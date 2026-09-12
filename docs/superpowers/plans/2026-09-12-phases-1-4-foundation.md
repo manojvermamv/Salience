@@ -115,7 +115,7 @@ def test_budget_settlement_releases_reservation(governance):
 - [x] **Step 2: Verify red**
 Run: `pytest tests/unit/test_policy.py tests/unit/test_costs.py -q`
 Expected: FAIL because governance services do not exist.
-- [ ] **Step 3: Implement deterministic governance services**
+- [x] **Step 3: Implement deterministic governance services**
 ```python
 @dataclass(frozen=True)
 class AuthorizationRequest:
@@ -126,10 +126,10 @@ class AuthorizationRequest:
     dry_run: bool
 ```
 Policy evaluation must deny unknown scopes, expired/disabled policies, budget overflow, and required-but-unapproved effects. Record decision/audit/provenance in one transaction. Generate and persist W3C-compatible trace IDs while emitting matching OpenTelemetry spans; redact secret values from every event. Store estimated, reserved, released, and actual cost rows separately.
-- [ ] **Step 4: Verify green**
+- [x] **Step 4: Verify green**
 Run: `pytest tests/unit/test_policy.py tests/unit/test_costs.py tests/unit/test_secrets.py tests/unit/test_tracing.py -q`
 Expected: PASS with redaction and denial cases covered.
-- [ ] **Step 5: Checkpoint**
+- [x] **Step 5: Checkpoint**
 Run: `git add src/salience/governance src/salience/observability tests/unit docs/governance.md && git commit -m "feat: add deterministic governance controls"`
 
 ### Task 4: Implement storage, capability registry, and adapter contracts
