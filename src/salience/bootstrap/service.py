@@ -6,6 +6,7 @@ from salience.agents.execution import AgentInvocation
 from salience.agents.fixtures import fixture_agent_service
 from salience.bootstrap.contracts import ResearchEvidenceInput, StrategyVersionInput
 from salience.bootstrap.repository import BootstrapRepository
+from salience.governance.trust import TrustContext
 from salience.memory.contracts import MemoryRecordInput
 from salience.memory.repository import MemoryRepository
 from salience.research.contracts import ResearchConnector
@@ -82,6 +83,9 @@ class ContentProgramService:
                     trust_level=finding.trust_level,
                     evidence_ids=[evidence_id],
                 ),
+                context=TrustContext.internal_memory_writer(
+                    "fixture://content-program-service", scopes=frozenset({"evidence"})
+                ),
             )
         strategy_run = await self._agents.invoke(
             AgentInvocation(agent_id="strategy_agent", input={"niche": normalized_niche})
@@ -105,6 +109,9 @@ class ContentProgramService:
                 content={"strategy_id": persisted_strategy.strategy_id, **strategy},
                 trust_level="fixture",
                 evidence_ids=evidence_ids,
+            ),
+            context=TrustContext.internal_memory_writer(
+                "fixture://content-program-service", scopes=frozenset({"semantic"})
             ),
         )
         return BootstrapResult(

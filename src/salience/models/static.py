@@ -30,4 +30,6 @@ class StaticModelAdapter:
             usage={"input_tokens": max(1, len(request.prompt.split())), "output_tokens": 2},
             latency_ms=0,
             provider_metadata={"adapter": "static"},
+            provider="static",
+            model="fixture",
         )

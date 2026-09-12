@@ -35,6 +35,7 @@ class CanonicalJobSnapshot:
     audit_events: list[dict[str, object]]
     provenance_records: list[dict[str, object]]
     cost_entries: list[dict[str, object]]
+    output_payload: dict[str, object]
 
 
 @dataclass(frozen=True)
@@ -51,6 +52,16 @@ class CanonicalContentProgram:
     slug: str
     name: str
     niche: str
+
+
+@dataclass(frozen=True)
+class CanonicalSchedule:
+    schedule_id: str
+    workspace_id: str
+    content_program_id: str
+    name: str
+    job_type: str
+    schedule_expression: str
 
 
 class CanonicalJobStore:
@@ -71,6 +82,28 @@ class CanonicalJobStore:
             self._create_run, workflow_run_id, task_queue, idempotency_key, dry_run
         )
 
+    async def create_intelligence_run(
+        self,
+        *,
+        workflow_run_id: str,
+        task_queue: str,
+        workspace_id: str,
+        content_program_id: str,
+        niche: str,
+        idempotency_key: str,
+        dry_run: bool,
+    ) -> CanonicalRun:
+        return await asyncio.to_thread(
+            self._create_intelligence_run,
+            workflow_run_id,
+            task_queue,
+            workspace_id,
+            content_program_id,
+            niche,
+            idempotency_key,
+            dry_run,
+        )
+
     async def checkpoint(self, run: CanonicalRun, checkpoint_name: str) -> None:
         await asyncio.to_thread(self._checkpoint, run, checkpoint_name)
 
@@ -86,6 +119,11 @@ class CanonicalJobStore:
 
     async def terminal(self, run: CanonicalRun, status: str) -> None:
         await asyncio.to_thread(self._terminal, run, status)
+
+    async def complete_with_output(
+        self, run: CanonicalRun, *, status: str, output: dict[str, object]
+    ) -> None:
+        await asyncio.to_thread(self._complete_with_output, run, status, output)
 
     async def dead_letter(
         self,
@@ -130,6 +168,26 @@ class CanonicalJobStore:
     ) -> CanonicalContentProgram:
         return await asyncio.to_thread(
             self._create_content_program, workspace_id, slug, name, niche
+        )
+
+    async def create_schedule(
+        self,
+        *,
+        workspace_id: str,
+        content_program_id: str,
+        name: str,
+        schedule_expression: str,
+        job_type: str,
+        payload: dict[str, object],
+    ) -> CanonicalSchedule:
+        return await asyncio.to_thread(
+            self._create_schedule,
+            workspace_id,
+            content_program_id,
+            name,
+            schedule_expression,
+            job_type,
+            payload,
         )
 
     def _connect(self) -> psycopg.Connection:
@@ -188,6 +246,91 @@ class CanonicalJobStore:
         return CanonicalRun(
             workspace_id, content_program_id, job_id, workflow_run_id, trace_context
         )
+
+    def _create_intelligence_run(
+        self,
+        workflow_run_id: str,
+        task_queue: str,
+        workspace_id: str,
+        content_program_id: str,
+        niche: str,
+        idempotency_key: str,
+        dry_run: bool,
+    ) -> CanonicalRun:
+        trace_context = TraceContext.new_root()
+        with self._connect() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT id FROM content_programs
+                WHERE id = %s AND workspace_id = %s
+                """,
+                (content_program_id, workspace_id),
+            )
+            if cursor.fetchone() is None:
+                raise KeyError("content program does not belong to workspace")
+            cursor.execute(
+                """
+                INSERT INTO jobs (
+                    workspace_id, content_program_id, job_type, state, workflow_run_id,
+                    task_queue, idempotency_key, input_payload, retry_policy, trace_id, span_id,
+                    dry_run, started_at
+                ) VALUES (
+                    %s, %s, 'intelligence_research', 'running', %s,
+                    %s, %s, %s::jsonb, %s::jsonb, %s, %s, %s, CURRENT_TIMESTAMP
+                )
+                ON CONFLICT (workspace_id, idempotency_key) DO NOTHING
+                RETURNING id, trace_id, span_id
+                """,
+                (
+                    workspace_id,
+                    content_program_id,
+                    workflow_run_id,
+                    task_queue,
+                    idempotency_key,
+                    json.dumps({"niche": niche, "contract_version": "IntelligenceRunRequest@v1"}),
+                    json.dumps({"maximum_attempts": 3, "initial_backoff_ms": 100}),
+                    trace_context.trace_id,
+                    trace_context.span_id,
+                    dry_run,
+                ),
+            )
+            inserted = cursor.fetchone()
+            if inserted is None:
+                cursor.execute(
+                    """
+                    SELECT id, workflow_run_id, trace_id, span_id
+                    FROM jobs
+                    WHERE workspace_id = %s AND idempotency_key = %s
+                    """,
+                    (workspace_id, idempotency_key),
+                )
+                job_id, existing_workflow_id, trace_id, span_id = cursor.fetchone()
+                return CanonicalRun(
+                    workspace_id=UUID(workspace_id),
+                    content_program_id=UUID(content_program_id),
+                    job_id=job_id,
+                    workflow_run_id=existing_workflow_id,
+                    trace_context=TraceContext(trace_id=trace_id, span_id=span_id),
+                )
+            job_id, trace_id, span_id = inserted
+            run = CanonicalRun(
+                workspace_id=UUID(workspace_id),
+                content_program_id=UUID(content_program_id),
+                job_id=job_id,
+                workflow_run_id=workflow_run_id,
+                trace_context=TraceContext(trace_id=trace_id, span_id=span_id),
+            )
+            self._insert_audit(
+                cursor,
+                run.workspace_id,
+                run.job_id,
+                run.workflow_run_id,
+                run.trace_context,
+                "intelligence_run.started",
+                "allowed",
+                {"task_queue": task_queue, "dry_run": dry_run},
+            )
+        return run
 
     def _checkpoint(self, run: CanonicalRun, checkpoint_name: str) -> None:
         with self._connect() as connection, connection.cursor() as cursor:
@@ -296,6 +439,29 @@ class CanonicalJobStore:
                 {"status": status},
             )
 
+    def _complete_with_output(
+        self, run: CanonicalRun, status: str, output: dict[str, object]
+    ) -> None:
+        with self._connect() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                UPDATE jobs
+                SET state = %s, output_payload = %s::jsonb, finished_at = CURRENT_TIMESTAMP
+                WHERE id = %s
+                """,
+                (status, json.dumps(output), run.job_id),
+            )
+            self._insert_audit(
+                cursor,
+                run.workspace_id,
+                run.job_id,
+                run.workflow_run_id,
+                run.trace_context,
+                f"intelligence_run.{status}",
+                "completed" if status == "succeeded" else "failed",
+                output,
+            )
+
     def _dead_letter(
         self,
         run: CanonicalRun,
@@ -389,13 +555,13 @@ class CanonicalJobStore:
     def _job_snapshot(self, job_id: str) -> CanonicalJobSnapshot | None:
         with self._connect() as connection, connection.cursor() as cursor:
             cursor.execute(
-                "SELECT state, dry_run, trace_id FROM jobs WHERE id = %s",
+                "SELECT state, dry_run, trace_id, COALESCE(output_payload, '{}'::jsonb) FROM jobs WHERE id = %s",
                 (job_id,),
             )
             job = cursor.fetchone()
             if job is None:
                 return None
-            state, dry_run, trace_id = job
+            state, dry_run, trace_id, output_payload = job
             cursor.execute(
                 """
                 SELECT action, outcome, details
@@ -447,6 +613,7 @@ class CanonicalJobStore:
                 audit_events=audit_events,
                 provenance_records=provenance_records,
                 cost_entries=cost_entries,
+                output_payload=output_payload,
             )
 
     def _job_by_idempotency_key(
@@ -502,6 +669,42 @@ class CanonicalJobStore:
             persisted_name,
             persisted_niche,
         )
+
+    def _create_schedule(
+        self,
+        workspace_id: str,
+        content_program_id: str,
+        name: str,
+        schedule_expression: str,
+        job_type: str,
+        payload: dict[str, object],
+    ) -> CanonicalSchedule:
+        with self._connect() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                INSERT INTO job_schedules (
+                    workspace_id, content_program_id, name, schedule_expression, job_type, payload
+                ) VALUES (%s, %s, %s, %s, %s, %s::jsonb)
+                ON CONFLICT (workspace_id, name)
+                DO UPDATE SET
+                    content_program_id = EXCLUDED.content_program_id,
+                    schedule_expression = EXCLUDED.schedule_expression,
+                    job_type = EXCLUDED.job_type,
+                    payload = EXCLUDED.payload,
+                    updated_at = CURRENT_TIMESTAMP
+                RETURNING id::text, workspace_id::text, content_program_id::text, name,
+                          job_type, schedule_expression
+                """,
+                (
+                    workspace_id,
+                    content_program_id,
+                    name,
+                    schedule_expression,
+                    job_type,
+                    json.dumps(payload),
+                ),
+            )
+            return CanonicalSchedule(*cursor.fetchone())
 
     @staticmethod
     def _insert_audit(

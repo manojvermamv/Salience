@@ -38,6 +38,29 @@ def main(arguments: Sequence[str] | None = None) -> None:
     start.add_argument("--dry-run", action=argparse.BooleanOptionalAction, default=True)
     inspect = job_commands.add_parser("inspect")
     inspect.add_argument("job_id")
+    intelligence = subcommands.add_parser("intelligence")
+    intelligence_commands = intelligence.add_subparsers(dest="intelligence_command", required=True)
+    intelligence_start = intelligence_commands.add_parser("start")
+    intelligence_start.add_argument("--workspace-id", required=True)
+    intelligence_start.add_argument("--program-id", required=True)
+    intelligence_start.add_argument("--niche", required=True)
+    intelligence_start.add_argument("--idempotency-key", required=True)
+    intelligence_start.add_argument("--dry-run", action=argparse.BooleanOptionalAction, default=True)
+    intelligence_inspect = intelligence_commands.add_parser("inspect")
+    intelligence_inspect.add_argument("job_id")
+    intelligence_schedule = intelligence_commands.add_parser("schedule")
+    intelligence_schedule.add_argument("--workspace-id", required=True)
+    intelligence_schedule.add_argument("--program-id", required=True)
+    intelligence_schedule.add_argument("--name", required=True)
+    intelligence_schedule.add_argument("--every-seconds", required=True, type=int)
+    intelligence_schedule.add_argument("--niche", required=True)
+    intelligence_brief = intelligence_commands.add_parser("brief")
+    intelligence_brief.add_argument("--program-id", required=True)
+    intelligence_brief.add_argument("--opportunity-id", required=True)
+    intelligence_brief.add_argument("--idempotency-key", required=True)
+    intelligence_brief.add_argument("--dry-run", action=argparse.BooleanOptionalAction, default=True)
+    intelligence_inspect_brief = intelligence_commands.add_parser("inspect-brief")
+    intelligence_inspect_brief.add_argument("brief_id")
     agents = subcommands.add_parser("agents")
     agent_commands = agents.add_subparsers(dest="agent_command", required=True)
     agent_commands.add_parser("list")
@@ -57,6 +80,46 @@ def main(arguments: Sequence[str] | None = None) -> None:
         )
     elif parsed.command == "jobs":
         result = _request(method="GET", path=f"/v1/jobs/{parsed.job_id}/inspection")
+    elif parsed.command == "intelligence" and parsed.intelligence_command == "start":
+        result = _request(
+            method="POST",
+            path="/v1/intelligence/runs",
+            payload={
+                "contract_version": "IntelligenceRunRequest@v1",
+                "workspace_id": parsed.workspace_id,
+                "content_program_id": parsed.program_id,
+                "niche": parsed.niche,
+                "dry_run": parsed.dry_run,
+                "idempotency_key": parsed.idempotency_key,
+            },
+        )
+    elif parsed.command == "intelligence" and parsed.intelligence_command == "inspect":
+        result = _request(method="GET", path=f"/v1/intelligence/runs/{parsed.job_id}")
+    elif parsed.command == "intelligence" and parsed.intelligence_command == "brief":
+        result = _request(
+            method="POST",
+            path=f"/v1/intelligence/opportunities/{parsed.opportunity_id}/briefs",
+            payload={
+                "contract_version": "ContentBriefRequest@v1",
+                "content_program_id": parsed.program_id,
+                "idempotency_key": parsed.idempotency_key,
+                "dry_run": parsed.dry_run,
+            },
+        )
+    elif parsed.command == "intelligence" and parsed.intelligence_command == "inspect-brief":
+        result = _request(method="GET", path=f"/v1/intelligence/briefs/{parsed.brief_id}")
+    elif parsed.command == "intelligence":
+        result = _request(
+            method="POST",
+            path="/v1/intelligence/schedules",
+            payload={
+                "workspace_id": parsed.workspace_id,
+                "content_program_id": parsed.program_id,
+                "name": parsed.name,
+                "every_seconds": parsed.every_seconds,
+                "niche": parsed.niche,
+            },
+        )
     elif parsed.agent_command == "list":
         result = _request(method="GET", path="/v1/agents")
     elif parsed.agent_command == "describe":

@@ -19,11 +19,21 @@ from salience.workflows.jobs import (
     TASK_QUEUE_PREFIX,
     DummyWorkflowRequest,
     DurableDummyWorkflow,
+    DummyActivities,
     RestartScenarioResult,
     WorkflowScenarioState,
     build_worker,
 )
+from salience.workflows.intelligence import (
+    IntelligenceActivities,
+    IntelligenceLoopWorkflow,
+    IntelligenceWorkflowState,
+)
+from salience.agents.fixtures import fixture_agent_service
+from salience.intelligence.repository import IntelligenceRepository
+from salience.research.rss import ConfiguredRssResearchConnector
 from salience.workflows.persistence import CanonicalJobStore
+from temporalio.worker import Worker
 
 
 @dataclass(frozen=True)
@@ -42,8 +52,66 @@ async def run_worker() -> None:
         provider=HttpMockEffectProvider(settings.mock_effect_provider_url),
         store=CanonicalJobStore(settings.database_url),
     )
-    worker = build_worker(client, task_queue=settings.worker_task_queue, state=state)
+    intelligence_state = IntelligenceWorkflowState(
+        store=CanonicalJobStore(settings.database_url),
+        repository=IntelligenceRepository(settings.database_url),
+        agents=_intelligence_agent_service(settings),
+    )
+    worker = build_deployable_worker(
+        client,
+        task_queue=settings.worker_task_queue,
+        dummy_state=state,
+        intelligence_state=intelligence_state,
+    )
     await worker.run()
+
+
+def build_deployable_worker(
+    client: Client,
+    *,
+    task_queue: str,
+    dummy_state: WorkflowScenarioState,
+    intelligence_state: IntelligenceWorkflowState,
+) -> Worker:
+    """Register every owned workflow on one task queue without split ownership."""
+
+    dummy = DummyActivities(dummy_state)
+    intelligence = IntelligenceActivities(intelligence_state)
+    return Worker(
+        client,
+        task_queue=task_queue,
+        workflows=[DurableDummyWorkflow, IntelligenceLoopWorkflow],
+        activities=[
+            dummy.checkpoint,
+            dummy.external_effect,
+            dummy.terminal,
+            dummy.dead_letter,
+            intelligence.fetch,
+            intelligence.normalize,
+            intelligence.rank,
+            intelligence.strategy,
+            intelligence.queue,
+            intelligence.complete,
+            intelligence.cancel,
+            intelligence.packages,
+            intelligence.claims,
+            intelligence.brief,
+        ],
+    )
+
+
+def _intelligence_agent_service(settings: Settings):
+    if not settings.research_rss_feed_urls:
+        return fixture_agent_service()
+    return fixture_agent_service(
+        research_connector=ConfiguredRssResearchConnector(
+            feed_urls=settings.research_rss_feed_urls,
+            allowed_domains=frozenset(settings.research_allowed_domains),
+            timeout_seconds=settings.research_request_timeout_seconds,
+            max_response_bytes=settings.research_max_response_bytes,
+        ),
+        research_source_label="configured-rss",
+    )
 
 
 def main() -> None:

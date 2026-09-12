@@ -7,9 +7,11 @@ It gives a small team a governed way to define workspaces and content programs,
 run restart-safe work, inspect every effect, and add future providers without
 making one model, agent, tool, or platform the system of record.
 
-**Status: Phases 1–4 foundation implemented.** The system deliberately stops
-before autonomous content production, media generation, publishing, browser
-research, analytics, or learning loops.
+**Status: Phases 1–6 intelligence loop implemented.** A dry-run program can
+now move through source-linked research, signals, ranked opportunities,
+strategy, strategic packages, claim/evidence checks, and immutable
+`ContentBrief` records. It still stops before scripting, media, publishing,
+analytics, and learning loops.
 
 [Open the interactive Archify architecture map](docs/salience-phase-1-4.architecture.html)
 
@@ -66,10 +68,10 @@ focus views, relationship tracing, and local SVG/PNG export.
 | Surface | Shipped foundation | Intentionally deferred |
 | --- | --- | --- |
 | Agents | Versioned manifests, direct/delegated fixture calls, and teams | Autonomous content agents and delegated production authority |
-| Models | Deterministic static adapter and OpenAI-compatible HTTP boundary | A required model vendor or model-dependent workflow |
-| MCP | Version-gated `2025-11-25` fixture gateway | Production MCP transport SDK integration |
-| A2A | Version-gated `0.3.0` descriptor/task/artifact fixture | Production A2A transport SDK integration |
-| Memory and strategy | Scope-filtered PostgreSQL memory, evidence, and immutable strategy versions | Vector search, learning loops, and automated optimization |
+| Models | Structured static/OpenAI-compatible gateways and invocation lineage | A required model vendor |
+| MCP | Official SDK adapter for `2026-07-28` plus legacy negotiation | Unneeded optional extensions |
+| A2A | Official SDK adapter for A2A `1.0` plus explicit `0.3` behavior | Mandatory remote agents |
+| Research and strategy | RSS/HN/browser contracts, signals, packages, claims, and briefs | Crawling, scripting, media, publishing, and learning |
 | Plugins | Versioned capability registry and provider-compatibility metadata | Large platform integrations |
 
 The data model also keeps hooks for tenant isolation, agent/tool trust and
@@ -141,11 +143,16 @@ creates identities and starts jobs; `control:read` retrieves state and records.
 | `GET /v1/jobs/{job_id}/trace` | Retrieve the distributed trace identity |
 | `GET /v1/agents` | List versioned fixture agent capabilities |
 | `POST /v1/agents/{agent_id}/runs` | Invoke a validated direct or delegated fixture agent run |
+| `POST /v1/intelligence/runs` | Start an idempotent dry-run intelligence workflow |
+| `GET /v1/intelligence/runs/{job_id}` | Inspect its state, trace, and output IDs |
+| `POST /v1/intelligence/schedules` | Store a read-only research cadence |
+| `POST /v1/intelligence/opportunities/{opportunity_id}/briefs` | Start a selected-opportunity brief workflow |
+| `GET /v1/intelligence/briefs/{brief_id}` | Retrieve immutable ContentBrief content and lineage |
 
 The command-line client and Python SDK both use these public schemas; neither
 reaches into the database.
 
-## Verify The Foundation
+## Verify The Intelligence Loop
 
 Create the local development environment, then run the isolated Phase 1–4
 verification stack:
@@ -158,7 +165,7 @@ pip install -e '.[dev]'
 bash scripts/verify-phases-1-4.sh
 ```
 
-The verifier provisions a disposable PostgreSQL and Temporal project, applies
+The Foundation verifier provisions a disposable PostgreSQL and Temporal project, applies
 all migrations, and exercises Phase 1 recovery/control, Phase 2 callable
 agents, Phase 3 protocol contracts, Phase 4 bootstrap behavior, and the
 cross-phase contract. The recovery case deliberately hard-exits a worker after
@@ -180,6 +187,9 @@ Keeping these capabilities out of the foundation is intentional: later systems
 must attach through the governed, versioned contracts above rather than bypass
 identity, budget, policy, audit, or provenance controls.
 
+For the focused Phase 5–6 verifier and optional real-feed configuration, see
+[`docs/verification.md`](docs/verification.md) and [`docs/research.md`](docs/research.md).
+
 ## Repository Guide
 
 | Start here | Contents |
@@ -189,6 +199,10 @@ identity, budget, policy, audit, or provenance controls.
 | [`docs/deployment.md`](docs/deployment.md) | Deployment topology and operator responsibilities |
 | [`docs/verification.md`](docs/verification.md) | Phase verification approach and evidence |
 | [`docs/limitations.md`](docs/limitations.md) | Explicit current constraints and deferred production work |
+| [`docs/research.md`](docs/research.md) | Source order, RSS/HN/browser constraints, and live-smoke setup |
+| [`docs/trust-model.md`](docs/trust-model.md) | Untrusted-input and memory-write rules |
+| [`docs/model-execution.md`](docs/model-execution.md) | Structured model gateway and lineage behavior |
+| [`docs/phase-7-handoff.md`](docs/phase-7-handoff.md) | The only allowed input to future scripting work |
 | [`docs/implementation-progress.md`](docs/implementation-progress.md) | Persistent build checkpoints and resume context |
 | [`docs/adr/`](docs/adr/) | Build-vs-adopt decisions for durable runtime, storage, API persistence, and governance |
 | [`docs/contracts/adapter-contracts.md`](docs/contracts/adapter-contracts.md) | Project-owned adapter and compatibility contracts |

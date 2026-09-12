@@ -14,8 +14,10 @@ dependencies = [
   "fastapi==0.141.1",
   "httpx==0.28.1",
   "jsonschema==4.26.0",
+  "mcp==2.2.0",
   "opentelemetry-api==1.44.0",
   "opentelemetry-sdk==1.44.0",
+  "a2a-sdk==1.1.2",
   "pydantic==2.12.5",
   "psycopg[binary]==3.3.5",
   "sqlalchemy==2.0.52",
@@ -24,6 +26,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+browser = [
+  "playwright==1.62.0",
+]
 dev = [
   "pytest==9.1.1",
   "pytest-asyncio==1.3.0",
@@ -35,6 +40,9 @@ content = "salience.cli:main"
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 testpaths = ["tests"]
+markers = [
+  "live: requires explicitly configured live network or provider access",
+]
 
 [tool.setuptools.packages.find]
 where = ["src"]

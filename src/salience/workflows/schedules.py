@@ -35,6 +35,33 @@ class ScheduleRequest:
             raise ValueError("schedule interval must be positive")
 
 
+@dataclass(frozen=True)
+class IntelligenceScheduleRequest:
+    workspace_id: str
+    content_program_id: str
+    name: str
+    every: timedelta
+    niche: str
+
+    def to_schedule_request(self, *, task_queue: str) -> ScheduleRequest:
+        if not self.niche.strip():
+            raise ValueError("niche must be non-empty")
+        return ScheduleRequest(
+            schedule_id=f"{self.workspace_id}:{self.name}",
+            task_queue=task_queue,
+            every=self.every,
+            workflow_type="IntelligenceLoopWorkflow",
+            payload={
+                "workspace_id": self.workspace_id,
+                "content_program_id": self.content_program_id,
+                "niche": self.niche,
+                "idempotency_key": f"schedule:{self.workspace_id}:{self.name}",
+                "dry_run": True,
+                "contract_version": "IntelligenceRunRequest@v1",
+            },
+        )
+
+
 class TemporalScheduleService:
     def __init__(self, client: TemporalScheduleClient) -> None:
         self._client = client

@@ -10,12 +10,15 @@ class ToolManifest:
     required_scope: str
     protocol_version: str
     timeout_seconds: float
+    protocol_features: tuple[str, ...] = ()
+    authentication_mode: str = "none"
+    sdk_version: str | None = None
 
 
 @dataclass(frozen=True)
 class ToolResult:
     output: dict[str, Any]
-    provenance: dict[str, str]
+    provenance: dict[str, Any]
     protocol_version: str
 
 

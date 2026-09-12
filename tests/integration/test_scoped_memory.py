@@ -5,6 +5,7 @@ import pytest
 
 from salience.memory.contracts import MemoryRecordInput
 from salience.memory.repository import MemoryRepository
+from salience.governance.trust import TrustContext
 from salience.workflows.persistence import CanonicalJobStore
 
 
@@ -35,6 +36,9 @@ async def test_memory_retrieval_never_returns_another_programs_records() -> None
         workspace_id=first_workspace.workspace_id,
         program_id=first_program.content_program_id,
         record=MemoryRecordInput(scope="semantic", content={"audience": "A"}),
+        context=TrustContext.internal_memory_writer(
+            "test://memory", scopes=frozenset({"semantic"})
+        ),
     )
 
     assert await repository.retrieve(

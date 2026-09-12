@@ -17,5 +17,7 @@ class FixtureResearchConnector:
                     "audience": "people seeking practical, trustworthy guidance",
                     "source": "fixture",
                 },
+                source_identity=f"fixture://research/{normalized}",
+                provenance={"connector": "fixture", "source_kind": "fixture"},
             )
         ]
