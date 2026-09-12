@@ -72,7 +72,14 @@ class BrowserResearchAgentRuntime:
         url = invocation.input["url"]
         artifacts: list[dict[str, str]] = []
         if self._browser_tool is not None:
-            result = await self._browser_tool.read(BrowserResearchRequest(url=url))
+            result = await self._browser_tool.read(
+                BrowserResearchRequest(
+                    url=url,
+                    agent_run_id=str(context.run_id),
+                    tool_run_id=f"browser:{context.run_id}",
+                    trace_id=context.trace_context.trace_id,
+                )
+            )
             artifacts = [
                 {
                     "text_artifact_key": result.text_artifact_key,

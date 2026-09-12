@@ -172,7 +172,7 @@ git commit -m "feat: persist governed browser evidence"
 - Consumes: Task 1 browser request lineage fields and existing `TraceContext`.
 - Produces: `AgentExecutionContext(run_id: UUID, ...)`, an `AgentRun.id` equal to `context.run_id`, and browser calls with canonical agent/tool/trace IDs.
 
-- [ ] **Step 1: Write failing lineage tests**
+- [x] **Step 1: Write failing lineage tests**
 
 ```python
 assert runtime.context.run_id == run.id
@@ -181,23 +181,23 @@ assert browser_request.trace_id == run.trace_context.trace_id
 assert output["trust_level"] == "untrusted_external"
 ```
 
-- [ ] **Step 2: Run the focused tests to verify red**
+- [x] **Step 2: Run the focused tests to verify red**
 
 Run: `python -m pytest tests/unit/test_agent_execution.py tests/unit/test_intelligence_agents.py -v`
 
 Expected: FAIL because agent IDs are generated after runtime invocation and the browser runtime constructs an unadorned request.
 
-- [ ] **Step 3: Allocate the run UUID before the runtime invocation**
+- [x] **Step 3: Allocate the run UUID before the runtime invocation**
 
 Create `run_id = uuid4()` in `AgentService._invoke`, set it on `AgentExecutionContext`, and use the same value when constructing the successful `AgentRun`. In `BrowserResearchAgentRuntime`, construct a `BrowserResearchRequest` with `agent_run_id=str(context.run_id)`, `tool_run_id=f"browser:{context.run_id}"`, and `trace_id=context.trace_context.trace_id`.
 
-- [ ] **Step 4: Run lineage and trust regression tests**
+- [x] **Step 4: Run lineage and trust regression tests**
 
 Run: `python -m pytest tests/unit/test_agent_execution.py tests/unit/test_intelligence_agents.py tests/unit/test_research_trust.py -v`
 
 Expected: PASS; browser output stays artifact-only and untrusted.
 
-- [ ] **Step 5: Record the checkpoint and commit**
+- [x] **Step 5: Record the checkpoint and commit**
 
 ```bash
 git add src/salience/agents/execution.py src/salience/agents/intelligence.py tests/unit/test_agent_execution.py tests/unit/test_intelligence_agents.py docs/implementation-progress.md
