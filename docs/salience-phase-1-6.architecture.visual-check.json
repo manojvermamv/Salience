@@ -6,9 +6,9 @@
   "status": "skipped",
   "visualReview": "pending",
   "artifact": {
-    "path": "/home/admin/Salience/docs/salience-phase-1-4.architecture.html",
-    "sha256": "74601023826b8ae7ea6d82a8490a5a60142dbc2655aba1b88e88fd0b98a94867",
-    "bytes": 814808
+    "path": "/home/admin/Salience/docs/salience-phase-1-6.architecture.html",
+    "sha256": "dd7fc33a192e7cb3b2f259f0f5d7997fc3903c76c60ffaf174158a4c6c84de48",
+    "bytes": 817093
   },
   "state": {
     "detail": "read",
@@ -24,7 +24,7 @@
       "severity": "warning",
       "message": "Chrome or Chromium is unavailable. Set ARCHIFY_CHROME to its executable path.",
       "subject": {
-        "artifact": "/home/admin/Salience/docs/salience-phase-1-4.architecture.html"
+        "artifact": "/home/admin/Salience/docs/salience-phase-1-6.architecture.html"
       },
       "evidence": {
         "executable": null
@@ -53,8 +53,8 @@
     "contactSheet": null
   },
   "sidecars": {
-    "receipt": "salience-phase-1-4.architecture.visual-check.json",
-    "contactSheet": "salience-phase-1-4.architecture.visual-check.html"
+    "receipt": "salience-phase-1-6.architecture.visual-check.json",
+    "contactSheet": "salience-phase-1-6.architecture.visual-check.html"
   },
   "error": "Chrome or Chromium is unavailable. Set ARCHIFY_CHROME to its executable path."
 }

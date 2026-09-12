@@ -14,3 +14,10 @@ Retry exhaustion and timeouts create canonical dead-letter records. Cooperative
 cancellation, policy/approval denial, budget denial, and dry-run execution are
 terminal states that do not make a remote provider write. Dry-run is the safe
 default for new program flows.
+
+The intelligence workflow applies the same recovery rules to its canonical
+stages. A source fetch is keyed by its source identity and request fingerprint;
+ranking, strategy proposal, package selection, claim checks, and brief assembly
+reuse their natural identities after a retry or worker restart. Read-only source
+collection can be resumed safely, but it never grants permission for a write
+effect or live publication.

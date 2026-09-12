@@ -1,20 +1,18 @@
 # MCP and A2A compatibility
 
-The MCP fixture advertises protocol revision `2025-11-25` and rejects any other
-revision before invocation. Its tool boundary validates scopes, input schema,
-and timeout, then maps results to provider-neutral output/provenance records.
+Compatibility is checked at an owned gateway before an external protocol value
+enters a Salience contract. `mcp==2.2.0` supports MCP `2026-07-28` discovery and
+read-only tool calls, with an explicit `2025-11-25` legacy path. `a2a-sdk==1.1.2`
+supports A2A 1.0 Agent Cards, skills, task artifacts, and cancellation, with an
+explicit deprecated 0.3 compatibility path.
 
-The official MCP Python SDK is MIT licensed and supports current standard
-transports, but its stable v2 line is a breaking change. It is not adopted for
-the fixture-only Phase 3 gateway: adding it would make a narrow contract test
-own session, transport, and SDK lifecycle behavior prematurely. A later real
-transport adapter must pin an SDK version, support its negotiated protocol
-range, validate Streamable HTTP origin/authentication rules, and preserve this
-contract.
+The adapters project only validated, JSON-compatible DTOs into canonical
+records. Authentication material is resolved at the adapter edge; protocol SDK
+objects, wire payloads, Agent Cards, and remote artifacts are not canonical
+domain values. Unsupported revisions fail closed with a migration message.
 
-The A2A fixture advertises protocol `0.3.0`, maps a descriptor, task result,
-artifact, and parent run lineage, and rejects incompatible cards before an
-invocation. The official Python SDK is Apache-2.0 and the protocol requires
-explicit version negotiation; it remains deferred until a real transport needs
-its capabilities. External Agent Cards, task states, and artifacts are treated
-as untrusted input at that future adapter edge.
+The default loop does not require a remote MCP server or A2A agent. A configured
+remote adapter must still observe secret scopes, trust classification, policy,
+budget, audit, provenance, trace, and timeout boundaries. See
+[`docs/compatibility.md`](compatibility.md) and
+[`docs/adr/0005-mcp-a2a-and-browser-sdk-adoption.md`](adr/0005-mcp-a2a-and-browser-sdk-adoption.md).

@@ -6,8 +6,10 @@ stores immutable artifact bytes; neither replaces a canonical database row.
 ## Migration
 
 The first migration is a static schema snapshot at
-`migrations/versions/0001_canonical_foundation.py`. It deliberately does not import
-application metadata, so future model changes cannot alter a historical migration.
+`migrations/versions/0001_canonical_foundation.py`. The implemented history
+reaches `0005_strategy_idempotency.py`; `0004_intelligence_loop.py` adds the
+source-to-brief lineage tables. Historical migrations do not import application
+metadata, so future model changes cannot alter an already-applied migration.
 
 Use an SQLAlchemy async URL for Alembic:
 
@@ -41,6 +43,12 @@ failure history. A workspace-local job idempotency key is unique.
 idempotency key, request fingerprint, remote reference, and reconciliation state. This
 is the durable boundary used to prevent duplicate external writes.
 
+The intelligence loop adds canonical sources, source fetches, evidence, signals,
+source support, ranked opportunities, strategic packages/evaluations, claims,
+claim/evidence links, immutable brief versions, and model-invocation lineage.
+Their natural keys make retrying a stage return the existing record instead of
+duplicating a source, strategy proposal, or brief.
+
 ## Governance and Traceability
 
 - `audit_events` has a unique `(run_id, sequence_no)` and a trigger that rejects
@@ -62,6 +70,7 @@ protocol compatibility metadata. `plugin_versions` and `plugin_capabilities` hol
 versioned capability declarations without embedding a provider SDK or protocol object
 in canonical rows.
 
-Those fields are hooks only. Enforcement services, workflow adapters, protocol
-gateways, and agent execution are implemented in later Phase-1 through Phase-4 tasks.
-
+Those fields remain extension hooks. The deterministic Phase 1–6 implementation
+enforces its present scope, policy, approval, trust, workflow, protocol-gateway,
+and callable-agent boundaries without treating a future tenant, publisher, or
+provider deployment as already configured.

@@ -11,11 +11,19 @@ requires a single accepted effect plus reconciliation.
 For Phases 5–6, reuse active services when disk is constrained:
 
 ```bash
-pytest tests/e2e/test_phase5_durable_research.py \
+pytest tests/test_config.py tests/unit/test_research_connectors.py \
+  tests/e2e/test_phase5_durable_research.py \
   tests/e2e/test_phases_5_6_intelligence_loop.py \
   tests/evals/test_phase5_signal_eval.py tests/evals/test_phase6_packaging_eval.py \
-  tests/evals/test_intelligence_safety_eval.py -q
+  tests/evals/test_intelligence_safety_eval.py \
+  tests/integration/test_intelligence_control_api.py -q
 ```
+
+This focused command verifies configuration, source connector boundaries,
+restart-safe source-to-brief lineage, deterministic ranking and packaging,
+prompt-injection/contradiction safety, and the public intelligence control API.
+Use the PostgreSQL and Temporal service addresses for `TEST_DATABASE_URL` and
+`TEST_TEMPORAL_TARGET` when running outside their Compose network.
 
 Set `LIVE_HACKER_NEWS_ITEM_URL` for `pytest -m live tests/live/test_research_smoke.py -q`.
 Inspect `df -h .` and `docker system df` before browser installation or a broad

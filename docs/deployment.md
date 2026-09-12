@@ -4,7 +4,7 @@ Run `docker compose --profile application up --build` for PostgreSQL, Temporal,
 the API, worker, mock effect provider, and migration job. Set a nonempty
 `CONTROL_PLANE_TOKEN` outside source control. The API and worker use service
 hostnames; PostgreSQL is canonical and should be backed up/exported with its
-Alembic version history.
+Alembic version history through `0005_strategy_idempotency`.
 
 Use a dedicated worker process and restrict network/secret permissions at the
 deployment boundary. The mock provider is a test fixture only and must not be
@@ -15,3 +15,8 @@ HTTPS feed URLs and `RESEARCH_ALLOWED_DOMAINS` contains their exact hostnames.
 The connector does not follow redirects, records untrusted evidence, and fails
 closed outside scope. Browser setup is optional: `pip install '.[browser]'` then
 `playwright install chromium`, only after checking available disk capacity.
+
+No model credential, MCP server, A2A endpoint, publisher, or browser binary is
+required to deploy the Phase 1–6 dry-run loop. Configure those adapters only
+with operator-managed secrets and policy after their individual contract and
+compatibility checks pass.

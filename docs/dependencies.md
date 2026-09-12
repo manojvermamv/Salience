@@ -1,6 +1,8 @@
 # Dependency Inventory
 
-This is the review record for the initial `phases-1-4-foundation` branch. Exact Python dependency pins are copied from `pyproject.toml`; image digests are copied from `compose.yaml`.
+This is the review record for the implemented Phase 1–6 branch. Exact Python
+dependency pins are copied from `pyproject.toml`; image digests are copied from
+`compose.yaml`.
 
 | Component | Version selected | License | Boundary | Replacement path |
 | --- | --- | --- | --- | --- |
@@ -18,11 +20,13 @@ This is the review record for the initial `phases-1-4-foundation` branch. Exact 
 | Uvicorn | 0.40.0 | BSD-3-Clause | ASGI process | another ASGI server |
 | JSON Schema | 4.26.0 | MIT | boundary validation | compliant validator |
 | OpenTelemetry | 1.44.0 | Apache-2.0 | trace emission | compatible SDK/exporter |
-| MCP Python SDK | not adopted | MIT | owned MCP fixture contract | pin the official SDK only for a production transport adapter |
-| A2A Python SDK | not adopted | verify before adoption | owned A2A fixture contract | pin an official/maintained SDK only for a production transport adapter |
+| MCP Python SDK | 2.2.0 | MIT | owned MCP adapter edge | remove adapter; retain owned DTO contract |
+| A2A Python SDK | 1.1.2 | Apache-2.0 | owned A2A adapter edge | remove adapter; retain owned DTO contract |
+| Playwright | 1.62.0 (optional extra) | Apache-2.0 | read-only browser adapter | omit optional extra; retain browser contract |
 
 ## Review cadence
 
 Review image and package advisories before every release. Garage has an explicit
-ADR; MCP and A2A are intentionally SDK-free fixture contracts with version
-compatibility tested rather than inferred before any transport SDK is adopted.
+ADR; MCP and A2A use official SDKs only at owned, version-gated adapter edges.
+Fixtures remain the deterministic default, and protocol compatibility is tested
+rather than inferred.

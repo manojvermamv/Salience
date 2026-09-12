@@ -20,6 +20,10 @@ The adapter treats a missing S3 object as `ObjectNotFound`; callers do not depen
 a provider exception class. Artifact bytes never become the only source of canonical
 metadata.
 
+The Phase 5–6 browser and model-recording paths retain artifact references rather
+than provider response objects. Object storage remains optional for fixture-backed
+research and no browser binary is required by the default intelligence loop.
+
 ## Workflow
 
 `WorkflowBackend` is intentionally small: start, status, cancel, and resume. The
@@ -27,10 +31,14 @@ Temporal adapter is implemented in the durable-workflow task. Keeping this proto
 here prevents Temporal workflow handles and exceptions from entering job or API
 contracts.
 
+`IntelligenceLoopWorkflow` consumes this same boundary. Its source, ranking,
+agent, strategy, package, claim, and brief stages use canonical checkpoints and
+idempotent repositories, so a backend retry does not become a second semantic
+decision or external effect.
+
 ## Compatibility
 
 Adapter contracts are semantically versioned. A plugin with a different major contract
 version is rejected at registration time. This is a deliberate safe failure: operators
 must upgrade, pin, or provide a compatibility adapter instead of silently loading a
 semantically incompatible integration.
-

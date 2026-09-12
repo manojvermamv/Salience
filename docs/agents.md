@@ -16,6 +16,12 @@ boundary. Direct calls, delegated calls, and team members use that same service;
 delegated calls receive a child trace context and retain their parent run ID.
 The fixture runtimes are deterministic and do not invoke an AI/model provider.
 
+The Phase 5–6 workflow uses the same boundary for Research and Strategy
+specialists, and exposes an optional read-only Browser specialist. Their results
+are versioned, source-linked records: findings, questions, contradictions,
+assumptions, and uncertainties cross into the intelligence loop without granting
+the agent independent authority to publish, purchase, or change policy.
+
 The control API exposes listing, describing, and running the same manifests at
 `/v1/agents`. `SalienceClient.agents` and `content agents` use those HTTP
 schemas; neither bypasses the public transport with an internal runtime call.

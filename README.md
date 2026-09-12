@@ -2,10 +2,11 @@
 
 > Find what people care about. Create what they can’t ignore.
 
-**Salience is an operator-controlled, durable foundation for content programs.**
-It gives a small team a governed way to define workspaces and content programs,
-run restart-safe work, inspect every effect, and add future providers without
-making one model, agent, tool, or platform the system of record.
+**Salience is an operator-controlled, durable intelligence foundation for
+content programs.** It gives a small team a governed way to define workspaces
+and content programs, turn bounded public research into an evidence-linked
+`ContentBrief`, inspect every decision, and add future providers without making
+one model, agent, tool, or platform the system of record.
 
 **Status: Phases 1–6 intelligence loop implemented.** A dry-run program can
 now move through source-linked research, signals, ranked opportunities,
@@ -13,28 +14,30 @@ strategy, strategic packages, claim/evidence checks, and immutable
 `ContentBrief` records. It still stops before scripting, media, publishing,
 analytics, and learning loops.
 
-[Open the interactive Archify architecture map](docs/salience-phase-1-4.architecture.html)
+[Open the interactive Archify architecture map](docs/salience-phase-1-6.architecture.html)
 
 ## Architecture At A Glance
 
 ```mermaid
 flowchart LR
-    Operator[Operators, API clients, CLI, SDK] -->|scoped control request| API[Control API]
-    API -->|canonical identity and governance| PG[(PostgreSQL)]
-    API -->|start durable run| Temporal[Temporal]
+    Operator[Operators, API clients, CLI, SDK] -->|scoped request| API[Control API]
+    API -->|idempotent start| Temporal[Temporal adapter]
     Temporal -->|tasks and timers| Worker[Salience worker]
-    Worker -->|checkpoint, audit, provenance| PG
-    Worker -->|reconciled idempotent effect| Mock[Mock effect provider]
-    Worker -.->|contracted bytes| Storage[Object-store contract]
-    API -->|authorized calls| Agents[Agent registry]
-    Agents -->|pinned compatibility| Protocols[Model, MCP, A2A, plugin contracts]
-    Bootstrap[Bounded niche bootstrap] -.->|evidence, memory, strategy| PG
+    Worker -->|checkpointed activities| Loop[Intelligence loop]
+    Sources[Public RSS, HN, optional browser] -.->|untrusted evidence| Loop
+    Loop -->|direct/delegated contract| Agents[Research and strategy agents]
+    Agents -->|version-gated boundary| Providers[Model, MCP, A2A, plugin adapters]
+    Loop -->|source to immutable brief lineage| PG[(PostgreSQL)]
+    API -->|identity, scope, policy, budget| PG
+    Worker -.->|artifact references| Storage[Object-store contract]
+    Future[Phase 7+ providers] -.->|deferred adapter| Providers
 ```
 
 The Mermaid view is a quick GitHub-native overview. The linked
-[Archify viewer](docs/salience-phase-1-4.architecture.html) is the checked,
-interactive source for the Phase 1–4 architecture: it supports theme switching,
-focus views, relationship tracing, and local SVG/PNG export.
+[Archify viewer](docs/salience-phase-1-6.architecture.html) is the checked,
+interactive source for the implemented Phase 1–6 architecture: it supports
+theme switching, focus views, relationship tracing, source evidence, and local
+SVG/PNG export.
 
 ## What You Can Rely On Today
 
@@ -63,6 +66,19 @@ focus views, relationship tracing, and local SVG/PNG export.
 - Each run records audit events, provenance, idempotency/reconciliation state,
   distributed run identities, and OpenTelemetry-compatible trace identifiers.
 
+### An Evidence-Linked Intelligence Loop
+
+- **Read-only source collection** supports deterministic fixtures plus opt-in,
+  allowlisted RSS/Atom and Hacker News connectors. Browser research is an
+  optional artifact-only adapter, not a default crawler.
+- **Signals and opportunities** retain source support, raw feature availability,
+  stable fingerprints, transparent ranking, and bounded model adjustment hooks.
+- **Callable research and strategy agents** use versioned input/output contracts
+  and can run directly or under the durable workflow without requiring a model
+  vendor.
+- **Strategic packages, claims, and briefs** use explicit evidence checks;
+  contradictory or unsupported claims cannot enter an immutable `ContentBrief@v1`.
+
 ### Provider-Neutral Extensions
 
 | Surface | Shipped foundation | Intentionally deferred |
@@ -71,7 +87,7 @@ focus views, relationship tracing, and local SVG/PNG export.
 | Models | Structured static/OpenAI-compatible gateways and invocation lineage | A required model vendor |
 | MCP | Official SDK adapter for `2026-07-28` plus legacy negotiation | Unneeded optional extensions |
 | A2A | Official SDK adapter for A2A `1.0` plus explicit `0.3` behavior | Mandatory remote agents |
-| Research and strategy | RSS/HN/browser contracts, signals, packages, claims, and briefs | Crawling, scripting, media, publishing, and learning |
+| Research and strategy | RSS/HN/browser contracts, source-linked signals, opportunities, packages, claims, and immutable briefs | General crawling, scripting, media, publishing, and learning |
 | Plugins | Versioned capability registry and provider-compatibility metadata | Large platform integrations |
 
 The data model also keeps hooks for tenant isolation, agent/tool trust and
@@ -117,7 +133,20 @@ docker compose logs -f worker
 
 `content jobs start-dummy` defaults to `--dry-run`. The configured Temporal
 control plane rejects non-dry-run calls until an operator supplies the required
-policy adapter; direct production effects are not a Phase 1–4 feature.
+policy adapter; direct production effects are not a Phase 1–6 feature.
+
+To run the implemented intelligence loop, create a workspace and program with
+the control API, then pass their returned IDs to the same HTTP-only CLI:
+
+```bash
+docker compose exec api content intelligence start \
+  --workspace-id <workspace_id> --program-id <content_program_id> \
+  --niche 'Personal Finance' --idempotency-key getting-started-intelligence-001
+```
+
+Inspect the returned job with `content intelligence inspect <job_id>`. Its final
+output includes the selected brief ID when the dry-run reaches the immutable
+brief stage.
 
 Stop the local stack when finished:
 
@@ -148,6 +177,7 @@ creates identities and starts jobs; `control:read` retrieves state and records.
 | `POST /v1/intelligence/schedules` | Store a read-only research cadence |
 | `POST /v1/intelligence/opportunities/{opportunity_id}/briefs` | Start a selected-opportunity brief workflow |
 | `GET /v1/intelligence/briefs/{brief_id}` | Retrieve immutable ContentBrief content and lineage |
+| `GET /v1/intelligence/briefs/{brief_id}/lineage` | Retrieve source-to-brief canonical lineage |
 
 The command-line client and Python SDK both use these public schemas; neither
 reaches into the database.
@@ -165,11 +195,16 @@ pip install -e '.[dev]'
 bash scripts/verify-phases-1-4.sh
 ```
 
-The Foundation verifier provisions a disposable PostgreSQL and Temporal project, applies
-all migrations, and exercises Phase 1 recovery/control, Phase 2 callable
-agents, Phase 3 protocol contracts, Phase 4 bootstrap behavior, and the
-cross-phase contract. The recovery case deliberately hard-exits a worker after
-the fixture accepts an effect, then proves safe reconciliation after restart.
+The Foundation verifier provisions a disposable PostgreSQL and Temporal project,
+applies all migrations, and exercises Phase 1 recovery/control, Phase 2
+callable agents, Phase 3 protocol contracts, and Phase 4 bootstrap behavior.
+The recovery case deliberately hard-exits a worker after the fixture accepts an
+effect, then proves safe reconciliation after restart.
+
+Then run the Phase 5–6 intelligence verifier against active local services. It
+proves that a restarted worker resumes a source-linked run and produces an
+immutable brief with canonical lineage. See [`docs/verification.md`](docs/verification.md)
+for the focused command and constrained-host guidance.
 
 ## What Is Deliberately Not Here
 
@@ -180,7 +215,7 @@ does not include:
 - Publishing automation or broad platform integrations
 - Browser-driven production research
 - Learning, analytics, or optimization loops
-- Production MCP, A2A, or model-provider SDK transports
+- A required model credential, live browser binary, or production publishing provider
 - A production secret-manager deployment or Garage cluster configuration
 
 Keeping these capabilities out of the foundation is intentional: later systems
@@ -206,7 +241,8 @@ For the focused Phase 5–6 verifier and optional real-feed configuration, see
 | [`docs/implementation-progress.md`](docs/implementation-progress.md) | Persistent build checkpoints and resume context |
 | [`docs/adr/`](docs/adr/) | Build-vs-adopt decisions for durable runtime, storage, API persistence, and governance |
 | [`docs/contracts/adapter-contracts.md`](docs/contracts/adapter-contracts.md) | Project-owned adapter and compatibility contracts |
-| [`Build Phases 1–4 End-to-End.md`](Build%20Phases%201%E2%80%934%20End-to-End.md) | Executed end-to-end implementation checklist |
+| [`prompts/Build Phases 1–4 End-to-End.md`](prompts/Build%20Phases%201%E2%80%934%20End-to-End.md) | Executed foundation checklist |
+| [`prompts/Build Real Intelligence Loop — Pre-Phase 5 + Phases 5–6 End-to-End.md`](prompts/Build%20Real%20Intelligence%20Loop%20%E2%80%94%20Pre-Phase%205%20%2B%20Phases%205%E2%80%936%20End-to-End.md) | Executed intelligence-loop direction |
 
 ## Design Principle
 

@@ -13,3 +13,8 @@ Garage deployment configuration and a production secret manager remain
 adapter/operator work. The data model preserves tenant,
 classification, retention, jurisdiction, provenance/C2PA, trust/delegation, and
 OpenTelemetry compatibility hooks for later deployment policy.
+
+The implemented loop is deliberately intelligence-only: it ends at immutable
+briefs. A future Phase 7 capability may consume a selected brief but must not
+reconstruct its evidence, change claim verification, or inherit permission to
+publish, purchase, create media, or invoke an unapproved provider.

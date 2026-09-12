@@ -1,8 +1,8 @@
 # Governance Controls
 
-The Phase-1 governance services are deterministic, provider-neutral control-plane
-components. They decide whether a proposed effect may proceed; they do not perform the
-effect.
+The Phase 1–6 governance services are deterministic, provider-neutral
+control-plane components. They decide whether a proposed effect may proceed;
+they do not perform the effect.
 
 ## Authorization
 
@@ -27,10 +27,11 @@ the original ledger entry rather than creating a duplicate. The ledger distingui
 - `released`
 - `actual`
 
-The service deliberately uses integer micro-units to avoid floating-point currency
-errors. A database-backed repository will persist these canonical values using the
-`budgets`, `budget_reservations`, and `cost_ledger_entries` schema in a later
-durable-job slice.
+The service deliberately uses integer micro-units to avoid floating-point
+currency errors. The canonical schema reserves `budgets`,
+`budget_reservations`, and `cost_ledger_entries` for durable accounting, while
+job inspection and recorded model invocations project estimated/reserved and
+actual-cost hooks without requiring a specific model or payment provider.
 
 ## Secrets and Permissions
 
@@ -49,7 +50,8 @@ checkpoint, provenance record, exception, or log entry.
 lineage in an additional product header, and projects the context into OpenTelemetry.
 The emitted span uses the same trace ID and carries the canonical Salience span IDs as
 attributes. Canonical rows retain the trace/span IDs without coupling them to an
-OpenTelemetry SDK object.
+OpenTelemetry SDK object. The intelligence workflow carries the same trace
+through source, signal, agent, strategy, package, claim, and brief lineage.
 
 ## Future Hooks
 
@@ -58,4 +60,3 @@ data classification/retention, delegated authority, trust classification, proven
 (C2PA), and protocol compatibility. Those fields do not grant access themselves:
 production enforcement must remain in the policy, scope, approval, and workflow
 boundaries.
-

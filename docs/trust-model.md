@@ -13,3 +13,9 @@ evidence memory.
 Claims and evidence are separate. A claim is verified only with explicitly verified supporting
 evidence and no contradiction. Unverified or contradictory claims become prohibited brief claims,
 not facts.
+
+The durable workflow keeps this classification across checkpoints and agent
+delegations. Research and browser outputs retain source-linked findings,
+questions, and contradictions; Strategy outputs retain assumptions and
+uncertainties. A model adjustment is bounded supplemental input to deterministic
+ranking and can never replace source facts or verify a claim.

@@ -18,7 +18,8 @@ manifest status but retains the version in history, preserving provenance and
 reconciliation for prior jobs. Resolution excludes disabled plugins by default; audit
 or recovery code may explicitly resolve a historical disabled version.
 
-The initial registry is in-memory to make the contract portable. A repository adapter
-will persist manifests into `plugin_versions` and `plugin_capabilities` without
-changing the public registry semantics.
-
+The initial registry remains in-memory to keep the capability contract portable.
+The canonical schema reserves `plugin_versions` and `plugin_capabilities` for a
+repository adapter without changing public registry semantics. No plugin is
+required by the Phase 1–6 intelligence workflow; model, MCP, A2A, research, and
+future publishing providers remain independently versioned boundaries.
