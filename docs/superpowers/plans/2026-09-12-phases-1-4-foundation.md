@@ -459,7 +459,7 @@ async def test_memory_retrieval_never_returns_another_programs_records(repositor
 - [ ] **Step 2: Verify red**
 Run: `pytest tests/integration/test_scoped_memory.py -q`
 Expected: FAIL because memory tables and repository are absent.
-- [ ] **Step 3: Implement versioned memory/strategy persistence**
+- [x] **Step 3: Implement versioned memory/strategy persistence**
 ```python
 class MemoryRecordInput(BaseModel):
     scope: Literal["working", "semantic", "evidence", "episodic", "analytics", "artifact"]
@@ -469,7 +469,7 @@ class MemoryRecordInput(BaseModel):
     evidence_ids: list[UUID]
 ```
 Persist source, trust, confidence, verification/expiry, supersession/conflict, writer identity, sensitivity, provenance, and program/tenant boundaries. Do not add a vector database.
-- [ ] **Step 4: Verify green**
+- [x] **Step 4: Verify green**
 Run: `alembic upgrade head && pytest tests/integration/test_scoped_memory.py -q`
 Expected: PASS for scope, evidence, provenance, classification, and retention fields.
 - [ ] **Step 5: Checkpoint**

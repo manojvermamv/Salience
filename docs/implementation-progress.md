@@ -4,9 +4,9 @@
 
 - Branch: `phases-1-4-foundation`
 - Plan: `docs/superpowers/plans/2026-09-12-phases-1-4-foundation.md`
-- Active task: 12 — A2A remote-agent gateway
-- Current TDD step: checkpoint the verified Phase 3 protocol fixtures, then add Task 13 scoped memory and bootstrap records.
-- Last verified state: model runtime swap, MCP tool fixture, and A2A remote-agent fixture all pass their compatibility and provider-neutral mapping contracts.
+- Active task: 13 — scoped memory and bootstrap records
+- Current TDD step: checkpoint the verified memory/strategy migration, then add the Task 14 bounded bootstrap flow.
+- Last verified state: `0003_memory_strategy` is applied; PostgreSQL retrieval proves semantic memory cannot cross content-program boundaries.
 
 ## Checkpoints
 
@@ -34,9 +34,10 @@
 - 2026-09-12: Added Phase 3 model gateway contracts with deterministic static fixtures and an optional schema-validating OpenAI-compatible HTTP adapter. Agent runtime selection remains outside agent manifests.
 - 2026-09-12: Researched the current official MCP specification and SDK. Implemented an SDK-free `2025-11-25` fixture gateway so the project owns its compatibility boundary while the breaking v2 SDK remains deferred.
 - 2026-09-12: Researched official A2A v0.3.0 and its Apache-2.0 Python SDK. Added an SDK-free version-gated descriptor/task/artifact fixture and completed the Phase 3 verifier suite.
+- 2026-09-12: Added scoped PostgreSQL memory plus versioned research-evidence and strategy persistence. Cross-program scope isolation is verified and no vector database is used.
 
 ## Resume Instructions
 
-1. Commit the Phase 3 protocol checkpoint, then write the red scoped-memory isolation test for Task 13.
-2. Keep protocol cards, task results, and external artifacts at owned compatibility boundaries.
+1. Commit Task 13, then write the red niche-only bootstrap verifier for Task 14.
+2. Keep bootstrap evidence, strategy, and memory records scoped and explainable.
 3. Update this file and the checked task steps after each verified slice, then commit the checkpoint.
