@@ -12,6 +12,7 @@
 
 - 2026-09-12: Created the isolated worktree and installed the local test runner.
 - 2026-09-12: Added and verified the failing configuration-security test; implementation has not started.
+- 2026-09-12: Completed dependency research and recorded ADRs; SeaweedFS was rejected for an unpatched high advisory and Garage selected as the isolated S3 service.
 
 ## Resume Instructions
 

@@ -4,9 +4,9 @@
 
 **Goal:** Deliver a Docker-deployable, restart-safe, framework-neutral foundation through niche bootstrap, with no Phase-5 content-production functionality.
 
-**Architecture:** PostgreSQL remains the canonical system of record; Temporal supplies durable task queues, retries, timers, and workflow replay behind an owned `WorkflowBackend`. A Python service exposes control, agent, and bootstrap APIs; a separate worker runs Temporal activities. S3 storage, model runtimes, MCP tools, A2A agents, policy, secrets, and identity all enter through owned, versioned contracts.
+**Architecture:** PostgreSQL remains the canonical system of record; Temporal supplies durable task queues, retries, timers, and workflow replay behind an owned `WorkflowBackend`. A Python service exposes control, agent, and bootstrap APIs; a separate worker runs Temporal activities. Garage provides the S3-compatible byte service behind an owned object-store contract; model runtimes, MCP tools, A2A agents, policy, secrets, and identity all enter through owned, versioned contracts.
 
-**Tech Stack:** Python 3.13, FastAPI, SQLAlchemy/Alembic, PostgreSQL, Temporal Python SDK/server, SeaweedFS S3 endpoint with boto3, OpenTelemetry API/SDK, JSON Schema, Docker Compose, pytest.
+**Tech Stack:** Python 3.13, FastAPI, SQLAlchemy/Alembic, PostgreSQL, Temporal Python SDK/server, Garage S3 endpoint with boto3, OpenTelemetry API/SDK, JSON Schema, Docker Compose, pytest.
 
 **Spec:** `Build Phases 1–4 End-to-End.md`, `docs/core/`
 
@@ -52,7 +52,7 @@ class Settings:
     @classmethod
     def from_mapping(cls, values: Mapping[str, str]) -> "Settings": ...
 ```
-Pin resolved Python packages and container image digests; make the worker/API wait for dependency health checks. ADRs must select Temporal and SeaweedFS only after recording current version, license, maintenance/security evidence, adapter boundary, fallback, and data-export path. Record why a scoped environment resolver is sufficient for Phase 1 while an OpenBao adapter remains the production secret-manager extension point; record why OPA is deferred behind `PolicyEngine` for the narrow deterministic rules in scope.
+Pin resolved Python packages and container image digests; make the worker/API wait for dependency health checks. ADRs must select Temporal and Garage only after recording current version, license, maintenance/security evidence, adapter boundary, fallback, and data-export path. Record why a scoped environment resolver is sufficient for Phase 1 while an OpenBao adapter remains the production secret-manager extension point; record why OPA is deferred behind `PolicyEngine` for the narrow deterministic rules in scope.
 - [ ] **Step 4: Verify green**
 Run: `pytest tests/test_config.py -q && docker compose config -q`
 Expected: PASS and a valid Compose configuration.
@@ -166,7 +166,7 @@ class PluginManifest(BaseModel):
     capabilities: list[str]
     protocol_compatibility: dict[str, str]
 ```
-The S3 adapter persists artifact checksums and metadata in PostgreSQL and uses SeaweedFS only for bytes. Registry records provider/model/tool/agent protocol metadata and supports disabled plugins without deleting history.
+The S3 adapter persists artifact checksums and metadata in PostgreSQL and uses Garage only for bytes. Registry records provider/model/tool/agent protocol metadata and supports disabled plugins without deleting history.
 - [ ] **Step 4: Verify green**
 Run: `pytest tests/contracts/test_object_store.py tests/contracts/test_plugin_registry.py -q`
 Expected: PASS for memory and S3 adapters, including incompatibility cases.
