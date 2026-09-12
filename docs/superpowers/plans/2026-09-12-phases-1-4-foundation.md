@@ -141,7 +141,7 @@ Run: `git add src/salience/governance src/salience/observability tests/unit docs
 **Interfaces:**
 - Produces `ObjectStore.put/get/delete`, `WorkflowBackend.start/status/cancel/resume`, and `PluginRegistry.register/resolve/validate`.
 
-- [ ] **Step 1: Write failing object-store and registry contracts**
+- [x] **Step 1: Write failing object-store and registry contracts**
 ```python
 def object_store_contract(store: ObjectStore) -> None:
     receipt = store.put(key="a.txt", data=b"phase-1", content_type="text/plain")
@@ -151,7 +151,7 @@ def test_registry_rejects_incompatible_contract_version(registry):
     with pytest.raises(CompatibilityError):
         registry.register(PluginManifest(contract_version="999.0"))
 ```
-- [ ] **Step 2: Verify red**
+- [x] **Step 2: Verify red**
 Run: `pytest tests/contracts/test_object_store.py tests/contracts/test_plugin_registry.py -q`
 Expected: FAIL because contracts and adapters do not exist.
 - [ ] **Step 3: Implement contract-owned adapters**
