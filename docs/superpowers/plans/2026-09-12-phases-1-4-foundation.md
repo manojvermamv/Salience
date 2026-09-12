@@ -89,7 +89,7 @@ The migration must create required FK/index/unique constraints, including `(work
 - [x] **Step 4: Verify green**
 Run: `docker compose up -d postgres && alembic upgrade head && pytest tests/integration/test_migrations.py -q`
 Expected: PASS against real PostgreSQL.
-- [ ] **Step 5: Checkpoint**
+- [x] **Step 5: Checkpoint**
 Run: `git add alembic.ini migrations src/salience/db src/salience/core/ids.py docs/database.md tests/integration/test_migrations.py && git commit -m "feat: add canonical postgres foundation"`
 
 ### Task 3: Implement audit, provenance, tracing, secrets, permissions, policy, and cost controls
