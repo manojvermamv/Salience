@@ -428,14 +428,14 @@ async def test_a2a_fixture_maps_result_and_parent_lineage(gateway, parent_run):
 - [ ] **Step 2: Verify red**
 Run: `pytest tests/integration/test_a2a_gateway.py -q`
 Expected: FAIL because the A2A adapter is absent.
-- [ ] **Step 3: Implement current-compatible A2A boundary**
+- [x] **Step 3: Implement current-compatible A2A boundary**
 ```python
 class RemoteAgentGateway(Protocol):
     async def discover(self, endpoint: str) -> RemoteAgentDescriptor: ...
     async def invoke(self, descriptor: RemoteAgentDescriptor, input: Mapping[str, Any], parent_run_id: UUID) -> AgentResult: ...
 ```
 Use the current verified A2A SDK/spec mapping at the transport edge; convert card/task/artifact state into canonical records, preserve child provenance, and reject incompatible version ranges before invocation. The fixture exposes discoverable skills and an asynchronous task result.
-- [ ] **Step 4: Verify green and checkpoint Phase 3**
+- [x] **Step 4: Verify green and checkpoint Phase 3**
 Run: `pytest tests/integration/test_a2a_gateway.py tests/integration/test_mcp_gateway.py tests/integration/test_runtime_swap.py -q`
 Expected: PASS for A2A success, async result, artifact mapping, incompatibility, and adapter removal readability.
 - [ ] **Step 5: Checkpoint**

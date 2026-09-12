@@ -12,6 +12,9 @@ transport adapter must pin an SDK version, support its negotiated protocol
 range, validate Streamable HTTP origin/authentication rules, and preserve this
 contract.
 
-The A2A fixture follows the same rule: an owned descriptor/task mapping records
-the accepted protocol range, with any real SDK held at the edge and only adopted
-after pinned compatibility testing.
+The A2A fixture advertises protocol `0.3.0`, maps a descriptor, task result,
+artifact, and parent run lineage, and rejects incompatible cards before an
+invocation. The official Python SDK is Apache-2.0 and the protocol requires
+explicit version negotiation; it remains deferred until a real transport needs
+its capabilities. External Agent Cards, task states, and artifacts are treated
+as untrusted input at that future adapter edge.
