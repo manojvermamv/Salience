@@ -6,7 +6,7 @@
 - Plan: `docs/superpowers/plans/2026-09-12-phases-1-4-foundation.md`
 - Active task: merge preparation
 - Current TDD step: verify the committed Phases 1–4 foundation, preserve user-owned `main` changes, then generate Archify-backed end-user documentation after merge.
-- Last verified state: `scripts/verify-phases-1-4.sh` passed in an isolated Compose project (five e2e tests, including real worker hard-exit/restart reconciliation) and cleaned only its project resources.
+- Last verified state: `scripts/verify-phases-1-4.sh` passed in an isolated Compose project (five e2e tests, including real worker hard-exit/restart reconciliation). The full local suite additionally exposed and fixed automatic test endpoint provisioning plus neutral-URL migration handling; the focused migration suite passes. A subsequent full rerun exhausted host disk space in Temporal's test volume after 38 tests, so no further Docker rebuild is attempted until storage is available.
 
 ## Checkpoints
 

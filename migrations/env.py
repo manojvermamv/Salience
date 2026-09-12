@@ -20,11 +20,12 @@ target_metadata = Base.metadata
 
 def database_url() -> str:
     arguments = context.get_x_argument(as_dictionary=True)
-    return (
+    url = (
         arguments.get("database_url")
         or os.environ.get("DATABASE_URL")
         or config.get_main_option("sqlalchemy.url")
     )
+    return url.replace("postgresql://", "postgresql+asyncpg://", 1)
 
 
 def run_migrations_offline() -> None:
@@ -66,4 +67,3 @@ if context.is_offline_mode():
     run_migrations_offline()
 else:
     asyncio.run(run_migrations_online())
-
