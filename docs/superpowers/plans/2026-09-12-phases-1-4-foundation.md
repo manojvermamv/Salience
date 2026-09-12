@@ -229,7 +229,7 @@ def test_admin_can_start_and_inspect_dummy_job(client):
 - [ ] **Step 2: Verify red**
 Run: `pytest tests/integration/test_control_api.py::test_admin_can_start_and_inspect_dummy_job -q`
 Expected: FAIL because the ASGI application is absent.
-- [ ] **Step 3: Implement authenticated API and CLI**
+- [x] **Step 3: Implement authenticated API and CLI**
 ```python
 def require_scope(required: str) -> Callable[[Request], RequestContext]: ...
 
@@ -237,7 +237,7 @@ def require_scope(required: str) -> Callable[[Request], RequestContext]: ...
 async def start_dummy(request: DummyJobRequest, context: AdminContext) -> JobResponse: ...
 ```
 Require a configured control-plane token and request scopes; do not expose raw secrets. CLI commands must call the same HTTP/API schema as external users.
-- [ ] **Step 4: Verify green and checkpoint Phase 1**
+- [x] **Step 4: Verify green and checkpoint Phase 1**
 Run: `pytest tests/integration/test_control_api.py tests/e2e/test_phase1_verifier.py -q`
 Expected: PASS for the complete Phase-1 acceptance flow, including audit/provenance/trace/cost inspection.
 - [ ] **Step 5: Checkpoint**

@@ -39,7 +39,7 @@ services:
   api:
     build: .
     profiles: ["application"]
-    command: ["uvicorn", "salience.api.app:app", "--host", "0.0.0.0", "--port", "8000"]
+    command: ["uvicorn", "salience.api.app:create_configured_app", "--factory", "--host", "0.0.0.0", "--port", "8000"]
     environment:
       CONTROL_PLANE_TOKEN: ${CONTROL_PLANE_TOKEN:-development-control-token}
       DATABASE_URL: postgresql+asyncpg://salience:salience@postgres:5432/salience

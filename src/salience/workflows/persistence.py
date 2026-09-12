@@ -26,6 +26,33 @@ class CanonicalCounts:
     dead_letter_count: int
 
 
+@dataclass(frozen=True)
+class CanonicalJobSnapshot:
+    job_id: str
+    state: str
+    dry_run: bool
+    trace_id: str
+    audit_events: list[dict[str, object]]
+    provenance_records: list[dict[str, object]]
+    cost_entries: list[dict[str, object]]
+
+
+@dataclass(frozen=True)
+class CanonicalWorkspace:
+    workspace_id: str
+    slug: str
+    display_name: str
+
+
+@dataclass(frozen=True)
+class CanonicalContentProgram:
+    content_program_id: str
+    workspace_id: str
+    slug: str
+    name: str
+    niche: str
+
+
 class CanonicalJobStore:
     """Synchronous Psycopg operations dispatched off Temporal's activity event loop."""
 
@@ -83,6 +110,26 @@ class CanonicalJobStore:
     ) -> bool:
         return await asyncio.to_thread(
             self._effect_was_reconciled, run, idempotency_key
+        )
+
+    async def job_snapshot(self, job_id: str) -> CanonicalJobSnapshot | None:
+        return await asyncio.to_thread(self._job_snapshot, job_id)
+
+    async def job_by_idempotency_key(
+        self, idempotency_key: str
+    ) -> CanonicalJobSnapshot | None:
+        return await asyncio.to_thread(self._job_by_idempotency_key, idempotency_key)
+
+    async def create_workspace(
+        self, *, slug: str, display_name: str
+    ) -> CanonicalWorkspace:
+        return await asyncio.to_thread(self._create_workspace, slug, display_name)
+
+    async def create_content_program(
+        self, *, workspace_id: str, slug: str, name: str, niche: str
+    ) -> CanonicalContentProgram:
+        return await asyncio.to_thread(
+            self._create_content_program, workspace_id, slug, name, niche
         )
 
     def _connect(self) -> psycopg.Connection:
@@ -338,6 +385,123 @@ class CanonicalJobStore:
             )
             row = cursor.fetchone()
             return row is not None and row[0] == "true"
+
+    def _job_snapshot(self, job_id: str) -> CanonicalJobSnapshot | None:
+        with self._connect() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT state, dry_run, trace_id FROM jobs WHERE id = %s",
+                (job_id,),
+            )
+            job = cursor.fetchone()
+            if job is None:
+                return None
+            state, dry_run, trace_id = job
+            cursor.execute(
+                """
+                SELECT action, outcome, details
+                FROM audit_events WHERE job_id = %s ORDER BY sequence_no
+                """,
+                (job_id,),
+            )
+            audit_events = [
+                {"action": action, "outcome": outcome, "details": details}
+                for action, outcome, details in cursor.fetchall()
+            ]
+            cursor.execute(
+                """
+                SELECT origin_type, source_uri, verification_status, lineage
+                FROM provenance_records WHERE job_id = %s ORDER BY created_at
+                """,
+                (job_id,),
+            )
+            provenance_records = [
+                {
+                    "origin_type": origin_type,
+                    "source_uri": source_uri,
+                    "verification_status": verification_status,
+                    "lineage": lineage,
+                }
+                for origin_type, source_uri, verification_status, lineage in cursor.fetchall()
+            ]
+            cursor.execute(
+                """
+                SELECT estimated_amount, actual_amount, currency, usage
+                FROM cost_ledger_entries WHERE job_id = %s ORDER BY recorded_at
+                """,
+                (job_id,),
+            )
+            cost_entries = [
+                {
+                    "estimated_amount": str(estimated_amount),
+                    "actual_amount": str(actual_amount) if actual_amount is not None else None,
+                    "currency": currency,
+                    "usage": usage,
+                }
+                for estimated_amount, actual_amount, currency, usage in cursor.fetchall()
+            ]
+            return CanonicalJobSnapshot(
+                job_id=job_id,
+                state=state,
+                dry_run=dry_run,
+                trace_id=trace_id,
+                audit_events=audit_events,
+                provenance_records=provenance_records,
+                cost_entries=cost_entries,
+            )
+
+    def _job_by_idempotency_key(
+        self, idempotency_key: str
+    ) -> CanonicalJobSnapshot | None:
+        with self._connect() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT id::text FROM jobs
+                WHERE idempotency_key = %s
+                ORDER BY created_at DESC LIMIT 1
+                """,
+                (idempotency_key,),
+            )
+            row = cursor.fetchone()
+        return self._job_snapshot(row[0]) if row is not None else None
+
+    def _create_workspace(self, slug: str, display_name: str) -> CanonicalWorkspace:
+        with self._connect() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                INSERT INTO workspaces (slug, display_name)
+                VALUES (%s, %s)
+                ON CONFLICT (slug) DO UPDATE SET display_name = EXCLUDED.display_name
+                RETURNING id::text, slug, display_name
+                """,
+                (slug, display_name),
+            )
+            workspace_id, persisted_slug, persisted_display_name = cursor.fetchone()
+        return CanonicalWorkspace(workspace_id, persisted_slug, persisted_display_name)
+
+    def _create_content_program(
+        self, workspace_id: str, slug: str, name: str, niche: str
+    ) -> CanonicalContentProgram:
+        with self._connect() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                INSERT INTO content_programs (workspace_id, slug, name, niche)
+                VALUES (%s, %s, %s, %s)
+                ON CONFLICT (workspace_id, slug)
+                DO UPDATE SET name = EXCLUDED.name, niche = EXCLUDED.niche
+                RETURNING id::text, workspace_id::text, slug, name, niche
+                """,
+                (workspace_id, slug, name, niche),
+            )
+            program_id, persisted_workspace_id, persisted_slug, persisted_name, persisted_niche = (
+                cursor.fetchone()
+            )
+        return CanonicalContentProgram(
+            program_id,
+            persisted_workspace_id,
+            persisted_slug,
+            persisted_name,
+            persisted_niche,
+        )
 
     @staticmethod
     def _insert_audit(
