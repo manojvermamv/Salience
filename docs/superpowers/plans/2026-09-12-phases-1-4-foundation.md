@@ -395,14 +395,14 @@ async def test_mcp_gateway_records_provenanced_tool_call(gateway):
 - [ ] **Step 2: Verify red**
 Run: `pytest tests/integration/test_mcp_gateway.py -q`
 Expected: FAIL because the MCP gateway is absent.
-- [ ] **Step 3: Implement current-spec adapter**
+- [x] **Step 3: Implement current-spec adapter**
 ```python
 class ToolGateway(Protocol):
     async def discover(self, server_id: str, tool_name: str) -> ToolManifest: ...
     async def invoke(self, manifest: ToolManifest, arguments: Mapping[str, Any]) -> ToolResult: ...
 ```
 Pin the verified MCP SDK/spec compatibility in plugin metadata, retrieve tool schemas, enforce scope/timeout/schema validation, and persist canonical tool run/audit/provenance records. The fixture uses no external account.
-- [ ] **Step 4: Verify green**
+- [x] **Step 4: Verify green**
 Run: `pytest tests/integration/test_mcp_gateway.py -q`
 Expected: PASS for discovery, schema, invocation, permission denial, and timeout.
 - [ ] **Step 5: Checkpoint**

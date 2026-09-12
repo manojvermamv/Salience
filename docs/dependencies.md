@@ -18,9 +18,11 @@ This is the review record for the initial `phases-1-4-foundation` branch. Exact 
 | Uvicorn | 0.40.0 | BSD-3-Clause | ASGI process | another ASGI server |
 | JSON Schema | 4.26.0 | MIT | boundary validation | compliant validator |
 | OpenTelemetry | 1.44.0 | Apache-2.0 | trace emission | compatible SDK/exporter |
-| MCP Python SDK | 2.2.0 | MIT | MCP gateway | protocol client/server adapter |
-| A2A Python SDK | 1.1.2 | Apache-2.0 | remote-agent gateway | protocol adapter |
+| MCP Python SDK | not adopted | MIT | owned MCP fixture contract | pin the official SDK only for a production transport adapter |
+| A2A Python SDK | not adopted | verify before adoption | owned A2A fixture contract | pin an official/maintained SDK only for a production transport adapter |
 
 ## Review cadence
 
-Review image and package advisories before every release. Garage, MCP, and A2A have explicit protocol/security caveats documented in their ADRs; version compatibility is tested rather than inferred.
+Review image and package advisories before every release. Garage has an explicit
+ADR; MCP and A2A are intentionally SDK-free fixture contracts with version
+compatibility tested rather than inferred before any transport SDK is adopted.

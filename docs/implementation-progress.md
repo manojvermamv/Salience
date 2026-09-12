@@ -4,9 +4,9 @@
 
 - Branch: `phases-1-4-foundation`
 - Plan: `docs/superpowers/plans/2026-09-12-phases-1-4-foundation.md`
-- Active task: 10 — model gateway
-- Current TDD step: checkpoint the static/HTTP model boundary, then add the Task 11 MCP fixture gateway.
-- Last verified state: two static runtime configurations run the same agent identity, and disabled static configurations fail before any network operation.
+- Active task: 11 — MCP tool gateway
+- Current TDD step: checkpoint the versioned MCP fixture gateway, then research and add the Task 12 A2A fixture.
+- Last verified state: MCP fixture discovery/invocation passes with revision `2025-11-25`, scope, schema, timeout, provenance, and compatibility enforcement.
 
 ## Checkpoints
 
@@ -32,9 +32,10 @@
 - 2026-09-12: Added deterministic native agent execution for the lead, research, and strategy fixture manifests. Direct/delegated equivalence, schema rejection, and team composition are verified without an AI/model provider.
 - 2026-09-12: Completed Phase 2 public callable-agent surfaces. The control API, SDK, and CLI share the same agent schemas; the Phase 2 verifier confirms direct, delegated, and team fixture calls remain equivalent.
 - 2026-09-12: Added Phase 3 model gateway contracts with deterministic static fixtures and an optional schema-validating OpenAI-compatible HTTP adapter. Agent runtime selection remains outside agent manifests.
+- 2026-09-12: Researched the current official MCP specification and SDK. Implemented an SDK-free `2025-11-25` fixture gateway so the project owns its compatibility boundary while the breaking v2 SDK remains deferred.
 
 ## Resume Instructions
 
-1. Commit Task 10, then write the red MCP discovery/invocation fixture test.
+1. Commit Task 11, then research and write the red A2A fixture compatibility test.
 2. Keep agent manifests independent of model/provider runtimes.
 3. Update this file and the checked task steps after each verified slice, then commit the checkpoint.
