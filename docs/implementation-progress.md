@@ -4,9 +4,9 @@
 
 - Branch: `phases-1-4-foundation`
 - Plan: `docs/superpowers/plans/2026-09-12-phases-1-4-foundation.md`
-- Active task: 14 — bounded niche bootstrap
-- Current TDD step: checkpoint the fixture-backed bootstrap flow, then build Task 15's clean-stack cross-phase verifier and operations docs.
-- Last verified state: niche-only bootstrap persists provisional fixture evidence, scope-filtered memory, strategy assumptions/provenance, and direct research/strategy agent lineage.
+- Active task: 15 — cross-phase verification
+- Current TDD step: commit the verified Phases 1–4 foundation, then prepare the requested merge and Archify documentation on `main`.
+- Last verified state: `scripts/verify-phases-1-4.sh` passed in an isolated Compose project (five e2e tests, including real worker hard-exit/restart reconciliation) and cleaned only its project resources.
 
 ## Checkpoints
 
@@ -36,9 +36,10 @@
 - 2026-09-12: Researched official A2A v0.3.0 and its Apache-2.0 Python SDK. Added an SDK-free version-gated descriptor/task/artifact fixture and completed the Phase 3 verifier suite.
 - 2026-09-12: Added scoped PostgreSQL memory plus versioned research-evidence and strategy persistence. Cross-program scope isolation is verified and no vector database is used.
 - 2026-09-12: Completed fixture-backed niche bootstrap. A niche creates canonical workspace/program identities, direct research/strategy agent runs, evidence, scoped memory, and immutable explainable strategy records without browser or model-provider access.
+- 2026-09-12: Completed the clean Phases 1–4 verification script and operational runbooks. Its isolated Compose run applied every migration and passed Phase 1 recovery/control, Phase 2 agents, Phase 3 protocols, and Phase 4 bootstrap checks.
 
 ## Resume Instructions
 
-1. Commit Task 14, then write the red cross-phase clean-stack verifier for Task 15.
-2. Keep bootstrap evidence, strategy, and memory records scoped and explainable.
-3. Update this file and the checked task steps after each verified slice, then commit the checkpoint.
+1. Commit the verified Phases 1–4 checkpoint.
+2. Merge only after inspecting branch status and preserving any user-owned `main` changes.
+3. Install Archify and generate the requested end-user README architecture documentation on merged `main`.

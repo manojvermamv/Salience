@@ -526,14 +526,14 @@ def test_clean_stack_executes_phases_one_through_four(compose_stack):
 - [ ] **Step 2: Verify red**
 Run: `pytest tests/e2e/test_phases_1_4_stack.py -q`
 Expected: FAIL until each phase exposes its verifier result.
-- [ ] **Step 3: Implement verifier script and runbooks**
+- [x] **Step 3: Implement verifier script and runbooks**
 ```bash
 docker compose up -d --build
 alembic upgrade head
 pytest tests/e2e/test_phases_1_4_stack.py -q
 ```
 The script must create fresh named volumes, wait for readiness, run migration/health/restart/reconciliation/agent/model/MCP/A2A/bootstrap checks, print retained IDs for inspection, then remove only its uniquely named test project. Document architecture, exact dependencies/ADRs, contracts, migration model, API/CLI/SDK usage, recovery, and Phase-5+ exclusions.
-- [ ] **Step 4: Verify green**
+- [x] **Step 4: Verify green**
 Run: `scripts/verify-phases-1-4.sh`
 Expected: PASS on a clean Docker project with no skipped required assertions.
 - [ ] **Step 5: Final checkpoint**
