@@ -4,9 +4,9 @@
 
 - Branch: `phases-1-4-foundation`
 - Plan: `docs/superpowers/plans/2026-09-12-phases-1-4-foundation.md`
-- Active task: 2 — canonical PostgreSQL model and migrations
-- Current TDD step: implement canonical PostgreSQL persistence for the expanded Temporal restart verifier.
-- Last verified state: the restart verifier now fails as expected because the scenario has no database-backed job/effect/audit/provenance boundary.
+- Active task: 5 — durable jobs, effects, and recovery
+- Current TDD step: replace the unsafe Temporal-activity PostgreSQL driver boundary with the reviewed Psycopg 3 implementation.
+- Last verified state: the expanded restart verifier remains red; the prior asyncpg prototype was removed after it reproducibly caused native segmentation faults inside Temporal activities.
 
 ## Checkpoints
 
@@ -23,9 +23,10 @@
 - 2026-09-12: Completed and committed Task 4; started the pinned Temporal runtime and observed the red process-restart verifier fail before any workflow implementation.
 - 2026-09-12: Implemented a real Temporal worker restart scenario with independent idempotent mock-effect reconciliation; focused e2e verifier passes against the pinned Compose Temporal service.
 - 2026-09-12: Expanded the restart verifier with canonical checkpoint/effect/audit/provenance assertions and observed the expected red database-boundary failure.
+- 2026-09-12: Root-caused a native asyncpg/Python 3.13 crash to PostgreSQL I/O inside Temporal activities. Plain repository I/O is stable, but three activity-boundary variants (original connection, explicit non-TLS connection, and pre-opened connection) segfaulted. The unsafe uncommitted prototype was removed. Psycopg 3.3.5 is the selected next experiment: its official metadata supports Python 3.13, but its LGPL-3.0-only license must remain recorded in the dependency decision before adoption.
 
 ## Resume Instructions
 
-1. Persist Task 5 checkpoints, effects, and state transitions into canonical PostgreSQL records, then re-run the expanded restart verifier.
+1. Record the Psycopg build-vs-adopt decision, add the driver as a pinned dependency, and reimplement the canonical activity repository using its synchronous worker-safe boundary.
 2. Keep external effects idempotent at both local and provider boundaries, with durable checkpointing before every boundary.
 3. Update this file and the checked task steps after each verified slice, then commit the checkpoint.
