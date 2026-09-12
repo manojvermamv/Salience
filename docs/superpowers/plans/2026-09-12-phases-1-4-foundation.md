@@ -302,13 +302,13 @@ async def test_lead_uses_same_research_contract_as_direct_user(agent_service):
 - [ ] **Step 2: Verify red**
 Run: `pytest tests/integration/test_agent_delegation.py::test_lead_uses_same_research_contract_as_direct_user -q`
 Expected: FAIL because native execution is absent.
-- [ ] **Step 3: Implement native runners**
+- [x] **Step 3: Implement native runners**
 ```python
 class AgentRuntime(Protocol):
     async def invoke(self, invocation: AgentInvocation, context: AgentExecutionContext) -> AgentResult: ...
 ```
 Register durable `lead_content_agent`, `research_agent`, and `strategy_agent`; permit sync calls only below the manifest timeout and use the WorkflowBackend for async calls. Apply scopes, policies, budgets, memory filters, cancellation, retries, trace parentage, and JSON Schema validation at this shared boundary. Teams compose existing agents through the same service.
-- [ ] **Step 4: Verify green**
+- [x] **Step 4: Verify green**
 Run: `pytest tests/unit/test_agent_execution.py tests/integration/test_agent_delegation.py tests/e2e/test_phase2_verifier.py -q`
 Expected: PASS for status/events/cancel/resume/restart, direct/delegated lineage, missing specialist, and team member direct invocation.
 - [ ] **Step 5: Checkpoint Phase 2**

@@ -4,9 +4,9 @@
 
 - Branch: `phases-1-4-foundation`
 - Plan: `docs/superpowers/plans/2026-09-12-phases-1-4-foundation.md`
-- Active task: 7 — canonical callable-agent registry
-- Current TDD step: checkpoint the verified registry/migration, then add Task 8 native agent-execution coverage.
-- Last verified state: runtime-neutral immutable agent manifests and disabled-history behavior pass in unit tests; PostgreSQL migration `0002_agents` is applied and verified against the live database.
+- Active task: 8 — native agent execution
+- Current TDD step: checkpoint the fixture-only execution layer, then add Task 9 API/SDK client coverage.
+- Last verified state: direct, delegated, and team fixture calls share JSON-schema validation and return provider-neutral agent runs with trace parentage.
 
 ## Checkpoints
 
@@ -29,9 +29,10 @@
 - 2026-09-12: Added a deployable worker, independent HTTP mock provider, Temporal schedule adapter, and isolated Compose recovery verifier. The verifier builds a unique stack, migrates it, hard-exits the worker after provider acceptance, restarts it, verifies reconciliation, and removes only that stack.
 - 2026-09-12: Completed Phase 1 control-plane coverage. The FastAPI adapter enforces token and scope checks, creates canonical workspace/program identities, starts idempotent dry-run jobs through Temporal, exposes inspection records, and supplies an HTTP-only CLI. The live Phase 1 verifier passes.
 - 2026-09-12: Added Phase 2 canonical callable-agent entities: immutable provider-neutral manifests, version registry with disabled-history preservation, and PostgreSQL agent/team/run/delegation/event records.
+- 2026-09-12: Added deterministic native agent execution for the lead, research, and strategy fixture manifests. Direct/delegated equivalence, schema rejection, and team composition are verified without an AI/model provider.
 
 ## Resume Instructions
 
-1. Commit Task 7, then write the red direct/delegated execution equivalence test for Task 8.
-2. Preserve canonical provider-independent identities while adding fixture-only agent execution.
+1. Commit Task 8, then write the red public API/SDK agent-client contract for Task 9.
+2. Preserve canonical provider-independent identities while exposing fixture-only agent execution.
 3. Update this file and the checked task steps after each verified slice, then commit the checkpoint.
