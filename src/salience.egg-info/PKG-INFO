@@ -1,0 +1,20 @@
+Metadata-Version: 2.4
+Name: salience
+Version: 0.1.0
+Summary: Durable, provider-neutral content program control plane
+Requires-Python: <3.14,>=3.13
+Requires-Dist: alembic==1.20.0
+Requires-Dist: asyncpg==0.31.0
+Requires-Dist: boto3==1.43.93
+Requires-Dist: fastapi==0.141.1
+Requires-Dist: httpx==0.28.1
+Requires-Dist: jsonschema==4.26.0
+Requires-Dist: opentelemetry-api==1.44.0
+Requires-Dist: opentelemetry-sdk==1.44.0
+Requires-Dist: pydantic==2.12.5
+Requires-Dist: sqlalchemy==2.0.52
+Requires-Dist: temporalio==1.32.0
+Requires-Dist: uvicorn[standard]==0.40.0
+Provides-Extra: dev
+Requires-Dist: pytest==9.1.1; extra == "dev"
+Requires-Dist: pytest-asyncio==1.3.0; extra == "dev"

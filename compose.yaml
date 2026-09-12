@@ -1,0 +1,64 @@
+name: salience
+
+services:
+  postgres:
+    image: postgres@sha256:47f917f7409eacd22fc5dfb1dee634e1b55cf0c01d1a7eb701be2227a03e0641
+    environment:
+      POSTGRES_DB: salience
+      POSTGRES_USER: salience
+      POSTGRES_PASSWORD: salience
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U salience -d salience"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  temporal:
+    image: temporalio/auto-setup@sha256:a73792b9289ac504ee6c49fb0dfb430626bc4f422f15cf885503de49e4ae283b
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB: postgres12
+      DB_PORT: "5432"
+      POSTGRES_SEEDS: postgres
+      POSTGRES_USER: salience
+      POSTGRES_PWD: salience
+
+  garage:
+    image: dxflrs/garage@sha256:866bd13ed2038ba7e7190e840482bc27234c4afaf77be8cfa439ae088c1e4690
+    profiles: ["storage"]
+    command: ["/garage", "server"]
+    volumes:
+      - ${GARAGE_CONFIG_PATH:-./infra/garage/garage.toml}:/etc/garage.toml:ro
+      - garage-meta:/var/lib/garage/meta
+      - garage-data:/var/lib/garage/data
+
+  api:
+    build: .
+    profiles: ["application"]
+    command: ["uvicorn", "salience.api.app:app", "--host", "0.0.0.0", "--port", "8000"]
+    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      temporal:
+        condition: service_started
+
+  worker:
+    build: .
+    profiles: ["application"]
+    command: ["python", "-m", "salience.worker"]
+    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      temporal:
+        condition: service_started
+
+volumes:
+  garage-data:
+  garage-meta:
+  postgres-data:

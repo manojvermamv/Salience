@@ -31,16 +31,16 @@
 **Interfaces:**
 - Produces `Settings.from_environment() -> Settings` and a Compose stack with PostgreSQL, Temporal, SeaweedFS, API, and worker services.
 
-- [ ] **Step 1: Write the failing configuration test**
+- [x] **Step 1: Write the failing configuration test**
 ```python
 def test_settings_require_nonempty_control_token() -> None:
     with pytest.raises(ValidationError):
         Settings.from_mapping({"CONTROL_PLANE_TOKEN": ""})
 ```
-- [ ] **Step 2: Verify red**
+- [x] **Step 2: Verify red**
 Run: `pytest tests/test_config.py::test_settings_require_nonempty_control_token -q`
 Expected: FAIL because `Settings` does not exist.
-- [ ] **Step 3: Implement configuration and deployment files**
+- [x] **Step 3: Implement configuration and deployment files**
 ```python
 @dataclass(frozen=True)
 class Settings:
@@ -53,10 +53,10 @@ class Settings:
     def from_mapping(cls, values: Mapping[str, str]) -> "Settings": ...
 ```
 Pin resolved Python packages and container image digests; make the worker/API wait for dependency health checks. ADRs must select Temporal and Garage only after recording current version, license, maintenance/security evidence, adapter boundary, fallback, and data-export path. Record why a scoped environment resolver is sufficient for Phase 1 while an OpenBao adapter remains the production secret-manager extension point; record why OPA is deferred behind `PolicyEngine` for the narrow deterministic rules in scope.
-- [ ] **Step 4: Verify green**
+- [x] **Step 4: Verify green**
 Run: `pytest tests/test_config.py -q && docker compose config -q`
 Expected: PASS and a valid Compose configuration.
-- [ ] **Step 5: Checkpoint**
+- [x] **Step 5: Checkpoint**
 Run: `git add pyproject.toml Dockerfile compose.yaml .env.example .gitignore src/salience/config.py docs tests/test_config.py && git commit -m "chore: establish phase foundation runtime"`
 
 ### Task 2: Create the canonical PostgreSQL model and migrations
