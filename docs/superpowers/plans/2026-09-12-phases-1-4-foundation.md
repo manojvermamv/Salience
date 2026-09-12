@@ -182,7 +182,7 @@ Run: `git add src/salience/contracts src/salience/storage src/salience/plugins t
 **Interfaces:**
 - Produces `DummyWorkflowRequest`, `JobService.start_dummy`, `ExternalEffectService.execute_or_reconcile`, and `TemporalWorkflowBackend`.
 
-- [ ] **Step 1: Write the failure/recovery test before workflow code**
+- [x] **Step 1: Write the failure/recovery test before workflow code**
 ```python
 def test_killed_worker_resumes_checkpoint_without_duplicate_effect(compose_stack):
     job = compose_stack.start_dummy_job(crash_after="provider_effect")
@@ -191,7 +191,7 @@ def test_killed_worker_resumes_checkpoint_without_duplicate_effect(compose_stack
     assert compose_stack.wait_for_job(job.id).status == "succeeded"
     assert compose_stack.effect_calls(job.id) == 1
 ```
-- [ ] **Step 2: Verify red**
+- [x] **Step 2: Verify red**
 Run: `pytest tests/e2e/test_worker_restart.py::test_killed_worker_resumes_checkpoint_without_duplicate_effect -q`
 Expected: FAIL because the worker and workflow are absent.
 - [ ] **Step 3: Implement Temporal-backed workflow boundary**
