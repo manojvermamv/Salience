@@ -64,6 +64,7 @@
 ## Resume Instructions
 
 0. 2026-09-12: Began the governed browser-evidence prerequisite. Created isolated worktree `browser-evidence`, read the browser-evidence prompt and current browser/agent/storage/trust contracts, and recorded the install/build-vs-adopt decision in `docs/superpowers/specs/2026-09-12-browser-evidence-design.md`. No browser, Docker, or system state has changed yet.
+0. 2026-09-12: Completed browser-evidence Task 1. `BrowserResearchRequest` now rejects non-positive bounds and carries owned agent/tool/trace IDs. Shared HTTPS scope validation denies private IP literals unless an explicit test-only flag permits the local fixture. Focused unit tests passed 7/7; compilation and diff checks passed.
 
 1. Start Phase 7 from `docs/phase-7-handoff.md` and a selected `ContentBrief@v1`; do not reconstruct or mutate Phase 5–6 research decisions.
 2. Reuse the retained test environment/active services for focused verification and checkpoint every verified task.

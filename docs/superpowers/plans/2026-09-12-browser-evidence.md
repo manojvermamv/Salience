@@ -48,7 +48,7 @@
 - Consumes: `ObjectStore.put(key, data, content_type, metadata)` and `NetworkScopeDenied`.
 - Produces: `BrowserResearchRequest(url, timeout_seconds, step_limit, max_response_bytes, agent_run_id, tool_run_id, trace_id)`, `BrowserResearchResult(..., browser_version, playwright_version, fetched_at, screenshot_hash, trace_hash)`, `BrowserEvidenceFailure`, and `assert_network_scope(url, allowed_domains, allow_private_network=False)`.
 
-- [ ] **Step 1: Write failing unit tests for validation and deterministic metadata DTOs**
+- [x] **Step 1: Write failing unit tests for validation and deterministic metadata DTOs**
 
 ```python
 def test_browser_request_rejects_non_positive_limits() -> None:
@@ -60,13 +60,13 @@ def test_network_scope_rejects_private_literal_even_when_allowlisted() -> None:
         assert_network_scope("https://127.0.0.1/page", frozenset({"127.0.0.1"}))
 ```
 
-- [ ] **Step 2: Run the focused unit test to verify red**
+- [x] **Step 2: Run the focused unit test to verify red**
 
 Run: `python -m pytest tests/unit/test_browser_policy.py -v`
 
 Expected: FAIL because the request accepts invalid limits and `assert_network_scope` has no private-address policy argument.
 
-- [ ] **Step 3: Implement immutable DTO validation and literal-host policy**
+- [x] **Step 3: Implement immutable DTO validation and literal-host policy**
 
 ```python
 @dataclass(frozen=True)
@@ -86,13 +86,13 @@ class BrowserResearchRequest:
 
 Use `ipaddress.ip_address(hostname)` only when `hostname` is a literal. Deny `.is_loopback`, `.is_private`, `.is_link_local`, `.is_multicast`, `.is_unspecified`, and `.is_reserved` unless `allow_private_network=True`; always require HTTPS and an exact allowed hostname.
 
-- [ ] **Step 4: Add the `browser` pytest marker and run the focused test green**
+- [x] **Step 4: Add the `browser` pytest marker and run the focused test green**
 
 Run: `python -m pytest tests/unit/test_browser_policy.py -v`
 
 Expected: PASS without importing or launching Playwright.
 
-- [ ] **Step 5: Record the checkpoint and commit**
+- [x] **Step 5: Record the checkpoint and commit**
 
 ```bash
 git add src/salience/browser/contracts.py src/salience/research/http.py tests/unit/test_browser_policy.py pyproject.toml docs/implementation-progress.md

@@ -41,6 +41,7 @@ content = "salience.cli:main"
 pythonpath = ["src"]
 testpaths = ["tests"]
 markers = [
+  "browser: requires the locally installed Playwright Chromium runtime",
   "live: requires explicitly configured live network or provider access",
 ]
 

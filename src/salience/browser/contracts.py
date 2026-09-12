@@ -18,6 +18,18 @@ class BrowserResearchRequest:
     timeout_seconds: float = 30
     step_limit: int = 20
     max_response_bytes: int = 1_000_000
+    agent_run_id: str | None = None
+    tool_run_id: str | None = None
+    trace_id: str | None = None
+
+    def __post_init__(self) -> None:
+        for field_name, value in (
+            ("timeout_seconds", self.timeout_seconds),
+            ("step_limit", self.step_limit),
+            ("max_response_bytes", self.max_response_bytes),
+        ):
+            if value <= 0:
+                raise ValueError(f"{field_name} must be positive")
 
 
 @dataclass(frozen=True)
