@@ -495,13 +495,13 @@ def test_niche_only_bootstrap_creates_explainable_strategy_and_memory(client):
 - [ ] **Step 2: Verify red**
 Run: `pytest tests/e2e/test_phase4_verifier.py::test_niche_only_bootstrap_creates_explainable_strategy_and_memory -q`
 Expected: FAIL because the bootstrap service is absent.
-- [ ] **Step 3: Implement a bounded, fixture-backed research flow**
+- [x] **Step 3: Implement a bounded, fixture-backed research flow**
 ```python
 class ResearchConnector(Protocol):
     async def research(self, request: BootstrapResearchRequest) -> list[ResearchFinding]: ...
 ```
 The Lead Agent starts a durable bootstrap run, calls `research_agent` through `AgentService`, persists sources/fetch times/provenance, invokes `strategy_agent`, records provisional audiences/positioning/pillars/channels/formats/metrics/uncertainties as immutable `StrategyVersion`, and writes only scope-authorized durable memory. Fixture research is the default clean-deployment mode; HTTP/browser connectors remain optional later adapters.
-- [ ] **Step 4: Verify green**
+- [x] **Step 4: Verify green**
 Run: `pytest tests/unit/test_bootstrap_service.py tests/e2e/test_phase4_verifier.py -q`
 Expected: PASS for niche-only run, direct research call, interrupted/restarted bootstrap, evidence provenance, assumptions, and scoped retrieval.
 - [ ] **Step 5: Checkpoint Phase 4**
