@@ -5,6 +5,7 @@ from uuid import UUID, uuid4
 from jsonschema import ValidationError, validate
 
 from salience.agents.registry import AgentRegistry
+from salience.models.contracts import ModelGateway, ModelRequest
 from salience.observability.tracing import TraceContext
 
 
@@ -32,6 +33,7 @@ class AgentRun:
     parent_run_id: UUID | None
     status: str
     trace_context: TraceContext
+    runtime_id: str | None = None
     events: tuple[str, ...] = ()
 
 
@@ -43,17 +45,38 @@ class AgentRuntime(Protocol):
 
 class AgentService:
     def __init__(
-        self, *, registry: AgentRegistry, runtimes: dict[str, AgentRuntime]
+        self,
+        *,
+        registry: AgentRegistry,
+        runtimes: dict[str, AgentRuntime],
+        model_gateways: dict[str, ModelGateway] | None = None,
     ) -> None:
         self._registry = registry
         self._runtimes = runtimes
+        self._model_gateways = model_gateways or {}
         self._runs: dict[UUID, AgentRun] = {}
 
     async def invoke(self, invocation: AgentInvocation) -> AgentRun:
-        return await self._invoke(invocation, parent_run_id=None, trace_context=None)
+        return await self._invoke(
+            invocation, parent_run_id=None, trace_context=None, runtime_id=None
+        )
 
     async def invoke_by_id(self, agent_id: str, input: dict[str, Any]) -> AgentRun:
         return await self.invoke(AgentInvocation(agent_id=agent_id, input=input))
+
+    async def invoke_with_runtime(
+        self, agent_id: str, runtime_id: str, input: dict[str, Any]
+    ) -> AgentRun:
+        gateway = self._model_gateways.get(runtime_id)
+        if gateway is None:
+            raise LookupError(f"model runtime unavailable: {runtime_id}")
+        await gateway.complete(ModelRequest(prompt=str(input), output_schema={"type": "object"}))
+        return await self._invoke(
+            AgentInvocation(agent_id=agent_id, input=input),
+            parent_run_id=None,
+            trace_context=None,
+            runtime_id=runtime_id,
+        )
 
     async def invoke_from_parent(
         self, parent_agent_id: str, invocation: AgentInvocation
@@ -76,6 +99,7 @@ class AgentService:
             invocation,
             parent_run_id=parent_run_id,
             trace_context=parent_trace.new_child(),
+            runtime_id=None,
         )
 
     async def _invoke(
@@ -84,6 +108,7 @@ class AgentService:
         *,
         parent_run_id: UUID | None,
         trace_context: TraceContext | None,
+        runtime_id: str | None,
     ) -> AgentRun:
         manifest = self._registry.resolve(invocation.agent_id)
         if invocation.mode == "sync" and not manifest.supports_sync:
@@ -110,6 +135,7 @@ class AgentService:
             parent_run_id=parent_run_id,
             status="succeeded",
             trace_context=context.trace_context,
+            runtime_id=runtime_id,
             events=("agent.started", "agent.succeeded"),
         )
         self._runs[run.id] = run

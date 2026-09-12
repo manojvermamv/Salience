@@ -2,9 +2,12 @@ from salience.agents.contracts import AgentManifest
 from salience.agents.execution import AgentService
 from salience.agents.registry import AgentRegistry
 from salience.agents.specialists import fixture_specialist_runtimes
+from salience.models.contracts import ModelGateway
 
 
-def fixture_agent_service() -> AgentService:
+def fixture_agent_service(
+    *, model_gateways: dict[str, ModelGateway] | None = None
+) -> AgentService:
     registry = AgentRegistry()
     registry.register(
         AgentManifest(
@@ -48,4 +51,8 @@ def fixture_agent_service() -> AgentService:
             supports_async=True,
         )
     )
-    return AgentService(registry=registry, runtimes=fixture_specialist_runtimes())
+    return AgentService(
+        registry=registry,
+        runtimes=fixture_specialist_runtimes(),
+        model_gateways=model_gateways,
+    )

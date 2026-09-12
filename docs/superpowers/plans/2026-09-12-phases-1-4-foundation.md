@@ -364,13 +364,13 @@ async def test_same_agent_runs_through_two_runtime_configurations(agent_service)
 - [ ] **Step 2: Verify red**
 Run: `pytest tests/contracts/test_model_gateway.py tests/integration/test_runtime_swap.py -q`
 Expected: FAIL because no model gateway exists.
-- [ ] **Step 3: Implement owned model boundary**
+- [x] **Step 3: Implement owned model boundary**
 ```python
 class ModelGateway(Protocol):
     async def complete(self, request: ModelRequest) -> ModelResult: ...
 ```
 The static adapter must produce deterministic valid/invalid fixture payloads. The OpenAI-compatible adapter must map plain HTTP JSON only, validate structured output before persistence, capture token/cost/latency, and fail cleanly without credentials. Agent manifests request capabilities/policy, never provider classes.
-- [ ] **Step 4: Verify green**
+- [x] **Step 4: Verify green**
 Run: `pytest tests/contracts/test_model_gateway.py tests/integration/test_runtime_swap.py -q`
 Expected: PASS for two configurations, fallback, timeout, disabled provider, and invalid structured output.
 - [ ] **Step 5: Checkpoint**
