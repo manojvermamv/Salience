@@ -5,8 +5,8 @@
 - Branch: `phases-1-4-foundation`
 - Plan: `docs/superpowers/plans/2026-09-12-phases-1-4-foundation.md`
 - Active task: 2 — canonical PostgreSQL model and migrations
-- Current TDD step: implement the Temporal-backed dummy workflow and mock-effect reconciliation for the red restart verifier.
-- Last verified state: pinned Temporal auto-setup is running with the default namespace; the focused restart test fails because workflow services do not exist.
+- Current TDD step: add canonical job/effect persistence and operational controls around the verified Temporal restart scenario.
+- Last verified state: the real Temporal restart scenario passes: worker shutdown after mock-provider acceptance resumes through a replacement worker without a duplicate provider call.
 
 ## Checkpoints
 
@@ -21,9 +21,10 @@
 - 2026-09-12: Completed and committed the Task 3 governance checkpoint, then created red conformance tests for memory/S3 object stores and versioned plugin registration.
 - 2026-09-12: Implemented and verified owned storage, workflow, and plugin contracts with memory and mocked-S3 adapter coverage; Garage v2.3 command/configuration surface was inspected before wiring a real runtime adapter.
 - 2026-09-12: Completed and committed Task 4; started the pinned Temporal runtime and observed the red process-restart verifier fail before any workflow implementation.
+- 2026-09-12: Implemented a real Temporal worker restart scenario with independent idempotent mock-effect reconciliation; focused e2e verifier passes against the pinned Compose Temporal service.
 
 ## Resume Instructions
 
-1. Implement Task 5's Temporal-backed dummy workflow and independent mock effect reconciliation until the real restart verifier passes.
+1. Persist Task 5 checkpoints, effects, and state transitions into canonical PostgreSQL records, then add timeout/cancel/dead-letter/dry-run coverage.
 2. Keep external effects idempotent at both local and provider boundaries, with durable checkpointing before every boundary.
 3. Update this file and the checked task steps after each verified slice, then commit the checkpoint.
