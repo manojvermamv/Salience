@@ -1,5 +1,15 @@
 # Verification
 
+## Current verified baseline
+
+On 2026-09-12, the merged `main` checkout passed the full Python suite: 99
+tests passed, one live test was intentionally skipped, and the only warning was
+a third-party Starlette deprecation warning. The project-owned browser verifier
+also passed all seven governed Chromium scenarios using Playwright 1.62.0 and
+Chromium 151.0.7922.34. The retained local receipt location is recorded in
+`docs/implementation-progress.md`; generated evidence is intentionally ignored
+by Git because it can contain captured public-page artifacts.
+
 Run `scripts/verify-phases-1-4.sh` from a prepared local checkout. It creates a
 unique Compose project, applies all migrations, executes Phases 1–4 e2e tests,
 and removes only its project volumes on exit.

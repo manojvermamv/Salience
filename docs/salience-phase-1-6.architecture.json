@@ -2,7 +2,7 @@
   "schema_version": 1,
   "diagram_type": "architecture",
   "meta": {
-    "title": "Salience: Governed Intelligence Loop",
+    "title": "Salience: Governed Intelligence & Browser Evidence",
     "locale": "en",
     "quality_profile": "showcase",
     "output": "salience-phase-1-6.architecture.html",
@@ -10,7 +10,7 @@
     "repository": {
       "url": "https://github.com/manojvermamv/Salience.git",
       "provider": "github",
-      "revision": "3af208d29c3656129e8e452662776d79cc08cdb7"
+      "revision": "0e494965f16d01d05192cdcd5fc29d7fd508ac87"
     },
     "views": [
       {
@@ -91,11 +91,14 @@
     {
       "id": "sources",
       "type": "external",
-      "label": "Public sources",
-      "tag": "untrusted data",
+      "label": "Public & browser sources",
+      "tag": "untrusted evidence",
       "pos": [1200, 80],
       "size": [200, 78],
-      "sources": [{"path": "src/salience/research/rss.py", "line": 22, "label": "RSS connector"}]
+      "sources": [
+        {"path": "src/salience/research/rss.py", "line": 22, "label": "RSS connector"},
+        {"path": "src/salience/browser/playwright.py", "line": 23, "label": "governed browser adapter"}
+      ]
     },
     {
       "id": "agents",
@@ -157,7 +160,7 @@
     {"id": "dispatch-task", "from": "temporal", "to": "worker", "label": "tasks & timers", "labelAt": [698, 397]},
     {"id": "execute-loop", "from": "worker", "to": "intelligence", "label": "bounded activities", "labelAt": [933, 265]},
     {"id": "call-agents", "from": "intelligence", "to": "agents", "label": "direct or delegated run", "labelAt": [1170, 397]},
-    {"id": "source-evidence", "from": "sources", "to": "intelligence", "label": "read-only evidence", "variant": "dashed", "fromSide": "left", "toSide": "top", "via": [[1100, 119], [1050, 119], [1050, 265]], "labelDy": -16},
+    {"id": "source-evidence", "from": "sources", "to": "intelligence", "label": "read-only, artifact-backed evidence", "variant": "dashed", "fromSide": "left", "toSide": "top", "via": [[1100, 119], [1050, 119], [1050, 265]], "labelDy": -16},
     {"id": "provider-contracts", "from": "agents", "to": "provider-gateway", "label": "owned contracts", "fromSide": "bottom", "toSide": "top", "labelAt": [1405, 410]},
     {"id": "future-adapters", "from": "provider-gateway", "to": "future-providers", "label": "versioned adapter edge", "variant": "dashed", "fromSide": "bottom", "toSide": "top", "labelAt": [1408, 600]},
     {"id": "canonical-lineage", "from": "intelligence", "to": "postgres", "label": "source → signal → brief", "fromSide": "bottom", "toSide": "top", "via": [[1050, 520], [595, 520]], "labelAt": [825, 495]},
@@ -185,7 +188,7 @@
       "title": "What remains deferred",
       "items": [
         "Scripting, media generation, publishing, analytics, experiments, and learning begin only after the immutable brief handoff.",
-        "No model credential, browser binary, production publisher, or remote agent is required by the default loop."
+        "No model credential, production publisher, or remote agent is required; browser evidence is optional and independently verified."
       ]
     }
   ]

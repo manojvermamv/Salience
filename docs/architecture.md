@@ -14,6 +14,8 @@ HN are read-only; Playwright is optional and artifact-only. Scripting, media,
 publishing, analytics, experiments, and learning remain excluded.
 
 The repository-grounded [Phase 1–6 Archify viewer](salience-phase-1-6.architecture.html)
-is the interactive master diagram. Its source evidence is pinned to the commit
-that introduced the implemented loop; it distinguishes running boundaries from
-future provider adapters.
+is the interactive master diagram. It includes the optional governed-browser
+evidence path beside RSS/HN sources, preserving the distinction between
+untrusted artifact-backed evidence and canonical records. Its source evidence
+is pinned to the verified implementation revision and it distinguishes running
+boundaries from future provider adapters.

@@ -2,14 +2,16 @@
 
 ## Active Context
 
-- Branch: `intelligence-loop-phases-5-6` (isolated worktree)
+- Branch: `main` (merged and pushed)
 - Plan: `docs/superpowers/plans/2026-09-12-intelligence-loop-phases-5-6.md`
-- Active task: Pre-Phase-5 compatibility/trust gate plus Phases 5–6 intelligence loop.
-- Current TDD step: All planned Pre-Phase-5 and Phase 5–6 tasks are complete; begin Phase 7 only from a selected immutable `ContentBrief@v1`.
-- Last verified state: Task 12 completed. The post-wiring focused suite passed 16/16: configuration, configured RSS contract, restart-safe Phase 5 workflow, full Phase 5–6 ContentBrief lineage, ranking/packaging/safety evals, and intelligence control API. `compileall` and `git diff --check` passed. Earlier, `pytest tests -m 'not live' --ignore=tests/e2e/test_compose_worker_restart.py -q` completed against active PostgreSQL/Temporal with no entries in pytest's `lastfailed` cache. The active database is upgraded through `0005_strategy_idempotency`. The local host is at 99% usage with 319 MB available; `docker system df` reports 6.669 GB images (948.8 MB reclaimable), 903.1 MB volumes (0 reclaimable), and 304.2 MB build cache (0 reclaimable). No browser binary, broad isolated Compose run, or destructive cleanup was attempted. `scripts/verify-phases-1-4.sh` remains previously verified, but was not re-run under this capacity constraint.
+- Active task: Documentation, Archify visual, and worktree-integration refresh after the completed browser-evidence verification.
+- Current TDD step: Phases 1–6 and the optional governed-browser verification slice are complete; begin Phase 7 only from a selected immutable `ContentBrief@v1`.
+- Last verified state: The merged `main` checkout passed 99 tests with one intentional live-test skip and one third-party Starlette deprecation warning. After the documentation/visual refresh, `tests/scripts/test_browser_documentation.sh` and `bash scripts/verify-browser-evidence.sh` passed; the latter passed all 7 browser scenarios using project-local Playwright 1.62.0 and Chromium 151.0.7922.34, retaining ignored local evidence at `artifacts/browser-evidence/20260912T213648Z-704463/`. The `phases-1-4-foundation` worktree is clean and contains no commit absent from `main`; it requires no merge. Historical capacity notes below describe earlier checkpoints and are superseded by this baseline.
 
 ## Checkpoints
 
+- 2026-09-12: Audited the retained `phases-1-4-foundation` worktree before final integration; it is clean and has no commit absent from `main`, so no merge was performed. Refreshed the master README flow, current architecture/verification documentation, and Archify source to make governed browser evidence explicit. The delivered viewer has specification SHA-256 `24bfe7c9e3f60892bc0b98de615dde858dd13f93ec7aa0008d43a0f0f6109edc` and artifact SHA-256 `d68f14807c03baf56e8e07b4829d4b08a3898f4f07c4460ee3d09d3fb416107d`. Archify showcase validation passed 9/9 with zero errors/warnings; real Chromium visual checks passed at 1440x900, 1600x1000, 1920x1080, and 2048x1320; a light-theme 1440x900 perceptual review found the browser evidence path, main execution flow, and conclusion cards clear and balanced.
+- 2026-09-12: Re-ran the project-owned documentation contract and browser verifier after the master-doc refresh. The documentation contract passed and the real headless Chromium suite passed 7/7, retaining the final ignored receipt at `artifacts/browser-evidence/20260912T213648Z-704463/`; `git diff --check` was clean.
 - 2026-09-12: Created the isolated worktree and installed the local test runner.
 - 2026-09-12: Added and verified the failing configuration-security test; implementation has not started.
 - 2026-09-12: Completed dependency research and recorded ADRs; SeaweedFS was rejected for an unpatched high advisory and Garage selected as the isolated S3 service.

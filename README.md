@@ -24,7 +24,9 @@ flowchart LR
     API -->|idempotent start| Temporal[Temporal adapter]
     Temporal -->|tasks and timers| Worker[Salience worker]
     Worker -->|checkpointed activities| Loop[Intelligence loop]
-    Sources[Public RSS, HN, optional browser] -.->|untrusted evidence| Loop
+    Sources[RSS and HN sources] -.->|untrusted evidence| Loop
+    Browser[Governed browser evidence] -.->|untrusted evidence| Loop
+    Browser -.->|text, screenshot, trace receipts| Storage
     Loop -->|direct/delegated contract| Agents[Research and strategy agents]
     Agents -->|version-gated boundary| Providers[Model, MCP, A2A, plugin adapters]
     Loop -->|source to immutable brief lineage| PG[(PostgreSQL)]
@@ -33,7 +35,9 @@ flowchart LR
     Future[Phase 7+ providers] -.->|deferred adapter| Providers
 ```
 
-The Mermaid view is a quick GitHub-native overview. The linked
+The Mermaid view is a quick GitHub-native overview. Browser evidence is an
+optional, read-only path: its text remains untrusted and its text, screenshot,
+and trace artifacts are retained behind the object-store contract. The linked
 [Archify viewer](docs/salience-phase-1-6.architecture.html) is the checked,
 interactive source for the implemented Phase 1–6 architecture: it supports
 theme switching, focus views, relationship tracing, source evidence, and local
@@ -216,10 +220,12 @@ bash scripts/verify-browser-evidence.sh --install
 ```
 
 The command creates or reuses `.venv`, installs the pinned `playwright==1.62.0`
-package, installs only Playwright Chromium and its documented Linux dependencies,
+package and only Playwright Chromium with its documented Linux dependencies,
 then runs the governed browser integration/security suite. It requires no
 credential or paid provider, makes no Docker cleanup, and writes retained local
-proof under `artifacts/browser-evidence/`. See [`docs/research.md`](docs/research.md)
+proof under `artifacts/browser-evidence/`. It verifies JavaScript rendering,
+artifact hashes/metadata, private-network and redirect denial, download denial,
+timeout traces, and hostile-text isolation. See [`docs/research.md`](docs/research.md)
 for execution limits and [`docs/verification.md`](docs/verification.md) for the
 test coverage.
 
