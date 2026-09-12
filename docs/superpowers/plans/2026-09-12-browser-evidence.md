@@ -216,22 +216,23 @@ git commit -m "feat: link browser evidence to agent runs"
 - Consumes: project `pyproject.toml`, `/usr/bin/python3`, `/usr/bin/sudo`, and Playwright CLI.
 - Produces: idempotent installer and `PASS`/`FAIL`/`NOT RUN` verifier that reports a durable evidence directory.
 
-- [ ] **Step 1: Write failing shell smoke tests with a fake `PATH`**
+- [x] **Step 1: Write a failing shell smoke test with an absent venv**
 
 ```bash
-PATH="$(mktemp -d)" bash scripts/verify-browser-evidence.sh
+SALIENCE_BROWSER_EVIDENCE_VENV="$(mktemp -d)/missing" \
+  bash scripts/verify-browser-evidence.sh
 test "$?" -eq 2
 ```
 
 Assert the verifier prints `NOT RUN` and an actionable missing-prerequisite message rather than invoking a browser test.
 
-- [ ] **Step 2: Run the shell smoke test to verify red**
+- [x] **Step 2: Run the shell smoke test to verify red**
 
 Run: `bash tests/scripts/test_verify_browser_evidence.sh`
 
 Expected: FAIL because neither project script exists.
 
-- [ ] **Step 3: Implement the scripts**
+- [x] **Step 3: Implement the scripts**
 
 `setup-browser-evidence.sh` must use a repository-relative `.venv`, run `python3 -m venv`, `"$VENV/bin/python" -m pip install --upgrade pip`, `"$VENV/bin/python" -m pip install '.[browser,dev]'`, `sudo -n "$VENV/bin/python" -m playwright install-deps chromium`, and `"$VENV/bin/python" -m playwright install chromium`. It must measure `df -h .` before/after and print the chosen browser executable/version without printing environment secrets.
 
@@ -239,13 +240,13 @@ Expected: FAIL because neither project script exists.
 
 Add `artifacts/` to `.gitignore` so payload evidence is retained locally for operators but not committed.
 
-- [ ] **Step 4: Run script shell checks and the unavailable-prerequisite path**
+- [x] **Step 4: Run script shell checks and the unavailable-prerequisite path**
 
 Run: `bash -n scripts/setup-browser-evidence.sh scripts/verify-browser-evidence.sh && bash tests/scripts/test_verify_browser_evidence.sh`
 
 Expected: shell smoke test passes; the verifier reports `NOT RUN` and does not claim browser evidence before the integration suite exists.
 
-- [ ] **Step 5: Record the checkpoint and commit**
+- [x] **Step 5: Record the checkpoint and commit**
 
 ```bash
 git add scripts/setup-browser-evidence.sh scripts/verify-browser-evidence.sh tests/scripts/test_verify_browser_evidence.sh .gitignore docs/implementation-progress.md
