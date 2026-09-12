@@ -109,7 +109,7 @@ git commit -m "feat: define governed browser evidence contracts"
 - Consumes: Task 1 DTOs and `assert_network_scope(..., allow_private_network=...)`.
 - Produces: `PlaywrightBrowserResearchTool(object_store, allowed_domains, allow_private_network=False, ignore_https_errors=False)` that writes text, PNG, and ZIP receipts with provenance metadata and raises `BrowserEvidenceFailure` with non-secret diagnostics.
 
-- [ ] **Step 1: Write failing adapter tests with a fake Playwright module**
+- [x] **Step 1: Write failing adapter tests with a fake Playwright module**
 
 ```python
 async def test_browser_writes_complete_evidence_metadata(monkeypatch) -> None:
@@ -122,13 +122,13 @@ async def test_browser_writes_complete_evidence_metadata(monkeypatch) -> None:
     assert result.screenshot_hash and result.trace_hash
 ```
 
-- [ ] **Step 2: Run the focused test to verify red**
+- [x] **Step 2: Run the focused test to verify red**
 
 Run: `python -m pytest tests/unit/test_browser_policy.py -v`
 
 Expected: FAIL because receipts currently contain only `url` metadata and result has no evidence hashes/version/fetch time.
 
-- [ ] **Step 3: Implement the smallest adapter extension**
+- [x] **Step 3: Implement the smallest adapter extension**
 
 Use a new `TemporaryDirectory` for every call. Start tracing before navigation, increment a counter in `enforce_route`, abort once it exceeds `request.step_limit`, and call `assert_network_scope` for each routed request and final page URL. Launch with `headless=True`; create a context with `accept_downloads=False` and explicit `ignore_https_errors` only from the test-only constructor setting. Record `playwright.__version__`, `browser.version`, and an ISO-8601 UTC timestamp. Store each artifact with the same metadata keys:
 
@@ -147,13 +147,13 @@ metadata = {
 
 Stop tracing in `finally` whenever it started. Persist a nonempty trace before raising `BrowserEvidenceFailure` for navigation/timeout/security failures. Do not include a page body, credentials, or a URL query string in the error message.
 
-- [ ] **Step 4: Run focused unit tests and static syntax verification**
+- [x] **Step 4: Run focused unit tests and static syntax verification**
 
 Run: `python -m pytest tests/unit/test_browser_policy.py -v && python -m compileall -q src`
 
 Expected: PASS and no compile output.
 
-- [ ] **Step 5: Record the checkpoint and commit**
+- [x] **Step 5: Record the checkpoint and commit**
 
 ```bash
 git add src/salience/browser/playwright.py tests/unit/test_browser_policy.py docs/implementation-progress.md
