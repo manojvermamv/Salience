@@ -69,13 +69,13 @@ Run: `git add pyproject.toml Dockerfile compose.yaml .env.example .gitignore src
 **Interfaces:**
 - Produces UUID-backed `Workspace`, `ContentProgram`, `Job`, `Checkpoint`, `ExternalEffect`, `AuditEvent`, `ProvenanceRecord`, `Budget`, `CostLedgerEntry`, `PolicyVersion`, `Approval`, `PluginVersion`, `SecretReferenceRecord`, and `Artifact` models.
 
-- [ ] **Step 1: Write failing migration assertion**
+- [x] **Step 1: Write failing migration assertion**
 ```python
 async def test_initial_migration_creates_workspace_program_and_job_tables(db):
     tables = await list_tables(db)
     assert {"workspaces", "content_programs", "jobs", "job_checkpoints"} <= tables
 ```
-- [ ] **Step 2: Verify red**
+- [x] **Step 2: Verify red**
 Run: `pytest tests/integration/test_migrations.py::test_initial_migration_creates_workspace_program_and_job_tables -q`
 Expected: FAIL because no migration exists.
 - [ ] **Step 3: Implement migration and metadata**
