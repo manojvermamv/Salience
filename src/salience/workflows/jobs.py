@@ -9,6 +9,7 @@ from temporalio.common import RetryPolicy
 from temporalio.worker import Worker
 
 from salience.fixtures.mock_effect_provider import MockEffectProvider
+from salience.workflows.persistence import CanonicalJobStore, CanonicalRun
 
 
 TASK_QUEUE_PREFIX = "salience-phase-one-dummy"
@@ -48,6 +49,8 @@ class RestartScenarioState:
     effect_accepted: asyncio.Event = field(default_factory=asyncio.Event)
     crash_once: bool = True
     reconciled: bool = False
+    store: CanonicalJobStore | None = None
+    canonical_run: CanonicalRun | None = None
 
 
 class DummyActivities:
@@ -57,9 +60,15 @@ class DummyActivities:
     @activity.defn(name="salience.checkpoint")
     async def checkpoint(self, checkpoint_name: str) -> None:
         self._state.checkpoints.append(checkpoint_name)
+        assert self._state.store is not None
+        assert self._state.canonical_run is not None
+        await self._state.store.checkpoint(self._state.canonical_run, checkpoint_name)
 
     @activity.defn(name="salience.external_effect")
     async def external_effect(self, idempotency_key: str) -> str:
+        assert self._state.store is not None
+        assert self._state.canonical_run is not None
+        await self._state.store.plan_effect(self._state.canonical_run, idempotency_key)
         receipt = await self._state.provider.execute_or_reconcile(idempotency_key)
         if receipt.reconciled:
             self._state.reconciled = True
@@ -67,6 +76,12 @@ class DummyActivities:
             self._state.crash_once = False
             self._state.effect_accepted.set()
             await asyncio.Event().wait()
+        await self._state.store.complete_effect(
+            self._state.canonical_run,
+            idempotency_key=idempotency_key,
+            external_id=receipt.external_id,
+            reconciled=receipt.reconciled,
+        )
         return receipt.external_id
 
 
@@ -76,6 +91,10 @@ class RestartScenarioResult:
     checkpoint_count: int
     provider_effect_calls: int
     reconciled: bool
+    canonical_checkpoint_count: int
+    canonical_effect_count: int
+    audit_count: int
+    provenance_count: int
 
 
 def build_worker(
@@ -96,12 +115,19 @@ def build_worker(
 async def run_restart_reconciliation_scenario(
     *,
     temporal_target: str,
+    database_url: str,
 ) -> RestartScenarioResult:
     client = await Client.connect(temporal_target)
     task_queue = f"{TASK_QUEUE_PREFIX}-{uuid4()}"
     workflow_id = f"restart-contract-{uuid4()}"
     idempotency_key = f"external-effect-{uuid4()}"
-    state = RestartScenarioState()
+    store = CanonicalJobStore(database_url)
+    state = RestartScenarioState(store=store)
+    state.canonical_run = await store.create_run(
+        workflow_run_id=workflow_id,
+        task_queue=task_queue,
+        idempotency_key=idempotency_key,
+    )
 
     first_worker = build_worker(client, task_queue=task_queue, state=state)
     first_worker_task = asyncio.create_task(first_worker.run())
@@ -129,10 +155,14 @@ async def run_restart_reconciliation_scenario(
         if not first_worker_task.done():
             await first_worker_task
 
+    counts = await store.counts(state.canonical_run)
     return RestartScenarioResult(
         status="succeeded",
         checkpoint_count=len(state.checkpoints),
         provider_effect_calls=state.provider.call_count,
         reconciled=state.reconciled,
+        canonical_checkpoint_count=counts.checkpoint_count,
+        canonical_effect_count=counts.effect_count,
+        audit_count=counts.audit_count,
+        provenance_count=counts.provenance_count,
     )
-
