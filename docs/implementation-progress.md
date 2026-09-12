@@ -2,10 +2,10 @@
 
 ## Active Context
 
-- Branch: `phases-1-4-foundation`
+- Branch: `main`
 - Plan: `docs/superpowers/plans/2026-09-12-phases-1-4-foundation.md`
-- Active task: merge preparation
-- Current TDD step: verify the committed Phases 1–4 foundation, preserve user-owned `main` changes, then generate Archify-backed end-user documentation after merge.
+- Active task: verify, commit, and push the Archify-backed master documentation.
+- Current TDD step: validate the frozen architecture artifact and documentation without invoking a storage-heavy Docker rebuild.
 - Last verified state: `scripts/verify-phases-1-4.sh` passed in an isolated Compose project (five e2e tests, including real worker hard-exit/restart reconciliation). The full local suite additionally exposed and fixed automatic test endpoint provisioning plus neutral-URL migration handling; the focused migration suite passes. A subsequent full rerun exhausted host disk space in Temporal's test volume after 38 tests, so no further Docker rebuild is attempted until storage is available.
 
 ## Checkpoints
@@ -37,9 +37,14 @@
 - 2026-09-12: Added scoped PostgreSQL memory plus versioned research-evidence and strategy persistence. Cross-program scope isolation is verified and no vector database is used.
 - 2026-09-12: Completed fixture-backed niche bootstrap. A niche creates canonical workspace/program identities, direct research/strategy agent runs, evidence, scoped memory, and immutable explainable strategy records without browser or model-provider access.
 - 2026-09-12: Completed the clean Phases 1–4 verification script and operational runbooks. Its isolated Compose run applied every migration and passed Phase 1 recovery/control, Phase 2 agents, Phase 3 protocols, and Phase 4 bootstrap checks.
+- 2026-09-12: Merged the verified `phases-1-4-foundation` branch into local `main`, preserving the user-owned README product line for the requested master README refresh.
+- 2026-09-12: Installed the project-local Archify 2.17 skill, verified its Node 24.19.0 runtime with `doctor`, authored a repository-grounded Phase 1–4 architecture specification, and delivered a standalone interactive HTML artifact. The final Archify showcase receipt reports 9/9 checks, zero composition errors, and zero warnings. Browser evidence is skipped because Chrome/Chromium is unavailable in this environment; the deterministic delivery artifact remains valid.
+- 2026-09-12: Replaced the minimal README with an end-user master guide covering the shipped scope, safe in-container demo, public API, validation, architecture, extension points, and deliberate exclusions. The README links the checked Archify viewer and retains the product line.
+- 2026-09-12: Re-ran `git diff --check`, verified all README repository references, and re-checked the frozen Archify HTML. The artifact remains a 9/9 showcase pass with zero errors and warnings; no Docker workload was started because the host still has insufficient free space for a safe Temporal test rerun.
+- 2026-09-12: The `main` checkout intentionally has no duplicate virtual environment. Reused the retained Python 3.13 test environment from the verified worktree against the already-running local PostgreSQL/Temporal services; `tests/integration/test_migrations.py` passed 2/2 in 1.65 seconds. This adds fresh migration evidence without creating a new Temporal volume.
 
 ## Resume Instructions
 
-1. Commit the verified Phases 1–4 checkpoint.
-2. Merge only after inspecting branch status and preserving any user-owned `main` changes.
-3. Install Archify and generate the requested end-user README architecture documentation on merged `main`.
+1. Inspect the final documentation and generated Archify artifacts.
+2. Run lightweight documentation/Archify verification; do not retry storage-heavy Compose tests while host disk space is constrained.
+3. Commit the merged Phases 1–4 foundation and documentation, then push `main` without force.
