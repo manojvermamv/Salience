@@ -1,0 +1,104 @@
+name: salience
+
+services:
+  postgres:
+    image: postgres@sha256:47f917f7409eacd22fc5dfb1dee634e1b55cf0c01d1a7eb701be2227a03e0641
+    environment:
+      POSTGRES_DB: salience
+      POSTGRES_USER: salience
+      POSTGRES_PASSWORD: salience
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U salience -d salience"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  temporal:
+    image: temporalio/auto-setup@sha256:a73792b9289ac504ee6c49fb0dfb430626bc4f422f15cf885503de49e4ae283b
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB: postgres12
+      DB_PORT: "5432"
+      POSTGRES_SEEDS: postgres
+      POSTGRES_USER: salience
+      POSTGRES_PWD: salience
+
+  garage:
+    image: dxflrs/garage@sha256:866bd13ed2038ba7e7190e840482bc27234c4afaf77be8cfa439ae088c1e4690
+    profiles: ["storage"]
+    command: ["/garage", "server"]
+    volumes:
+      - ${GARAGE_CONFIG_PATH:-./infra/garage/garage.toml}:/etc/garage.toml:ro
+      - garage-meta:/var/lib/garage/meta
+      - garage-data:/var/lib/garage/data
+
+  api:
+    build: .
+    profiles: ["application"]
+    command: ["uvicorn", "salience.api.app:create_configured_app", "--factory", "--host", "0.0.0.0", "--port", "8000"]
+    environment:
+      CONTROL_PLANE_TOKEN: ${CONTROL_PLANE_TOKEN:-development-control-token}
+      DATABASE_URL: postgresql+asyncpg://salience:salience@postgres:5432/salience
+      TEMPORAL_TARGET: temporal:7233
+      OBJECT_STORE_ENDPOINT: http://garage:3900
+      WORKER_TASK_QUEUE: salience-phase-one
+      MOCK_EFFECT_PROVIDER_URL: http://mock-effect-provider:8081
+    depends_on:
+      postgres:
+        condition: service_healthy
+      temporal:
+        condition: service_started
+
+  worker:
+    build: .
+    profiles: ["application"]
+    command: ["python", "-m", "salience.workflows.worker"]
+    environment:
+      CONTROL_PLANE_TOKEN: ${CONTROL_PLANE_TOKEN:-development-control-token}
+      DATABASE_URL: postgresql+asyncpg://salience:salience@postgres:5432/salience
+      TEMPORAL_TARGET: temporal:7233
+      OBJECT_STORE_ENDPOINT: http://garage:3900
+      WORKER_TASK_QUEUE: salience-phase-one
+      MOCK_EFFECT_PROVIDER_URL: http://mock-effect-provider:8081
+    depends_on:
+      postgres:
+        condition: service_healthy
+      temporal:
+        condition: service_started
+      mock-effect-provider:
+        condition: service_healthy
+
+  migrate:
+    build: .
+    profiles: ["application"]
+    command: ["alembic", "upgrade", "head"]
+    environment:
+      CONTROL_PLANE_TOKEN: ${CONTROL_PLANE_TOKEN:-development-control-token}
+      DATABASE_URL: postgresql+asyncpg://salience:salience@postgres:5432/salience
+      TEMPORAL_TARGET: temporal:7233
+      OBJECT_STORE_ENDPOINT: http://garage:3900
+      WORKER_TASK_QUEUE: salience-phase-one
+      MOCK_EFFECT_PROVIDER_URL: http://mock-effect-provider:8081
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  mock-effect-provider:
+    build: .
+    profiles: ["application"]
+    command:
+      ["uvicorn", "salience.fixtures.mock_effect_provider:app", "--host", "0.0.0.0", "--port", "8081"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8081/health/live')"]
+      interval: 2s
+      timeout: 2s
+      retries: 20
+
+volumes:
+  garage-data:
+  garage-meta:
+  postgres-data:
