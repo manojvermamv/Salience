@@ -4,8 +4,8 @@
 
 - Branch: `phases-1-4-foundation`
 - Plan: `docs/superpowers/plans/2026-09-12-phases-1-4-foundation.md`
-- Active task: 15 — cross-phase verification
-- Current TDD step: commit the verified Phases 1–4 foundation, then prepare the requested merge and Archify documentation on `main`.
+- Active task: merge preparation
+- Current TDD step: verify the committed Phases 1–4 foundation, preserve user-owned `main` changes, then generate Archify-backed end-user documentation after merge.
 - Last verified state: `scripts/verify-phases-1-4.sh` passed in an isolated Compose project (five e2e tests, including real worker hard-exit/restart reconciliation) and cleaned only its project resources.
 
 ## Checkpoints

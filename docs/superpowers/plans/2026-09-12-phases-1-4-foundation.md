@@ -536,7 +536,7 @@ The script must create fresh named volumes, wait for readiness, run migration/he
 - [x] **Step 4: Verify green**
 Run: `scripts/verify-phases-1-4.sh`
 Expected: PASS on a clean Docker project with no skipped required assertions.
-- [ ] **Step 5: Final checkpoint**
+- [x] **Step 5: Final checkpoint**
 Run: `git add scripts tests/e2e docs README.md && git commit -m "test: verify phases one through four end to end"`
 
 ## Plan Self-Review
