@@ -29,6 +29,8 @@ class Settings:
     database_url: str
     temporal_target: str
     object_store_endpoint: str
+    worker_task_queue: str
+    mock_effect_provider_url: str
     control_plane_token: SecretReference
 
     @classmethod
@@ -47,5 +49,9 @@ class Settings:
             ),
             temporal_target=values.get("TEMPORAL_TARGET", "temporal:7233"),
             object_store_endpoint=values.get("OBJECT_STORE_ENDPOINT", "http://garage:3900"),
+            worker_task_queue=values.get("WORKER_TASK_QUEUE", "salience-phase-one"),
+            mock_effect_provider_url=values.get(
+                "MOCK_EFFECT_PROVIDER_URL", "http://mock-effect-provider:8081"
+            ),
             control_plane_token=SecretReference("env://CONTROL_PLANE_TOKEN"),
         )

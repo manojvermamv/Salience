@@ -1,4 +1,5 @@
 import asyncio
+import os
 from dataclasses import dataclass, field
 from datetime import timedelta
 from uuid import uuid4
@@ -9,7 +10,7 @@ from temporalio.common import RetryPolicy
 from temporalio.exceptions import ApplicationError
 from temporalio.worker import Worker
 
-from salience.fixtures.mock_effect_provider import MockEffectProvider
+from salience.fixtures.mock_effect_memory import MockEffectProvider
 from salience.governance.policy import (
     AuthorizationRequest,
     EffectClass,
@@ -18,7 +19,7 @@ from salience.governance.policy import (
 )
 from salience.governance.scopes import ScopeGrant
 from salience.observability.tracing import TraceContext
-from salience.workflows.effects import EffectRequest, ExternalEffectService
+from salience.workflows.effects import EffectProvider, EffectRequest, ExternalEffectService
 from salience.workflows.persistence import CanonicalCounts, CanonicalJobStore, CanonicalRun
 
 
@@ -32,6 +33,7 @@ class DummyWorkflowRequest:
     mode: str = "success"
     dry_run: bool = False
     effect_delay_seconds: float = 0.0
+    crash_after_remote_acceptance: bool = False
 
 
 @workflow.defn
@@ -94,7 +96,7 @@ class DurableDummyWorkflow:
 
 @dataclass
 class WorkflowScenarioState:
-    provider: MockEffectProvider = field(default_factory=MockEffectProvider)
+    provider: EffectProvider = field(default_factory=MockEffectProvider)
     checkpoints: list[str] = field(default_factory=list)
     effect_accepted: asyncio.Event = field(default_factory=asyncio.Event)
     checkpoint_recorded: asyncio.Event = field(default_factory=asyncio.Event)
@@ -111,11 +113,10 @@ class DummyActivities:
     def __init__(self, state: WorkflowScenarioState) -> None:
         self._state = state
 
-    @property
-    def _run(self) -> CanonicalRun:
-        if self._state.canonical_run is None:
-            raise RuntimeError("canonical run was not configured")
-        return self._state.canonical_run
+    async def _run(self) -> CanonicalRun:
+        if self._state.canonical_run is not None:
+            return self._state.canonical_run
+        return await self._store.run_for_workflow(activity.info().workflow_id)
 
     @property
     def _store(self) -> CanonicalJobStore:
@@ -126,12 +127,13 @@ class DummyActivities:
     @activity.defn(name="salience.checkpoint")
     async def checkpoint(self, checkpoint_name: str) -> None:
         self._state.checkpoints.append(checkpoint_name)
-        await self._store.checkpoint(self._run, checkpoint_name)
+        await self._store.checkpoint(await self._run(), checkpoint_name)
         self._state.checkpoint_recorded.set()
 
     @activity.defn(name="salience.external_effect")
     async def external_effect(self, request: DummyWorkflowRequest) -> str:
-        await self._store.plan_effect(self._run, request.idempotency_key)
+        run = await self._run()
+        await self._store.plan_effect(run, request.idempotency_key)
         if not request.dry_run:
             self._state.effect_attempts += 1
         if request.mode == "retry_exhausted":
@@ -149,12 +151,14 @@ class DummyActivities:
         if receipt.reconciled:
             self._state.reconciled = True
         self._state.external_reference = receipt.external_id
+        if request.crash_after_remote_acceptance and not receipt.reconciled:
+            os._exit(137)
         if self._state.crash_after_acceptance and not self._state.crashed:
             self._state.crashed = True
             self._state.effect_accepted.set()
             await asyncio.Event().wait()
         await self._store.complete_effect(
-            self._run,
+            run,
             idempotency_key=request.idempotency_key,
             external_id=receipt.external_id,
             reconciled=receipt.reconciled,
@@ -163,19 +167,19 @@ class DummyActivities:
 
     @activity.defn(name="salience.terminal")
     async def terminal(self, status: str) -> None:
-        await self._store.terminal(self._run, status)
+        await self._store.terminal(await self._run(), status)
 
     @activity.defn(name="salience.dead_letter")
     async def dead_letter(self, payload: dict[str, str]) -> None:
         status = payload["status"]
         await self._store.dead_letter(
-            self._run,
+            await self._run(),
             attempt=self._state.effect_attempts,
             error_type="activity_timeout" if status == "timed_out" else "fixture_failure",
             error_message=status,
         )
         if status == "timed_out":
-            await self._store.terminal(self._run, status)
+            await self._store.terminal(await self._run(), status)
 
 
 @dataclass(frozen=True)

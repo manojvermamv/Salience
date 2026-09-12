@@ -1,33 +1,41 @@
-from dataclasses import dataclass
-from uuid import uuid4
+import httpx
+from fastapi import FastAPI
+from pydantic import BaseModel
+
+from salience.fixtures.mock_effect_memory import MockEffectProvider, MockEffectReceipt
 
 
-@dataclass(frozen=True)
-class MockEffectReceipt:
-    external_id: str
-    idempotency_key: str
-    reconciled: bool
+class HttpMockEffectProvider:
+    """HTTP adapter for the independently running no-op effect fixture."""
 
-
-class MockEffectProvider:
-    def __init__(self) -> None:
-        self._receipts: dict[str, MockEffectReceipt] = {}
-        self.call_count = 0
+    def __init__(self, base_url: str) -> None:
+        self._base_url = base_url.rstrip("/")
 
     async def execute_or_reconcile(self, idempotency_key: str) -> MockEffectReceipt:
-        existing = self._receipts.get(idempotency_key)
-        if existing is not None:
-            return MockEffectReceipt(
-                external_id=existing.external_id,
-                idempotency_key=existing.idempotency_key,
-                reconciled=True,
-            )
-        self.call_count += 1
-        receipt = MockEffectReceipt(
-            external_id=f"mock-{uuid4()}",
-            idempotency_key=idempotency_key,
-            reconciled=False,
+        async with httpx.AsyncClient(base_url=self._base_url, timeout=5) as client:
+            response = await client.post("/effects", json={"idempotency_key": idempotency_key})
+        response.raise_for_status()
+        payload = response.json()
+        return MockEffectReceipt(
+            external_id=payload["external_id"],
+            idempotency_key=payload["idempotency_key"],
+            reconciled=payload["reconciled"],
         )
-        self._receipts[idempotency_key] = receipt
-        return receipt
 
+
+class MockEffectRequest(BaseModel):
+    idempotency_key: str
+
+
+_provider = MockEffectProvider()
+app = FastAPI(title="Salience mock external-effect provider")
+
+
+@app.get("/health/live")
+async def live() -> dict[str, str | int]:
+    return {"status": "ok", "accepted_effect_count": _provider.call_count}
+
+
+@app.post("/effects")
+async def execute_effect(request: MockEffectRequest) -> MockEffectReceipt:
+    return await _provider.execute_or_reconcile(request.idempotency_key)

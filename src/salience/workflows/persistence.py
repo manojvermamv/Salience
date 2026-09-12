@@ -75,8 +75,19 @@ class CanonicalJobStore:
     async def counts(self, run: CanonicalRun) -> CanonicalCounts:
         return await asyncio.to_thread(self._counts, run)
 
+    async def run_for_workflow(self, workflow_run_id: str) -> CanonicalRun:
+        return await asyncio.to_thread(self._run_for_workflow, workflow_run_id)
+
+    async def effect_was_reconciled(
+        self, run: CanonicalRun, idempotency_key: str
+    ) -> bool:
+        return await asyncio.to_thread(
+            self._effect_was_reconciled, run, idempotency_key
+        )
+
     def _connect(self) -> psycopg.Connection:
-        return psycopg.connect(self._database_url)
+        dsn = self._database_url.replace("postgresql+asyncpg://", "postgresql://", 1)
+        return psycopg.connect(dsn)
 
     def _create_run(
         self,
@@ -292,6 +303,41 @@ class CanonicalJobStore:
                 (run.job_id, run.job_id, run.job_id, run.job_id, run.job_id),
             )
             return CanonicalCounts(*cursor.fetchone())
+
+    def _run_for_workflow(self, workflow_run_id: str) -> CanonicalRun:
+        with self._connect() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT workspace_id, content_program_id, id, workflow_run_id, trace_id, span_id
+                FROM jobs
+                WHERE workflow_run_id = %s
+                """,
+                (workflow_run_id,),
+            )
+            row = cursor.fetchone()
+            if row is None:
+                raise KeyError(f"canonical job not found for workflow {workflow_run_id}")
+            workspace_id, content_program_id, job_id, run_id, trace_id, span_id = row
+            return CanonicalRun(
+                workspace_id=workspace_id,
+                content_program_id=content_program_id,
+                job_id=job_id,
+                workflow_run_id=run_id,
+                trace_context=TraceContext(trace_id=trace_id, span_id=span_id),
+            )
+
+    def _effect_was_reconciled(self, run: CanonicalRun, idempotency_key: str) -> bool:
+        with self._connect() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT reconciliation_state ->> 'reconciled'
+                FROM external_effects
+                WHERE workspace_id = %s AND idempotency_key = %s
+                """,
+                (run.workspace_id, idempotency_key),
+            )
+            row = cursor.fetchone()
+            return row is not None and row[0] == "true"
 
     @staticmethod
     def _insert_audit(

@@ -194,7 +194,7 @@ def test_killed_worker_resumes_checkpoint_without_duplicate_effect(compose_stack
 - [x] **Step 2: Verify red**
 Run: `pytest tests/e2e/test_worker_restart.py::test_killed_worker_resumes_checkpoint_without_duplicate_effect -q`
 Expected: FAIL because the worker and workflow are absent.
-- [ ] **Step 3: Implement Temporal-backed workflow boundary**
+- [x] **Step 3: Implement Temporal-backed workflow boundary**
 ```python
 class ExternalEffectService:
     async def execute_or_reconcile(self, request: EffectRequest) -> EffectReceipt:
@@ -204,7 +204,7 @@ class ExternalEffectService:
         return await self._reconcile_then_execute_once(request)
 ```
 Use Temporal task queues, retry policy, start-to-close timeouts, durable timers/schedules, cancellation, signal/query status, and an exhausted-retry terminal transition to canonical dead-letter state. Activities store a canonical checkpoint before every external boundary. The independent mock provider must deduplicate its own idempotency key and expose reconciliation; kill a real Compose worker after remote acceptance but before local receipt persistence.
-- [ ] **Step 4: Verify green**
+- [x] **Step 4: Verify green**
 Run: `docker compose up -d && alembic upgrade head && pytest tests/integration/test_durable_dummy_job.py tests/e2e/test_worker_restart.py -q`
 Expected: PASS after actual worker termination/restart, retry exhaustion, timeout, cancellation, approval, budget, and dry-run cases.
 - [ ] **Step 5: Checkpoint**

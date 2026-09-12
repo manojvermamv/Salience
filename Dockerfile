@@ -5,7 +5,9 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
 COPY pyproject.toml ./
+COPY alembic.ini ./
+COPY migrations ./migrations
 COPY src ./src
 RUN python -m pip install --no-cache-dir .
 
-CMD ["python", "-m", "salience.worker"]
+CMD ["python", "-m", "salience.workflows.worker"]
