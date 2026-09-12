@@ -4,9 +4,9 @@
 
 - Branch: `phases-1-4-foundation`
 - Plan: `docs/superpowers/plans/2026-09-12-phases-1-4-foundation.md`
-- Active task: 6 — Phase 1 control plane
-- Current TDD step: commit the verified Phase 1 control plane, then begin the Task 7 canonical agent registry.
-- Last verified state: the authenticated API starts idempotent dry-run jobs against live Temporal/PostgreSQL, while the worker persists and exposes canonical status, audit, provenance, trace, and cost inspection records.
+- Active task: 7 — canonical callable-agent registry
+- Current TDD step: checkpoint the verified registry/migration, then add Task 8 native agent-execution coverage.
+- Last verified state: runtime-neutral immutable agent manifests and disabled-history behavior pass in unit tests; PostgreSQL migration `0002_agents` is applied and verified against the live database.
 
 ## Checkpoints
 
@@ -28,9 +28,10 @@
 - 2026-09-12: Added and verified durable terminal-state handling: three-attempt retry exhaustion to a canonical dead letter, activity timeout, cooperative cancellation, approval and budget denial before effects, and dry-run execution with no provider call.
 - 2026-09-12: Added a deployable worker, independent HTTP mock provider, Temporal schedule adapter, and isolated Compose recovery verifier. The verifier builds a unique stack, migrates it, hard-exits the worker after provider acceptance, restarts it, verifies reconciliation, and removes only that stack.
 - 2026-09-12: Completed Phase 1 control-plane coverage. The FastAPI adapter enforces token and scope checks, creates canonical workspace/program identities, starts idempotent dry-run jobs through Temporal, exposes inspection records, and supplies an HTTP-only CLI. The live Phase 1 verifier passes.
+- 2026-09-12: Added Phase 2 canonical callable-agent entities: immutable provider-neutral manifests, version registry with disabled-history preservation, and PostgreSQL agent/team/run/delegation/event records.
 
 ## Resume Instructions
 
-1. Commit the Phase 1 API checkpoint, then write the red Task 7 canonical agent-registry test.
-2. Preserve canonical provider-independent identities while adding Phase 2 callable-agent records.
+1. Commit Task 7, then write the red direct/delegated execution equivalence test for Task 8.
+2. Preserve canonical provider-independent identities while adding fixture-only agent execution.
 3. Update this file and the checked task steps after each verified slice, then commit the checkpoint.

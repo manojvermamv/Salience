@@ -262,7 +262,7 @@ def test_manifest_identity_is_independent_of_runtime(registry):
 - [ ] **Step 2: Verify red**
 Run: `pytest tests/unit/test_agent_registry.py::test_manifest_identity_is_independent_of_runtime -q`
 Expected: FAIL because no agent types exist.
-- [ ] **Step 3: Implement models and migration**
+- [x] **Step 3: Implement models and migration**
 ```python
 class AgentManifest(BaseModel):
     agent_id: str
@@ -276,7 +276,7 @@ class AgentManifest(BaseModel):
     supports_async: bool
 ```
 Persist immutable versions, status, health, parent/child IDs, runtime selection, artifacts, and events. Keep model/framework/provider fields only in execution/provenance mappings.
-- [ ] **Step 4: Verify green**
+- [x] **Step 4: Verify green**
 Run: `alembic upgrade head && pytest tests/unit/test_agent_registry.py tests/integration/test_agent_migration.py -q`
 Expected: PASS with disabled versions preserving history.
 - [ ] **Step 5: Checkpoint**
