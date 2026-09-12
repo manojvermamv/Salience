@@ -20,6 +20,7 @@ class AgentInvocation:
 @dataclass(frozen=True)
 class AgentExecutionContext:
     trace_context: TraceContext
+    run_id: UUID
     parent_run_id: UUID | None = None
     delegated_authority: frozenset[str] = frozenset()
     tool_scopes: frozenset[str] = frozenset()
@@ -114,6 +115,7 @@ class AgentService:
             events=("agent.delegated",),
             execution_context=AgentExecutionContext(
                 trace_context=parent_trace,
+                run_id=parent_run_id,
                 delegated_authority=frozenset(parent_manifest.delegated_authority_scopes),
                 tool_scopes=frozenset(parent_manifest.tool_scopes),
                 memory_scopes=frozenset(parent_manifest.memory_scopes),
@@ -149,6 +151,7 @@ class AgentService:
         runtime = self._runtimes.get(manifest.agent_id)
         if runtime is None:
             raise LookupError(f"runtime unavailable for {manifest.agent_id}")
+        run_id = uuid4()
         manifest_tool_scopes = frozenset(manifest.tool_scopes)
         manifest_memory_scopes = frozenset(manifest.memory_scopes)
         manifest_delegated_authority = frozenset(manifest.delegated_authority_scopes)
@@ -158,6 +161,7 @@ class AgentService:
             manifest_delegated_authority &= parent_execution_context.delegated_authority
         context = AgentExecutionContext(
             trace_context=trace_context or TraceContext.new_root(),
+            run_id=run_id,
             parent_run_id=parent_run_id,
             delegated_authority=manifest_delegated_authority,
             tool_scopes=manifest_tool_scopes,
@@ -169,7 +173,7 @@ class AgentService:
         output = await runtime.invoke(invocation, context)
         self._validate(manifest.output_schema, output, "output")
         run = AgentRun(
-            id=uuid4(),
+            id=run_id,
             agent_id=manifest.agent_id,
             request=invocation,
             output=output,

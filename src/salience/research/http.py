@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from ipaddress import ip_address
 from urllib.parse import urljoin, urlparse
 
 import httpx
@@ -13,11 +14,29 @@ from salience.research.contracts import (
 )
 
 
-def assert_network_scope(url: str, allowed_domains: frozenset[str]) -> None:
+def assert_network_scope(
+    url: str,
+    allowed_domains: frozenset[str],
+    *,
+    allow_private_network: bool = False,
+) -> None:
     parsed = urlparse(url)
     hostname = parsed.hostname
     if parsed.scheme != "https" or not hostname or hostname not in allowed_domains:
         raise NetworkScopeDenied(f"research URL is outside the configured network scope: {url}")
+    try:
+        address = ip_address(hostname)
+    except ValueError:
+        return
+    if not allow_private_network and (
+        address.is_loopback
+        or address.is_private
+        or address.is_link_local
+        or address.is_multicast
+        or address.is_unspecified
+        or address.is_reserved
+    ):
+        raise NetworkScopeDenied("research URL targets a private network address")
 
 
 async def bounded_get(

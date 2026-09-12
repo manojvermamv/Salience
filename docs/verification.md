@@ -28,3 +28,21 @@ Use the PostgreSQL and Temporal service addresses for `TEST_DATABASE_URL` and
 Set `LIVE_HACKER_NEWS_ITEM_URL` for `pytest -m live tests/live/test_research_smoke.py -q`.
 Inspect `df -h .` and `docker system df` before browser installation or a broad
 Compose verifier; no global Docker cleanup is part of verification.
+
+## Browser Evidence
+
+Run the single operator/CI workflow below on supported Linux hosts:
+
+```bash
+bash scripts/verify-browser-evidence.sh --install
+```
+
+Without `--install`, the verifier reports `NOT RUN` with an actionable setup
+message if the project venv or Chromium runtime is absent. With it, the script
+uses the official Playwright Chromium dependency/browser installation path,
+launches Chromium once as a preflight, then runs the browser-marked suite.
+The suite proves JavaScript rendering, structured text/PNG/ZIP evidence,
+source/fetch/version/run/hash receipts, blocked domains and redirects, disabled
+downloads, retained timeout traces without secrets, and untrusted hostile text.
+It retains every run below `artifacts/browser-evidence/`; a test failure prints
+that location for inspection. It never performs global Docker or system cleanup.

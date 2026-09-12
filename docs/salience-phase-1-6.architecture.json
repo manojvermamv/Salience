@@ -6,7 +6,7 @@
     "locale": "en",
     "quality_profile": "showcase",
     "output": "salience-phase-1-6.architecture.html",
-    "viewBox": [1480, 930],
+    "viewBox": [1480, 720],
     "repository": {
       "url": "https://github.com/manojvermamv/Salience.git",
       "provider": "github",
@@ -39,7 +39,7 @@
       "type": "external",
       "label": "Operators & clients",
       "tag": "scoped access",
-      "pos": [30, 370],
+      "pos": [30, 305],
       "size": [175, 78],
       "sources": [{"path": "src/salience/api/routes/control.py", "line": 18, "label": "control routes"}]
     },
@@ -48,7 +48,7 @@
       "type": "backend",
       "label": "Control API",
       "tag": "dry-run first",
-      "pos": [255, 370],
+      "pos": [255, 305],
       "size": [180, 78],
       "sources": [{"path": "src/salience/api/routes/intelligence.py", "line": 17, "label": "intelligence routes"}]
     },
@@ -57,7 +57,7 @@
       "type": "security",
       "label": "Governance & trust",
       "tag": "fail closed",
-      "pos": [255, 610],
+      "pos": [255, 500],
       "size": [180, 78],
       "sources": [{"path": "src/salience/governance/trust.py", "line": 11, "label": "trust policy"}]
     },
@@ -66,7 +66,7 @@
       "type": "messagebus",
       "label": "Temporal adapter",
       "tag": "replaceable",
-      "pos": [490, 370],
+      "pos": [490, 305],
       "size": [180, 78],
       "sources": [{"path": "src/salience/workflows/temporal_backend.py", "line": 8, "label": "workflow adapter"}]
     },
@@ -75,7 +75,7 @@
       "type": "backend",
       "label": "Salience worker",
       "tag": "restart-safe",
-      "pos": [725, 370],
+      "pos": [725, 305],
       "size": [180, 78],
       "sources": [{"path": "src/salience/workflows/worker.py", "line": 48, "label": "worker runtime"}]
     },
@@ -84,7 +84,7 @@
       "type": "backend",
       "label": "Intelligence loop",
       "tag": "Phase 5–6",
-      "pos": [960, 370],
+      "pos": [960, 305],
       "size": [180, 78],
       "sources": [{"path": "src/salience/workflows/intelligence.py", "line": 573, "label": "durable loop"}]
     },
@@ -93,7 +93,7 @@
       "type": "external",
       "label": "Public sources",
       "tag": "untrusted data",
-      "pos": [1200, 110],
+      "pos": [1200, 80],
       "size": [200, 78],
       "sources": [{"path": "src/salience/research/rss.py", "line": 22, "label": "RSS connector"}]
     },
@@ -102,7 +102,7 @@
       "type": "backend",
       "label": "Callable agents",
       "tag": "versioned contracts",
-      "pos": [1200, 370],
+      "pos": [1200, 305],
       "size": [200, 78],
       "sources": [{"path": "src/salience/agents/intelligence.py", "line": 12, "label": "agent runtimes"}]
     },
@@ -111,7 +111,7 @@
       "type": "backend",
       "label": "Provider gateways",
       "tag": "compatibility-gated",
-      "pos": [1200, 610],
+      "pos": [1200, 500],
       "size": [200, 78],
       "sources": [
         {"path": "src/salience/models/recording.py", "line": 155, "label": "model gateway"},
@@ -124,7 +124,7 @@
       "type": "external",
       "label": "Future providers",
       "tag": "not invoked by default",
-      "pos": [1200, 810],
+      "pos": [1200, 640],
       "size": [200, 78],
       "sources": [{"path": "docs/phase-7-handoff.md", "line": 1, "label": "Phase 7 boundary"}]
     },
@@ -133,7 +133,7 @@
       "type": "database",
       "label": "PostgreSQL record of truth",
       "tag": "migrations 0001–0005",
-      "pos": [490, 770],
+      "pos": [490, 640],
       "size": [210, 78],
       "sources": [
         {"path": "migrations/versions/0004_intelligence_loop.py", "line": 6, "label": "intelligence schema"},
@@ -145,23 +145,23 @@
       "type": "cloud",
       "label": "Object-store contract",
       "tag": "memory or S3-compatible",
-      "pos": [780, 770],
+      "pos": [780, 640],
       "size": [200, 78],
       "sources": [{"path": "src/salience/storage/s3.py", "line": 54, "label": "S3 adapter"}]
     }
   ],
   "connections": [
-    {"id": "operator-request", "from": "operators", "to": "control-api", "label": "authenticated request", "variant": "emphasis", "labelAt": [230, 462]},
-    {"id": "authorize", "from": "control-api", "to": "governance", "label": "scope, policy & budget", "fromSide": "bottom", "toSide": "top", "labelAt": [450, 540]},
-    {"id": "start-workflow", "from": "control-api", "to": "temporal", "label": "idempotent durable start", "labelAt": [463, 462]},
-    {"id": "dispatch-task", "from": "temporal", "to": "worker", "label": "tasks & timers", "labelAt": [698, 462]},
-    {"id": "execute-loop", "from": "worker", "to": "intelligence", "label": "bounded activities", "labelAt": [933, 330]},
-    {"id": "call-agents", "from": "intelligence", "to": "agents", "label": "direct or delegated run", "labelAt": [1170, 462]},
-    {"id": "source-evidence", "from": "sources", "to": "intelligence", "label": "read-only evidence", "variant": "dashed", "fromSide": "left", "toSide": "top", "via": [[1100, 149], [1050, 149], [1050, 330]], "labelDy": -16},
-    {"id": "provider-contracts", "from": "agents", "to": "provider-gateway", "label": "owned contracts", "fromSide": "bottom", "toSide": "top", "labelAt": [1405, 462]},
-    {"id": "future-adapters", "from": "provider-gateway", "to": "future-providers", "label": "versioned adapter edge", "variant": "dashed", "fromSide": "bottom", "toSide": "top", "labelAt": [1408, 702]},
-    {"id": "canonical-lineage", "from": "intelligence", "to": "postgres", "label": "source → signal → brief", "fromSide": "bottom", "toSide": "top", "via": [[1050, 650], [595, 650]], "labelAt": [825, 625]},
-    {"id": "artifact-bytes", "from": "postgres", "to": "object-storage", "label": "artifact references", "variant": "dashed", "labelAt": [740, 740]}
+    {"id": "operator-request", "from": "operators", "to": "control-api", "label": "authenticated request", "variant": "emphasis", "labelAt": [230, 397]},
+    {"id": "authorize", "from": "control-api", "to": "governance", "label": "scope, policy & budget", "fromSide": "bottom", "toSide": "top", "labelAt": [450, 445]},
+    {"id": "start-workflow", "from": "control-api", "to": "temporal", "label": "idempotent durable start", "labelAt": [463, 397]},
+    {"id": "dispatch-task", "from": "temporal", "to": "worker", "label": "tasks & timers", "labelAt": [698, 397]},
+    {"id": "execute-loop", "from": "worker", "to": "intelligence", "label": "bounded activities", "labelAt": [933, 265]},
+    {"id": "call-agents", "from": "intelligence", "to": "agents", "label": "direct or delegated run", "labelAt": [1170, 397]},
+    {"id": "source-evidence", "from": "sources", "to": "intelligence", "label": "read-only evidence", "variant": "dashed", "fromSide": "left", "toSide": "top", "via": [[1100, 119], [1050, 119], [1050, 265]], "labelDy": -16},
+    {"id": "provider-contracts", "from": "agents", "to": "provider-gateway", "label": "owned contracts", "fromSide": "bottom", "toSide": "top", "labelAt": [1405, 410]},
+    {"id": "future-adapters", "from": "provider-gateway", "to": "future-providers", "label": "versioned adapter edge", "variant": "dashed", "fromSide": "bottom", "toSide": "top", "labelAt": [1408, 600]},
+    {"id": "canonical-lineage", "from": "intelligence", "to": "postgres", "label": "source → signal → brief", "fromSide": "bottom", "toSide": "top", "via": [[1050, 520], [595, 520]], "labelAt": [825, 495]},
+    {"id": "artifact-bytes", "from": "postgres", "to": "object-storage", "label": "artifact references", "variant": "dashed", "labelAt": [740, 610]}
   ],
   "cards": [
     {
