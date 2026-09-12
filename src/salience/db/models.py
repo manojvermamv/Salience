@@ -406,3 +406,153 @@ class CostLedgerEntry(CanonicalIdentity, Base):
     currency: Mapped[str] = mapped_column(String(3), nullable=False, default="USD")
     usage: Mapped[JsonDocument] = mapped_column(JSONB, default=dict)
     recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class ResearchSource(CanonicalIdentity, Base):
+    __tablename__ = "research_sources"
+    __table_args__ = (UniqueConstraint("content_program_id", "source_key", "version"),)
+
+    workspace_id: Mapped[UUID] = mapped_column(ForeignKey("workspaces.id"), nullable=False)
+    content_program_id: Mapped[UUID] = mapped_column(
+        ForeignKey("content_programs.id"), nullable=False, index=True
+    )
+    source_key: Mapped[str] = mapped_column(String(255), nullable=False)
+    version: Mapped[str] = mapped_column(String(64), nullable=False)
+    connector: Mapped[str] = mapped_column(String(128), nullable=False)
+    trust_level: Mapped[str] = mapped_column(String(64), nullable=False)
+    configuration: Mapped[JsonDocument] = mapped_column(JSONB, default=dict)
+    network_scope: Mapped[JsonDocument] = mapped_column(JSONB, default=list)
+    rate_limit: Mapped[JsonDocument] = mapped_column(JSONB, default=dict)
+    protocol_metadata: Mapped[JsonDocument] = mapped_column(JSONB, default=dict)
+
+
+class ResearchFetch(CanonicalIdentity, Base):
+    __tablename__ = "research_fetches"
+    __table_args__ = (
+        UniqueConstraint("research_source_id", "resource_identity", "window_key"),
+    )
+
+    workspace_id: Mapped[UUID] = mapped_column(ForeignKey("workspaces.id"), nullable=False)
+    content_program_id: Mapped[UUID] = mapped_column(
+        ForeignKey("content_programs.id"), nullable=False, index=True
+    )
+    research_source_id: Mapped[UUID] = mapped_column(
+        ForeignKey("research_sources.id"), nullable=False, index=True
+    )
+    resource_identity: Mapped[str] = mapped_column(String(1024), nullable=False)
+    window_key: Mapped[str] = mapped_column(String(255), nullable=False)
+    request_fingerprint: Mapped[str] = mapped_column(String(128), nullable=False)
+    canonical_url: Mapped[str] = mapped_column(Text, nullable=False)
+    raw_content_hash: Mapped[str | None] = mapped_column(String(128))
+    status: Mapped[str] = mapped_column(String(64), nullable=False)
+    provenance: Mapped[JsonDocument] = mapped_column(JSONB, default=dict)
+    trace_id: Mapped[str | None] = mapped_column(String(64), index=True)
+    span_id: Mapped[str | None] = mapped_column(String(32))
+
+
+class Signal(CanonicalIdentity, Base):
+    __tablename__ = "signals"
+    __table_args__ = (UniqueConstraint("content_program_id", "fingerprint"),)
+
+    workspace_id: Mapped[UUID] = mapped_column(ForeignKey("workspaces.id"), nullable=False)
+    content_program_id: Mapped[UUID] = mapped_column(
+        ForeignKey("content_programs.id"), nullable=False, index=True
+    )
+    fingerprint: Mapped[str] = mapped_column(String(128), nullable=False)
+    topic: Mapped[str] = mapped_column(Text, nullable=False)
+    features: Mapped[JsonDocument] = mapped_column(JSONB, default=dict)
+    feature_availability: Mapped[JsonDocument] = mapped_column(JSONB, default=dict)
+    provenance: Mapped[JsonDocument] = mapped_column(JSONB, default=dict)
+    trace_id: Mapped[str | None] = mapped_column(String(64), index=True)
+    span_id: Mapped[str | None] = mapped_column(String(32))
+
+
+class TopicOpportunity(CanonicalIdentity, Base):
+    __tablename__ = "topic_opportunities"
+    __table_args__ = (UniqueConstraint("content_program_id", "fingerprint"),)
+
+    workspace_id: Mapped[UUID] = mapped_column(ForeignKey("workspaces.id"), nullable=False)
+    content_program_id: Mapped[UUID] = mapped_column(
+        ForeignKey("content_programs.id"), nullable=False, index=True
+    )
+    fingerprint: Mapped[str] = mapped_column(String(128), nullable=False)
+    topic: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    score: Mapped[Decimal] = mapped_column(Numeric(7, 3), nullable=False)
+    supporting_signal_ids: Mapped[JsonDocument] = mapped_column(JSONB, default=list)
+    feature_availability: Mapped[JsonDocument] = mapped_column(JSONB, default=dict)
+    explanation: Mapped[str] = mapped_column(Text, nullable=False)
+    risks: Mapped[JsonDocument] = mapped_column(JSONB, default=list)
+    provenance: Mapped[JsonDocument] = mapped_column(JSONB, default=dict)
+    trace_id: Mapped[str | None] = mapped_column(String(64), index=True)
+    span_id: Mapped[str | None] = mapped_column(String(32))
+
+
+class StrategicPackage(CanonicalIdentity, Base):
+    __tablename__ = "strategic_packages"
+    __table_args__ = (UniqueConstraint("topic_opportunity_id", "diversity_fingerprint"),)
+
+    workspace_id: Mapped[UUID] = mapped_column(ForeignKey("workspaces.id"), nullable=False)
+    content_program_id: Mapped[UUID] = mapped_column(
+        ForeignKey("content_programs.id"), nullable=False, index=True
+    )
+    topic_opportunity_id: Mapped[UUID] = mapped_column(
+        ForeignKey("topic_opportunities.id"), nullable=False, index=True
+    )
+    diversity_fingerprint: Mapped[str] = mapped_column(String(128), nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    package: Mapped[JsonDocument] = mapped_column(JSONB, nullable=False)
+    provenance: Mapped[JsonDocument] = mapped_column(JSONB, default=dict)
+    trace_id: Mapped[str | None] = mapped_column(String(64), index=True)
+    span_id: Mapped[str | None] = mapped_column(String(32))
+
+
+class ContentBriefVersion(CanonicalIdentity, Base):
+    __tablename__ = "content_brief_versions"
+    __table_args__ = (UniqueConstraint("content_program_id", "brief_key", "version"),)
+
+    workspace_id: Mapped[UUID] = mapped_column(ForeignKey("workspaces.id"), nullable=False)
+    content_program_id: Mapped[UUID] = mapped_column(
+        ForeignKey("content_programs.id"), nullable=False, index=True
+    )
+    brief_key: Mapped[str] = mapped_column(String(255), nullable=False)
+    version: Mapped[int] = mapped_column(Integer, nullable=False)
+    topic_opportunity_id: Mapped[UUID] = mapped_column(
+        ForeignKey("topic_opportunities.id"), nullable=False, index=True
+    )
+    strategic_package_id: Mapped[UUID] = mapped_column(
+        ForeignKey("strategic_packages.id"), nullable=False, index=True
+    )
+    strategy_version_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("strategy_versions.id"), index=True
+    )
+    content: Mapped[JsonDocument] = mapped_column(JSONB, nullable=False)
+    claim_ids: Mapped[JsonDocument] = mapped_column(JSONB, default=list)
+    provenance: Mapped[JsonDocument] = mapped_column(JSONB, default=dict)
+    trace_id: Mapped[str | None] = mapped_column(String(64), index=True)
+    span_id: Mapped[str | None] = mapped_column(String(32))
+
+
+class ModelInvocationRecord(Base):
+    __tablename__ = "model_invocations"
+
+    id: Mapped[UUID] = mapped_column(primary_key=True)
+    tenant_id: Mapped[UUID | None] = mapped_column(index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    job_id: Mapped[UUID | None] = mapped_column(ForeignKey("jobs.id"), index=True)
+    parent_agent_run_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("agent_runs.id"), index=True
+    )
+    capability: Mapped[str] = mapped_column(String(255), nullable=False)
+    status: Mapped[str] = mapped_column(String(64), nullable=False)
+    runtime_id: Mapped[str | None] = mapped_column(String(255))
+    provider: Mapped[str | None] = mapped_column(String(255))
+    model: Mapped[str | None] = mapped_column(String(255))
+    input_hash: Mapped[str] = mapped_column(String(128), nullable=False)
+    output_hash: Mapped[str | None] = mapped_column(String(128))
+    usage: Mapped[JsonDocument] = mapped_column(JSONB, default=dict)
+    latency_ms: Mapped[int] = mapped_column(Integer, nullable=False)
+    actual_cost_micros: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    trace_id: Mapped[str | None] = mapped_column(String(64), index=True)
+    span_id: Mapped[str | None] = mapped_column(String(32))

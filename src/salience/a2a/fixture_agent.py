@@ -16,6 +16,8 @@ class FixtureA2AAgent:
             preferred_transport="JSONRPC",
         )
 
-    async def invoke(self, input: dict[str, Any]) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    async def invoke(
+        self, input: dict[str, Any]
+    ) -> tuple[dict[str, Any], list[dict[str, Any]], str | None]:
         output = {"niche": input["niche"], "source": "fixture"}
-        return output, [{"kind": "structured-data", "data": output}]
+        return output, [{"kind": "structured-data", "data": output}], None

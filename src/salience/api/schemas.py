@@ -65,3 +65,53 @@ class AgentRunResponse(BaseModel):
     status: str
     parent_run_id: str | None
     output: dict[str, object]
+
+
+class IntelligenceRunRequest(BaseModel):
+    contract_version: str = "IntelligenceRunRequest@v1"
+    workspace_id: str = Field(min_length=1)
+    content_program_id: str = Field(min_length=1)
+    niche: str = Field(min_length=1, max_length=500)
+    dry_run: bool = True
+    idempotency_key: str = Field(min_length=1, max_length=255)
+
+
+class IntelligenceRunResponse(BaseModel):
+    job_id: str
+    state: str
+    dry_run: bool
+    trace_id: str
+    output: dict[str, object] = Field(default_factory=dict)
+
+
+class IntelligenceScheduleRequest(BaseModel):
+    workspace_id: str = Field(min_length=1)
+    content_program_id: str = Field(min_length=1)
+    name: str = Field(min_length=1, max_length=128, pattern=r"^[a-z0-9-]+$")
+    every_seconds: int = Field(gt=0, le=31_536_000)
+    niche: str = Field(min_length=1, max_length=500)
+
+
+class IntelligenceScheduleResponse(BaseModel):
+    schedule_id: str
+    workspace_id: str
+    content_program_id: str
+    name: str
+    job_type: str
+    schedule_expression: str
+
+
+class ContentBriefRequest(BaseModel):
+    contract_version: str = "ContentBriefRequest@v1"
+    content_program_id: str = Field(min_length=1)
+    idempotency_key: str = Field(min_length=1, max_length=255)
+    dry_run: bool = True
+
+
+class ContentBriefResponse(BaseModel):
+    brief_id: str
+    content_program_id: str
+    opportunity_id: str
+    package_id: str
+    content: dict[str, object]
+    claim_ids: list[str]

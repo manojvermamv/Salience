@@ -3,10 +3,14 @@ from salience.agents.execution import AgentService
 from salience.agents.registry import AgentRegistry
 from salience.agents.specialists import fixture_specialist_runtimes
 from salience.models.contracts import ModelGateway
+from salience.research.contracts import ResearchConnector
 
 
 def fixture_agent_service(
-    *, model_gateways: dict[str, ModelGateway] | None = None
+    *,
+    model_gateways: dict[str, ModelGateway] | None = None,
+    research_connector: ResearchConnector | None = None,
+    research_source_label: str = "fixture",
 ) -> AgentService:
     registry = AgentRegistry()
     registry.register(
@@ -27,7 +31,17 @@ def fixture_agent_service(
             agent_id="research_agent",
             version="1.0.0",
             input_schema={"type": "object", "required": ["niche"]},
-            output_schema={"type": "object", "required": ["niche", "source"]},
+            output_schema={
+                "type": "object",
+                "required": [
+                    "contract_version",
+                    "niche",
+                    "source",
+                    "findings",
+                    "contradictions",
+                    "unresolved_questions",
+                ],
+            },
             tool_scopes=[],
             memory_scopes=["evidence"],
             effect_classification="read",
@@ -42,7 +56,16 @@ def fixture_agent_service(
             input_schema={"type": "object", "required": ["niche"]},
             output_schema={
                 "type": "object",
-                "required": ["niche", "source", "content_pillars"],
+                "required": [
+                    "contract_version",
+                    "niche",
+                    "source",
+                    "content_pillars",
+                    "audience",
+                    "positioning",
+                    "topic_priorities",
+                    "uncertainties",
+                ],
             },
             tool_scopes=[],
             memory_scopes=["semantic", "evidence"],
@@ -51,8 +74,32 @@ def fixture_agent_service(
             supports_async=True,
         )
     )
+    registry.register(
+        AgentManifest(
+            agent_id="browser_research_agent",
+            version="1.0.0",
+            input_schema={"type": "object", "required": ["url"]},
+            output_schema={
+                "type": "object",
+                "required": [
+                    "contract_version",
+                    "url",
+                    "effect_classification",
+                    "artifacts",
+                ],
+            },
+            tool_scopes=[],
+            memory_scopes=[],
+            effect_classification="read",
+            supports_sync=True,
+            supports_async=True,
+        )
+    )
     return AgentService(
         registry=registry,
-        runtimes=fixture_specialist_runtimes(),
+        runtimes=fixture_specialist_runtimes(
+            research_connector=research_connector,
+            source_label=research_source_label,
+        ),
         model_gateways=model_gateways,
     )

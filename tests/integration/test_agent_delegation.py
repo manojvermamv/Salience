@@ -14,7 +14,7 @@ def build_service() -> AgentService:
             version="1.0.0",
             input_schema={"type": "object", "required": ["niche"]},
             output_schema={"type": "object", "required": ["niche", "source"]},
-            tool_scopes=[],
+            tool_scopes=["research.fetch", "research.hidden"],
             memory_scopes=["evidence"],
             effect_classification="read",
             supports_sync=True,
@@ -27,7 +27,7 @@ def build_service() -> AgentService:
             version="1.0.0",
             input_schema={"type": "object", "required": ["niche"]},
             output_schema={"type": "object"},
-            tool_scopes=[],
+            tool_scopes=["research.fetch"],
             memory_scopes=[],
             effect_classification="read",
             supports_sync=True,
@@ -50,3 +50,8 @@ async def test_lead_uses_same_research_contract_as_direct_user() -> None:
     assert direct.result_schema == delegated.result_schema
     assert delegated.parent_run_id is not None
     assert delegated.output["source"] == "fixture"
+    assert direct.execution_context.tool_scopes == frozenset(
+        {"research.fetch", "research.hidden"}
+    )
+    assert delegated.execution_context.tool_scopes == frozenset({"research.fetch"})
+    assert delegated.execution_context.memory_scopes == frozenset()
