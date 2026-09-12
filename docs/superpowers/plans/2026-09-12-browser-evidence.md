@@ -263,31 +263,31 @@ git commit -m "feat: automate browser evidence verification"
 - Consumes: Tasks 1–4, actual Playwright Chromium, and `SALIENCE_BROWSER_EVIDENCE_DIR`.
 - Produces: browser-marked tests that write payloads and `.metadata.json` receipts beneath the evidence root and prove all required runtime/security/trust cases.
 
-- [ ] **Step 1: Write the browser-marked tests and disk store fixture**
+- [x] **Step 1: Write the browser-marked tests and disk store fixture**
 
 Create `DirectoryObjectStore(root: Path)` that safely maps each slash-delimited object key below `root`, writes data plus `{key}.metadata.json`, and returns existing `ObjectReceipt` fields with SHA-256 hashes. Start a `ThreadingHTTPServer` wrapped in a temporary self-signed TLS context created by `/usr/bin/openssl`; expose routes `/page`, `/redirect-external`, `/redirect-private`, `/download`, and `/slow`. The JavaScript page must change its body after load and include a hostile instruction string.
 
 Cover these assertions in independently named tests: real launch/browser version and JS text; result structure plus text/PNG/ZIP artifacts; all receipt metadata and hashes; unapproved initial URL; external/private redirects; download attempt without saved file; bounded timeout with ZIP trace and no `secret=` in exception; hostile text remains `untrusted_external` and is refused by `TrustPolicy` for authority/verified memory; and agent runtime passes matching run/trace IDs.
 
-- [ ] **Step 2: Run the integration test before installation to verify an honest unavailable state**
+- [x] **Step 2: Run the integration test before installation to verify an honest unavailable state**
 
 Run: `python -m pytest tests/integration/test_browser_evidence.py -m browser -v`
 
 Expected: FAIL or SKIP with a clear missing Playwright/Chromium message; do not mask an unavailable browser as a passing test.
 
-- [ ] **Step 3: Install the project browser runtime using Task 4**
+- [x] **Step 3: Install the project browser runtime using Task 4**
 
 Run: `bash scripts/setup-browser-evidence.sh`
 
 Expected: Playwright 1.62.0, only Chromium dependencies, revision-matched browser cache, and a recorded free-disk delta.
 
-- [ ] **Step 4: Run the real one-command workflow and inspect evidence**
+- [x] **Step 4: Run the real one-command workflow and inspect evidence**
 
 Run: `bash scripts/verify-browser-evidence.sh --install`
 
 Expected: `PASS`, a real PNG and ZIP, and metadata receipts containing source URL, fetch time, versions, IDs, artifact type, and SHA-256 values beneath the printed evidence root.
 
-- [ ] **Step 5: Record the checkpoint and commit**
+- [x] **Step 5: Record the checkpoint and commit**
 
 ```bash
 git add tests/integration/test_browser_evidence.py pyproject.toml docs/implementation-progress.md
