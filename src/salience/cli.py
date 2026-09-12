@@ -38,6 +38,15 @@ def main(arguments: Sequence[str] | None = None) -> None:
     start.add_argument("--dry-run", action=argparse.BooleanOptionalAction, default=True)
     inspect = job_commands.add_parser("inspect")
     inspect.add_argument("job_id")
+    agents = subcommands.add_parser("agents")
+    agent_commands = agents.add_subparsers(dest="agent_command", required=True)
+    agent_commands.add_parser("list")
+    describe = agent_commands.add_parser("describe")
+    describe.add_argument("agent_id")
+    run = agent_commands.add_parser("run")
+    run.add_argument("agent_id")
+    run.add_argument("--niche", required=True)
+    run.add_argument("--mode", choices=("sync", "async"), default="async")
 
     parsed = parser.parse_args(arguments)
     if parsed.command == "jobs" and parsed.job_command == "start-dummy":
@@ -46,8 +55,18 @@ def main(arguments: Sequence[str] | None = None) -> None:
             path="/v1/jobs/dummy",
             payload={"dry_run": parsed.dry_run, "idempotency_key": parsed.idempotency_key},
         )
-    else:
+    elif parsed.command == "jobs":
         result = _request(method="GET", path=f"/v1/jobs/{parsed.job_id}/inspection")
+    elif parsed.agent_command == "list":
+        result = _request(method="GET", path="/v1/agents")
+    elif parsed.agent_command == "describe":
+        result = _request(method="GET", path=f"/v1/agents/{parsed.agent_id}")
+    else:
+        result = _request(
+            method="POST",
+            path=f"/v1/agents/{parsed.agent_id}/runs",
+            payload={"input": {"niche": parsed.niche}, "mode": parsed.mode},
+        )
     print(json.dumps(result, sort_keys=True))
 
 

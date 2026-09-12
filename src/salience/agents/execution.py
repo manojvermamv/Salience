@@ -124,3 +124,9 @@ class AgentService:
 
     def get_run(self, run_id: UUID) -> AgentRun | None:
         return self._runs.get(run_id)
+
+    def list_agents(self):
+        return self._registry.list()
+
+    def describe_agent(self, agent_id: str):
+        return self._registry.describe(agent_id)

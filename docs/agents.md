@@ -15,3 +15,7 @@ The Phase 2 fixture executor validates JSON input/output schemas at one shared
 boundary. Direct calls, delegated calls, and team members use that same service;
 delegated calls receive a child trace context and retain their parent run ID.
 The fixture runtimes are deterministic and do not invoke an AI/model provider.
+
+The control API exposes listing, describing, and running the same manifests at
+`/v1/agents`. `SalienceClient.agents` and `content agents` use those HTTP
+schemas; neither bypasses the public transport with an internal runtime call.

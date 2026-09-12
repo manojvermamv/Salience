@@ -55,3 +55,6 @@ class AgentRegistry:
         if agent_id not in self._versions:
             raise AgentNotFound(agent_id)
         return tuple(self._versions[agent_id])
+
+    def list(self) -> tuple[AgentVersionView, ...]:
+        return tuple(versions[-1] for versions in self._versions.values())

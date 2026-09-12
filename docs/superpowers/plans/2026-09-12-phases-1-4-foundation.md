@@ -333,13 +333,13 @@ def test_client_lists_describes_and_runs_research_agent(api_server):
 - [ ] **Step 2: Verify red**
 Run: `pytest tests/integration/test_agent_api.py tests/unit/test_sdk.py -q`
 Expected: FAIL because the client/endpoints are absent.
-- [ ] **Step 3: Implement API-compatible clients**
+- [x] **Step 3: Implement API-compatible clients**
 ```python
 class AgentsClient:
     def run(self, agent_id: str, input: Mapping[str, Any], *, mode: Literal["sync", "async"] = "async") -> AgentRunView: ...
 ```
 The CLI commands `content agents list|describe|run|status|cancel` must use these canonical HTTP requests and never call an internal-only path.
-- [ ] **Step 4: Verify green**
+- [x] **Step 4: Verify green**
 Run: `pytest tests/integration/test_agent_api.py tests/unit/test_sdk.py -q`
 Expected: PASS for sync/async/client/CLI schemas.
 - [ ] **Step 5: Checkpoint**

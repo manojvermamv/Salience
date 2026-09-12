@@ -4,9 +4,9 @@
 
 - Branch: `phases-1-4-foundation`
 - Plan: `docs/superpowers/plans/2026-09-12-phases-1-4-foundation.md`
-- Active task: 8 — native agent execution
-- Current TDD step: checkpoint the fixture-only execution layer, then add Task 9 API/SDK client coverage.
-- Last verified state: direct, delegated, and team fixture calls share JSON-schema validation and return provider-neutral agent runs with trace parentage.
+- Active task: 9 — callable-agent clients
+- Current TDD step: checkpoint the verified Phase 2 API/SDK/CLI, then research and implement the Task 10 model gateway boundary.
+- Last verified state: public API, HTTP SDK, and CLI all use the fixture-backed callable-agent schemas; Phase 2 direct/delegated/team verifier passes.
 
 ## Checkpoints
 
@@ -30,9 +30,10 @@
 - 2026-09-12: Completed Phase 1 control-plane coverage. The FastAPI adapter enforces token and scope checks, creates canonical workspace/program identities, starts idempotent dry-run jobs through Temporal, exposes inspection records, and supplies an HTTP-only CLI. The live Phase 1 verifier passes.
 - 2026-09-12: Added Phase 2 canonical callable-agent entities: immutable provider-neutral manifests, version registry with disabled-history preservation, and PostgreSQL agent/team/run/delegation/event records.
 - 2026-09-12: Added deterministic native agent execution for the lead, research, and strategy fixture manifests. Direct/delegated equivalence, schema rejection, and team composition are verified without an AI/model provider.
+- 2026-09-12: Completed Phase 2 public callable-agent surfaces. The control API, SDK, and CLI share the same agent schemas; the Phase 2 verifier confirms direct, delegated, and team fixture calls remain equivalent.
 
 ## Resume Instructions
 
-1. Commit Task 8, then write the red public API/SDK agent-client contract for Task 9.
-2. Preserve canonical provider-independent identities while exposing fixture-only agent execution.
+1. Commit the Phase 2 API/SDK/CLI checkpoint, then write the red Task 10 model-gateway portability test.
+2. Keep agent manifests independent of model/provider runtimes.
 3. Update this file and the checked task steps after each verified slice, then commit the checkpoint.
