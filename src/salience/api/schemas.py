@@ -43,3 +43,25 @@ class ContentProgramResponse(BaseModel):
     slug: str
     name: str
     niche: str
+
+
+class AgentRunRequest(BaseModel):
+    input: dict[str, object]
+    mode: str = "async"
+
+
+class AgentResponse(BaseModel):
+    agent_id: str
+    version: str
+    status: str
+    supports_sync: bool
+    supports_async: bool
+    runtime_id: str | None
+
+
+class AgentRunResponse(BaseModel):
+    run_id: str
+    agent_id: str
+    status: str
+    parent_run_id: str | None
+    output: dict[str, object]
