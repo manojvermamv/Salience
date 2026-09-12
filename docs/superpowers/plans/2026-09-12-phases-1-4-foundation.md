@@ -78,7 +78,7 @@ async def test_initial_migration_creates_workspace_program_and_job_tables(db):
 - [x] **Step 2: Verify red**
 Run: `pytest tests/integration/test_migrations.py::test_initial_migration_creates_workspace_program_and_job_tables -q`
 Expected: FAIL because no migration exists.
-- [ ] **Step 3: Implement migration and metadata**
+- [x] **Step 3: Implement migration and metadata**
 ```python
 class CanonicalIdentity(Base):
     id: Mapped[UUID] = mapped_column(primary_key=True, server_default=text("gen_random_uuid()"))
@@ -86,7 +86,7 @@ class CanonicalIdentity(Base):
     created_at: Mapped[datetime]
 ```
 The migration must create required FK/index/unique constraints, including `(workspace_id, external_system, external_id)`, external-effect idempotency keys, monotonic audit sequence per run, and budget reservation references. Add `data_classification`, retention/deletion fields, domain-policy references, trust/delegation fields, C2PA/provenance extensions, trace/span IDs, and protocol compatibility JSON to appropriate canonical rows. Never store secret values.
-- [ ] **Step 4: Verify green**
+- [x] **Step 4: Verify green**
 Run: `docker compose up -d postgres && alembic upgrade head && pytest tests/integration/test_migrations.py -q`
 Expected: PASS against real PostgreSQL.
 - [ ] **Step 5: Checkpoint**
