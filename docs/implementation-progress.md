@@ -5,8 +5,8 @@
 - Branch: `phases-1-4-foundation`
 - Plan: `docs/superpowers/plans/2026-09-12-phases-1-4-foundation.md`
 - Active task: 5 — durable jobs, effects, and recovery
-- Current TDD step: add Task 5 terminal-state, cancellation, policy, budget, and dry-run coverage around the verified durable persistence boundary.
-- Last verified state: the live Temporal restart verifier passes with canonical PostgreSQL checkpoint, effect, audit, and provenance records.
+- Current TDD step: add the deployable worker/schedule boundary and a real Compose worker-loss verifier for Task 5.
+- Last verified state: live Temporal tests pass for restart reconciliation plus bounded retry/dead-letter, timeout, cooperative cancellation, approval/budget denial, and dry-run terminal states.
 
 ## Checkpoints
 
@@ -25,9 +25,10 @@
 - 2026-09-12: Expanded the restart verifier with canonical checkpoint/effect/audit/provenance assertions and observed the expected red database-boundary failure.
 - 2026-09-12: Root-caused a native asyncpg/Python 3.13 crash to PostgreSQL I/O inside Temporal activities. Plain repository I/O is stable, but three activity-boundary variants (original connection, explicit non-TLS connection, and pre-opened connection) segfaulted. The unsafe uncommitted prototype was removed. Psycopg 3.3.5 is the selected next experiment: its official metadata supports Python 3.13, but its LGPL-3.0-only license must remain recorded in the dependency decision before adoption.
 - 2026-09-12: Adopted Psycopg 3.3.5 for the worker-side repository after its checked live Temporal restart scenario persisted canonical checkpoints, reconciled effect state, audit events, and provenance without the asyncpg crash.
+- 2026-09-12: Added and verified durable terminal-state handling: three-attempt retry exhaustion to a canonical dead letter, activity timeout, cooperative cancellation, approval and budget denial before effects, and dry-run execution with no provider call.
 
 ## Resume Instructions
 
-1. Add timeout, cancellation, dead-letter, approval, budget, and dry-run coverage to Task 5, then complete its workflow/API worker boundary.
+1. Add the deployable Temporal worker, schedule boundary, and Compose worker-loss verifier to complete Task 5.
 2. Keep external effects idempotent at both local and provider boundaries, with durable checkpointing before every boundary.
 3. Update this file and the checked task steps after each verified slice, then commit the checkpoint.

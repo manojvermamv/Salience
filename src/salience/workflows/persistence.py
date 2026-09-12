@@ -23,6 +23,7 @@ class CanonicalCounts:
     effect_count: int
     audit_count: int
     provenance_count: int
+    dead_letter_count: int
 
 
 class CanonicalJobStore:
@@ -32,10 +33,15 @@ class CanonicalJobStore:
         self._database_url = database_url
 
     async def create_run(
-        self, *, workflow_run_id: str, task_queue: str, idempotency_key: str
+        self,
+        *,
+        workflow_run_id: str,
+        task_queue: str,
+        idempotency_key: str,
+        dry_run: bool = False,
     ) -> CanonicalRun:
         return await asyncio.to_thread(
-            self._create_run, workflow_run_id, task_queue, idempotency_key
+            self._create_run, workflow_run_id, task_queue, idempotency_key, dry_run
         )
 
     async def checkpoint(self, run: CanonicalRun, checkpoint_name: str) -> None:
@@ -51,6 +57,21 @@ class CanonicalJobStore:
             self._complete_effect, run, idempotency_key, external_id, reconciled
         )
 
+    async def terminal(self, run: CanonicalRun, status: str) -> None:
+        await asyncio.to_thread(self._terminal, run, status)
+
+    async def dead_letter(
+        self,
+        run: CanonicalRun,
+        *,
+        attempt: int,
+        error_type: str,
+        error_message: str,
+    ) -> None:
+        await asyncio.to_thread(
+            self._dead_letter, run, attempt, error_type, error_message
+        )
+
     async def counts(self, run: CanonicalRun) -> CanonicalCounts:
         return await asyncio.to_thread(self._counts, run)
 
@@ -58,7 +79,11 @@ class CanonicalJobStore:
         return psycopg.connect(self._database_url)
 
     def _create_run(
-        self, workflow_run_id: str, task_queue: str, idempotency_key: str
+        self,
+        workflow_run_id: str,
+        task_queue: str,
+        idempotency_key: str,
+        dry_run: bool,
     ) -> CanonicalRun:
         workspace_id, content_program_id, job_id = uuid4(), uuid4(), uuid4()
         trace_context = TraceContext.new_root()
@@ -81,7 +106,7 @@ class CanonicalJobStore:
                     task_queue, idempotency_key, input_payload, retry_policy, trace_id, span_id, dry_run
                 ) VALUES (
                     %s, %s, %s, 'durable_dummy', 'running', %s,
-                    %s, %s, %s::jsonb, %s::jsonb, %s, %s, FALSE
+                    %s, %s, %s::jsonb, %s::jsonb, %s, %s, %s
                 )
                 """,
                 (
@@ -95,6 +120,7 @@ class CanonicalJobStore:
                     json.dumps({"maximum_attempts": 3}),
                     trace_context.trace_id,
                     trace_context.span_id,
+                    dry_run,
                 ),
             )
             self._insert_audit(
@@ -132,10 +158,7 @@ class CanonicalJobStore:
                 "job.checkpointed", "allowed", {"checkpoint": checkpoint_name}
             )
             if checkpoint_name == "after_external_effect":
-                cursor.execute(
-                    "UPDATE jobs SET state = 'succeeded', finished_at = CURRENT_TIMESTAMP WHERE id = %s",
-                    (run.job_id,),
-                )
+                self._update_terminal(cursor, run, "succeeded")
 
     def _plan_effect(self, run: CanonicalRun, idempotency_key: str) -> None:
         with self._connect() as connection, connection.cursor() as cursor:
@@ -171,9 +194,14 @@ class CanonicalJobStore:
                 ),
             )
             self._insert_audit(
-                cursor, run.workspace_id, run.job_id, run.workflow_run_id, run.trace_context,
+                cursor,
+                run.workspace_id,
+                run.job_id,
+                run.workflow_run_id,
+                run.trace_context,
                 "external_effect.reconciled" if reconciled else "external_effect.completed",
-                "allowed", {"external_id": external_id, "reconciled": reconciled}
+                "allowed",
+                {"external_id": external_id, "reconciled": reconciled},
             )
             cursor.execute(
                 """
@@ -196,6 +224,60 @@ class CanonicalJobStore:
                 ),
             )
 
+    def _terminal(self, run: CanonicalRun, status: str) -> None:
+        with self._connect() as connection, connection.cursor() as cursor:
+            self._update_terminal(cursor, run, status)
+            self._insert_audit(
+                cursor,
+                run.workspace_id,
+                run.job_id,
+                run.workflow_run_id,
+                run.trace_context,
+                f"job.{status}",
+                "denied" if status == "denied" else "completed",
+                {"status": status},
+            )
+
+    def _dead_letter(
+        self,
+        run: CanonicalRun,
+        attempt: int,
+        error_type: str,
+        error_message: str,
+    ) -> None:
+        with self._connect() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                INSERT INTO job_dead_letters (
+                    job_id, attempt, error_type, error_message, retryable, failed_at
+                ) VALUES (%s, %s, %s, %s, FALSE, CURRENT_TIMESTAMP)
+                ON CONFLICT (job_id, attempt) DO NOTHING
+                """,
+                (run.job_id, attempt, error_type, error_message),
+            )
+            cursor.execute(
+                "UPDATE jobs SET attempt = %s WHERE id = %s",
+                (attempt, run.job_id),
+            )
+            self._update_terminal(cursor, run, "dead_lettered")
+            self._insert_audit(
+                cursor,
+                run.workspace_id,
+                run.job_id,
+                run.workflow_run_id,
+                run.trace_context,
+                "job.dead_lettered",
+                "failed",
+                {"attempt": attempt, "error_type": error_type},
+            )
+
+    @staticmethod
+    def _update_terminal(cursor: psycopg.Cursor, run: CanonicalRun, status: str) -> None:
+        cursor.execute(
+            "UPDATE jobs SET state = %s, finished_at = CURRENT_TIMESTAMP WHERE id = %s",
+            (status, run.job_id),
+        )
+
     def _counts(self, run: CanonicalRun) -> CanonicalCounts:
         with self._connect() as connection, connection.cursor() as cursor:
             cursor.execute(
@@ -204,9 +286,10 @@ class CanonicalJobStore:
                     (SELECT COUNT(*) FROM job_checkpoints WHERE job_id = %s),
                     (SELECT COUNT(*) FROM external_effects WHERE job_id = %s),
                     (SELECT COUNT(*) FROM audit_events WHERE job_id = %s),
-                    (SELECT COUNT(*) FROM provenance_records WHERE job_id = %s)
+                    (SELECT COUNT(*) FROM provenance_records WHERE job_id = %s),
+                    (SELECT COUNT(*) FROM job_dead_letters WHERE job_id = %s)
                 """,
-                (run.job_id, run.job_id, run.job_id, run.job_id),
+                (run.job_id, run.job_id, run.job_id, run.job_id, run.job_id),
             )
             return CanonicalCounts(*cursor.fetchone())
 
@@ -249,4 +332,3 @@ class CanonicalJobStore:
                 json.dumps(details),
             ),
         )
-
