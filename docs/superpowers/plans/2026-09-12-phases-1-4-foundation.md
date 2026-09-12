@@ -102,7 +102,7 @@ Run: `git add alembic.ini migrations src/salience/db src/salience/core/ids.py do
 **Interfaces:**
 - Produces `PolicyEngine.authorize(request) -> PolicyDecision`, `BudgetService.reserve(...) -> Reservation`, `BudgetService.settle(...) -> CostLedgerEntry`, `SecretResolver.resolve(reference, scopes) -> SecretValue`, and `TraceContext.new_child(...) -> TraceContext`.
 
-- [ ] **Step 1: Write failing governance tests**
+- [x] **Step 1: Write failing governance tests**
 ```python
 def test_effect_requires_scope_policy_approval_and_budget(governance):
     decision = governance.authorize(effect="mock.write", scopes=set(), estimated_micros=10)
@@ -112,7 +112,7 @@ def test_budget_settlement_releases_reservation(governance):
     reservation = governance.reserve("run-1", 50)
     assert governance.settle(reservation.id, 30).actual_micros == 30
 ```
-- [ ] **Step 2: Verify red**
+- [x] **Step 2: Verify red**
 Run: `pytest tests/unit/test_policy.py tests/unit/test_costs.py -q`
 Expected: FAIL because governance services do not exist.
 - [ ] **Step 3: Implement deterministic governance services**
