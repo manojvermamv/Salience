@@ -154,7 +154,7 @@ def test_registry_rejects_incompatible_contract_version(registry):
 - [x] **Step 2: Verify red**
 Run: `pytest tests/contracts/test_object_store.py tests/contracts/test_plugin_registry.py -q`
 Expected: FAIL because contracts and adapters do not exist.
-- [ ] **Step 3: Implement contract-owned adapters**
+- [x] **Step 3: Implement contract-owned adapters**
 ```python
 class ObjectStore(Protocol):
     def put(self, *, key: str, data: bytes, content_type: str, metadata: Mapping[str, str]) -> ObjectReceipt: ...
@@ -167,10 +167,10 @@ class PluginManifest(BaseModel):
     protocol_compatibility: dict[str, str]
 ```
 The S3 adapter persists artifact checksums and metadata in PostgreSQL and uses Garage only for bytes. Registry records provider/model/tool/agent protocol metadata and supports disabled plugins without deleting history.
-- [ ] **Step 4: Verify green**
+- [x] **Step 4: Verify green**
 Run: `pytest tests/contracts/test_object_store.py tests/contracts/test_plugin_registry.py -q`
 Expected: PASS for memory and S3 adapters, including incompatibility cases.
-- [ ] **Step 5: Checkpoint**
+- [x] **Step 5: Checkpoint**
 Run: `git add src/salience/contracts src/salience/storage src/salience/plugins tests/contracts docs/contracts docs/plugins.md && git commit -m "feat: add storage and plugin contracts"`
 
 ### Task 5: Implement Phase-1 durable jobs, effects, and recovery
