@@ -309,30 +309,30 @@ git commit -m "test: verify real governed browser evidence"
 - Consumes: Tasks 1–5 and actual script output.
 - Produces: accurate user-facing install, verification, evidence-path, scope, retention, and limitations documentation.
 
-- [ ] **Step 1: Write documentation assertions for required operator language**
+- [x] **Step 1: Write documentation assertions for required operator language**
 
 ```bash
 grep -F 'bash scripts/verify-browser-evidence.sh --install' README.md docs/deployment.md docs/verification.md
 grep -F 'untrusted_external' docs/research.md docs/limitations.md
 ```
 
-- [ ] **Step 2: Run assertions to verify red**
+- [x] **Step 2: Run assertions to verify red**
 
 Run: `bash tests/scripts/test_browser_documentation.sh`
 
 Expected: FAIL because the one-command installer/verifier and evidence retention semantics are not yet documented.
 
-- [ ] **Step 3: Document only verified behavior**
+- [x] **Step 3: Document only verified behavior**
 
 Document the exact command, no-credential requirement, `artifacts/browser-evidence/` output, Playwright browser cache location, version pin, headless/read-only/allowlist/private-network/download limits, untrusted evidence treatment, EC2 disk requirement, and no destructive cleanup. Update progress with actual OS, disk before/after, version strings, installation command, test count, and screenshot/trace evidence path from Task 5.
 
-- [ ] **Step 4: Re-run complete browser and regression verification**
+- [x] **Step 4: Re-run complete browser and regression verification**
 
 Run: `bash scripts/verify-browser-evidence.sh && python -m pytest tests/unit/test_browser_policy.py tests/unit/test_agent_execution.py tests/unit/test_intelligence_agents.py tests/unit/test_research_trust.py -v && python -m compileall -q src && git diff --check && bash tests/scripts/test_browser_documentation.sh`
 
 Expected: browser verifier prints `PASS`; focused regressions pass; compiler/diff/doc checks produce no errors.
 
-- [ ] **Step 5: Inspect generated evidence and checkpoint final commit**
+- [x] **Step 5: Inspect generated evidence and checkpoint final commit**
 
 Inspect the verifier-reported directory with `find ... -type f -maxdepth 8 -print | sort` and `du -sh ...`; confirm at least one PNG, one ZIP, text artifact, and metadata receipt exist. Then commit:
 

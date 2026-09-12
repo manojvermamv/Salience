@@ -206,6 +206,23 @@ proves that a restarted worker resumes a source-linked run and produces an
 immutable brief with canonical lineage. See [`docs/verification.md`](docs/verification.md)
 for the focused command and constrained-host guidance.
 
+## Verify Browser Evidence
+
+Browser evidence remains optional to the dry-run control plane, but the current
+Linux operator workflow is project-owned and reproducible:
+
+```bash
+bash scripts/verify-browser-evidence.sh --install
+```
+
+The command creates or reuses `.venv`, installs the pinned `playwright==1.62.0`
+package, installs only Playwright Chromium and its documented Linux dependencies,
+then runs the governed browser integration/security suite. It requires no
+credential or paid provider, makes no Docker cleanup, and writes retained local
+proof under `artifacts/browser-evidence/`. See [`docs/research.md`](docs/research.md)
+for execution limits and [`docs/verification.md`](docs/verification.md) for the
+test coverage.
+
 ## What Is Deliberately Not Here
 
 Salience is not presented as a finished autonomous content system. This phase
@@ -213,9 +230,9 @@ does not include:
 
 - AI content or media generation providers
 - Publishing automation or broad platform integrations
-- Browser-driven production research
+- Unbounded browser-driven production research
 - Learning, analytics, or optimization loops
-- A required model credential, live browser binary, or production publishing provider
+- A required model credential or production publishing provider
 - A production secret-manager deployment or Garage cluster configuration
 
 Keeping these capabilities out of the foundation is intentional: later systems

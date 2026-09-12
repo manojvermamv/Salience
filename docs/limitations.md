@@ -6,11 +6,16 @@ packages, claim/evidence checks, and immutable ContentBriefs. They do not
 implement scripting, media generation, publishing, analytics, learning, or a
 general crawler.
 
-Browser code is optional and no browser binary/live-browser smoke was installed
-on this disk-constrained host. Real RSS feeds are opt-in and allowlisted;
-fixtures remain CI defaults. No model credentials are supplied or required.
-Garage deployment configuration and a production secret manager remain
-adapter/operator work. The data model preserves tenant,
+Browser evidence is optional to the control plane but is verified on this Debian
+13 host with `playwright==1.62.0` and Playwright Chromium 151.0.7922.34. It is a
+read-only evidence collector, not a general crawler: it permits exact HTTPS
+allowlisted domains, blocks private/localhost IP literals by default, disables
+downloads, and treats retrieved content as `untrusted_external`. The local
+integration fixture is the only explicit loopback/self-signed-certificate
+exception. Real RSS feeds are opt-in and allowlisted; fixtures remain CI
+defaults. No model credentials are supplied or required. Garage deployment
+configuration and a production secret manager remain adapter/operator work. The
+data model preserves tenant,
 classification, retention, jurisdiction, provenance/C2PA, trust/delegation, and
 OpenTelemetry compatibility hooks for later deployment policy.
 
