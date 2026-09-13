@@ -4,11 +4,13 @@
 
 - Branch: `phase7-8-release-gate-phase9` (isolated worktree from `main`)
 - Plan: `docs/superpowers/plans/2026-09-13-phase-7-8-release-gate-phase-9-publishing.md`
-- Active task: Gate Two, Task 15 — checkpointed Temporal publication workflow, scheduling, and recovery verifier.
-- Current TDD step: Specify red worker-restart and poll/webhook convergence tests before workflow implementation.
-- Last verified state: Gate Two Task 14 passed the publisher contract, governance, private delivery, and deterministic fixture suite (16/16) with compilation and whitespace checks clean. Publication remains fixture-first, provider-neutral, and behind the canonical ready-package boundary.
+- Active task: Gate Two, Task 16 — authenticated publication control API, CLI, SDK, and signed webhook ingress.
+- Current TDD step: Specify public-surface red tests before adding routes or client methods.
+- Last verified state: Gate Two Task 15 passed fixture-first Temporal restart, poll/webhook, schedule, and Phase 7 creative-recovery suites with compilation and whitespace checks clean. Publication remains fixture-first, provider-neutral, and behind the canonical ready-package boundary.
 
 ## Checkpoints
+
+- 2026-09-13: Completed Gate Two Task 15 red-green. Added `GovernedPublicationWorkflow` and `PublicationActivities` on the existing Temporal boundary. The path creates a workspace-bound request, external effect, immutable plan/attempt/receipt, reservation, private delivery capability, reauthorization, submit-or-reconcile checkpoint, poll/webhook status history, settlement, immutable final publication, cancellation, bounded polling, and canonical dead-letter terminal. A hard worker stop after `publication.accepted` resumes through provider reconciliation with one fixture submission and one remote receipt. The fixture’s duplicate signed processing webhook and poll publish transition converge to exactly `accepted`, `processing`, `published` plus one webhook receipt. `PublicationScheduleService` schedules only versioned request/plan references. The Phase-9 recovery/publishing/schedule suite passed 3/3 in 18.92s; the untouched Phase-7 creative recovery suite passed 3/3 in 19.98s; compilation and whitespace checks passed. Next: Task 16 red authenticated control-plane, client, and signed-webhook contracts.
 
 - 2026-09-13: Completed Gate Two Task 14 red-green. `PublicationAuthorizer` fails closed unless the current ready package, workspace/program, account/connection identity and scope, capability profile revision, destination/locale/territory/visibility, policy, rights, disclosure, publishing approval, reserved budget, and rate/quota facts all agree. `PublicationDelivery` creates HTTPS-only 15-minute-or-less asset-scoped edge capabilities and has no canonical URL/token representation. The deterministic fixture satisfies the runtime-checkable, provider-neutral adapter contract, reuses an accepted idempotency identity on reconciliation, rejects quota before remote creation, and verifies stable signed webhook projections. The publisher contract/registry/governance/delivery/fixture suite passed 16/16; compilation and whitespace checks passed. No live publisher or credential resolver was enabled. Next: Task 15 red restart and poll/webhook workflow contracts.
 

@@ -670,7 +670,7 @@ Expected: PASS. Commit: `feat: add governed fixture publisher`.
 
 **Interfaces:** `PublicationWorkflowRequest`, `PublicationActivities`, `GovernedPublicationWorkflow`, and `PublicationScheduleService` use canonical publication plans and existing Temporal scheduling.
 
-- [ ] **Step 1: Write red worker-restart and race tests**
+- [x] **Step 1: Write red worker-restart and race tests**
 
 ```python
 async def test_publication_restart_after_remote_acceptance_does_not_duplicate_post(scenario):
@@ -685,17 +685,17 @@ async def test_poll_and_duplicate_webhook_converge_to_one_receipt(scenario):
     assert result.webhook_receipt_count == 1
 ```
 
-- [ ] **Step 2: Run E2E tests and confirm failure**
+- [x] **Step 2: Run E2E tests and confirm failure**
 
 Run: `pytest tests/e2e/test_phase9_publication_recovery.py tests/e2e/test_phase9_governed_publishing.py -q`
 
 Expected: FAIL because no publication workflow exists.
 
-- [ ] **Step 3: Implement checkpointed publication activities**
+- [x] **Step 3: Implement checkpointed publication activities**
 
 Create/checkpoint request, preflight, cost reserve, plan, delivery, submit-or-reconcile, await, receipt, settlement, and complete/cancel/dead-letter stages. Schedule immutable request/plan references, preserve scheduler restart safety, and create a new plan for changed scheduling input. Persist conditional state transitions before remote calls; ambiguous outcomes become `ambiguous_requires_reconciliation`, never a blind repeat.
 
-- [ ] **Step 4: Verify**
+- [x] **Step 4: Verify**
 
 Run: `pytest tests/e2e/test_phase9_publication_recovery.py tests/e2e/test_phase9_governed_publishing.py tests/e2e/test_phase7_creative_recovery.py -q`
 

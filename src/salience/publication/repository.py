@@ -44,6 +44,27 @@ class PersistedRemotePublicationReceipt:
     remote_id: str
 
 
+@dataclass(frozen=True)
+class PersistedPublicationStatusEvent:
+    id: str
+    publication_attempt_id: str
+    state: str
+
+
+@dataclass(frozen=True)
+class PersistedPublisherWebhookReceipt:
+    id: str
+    publication_attempt_id: str
+    state: str
+
+
+@dataclass(frozen=True)
+class PersistedPublication:
+    id: str
+    publication_request_id: str
+    remote_receipt_id: str
+
+
 class ImmutablePublicationConflict(ValueError):
     """An idempotency identity was replayed with a different governed decision."""
 
@@ -97,6 +118,9 @@ class PublicationRepository:
         version: int,
         publisher_id: str,
         publisher_version: str,
+        external_effect_id: str | None = None,
+        trace_id: str | None = None,
+        span_id: str | None = None,
     ) -> PersistedPublicationPlan:
         return await asyncio.to_thread(
             self._create_plan,
@@ -104,6 +128,9 @@ class PublicationRepository:
             version,
             publisher_id,
             publisher_version,
+            external_effect_id,
+            trace_id,
+            span_id,
         )
 
     async def create_attempt(
@@ -138,6 +165,75 @@ class PublicationRepository:
             state,
             safe_metadata_hash,
             remote_url,
+        )
+
+    async def attach_reservation(
+        self, *, publication_plan_id: str, budget_reservation_id: str
+    ) -> None:
+        await asyncio.to_thread(
+            self._attach_reservation, publication_plan_id, budget_reservation_id
+        )
+
+    async def record_status_event(
+        self,
+        *,
+        publication_attempt_id: str,
+        state: str,
+        source: str,
+        safe_payload_hash: str,
+        trace_id: str | None = None,
+        span_id: str | None = None,
+    ) -> PersistedPublicationStatusEvent:
+        return await asyncio.to_thread(
+            self._record_status_event,
+            publication_attempt_id,
+            state,
+            source,
+            safe_payload_hash,
+            trace_id,
+            span_id,
+        )
+
+    async def record_verified_webhook(
+        self,
+        *,
+        publication_attempt_id: str,
+        status_event_id: str,
+        publisher_id: str,
+        delivery_identity: str,
+        safe_payload_hash: str,
+        state: str,
+        trace_id: str | None = None,
+        span_id: str | None = None,
+    ) -> PersistedPublisherWebhookReceipt:
+        return await asyncio.to_thread(
+            self._record_verified_webhook,
+            publication_attempt_id,
+            status_event_id,
+            publisher_id,
+            delivery_identity,
+            safe_payload_hash,
+            state,
+            trace_id,
+            span_id,
+        )
+
+    async def record_publication(
+        self,
+        *,
+        publication_request_id: str,
+        remote_receipt_id: str,
+        state: str,
+        trace_id: str | None = None,
+        span_id: str | None = None,
+    ) -> PersistedPublication:
+        return await asyncio.to_thread(
+            self._record_publication,
+            publication_request_id,
+            remote_receipt_id,
+            state,
+            trace_id,
+            span_id,
         )
 
     def _connect(self) -> psycopg.Connection:
@@ -279,24 +375,37 @@ class PublicationRepository:
         version: int,
         publisher_id: str,
         publisher_version: str,
+        external_effect_id: str | None,
+        trace_id: str | None,
+        span_id: str | None,
     ) -> PersistedPublicationPlan:
         with self._connect() as connection, connection.cursor() as cursor:
             cursor.execute(
                 """
                 INSERT INTO publication_plans (
-                    publication_request_id, version, publisher_id, publisher_version, state
-                ) VALUES (%s, %s, %s, %s, 'planned')
+                    publication_request_id, version, publisher_id, publisher_version,
+                    external_effect_id, state, trace_id, span_id
+                ) VALUES (%s, %s, %s, %s, %s, 'planned', %s, %s)
                 ON CONFLICT (publication_request_id, version) DO NOTHING
                 RETURNING id::text, publication_request_id::text
                 """,
-                (publication_request_id, version, publisher_id, publisher_version),
+                (
+                    publication_request_id,
+                    version,
+                    publisher_id,
+                    publisher_version,
+                    external_effect_id,
+                    trace_id,
+                    span_id,
+                ),
             )
             row = cursor.fetchone()
             if row is not None:
                 return PersistedPublicationPlan(*row)
             cursor.execute(
                 """
-                SELECT id::text, publication_request_id::text, publisher_id, publisher_version
+                SELECT id::text, publication_request_id::text, publisher_id, publisher_version,
+                       external_effect_id::text
                 FROM publication_plans
                 WHERE publication_request_id = %s AND version = %s
                 """,
@@ -305,10 +414,28 @@ class PublicationRepository:
             existing = cursor.fetchone()
             if existing is None:
                 raise KeyError(publication_request_id)
-            identifier, found_request, found_publisher, found_version = existing
-            if (found_publisher, found_version) != (publisher_id, publisher_version):
+            identifier, found_request, found_publisher, found_version, found_effect = existing
+            if (found_publisher, found_version, found_effect) != (
+                publisher_id,
+                publisher_version,
+                external_effect_id,
+            ):
                 raise ImmutablePublicationConflict("publication plan differs from its immutable version")
             return PersistedPublicationPlan(identifier, found_request)
+
+    def _attach_reservation(self, publication_plan_id: str, budget_reservation_id: str) -> None:
+        with self._connect() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                UPDATE publication_plans
+                SET budget_reservation_id = %s, updated_at = CURRENT_TIMESTAMP
+                WHERE id = %s
+                  AND (budget_reservation_id IS NULL OR budget_reservation_id = %s)
+                """,
+                (budget_reservation_id, publication_plan_id, budget_reservation_id),
+            )
+            if cursor.rowcount != 1:
+                raise ImmutablePublicationConflict("publication plan already has another budget reservation")
 
     def _create_attempt(
         self,
@@ -413,6 +540,152 @@ class PublicationRepository:
             ):
                 raise ImmutablePublicationConflict("remote publication receipt differs from its immutable fact")
             return PersistedRemotePublicationReceipt(identifier, found_attempt, found_remote)
+
+    def _record_status_event(
+        self,
+        publication_attempt_id: str,
+        state: str,
+        source: str,
+        safe_payload_hash: str,
+        trace_id: str | None,
+        span_id: str | None,
+    ) -> PersistedPublicationStatusEvent:
+        with self._connect() as connection, connection.cursor() as cursor:
+            cursor.execute("SELECT pg_advisory_xact_lock(hashtext(%s))", (publication_attempt_id,))
+            cursor.execute(
+                """
+                INSERT INTO publication_status_events (
+                    publication_attempt_id, sequence_no, state, source, safe_payload_hash,
+                    trace_id, span_id
+                ) SELECT %s, COALESCE(MAX(sequence_no), 0) + 1, %s, %s, %s, %s, %s
+                  FROM publication_status_events
+                 WHERE publication_attempt_id = %s
+                ON CONFLICT (publication_attempt_id, source, safe_payload_hash) DO NOTHING
+                RETURNING id::text, publication_attempt_id::text, state
+                """,
+                (
+                    publication_attempt_id,
+                    state,
+                    source,
+                    safe_payload_hash,
+                    trace_id,
+                    span_id,
+                    publication_attempt_id,
+                ),
+            )
+            row = cursor.fetchone()
+            if row is not None:
+                return PersistedPublicationStatusEvent(*row)
+            cursor.execute(
+                """
+                SELECT id::text, publication_attempt_id::text, state
+                FROM publication_status_events
+                WHERE publication_attempt_id = %s AND source = %s AND safe_payload_hash = %s
+                """,
+                (publication_attempt_id, source, safe_payload_hash),
+            )
+            existing = cursor.fetchone()
+            if existing is None or existing[2] != state:
+                raise ImmutablePublicationConflict("publication status event differs from existing event")
+            return PersistedPublicationStatusEvent(*existing)
+
+    def _record_verified_webhook(
+        self,
+        publication_attempt_id: str,
+        status_event_id: str,
+        publisher_id: str,
+        delivery_identity: str,
+        safe_payload_hash: str,
+        state: str,
+        trace_id: str | None,
+        span_id: str | None,
+    ) -> PersistedPublisherWebhookReceipt:
+        with self._connect() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                INSERT INTO publisher_webhook_receipts (
+                    publication_attempt_id, publication_status_event_id, publisher_id,
+                    delivery_identity, safe_payload_hash, signature_verified, state, trace_id, span_id
+                ) VALUES (%s, %s, %s, %s, %s, TRUE, %s, %s, %s)
+                ON CONFLICT DO NOTHING
+                RETURNING id::text, publication_attempt_id::text, state
+                """,
+                (
+                    publication_attempt_id,
+                    status_event_id,
+                    publisher_id,
+                    delivery_identity,
+                    safe_payload_hash,
+                    state,
+                    trace_id,
+                    span_id,
+                ),
+            )
+            row = cursor.fetchone()
+            if row is not None:
+                return PersistedPublisherWebhookReceipt(*row)
+            cursor.execute(
+                """
+                SELECT id::text, publication_attempt_id::text, publication_status_event_id::text,
+                       publisher_id, delivery_identity, safe_payload_hash, state
+                FROM publisher_webhook_receipts
+                WHERE publisher_id = %s AND delivery_identity = %s
+                   OR publication_attempt_id = %s AND safe_payload_hash = %s
+                """,
+                (publisher_id, delivery_identity, publication_attempt_id, safe_payload_hash),
+            )
+            existing = cursor.fetchone()
+            if existing is None:
+                raise KeyError(delivery_identity)
+            identifier, found_attempt, found_event, found_publisher, found_delivery, found_hash, found_state = existing
+            if (found_attempt, found_event, found_publisher, found_delivery, found_hash, found_state) != (
+                publication_attempt_id,
+                status_event_id,
+                publisher_id,
+                delivery_identity,
+                safe_payload_hash,
+                state,
+            ):
+                raise ImmutablePublicationConflict("publisher webhook receipt differs from verified delivery")
+            return PersistedPublisherWebhookReceipt(identifier, found_attempt, found_state)
+
+    def _record_publication(
+        self,
+        publication_request_id: str,
+        remote_receipt_id: str,
+        state: str,
+        trace_id: str | None,
+        span_id: str | None,
+    ) -> PersistedPublication:
+        with self._connect() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                INSERT INTO publications (
+                    publication_request_id, remote_publication_receipt_id, state, published_at,
+                    trace_id, span_id
+                ) VALUES (%s, %s, %s, CURRENT_TIMESTAMP, %s, %s)
+                ON CONFLICT (publication_request_id) DO NOTHING
+                RETURNING id::text, publication_request_id::text, remote_publication_receipt_id::text
+                """,
+                (publication_request_id, remote_receipt_id, state, trace_id, span_id),
+            )
+            row = cursor.fetchone()
+            if row is not None:
+                return PersistedPublication(*row)
+            cursor.execute(
+                """
+                SELECT id::text, publication_request_id::text, remote_publication_receipt_id::text, state
+                FROM publications WHERE publication_request_id = %s
+                """,
+                (publication_request_id,),
+            )
+            existing = cursor.fetchone()
+            if existing is None:
+                raise KeyError(publication_request_id)
+            identifier, found_request, found_receipt, found_state = existing
+            if (found_receipt, found_state) != (remote_receipt_id, state):
+                raise ImmutablePublicationConflict("publication differs from immutable receipt reference")
+            return PersistedPublication(identifier, found_request, found_receipt)
 
 
 def _fingerprint(value: dict[str, Any]) -> str:

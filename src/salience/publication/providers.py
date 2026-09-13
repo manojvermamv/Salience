@@ -54,6 +54,7 @@ class FixturePublisherAdapter:
         self._scenario = scenario
         self._signing_key = signing_key.encode()
         self._submissions: dict[str, RemotePublicationReceipt] = {}
+        self._status_calls: dict[str, int] = {}
         self._submit_count = 0
 
     @property
@@ -143,12 +144,16 @@ class FixturePublisherAdapter:
         )
         if receipt is None:
             return None
-        state = {
-            "processing": "processing",
-            "published": "published",
-            "failed": "failed",
-            "cancelled": "cancelled",
-        }.get(self._scenario, receipt.state)
+        polls = self._status_calls.get(remote_id, 0) + 1
+        self._status_calls[remote_id] = polls
+        if self._scenario in {"failed", "cancelled"}:
+            state = self._scenario
+        elif self._scenario == "processing":
+            state = "processing"
+        elif self._scenario in {"accepted", "crash_after_acceptance", "published"}:
+            state = "processing" if polls == 1 else "published"
+        else:
+            state = receipt.state
         return receipt.model_copy(update={"state": state})
 
     async def cancel(self, remote_id: str) -> RemotePublicationReceipt | None:

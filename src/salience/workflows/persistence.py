@@ -133,6 +133,28 @@ class CanonicalJobStore:
             dry_run,
         )
 
+    async def create_publication_run(
+        self,
+        *,
+        workflow_run_id: str,
+        task_queue: str,
+        workspace_id: str,
+        content_program_id: str,
+        ready_package_id: str,
+        publisher_account_id: str,
+        idempotency_key: str,
+    ) -> CanonicalRun:
+        return await asyncio.to_thread(
+            self._create_publication_run,
+            workflow_run_id,
+            task_queue,
+            workspace_id,
+            content_program_id,
+            ready_package_id,
+            publisher_account_id,
+            idempotency_key,
+        )
+
     async def checkpoint(self, run: CanonicalRun, checkpoint_name: str) -> None:
         await asyncio.to_thread(self._checkpoint, run, checkpoint_name)
 
@@ -455,6 +477,107 @@ class CanonicalJobStore:
                 "creative_run.started",
                 "allowed",
                 {"task_queue": task_queue, "dry_run": dry_run, "brief_id": brief_id},
+            )
+        return run
+
+    def _create_publication_run(
+        self,
+        workflow_run_id: str,
+        task_queue: str,
+        workspace_id: str,
+        content_program_id: str,
+        ready_package_id: str,
+        publisher_account_id: str,
+        idempotency_key: str,
+    ) -> CanonicalRun:
+        trace_context = TraceContext.new_root()
+        with self._connect() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT ready.id
+                FROM ready_to_publish_packages ready
+                JOIN publisher_accounts account ON account.id = %s
+                WHERE ready.id = %s
+                  AND ready.workspace_id = %s
+                  AND ready.content_program_id = %s
+                  AND ready.approval_state = 'approved'
+                  AND account.workspace_id = ready.workspace_id
+                  AND account.status = 'active'
+                """,
+                (publisher_account_id, ready_package_id, workspace_id, content_program_id),
+            )
+            if cursor.fetchone() is None:
+                raise KeyError("ready package and publisher account are not publishable together")
+            cursor.execute(
+                """
+                INSERT INTO jobs (
+                    workspace_id, content_program_id, job_type, state, workflow_run_id,
+                    task_queue, idempotency_key, input_payload, retry_policy, trace_id, span_id,
+                    dry_run, started_at
+                ) VALUES (
+                    %s, %s, 'governed_publication', 'running', %s,
+                    %s, %s, %s::jsonb, %s::jsonb, %s, %s, FALSE, CURRENT_TIMESTAMP
+                )
+                ON CONFLICT (workspace_id, idempotency_key) DO NOTHING
+                RETURNING id, trace_id, span_id
+                """,
+                (
+                    workspace_id,
+                    content_program_id,
+                    workflow_run_id,
+                    task_queue,
+                    idempotency_key,
+                    json.dumps(
+                        {
+                            "ready_package_id": ready_package_id,
+                            "publisher_account_id": publisher_account_id,
+                            "contract_version": "PublicationWorkflowRequest@v1",
+                        }
+                    ),
+                    json.dumps({"maximum_attempts": 3, "initial_backoff_ms": 100}),
+                    trace_context.trace_id,
+                    trace_context.span_id,
+                ),
+            )
+            inserted = cursor.fetchone()
+            if inserted is None:
+                cursor.execute(
+                    """
+                    SELECT id, workflow_run_id, trace_id, span_id
+                    FROM jobs
+                    WHERE workspace_id = %s AND idempotency_key = %s
+                    """,
+                    (workspace_id, idempotency_key),
+                )
+                job_id, existing_workflow_id, trace_id, span_id = cursor.fetchone()
+                return CanonicalRun(
+                    workspace_id=UUID(workspace_id),
+                    content_program_id=UUID(content_program_id),
+                    job_id=job_id,
+                    workflow_run_id=existing_workflow_id,
+                    trace_context=TraceContext(trace_id=trace_id, span_id=span_id),
+                )
+            job_id, trace_id, span_id = inserted
+            run = CanonicalRun(
+                workspace_id=UUID(workspace_id),
+                content_program_id=UUID(content_program_id),
+                job_id=job_id,
+                workflow_run_id=workflow_run_id,
+                trace_context=TraceContext(trace_id=trace_id, span_id=span_id),
+            )
+            self._insert_audit(
+                cursor,
+                run.workspace_id,
+                run.job_id,
+                run.workflow_run_id,
+                run.trace_context,
+                "publication_run.started",
+                "allowed",
+                {
+                    "task_queue": task_queue,
+                    "ready_package_id": ready_package_id,
+                    "publisher_account_id": publisher_account_id,
+                },
             )
         return run
 

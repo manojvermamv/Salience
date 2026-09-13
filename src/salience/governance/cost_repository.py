@@ -66,6 +66,28 @@ class CostReservationRepository:
             estimated_micros,
         )
 
+    async def reserve_for_publication_effect(
+        self,
+        *,
+        budget_id: str,
+        reservation_key: str,
+        job_id: str,
+        external_effect_id: str,
+        publication_plan_id: str,
+        estimated_micros: int,
+    ) -> DurableCostReservation:
+        if estimated_micros < 0:
+            raise ValueError("estimated_micros must be non-negative")
+        return await asyncio.to_thread(
+            self._reserve_for_publication_effect,
+            budget_id,
+            reservation_key,
+            job_id,
+            external_effect_id,
+            publication_plan_id,
+            estimated_micros,
+        )
+
     async def record_actual_usage(
         self, reservation_id: str, actual_micros: int | None
     ) -> CostSettlementOutcome:
@@ -210,6 +232,10 @@ class CostReservationRepository:
                 "UPDATE creative_job_effects SET state = 'pending_actual' WHERE budget_reservation_id = %s",
                 (reservation_id,),
             )
+            cursor.execute(
+                "UPDATE publication_plans SET state = 'pending_actual' WHERE budget_reservation_id = %s",
+                (reservation_id,),
+            )
             self._record_lineage(cursor, reservation["job_id"], "cost.pending_actual", "allowed", {
                 "reservation_id": reservation_id,
             })
@@ -252,6 +278,14 @@ class CostReservationRepository:
             cursor.execute(
                 "UPDATE creative_job_effects SET state = %s WHERE budget_reservation_id = %s",
                 (status.value, reservation_id),
+            )
+            cursor.execute(
+                """
+                UPDATE publication_plans
+                SET actual_cost_micros = %s, state = %s, updated_at = CURRENT_TIMESTAMP
+                WHERE budget_reservation_id = %s
+                """,
+                (actual_micros, status.value, reservation_id),
             )
             cursor.execute(
                 """
@@ -306,9 +340,113 @@ class CostReservationRepository:
     def _reservation_count(self, effect_id: str) -> int:
         with psycopg.connect(self._database_url) as connection, connection.cursor() as cursor:
             cursor.execute(
-                "SELECT count(*) FROM creative_job_effects WHERE external_effect_id = %s", (effect_id,)
+                "SELECT count(*) FROM budget_reservations WHERE external_effect_id = %s", (effect_id,)
             )
             return int(cursor.fetchone()[0])
+
+    def _reserve_for_publication_effect(
+        self,
+        budget_id: str,
+        reservation_key: str,
+        job_id: str,
+        external_effect_id: str,
+        publication_plan_id: str,
+        estimated_micros: int,
+    ) -> DurableCostReservation:
+        with psycopg.connect(self._database_url) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT limit_amount, status FROM budgets WHERE id = %s FOR UPDATE", (budget_id,)
+            )
+            budget = cursor.fetchone()
+            if budget is None:
+                raise KeyError(f"budget not found: {budget_id}")
+            limit_amount, budget_status = budget
+            if budget_status != "active":
+                raise BudgetExceeded("budget is not active")
+            cursor.execute(
+                """
+                SELECT id::text, estimated_amount, reserved_amount, status, job_id::text,
+                       external_effect_id::text
+                FROM budget_reservations
+                WHERE budget_id = %s AND reservation_key = %s
+                FOR UPDATE
+                """,
+                (budget_id, reservation_key),
+            )
+            existing = cursor.fetchone()
+            if existing is not None:
+                reservation_id, estimated, reserved, status, persisted_job, persisted_effect = existing
+                if (
+                    _to_micros(estimated) != estimated_micros
+                    or persisted_job != job_id
+                    or persisted_effect != external_effect_id
+                ):
+                    raise IdempotencyConflict("reservation key already has different cost inputs")
+                return DurableCostReservation(
+                    reservation_id,
+                    budget_id,
+                    reservation_key,
+                    _to_micros(estimated),
+                    _to_micros(reserved),
+                    CostSettlementStatus(status),
+                )
+            self._verify_publication_effect_ownership(
+                cursor, publication_plan_id, external_effect_id, job_id, budget_id
+            )
+            available_micros = _to_micros(limit_amount) - self._committed_micros(cursor, budget_id)
+            if estimated_micros > available_micros:
+                raise BudgetExceeded("reservation would exceed the available budget")
+            amount = _to_amount(estimated_micros)
+            cursor.execute(
+                """
+                INSERT INTO budget_reservations (
+                    budget_id, job_id, external_effect_id, reservation_key, estimated_amount,
+                    reserved_amount, status
+                ) VALUES (%s, %s, %s, %s, %s, %s, 'reserved')
+                RETURNING id::text
+                """,
+                (budget_id, job_id, external_effect_id, reservation_key, amount, amount),
+            )
+            reservation_id = cursor.fetchone()[0]
+            cursor.execute(
+                """
+                UPDATE publication_plans
+                SET budget_reservation_id = %s, state = 'reserved', updated_at = CURRENT_TIMESTAMP
+                WHERE id = %s
+                  AND (budget_reservation_id IS NULL OR budget_reservation_id = %s)
+                """,
+                (reservation_id, publication_plan_id, reservation_id),
+            )
+            if cursor.rowcount != 1:
+                raise IdempotencyConflict("publication plan cannot be linked to this budget reservation")
+            cursor.execute(
+                """
+                INSERT INTO cost_ledger_entries (
+                    budget_reservation_id, job_id, estimated_amount, actual_amount, usage, recorded_at
+                ) VALUES (%s, %s, %s, NULL, %s::jsonb, CURRENT_TIMESTAMP)
+                """,
+                (
+                    reservation_id,
+                    job_id,
+                    amount,
+                    _json({"kind": "estimated", "estimated_micros": estimated_micros}),
+                ),
+            )
+            self._record_lineage(
+                cursor,
+                job_id,
+                "cost.reserved",
+                "allowed",
+                {"reservation_id": reservation_id, "estimated_micros": estimated_micros},
+            )
+            return DurableCostReservation(
+                reservation_id,
+                budget_id,
+                reservation_key,
+                estimated_micros,
+                estimated_micros,
+                CostSettlementStatus.RESERVED,
+            )
 
     def _attach_provider_job(self, reservation_id: str, provider_job_id: str) -> None:
         with psycopg.connect(self._database_url) as connection, connection.cursor() as cursor:
@@ -365,6 +503,39 @@ class CostReservationRepository:
         ownership = cursor.fetchone()
         if ownership != (job_id, job_id):
             raise ValueError("creative job and external effect must belong to the same canonical job")
+
+    @staticmethod
+    def _verify_publication_effect_ownership(
+        cursor: psycopg.Cursor[Any],
+        publication_plan_id: str,
+        external_effect_id: str,
+        job_id: str,
+        budget_id: str,
+    ) -> None:
+        cursor.execute(
+            """
+            SELECT effect.job_id::text, plan.external_effect_id::text, budget.workspace_id::text,
+                   request.workspace_id::text, budget.content_program_id::text,
+                   request.content_program_id::text
+            FROM publication_plans plan
+            JOIN publication_requests request ON request.id = plan.publication_request_id
+            JOIN external_effects effect ON effect.id = %s
+            JOIN budgets budget ON budget.id = %s
+            WHERE plan.id = %s
+            """,
+            (external_effect_id, budget_id, publication_plan_id),
+        )
+        ownership = cursor.fetchone()
+        if ownership is None:
+            raise ValueError("publication plan, effect, and budget must exist")
+        effect_job, plan_effect, budget_workspace, request_workspace, budget_program, request_program = ownership
+        if (
+            effect_job != job_id
+            or plan_effect != external_effect_id
+            or budget_workspace != request_workspace
+            or budget_program not in {None, request_program}
+        ):
+            raise ValueError("publication plan, external effect, and budget must share canonical scope")
 
     @staticmethod
     def _reservation_for_update(cursor: psycopg.Cursor[Any], reservation_id: str) -> dict[str, Any]:
