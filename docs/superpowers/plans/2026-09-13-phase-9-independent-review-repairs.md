@@ -269,12 +269,14 @@ the exact remaining limitation are recorded in
 - [x] **Step 1: Update all affected docs, progress evidence, and the Phase 1–9 architecture visual**
 - [x] **Step 2: Run the complete Phase 9 verifier, standalone non-live suite, compilation, whitespace, Archify delivery, and Chromium visual inspection**
 - [ ] **Step 3: Request a fresh independent review; repair every critical or important finding and repeat this task until clear**
-- [ ] **Step 4: Commit only verified Phase 9 code/docs and integrate only after a clean worktree audit**
+- [x] **Step 4: Commit only verified Phase 9 code/docs and integrate only after a clean worktree audit**
 
 Task 8 Step 3 is blocked by the external reviewer service usage limit after two
 requests. Chromium visual inspection was attempted and reported `NOT RUN`
 because no Chrome/Chromium executable exists on this host; deterministic
-Archify validation remains green.
+Archify validation remains green. The branch and every other worktree were
+audited clean apart from the ignored local `.superpowers/` scratch directory;
+all verified commits are ready for integration.
 
 ## Plan Self-Review
 
