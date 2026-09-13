@@ -16,7 +16,7 @@ from temporalio.exceptions import ApplicationError
 from temporalio.worker import Worker
 
 from salience.agents.execution import AgentInvocation, AgentService
-from salience.creative.contracts import CreativeCapabilityRequest, DistributionPackage
+from salience.creative.contracts import CreativeCapabilityRequest, CreativeVariantPlan, DistributionPackage
 from salience.creative.capabilities import CreativeCapabilityRegistry
 from salience.creative.governance import RightsPolicy
 from salience.creative.media import MediaEngine
@@ -815,6 +815,18 @@ def _capability_request(payload: dict[str, Any]) -> CreativeCapabilityRequest:
         duration_seconds=30,
         max_variants=payload["production"]["requested_variants"],
         provider_extension={"script_text": "Evidence-linked fixture script"},
+    )
+
+
+def _variant_plans(request: CreativeCapabilityRequest) -> tuple[CreativeVariantPlan, ...]:
+    return tuple(
+        CreativeVariantPlan(
+            request_key=f"{request.request_key}:variant:{index}",
+            variant_key=f"variant-{index}",
+            variant_index=index,
+            max_variants=request.max_variants,
+        )
+        for index in range(1, request.max_variants + 1)
     )
 
 

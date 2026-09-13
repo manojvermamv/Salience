@@ -149,6 +149,30 @@ def test_capability_request_rejects_a_variant_count_above_configured_quota() -> 
         )
 
 
+def test_workflow_derives_stable_bounded_variant_identities() -> None:
+    from salience.creative.contracts import CreativeCapabilityRequest
+    from salience.workflows.creative import _variant_plans
+
+    request = CreativeCapabilityRequest(
+        request_key="render-variants",
+        content_program_id="program-1",
+        brief_id="brief-1",
+        script_id="script-1",
+        capability="text_to_video",
+        expected_modality="video",
+        aspect_ratio="9:16",
+        resolution="1080x1920",
+        duration_seconds=30,
+        max_variants=3,
+    )
+
+    assert [(plan.request_key, plan.variant_key) for plan in _variant_plans(request)] == [
+        ("render-variants:variant:1", "variant-1"),
+        ("render-variants:variant:2", "variant-2"),
+        ("render-variants:variant:3", "variant-3"),
+    ]
+
+
 def test_provider_result_preserves_explicit_unknown_actual_cost() -> None:
     from salience.creative.contracts import ProviderJobResult, ProviderUsage
 
