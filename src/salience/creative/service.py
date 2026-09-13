@@ -195,7 +195,7 @@ class CreativeService:
         self._require_approved(production)
         self._ensure_publication_metadata_is_absent(production.package_metadata)
         self._authorize_rights(production)
-        self._require_c2pa(production)
+        await self._require_c2pa(production)
         package = distribution or await self.build_distribution(production)
         if (
             package.locale != production.locale
@@ -244,9 +244,14 @@ class CreativeService:
         )
         self._require_allowed(decision.blocker_codes)
 
-    @staticmethod
-    def _require_c2pa(production: ApprovedProduction) -> None:
-        if production.profile_rules.get("requires_c2pa") is True and production.c2pa_status != "valid":
+    async def _require_c2pa(self, production: ApprovedProduction) -> None:
+        persisted_status = production.c2pa_status
+        reader = getattr(self._repository, "asset_provenance", None)
+        if reader is not None:
+            provenance = await reader(production.asset_id)
+            if provenance is not None:
+                persisted_status = provenance["validation_status"]
+        if production.profile_rules.get("requires_c2pa") is True and persisted_status != "valid":
             raise CreativeGovernanceDenied("c2pa_required")
 
     def _validate_candidates(

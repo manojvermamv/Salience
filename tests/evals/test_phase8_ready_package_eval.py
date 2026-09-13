@@ -85,3 +85,21 @@ async def test_finalization_rejects_required_c2pa_that_is_not_configured() -> No
                 c2pa_status="not_configured",
             )
         )
+
+
+@pytest.mark.asyncio
+async def test_finalization_loads_persisted_c2pa_status_over_workflow_literal() -> None:
+    class PersistedProvenanceRepository(RecordingRepository):
+        async def asset_provenance(self, asset_id: str) -> dict[str, object]:
+            assert asset_id == "asset-1"
+            return {"validation_status": "not_configured"}
+
+    service = CreativeService(PersistedProvenanceRepository())
+
+    with pytest.raises(CreativeGovernanceDenied, match="c2pa_required"):
+        await service.finalize_ready_package(
+            _approved_production(
+                profile_rules={**_approved_production().profile_rules, "requires_c2pa": True},
+                c2pa_status="valid",
+            )
+        )

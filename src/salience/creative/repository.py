@@ -388,6 +388,9 @@ class CreativeRepository:
             ),
         )
 
+    async def asset_provenance(self, asset_id: str) -> dict[str, Any] | None:
+        return await asyncio.to_thread(self._asset_provenance, asset_id)
+
     async def select_asset(
         self, *, asset_variant_id: str, reason: str
     ) -> str:
@@ -910,6 +913,28 @@ class CreativeRepository:
                 (asset_id, provider_job_id, variant_key, selection_state, selection_reason),
             )
             return CreativeAssetVariant(asset_id, cursor.fetchone()[0])
+
+    def _asset_provenance(self, asset_id: str) -> dict[str, Any] | None:
+        with self._connect() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT origin_type, validation_status, c2pa_manifest_reference, signer_metadata,
+                       ingredients, transformations
+                FROM asset_provenance WHERE asset_id = %s
+                """,
+                (asset_id,),
+            )
+            row = cursor.fetchone()
+            if row is None:
+                return None
+            return {
+                "origin_type": row[0],
+                "validation_status": row[1],
+                "c2pa_manifest_reference": row[2],
+                "signer_metadata": row[3],
+                "ingredients": row[4],
+                "transformations": row[5],
+            }
 
     def _record_distribution_package(
         self,
