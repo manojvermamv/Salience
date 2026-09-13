@@ -155,7 +155,7 @@ Expected: PASS, including direct SQL immutability rejection. Commit: `feat: pers
 
 **Interfaces:** `CostReservationRepository.reserve_for_effect(...)`, `record_actual_usage(...)`, `settle(...)`, and `release_unused(...)` return typed records. Reservation identity is `(budget_id, reservation_key)` and links one job/effect/creative job atomically.
 
-- [ ] **Step 1: Write transactional red tests**
+- [x] **Step 1: Write transactional red tests**
 
 ```python
 async def test_reserve_for_effect_is_idempotent_after_restart(repository, creative_effect):
@@ -170,13 +170,13 @@ async def test_settlement_records_overage_once_and_blocks_finalization(repositor
     assert await repository.settle(reservation.reservation_id, actual_micros=120) == outcome
 ```
 
-- [ ] **Step 2: Run the cost suite and confirm it fails**
+- [x] **Step 2: Run the cost suite and confirm it fails**
 
 Run: `pytest tests/integration/test_creative_cost_lifecycle.py tests/unit/test_costs.py -q`
 
 Expected: FAIL because no PostgreSQL cost lifecycle repository exists.
 
-- [ ] **Step 3: Implement lock-safe financial writes**
+- [x] **Step 3: Implement lock-safe financial writes**
 
 ```python
 def _reserve_for_effect(cursor, budget_id, reservation_key, estimated_micros, job_id, effect_id, creative_job_id):
@@ -187,7 +187,7 @@ def _reserve_for_effect(cursor, budget_id, reservation_key, estimated_micros, jo
 
 Record estimated, reserved, pending actual, actual, release, and overage values in integer micro-units. Use one database transaction for budget lock, availability check, reservation insert/reuse, creative-job link, external-effect link, audit, and provenance. Do not turn an unknown actual value into zero.
 
-- [ ] **Step 4: Verify concurrency and restart properties**
+- [x] **Step 4: Verify concurrency and restart properties**
 
 Run: `pytest tests/integration/test_creative_cost_lifecycle.py tests/unit/test_costs.py tests/e2e/test_phase7_creative_recovery.py -q`
 

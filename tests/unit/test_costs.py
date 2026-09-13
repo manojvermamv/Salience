@@ -29,3 +29,9 @@ def test_budget_reservation_is_idempotent_and_refuses_overflow() -> None:
     with pytest.raises(BudgetExceeded):
         governance.reserve("run-2", 31)
 
+
+def test_cost_kind_preserves_pending_actual_and_overage_lifecycle_facts() -> None:
+    from salience.governance.costs import CostSettlementStatus
+
+    assert CostSettlementStatus.PENDING_ACTUAL.value == "pending_actual"
+    assert CostSettlementStatus.OVERAGE_PENDING_APPROVAL.value == "overage_pending_approval"
