@@ -4,11 +4,13 @@
 
 - Branch: `phase7-8-release-gate-phase9` (isolated worktree from `main`)
 - Plan: `docs/superpowers/plans/2026-09-13-phase-7-8-release-gate-phase-9-publishing.md`
-- Active task: Gate One, Task 4 — integrate durable creative authorization, reservation, and settlement after the Task 3 cost checkpoint.
-- Current TDD step: Write activity-level crash/restart tests red, then replace the workflow’s in-memory authority with the canonical effect/reservation lifecycle.
+- Active task: Gate One, Task 4 — blocked before red tests on canonical budget selection for non-dry creative runs.
+- Current TDD step: Await an explicit budget-binding decision; do not replace the in-memory comparison with an implicit workspace/program budget or a hidden default.
 - Last verified state: Gate One Task 3 passed its PostgreSQL cost lifecycle and existing creative recovery suite (8 tests). Phase 7–8 remains unapproved; Task 11’s complete release ladder and independent review remain mandatory before any Phase 9 code.
 
 ## Checkpoints
+
+- 2026-09-13: Paused Gate One Task 4 at a material integration boundary. The new durable repository correctly requires a canonical `budget_id`, but `CreativeProductionRequest@v1`, the creative API/control-plane start contract, and current workspace/content-program records expose no budget binding or deterministic default-budget policy. Continuing without a decision would either restore an in-memory authority or silently select an arbitrary budget, both contrary to the approved release-gate design. The Task 3 commit `75a7d8b` is clean and recoverable; next action is the explicit budget-binding decision below, then Task 4 red tests and integration.
 
 - 2026-09-13: Completed Gate One Task 3 red-green durable cost checkpoint. Added `CostReservationRepository`, which locks the active budget row, verifies creative-job/effect ownership, reserves by `(budget_id, reservation_key)`, links canonical effect/reservation rows, writes audit/provenance, retains unknown actuals as `pending_actual`, records one settlement ledger row, supports unused release, and returns fail-closed `overage_pending_approval` when actual cost exceeds the reservation. The red suite failed on the absent repository and settlement statuses. An added terminal-path test exposed an omitted reservation ID in the locked projection; the repair preserved that ID and read the ledger’s actual foreign-key column. The cost lifecycle/unit suite passed 6/6, and the same slice with the existing crash/recovery verifier passed 8/8; compilation and whitespace checks were clean. Remaining risk: the creative workflow still authorizes against an in-memory integer; Task 4 must invoke this repository before provider submission and settle it before finalization.
 
