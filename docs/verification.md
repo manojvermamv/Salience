@@ -125,6 +125,8 @@ suite, each with only the existing third-party Starlette deprecation warning. It
 also executes the YouTube contract and live-status test. The verifier disables
 pytest's optional cache provider so a constrained host cannot turn cache writes
 into a false release failure.
+A separate invocation of the complete non-live command also passed all 232
+tests after the final documentation refresh.
 
 The live status is intentionally `NOT RUN: YOUTUBE_PUBLISHER_CONNECTION_REF is
 not configured` unless an operator explicitly supplies its connection reference
