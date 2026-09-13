@@ -73,3 +73,21 @@ class CreativeCapabilityRequest(BaseModel):
         if capability not in CREATIVE_CAPABILITIES:
             raise ValueError(f"unsupported creative capability: {capability}")
         return capability
+
+
+class ProviderJobResult(BaseModel):
+    """Provider-neutral lifecycle projection with no credential-bearing fields."""
+
+    model_config = ConfigDict(frozen=True)
+
+    contract_version: Literal["ProviderJobResult@v1"] = "ProviderJobResult@v1"
+    provider_id: str = Field(min_length=1, max_length=128)
+    provider_version: str | None = Field(default=None, max_length=64)
+    model_id: str | None = Field(default=None, max_length=255)
+    capability: str = Field(min_length=1, max_length=128)
+    request_key: str = Field(min_length=1, max_length=255)
+    external_job_id: str = Field(min_length=1, max_length=255)
+    state: Literal["submitted", "running", "completed", "failed", "cancelled"]
+    failure_class: str | None = Field(default=None, max_length=128)
+    download_reference: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
