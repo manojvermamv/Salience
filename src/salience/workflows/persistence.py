@@ -27,6 +27,12 @@ class CanonicalCounts:
 
 
 @dataclass(frozen=True)
+class CanonicalEffect:
+    status: str
+    external_id: str | None
+
+
+@dataclass(frozen=True)
 class CanonicalJobSnapshot:
     job_id: str
     state: str
@@ -131,6 +137,12 @@ class CanonicalJobStore:
 
     async def plan_effect(self, run: CanonicalRun, idempotency_key: str) -> None:
         await asyncio.to_thread(self._plan_effect, run, idempotency_key)
+
+    async def begin_effect_submission(self, run: CanonicalRun, idempotency_key: str) -> bool:
+        return await asyncio.to_thread(self._begin_effect_submission, run, idempotency_key)
+
+    async def effect(self, run: CanonicalRun, idempotency_key: str) -> CanonicalEffect | None:
+        return await asyncio.to_thread(self._effect, run, idempotency_key)
 
     async def complete_effect(
         self, run: CanonicalRun, *, idempotency_key: str, external_id: str, reconciled: bool
@@ -507,6 +519,35 @@ class CanonicalJobStore:
                     idempotency_key,
                 ),
             )
+
+    def _begin_effect_submission(self, run: CanonicalRun, idempotency_key: str) -> bool:
+        with self._connect() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                UPDATE external_effects
+                SET status = 'submitting', attempted_at = CURRENT_TIMESTAMP,
+                    reconciliation_state = %s::jsonb, updated_at = CURRENT_TIMESTAMP
+                WHERE workspace_id = %s AND idempotency_key = %s AND status = 'planned'
+                RETURNING id
+                """,
+                (json.dumps({"state": "submitting"}), run.workspace_id, idempotency_key),
+            )
+            return cursor.fetchone() is not None
+
+    def _effect(self, run: CanonicalRun, idempotency_key: str) -> CanonicalEffect | None:
+        with self._connect() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT status, provider_reference
+                FROM external_effects
+                WHERE workspace_id = %s AND idempotency_key = %s
+                """,
+                (run.workspace_id, idempotency_key),
+            )
+            row = cursor.fetchone()
+            if row is None:
+                return None
+            return CanonicalEffect(status=row[0], external_id=row[1])
             self._insert_audit(
                 cursor,
                 run.workspace_id,

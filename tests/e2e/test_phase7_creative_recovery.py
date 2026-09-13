@@ -29,6 +29,24 @@ from salience.workflows.creative import (
 from salience.workflows.persistence import CanonicalJobStore
 
 
+class ReconciliationProbeProvider(FixtureCreativeProvider):
+    """Counts every submission call so fixture idempotency cannot mask a retry."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.submit_attempts = 0
+        self.reconcile_calls = 0
+
+    async def submit(self, request):
+        self.submit_attempts += 1
+        return await super().submit(request)
+
+    async def reconcile(self, request_key):
+        self.reconcile_calls += 1
+        job = self._jobs_by_key.get(request_key)
+        return job.result if job is not None else None
+
+
 async def _seed_brief(database_url: str) -> dict[str, str]:
     store = CanonicalJobStore(database_url)
     workspace = await store.create_workspace(
@@ -148,7 +166,7 @@ async def test_restart_after_provider_acceptance_reconciles_without_resubmission
         idempotency_key=idempotency_key,
         dry_run=False,
     )
-    provider = FixtureCreativeProvider()
+    provider = ReconciliationProbeProvider()
     state = CreativeWorkflowState(
         store=store,
         intelligence_repository=IntelligenceRepository(database_url),
@@ -197,6 +215,8 @@ async def test_restart_after_provider_acceptance_reconciles_without_resubmission
     assert result.state == "completed"
     assert result.ready_package_id
     assert result.provider_submit_count == 1
+    assert provider.submit_attempts == 1
+    assert provider.reconcile_calls == 1
     lineage = await CreativeRepository(database_url).lineage_for_ready_package(result.ready_package_id)
     assert lineage["source_ids"] == [seeded["source_id"]]
     assert lineage["asset_ids"] == [result.asset_id]

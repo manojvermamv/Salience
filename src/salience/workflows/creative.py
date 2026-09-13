@@ -251,14 +251,23 @@ class CreativeActivities:
             creative_job_id=creative_job_id, provider_id=self._state.provider.provider_id
         )
         await self._state.store.plan_effect(run, capability_request.request_key)
-        if existing is None or not existing.get("external_job_id"):
+        if existing is not None and existing.get("external_job_id"):
+            provider_result = await self._state.provider.get_status(existing["external_job_id"])
+            reconciled = True
+        elif await self._state.store.begin_effect_submission(run, capability_request.request_key):
             provider_result = await self._state.provider.submit(capability_request)
+            reconciled = False
             if self._state.crash_at == "provider.submitted" and not self._state.crashed:
                 self._state.crashed = True
                 self._state.crash_reached.set()
                 await asyncio.Event().wait()
         else:
-            provider_result = await self._state.provider.get_status(existing["external_job_id"])
+            provider_result = await self._state.provider.reconcile(capability_request.request_key)
+            if provider_result is None:
+                raise RuntimeError(
+                    "creative provider submission is ambiguous and cannot be reconciled"
+                )
+            reconciled = True
         provider_job_id = await self._state.creative_repository.record_provider_job(
             creative_job_id=creative_job_id,
             provider_id=provider_result.provider_id,
@@ -276,7 +285,7 @@ class CreativeActivities:
             run,
             idempotency_key=capability_request.request_key,
             external_id=provider_result.external_job_id,
-            reconciled=existing is not None,
+            reconciled=reconciled,
         )
         await self._checkpoint("creative.provider.reconciled")
         return {

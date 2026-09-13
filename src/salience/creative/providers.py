@@ -32,6 +32,8 @@ class ProviderWebhookRejected(ProviderError):
 class CreativeProvider(Protocol):
     async def submit(self, request: CreativeCapabilityRequest) -> ProviderJobResult: ...
 
+    async def reconcile(self, request_key: str) -> ProviderJobResult | None: ...
+
     async def get_status(self, external_job_id: str) -> ProviderJobResult: ...
 
     async def cancel(self, external_job_id: str) -> ProviderJobResult: ...
@@ -84,6 +86,10 @@ class FixtureCreativeProvider:
         self._jobs_by_key[request.request_key] = job
         self._jobs_by_external_id[external_job_id] = job
         return result
+
+    async def reconcile(self, request_key: str) -> ProviderJobResult | None:
+        job = self._jobs_by_key.get(request_key)
+        return job.result if job is not None else None
 
     async def get_status(self, external_job_id: str) -> ProviderJobResult:
         job = self._job(external_job_id)
@@ -207,6 +213,11 @@ class SynthesiaCreativeProvider:
         )
         self._jobs[external_job_id] = result
         return result
+
+    async def reconcile(self, request_key: str) -> ProviderJobResult | None:
+        # The documented video API retrieves by provider video ID, not callback/idempotency key.
+        # An ambiguous accepted submission must therefore stay unresolved rather than be replayed.
+        return None
 
     async def get_status(self, external_job_id: str) -> ProviderJobResult:
         response = await self._client.get(
