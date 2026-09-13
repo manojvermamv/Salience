@@ -58,11 +58,17 @@ class FixtureCreativeProvider:
     def __init__(self) -> None:
         self._jobs_by_key: dict[str, _FixtureJob] = {}
         self._jobs_by_external_id: dict[str, _FixtureJob] = {}
+        self._submit_count = 0
+
+    @property
+    def submit_count(self) -> int:
+        return self._submit_count
 
     async def submit(self, request: CreativeCapabilityRequest) -> ProviderJobResult:
         existing = self._jobs_by_key.get(request.request_key)
         if existing is not None:
             return existing.result
+        self._submit_count += 1
         external_job_id = self._external_job_id(request.request_key)
         result = ProviderJobResult(
             provider_id=self.provider_id,

@@ -654,19 +654,35 @@ class IntelligenceRepository:
             row = cursor.fetchone()
             if row is None:
                 raise KeyError("content brief is outside the requested workspace/program")
-            keys = (
-                "brief_id",
-                "workspace_id",
-                "content_program_id",
-                "brief_key",
-                "version",
-                "content",
-                "claim_ids",
-                "provenance",
-                "trace_id",
-                "span_id",
+            brief = dict(
+                zip(
+                    (
+                        "brief_id",
+                        "workspace_id",
+                        "content_program_id",
+                        "brief_key",
+                        "version",
+                        "content",
+                        "claim_ids",
+                        "provenance",
+                        "trace_id",
+                        "span_id",
+                    ),
+                    row,
+                    strict=True,
+                )
             )
-            return dict(zip(keys, row, strict=True))
+            cursor.execute(
+                """
+                SELECT DISTINCT research_evidence_id::text
+                FROM claim_evidence
+                WHERE claim_id = ANY(%s::uuid[])
+                ORDER BY research_evidence_id::text
+                """,
+                (brief["claim_ids"],),
+            )
+            brief["evidence_ids"] = [evidence_row[0] for evidence_row in cursor.fetchall()]
+            return brief
 
     def _lineage_for_brief(self, brief_id: str) -> dict[str, list[str] | str]:
         with self._connect() as connection, connection.cursor() as cursor:

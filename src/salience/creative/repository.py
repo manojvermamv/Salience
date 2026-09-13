@@ -127,6 +127,82 @@ class CreativeRepository:
             ),
         )
 
+    async def record_creative_brief(
+        self,
+        *,
+        workspace_id: str,
+        program_id: str,
+        brief_id: str,
+        script_id: str,
+        creative_key: str,
+        version: int,
+        status: str,
+        creative_plan: dict[str, Any],
+        trace_id: str,
+        span_id: str | None = None,
+    ) -> str:
+        return await self._returning_id(
+            """
+            INSERT INTO creative_briefs (
+                workspace_id, content_program_id, content_brief_id, script_version_id, creative_key,
+                version, status, creative_plan, provenance, trace_id, span_id
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s::jsonb, %s::jsonb, %s, %s)
+            ON CONFLICT (content_program_id, creative_key, version)
+            DO UPDATE SET updated_at = CURRENT_TIMESTAMP
+            RETURNING id::text
+            """,
+            (
+                workspace_id,
+                program_id,
+                brief_id,
+                script_id,
+                creative_key,
+                version,
+                status,
+                _json(creative_plan),
+                _json({"script_id": script_id}),
+                trace_id,
+                span_id,
+            ),
+        )
+
+    async def record_storyboard(
+        self,
+        *,
+        creative_brief_id: str,
+        version: int,
+        status: str,
+        content: dict[str, Any],
+        trace_id: str,
+        span_id: str | None = None,
+    ) -> str:
+        return await self._returning_id(
+            """
+            INSERT INTO storyboards (
+                creative_brief_id, version, status, content, provenance, trace_id, span_id
+            ) VALUES (%s, %s, %s, %s::jsonb, %s::jsonb, %s, %s)
+            ON CONFLICT (creative_brief_id, version)
+            DO UPDATE SET updated_at = CURRENT_TIMESTAMP
+            RETURNING id::text
+            """,
+            (
+                creative_brief_id,
+                version,
+                status,
+                _json(content),
+                _json({"creative_brief_id": creative_brief_id}),
+                trace_id,
+                span_id,
+            ),
+        )
+
+    async def provider_job_for_creative(
+        self, *, creative_job_id: str, provider_id: str
+    ) -> dict[str, Any] | None:
+        return await asyncio.to_thread(
+            self._provider_job_for_creative, creative_job_id, provider_id
+        )
+
     async def record_provider_job(
         self,
         *,
@@ -421,6 +497,28 @@ class CreativeRepository:
             ):
                 raise ValueError("provider job already reconciled to a different external ID")
             return provider_job_id
+
+    def _provider_job_for_creative(
+        self, creative_job_id: str, provider_id: str
+    ) -> dict[str, Any] | None:
+        with self._connect() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT id::text, external_job_id, state, reconciliation_state
+                FROM provider_jobs
+                WHERE creative_job_id = %s AND provider_id = %s
+                """,
+                (creative_job_id, provider_id),
+            )
+            row = cursor.fetchone()
+            if row is None:
+                return None
+            return {
+                "provider_job_id": row[0],
+                "external_job_id": row[1],
+                "state": row[2],
+                "reconciliation_state": row[3],
+            }
 
     def _record_asset_variant(
         self,

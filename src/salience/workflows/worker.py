@@ -29,6 +29,11 @@ from salience.workflows.intelligence import (
     IntelligenceLoopWorkflow,
     IntelligenceWorkflowState,
 )
+from salience.workflows.creative import (
+    CreativeActivities,
+    CreativeProductionWorkflow,
+    CreativeWorkflowState,
+)
 from salience.agents.fixtures import fixture_agent_service
 from salience.intelligence.repository import IntelligenceRepository
 from salience.research.rss import ConfiguredRssResearchConnector
@@ -72,31 +77,54 @@ def build_deployable_worker(
     task_queue: str,
     dummy_state: WorkflowScenarioState,
     intelligence_state: IntelligenceWorkflowState,
+    creative_state: CreativeWorkflowState | None = None,
 ) -> Worker:
     """Register every owned workflow on one task queue without split ownership."""
 
     dummy = DummyActivities(dummy_state)
     intelligence = IntelligenceActivities(intelligence_state)
+    creative = CreativeActivities(creative_state) if creative_state is not None else None
+    workflows = [DurableDummyWorkflow, IntelligenceLoopWorkflow]
+    activities = [
+        dummy.checkpoint,
+        dummy.external_effect,
+        dummy.terminal,
+        dummy.dead_letter,
+        intelligence.fetch,
+        intelligence.normalize,
+        intelligence.rank,
+        intelligence.strategy,
+        intelligence.queue,
+        intelligence.complete,
+        intelligence.cancel,
+        intelligence.packages,
+        intelligence.claims,
+        intelligence.brief,
+    ]
+    if creative is not None:
+        workflows.append(CreativeProductionWorkflow)
+        activities.extend(
+            [
+                creative.load_brief,
+                creative.script,
+                creative.verify_script,
+                creative.direction,
+                creative.authorize,
+                creative.submit_or_reconcile,
+                creative.await_provider,
+                creative.import_validate,
+                creative.distribute,
+                creative.final_gate,
+                creative.complete,
+                creative.denied,
+                creative.cancel,
+            ]
+        )
     return Worker(
         client,
         task_queue=task_queue,
-        workflows=[DurableDummyWorkflow, IntelligenceLoopWorkflow],
-        activities=[
-            dummy.checkpoint,
-            dummy.external_effect,
-            dummy.terminal,
-            dummy.dead_letter,
-            intelligence.fetch,
-            intelligence.normalize,
-            intelligence.rank,
-            intelligence.strategy,
-            intelligence.queue,
-            intelligence.complete,
-            intelligence.cancel,
-            intelligence.packages,
-            intelligence.claims,
-            intelligence.brief,
-        ],
+        workflows=workflows,
+        activities=activities,
     )
 
 
