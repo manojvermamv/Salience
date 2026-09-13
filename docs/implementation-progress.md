@@ -4,11 +4,13 @@
 
 - Branch: `phase7-8-release-gate-phase9` (isolated worktree from `main`)
 - Plan: `docs/superpowers/plans/2026-09-13-phase-7-8-release-gate-phase-9-publishing.md`
-- Active task: Gate One, Task 5 — persist provider lifecycle, bounded polling, cancellation, and dead-letter terminals.
-- Current TDD step: Write lifecycle/cancellation red tests before adding provider transition writers or changing retry behavior.
-- Last verified state: Gate One Task 4 passed durable reservation/settlement, crash-reconciliation, and control API tests (11 tests). Phase 7–8 remains unapproved; Task 11’s complete release ladder and independent review remain mandatory before any Phase 9 code.
+- Active task: Gate One, Task 6 — add signed creative webhook ingress and poll/webhook convergence.
+- Current TDD step: Write duplicate/race red tests for credential-free verified webhook receipts and provider-job state convergence.
+- Last verified state: Gate One Task 5 passed lifecycle persistence, bounded timeout/dead-letter, fixture cancellation, and recovery tests (9 tests). Phase 7–8 remains unapproved; Task 11’s complete release ladder and independent review remain mandatory before any Phase 9 code.
 
 ## Checkpoints
+
+- 2026-09-13: Completed Gate One Task 5 red-green provider lifecycle. `provider_jobs` now advances only through conditional allowed transitions, records terminal/poll/retry/cancellation/actual-cost metadata, and rejects rewrites from terminal states. The workflow performs one persisted provider poll per Temporal turn so cancellation signals are observable between polls; it bounds polls from the configured provider timeout and transitions to a single canonical dead letter without resubmitting an accepted request. Provider terminal failures retain classified failure state and the canonical job dead-letter record. Cancellation requests are persisted before an advertised-capable provider is cancelled, then settle known actual cost or release an unused reservation. The deterministic fixture exposes idempotent counted cancellation. The lifecycle/provider/recovery/control suite passed 9/9, with compilation and whitespace checks clean. Next: Task 6 signed webhook ingestion and poll/webhook convergence.
 
 - 2026-09-13: Completed Gate One Task 4 red-green durable creative cost lifecycle. Non-dry `CreativeProductionRequest@v1` and control API starts now require and retain the caller-selected canonical `budget_id`; no arbitrary/default budget is selected. Authorization writes the canonical creative job and planned external effect, reserves against provider capability metadata before submission, persists the reservation/effect/provider links, and checkpoints the reservation. Completion records provider usage and settles it before media import/distribution/finalization; unknown actuals and overages fail closed before a Ready-to-Publish package. The fixture provides explicit zero actual cost solely for deterministic local completion, while its estimate remains provider metadata rather than workflow authority. Recovery proves one provider submission/reconciliation and one reservation; exhausted canonical budgets deny before submit. The recovery/control/cost/repository suite passed 11/11, with compilation and whitespace checks clean. Next: Task 5 lifecycle transition, bounded polling, cancellation, and dead-letter tests.
 

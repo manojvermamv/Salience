@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Any
 
 import psycopg
@@ -14,6 +15,26 @@ import psycopg
 class CreativeAssetVariant:
     asset_id: str
     asset_variant_id: str
+
+
+@dataclass(frozen=True)
+class ProviderJobLifecycle:
+    provider_job_id: str
+    state: str
+    terminal_at: datetime | None
+    next_poll_after: datetime | None
+    retry_after: datetime | None
+    actual_cost_status: str
+    cancel_requested_at: datetime | None
+
+
+_TERMINAL_PROVIDER_STATES = frozenset({"completed", "failed", "cancelled", "dead_lettered"})
+_PROVIDER_STATE_TRANSITIONS = {
+    "planned": frozenset({"submitting", "submitted", "failed", "cancelled", "dead_lettered"}),
+    "submitting": frozenset({"submitted", "running", "failed", "cancelled", "dead_lettered"}),
+    "submitted": frozenset({"running", "completed", "failed", "cancelled", "dead_lettered"}),
+    "running": frozenset({"completed", "failed", "cancelled", "dead_lettered"}),
+}
 
 
 class CreativeRepository:
@@ -239,6 +260,45 @@ class CreativeRepository:
             actual_cost_micros,
             failure_class,
             span_id,
+        )
+
+    async def transition_provider_job(
+        self,
+        *,
+        provider_job_id: str,
+        state: str,
+        trace_id: str,
+        span_id: str | None = None,
+        actual_cost_micros: int | None = None,
+        failure_class: str | None = None,
+        next_poll_after_seconds: int | None = None,
+        retry_after_seconds: int | None = None,
+    ) -> ProviderJobLifecycle:
+        if state not in {*_PROVIDER_STATE_TRANSITIONS, *_TERMINAL_PROVIDER_STATES}:
+            raise ValueError(f"unsupported provider lifecycle state: {state}")
+        if actual_cost_micros is not None and actual_cost_micros < 0:
+            raise ValueError("actual_cost_micros must be non-negative")
+        if next_poll_after_seconds is not None and next_poll_after_seconds < 0:
+            raise ValueError("next_poll_after_seconds must be non-negative")
+        if retry_after_seconds is not None and retry_after_seconds < 0:
+            raise ValueError("retry_after_seconds must be non-negative")
+        return await asyncio.to_thread(
+            self._transition_provider_job,
+            provider_job_id,
+            state,
+            trace_id,
+            span_id,
+            actual_cost_micros,
+            failure_class,
+            next_poll_after_seconds,
+            retry_after_seconds,
+        )
+
+    async def request_provider_cancellation(
+        self, *, provider_job_id: str, trace_id: str, span_id: str | None = None
+    ) -> ProviderJobLifecycle:
+        return await asyncio.to_thread(
+            self._request_provider_cancellation, provider_job_id, trace_id, span_id
         )
 
     async def record_asset_variant(
@@ -601,6 +661,105 @@ class CreativeRepository:
                 "state": row[2],
                 "reconciliation_state": row[3],
             }
+
+    def _transition_provider_job(
+        self,
+        provider_job_id: str,
+        state: str,
+        trace_id: str,
+        span_id: str | None,
+        actual_cost_micros: int | None,
+        failure_class: str | None,
+        next_poll_after_seconds: int | None,
+        retry_after_seconds: int | None,
+    ) -> ProviderJobLifecycle:
+        with self._connect() as connection, connection.cursor() as cursor:
+            current = self._provider_lifecycle_for_update(cursor, provider_job_id)
+            if current.state != state:
+                allowed = _PROVIDER_STATE_TRANSITIONS.get(current.state, frozenset())
+                if state not in allowed:
+                    if current.state in _TERMINAL_PROVIDER_STATES:
+                        raise ValueError("terminal provider job cannot transition")
+                    raise ValueError(
+                        f"provider lifecycle transition {current.state}->{state} is not allowed"
+                    )
+            terminal = state in _TERMINAL_PROVIDER_STATES
+            cursor.execute(
+                """
+                UPDATE provider_jobs
+                SET state = %s,
+                    actual_cost_micros = COALESCE(%s, actual_cost_micros),
+                    actual_cost_status = CASE WHEN %s::bigint IS NULL
+                        THEN actual_cost_status ELSE 'known' END,
+                    failure_class = COALESCE(%s, failure_class),
+                    terminal_at = CASE WHEN %s THEN COALESCE(terminal_at, CURRENT_TIMESTAMP)
+                        ELSE terminal_at END,
+                    completed_at = CASE WHEN %s THEN COALESCE(completed_at, CURRENT_TIMESTAMP)
+                        ELSE completed_at END,
+                    next_poll_after = CASE
+                        WHEN %s THEN NULL
+                        WHEN %s::integer IS NULL THEN next_poll_after
+                        ELSE CURRENT_TIMESTAMP + (%s * INTERVAL '1 second') END,
+                    retry_after = CASE
+                        WHEN %s::integer IS NULL THEN retry_after
+                        ELSE CURRENT_TIMESTAMP + (%s * INTERVAL '1 second') END,
+                    trace_id = %s,
+                    span_id = %s,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE id = %s
+                """,
+                (
+                    state,
+                    actual_cost_micros,
+                    actual_cost_micros,
+                    failure_class,
+                    terminal,
+                    terminal,
+                    terminal,
+                    next_poll_after_seconds,
+                    next_poll_after_seconds,
+                    retry_after_seconds,
+                    retry_after_seconds,
+                    trace_id,
+                    span_id,
+                    provider_job_id,
+                ),
+            )
+            return self._provider_lifecycle_for_update(cursor, provider_job_id)
+
+    def _request_provider_cancellation(
+        self, provider_job_id: str, trace_id: str, span_id: str | None
+    ) -> ProviderJobLifecycle:
+        with self._connect() as connection, connection.cursor() as cursor:
+            current = self._provider_lifecycle_for_update(cursor, provider_job_id)
+            if current.state not in _TERMINAL_PROVIDER_STATES:
+                cursor.execute(
+                    """
+                    UPDATE provider_jobs
+                    SET cancel_requested_at = COALESCE(cancel_requested_at, CURRENT_TIMESTAMP),
+                        trace_id = %s, span_id = %s, updated_at = CURRENT_TIMESTAMP
+                    WHERE id = %s
+                    """,
+                    (trace_id, span_id, provider_job_id),
+                )
+            return self._provider_lifecycle_for_update(cursor, provider_job_id)
+
+    @staticmethod
+    def _provider_lifecycle_for_update(
+        cursor: psycopg.Cursor[Any], provider_job_id: str
+    ) -> ProviderJobLifecycle:
+        cursor.execute(
+            """
+            SELECT id::text, state, terminal_at, next_poll_after, retry_after, actual_cost_status,
+                   cancel_requested_at
+            FROM provider_jobs WHERE id = %s FOR UPDATE
+            """,
+            (provider_job_id,),
+        )
+        row = cursor.fetchone()
+        if row is None:
+            raise KeyError(f"provider job not found: {provider_job_id}")
+        return ProviderJobLifecycle(*row)
 
     def _record_asset_variant(
         self,

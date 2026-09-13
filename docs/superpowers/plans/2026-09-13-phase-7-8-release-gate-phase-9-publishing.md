@@ -246,7 +246,7 @@ Expected: PASS for interruption before reserve, after reserve, after acceptance,
 
 **Interfaces:** `CreativeRepository.transition_provider_job(...)` applies allowed conditional state transitions. `CreativeActivities.await_provider` obeys `creative_provider_timeout_seconds`, bounded polling, provider error classification, and dead-letter behavior.
 
-- [ ] **Step 1: Write lifecycle red tests**
+- [x] **Step 1: Write lifecycle red tests**
 
 ```python
 async def test_timeout_after_provider_acceptance_reconciles_without_a_second_submit(workflow):
@@ -260,17 +260,17 @@ async def test_cancellation_reconciles_before_supported_provider_cancel(provider
     assert provider.cancel_calls == ["provider-1"]
 ```
 
-- [ ] **Step 2: Run the lifecycle suite and confirm it fails**
+- [x] **Step 2: Run the lifecycle suite and confirm it fails**
 
 Run: `pytest tests/integration/test_creative_provider_lifecycle.py tests/unit/test_creative_providers.py tests/e2e/test_phase7_creative_recovery.py -q`
 
 Expected: FAIL because lifecycle persistence, configured timeout, and cancellation are incomplete.
 
-- [ ] **Step 3: Implement transition and cancellation rules**
+- [x] **Step 3: Implement transition and cancellation rules**
 
 Persist submitted/running/completed/failed/cancelled/dead-lettered states, external IDs, classified failure, retry-after, timestamps, and usage. Poll only until configured timeout. Terminal failures call `CanonicalJobStore.dead_letter` exactly once. Cancellation reads canonical state, reconciles accepted work, calls adapter cancel only when the selected manifest advertises support, persists result, then releases/settles the reservation according to known usage.
 
-- [ ] **Step 4: Verify recovery and terminal paths**
+- [x] **Step 4: Verify recovery and terminal paths**
 
 Run: `pytest tests/integration/test_creative_provider_lifecycle.py tests/unit/test_creative_providers.py tests/e2e/test_phase7_creative_recovery.py -q`
 

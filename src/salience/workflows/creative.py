@@ -12,6 +12,7 @@ from uuid import NAMESPACE_URL, uuid5
 
 from temporalio import activity, workflow
 from temporalio.common import RetryPolicy
+from temporalio.exceptions import ApplicationError
 from temporalio.worker import Worker
 
 from salience.agents.execution import AgentInvocation, AgentService
@@ -28,10 +29,13 @@ from salience.workflows.persistence import CanonicalJobStore, CanonicalRun
 
 with workflow.unsafe.imports_passed_through():
     from salience.creative.providers import CreativeProvider, FixtureCreativeProvider
+    from salience.creative.providers import ProviderResponseError
 
 
 CREATIVE_WORKFLOW_TYPE = "CreativeProductionWorkflow"
 MAX_CREATIVE_ATTEMPTS = 3
+PROVIDER_POLL_INTERVAL_SECONDS = 0.05
+PROVIDER_POLLS_PER_TIMEOUT_SECOND = 1
 
 
 @dataclass(frozen=True)
@@ -81,6 +85,7 @@ class CreativeWorkflowState:
     provider: CreativeProvider = field(default_factory=FixtureCreativeProvider)
     media: MediaEngine | None = None
     cost_repository: CostReservationRepository | None = None
+    provider_timeout_seconds: int = 300
     permission_granted: bool = True
     policy_allowed: bool = True
     crash_at: str | None = None
@@ -381,27 +386,58 @@ class CreativeActivities:
     async def await_provider(self, payload: dict[str, Any]) -> dict[str, Any]:
         if payload.get("provider_state") == "dry_run":
             return payload
-        result = await self._state.provider.get_status(payload["external_job_id"])
-        if result.state == "running":
-            result = await self._state.provider.get_status(payload["external_job_id"])
-        if result.state != "completed":
-            raise RuntimeError(f"creative provider ended in {result.state}")
         if self._state.cost_repository is None:
             raise RuntimeError("durable cost repository is required for creative settlement")
         run = await self._run()
-        await self._state.creative_repository.record_provider_job(
-            creative_job_id=payload["creative_job_id"],
-            provider_id=result.provider_id,
-            provider_version=result.provider_version,
-            model_id=result.model_id,
-            external_job_id=result.external_job_id,
-            state=result.state,
-            normalized_request=payload["capability_request"],
-            reconciliation_state=result.metadata,
-            estimated_cost_micros=result.usage.estimated_micros,
-            actual_cost_micros=result.usage.actual_micros,
+        poll_count = int(payload.get("provider_poll_count", 0)) + 1
+        try:
+            result = await self._state.provider.get_status(payload["external_job_id"])
+        except ProviderResponseError as error:
+            retry_after_seconds = _retry_after_seconds(error.retry_after)
+            await self._state.creative_repository.transition_provider_job(
+                provider_job_id=payload["provider_job_id"],
+                state="running",
+                trace_id=run.trace_context.trace_id,
+                span_id=run.trace_context.span_id,
+                failure_class=error.failure_class,
+                retry_after_seconds=retry_after_seconds,
+            )
+            raise
+        if result.state in {"submitted", "running"}:
+            if poll_count > self._state.provider_timeout_seconds * PROVIDER_POLLS_PER_TIMEOUT_SECOND:
+                await self._dead_letter_provider(
+                    payload,
+                    run,
+                    failure_class="provider_timeout",
+                    message="creative provider did not complete before timeout",
+                )
+                raise ApplicationError("creative provider timed out", non_retryable=True)
+            await self._state.creative_repository.transition_provider_job(
+                provider_job_id=payload["provider_job_id"],
+                state=result.state,
+                trace_id=run.trace_context.trace_id,
+                span_id=run.trace_context.span_id,
+                next_poll_after_seconds=1,
+            )
+            return {**payload, "provider_state": result.state, "provider_poll_count": poll_count}
+        if result.state != "completed":
+            await self._retry_or_dead_letter_provider(
+                payload,
+                run,
+                failure_class=result.failure_class or "provider_terminal_failure",
+                message=f"creative provider ended in {result.state}",
+            )
+            if activity.info().attempt >= MAX_CREATIVE_ATTEMPTS:
+                raise ApplicationError(
+                    f"creative provider ended in {result.state}", non_retryable=True
+                )
+            raise RuntimeError(f"creative provider ended in {result.state}")
+        await self._state.creative_repository.transition_provider_job(
+            provider_job_id=payload["provider_job_id"],
+            state="completed",
             trace_id=run.trace_context.trace_id,
             span_id=run.trace_context.span_id,
+            actual_cost_micros=result.usage.actual_micros,
         )
         settlement = await self._state.cost_repository.record_actual_usage(
             payload["budget_reservation_id"], result.usage.actual_micros
@@ -413,6 +449,49 @@ class CreativeActivities:
         await self._checkpoint("creative.cost.settled")
         await self._checkpoint("creative.provider.completed")
         return {**payload, "provider_state": result.state, "cost_status": settlement.status.value}
+
+    async def _retry_or_dead_letter_provider(
+        self, payload: dict[str, Any], run: CanonicalRun, *, failure_class: str, message: str
+    ) -> None:
+        if activity.info().attempt < MAX_CREATIVE_ATTEMPTS:
+            await self._state.creative_repository.transition_provider_job(
+                provider_job_id=payload["provider_job_id"],
+                state="running",
+                trace_id=run.trace_context.trace_id,
+                span_id=run.trace_context.span_id,
+                failure_class=failure_class,
+            )
+            return
+        await self._state.creative_repository.transition_provider_job(
+            provider_job_id=payload["provider_job_id"],
+            state="dead_lettered",
+            trace_id=run.trace_context.trace_id,
+            span_id=run.trace_context.span_id,
+            failure_class=failure_class,
+        )
+        await self._state.store.dead_letter(
+            run,
+            attempt=activity.info().attempt,
+            error_type=failure_class,
+            error_message=message,
+        )
+
+    async def _dead_letter_provider(
+        self, payload: dict[str, Any], run: CanonicalRun, *, failure_class: str, message: str
+    ) -> None:
+        await self._state.creative_repository.transition_provider_job(
+            provider_job_id=payload["provider_job_id"],
+            state="dead_lettered",
+            trace_id=run.trace_context.trace_id,
+            span_id=run.trace_context.span_id,
+            failure_class=failure_class,
+        )
+        await self._state.store.dead_letter(
+            run,
+            attempt=MAX_CREATIVE_ATTEMPTS,
+            error_type=failure_class,
+            error_message=message,
+        )
 
     @activity.defn(name="salience.creative.import_validate")
     async def import_validate(self, payload: dict[str, Any]) -> dict[str, Any]:
@@ -503,11 +582,48 @@ class CreativeActivities:
         )
 
     @activity.defn(name="salience.creative.cancel")
-    async def cancel(self) -> CreativeProductionResult:
+    async def cancel(self, payload: dict[str, Any] | None = None) -> CreativeProductionResult:
         run = await self._run()
+        if payload is not None and not payload["request"]["dry_run"]:
+            await self._cancel_external_production(payload, run)
         await self._checkpoint("creative.cancelled")
         await self._state.store.terminal(run, "cancelled")
         return CreativeProductionResult("cancelled", str(run.job_id), run.trace_context.trace_id)
+
+    async def _cancel_external_production(
+        self, payload: dict[str, Any], run: CanonicalRun
+    ) -> None:
+        if self._state.cost_repository is None:
+            raise RuntimeError("durable cost repository is required for creative cancellation")
+        reservation_id = payload.get("budget_reservation_id")
+        provider_job_id = payload.get("provider_job_id")
+        external_job_id = payload.get("external_job_id")
+        if isinstance(provider_job_id, str) and isinstance(external_job_id, str):
+            await self._state.creative_repository.request_provider_cancellation(
+                provider_job_id=provider_job_id,
+                trace_id=run.trace_context.trace_id,
+                span_id=run.trace_context.span_id,
+            )
+            current = await self._state.provider.get_status(external_job_id)
+            if current.state not in {"completed", "failed", "cancelled"}:
+                if self._state.provider.capabilities.cancellation_support:
+                    current = await self._state.provider.cancel(external_job_id)
+                else:
+                    raise RuntimeError("selected creative provider does not support cancellation")
+            await self._state.creative_repository.transition_provider_job(
+                provider_job_id=provider_job_id,
+                state=current.state,
+                trace_id=run.trace_context.trace_id,
+                span_id=run.trace_context.span_id,
+                actual_cost_micros=current.usage.actual_micros,
+                failure_class=current.failure_class,
+            )
+            if isinstance(reservation_id, str):
+                await self._state.cost_repository.record_actual_usage(
+                    reservation_id, current.usage.actual_micros
+                )
+        elif isinstance(reservation_id, str):
+            await self._state.cost_repository.release_unused(reservation_id)
 
 
 @workflow.defn(name=CREATIVE_WORKFLOW_TYPE)
@@ -529,21 +645,28 @@ class CreativeProductionWorkflow:
             "salience.creative.authorize",
         ):
             if self._cancellation_requested:
-                return await _execute_terminal("salience.creative.cancel")
+                return await _execute_terminal("salience.creative.cancel", payload)
             payload = await _execute_stage(activity_name, payload)
         if not payload["authorized"]:
             return await workflow.execute_activity(
                 "salience.creative.denied", payload, start_to_close_timeout=timedelta(seconds=10)
             )
+        if self._cancellation_requested:
+            return await _execute_terminal("salience.creative.cancel", payload)
+        payload = await _execute_stage("salience.creative.submit_or_reconcile", payload)
+        while payload.get("provider_state") in {"submitted", "running"}:
+            if self._cancellation_requested:
+                return await _execute_terminal("salience.creative.cancel", payload)
+            payload = await _execute_stage("salience.creative.await_provider", payload)
+            if payload.get("provider_state") in {"submitted", "running"}:
+                await workflow.sleep(timedelta(seconds=PROVIDER_POLL_INTERVAL_SECONDS))
         for activity_name in (
-            "salience.creative.submit_or_reconcile",
-            "salience.creative.await_provider",
             "salience.creative.import_validate",
             "salience.creative.distribute",
             "salience.creative.final_gate",
         ):
             if self._cancellation_requested:
-                return await _execute_terminal("salience.creative.cancel")
+                return await _execute_terminal("salience.creative.cancel", payload)
             payload = await _execute_stage(activity_name, payload)
         return await workflow.execute_activity(
             "salience.creative.complete", payload, start_to_close_timeout=timedelta(seconds=10)
@@ -563,8 +686,12 @@ async def _execute_stage(name: str, argument: Any) -> dict[str, Any]:
     )
 
 
-async def _execute_terminal(name: str) -> CreativeProductionResult:
-    return await workflow.execute_activity(name, start_to_close_timeout=timedelta(seconds=10))
+async def _execute_terminal(
+    name: str, payload: dict[str, Any] | None = None
+) -> CreativeProductionResult:
+    return await workflow.execute_activity(
+        name, payload, start_to_close_timeout=timedelta(seconds=10)
+    )
 
 
 def build_creative_worker(client: Any, *, task_queue: str, state: CreativeWorkflowState) -> Worker:
@@ -664,6 +791,16 @@ def _capability_request(payload: dict[str, Any]) -> CreativeCapabilityRequest:
 
 def _fingerprint(value: dict[str, Any]) -> str:
     return hashlib.sha256(json.dumps(value, sort_keys=True).encode()).hexdigest()
+
+
+def _retry_after_seconds(value: str | None) -> int | None:
+    if value is None:
+        return None
+    try:
+        seconds = int(value)
+    except ValueError:
+        return None
+    return seconds if seconds >= 0 else None
 
 
 def _stage_run_id(run: CanonicalRun, stage: str) -> str:

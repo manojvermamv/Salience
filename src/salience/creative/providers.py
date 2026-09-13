@@ -92,10 +92,15 @@ class FixtureCreativeProvider:
         self._jobs_by_key: dict[str, _FixtureJob] = {}
         self._jobs_by_external_id: dict[str, _FixtureJob] = {}
         self._submit_count = 0
+        self._cancel_count = 0
 
     @property
     def submit_count(self) -> int:
         return self._submit_count
+
+    @property
+    def cancel_count(self) -> int:
+        return self._cancel_count
 
     async def submit(self, request: CreativeCapabilityRequest) -> ProviderJobResult:
         existing = self._jobs_by_key.get(request.request_key)
@@ -144,6 +149,9 @@ class FixtureCreativeProvider:
 
     async def cancel(self, external_job_id: str) -> ProviderJobResult:
         job = self._job(external_job_id)
+        if job.result.state == "cancelled":
+            return job.result
+        self._cancel_count += 1
         job.result = job.result.model_copy(update={"state": "cancelled"})
         return job.result
 

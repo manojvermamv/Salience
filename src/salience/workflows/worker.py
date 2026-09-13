@@ -70,6 +70,7 @@ async def run_worker() -> None:
         creative_repository=CreativeRepository(settings.database_url),
         agents=fixture_agent_service(),
         cost_repository=CostReservationRepository(settings.database_url),
+        provider_timeout_seconds=settings.creative_provider_timeout_seconds,
     )
     worker = build_deployable_worker(
         client,
