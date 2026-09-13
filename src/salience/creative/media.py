@@ -183,6 +183,17 @@ class MediaEngine:
             return MediaInspection("invalid", "ffprobe_invalid_payload", {})
         return MediaInspection("valid", None, _inspection_properties(payload))
 
+    def inspect_bytes(
+        self, data: bytes, *, timeout_seconds: int = 30
+    ) -> MediaInspection:
+        if not isinstance(data, bytes) or not data:
+            return MediaInspection("invalid", "empty_media", {})
+        temporary_path = self._write_temporary_bytes(data)
+        try:
+            return self.inspect(temporary_path, timeout_seconds=timeout_seconds)
+        finally:
+            temporary_path.unlink(missing_ok=True)
+
     def compose(
         self,
         input_paths: Sequence[Path],

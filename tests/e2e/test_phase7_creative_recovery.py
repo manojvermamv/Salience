@@ -1,5 +1,7 @@
 import asyncio
+import json
 import os
+import subprocess
 from uuid import uuid4
 
 import pytest
@@ -173,13 +175,7 @@ async def test_restart_after_provider_acceptance_reconciles_without_resubmission
         creative_repository=CreativeRepository(database_url),
         agents=fixture_agent_service(),
         provider=provider,
-        media=MediaEngine(
-            object_store=MemoryObjectStore(),
-            capacity_guard=StorageCapacityGuard(minimum_free_bytes=0),
-            ffmpeg_path="missing-ffmpeg",
-            ffprobe_path="missing-ffprobe",
-            temporary_root=tmp_path,
-        ),
+        media=_validated_fixture_media(tmp_path),
         crash_at="provider.submitted",
     )
     first_worker = build_creative_worker(temporal_client, task_queue=task_queue, state=state)
@@ -273,3 +269,29 @@ async def test_budget_denial_happens_before_creative_provider_submission() -> No
     assert result.state == "denied"
     assert result.denial_reason == "budget_exceeded"
     assert provider.submit_count == 0
+
+
+def _validated_fixture_media(tmp_path):
+    def probe(command, **_kwargs):
+        return subprocess.CompletedProcess(
+            command,
+            0,
+            stdout=json.dumps(
+                {
+                    "format": {"format_name": "mov,mp4,m4a", "duration": "30", "size": "64"},
+                    "streams": [
+                        {"codec_type": "video", "codec_name": "h264", "width": 1080, "height": 1920}
+                    ],
+                }
+            ),
+            stderr="",
+        )
+
+    return MediaEngine(
+        object_store=MemoryObjectStore(),
+        capacity_guard=StorageCapacityGuard(minimum_free_bytes=0),
+        ffmpeg_path="missing-ffmpeg",
+        ffprobe_path="/bin/true",
+        temporary_root=tmp_path,
+        command_runner=probe,
+    )

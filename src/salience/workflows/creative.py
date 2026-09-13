@@ -337,6 +337,11 @@ class CreativeActivities:
             raise RuntimeError("creative media engine is not configured")
         run = await self._run()
         data = await self._state.provider.download(payload["external_job_id"])
+        inspection = self._state.media.inspect_bytes(data)
+        if inspection.status != "valid" or not inspection.properties.get("video_codec"):
+            raise RuntimeError(
+                f"creative media technical validation failed: {inspection.reason or inspection.status}"
+            )
         receipt = await self._state.media.store_download(data, media_type="video/mp4")
         asset = await self._state.creative_repository.record_asset_variant(
             workspace_id=payload["request"]["workspace_id"],
@@ -352,7 +357,7 @@ class CreativeActivities:
             selection_state="selected",
             selection_reason="single bounded fixture variant",
             trace_id=run.trace_context.trace_id,
-            technical_properties={"inspection": "not_run"},
+            technical_properties=dict(inspection.properties),
         )
         await self._checkpoint("creative.asset.imported")
         return {**payload, "asset_id": asset.asset_id, "asset_variant_id": asset.asset_variant_id}

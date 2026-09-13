@@ -1,5 +1,7 @@
 import asyncio
+import json
 import os
+import subprocess
 from uuid import uuid4
 
 import pytest
@@ -157,13 +159,7 @@ async def test_control_plane_runs_fixture_brief_to_ready_package_with_reverse_li
         creative_repository=CreativeRepository(database_url),
         agents=fixture_agent_service(),
         provider=provider,
-        media=MediaEngine(
-            object_store=MemoryObjectStore(),
-            capacity_guard=StorageCapacityGuard(minimum_free_bytes=0),
-            ffmpeg_path="missing-ffmpeg",
-            ffprobe_path="missing-ffprobe",
-            temporary_root=tmp_path,
-        ),
+        media=_validated_fixture_media(tmp_path),
     )
     temporal_client = await Client.connect(temporal_target)
     worker = build_creative_worker(temporal_client, task_queue=task_queue, state=state)
@@ -198,6 +194,7 @@ async def test_control_plane_runs_fixture_brief_to_ready_package_with_reverse_li
     assert lineage["source_ids"] == [seeded["source_id"]]
     assert lineage["asset_ids"]
     assert lineage["agent_run_ids"]
+    assert _asset_inspection(database_url, completed.output["asset_id"])["video_codec"] == "h264"
     assert _script_history(database_url, completed.output["script_id"]) == [
         (1, "draft"),
         (2, "approved"),
@@ -256,3 +253,38 @@ def _script_history(database_url: str, approved_script_id: str) -> list[tuple[in
             (approved_script_id,),
         )
         return [(int(version), str(status)) for version, status in cursor.fetchall()]
+
+
+def _asset_inspection(database_url: str, asset_id: str) -> dict[str, object]:
+    with psycopg.connect(database_url) as connection, connection.cursor() as cursor:
+        cursor.execute("SELECT technical_properties FROM assets WHERE id = %s", (asset_id,))
+        row = cursor.fetchone()
+    if row is None:
+        raise AssertionError("asset was not persisted")
+    return dict(row[0])
+
+
+def _validated_fixture_media(tmp_path):
+    def probe(command, **_kwargs):
+        return subprocess.CompletedProcess(
+            command,
+            0,
+            stdout=json.dumps(
+                {
+                    "format": {"format_name": "mov,mp4,m4a", "duration": "30", "size": "64"},
+                    "streams": [
+                        {"codec_type": "video", "codec_name": "h264", "width": 1080, "height": 1920}
+                    ],
+                }
+            ),
+            stderr="",
+        )
+
+    return MediaEngine(
+        object_store=MemoryObjectStore(),
+        capacity_guard=StorageCapacityGuard(minimum_free_bytes=0),
+        ffmpeg_path="missing-ffmpeg",
+        ffprobe_path="/bin/true",
+        temporary_root=tmp_path,
+        command_runner=probe,
+    )
