@@ -1,10 +1,12 @@
 # Current limits
 
-Phases 1–6 provide a deterministic substrate, SDK compatibility adapters,
+Phases 1–8 provide a deterministic substrate, SDK compatibility adapters,
 bounded read-only research, source-linked intelligence records, strategic
-packages, claim/evidence checks, and immutable ContentBriefs. They do not
-implement scripting, media generation, publishing, analytics, learning, or a
-general crawler.
+packages, claim/evidence checks, immutable ContentBriefs, versioned scripts and
+creative direction, deterministic fixture-provider media flow, canonical asset
+and rights lineage, governed distribution packages, and immutable approved
+ready-package handoffs. They do not implement live social publishing, analytics,
+experimentation, learning, or a general crawler.
 
 Browser evidence is optional to the control plane but is verified on this Debian
 13 host with `playwright==1.62.0` and Playwright Chromium 151.0.7922.34. It is a
@@ -19,7 +21,10 @@ data model preserves tenant,
 classification, retention, jurisdiction, provenance/C2PA, trust/delegation, and
 OpenTelemetry compatibility hooks for later deployment policy.
 
-The implemented loop is deliberately intelligence-only: it ends at immutable
-briefs. A future Phase 7 capability may consume a selected brief but must not
-reconstruct its evidence, change claim verification, or inherit permission to
-publish, purchase, create media, or invoke an unapproved provider.
+The implemented production loop ends at `ReadyToPublishPackage@v1`. The verified
+provider is deterministic; a credential-gated provider adapter exists only as a
+disabled boundary. FFmpeg/ffprobe and `c2patool` are absent on this host, so
+media composition/inspection and C2PA signing are explicitly `NOT RUN`, not
+claimed as production-verified. A final package grants no authority to publish,
+purchase, expand scopes, or bypass future publisher policy. See
+[`docs/phase-9-handoff.md`](phase-9-handoff.md).

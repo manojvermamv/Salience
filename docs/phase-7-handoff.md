@@ -1,10 +1,13 @@
-# Phase 7 Handoff
+# Phase 7 Handoff — Completed
 
 The sole Phase 7 input is selected immutable `ContentBrief@v1` plus its package, opportunity,
 strategy, claim/evidence links, source/fetch/signal lineage, provenance, risks, and questions.
-A future scripting or copy capability must consume this versioned record, not reconstruct or
-overwrite research decisions.
+A scripting/copy capability consumed this versioned record in Phase 7; it does
+not reconstruct or overwrite research decisions.
 
-Phase 7 starts with dry-run script/copy contracts, claim-aware verification, artifact persistence,
-and existing policy/budget/approval gates. A brief grants no permission to publish, purchase,
-create media, or alter evidence verification.
+The implemented path uses dry-run script/copy contracts, claim-aware
+verification, canonical asset persistence, rights/disclosure/platform gates,
+and existing policy/budget/approval controls. A brief never grants permission to
+publish, purchase, alter evidence verification, or invoke an unapproved
+provider. Its output boundary is now [`ReadyToPublishPackage@v1`](phase-9-handoff.md),
+the only valid Phase-9 publishing input.

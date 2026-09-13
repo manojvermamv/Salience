@@ -22,6 +22,20 @@ are versioned, source-linked records: findings, questions, contradictions,
 assumptions, and uncertainties cross into the intelligence loop without granting
 the agent independent authority to publish, purchase, or change policy.
 
+Phase 7–8 adds deterministic fixture Writer, Creative Director, Production, and
+Verifier specialists. They draft/verify claim-linked scripts, produce a
+storyboard and bounded capability request, advance fixture provider state, and
+retain verifier decisions. They do not receive a publisher credential or an
+authority grant. `CreativeProductionWorkflow` remains the caller that binds
+their typed results to a selected brief, canonical job, policy/budget gate, and
+trace.
+
 The control API exposes listing, describing, and running the same manifests at
 `/v1/agents`. `SalienceClient.agents` and `content agents` use those HTTP
 schemas; neither bypasses the public transport with an internal runtime call.
+
+Creative agent output is provider-neutral: a capability request names a bounded
+capability/modality/format and optional provider ID, while provider
+selection/reconciliation occurs behind the owned creative-provider contract.
+Trust classification and delegated-authority fields remain manifest hooks for a
+later authority model; they do not activate autonomous action in this phase.

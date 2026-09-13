@@ -1,6 +1,6 @@
 # Dependency Inventory
 
-This is the review record for the implemented Phase 1–6 branch. Exact Python
+This is the review record for the implemented Phase 1–8 branch. Exact Python
 dependency pins are copied from `pyproject.toml`; image digests are copied from
 `compose.yaml`.
 
@@ -32,7 +32,9 @@ dependency pins are copied from `pyproject.toml`; image digests are copied from
 Review image and package advisories before every release. Garage has an explicit
 ADR; MCP and A2A use official SDKs only at owned, version-gated adapter edges.
 Fixtures remain the deterministic default, and protocol compatibility is tested
-rather than inferred. Before enabling media work, `MediaEngine` must pass its
+rather than inferred. The Phase 7–8 build-vs-adopt decision retains
+project-owned, versioned DTOs and reconciliation semantics while adopting only
+optional, replaceable execution adapters. Before enabling media work, `MediaEngine` must pass its
 free-space guard; it discovers but never installs `ffmpeg`/`ffprobe`. Current
 host measurement is 4.1 GiB free with neither executable present, so real media
 inspection/composition is `NOT RUN` until a guarded environment step installs

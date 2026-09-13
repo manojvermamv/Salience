@@ -7,9 +7,12 @@ stores immutable artifact bytes; neither replaces a canonical database row.
 
 The first migration is a static schema snapshot at
 `migrations/versions/0001_canonical_foundation.py`. The implemented history
-reaches `0005_strategy_idempotency.py`; `0004_intelligence_loop.py` adds the
-source-to-brief lineage tables. Historical migrations do not import application
-metadata, so future model changes cannot alter an already-applied migration.
+reaches `0007_creative_lineage.py`; `0004_intelligence_loop.py` adds the
+source-to-brief lineage tables, `0006_creative_production_distribution.py` adds
+the Phase 7–8 canonical production/distribution model, and `0007` anchors
+provider and package-asset reconciliation lineage. Historical migrations do
+not import application metadata, so future model changes cannot alter an
+already-applied migration.
 
 Use an SQLAlchemy async URL for Alembic:
 
@@ -32,6 +35,26 @@ migration before accepting untrusted tenant traffic.
 `workspaces` and `content_programs` establish the root product identities.
 `external_identity_mappings` provides a workspace-scoped unique mapping to remote
 systems.
+
+## Creative And Distribution Lineage
+
+The creative schema is canonical, provider-neutral, and versioned. It records
+`script_versions`, `creative_briefs`, `storyboards`, `shot_plans`, and
+`creative_jobs` under the selected immutable `content_brief_versions` record.
+`provider_jobs` retains normalized requests, external-job reconciliation state,
+provider/model metadata, estimated/actual cost hooks, failure class, and trace
+context without credential values.
+
+`assets`, variants, transformations, captions, compositions, licenses, consent,
+likeness/voice records, usage restrictions, and `asset_provenance` retain
+content-hash, object-storage, rights, and C2PA-reference metadata. Platform
+profiles and distribution packages are versioned independently. A package must
+retain its selected asset roles, title/thumbnail decision, localization,
+originality evaluation, and synthetic-media disclosure before the immutable
+`ready_to_publish_packages` record can reference an approved governance state.
+
+The final package has no publisher account or remote destination. Phase 9 must
+add a separate publishing-effect identity and must not mutate this lineage.
 
 ## Durable Runs
 
@@ -70,7 +93,7 @@ protocol compatibility metadata. `plugin_versions` and `plugin_capabilities` hol
 versioned capability declarations without embedding a provider SDK or protocol object
 in canonical rows.
 
-Those fields remain extension hooks. The deterministic Phase 1–6 implementation
+Those fields remain extension hooks. The deterministic Phase 1–8 implementation
 enforces its present scope, policy, approval, trust, workflow, protocol-gateway,
 and callable-agent boundaries without treating a future tenant, publisher, or
 provider deployment as already configured.

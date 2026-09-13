@@ -21,5 +21,9 @@ or recovery code may explicitly resolve a historical disabled version.
 The initial registry remains in-memory to keep the capability contract portable.
 The canonical schema reserves `plugin_versions` and `plugin_capabilities` for a
 repository adapter without changing public registry semantics. No plugin is
-required by the Phase 1–6 intelligence workflow; model, MCP, A2A, research, and
+required by the Phase 1–8 fixture path. The creative capability registry resolves
+only enabled, compatible candidates by declared capability, modality, and
+explicit provider constraints. Fixture providers prove this selection/replacement
+boundary; the credential-gated Synthesia REST adapter is an optional owned DTO
+edge, not a default runtime dependency. Model, MCP, A2A, research, creative, and
 future publishing providers remain independently versioned boundaries.

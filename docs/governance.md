@@ -1,6 +1,6 @@
 # Governance Controls
 
-The Phase 1–6 governance services are deterministic, provider-neutral
+The Phase 1–8 governance services are deterministic, provider-neutral
 control-plane components. They decide whether a proposed effect may proceed;
 they do not perform the effect.
 
@@ -32,6 +32,21 @@ currency errors. The canonical schema reserves `budgets`,
 `budget_reservations`, and `cost_ledger_entries` for durable accounting, while
 job inspection and recorded model invocations project estimated/reserved and
 actual-cost hooks without requiring a specific model or payment provider.
+
+## Creative Gates
+
+Phase 7–8 applies the same controls before a provider job and before a ready
+package is finalized. `RightsPolicy` fails closed for real likeness or voice
+clone use unless active, unrevoked, unexpired consent permits the channel,
+territory, and commercial use. `PlatformValidator` checks only the immutable
+platform-profile rules. `OriginalityValidator` rejects exact repeated title,
+narrative, or thumbnail fingerprints while retaining deterministic metrics.
+
+`DisclosurePolicy` derives synthetic-media labels from governed media facts and
+profile/jurisdiction references, never from an unverified provider assertion.
+The package retains the disclosure decision and only an approved final decision
+can become `ReadyToPublishPackage@v1`. This approval is a Phase-9 handoff, not
+permission to make a publish effect.
 
 ## Secrets and Permissions
 

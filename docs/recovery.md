@@ -21,3 +21,12 @@ ranking, strategy proposal, package selection, claim checks, and brief assembly
 reuse their natural identities after a retry or worker restart. Read-only source
 collection can be resumed safely, but it never grants permission for a write
 effect or live publication.
+
+The creative workflow applies the same rules to the provider boundary. It
+persists the creative request and `provider_jobs` reconciliation state before
+remote submission; a restart asks the provider for the same external job rather
+than generating another asset. Imported asset bytes are content-hashed and
+deduplicated under the content program. The full Phase 7 recovery fixture
+interrupts after provider acceptance, resumes on a replacement worker, and
+requires one provider submission plus complete script/asset/distribution/ready
+package lineage. No recovery path converts a ready package into live publishing.
