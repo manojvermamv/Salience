@@ -4,11 +4,13 @@
 
 - Branch: `phase7-8-release-gate-phase9` (isolated worktree from `main`)
 - Plan: `docs/superpowers/plans/2026-09-13-phase-7-8-release-gate-phase-9-publishing.md`
-- Active task: Gate Two, Task 12 — governed publication contracts, credential leases, registry, and red tests.
-- Current TDD step: Read the Phase 9 task contract and add only its owned DTO and registry tests before introducing a publication migration, workflow, or control route.
-- Last verified state: Gate One is approved after the final 60-test release verifier, 181-test non-live suite, Phase 1-6 restart regression, independent review, and Archify delivery/visual evidence. Phase 9 work may now begin, but it must remain fixture-first, provider-neutral, and behind the canonical ready-package boundary.
+- Active task: Gate Two, Task 13 — canonical publication migration and repository.
+- Current TDD step: Add migration/repository red tests proving versioned ready-package requests and immutable remote receipts before creating publication tables.
+- Last verified state: Gate Two Task 12 passed owned contract/credential/registry tests (5/5) with compilation and whitespace checks clean. Publication remains fixture-first, provider-neutral, and behind the canonical ready-package boundary.
 
 ## Checkpoints
+
+- 2026-09-13: Completed Gate Two Task 12 red-green. Added immutable owned DTOs for workspace-bound publisher accounts, secret-reference-only connections, capability profiles, explicit versioned publication requests/plans/attempts/receipts/publications, and a non-serializable redacted credential lease. The provider-neutral registry deterministically filters explicit publisher selection, enablement, contract compatibility, platform, account type, verified audit state, `publish:create` scope, content type, visibility, disclosure, scheduling, quota, and health. The initial contract run failed at the intentionally absent package import; the contract/registry suite then passed 5/5 with compilation and whitespace checks clean. Next: Task 13 additive canonical publication migration and idempotent repository.
 
 - 2026-09-13: Completed Gate One Task 11 and opened the Phase 9 barrier. The exact documentation/release verifier passed 60 required fixture checks after the review-driven webhook repair; optional FFmpeg, C2PA, and live provider/publishing work remained accurately `NOT RUN`. The full non-live suite passed 181/181 and the strongest Phase 1-6 restart set passed 5/5; compilation and whitespace checks were clean. Independent review in `docs/superpowers/reviews/2026-09-13-phase-7-8-release-gate.md` found and repaired one high webhook-delivery identity gap, then recorded no remaining critical/high finding. The refreshed Archify source/HTML passed 9/9 showcase checks with zero warnings/errors and Chromium containment/readability across all required desktop viewports; direct screenshot review found it balanced and readable. Gate Two may now begin with Task 12 only.
 

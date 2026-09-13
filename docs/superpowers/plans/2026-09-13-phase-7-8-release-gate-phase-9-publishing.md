@@ -542,7 +542,7 @@ Update release status only after all evidence and review are green. Commit: `doc
 
 **Interfaces:** Defines immutable `PublisherAccount`, `PublisherConnection`, `PublisherCapabilityProfile`, `PublicationRequest`, `PublicationPlan`, `PublicationAttempt`, `RemotePublicationReceipt`, `Publication`, `CredentialLease`, and `PublisherAdapter` DTO/protocol contracts.
 
-- [ ] **Step 1: Write red ownership and capability tests**
+- [x] **Step 1: Write red ownership and capability tests**
 
 ```python
 def test_publication_request_requires_an_explicit_workspace_bound_account(ready_package):
@@ -557,17 +557,17 @@ def test_credential_lease_is_redacted_and_cannot_be_serialized():
     assert "token" not in repr(CredentialLease("secret", expires_at)).casefold()
 ```
 
-- [ ] **Step 2: Run tests and confirm failure**
+- [x] **Step 2: Run tests and confirm failure**
 
 Run: `pytest tests/unit/test_publication_contracts.py tests/contracts/test_publisher_registry.py -q`
 
 Expected: FAIL because publication contracts and registry do not exist.
 
-- [ ] **Step 3: Implement owned versioned contracts**
+- [x] **Step 3: Implement owned versioned contracts**
 
 Require exact account and ready-package identities, explicit destination/locale/territory/visibility/schedule, capability-profile version, idempotency key, and approval reference. Credential records contain only a secret reference, required/granted scopes, expiry/refresh/revocation status, and no secret value. Registry filtering checks provider enablement, contract compatibility, platform/account type, audit state, scope, content type, visibility, disclosure support, quotas, and health.
 
-- [ ] **Step 4: Verify and checkpoint**
+- [x] **Step 4: Verify and checkpoint**
 
 Run: `pytest tests/unit/test_publication_contracts.py tests/contracts/test_publisher_registry.py -q && python -m compileall -q src && git diff --check`
 
