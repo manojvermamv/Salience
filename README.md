@@ -70,7 +70,9 @@ SVG/PNG export. Its checked source is
 - Token authentication and explicit permission scopes protect control operations.
 - Policy references, approvals, dry-run mode, and budget checks happen before an
   effect is attempted.
-- Estimated and reserved costs have durable hooks alongside actual-cost entries.
+- The foundation has durable estimated/reserved/actual cost hooks. The current
+  creative fixture has only a bounded pre-submit budget check; its durable
+  reservation and actual-settlement lifecycle remains explicitly unimplemented.
 - Secret references remain separate from secret values and are constrained by
   permission scopes.
 - Each run records audit events, provenance, idempotency/reconciliation state,

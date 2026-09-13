@@ -29,6 +29,10 @@ FFmpeg/ffprobe and `c2patool` are absent on this host, so media
 composition/inspection and C2PA signing are explicitly `NOT RUN`, not claimed
 as production-verified. Rights/consent and asset-provenance records are schema
 and policy boundaries; this fixture path does not populate likeness, voice, or
-C2PA evidence. A final package grants no authority to publish, purchase, expand
-scopes, or bypass future publisher policy. See
+C2PA evidence. The creative workflow has a bounded in-memory budget check, but
+does not yet persist a budget reservation/actual-cost settlement for provider
+jobs. Provider cancellation and signed-webhook ingress are adapter contracts,
+not deployed workflow/API lifecycle behavior. A final package grants no
+authority to publish, purchase, expand scopes, or bypass future publisher
+policy. See
 [`docs/phase-9-handoff.md`](phase-9-handoff.md).
