@@ -1301,6 +1301,9 @@ class PublicationRequest(CanonicalIdentity, Base):
     approval_request_id: Mapped[UUID | None] = mapped_column(
         ForeignKey("approval_requests.id", ondelete="RESTRICT")
     )
+    publication_approval_request_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("approval_requests.id", ondelete="RESTRICT")
+    )
     request_key: Mapped[str] = mapped_column(String(255), nullable=False)
     version: Mapped[int] = mapped_column(Integer, nullable=False)
     publisher_id: Mapped[str] = mapped_column(String(128), nullable=False)
@@ -1374,6 +1377,7 @@ class PublicationSchedule(CanonicalIdentity, Base):
     job_schedule_id: Mapped[UUID | None] = mapped_column(
         ForeignKey("job_schedules.id", ondelete="RESTRICT")
     )
+    budget_id: Mapped[UUID | None] = mapped_column(ForeignKey("budgets.id", ondelete="RESTRICT"))
     version: Mapped[int] = mapped_column(Integer, nullable=False)
     scheduled_for: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
     timezone: Mapped[str] = mapped_column(String(64), nullable=False, default="UTC")
