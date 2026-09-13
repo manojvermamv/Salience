@@ -198,6 +198,10 @@ async def test_control_plane_runs_fixture_brief_to_ready_package_with_reverse_li
     assert lineage["source_ids"] == [seeded["source_id"]]
     assert lineage["asset_ids"]
     assert lineage["agent_run_ids"]
+    assert _script_history(database_url, completed.output["script_id"]) == [
+        (1, "draft"),
+        (2, "approved"),
+    ]
     title_candidates, originality_evaluations = await asyncio.to_thread(
         _distribution_gate_counts, database_url, ready_package_id
     )
@@ -238,3 +242,17 @@ def _distribution_gate_counts(
     if row is None:
         raise AssertionError("ready package was not persisted")
     return int(row[0]), int(row[1])
+
+
+def _script_history(database_url: str, approved_script_id: str) -> list[tuple[int, str]]:
+    with psycopg.connect(database_url) as connection, connection.cursor() as cursor:
+        cursor.execute(
+            """
+            SELECT version, status
+            FROM script_versions
+            WHERE script_key = (SELECT script_key FROM script_versions WHERE id = %s)
+            ORDER BY version
+            """,
+            (approved_script_id,),
+        )
+        return [(int(version), str(status)) for version, status in cursor.fetchall()]

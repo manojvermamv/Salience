@@ -136,7 +136,7 @@ class CreativeActivities:
             brief_id=brief["brief_id"],
             script_key=f"creative-{brief['brief_id']}",
             version=1,
-            status="approved",
+            status="draft",
             target_format=agent_run.output["target_format"],
             target_duration_seconds=agent_run.output["target_duration_seconds"],
             script={"sections": agent_run.output["sections"]},
@@ -153,8 +153,29 @@ class CreativeActivities:
         result = ScriptVerifier().evaluate(payload["script"], payload["brief"])
         if not result.allowed:
             raise ValueError(f"creative script rejected: {','.join(result.blocker_codes)}")
+        request = payload["request"]
+        approved_script_id = await self._state.creative_repository.record_script(
+            workspace_id=request["workspace_id"],
+            program_id=request["content_program_id"],
+            brief_id=payload["brief"]["brief_id"],
+            parent_script_id=payload["script_id"],
+            script_key=f"creative-{payload['brief']['brief_id']}",
+            version=2,
+            status="approved",
+            target_format=payload["script"]["target_format"],
+            target_duration_seconds=payload["script"]["target_duration_seconds"],
+            script={"sections": payload["script"]["sections"]},
+            claim_ids=payload["script"]["claim_ids"],
+            evidence_ids=payload["script"]["evidence_ids"],
+            trace_id=(await self._run()).trace_context.trace_id,
+        )
         await self._checkpoint("creative.script.verified")
-        return {**payload, "script_verification": {"blocker_codes": list(result.blocker_codes)}}
+        return {
+            **payload,
+            "draft_script_id": payload["script_id"],
+            "script_id": approved_script_id,
+            "script_verification": {"blocker_codes": list(result.blocker_codes)},
+        }
 
     @activity.defn(name="salience.creative.direction")
     async def direction(self, payload: dict[str, Any]) -> dict[str, Any]:
