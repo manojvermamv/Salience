@@ -4,11 +4,13 @@
 
 - Branch: `phase7-8-release-gate-phase9` (isolated worktree from `main`)
 - Plan: `docs/superpowers/plans/2026-09-13-phase-7-8-release-gate-phase-9-publishing.md`
-- Active task: Gate One, Task 4 — blocked before red tests on canonical budget selection for non-dry creative runs.
-- Current TDD step: Await an explicit budget-binding decision; do not replace the in-memory comparison with an implicit workspace/program budget or a hidden default.
+- Active task: Gate One, Task 4 — implement explicit canonical budget binding for non-dry creative runs.
+- Current TDD step: Write the request/control/workflow red tests, then reserve against the selected budget before any provider submission.
 - Last verified state: Gate One Task 3 passed its PostgreSQL cost lifecycle and existing creative recovery suite (8 tests). Phase 7–8 remains unapproved; Task 11’s complete release ladder and independent review remain mandatory before any Phase 9 code.
 
 ## Checkpoints
+
+- 2026-09-13: Accepted decision A for the Task 4 blocker: every non-dry creative run must carry an explicit canonical `budget_id`; dry runs reserve no cost. The release-gate design also records the user’s Phase 9 direction that canonical publication must select versioned, capability-compatible `PublisherAdapter` implementations through a registry, keeping YouTube, TikTok, Instagram, LinkedIn, fixture, and future adapters independently replaceable. Next: red request/control/workflow tests for the explicit creative budget binding; Phase 9 implementation remains behind the Gate One barrier.
 
 - 2026-09-13: Paused Gate One Task 4 at a material integration boundary. The new durable repository correctly requires a canonical `budget_id`, but `CreativeProductionRequest@v1`, the creative API/control-plane start contract, and current workspace/content-program records expose no budget binding or deterministic default-budget policy. Continuing without a decision would either restore an in-memory authority or silently select an arbitrary budget, both contrary to the approved release-gate design. The Task 3 commit `75a7d8b` is clean and recoverable; next action is the explicit budget-binding decision below, then Task 4 red tests and integration.
 
