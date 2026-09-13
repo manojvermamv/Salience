@@ -626,7 +626,7 @@ Expected: PASS. Commit: `feat: persist governed publications`.
 
 **Interfaces:** `PublicationAuthorizer.reauthorize`, `PublicationDelivery.create`, `FixturePublisherAdapter`, and `PublisherAdapter` methods for preflight/prepare/create/resume/submit/reconcile/status/cancel/webhook/capability refresh.
 
-- [ ] **Step 1: Write red policy and fixture tests**
+- [x] **Step 1: Write red policy and fixture tests**
 
 ```python
 async def test_preflight_denies_revoked_connection_before_fixture_submission(authorizer, request):
@@ -643,17 +643,17 @@ def test_delivery_url_is_short_lived_and_asset_scoped(delivery):
     assert receipt.expires_at > now_utc()
 ```
 
-- [ ] **Step 2: Run tests and confirm failure**
+- [x] **Step 2: Run tests and confirm failure**
 
 Run: `pytest tests/unit/test_publication_governance.py tests/unit/test_publication_delivery.py tests/integration/test_fixture_publisher.py -q`
 
 Expected: FAIL because publishing policy, delivery, and fixture adapter are absent.
 
-- [ ] **Step 3: Implement deterministic external-effect safety**
+- [x] **Step 3: Implement deterministic external-effect safety**
 
 Reauthorize exact ready package/account/profile/destination/locale/territory/policy/rights/disclosure/approval/budget/rate quota immediately before an effect. Reuse canonical cost repository. The fixture emits accepted, processing, published, failed, cancelled, quota, timeout, duplicate-webhook, and ambiguous results. Delivery receipts carry a private asset reference and expiry, never storage credentials.
 
-- [ ] **Step 4: Verify**
+- [x] **Step 4: Verify**
 
 Run: `pytest tests/unit/test_publication_governance.py tests/unit/test_publication_delivery.py tests/integration/test_fixture_publisher.py -q`
 

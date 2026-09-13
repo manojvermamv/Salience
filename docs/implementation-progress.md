@@ -4,11 +4,13 @@
 
 - Branch: `phase7-8-release-gate-phase9` (isolated worktree from `main`)
 - Plan: `docs/superpowers/plans/2026-09-13-phase-7-8-release-gate-phase-9-publishing.md`
-- Active task: Gate Two, Task 14 — publisher policy, private delivery, and fixture lifecycle.
-- Current TDD step: Specify red policy, private delivery, and fixture-adapter lifecycle tests before implementation.
-- Last verified state: Gate Two Task 13 passed the canonical publication migration/repository suite (4/4) after Alembic applied `0009_governed_publication`; compilation was clean. Publication remains fixture-first, provider-neutral, and behind the canonical ready-package boundary.
+- Active task: Gate Two, Task 15 — checkpointed Temporal publication workflow, scheduling, and recovery verifier.
+- Current TDD step: Specify red worker-restart and poll/webhook convergence tests before workflow implementation.
+- Last verified state: Gate Two Task 14 passed the publisher contract, governance, private delivery, and deterministic fixture suite (16/16) with compilation and whitespace checks clean. Publication remains fixture-first, provider-neutral, and behind the canonical ready-package boundary.
 
 ## Checkpoints
+
+- 2026-09-13: Completed Gate Two Task 14 red-green. `PublicationAuthorizer` fails closed unless the current ready package, workspace/program, account/connection identity and scope, capability profile revision, destination/locale/territory/visibility, policy, rights, disclosure, publishing approval, reserved budget, and rate/quota facts all agree. `PublicationDelivery` creates HTTPS-only 15-minute-or-less asset-scoped edge capabilities and has no canonical URL/token representation. The deterministic fixture satisfies the runtime-checkable, provider-neutral adapter contract, reuses an accepted idempotency identity on reconciliation, rejects quota before remote creation, and verifies stable signed webhook projections. The publisher contract/registry/governance/delivery/fixture suite passed 16/16; compilation and whitespace checks passed. No live publisher or credential resolver was enabled. Next: Task 15 red restart and poll/webhook workflow contracts.
 
 - 2026-09-13: Completed Gate Two Task 13 red-green. Added additive revision `0009_governed_publication` with tenant/workspace hooks and canonical publisher accounts, secret-reference-only versioned connections, capability profile facts, immutable ready-package-bound requests, plans, schedules, attempts, append-only status/webhook records, immutable remote receipts, and immutable publication receipt references. The typed PostgreSQL repository owns idempotent exact-match account/request/plan/attempt/remote-receipt writes and fails closed if an idempotency identity is replayed with a changed governed decision. The focused migration/repository suite passed 4/4 after the migration applied; compilation passed. Next: Task 14 red publisher policy, private delivery, and fixture lifecycle contracts.
 

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from datetime import datetime
-from typing import Literal, Protocol
+from typing import Literal, Protocol, runtime_checkable
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -141,6 +141,17 @@ class Publication(BaseModel):
     state: Literal["published", "failed", "cancelled"]
 
 
+class PublisherWebhookEvent(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    contract_version: Literal["PublisherWebhookEvent@v1"] = "PublisherWebhookEvent@v1"
+    publisher_id: str = Field(min_length=1, max_length=128)
+    delivery_identity: str = Field(min_length=1, max_length=255)
+    remote_id: str = Field(min_length=1, max_length=255)
+    state: PublicationState
+    safe_payload_hash: str = Field(pattern=r"^[0-9a-f]{64}$")
+
+
 class CredentialLease:
     """Ephemeral edge-only credential material that cannot cross DTO boundaries."""
 
@@ -163,13 +174,27 @@ class CredentialLease:
     __str__ = __repr__
 
 
+@runtime_checkable
 class PublisherAdapter(Protocol):
     @property
     def capabilities(self) -> PublisherCapabilityProfile: ...
 
     async def preflight(self, request: PublicationRequest) -> None: ...
 
+    async def prepare_delivery(self, request: PublicationRequest, delivery_url: str) -> str: ...
+
+    async def create_or_resume(
+        self, request: PublicationRequest, lease: CredentialLease
+    ) -> RemotePublicationReceipt: ...
+
     async def submit(self, request: PublicationRequest, lease: CredentialLease) -> RemotePublicationReceipt: ...
 
     async def reconcile(self, idempotency_key: str) -> RemotePublicationReceipt | None: ...
 
+    async def status(self, remote_id: str) -> RemotePublicationReceipt | None: ...
+
+    async def cancel(self, remote_id: str) -> RemotePublicationReceipt | None: ...
+
+    async def verify_webhook(self, webhook: object) -> PublisherWebhookEvent: ...
+
+    async def refresh_capabilities(self) -> PublisherCapabilityProfile: ...
