@@ -2,6 +2,8 @@ from fastapi.testclient import TestClient
 
 from salience.api.app import create_app
 from salience.api.dependencies import InMemoryControlPlane
+from salience.creative.providers import FixtureCreativeProvider
+from salience.creative.repository import CreativeRepository
 
 
 def _headers(scopes: str = "control:read,control:write") -> dict[str, str]:
@@ -98,3 +100,22 @@ def test_creative_control_rejects_non_dry_run_without_budget_identity() -> None:
     )
 
     assert response.status_code == 422
+
+
+def test_creative_webhook_rejects_unverified_and_unknown_providers() -> None:
+    app = create_app(
+        control_token="creative-token",
+        control_plane=InMemoryControlPlane(),
+        creative_providers={"fixture-creative": FixtureCreativeProvider()},
+        creative_repository=CreativeRepository("postgresql://unused"),
+    )
+    client = TestClient(app)
+
+    rejected = client.post(
+        "/v1/creative/providers/fixture-creative/webhooks",
+        content=b'{"id":"unknown","status":"completed"}',
+    )
+    unknown = client.post("/v1/creative/providers/unknown/webhooks", content=b"{}")
+
+    assert rejected.status_code == 401
+    assert unknown.status_code == 404

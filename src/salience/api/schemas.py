@@ -161,3 +161,9 @@ class CreativePackageResponse(BaseModel):
     job_id: str
     trace_id: str
     ready_package_id: str
+
+
+class CreativeWebhookResponse(BaseModel):
+    receipt_id: str
+    provider_job_id: str
+    state: str

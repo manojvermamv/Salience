@@ -288,7 +288,7 @@ Expected: PASS. Commit: `feat: complete creative provider lifecycle`.
 
 **Interfaces:** `POST /v1/creative/providers/{provider_id}/webhooks` accepts raw-safe payload bytes and signature headers, delegates verification to the selected provider, and returns a receipt identity without exposing the payload.
 
-- [ ] **Step 1: Write duplicate/race red tests**
+- [x] **Step 1: Write duplicate/race red tests**
 
 ```python
 async def test_duplicate_verified_webhook_creates_one_receipt_and_one_completion(api_client, completed_job):
@@ -301,17 +301,17 @@ async def test_poll_after_webhook_keeps_the_same_terminal_provider_state(workflo
     assert await workflow.webhook_then_poll() == "completed"
 ```
 
-- [ ] **Step 2: Run webhook tests and confirm they fail**
+- [x] **Step 2: Run webhook tests and confirm they fail**
 
 Run: `pytest tests/integration/test_creative_webhook_ingress.py tests/integration/test_creative_control_api.py -q`
 
 Expected: FAIL because no signed webhook route or canonical receipt exists.
 
-- [ ] **Step 3: Implement verified, duplicate-safe receipt persistence**
+- [x] **Step 3: Implement verified, duplicate-safe receipt persistence**
 
 Hash raw payload bytes before persistence; retain no secrets. Reject unknown providers, invalid signatures, malformed events, and provider/job mismatch. Insert-or-return the receipt, conditionally transition the provider job, emit audit/provenance/trace records, and let polling read the canonical state before requesting remote status.
 
-- [ ] **Step 4: Verify**
+- [x] **Step 4: Verify**
 
 Run: `pytest tests/integration/test_creative_webhook_ingress.py tests/integration/test_creative_provider_lifecycle.py tests/e2e/test_phase7_creative_recovery.py -q`
 

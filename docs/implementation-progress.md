@@ -4,11 +4,13 @@
 
 - Branch: `phase7-8-release-gate-phase9` (isolated worktree from `main`)
 - Plan: `docs/superpowers/plans/2026-09-13-phase-7-8-release-gate-phase-9-publishing.md`
-- Active task: Gate One, Task 6 — add signed creative webhook ingress and poll/webhook convergence.
-- Current TDD step: Write duplicate/race red tests for credential-free verified webhook receipts and provider-job state convergence.
-- Last verified state: Gate One Task 5 passed lifecycle persistence, bounded timeout/dead-letter, fixture cancellation, and recovery tests (9 tests). Phase 7–8 remains unapproved; Task 11’s complete release ladder and independent review remain mandatory before any Phase 9 code.
+- Active task: Gate One, Task 7 — registry-driven provider selection and bounded variant persistence.
+- Current TDD step: Add red selection constraints and bounded variant contracts before changing workflow provider resolution.
+- Last verified state: Gate One Task 6 passed signed ingress, duplicate receipt persistence, and lifecycle convergence tests (7 tests). Phase 7–8 remains unapproved; Task 11’s complete release ladder and independent review remain mandatory before any Phase 9 code.
 
 ## Checkpoints
+
+- 2026-09-13: Completed Gate One Task 6. The control API now accepts a provider-specific webhook route, holds raw bytes only transiently for JSON decoding, delegates signature verification to the selected provider adapter, rejects malformed/unknown/unverified deliveries, and persists only the adapter's credential-free verified event projection. Repository receipt insertion is idempotent by provider delivery identity and converges the matching canonical provider job through the lifecycle writer. The webhook/control/lifecycle suite passed 7/7 with compilation and whitespace checks clean. Next: Task 7 registry constraints and bounded variants.
 
 - 2026-09-13: Began Gate One Task 6 with the canonical verified-webhook core. A red integration contract proved the receipt writer was absent; `CreativeRepository.record_verified_webhook` now matches provider/external-job identity, retains only provider ID, delivery identity, verified safe payload hash, lifecycle state, trace/span metadata, and duplicate-safe receipt identity, then converges the matching provider job through the existing conditional lifecycle writer. A repeated verified delivery returns the same receipt and terminal state. The focused webhook/lifecycle suite passed 3/3 with compilation and whitespace checks clean. Remaining Task 6 work: inject provider selection into the signed HTTP ingress route and reject unverified/unknown deliveries at that boundary.
 
