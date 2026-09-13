@@ -10,6 +10,8 @@
 
 ## Checkpoints
 
+- 2026-09-13: Advanced Gate One Task 8 with canonical asset provenance persistence. Asset import now writes `asset_provenance` through an owned repository method, retaining generated origin, exact C2PA validation state, manifest reference/signer metadata hooks, and provider-job transformation lineage alongside the canonical asset. The creative full-loop/recovery and Phase 8 evaluation suite passed 6/6 with compilation and whitespace checks clean. Remaining Task 8 work: persist governed rights links and reload policy facts from canonical records at finalization.
+
 - 2026-09-13: Advanced Gate One Task 8 with a fail-closed C2PA finalization gate. A red ready-package evaluation proved a profile requiring C2PA still allowed `not_configured` through to persistence. `CreativeService.finalize_ready_package` now rejects every status except canonical `valid` when `requires_c2pa` is set, before distribution or ready-package writes. Phase 8 evaluation passed 3/3 with compilation and whitespace checks clean. Remaining Task 8 work: canonical rights/provenance persistence and reloading at finalization.
 
 - 2026-09-13: Advanced Gate One Task 7 with deterministic bounded variant plans. A capability request now derives exactly one stable `CreativeVariantPlan` per allowed index, with `variant-N` keys and request keys that cannot collide with the primary request or exceed the canonical maximum of three. The contract suite passed 10/10 with compilation and whitespace checks clean. Remaining Task 7 work: execute the resulting plans as separate durable effects and persist selected/rejected artifact outcomes.

@@ -357,6 +357,37 @@ class CreativeRepository:
             span_id,
         )
 
+    async def record_asset_provenance(
+        self,
+        *,
+        asset_id: str,
+        origin_type: str,
+        validation_status: str,
+        c2pa_manifest_reference: str | None,
+        signer_metadata: dict[str, Any],
+        ingredients: list[dict[str, Any]] | None = None,
+        transformations: list[dict[str, Any]] | None = None,
+    ) -> str:
+        return await self._returning_id(
+            """
+            INSERT INTO asset_provenance (
+                asset_id, origin_type, ingredients, transformations, c2pa_manifest_reference,
+                validation_status, signer_metadata
+            ) VALUES (%s, %s, %s::jsonb, %s::jsonb, %s, %s, %s::jsonb)
+            ON CONFLICT (asset_id) DO UPDATE SET updated_at = CURRENT_TIMESTAMP
+            RETURNING id::text
+            """,
+            (
+                asset_id,
+                origin_type,
+                _json(ingredients or []),
+                _json(transformations or []),
+                c2pa_manifest_reference,
+                validation_status,
+                _json(signer_metadata),
+            ),
+        )
+
     async def select_asset(
         self, *, asset_variant_id: str, reason: str
     ) -> str:

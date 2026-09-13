@@ -551,6 +551,15 @@ class CreativeActivities:
             trace_id=run.trace_context.trace_id,
             technical_properties=dict(inspection.properties),
         )
+        await self._state.creative_repository.record_asset_provenance(
+            asset_id=asset.asset_id,
+            origin_type="generated",
+            validation_status="not_configured",
+            c2pa_manifest_reference=None,
+            signer_metadata={},
+            ingredients=[],
+            transformations=[{"provider_job_id": payload["provider_job_id"]}],
+        )
         await self._checkpoint("creative.asset.imported")
         return {**payload, "asset_id": asset.asset_id, "asset_variant_id": asset.asset_variant_id}
 
