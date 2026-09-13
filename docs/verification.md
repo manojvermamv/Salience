@@ -89,6 +89,18 @@ media execution (the fixture uses a controlled media probe even when binaries
 exist), C2PA signer-backed media execution, and live provider/publishing work;
 Phase 7–8 deliberately performs no live publish effect.
 
+## Architecture Evidence
+
+The Phase 1-8 Archify source and standalone HTML were refreshed for the release
+gate. `deliver` validated all nine showcase checks with zero warnings/errors;
+the specification SHA-256 is
+`f06d8d549297cd8614c2da36e266a133160673220ccfe441acde565540d6fd97` and the
+HTML SHA-256 is `e888dd64671a5c456f166234ec84ae422b223e4944772c69ff6c704512260603`.
+Automated Chromium evidence passed containment/readability at 1440x900,
+1600x1000, 1920x1080, and 2048x1320, with no overflow. The linked HTML is a
+visual explanation of the fixture-verified boundary, not evidence of a live
+provider or publishing integration.
+
 For a full non-live regression before integration, run:
 
 ```bash

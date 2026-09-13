@@ -8,6 +8,7 @@ __pycache__/
 .ruff_cache/
 .coverage
 htmlcov/
+docs/*.architecture.visual-check.*
 .env
 .env.*
 !/.env.example

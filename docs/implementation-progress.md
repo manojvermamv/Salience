@@ -4,11 +4,13 @@
 
 - Branch: `phase7-8-release-gate-phase9` (isolated worktree from `main`)
 - Plan: `docs/superpowers/plans/2026-09-13-phase-7-8-release-gate-phase-9-publishing.md`
-- Active task: Gate One, Task 11 — release verification and independent review.
-- Current TDD step: Re-run the exact cross-phase verification ladder, validate the checked Archify artifact, then inspect the complete Gate-One diff independently before recording a release decision.
-- Last verified state: Gate One Task 10 passed the project-owned 60-test fixture release gate and truthful optional-status checks. Phase 7–8 remains unapproved until Task 11’s full ladder and independent review record no critical/high finding; Phase 9 code remains prohibited.
+- Active task: Gate Two, Task 12 — governed publication contracts, credential leases, registry, and red tests.
+- Current TDD step: Read the Phase 9 task contract and add only its owned DTO and registry tests before introducing a publication migration, workflow, or control route.
+- Last verified state: Gate One is approved after the final 60-test release verifier, 181-test non-live suite, Phase 1-6 restart regression, independent review, and Archify delivery/visual evidence. Phase 9 work may now begin, but it must remain fixture-first, provider-neutral, and behind the canonical ready-package boundary.
 
 ## Checkpoints
+
+- 2026-09-13: Completed Gate One Task 11 and opened the Phase 9 barrier. The exact documentation/release verifier passed 60 required fixture checks after the review-driven webhook repair; optional FFmpeg, C2PA, and live provider/publishing work remained accurately `NOT RUN`. The full non-live suite passed 181/181 and the strongest Phase 1-6 restart set passed 5/5; compilation and whitespace checks were clean. Independent review in `docs/superpowers/reviews/2026-09-13-phase-7-8-release-gate.md` found and repaired one high webhook-delivery identity gap, then recorded no remaining critical/high finding. The refreshed Archify source/HTML passed 9/9 showcase checks with zero warnings/errors and Chromium containment/readability across all required desktop viewports; direct screenshot review found it balanced and readable. Gate Two may now begin with Task 12 only.
 
 - 2026-09-13: Repaired a Gate One Task 11 review finding before release certification. The review found that a provider could reuse a verified delivery identity with a different safe payload hash; the receipt writer used a mutable conflict update and would accept that divergent replay. A red webhook integration assertion reproduced the gap. Receipt persistence now inserts once or reloads and exact-matches provider job, payload hash, and state, rejecting any divergent delivery before lifecycle convergence. The webhook/release-gate/crash-recovery regression slice passed 5/5. Next: rerun the complete Task 11 ladder against this repaired code before recording the independent-review decision.
 

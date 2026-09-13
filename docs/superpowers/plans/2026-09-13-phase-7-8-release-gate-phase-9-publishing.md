@@ -495,7 +495,7 @@ Expected: PASS for all required fixture checks with truthful optional status. Co
 
 **Interfaces:** The review record names verifier evidence, checks all five original blockers, and reports `approved`, `blocked`, or `conditional` with concrete severity.
 
-- [ ] **Step 1: Run the exact release verification ladder**
+- [x] **Step 1: Run the exact release verification ladder**
 
 Run:
 
@@ -510,17 +510,17 @@ node .agents/skills/archify/bin/archify.mjs validate architecture docs/salience-
 
 Expected: every required command passes; optional FFmpeg/C2PA/live checks remain an accurate `NOT RUN` only when their prerequisites are absent.
 
-- [ ] **Step 2: Run strongest Phase 1–6 regressions**
+- [x] **Step 2: Run strongest Phase 1–6 regressions**
 
 Run: `pytest tests/e2e/test_phase1_verifier.py tests/e2e/test_worker_restart.py tests/e2e/test_phases_1_4_stack.py tests/e2e/test_phase5_durable_research.py tests/e2e/test_phases_5_6_intelligence_loop.py -q`
 
 Expected: PASS with no weakened or skipped required test.
 
-- [ ] **Step 3: Perform an independent review against the spec**
+- [x] **Step 3: Perform an independent review against the spec**
 
 Inspect migrations, raw SQL, fail-closed transitions, secrets, retries, tests, docs, and the full diff independently of the implementation sequence. Record the result and repair every critical/high finding before repeating Steps 1–2.
 
-- [ ] **Step 4: Checkpoint the green barrier**
+- [x] **Step 4: Checkpoint the green barrier**
 
 Update release status only after all evidence and review are green. Commit: `docs: certify phase 7-8 release gate`.
 
