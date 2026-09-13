@@ -10,6 +10,8 @@ from typing import Any
 
 import psycopg
 
+from salience.creative.contracts import ProviderWebhookEvent
+
 
 @dataclass(frozen=True)
 class CreativeAssetVariant:
@@ -26,6 +28,13 @@ class ProviderJobLifecycle:
     retry_after: datetime | None
     actual_cost_status: str
     cancel_requested_at: datetime | None
+
+
+@dataclass(frozen=True)
+class CreativeWebhookReceipt:
+    receipt_id: str
+    provider_job_id: str
+    state: str
 
 
 _TERMINAL_PROVIDER_STATES = frozenset({"completed", "failed", "cancelled", "dead_lettered"})
@@ -300,6 +309,11 @@ class CreativeRepository:
         return await asyncio.to_thread(
             self._request_provider_cancellation, provider_job_id, trace_id, span_id
         )
+
+    async def record_verified_webhook(
+        self, *, event: ProviderWebhookEvent, trace_id: str, span_id: str | None = None
+    ) -> CreativeWebhookReceipt:
+        return await asyncio.to_thread(self._record_verified_webhook, event, trace_id, span_id)
 
     async def record_asset_variant(
         self,
@@ -743,6 +757,43 @@ class CreativeRepository:
                     (trace_id, span_id, provider_job_id),
                 )
             return self._provider_lifecycle_for_update(cursor, provider_job_id)
+
+    def _record_verified_webhook(
+        self, event: ProviderWebhookEvent, trace_id: str, span_id: str | None
+    ) -> CreativeWebhookReceipt:
+        delivery_identity = event.delivery_id or event.safe_payload_hash
+        with self._connect() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT id::text FROM provider_jobs
+                WHERE provider_id = %s AND external_job_id = %s FOR UPDATE
+                """,
+                (event.provider_id, event.external_job_id),
+            )
+            row = cursor.fetchone()
+            if row is None:
+                raise KeyError("provider webhook does not match a canonical provider job")
+            provider_job_id = row[0]
+            cursor.execute(
+                """
+                INSERT INTO creative_provider_webhook_receipts (
+                    provider_job_id, provider_id, delivery_identity, safe_payload_hash,
+                    signature_verified, state, trace_id, span_id
+                ) VALUES (%s, %s, %s, %s, TRUE, %s, %s, %s)
+                ON CONFLICT (provider_id, delivery_identity)
+                DO UPDATE SET updated_at = CURRENT_TIMESTAMP
+                RETURNING id::text, provider_job_id::text, state
+                """,
+                (provider_job_id, event.provider_id, delivery_identity, event.safe_payload_hash,
+                 event.state, trace_id, span_id),
+            )
+            receipt_id, persisted_provider_job_id, state = cursor.fetchone()
+        self._transition_provider_job(
+            provider_job_id, event.state, trace_id, span_id,
+            event.usage.actual_micros if event.usage is not None else None,
+            None, None, None,
+        )
+        return CreativeWebhookReceipt(receipt_id, persisted_provider_job_id, state)
 
     @staticmethod
     def _provider_lifecycle_for_update(
