@@ -190,6 +190,7 @@ async def _approved_publication_approval(
     ready: dict[str, str],
     publisher_account_id: str,
     *,
+    platform: str = "fixture",
     destination: str = "fixture://account",
     locale: str = "en",
     territory: str = "global",
@@ -215,6 +216,7 @@ async def _approved_publication_approval(
                         {
                             "ready_package_id": ready["ready_package_id"],
                             "publisher_account_id": publisher_account_id,
+                            "platform": platform,
                             "destination": destination,
                             "locale": locale,
                             "territory": territory,

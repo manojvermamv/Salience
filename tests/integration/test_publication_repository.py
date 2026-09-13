@@ -95,6 +95,40 @@ async def test_publication_request_rejects_approval_for_a_different_destination(
 
 
 @pytest.mark.asyncio
+async def test_current_authorization_denies_drifted_approved_scope() -> None:
+    from test_creative_release_gate_migration import _approved_publication_approval, _approved_ready_package
+
+    database_url = os.environ["TEST_DATABASE_URL"]
+    ready = await _approved_ready_package()
+    repository = PublicationRepository(database_url)
+    account = await repository.create_account(
+        workspace_id=ready["workspace_id"],
+        platform="fixture",
+        account_key=f"approval-drift-{uuid4()}",
+        account_type="creator",
+        external_account_reference=f"fixture:approval-drift:{uuid4()}",
+    )
+    approval_id = await _approved_publication_approval(ready, account.id)
+    request = await repository.create_request(
+        ready_package_id=ready["ready_package_id"],
+        workspace_id=ready["workspace_id"],
+        content_program_id=ready["program_id"],
+        publisher_account_id=account.id,
+        publication_approval_request_id=approval_id,
+        idempotency_key=f"approval-drift-{uuid4()}",
+    )
+    with psycopg.connect(database_url) as connection:
+        connection.execute(
+            "UPDATE approval_requests SET request_context = '{}'::jsonb WHERE id = %s",
+            (approval_id,),
+        )
+
+    current = await repository.load_current_authorization(request.id)
+
+    assert current.publication_approval_state == "invalid_scope"
+
+
+@pytest.mark.asyncio
 async def test_current_authorization_fails_closed_without_policy_and_asset_rights_proof() -> None:
     from test_creative_release_gate_migration import _approved_publication_approval, _approved_ready_package
 

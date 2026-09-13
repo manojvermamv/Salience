@@ -468,6 +468,7 @@ class PublicationRepository:
                  AND profile.publisher_account_id = account.id
                  AND profile.publisher_id = %s
                  AND profile.profile_version = %s
+                 AND profile.platform = %s
                  AND profile.audit_state = 'verified'
                  AND (profile.expires_at IS NULL OR profile.expires_at > CURRENT_TIMESTAMP)
                 JOIN approval_requests approval ON approval.id = %s
@@ -477,6 +478,7 @@ class PublicationRepository:
                                                 AND approval.request_context @> jsonb_build_object(
                                                     'ready_package_id', ready.id::text,
                                                     'publisher_account_id', account.id::text,
+                                                    'platform', %s::text,
                                                     'destination', %s::text,
                                                     'locale', %s::text,
                                                     'territory', %s::text,
@@ -488,6 +490,7 @@ class PublicationRepository:
                   AND ready.content_program_id = %s
                   AND ready.approval_state = 'approved'
                   AND account.workspace_id = ready.workspace_id
+                  AND account.platform = %s
                   AND account.status = 'active'
                 ON CONFLICT (content_program_id, request_key, version) DO NOTHING
                 RETURNING id::text, ready_package_id::text
@@ -505,7 +508,9 @@ class PublicationRepository:
                     publisher_account_id,
                     publisher_id,
                     capability_profile_version,
+                    platform,
                     publication_approval_request_id,
+                    platform,
                     destination,
                     locale,
                     territory,
@@ -514,6 +519,7 @@ class PublicationRepository:
                     ready_package_id,
                     workspace_id,
                     content_program_id,
+                    platform,
                 ),
             )
             row = cursor.fetchone()
@@ -634,12 +640,14 @@ class PublicationRepository:
                             AND publication_approval.request_context @> jsonb_build_object(
                                 'ready_package_id', request.ready_package_id::text,
                                 'publisher_account_id', request.publisher_account_id::text,
+                                'platform', request.platform,
                                 'destination', request.destination,
                                 'locale', request.locale,
                                 'territory', request.territory,
                                 'visibility', request.visibility,
                                 'capability_profile_version', request.capability_profile_version
                             ) THEN 'approved'
+                           WHEN publication_approval.status = 'approved' THEN 'invalid_scope'
                            ELSE publication_approval.status
                        END,
                        disclosure.status, account.workspace_id::text, account.account_type,
@@ -774,6 +782,7 @@ class PublicationRepository:
                       AND workspace_id = request.workspace_id
                       AND publisher_account_id = request.publisher_account_id
                       AND publisher_id = request.publisher_id
+                      AND platform = request.platform
                       AND profile_version = request.capability_profile_version
                       AND audit_state = 'verified'
                       AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)

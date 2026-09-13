@@ -212,6 +212,12 @@ Run: `bash scripts/verify-phase-9.sh && PYTHONPATH=src .venv/bin/pytest tests/co
 
 Expected: all fixture checks pass, live status is `NOT RUN` without explicit private configuration, and a fresh review reports no critical/important finding. Commit: `docs: complete governed publishing phase`.
 
+Current evidence: executable verification is green, but the fresh-review portion
+is externally blocked. Two reviewer requests failed with the reviewer service's
+usage limit; no clean independent-review result is claimed. The local audit and
+the exact remaining limitation are recorded in
+`docs/superpowers/reviews/2026-09-13-phase-9-independent-review.md`.
+
 ### Task 5: Bind approval, policy, rights, connection, and capability scope
 
 **Files:**
@@ -260,10 +266,15 @@ Expected: all fixture checks pass, live status is `NOT RUN` without explicit pri
 
 ### Task 8: Re-certify the repaired gate
 
-- [ ] **Step 1: Update all affected docs, progress evidence, and the Phase 1–9 architecture visual**
-- [ ] **Step 2: Run the complete Phase 9 verifier, standalone non-live suite, compilation, whitespace, Archify delivery, and Chromium visual inspection**
+- [x] **Step 1: Update all affected docs, progress evidence, and the Phase 1–9 architecture visual**
+- [x] **Step 2: Run the complete Phase 9 verifier, standalone non-live suite, compilation, whitespace, Archify delivery, and Chromium visual inspection**
 - [ ] **Step 3: Request a fresh independent review; repair every critical or important finding and repeat this task until clear**
 - [ ] **Step 4: Commit only verified Phase 9 code/docs and integrate only after a clean worktree audit**
+
+Task 8 Step 3 is blocked by the external reviewer service usage limit after two
+requests. Chromium visual inspection was attempted and reported `NOT RUN`
+because no Chrome/Chromium executable exists on this host; deterministic
+Archify validation remains green.
 
 ## Plan Self-Review
 
