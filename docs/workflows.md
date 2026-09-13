@@ -22,8 +22,19 @@ activity runs. It uses the HTTP mock provider only as a test fixture and calls
 it through `ExternalEffectService`; future providers must implement the same
 idempotency and reconciliation contract.
 
+`CreativeProductionWorkflow` is the implemented Phase 7–8 durable path. It
+accepts only a selected immutable brief, then checkpoints load, script,
+verification, creative direction, authorization, provider submit/reconcile,
+provider await, asset import/validation, distribution, and final governance.
+Every bounded activity has a 30-second start-to-close timeout and a three-attempt
+Temporal retry policy with 100ms-to-1s backoff. Cancellation, policy denial,
+budget denial, timeout, provider failure, and retry exhaustion remain canonical
+terminal states; a recovered worker reuses the canonical provider job and asset
+identities rather than submitting duplicate work.
+
 Read-only source connectors are not external-effect providers. They retain
 untrusted source and fetch provenance, honor allowlists and byte/timeout bounds,
-and never turn source content into authority. Phase 7 starts only from the
-selected immutable brief; scripting, media, publishing, analytics, and learning
-are not activities in the current workflow.
+and never turn source content into authority. Creative work starts only from the
+selected immutable brief. The ready package is an immutable Phase-9 handoff,
+not a workflow activity that publishes; analytics, experiments, and learning
+remain outside the current workflow.

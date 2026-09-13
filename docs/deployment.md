@@ -26,7 +26,15 @@ browser-evidence suite. It installs no Firefox/WebKit, requires no credential,
 performs no Docker/system cleanup, and retains local output under
 `artifacts/browser-evidence/`.
 
-No model credential, MCP server, A2A endpoint, publisher, or browser binary is
-required to deploy the Phase 1–6 dry-run loop. Configure those adapters only
-with operator-managed secrets and policy after their individual contract and
-compatibility checks pass.
+No model credential, MCP server, A2A endpoint, creative-provider credential,
+publisher, or browser binary is required to deploy the Phase 1–8 dry-run loop.
+The worker registers `CreativeProductionWorkflow`, but the deployed control
+plane fails closed for non-dry creative effects unless an operator explicitly
+wires an approved effect configuration. Configure a creative adapter only with
+a scope-limited secret reference, selected plugin/provider version, policy,
+budget, rights/consent evidence, and compatibility check.
+
+There is no publisher deployment in this release. A future publisher must run
+as a separate least-privileged effect boundary and consume only an approved
+`ReadyToPublishPackage@v1`; it must not inherit creative-provider secrets or
+approval as publishing authority.

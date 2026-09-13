@@ -13,6 +13,9 @@ The control API requires a configured bearer `CONTROL_PLANE_TOKEN` and an
 - `POST /v1/intelligence/schedules`
 - `POST /v1/intelligence/opportunities/{opportunity_id}/briefs`
 - `GET /v1/intelligence/briefs/{brief_id}` and `/lineage`
+- `POST /v1/creative/runs` and `GET /v1/creative/runs/{job_id}`
+- `GET /v1/creative/runs/{job_id}/script`, `/asset`, and `/package`
+- `GET /v1/creative/packages/{ready_package_id}/lineage`
 
 `POST /v1/jobs/dummy` accepts an idempotency key. The deployed adapter returns
 the same canonical job for repeat keys rather than scheduling another workflow.
@@ -43,3 +46,32 @@ content intelligence start \
   --niche 'Personal Finance' --idempotency-key local-intelligence-check
 content intelligence inspect <job_id>
 ```
+
+## Creative production
+
+`POST /v1/creative/runs` accepts `CreativeProductionRequest@v1`: workspace ID,
+content-program ID, selected `ContentBrief@v1` ID, idempotency key, target
+platform-profile key/version, and `dry_run` (default `true`). The caller needs
+`control:write`. The request returns the canonical job ID and W3C trace ID; a
+repeat idempotency key returns the same run rather than a second workflow.
+
+The deployed `TemporalControlPlane` rejects non-dry creative starts unless an
+operator explicitly enables an effect configuration. `GET` creative inspection
+routes require `control:read` and return only canonical identities plus the
+trace/output projection. There is no publish endpoint.
+
+The CLI and SDK use exactly this transport contract:
+
+```bash
+content creative start \
+  --workspace-id <workspace_id> --program-id <content_program_id> \
+  --brief-id <brief_id> --profile-key <profile_key> \
+  --idempotency-key creative-check
+content creative inspect <job_id>
+content creative package-lineage <ready_package_id>
+```
+
+`SalienceClient.creative` exposes equivalent `start`, `inspect`, `script`,
+`asset`, `package`, and `package_lineage` calls. `ReadyToPublishPackage@v1` is
+inspection data only; it contains no credentials, publisher target, or action
+to publish.

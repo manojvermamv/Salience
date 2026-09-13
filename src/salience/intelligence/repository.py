@@ -467,6 +467,13 @@ class IntelligenceRepository:
     async def brief_details(self, brief_id: str) -> dict[str, Any] | None:
         return await asyncio.to_thread(self._brief_details, brief_id)
 
+    async def exact_content_brief(
+        self, *, brief_id: str, workspace_id: str, program_id: str
+    ) -> dict[str, Any]:
+        return await asyncio.to_thread(
+            self._exact_content_brief, brief_id, workspace_id, program_id
+        )
+
     async def lineage_for_brief(self, brief_id: str) -> dict[str, list[str] | str]:
         return await asyncio.to_thread(self._lineage_for_brief, brief_id)
 
@@ -630,6 +637,52 @@ class IntelligenceRepository:
                 "claim_ids",
             )
             return dict(zip(keys, row, strict=True))
+
+    def _exact_content_brief(
+        self, brief_id: str, workspace_id: str, program_id: str
+    ) -> dict[str, Any]:
+        with self._connect() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT id::text, workspace_id::text, content_program_id::text, brief_key,
+                       version, content, claim_ids, provenance, trace_id, span_id
+                FROM content_brief_versions
+                WHERE id = %s AND workspace_id = %s AND content_program_id = %s
+                """,
+                (brief_id, workspace_id, program_id),
+            )
+            row = cursor.fetchone()
+            if row is None:
+                raise KeyError("content brief is outside the requested workspace/program")
+            brief = dict(
+                zip(
+                    (
+                        "brief_id",
+                        "workspace_id",
+                        "content_program_id",
+                        "brief_key",
+                        "version",
+                        "content",
+                        "claim_ids",
+                        "provenance",
+                        "trace_id",
+                        "span_id",
+                    ),
+                    row,
+                    strict=True,
+                )
+            )
+            cursor.execute(
+                """
+                SELECT DISTINCT research_evidence_id::text
+                FROM claim_evidence
+                WHERE claim_id = ANY(%s::uuid[])
+                ORDER BY research_evidence_id::text
+                """,
+                (brief["claim_ids"],),
+            )
+            brief["evidence_ids"] = [evidence_row[0] for evidence_row in cursor.fetchall()]
+            return brief
 
     def _lineage_for_brief(self, brief_id: str) -> dict[str, list[str] | str]:
         with self._connect() as connection, connection.cursor() as cursor:

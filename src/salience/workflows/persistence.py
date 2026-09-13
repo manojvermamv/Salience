@@ -27,6 +27,12 @@ class CanonicalCounts:
 
 
 @dataclass(frozen=True)
+class CanonicalEffect:
+    status: str
+    external_id: str | None
+
+
+@dataclass(frozen=True)
 class CanonicalJobSnapshot:
     job_id: str
     state: str
@@ -104,11 +110,39 @@ class CanonicalJobStore:
             dry_run,
         )
 
+    async def create_creative_run(
+        self,
+        *,
+        workflow_run_id: str,
+        task_queue: str,
+        workspace_id: str,
+        content_program_id: str,
+        brief_id: str,
+        idempotency_key: str,
+        dry_run: bool,
+    ) -> CanonicalRun:
+        return await asyncio.to_thread(
+            self._create_creative_run,
+            workflow_run_id,
+            task_queue,
+            workspace_id,
+            content_program_id,
+            brief_id,
+            idempotency_key,
+            dry_run,
+        )
+
     async def checkpoint(self, run: CanonicalRun, checkpoint_name: str) -> None:
         await asyncio.to_thread(self._checkpoint, run, checkpoint_name)
 
     async def plan_effect(self, run: CanonicalRun, idempotency_key: str) -> None:
         await asyncio.to_thread(self._plan_effect, run, idempotency_key)
+
+    async def begin_effect_submission(self, run: CanonicalRun, idempotency_key: str) -> bool:
+        return await asyncio.to_thread(self._begin_effect_submission, run, idempotency_key)
+
+    async def effect(self, run: CanonicalRun, idempotency_key: str) -> CanonicalEffect | None:
+        return await asyncio.to_thread(self._effect, run, idempotency_key)
 
     async def complete_effect(
         self, run: CanonicalRun, *, idempotency_key: str, external_id: str, reconciled: bool
@@ -332,6 +366,97 @@ class CanonicalJobStore:
             )
         return run
 
+    def _create_creative_run(
+        self,
+        workflow_run_id: str,
+        task_queue: str,
+        workspace_id: str,
+        content_program_id: str,
+        brief_id: str,
+        idempotency_key: str,
+        dry_run: bool,
+    ) -> CanonicalRun:
+        trace_context = TraceContext.new_root()
+        with self._connect() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT id
+                FROM content_brief_versions
+                WHERE id = %s AND workspace_id = %s AND content_program_id = %s
+                """,
+                (brief_id, workspace_id, content_program_id),
+            )
+            if cursor.fetchone() is None:
+                raise KeyError("content brief is outside the requested workspace/program")
+            cursor.execute(
+                """
+                INSERT INTO jobs (
+                    workspace_id, content_program_id, job_type, state, workflow_run_id,
+                    task_queue, idempotency_key, input_payload, retry_policy, trace_id, span_id,
+                    dry_run, started_at
+                ) VALUES (
+                    %s, %s, 'creative_production', 'running', %s,
+                    %s, %s, %s::jsonb, %s::jsonb, %s, %s, %s, CURRENT_TIMESTAMP
+                )
+                ON CONFLICT (workspace_id, idempotency_key) DO NOTHING
+                RETURNING id, trace_id, span_id
+                """,
+                (
+                    workspace_id,
+                    content_program_id,
+                    workflow_run_id,
+                    task_queue,
+                    idempotency_key,
+                    json.dumps(
+                        {
+                            "brief_id": brief_id,
+                            "contract_version": "CreativeProductionRequest@v1",
+                        }
+                    ),
+                    json.dumps({"maximum_attempts": 3, "initial_backoff_ms": 100}),
+                    trace_context.trace_id,
+                    trace_context.span_id,
+                    dry_run,
+                ),
+            )
+            inserted = cursor.fetchone()
+            if inserted is None:
+                cursor.execute(
+                    """
+                    SELECT id, workflow_run_id, trace_id, span_id
+                    FROM jobs
+                    WHERE workspace_id = %s AND idempotency_key = %s
+                    """,
+                    (workspace_id, idempotency_key),
+                )
+                job_id, existing_workflow_id, trace_id, span_id = cursor.fetchone()
+                return CanonicalRun(
+                    workspace_id=UUID(workspace_id),
+                    content_program_id=UUID(content_program_id),
+                    job_id=job_id,
+                    workflow_run_id=existing_workflow_id,
+                    trace_context=TraceContext(trace_id=trace_id, span_id=span_id),
+                )
+            job_id, trace_id, span_id = inserted
+            run = CanonicalRun(
+                workspace_id=UUID(workspace_id),
+                content_program_id=UUID(content_program_id),
+                job_id=job_id,
+                workflow_run_id=workflow_run_id,
+                trace_context=TraceContext(trace_id=trace_id, span_id=span_id),
+            )
+            self._insert_audit(
+                cursor,
+                run.workspace_id,
+                run.job_id,
+                run.workflow_run_id,
+                run.trace_context,
+                "creative_run.started",
+                "allowed",
+                {"task_queue": task_queue, "dry_run": dry_run, "brief_id": brief_id},
+            )
+        return run
+
     def _checkpoint(self, run: CanonicalRun, checkpoint_name: str) -> None:
         with self._connect() as connection, connection.cursor() as cursor:
             cursor.execute(
@@ -395,35 +520,52 @@ class CanonicalJobStore:
                 ),
             )
             self._insert_audit(
-                cursor,
-                run.workspace_id,
-                run.job_id,
-                run.workflow_run_id,
-                run.trace_context,
+                cursor, run.workspace_id, run.job_id, run.workflow_run_id, run.trace_context,
                 "external_effect.reconciled" if reconciled else "external_effect.completed",
-                "allowed",
-                {"external_id": external_id, "reconciled": reconciled},
+                "allowed", {"external_id": external_id, "reconciled": reconciled},
             )
             cursor.execute(
                 """
                 INSERT INTO provenance_records (
                     workspace_id, job_id, origin_type, source_uri, source_hash,
                     verification_status, c2pa_manifest, lineage, trace_id, span_id
-                ) VALUES (
-                    %s, %s, 'mock_provider', %s, %s,
-                    'verified', '{}'::jsonb, %s::jsonb, %s, %s
-                )
+                ) VALUES (%s, %s, 'mock_provider', %s, %s, 'verified', '{}'::jsonb, %s::jsonb, %s, %s)
                 """,
                 (
-                    run.workspace_id,
-                    run.job_id,
-                    f"mock://external-effects/{external_id}",
-                    external_id,
-                    json.dumps({"idempotency_key": idempotency_key}),
-                    run.trace_context.trace_id,
-                    run.trace_context.span_id,
+                    run.workspace_id, run.job_id, f"mock://external-effects/{external_id}",
+                    external_id, json.dumps({"idempotency_key": idempotency_key}),
+                    run.trace_context.trace_id, run.trace_context.span_id,
                 ),
             )
+
+    def _begin_effect_submission(self, run: CanonicalRun, idempotency_key: str) -> bool:
+        with self._connect() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                UPDATE external_effects
+                SET status = 'submitting', attempted_at = CURRENT_TIMESTAMP,
+                    reconciliation_state = %s::jsonb, updated_at = CURRENT_TIMESTAMP
+                WHERE workspace_id = %s AND idempotency_key = %s AND status = 'planned'
+                RETURNING id
+                """,
+                (json.dumps({"state": "submitting"}), run.workspace_id, idempotency_key),
+            )
+            return cursor.fetchone() is not None
+
+    def _effect(self, run: CanonicalRun, idempotency_key: str) -> CanonicalEffect | None:
+        with self._connect() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT status, provider_reference
+                FROM external_effects
+                WHERE workspace_id = %s AND idempotency_key = %s
+                """,
+                (run.workspace_id, idempotency_key),
+            )
+            row = cursor.fetchone()
+            if row is None:
+                return None
+            return CanonicalEffect(status=row[0], external_id=row[1])
 
     def _terminal(self, run: CanonicalRun, status: str) -> None:
         with self._connect() as connection, connection.cursor() as cursor:

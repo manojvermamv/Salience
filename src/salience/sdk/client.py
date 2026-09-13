@@ -41,6 +41,32 @@ class ContentBriefView(BaseModel):
     claim_ids: list[str]
 
 
+class CreativeRunView(BaseModel):
+    job_id: str
+    state: str
+    dry_run: bool
+    trace_id: str
+    output: dict[str, Any] = Field(default_factory=dict)
+
+
+class CreativeScriptView(BaseModel):
+    job_id: str
+    trace_id: str
+    script_id: str
+
+
+class CreativeAssetView(BaseModel):
+    job_id: str
+    trace_id: str
+    asset_id: str
+
+
+class CreativePackageView(BaseModel):
+    job_id: str
+    trace_id: str
+    ready_package_id: str
+
+
 @dataclass
 class _ControlClient:
     base_url: str
@@ -164,7 +190,64 @@ class IntelligenceClient(_ControlClient):
         return self._request("GET", f"/v1/intelligence/briefs/{brief_id}/lineage")
 
 
+@dataclass
+class CreativeClient(_ControlClient):
+    def start(
+        self,
+        *,
+        workspace_id: str,
+        content_program_id: str,
+        brief_id: str,
+        idempotency_key: str,
+        target_profile_key: str,
+        target_profile_version: int = 1,
+        dry_run: bool = True,
+    ) -> CreativeRunView:
+        return CreativeRunView.model_validate(
+            self._request(
+                "POST",
+                "/v1/creative/runs",
+                {
+                    "contract_version": "CreativeProductionRequest@v1",
+                    "workspace_id": workspace_id,
+                    "content_program_id": content_program_id,
+                    "brief_id": brief_id,
+                    "idempotency_key": idempotency_key,
+                    "target_profile_key": target_profile_key,
+                    "target_profile_version": target_profile_version,
+                    "dry_run": dry_run,
+                },
+            )
+        )
+
+    def inspect(self, job_id: str) -> CreativeRunView:
+        return CreativeRunView.model_validate(
+            self._request("GET", f"/v1/creative/runs/{job_id}")
+        )
+
+    def script(self, job_id: str) -> CreativeScriptView:
+        return CreativeScriptView.model_validate(
+            self._request("GET", f"/v1/creative/runs/{job_id}/script")
+        )
+
+    def asset(self, job_id: str) -> CreativeAssetView:
+        return CreativeAssetView.model_validate(
+            self._request("GET", f"/v1/creative/runs/{job_id}/asset")
+        )
+
+    def package(self, job_id: str) -> CreativePackageView:
+        return CreativePackageView.model_validate(
+            self._request("GET", f"/v1/creative/runs/{job_id}/package")
+        )
+
+    def package_lineage(self, ready_package_id: str) -> dict[str, Any]:
+        return self._request(
+            "GET", f"/v1/creative/packages/{ready_package_id}/lineage"
+        )
+
+
 class SalienceClient:
     def __init__(self, base_url: str, token: str) -> None:
         self.agents = AgentsClient(base_url, token)
         self.intelligence = IntelligenceClient(base_url, token)
+        self.creative = CreativeClient(base_url, token)

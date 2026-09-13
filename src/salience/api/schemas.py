@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
 
@@ -115,3 +117,40 @@ class ContentBriefResponse(BaseModel):
     package_id: str
     content: dict[str, object]
     claim_ids: list[str]
+
+
+class CreativeRunRequest(BaseModel):
+    contract_version: Literal["CreativeProductionRequest@v1"] = "CreativeProductionRequest@v1"
+    workspace_id: str = Field(min_length=1)
+    content_program_id: str = Field(min_length=1)
+    brief_id: str = Field(min_length=1)
+    idempotency_key: str = Field(min_length=1, max_length=255)
+    target_profile_key: str = Field(min_length=1, max_length=255)
+    target_profile_version: int = Field(default=1, gt=0)
+    dry_run: bool = True
+
+
+class CreativeRunResponse(BaseModel):
+    job_id: str
+    state: str
+    dry_run: bool
+    trace_id: str
+    output: dict[str, object] = Field(default_factory=dict)
+
+
+class CreativeScriptResponse(BaseModel):
+    job_id: str
+    trace_id: str
+    script_id: str
+
+
+class CreativeAssetResponse(BaseModel):
+    job_id: str
+    trace_id: str
+    asset_id: str
+
+
+class CreativePackageResponse(BaseModel):
+    job_id: str
+    trace_id: str
+    ready_package_id: str

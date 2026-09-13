@@ -29,7 +29,13 @@ from salience.workflows.intelligence import (
     IntelligenceLoopWorkflow,
     IntelligenceWorkflowState,
 )
+from salience.workflows.creative import (
+    CreativeActivities,
+    CreativeProductionWorkflow,
+    CreativeWorkflowState,
+)
 from salience.agents.fixtures import fixture_agent_service
+from salience.creative.repository import CreativeRepository
 from salience.intelligence.repository import IntelligenceRepository
 from salience.research.rss import ConfiguredRssResearchConnector
 from salience.workflows.persistence import CanonicalJobStore
@@ -57,11 +63,18 @@ async def run_worker() -> None:
         repository=IntelligenceRepository(settings.database_url),
         agents=_intelligence_agent_service(settings),
     )
+    creative_state = CreativeWorkflowState(
+        store=CanonicalJobStore(settings.database_url),
+        intelligence_repository=IntelligenceRepository(settings.database_url),
+        creative_repository=CreativeRepository(settings.database_url),
+        agents=fixture_agent_service(),
+    )
     worker = build_deployable_worker(
         client,
         task_queue=settings.worker_task_queue,
         dummy_state=state,
         intelligence_state=intelligence_state,
+        creative_state=creative_state,
     )
     await worker.run()
 
@@ -72,31 +85,54 @@ def build_deployable_worker(
     task_queue: str,
     dummy_state: WorkflowScenarioState,
     intelligence_state: IntelligenceWorkflowState,
+    creative_state: CreativeWorkflowState | None = None,
 ) -> Worker:
     """Register every owned workflow on one task queue without split ownership."""
 
     dummy = DummyActivities(dummy_state)
     intelligence = IntelligenceActivities(intelligence_state)
+    creative = CreativeActivities(creative_state) if creative_state is not None else None
+    workflows = [DurableDummyWorkflow, IntelligenceLoopWorkflow]
+    activities = [
+        dummy.checkpoint,
+        dummy.external_effect,
+        dummy.terminal,
+        dummy.dead_letter,
+        intelligence.fetch,
+        intelligence.normalize,
+        intelligence.rank,
+        intelligence.strategy,
+        intelligence.queue,
+        intelligence.complete,
+        intelligence.cancel,
+        intelligence.packages,
+        intelligence.claims,
+        intelligence.brief,
+    ]
+    if creative is not None:
+        workflows.append(CreativeProductionWorkflow)
+        activities.extend(
+            [
+                creative.load_brief,
+                creative.script,
+                creative.verify_script,
+                creative.direction,
+                creative.authorize,
+                creative.submit_or_reconcile,
+                creative.await_provider,
+                creative.import_validate,
+                creative.distribute,
+                creative.final_gate,
+                creative.complete,
+                creative.denied,
+                creative.cancel,
+            ]
+        )
     return Worker(
         client,
         task_queue=task_queue,
-        workflows=[DurableDummyWorkflow, IntelligenceLoopWorkflow],
-        activities=[
-            dummy.checkpoint,
-            dummy.external_effect,
-            dummy.terminal,
-            dummy.dead_letter,
-            intelligence.fetch,
-            intelligence.normalize,
-            intelligence.rank,
-            intelligence.strategy,
-            intelligence.queue,
-            intelligence.complete,
-            intelligence.cancel,
-            intelligence.packages,
-            intelligence.claims,
-            intelligence.brief,
-        ],
+        workflows=workflows,
+        activities=activities,
     )
 
 

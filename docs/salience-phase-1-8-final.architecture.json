@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Salience: Governed Content Production, Phase 1–8",
+    "locale": "en",
+    "quality_profile": "showcase",
+    "output": "salience-phase-1-8-final.architecture.html",
+    "viewBox": [1600, 740],
+    "repository": {
+      "url": "https://github.com/manojvermamv/Salience.git",
+      "provider": "github",
+      "revision": "40181729efef72858ca7785ac48bbbbad7262d70"
+    },
+    "views": [
+      {"id": "governed-start", "label": "Governed start", "focus": ["operators", "control-api", "governance", "temporal", "postgres"], "note": "Scoped, idempotent starts preserve canonical job and trace identities."},
+      {"id": "brief-to-ready", "label": "Brief to ready", "focus": ["intelligence", "creative-workflow", "provider-adapters", "distribution", "ready-package"], "note": "A selected evidence-linked brief reaches an immutable future publishing handoff."},
+      {"id": "assets-and-lineage", "label": "Assets and lineage", "focus": ["creative-workflow", "postgres", "object-storage", "ready-package"], "note": "Canonical records retain lineage while object storage keeps bytes replaceable."}
+    ]
+  },
+  "components": [
+    {"id": "operators", "type": "external", "label": "Operators, CLI & SDK", "tag": "scoped control", "pos": [20, 220], "size": [165, 76], "sources": [{"path": "src/salience/cli.py", "label": "HTTP-only CLI"}]},
+    {"id": "control-api", "type": "backend", "label": "Control API", "tag": "dry-run by default", "pos": [210, 220], "size": [165, 76], "sources": [{"path": "src/salience/api/routes/creative.py", "label": "creative routes"}]},
+    {"id": "temporal", "type": "messagebus", "label": "Temporal adapter", "tag": "durable workflow", "pos": [400, 220], "size": [165, 76], "sources": [{"path": "src/salience/api/dependencies.py", "label": "control adapter"}]},
+    {"id": "worker", "type": "backend", "label": "Salience worker", "tag": "restart-safe activities", "pos": [590, 220], "size": [165, 76], "sources": [{"path": "src/salience/workflows/worker.py", "label": "worker registration"}]},
+    {"id": "intelligence", "type": "backend", "label": "Intelligence loop", "tag": "brief + evidence lineage", "pos": [780, 220], "size": [165, 76], "sources": [{"path": "src/salience/workflows/intelligence.py", "label": "brief workflow"}]},
+    {"id": "creative-workflow", "type": "backend", "label": "Creative workflow", "tag": "agents + reconciliation", "pos": [970, 220], "size": [165, 76], "sources": [{"path": "src/salience/workflows/creative.py", "label": "creative workflow"}, {"path": "src/salience/agents/creative.py", "label": "creative agents"}]},
+    {"id": "distribution", "type": "backend", "label": "Distribution governance", "tag": "profile + disclosure", "pos": [1160, 220], "size": [165, 76], "sources": [{"path": "src/salience/creative/service.py", "label": "package assembly"}]},
+    {"id": "ready-package", "type": "security", "label": "Ready-to-Publish Package", "tag": "Phase 9 handoff only", "pos": [1350, 220], "size": [190, 76], "sources": [{"path": "src/salience/creative/contracts.py", "label": "immutable contract"}]},
+    {"id": "governance", "type": "security", "label": "Governance & rights", "tag": "scope, budget, consent", "pos": [210, 475], "size": [165, 76], "sources": [{"path": "src/salience/creative/governance.py", "label": "deterministic gates"}]},
+    {"id": "postgres", "type": "database", "label": "PostgreSQL record of truth", "tag": "migrations 0001–0007", "pos": [520, 475], "size": [220, 76], "sources": [{"path": "migrations/versions/0006_creative_production_distribution.py", "label": "creative schema"}, {"path": "migrations/versions/0007_creative_lineage.py", "label": "lineage schema"}]},
+    {"id": "object-storage", "type": "cloud", "label": "Object-store contract", "tag": "hash-stable asset bytes", "pos": [790, 475], "size": [200, 76], "sources": [{"path": "src/salience/creative/media.py", "label": "media receipts"}]},
+    {"id": "provider-adapters", "type": "external", "label": "Creative provider adapters", "tag": "fixture or credential-gated", "pos": [1000, 475], "size": [220, 76], "sources": [{"path": "src/salience/creative/providers.py", "label": "owned provider DTOs"}]}
+  ],
+  "connections": [
+    {"id": "operator-request", "from": "operators", "to": "control-api", "label": "authenticated HTTP control", "variant": "emphasis", "labelDy": 60},
+    {"id": "authorize", "from": "control-api", "to": "governance", "label": "scopes, policy, budget", "fromSide": "bottom", "toSide": "top", "labelAt": [292, 390]},
+    {"id": "start-workflow", "from": "control-api", "to": "temporal", "label": "idempotent workflow start", "labelDy": 60},
+    {"id": "dispatch", "from": "temporal", "to": "worker", "label": "tasks, retries, timers", "labelDy": 67},
+    {"id": "assemble-brief", "from": "worker", "to": "intelligence", "label": "evidence to immutable brief", "labelDy": 60},
+    {"id": "produce", "from": "intelligence", "to": "creative-workflow", "label": "selected ContentBrief@v1", "labelDy": 74},
+    {"id": "provider-job", "from": "creative-workflow", "to": "provider-adapters", "label": "capability request + reconciliation", "variant": "dashed", "fromSide": "bottom", "toSide": "top", "labelAt": [1080, 430]},
+    {"id": "govern-package", "from": "creative-workflow", "to": "distribution", "label": "validated asset + claim links", "labelDy": 67},
+    {"id": "immutable-handoff", "from": "distribution", "to": "ready-package", "label": "approved immutable package", "variant": "emphasis", "labelDy": 60},
+    {"id": "canonical-lineage", "from": "worker", "to": "postgres", "label": "jobs, trace, audit, provenance", "fromSide": "bottom", "toSide": "top", "labelAt": [650, 420]},
+    {"id": "asset-bytes", "from": "creative-workflow", "to": "object-storage", "label": "hash-verified media receipt", "fromSide": "bottom", "toSide": "top", "labelAt": [900, 400]}
+  ],
+  "cards": [
+    {"dot": "violet", "title": "Phase boundary", "items": ["Fixture path: ContentBrief@v1 → ReadyToPublishPackage@v1.", "No live publishing, analytics, experiments, or learning loops.", "FFmpeg/C2PA verification is NOT RUN without an operator binary or signer."]}
+  ]
+}

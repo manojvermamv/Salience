@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Mapping
 
 
@@ -47,6 +48,12 @@ class Settings:
     mcp_auth_secret_ref: SecretReference | None
     a2a_endpoint: str | None
     a2a_auth_secret_ref: SecretReference | None
+    creative_max_variants: int
+    creative_max_storage_bytes: int
+    creative_min_free_bytes: int
+    creative_provider_timeout_seconds: int
+    creative_temp_directory: Path
+    creative_synthesia_secret_ref: SecretReference | None
 
     @classmethod
     def from_environment(cls) -> "Settings":
@@ -90,6 +97,22 @@ class Settings:
             mcp_auth_secret_ref=_optional_secret_reference(values, "MCP_AUTH_SECRET_REF"),
             a2a_endpoint=_optional_value(values, "A2A_ENDPOINT"),
             a2a_auth_secret_ref=_optional_secret_reference(values, "A2A_AUTH_SECRET_REF"),
+            creative_max_variants=_positive_integer(values, "CREATIVE_MAX_VARIANTS", default=3),
+            creative_max_storage_bytes=_positive_integer(
+                values, "CREATIVE_MAX_STORAGE_BYTES", default=100_000_000
+            ),
+            creative_min_free_bytes=_positive_integer(
+                values, "CREATIVE_MIN_FREE_BYTES", default=2_000_000_000
+            ),
+            creative_provider_timeout_seconds=_positive_integer(
+                values, "CREATIVE_PROVIDER_TIMEOUT_SECONDS", default=300
+            ),
+            creative_temp_directory=Path(
+                values.get("CREATIVE_TEMP_DIRECTORY", "/tmp/salience-creative")
+            ),
+            creative_synthesia_secret_ref=_optional_secret_reference(
+                values, "SYNTHESIA_API_SECRET_REF"
+            ),
         )
 
 

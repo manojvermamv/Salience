@@ -556,3 +556,538 @@ class ModelInvocationRecord(Base):
     actual_cost_micros: Mapped[int] = mapped_column(BigInteger, nullable=False)
     trace_id: Mapped[str | None] = mapped_column(String(64), index=True)
     span_id: Mapped[str | None] = mapped_column(String(32))
+
+
+class ScriptVersion(CanonicalIdentity, Base):
+    __tablename__ = "script_versions"
+    __table_args__ = (
+        UniqueConstraint(
+            "content_program_id",
+            "script_key",
+            "version",
+            name="uq_script_versions_program_key_version",
+        ),
+    )
+
+    workspace_id: Mapped[UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    content_program_id: Mapped[UUID] = mapped_column(
+        ForeignKey("content_programs.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    content_brief_id: Mapped[UUID] = mapped_column(
+        ForeignKey("content_brief_versions.id", ondelete="RESTRICT"), nullable=False
+    )
+    parent_script_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("script_versions.id", ondelete="RESTRICT"), index=True
+    )
+    script_key: Mapped[str] = mapped_column(String(255), nullable=False)
+    version: Mapped[int] = mapped_column(Integer, nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    target_format: Mapped[str] = mapped_column(String(128), nullable=False)
+    target_duration_seconds: Mapped[int] = mapped_column(Integer, nullable=False)
+    script: Mapped[JsonDocument] = mapped_column(JSONB, nullable=False)
+    claim_ids: Mapped[JsonDocument] = mapped_column(JSONB, default=list)
+    evidence_ids: Mapped[JsonDocument] = mapped_column(JSONB, default=list)
+    provenance: Mapped[JsonDocument] = mapped_column(JSONB, default=dict)
+    trace_id: Mapped[str | None] = mapped_column(String(64), index=True)
+    span_id: Mapped[str | None] = mapped_column(String(32))
+
+
+class CreativeBrief(CanonicalIdentity, Base):
+    __tablename__ = "creative_briefs"
+    __table_args__ = (UniqueConstraint("content_program_id", "creative_key", "version"),)
+
+    workspace_id: Mapped[UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    content_program_id: Mapped[UUID] = mapped_column(
+        ForeignKey("content_programs.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    content_brief_id: Mapped[UUID] = mapped_column(
+        ForeignKey("content_brief_versions.id", ondelete="RESTRICT"), nullable=False
+    )
+    script_version_id: Mapped[UUID] = mapped_column(
+        ForeignKey("script_versions.id", ondelete="RESTRICT"), nullable=False
+    )
+    creative_key: Mapped[str] = mapped_column(String(255), nullable=False)
+    version: Mapped[int] = mapped_column(Integer, nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    creative_plan: Mapped[JsonDocument] = mapped_column(JSONB, nullable=False)
+    provenance: Mapped[JsonDocument] = mapped_column(JSONB, default=dict)
+    trace_id: Mapped[str | None] = mapped_column(String(64), index=True)
+    span_id: Mapped[str | None] = mapped_column(String(32))
+
+
+class Storyboard(CanonicalIdentity, Base):
+    __tablename__ = "storyboards"
+    __table_args__ = (UniqueConstraint("creative_brief_id", "version"),)
+
+    creative_brief_id: Mapped[UUID] = mapped_column(
+        ForeignKey("creative_briefs.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    version: Mapped[int] = mapped_column(Integer, nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    content: Mapped[JsonDocument] = mapped_column(JSONB, nullable=False)
+    provenance: Mapped[JsonDocument] = mapped_column(JSONB, default=dict)
+    trace_id: Mapped[str | None] = mapped_column(String(64), index=True)
+    span_id: Mapped[str | None] = mapped_column(String(32))
+
+
+class ShotPlan(CanonicalIdentity, Base):
+    __tablename__ = "shot_plans"
+    __table_args__ = (UniqueConstraint("storyboard_id", "sequence_no"),)
+
+    storyboard_id: Mapped[UUID] = mapped_column(
+        ForeignKey("storyboards.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    sequence_no: Mapped[int] = mapped_column(Integer, nullable=False)
+    duration_seconds: Mapped[Decimal] = mapped_column(Numeric(10, 3), nullable=False)
+    shot: Mapped[JsonDocument] = mapped_column(JSONB, nullable=False)
+    capability_requirements: Mapped[JsonDocument] = mapped_column(JSONB, default=list)
+
+
+class CreativeJob(CanonicalIdentity, Base):
+    __tablename__ = "creative_jobs"
+    __table_args__ = (
+        UniqueConstraint(
+            "content_program_id",
+            "request_fingerprint",
+            name="uq_creative_jobs_program_request_fingerprint",
+        ),
+        UniqueConstraint("content_program_id", "idempotency_key"),
+    )
+
+    workspace_id: Mapped[UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    content_program_id: Mapped[UUID] = mapped_column(
+        ForeignKey("content_programs.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    job_id: Mapped[UUID | None] = mapped_column(ForeignKey("jobs.id", ondelete="SET NULL"))
+    content_brief_id: Mapped[UUID] = mapped_column(
+        ForeignKey("content_brief_versions.id", ondelete="RESTRICT"), nullable=False
+    )
+    script_version_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("script_versions.id", ondelete="RESTRICT")
+    )
+    creative_brief_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("creative_briefs.id", ondelete="RESTRICT")
+    )
+    requested_capability: Mapped[str] = mapped_column(String(128), nullable=False)
+    request_fingerprint: Mapped[str] = mapped_column(String(128), nullable=False)
+    idempotency_key: Mapped[str] = mapped_column(String(255), nullable=False)
+    state: Mapped[str] = mapped_column(String(32), nullable=False)
+    request: Mapped[JsonDocument] = mapped_column(JSONB, nullable=False)
+    budget_reservation_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("budget_reservations.id", ondelete="RESTRICT")
+    )
+    timeout_seconds: Mapped[int] = mapped_column(Integer, nullable=False)
+    trace_id: Mapped[str | None] = mapped_column(String(64), index=True)
+    span_id: Mapped[str | None] = mapped_column(String(32))
+    provenance: Mapped[JsonDocument] = mapped_column(JSONB, default=dict)
+
+
+class ProviderJob(CanonicalIdentity, Base):
+    __tablename__ = "provider_jobs"
+    __table_args__ = (
+        UniqueConstraint(
+            "provider_id",
+            "external_job_id",
+            name="uq_provider_jobs_provider_external",
+        ),
+    )
+
+    creative_job_id: Mapped[UUID] = mapped_column(
+        ForeignKey("creative_jobs.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    plugin_version_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("plugin_versions.id", ondelete="RESTRICT")
+    )
+    provider_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    provider_version: Mapped[str | None] = mapped_column(String(64))
+    model_id: Mapped[str | None] = mapped_column(String(255))
+    external_job_id: Mapped[str | None] = mapped_column(String(255))
+    state: Mapped[str] = mapped_column(String(32), nullable=False)
+    reconciliation_state: Mapped[JsonDocument] = mapped_column(JSONB, default=dict)
+    normalized_request: Mapped[JsonDocument] = mapped_column(JSONB, nullable=False)
+    provider_extension: Mapped[JsonDocument] = mapped_column(JSONB, default=dict)
+    estimated_cost_micros: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
+    actual_cost_micros: Mapped[int | None] = mapped_column(BigInteger)
+    failure_class: Mapped[str | None] = mapped_column(String(128))
+    submitted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    trace_id: Mapped[str | None] = mapped_column(String(64), index=True)
+    span_id: Mapped[str | None] = mapped_column(String(32))
+
+
+class Asset(CanonicalIdentity, Base):
+    __tablename__ = "assets"
+    __table_args__ = (
+        UniqueConstraint(
+            "content_program_id",
+            "content_hash",
+            "media_type",
+            name="uq_assets_program_hash_media_type",
+        ),
+    )
+
+    workspace_id: Mapped[UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    content_program_id: Mapped[UUID] = mapped_column(
+        ForeignKey("content_programs.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    artifact_id: Mapped[UUID | None] = mapped_column(ForeignKey("artifacts.id", ondelete="SET NULL"))
+    creative_job_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("creative_jobs.id", ondelete="SET NULL")
+    )
+    storage_key: Mapped[str] = mapped_column(String(1024), nullable=False)
+    content_hash: Mapped[str] = mapped_column(String(128), nullable=False)
+    media_type: Mapped[str] = mapped_column(String(255), nullable=False)
+    byte_size: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    origin_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    technical_properties: Mapped[JsonDocument] = mapped_column(JSONB, default=dict)
+    creation_parameters: Mapped[JsonDocument] = mapped_column(JSONB, default=dict)
+    rights_status: Mapped[str] = mapped_column(String(32), nullable=False, default="unknown")
+    provenance_status: Mapped[str] = mapped_column(
+        String(32), nullable=False, default="not_configured"
+    )
+    trace_id: Mapped[str | None] = mapped_column(String(64), index=True)
+    span_id: Mapped[str | None] = mapped_column(String(32))
+
+
+class AssetVariant(CanonicalIdentity, Base):
+    __tablename__ = "asset_variants"
+    __table_args__ = (UniqueConstraint("asset_id", "variant_key"),)
+
+    asset_id: Mapped[UUID] = mapped_column(
+        ForeignKey("assets.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    provider_job_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("provider_jobs.id", ondelete="SET NULL")
+    )
+    variant_key: Mapped[str] = mapped_column(String(255), nullable=False)
+    selection_state: Mapped[str] = mapped_column(String(32), nullable=False)
+    selection_reason: Mapped[str | None] = mapped_column(Text)
+    verifier_results: Mapped[JsonDocument] = mapped_column(JSONB, default=dict)
+
+
+class AssetRelationship(CanonicalIdentity, Base):
+    __tablename__ = "asset_relationships"
+    __table_args__ = (
+        UniqueConstraint("parent_asset_id", "child_asset_id", "relationship_type"),
+    )
+
+    parent_asset_id: Mapped[UUID] = mapped_column(
+        ForeignKey("assets.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    child_asset_id: Mapped[UUID] = mapped_column(
+        ForeignKey("assets.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    relationship_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    transformation: Mapped[JsonDocument] = mapped_column(JSONB, default=dict)
+
+
+class CaptionTrack(CanonicalIdentity, Base):
+    __tablename__ = "caption_tracks"
+    __table_args__ = (UniqueConstraint("asset_id", "language_code", "format"),)
+
+    asset_id: Mapped[UUID] = mapped_column(
+        ForeignKey("assets.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    language_code: Mapped[str] = mapped_column(String(32), nullable=False)
+    format: Mapped[str] = mapped_column(String(32), nullable=False)
+    content: Mapped[JsonDocument] = mapped_column(JSONB, nullable=False)
+    artifact_id: Mapped[UUID | None] = mapped_column(ForeignKey("artifacts.id", ondelete="SET NULL"))
+    validation: Mapped[JsonDocument] = mapped_column(JSONB, default=dict)
+
+
+class Composition(CanonicalIdentity, Base):
+    __tablename__ = "compositions"
+    __table_args__ = (UniqueConstraint("content_program_id", "composition_key", "version"),)
+
+    content_program_id: Mapped[UUID] = mapped_column(
+        ForeignKey("content_programs.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    output_asset_id: Mapped[UUID | None] = mapped_column(ForeignKey("assets.id", ondelete="SET NULL"))
+    composition_key: Mapped[str] = mapped_column(String(255), nullable=False)
+    version: Mapped[int] = mapped_column(Integer, nullable=False)
+    specification: Mapped[JsonDocument] = mapped_column(JSONB, nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+
+
+class AssetLicense(CanonicalIdentity, Base):
+    __tablename__ = "asset_licenses"
+
+    asset_id: Mapped[UUID] = mapped_column(
+        ForeignKey("assets.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    license_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    attribution: Mapped[JsonDocument] = mapped_column(JSONB, default=dict)
+    commercial_use: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    terms: Mapped[JsonDocument] = mapped_column(JSONB, default=dict)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+
+
+class ConsentRecord(CanonicalIdentity, Base):
+    __tablename__ = "consent_records"
+    __table_args__ = (UniqueConstraint("workspace_id", "subject_type", "subject_id"),)
+
+    workspace_id: Mapped[UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    subject_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    subject_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    permitted_channels: Mapped[JsonDocument] = mapped_column(JSONB, default=list)
+    commercial_use: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    territories: Mapped[JsonDocument] = mapped_column(JSONB, default=list)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    evidence: Mapped[JsonDocument] = mapped_column(JSONB, default=dict)
+
+
+class LikenessIdentity(CanonicalIdentity, Base):
+    __tablename__ = "likeness_identities"
+    __table_args__ = (UniqueConstraint("workspace_id", "identity_key"),)
+
+    workspace_id: Mapped[UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    identity_key: Mapped[str] = mapped_column(String(255), nullable=False)
+    consent_record_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("consent_records.id", ondelete="RESTRICT")
+    )
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    attributes: Mapped[JsonDocument] = mapped_column(JSONB, default=dict)
+
+
+class VoiceIdentity(CanonicalIdentity, Base):
+    __tablename__ = "voice_identities"
+    __table_args__ = (UniqueConstraint("workspace_id", "identity_key"),)
+
+    workspace_id: Mapped[UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    identity_key: Mapped[str] = mapped_column(String(255), nullable=False)
+    consent_record_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("consent_records.id", ondelete="RESTRICT")
+    )
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    attributes: Mapped[JsonDocument] = mapped_column(JSONB, default=dict)
+
+
+class UsageRestriction(CanonicalIdentity, Base):
+    __tablename__ = "usage_restrictions"
+
+    asset_id: Mapped[UUID | None] = mapped_column(ForeignKey("assets.id", ondelete="CASCADE"))
+    restriction_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    document: Mapped[JsonDocument] = mapped_column(JSONB, nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+
+
+class AssetProvenance(CanonicalIdentity, Base):
+    __tablename__ = "asset_provenance"
+    __table_args__ = (UniqueConstraint("asset_id"),)
+
+    asset_id: Mapped[UUID] = mapped_column(
+        ForeignKey("assets.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    provenance_record_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("provenance_records.id", ondelete="SET NULL")
+    )
+    origin_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    ingredients: Mapped[JsonDocument] = mapped_column(JSONB, default=list)
+    transformations: Mapped[JsonDocument] = mapped_column(JSONB, default=list)
+    c2pa_manifest_reference: Mapped[str | None] = mapped_column(Text)
+    validation_status: Mapped[str] = mapped_column(String(32), nullable=False)
+    signer_metadata: Mapped[JsonDocument] = mapped_column(JSONB, default=dict)
+
+
+class PlatformProfile(CanonicalIdentity, Base):
+    __tablename__ = "platform_profiles"
+    __table_args__ = (
+        UniqueConstraint(
+            "content_program_id",
+            "profile_key",
+            "version",
+            name="uq_platform_profiles_program_key_version",
+        ),
+    )
+
+    workspace_id: Mapped[UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    content_program_id: Mapped[UUID] = mapped_column(
+        ForeignKey("content_programs.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    profile_key: Mapped[str] = mapped_column(String(255), nullable=False)
+    version: Mapped[int] = mapped_column(Integer, nullable=False)
+    target_platform: Mapped[str] = mapped_column(String(128), nullable=False)
+    rules: Mapped[JsonDocument] = mapped_column(JSONB, nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+
+
+class DistributionPackage(CanonicalIdentity, Base):
+    __tablename__ = "distribution_packages"
+    __table_args__ = (
+        UniqueConstraint(
+            "content_program_id",
+            "package_key",
+            "version",
+            name="uq_distribution_packages_program_key_version",
+        ),
+    )
+
+    workspace_id: Mapped[UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    content_program_id: Mapped[UUID] = mapped_column(
+        ForeignKey("content_programs.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    content_brief_id: Mapped[UUID] = mapped_column(
+        ForeignKey("content_brief_versions.id", ondelete="RESTRICT"), nullable=False
+    )
+    script_version_id: Mapped[UUID] = mapped_column(
+        ForeignKey("script_versions.id", ondelete="RESTRICT"), nullable=False
+    )
+    platform_profile_id: Mapped[UUID] = mapped_column(
+        ForeignKey("platform_profiles.id", ondelete="RESTRICT"), nullable=False
+    )
+    package_key: Mapped[str] = mapped_column(String(255), nullable=False)
+    version: Mapped[int] = mapped_column(Integer, nullable=False)
+    locale: Mapped[str] = mapped_column(String(32), nullable=False)
+    package_metadata: Mapped[JsonDocument] = mapped_column("metadata", JSONB, nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    verifier_results: Mapped[JsonDocument] = mapped_column(JSONB, default=dict)
+
+
+class DistributionPackageVariant(CanonicalIdentity, Base):
+    __tablename__ = "distribution_package_variants"
+    __table_args__ = (UniqueConstraint("distribution_package_id", "variant_key"),)
+
+    distribution_package_id: Mapped[UUID] = mapped_column(
+        ForeignKey("distribution_packages.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    variant_key: Mapped[str] = mapped_column(String(255), nullable=False)
+    package_metadata: Mapped[JsonDocument] = mapped_column("metadata", JSONB, nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+
+
+class DistributionPackageAsset(CanonicalIdentity, Base):
+    __tablename__ = "distribution_package_assets"
+    __table_args__ = (
+        UniqueConstraint("distribution_package_id", "asset_role"),
+    )
+
+    distribution_package_id: Mapped[UUID] = mapped_column(
+        ForeignKey("distribution_packages.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    asset_id: Mapped[UUID] = mapped_column(
+        ForeignKey("assets.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    asset_role: Mapped[str] = mapped_column(String(64), nullable=False)
+    selection_reason: Mapped[str | None] = mapped_column(Text)
+
+
+class TitleThumbnailCandidate(CanonicalIdentity, Base):
+    __tablename__ = "title_thumbnail_candidates"
+    __table_args__ = (UniqueConstraint("distribution_package_id", "candidate_key"),)
+
+    distribution_package_id: Mapped[UUID] = mapped_column(
+        ForeignKey("distribution_packages.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    candidate_key: Mapped[str] = mapped_column(String(255), nullable=False)
+    title: Mapped[str] = mapped_column(Text, nullable=False)
+    thumbnail_asset_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("assets.id", ondelete="SET NULL")
+    )
+    score: Mapped[Decimal | None] = mapped_column(Numeric(7, 3))
+    selection_state: Mapped[str] = mapped_column(String(32), nullable=False)
+    reason: Mapped[str | None] = mapped_column(Text)
+
+
+class Localization(CanonicalIdentity, Base):
+    __tablename__ = "localizations"
+    __table_args__ = (UniqueConstraint("distribution_package_id", "target_locale"),)
+
+    distribution_package_id: Mapped[UUID] = mapped_column(
+        ForeignKey("distribution_packages.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    source_locale: Mapped[str] = mapped_column(String(32), nullable=False)
+    target_locale: Mapped[str] = mapped_column(String(32), nullable=False)
+    content: Mapped[JsonDocument] = mapped_column(JSONB, nullable=False)
+    claim_ids: Mapped[JsonDocument] = mapped_column(JSONB, default=list)
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+
+
+class OriginalityEvaluation(CanonicalIdentity, Base):
+    __tablename__ = "originality_evaluations"
+    __table_args__ = (UniqueConstraint("distribution_package_id", "evaluator_version"),)
+
+    distribution_package_id: Mapped[UUID] = mapped_column(
+        ForeignKey("distribution_packages.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    evaluator_version: Mapped[str] = mapped_column(String(64), nullable=False)
+    metrics: Mapped[JsonDocument] = mapped_column(JSONB, nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    reason: Mapped[str] = mapped_column(Text, nullable=False)
+
+
+class SyntheticMediaDisclosure(CanonicalIdentity, Base):
+    __tablename__ = "synthetic_media_disclosures"
+    __table_args__ = (UniqueConstraint("distribution_package_id"),)
+
+    distribution_package_id: Mapped[UUID] = mapped_column(
+        ForeignKey("distribution_packages.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    decision: Mapped[JsonDocument] = mapped_column(JSONB, nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    policy_version_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("policy_versions.id", ondelete="RESTRICT")
+    )
+
+
+class ReadyToPublishPackage(CanonicalIdentity, Base):
+    __tablename__ = "ready_to_publish_packages"
+    __table_args__ = (
+        UniqueConstraint(
+            "content_program_id",
+            "ready_package_key",
+            "version",
+            name="uq_ready_package_program_key_version",
+        ),
+    )
+
+    workspace_id: Mapped[UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    content_program_id: Mapped[UUID] = mapped_column(
+        ForeignKey("content_programs.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    content_brief_id: Mapped[UUID] = mapped_column(
+        ForeignKey("content_brief_versions.id", ondelete="RESTRICT"), nullable=False
+    )
+    script_version_id: Mapped[UUID] = mapped_column(
+        ForeignKey("script_versions.id", ondelete="RESTRICT"), nullable=False
+    )
+    distribution_package_id: Mapped[UUID] = mapped_column(
+        ForeignKey("distribution_packages.id", ondelete="RESTRICT"), nullable=False
+    )
+    platform_profile_id: Mapped[UUID] = mapped_column(
+        ForeignKey("platform_profiles.id", ondelete="RESTRICT"), nullable=False
+    )
+    disclosure_id: Mapped[UUID] = mapped_column(
+        ForeignKey("synthetic_media_disclosures.id", ondelete="RESTRICT"), nullable=False
+    )
+    ready_package_key: Mapped[str] = mapped_column(String(255), nullable=False)
+    version: Mapped[int] = mapped_column(Integer, nullable=False)
+    approval_request_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("approval_requests.id", ondelete="RESTRICT")
+    )
+    approval_state: Mapped[str] = mapped_column(String(32), nullable=False)
+    verifier_results: Mapped[JsonDocument] = mapped_column(JSONB, nullable=False)
+    policy_versions: Mapped[JsonDocument] = mapped_column(JSONB, default=list)
+    lineage: Mapped[JsonDocument] = mapped_column(JSONB, nullable=False)

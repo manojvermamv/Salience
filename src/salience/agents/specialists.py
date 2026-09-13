@@ -1,6 +1,7 @@
 from typing import Any
 
 from salience.agents.execution import AgentExecutionContext, AgentInvocation, AgentRuntime
+from salience.agents.creative import fixture_creative_runtimes
 from salience.agents.intelligence import (
     BrowserResearchAgentRuntime,
     ResearchAgentRuntime,
@@ -27,4 +28,5 @@ def fixture_specialist_runtimes(
         ),
         "strategy_agent": StrategyAgentRuntime(source_label="fixture"),
         "browser_research_agent": BrowserResearchAgentRuntime(),
+        **fixture_creative_runtimes(),
     }

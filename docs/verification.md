@@ -1,6 +1,6 @@
 # Verification
 
-## Current verified baseline
+## Earlier Phase 1–6 Baseline
 
 On 2026-09-12, the merged `main` checkout passed the full Python suite: 99
 tests passed, one live test was intentionally skipped, and the only warning was
@@ -56,3 +56,36 @@ source/fetch/version/run/hash receipts, blocked domains and redirects, disabled
 downloads, retained timeout traces without secrets, and untrusted hostile text.
 It retains every run below `artifacts/browser-evidence/`; a test failure prints
 that location for inspection. It never performs global Docker or system cleanup.
+
+## Phase 7–8 Creative Production
+
+The current Phase 1–8 non-live regression passed 139 tests on 2026-09-13. Its
+only warning was the existing third-party Starlette `BlockingPortal`
+deprecation. The focused verifier below remains the fastest complete contract
+check for the creative-production boundary.
+
+Run the project-owned verifier from a prepared checkout:
+
+```bash
+bash scripts/verify-phases-7-8.sh
+```
+
+The script starts or reuses only the project PostgreSQL and Temporal fixtures,
+applies Alembic migrations through `0007_creative_lineage`, and drives the
+creative control API, CLI, SDK, fixture provider, full Temporal workflow, and
+interruption/restart recovery. The asserted completed path is a selected brief
+through claim-linked script and direction, policy/budget/rights authorization,
+idempotent provider submission/reconciliation, hash-stable asset import,
+distribution governance, disclosure/approval, and ready-package lineage.
+
+The script distinguishes a passing fixture path from unavailable optional
+dependencies. It reports `NOT RUN` rather than a false pass for FFmpeg media
+execution when `ffmpeg`/`ffprobe` are absent, C2PA signing when `c2patool` and
+`C2PA_SIGNER_REF` are not both configured, and live provider/publishing work
+because Phase 7–8 deliberately performs neither.
+
+For a full non-live regression before integration, run:
+
+```bash
+pytest tests/contracts tests/unit tests/integration tests/e2e tests/evals -m 'not live' -q
+```
