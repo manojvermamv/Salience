@@ -95,6 +95,111 @@ def fixture_agent_service(
             supports_async=True,
         )
     )
+    registry.register(
+        AgentManifest(
+            agent_id="writer_agent",
+            version="1.0.0",
+            input_schema={
+                "type": "object",
+                "required": [
+                    "brief_id",
+                    "content_program_id",
+                    "claim_ids",
+                    "evidence_ids",
+                    "target_format",
+                    "target_duration_seconds",
+                ],
+            },
+            output_schema={
+                "type": "object",
+                "required": [
+                    "contract_version",
+                    "brief_id",
+                    "content_program_id",
+                    "claim_ids",
+                    "evidence_ids",
+                    "sections",
+                ],
+            },
+            tool_scopes=["creative.script.plan"],
+            memory_scopes=["evidence"],
+            effect_classification="read",
+            supports_sync=True,
+            supports_async=True,
+        )
+    )
+    registry.register(
+        AgentManifest(
+            agent_id="creative_director_agent",
+            version="1.0.0",
+            input_schema={"type": "object", "required": ["brief_id", "script_id"]},
+            output_schema={
+                "type": "object",
+                "required": [
+                    "contract_version",
+                    "brief_id",
+                    "script_id",
+                    "provider_id",
+                    "shots",
+                    "capability_requests",
+                ],
+            },
+            tool_scopes=["creative.direction.plan"],
+            memory_scopes=["evidence"],
+            effect_classification="read",
+            supports_sync=True,
+            supports_async=True,
+        )
+    )
+    registry.register(
+        AgentManifest(
+            agent_id="production_agent",
+            version="1.0.0",
+            input_schema={
+                "type": "object",
+                "required": ["brief_id", "script_id", "capability", "max_variants"],
+            },
+            output_schema={
+                "type": "object",
+                "required": [
+                    "contract_version",
+                    "brief_id",
+                    "script_id",
+                    "capability",
+                    "requested_variants",
+                    "external_effect",
+                ],
+            },
+            tool_scopes=["creative.production.plan"],
+            memory_scopes=[],
+            effect_classification="read",
+            supports_sync=True,
+            supports_async=True,
+        )
+    )
+    registry.register(
+        AgentManifest(
+            agent_id="verifier_agent",
+            version="1.0.0",
+            input_schema={"type": "object", "required": ["subject_id", "subject_type"]},
+            output_schema={
+                "type": "object",
+                "required": [
+                    "contract_version",
+                    "subject_id",
+                    "subject_type",
+                    "advisory_only",
+                    "findings",
+                    "deterministic_gate_required",
+                ],
+            },
+            tool_scopes=["creative.verify"],
+            memory_scopes=[],
+            effect_classification="read",
+            supports_sync=True,
+            supports_async=True,
+        )
+    )
     return AgentService(
         registry=registry,
         runtimes=fixture_specialist_runtimes(
