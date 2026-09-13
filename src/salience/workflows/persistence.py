@@ -519,6 +519,24 @@ class CanonicalJobStore:
                     idempotency_key,
                 ),
             )
+            self._insert_audit(
+                cursor, run.workspace_id, run.job_id, run.workflow_run_id, run.trace_context,
+                "external_effect.reconciled" if reconciled else "external_effect.completed",
+                "allowed", {"external_id": external_id, "reconciled": reconciled},
+            )
+            cursor.execute(
+                """
+                INSERT INTO provenance_records (
+                    workspace_id, job_id, origin_type, source_uri, source_hash,
+                    verification_status, c2pa_manifest, lineage, trace_id, span_id
+                ) VALUES (%s, %s, 'mock_provider', %s, %s, 'verified', '{}'::jsonb, %s::jsonb, %s, %s)
+                """,
+                (
+                    run.workspace_id, run.job_id, f"mock://external-effects/{external_id}",
+                    external_id, json.dumps({"idempotency_key": idempotency_key}),
+                    run.trace_context.trace_id, run.trace_context.span_id,
+                ),
+            )
 
     def _begin_effect_submission(self, run: CanonicalRun, idempotency_key: str) -> bool:
         with self._connect() as connection, connection.cursor() as cursor:
@@ -548,36 +566,6 @@ class CanonicalJobStore:
             if row is None:
                 return None
             return CanonicalEffect(status=row[0], external_id=row[1])
-            self._insert_audit(
-                cursor,
-                run.workspace_id,
-                run.job_id,
-                run.workflow_run_id,
-                run.trace_context,
-                "external_effect.reconciled" if reconciled else "external_effect.completed",
-                "allowed",
-                {"external_id": external_id, "reconciled": reconciled},
-            )
-            cursor.execute(
-                """
-                INSERT INTO provenance_records (
-                    workspace_id, job_id, origin_type, source_uri, source_hash,
-                    verification_status, c2pa_manifest, lineage, trace_id, span_id
-                ) VALUES (
-                    %s, %s, 'mock_provider', %s, %s,
-                    'verified', '{}'::jsonb, %s::jsonb, %s, %s
-                )
-                """,
-                (
-                    run.workspace_id,
-                    run.job_id,
-                    f"mock://external-effects/{external_id}",
-                    external_id,
-                    json.dumps({"idempotency_key": idempotency_key}),
-                    run.trace_context.trace_id,
-                    run.trace_context.span_id,
-                ),
-            )
 
     def _terminal(self, run: CanonicalRun, status: str) -> None:
         with self._connect() as connection, connection.cursor() as cursor:
