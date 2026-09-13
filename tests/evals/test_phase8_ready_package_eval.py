@@ -69,3 +69,19 @@ async def test_finalization_rejects_localization_claim_injection_and_publish_met
         await service.build_distribution(
             _approved_production(package_metadata={"platform_account_id": "do-not-store"})
         )
+
+
+@pytest.mark.asyncio
+async def test_finalization_rejects_required_c2pa_that_is_not_configured() -> None:
+    service = CreativeService(RecordingRepository())
+
+    with pytest.raises(CreativeGovernanceDenied, match="c2pa_required"):
+        await service.finalize_ready_package(
+            _approved_production(
+                profile_rules={
+                    **_approved_production().profile_rules,
+                    "requires_c2pa": True,
+                },
+                c2pa_status="not_configured",
+            )
+        )
