@@ -45,7 +45,7 @@ workflow, scoped control API/CLI/SDK, schedules, cancellation, reconciliation,
 and signed-webhook ingress. It does not publish a video or enable a real social
 account in the deployed Compose application. The YouTube adapter is disabled by
 default and starts only a private resumable upload session when an injected
-lease and explicit connection identity are supplied. It does not stream package
+lease, explicit connection identity, and durable edge-session store are supplied. It does not stream package
 bytes, persist a resumable session URI in canonical records, create a public
 post, verify a YouTube webhook, or provide a production live-smoke upload.
 

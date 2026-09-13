@@ -99,6 +99,8 @@ def test_cli_starts_publication_through_the_control_api(monkeypatch, capsys) -> 
             "ready-1",
             "--publisher-account-id",
             "account-1",
+            "--publication-approval-request-id",
+            "publication-approval-1",
             "--budget-id",
             "budget-1",
             "--idempotency-key",
@@ -114,6 +116,7 @@ def test_cli_starts_publication_through_the_control_api(monkeypatch, capsys) -> 
         "content_program_id": "program-1",
         "ready_package_id": "ready-1",
         "publisher_account_id": "account-1",
+        "publication_approval_request_id": "publication-approval-1",
         "budget_id": "budget-1",
         "idempotency_key": "publication-key",
     }
@@ -137,8 +140,7 @@ def test_cli_schedules_publication_with_immutable_references(monkeypatch, capsys
             "publication", "schedule", "--workspace-id", "workspace-1", "--program-id", "program-1",
             "--publication-request-id", "publication-request-1", "--publication-plan-id", "publication-plan-1",
             "--schedule-version", "1", "--name", "weekday-private-release", "--every-seconds", "86400",
-            "--ready-package-id", "ready-1", "--publisher-account-id", "account-1", "--budget-id", "budget-1",
-            "--idempotency-key", "publication-schedule-1",
+            "--budget-id", "budget-1",
         ]
     )
 
@@ -148,7 +150,6 @@ def test_cli_schedules_publication_with_immutable_references(monkeypatch, capsys
         "workspace_id": "workspace-1", "content_program_id": "program-1",
         "publication_request_id": "publication-request-1", "publication_plan_id": "publication-plan-1",
         "schedule_version": 1, "name": "weekday-private-release", "every_seconds": 86400,
-        "ready_package_id": "ready-1", "publisher_account_id": "account-1", "budget_id": "budget-1",
-        "idempotency_key": "publication-schedule-1",
+        "budget_id": "budget-1",
     }
     assert json.loads(capsys.readouterr().out)["job_id"] == "job-1"

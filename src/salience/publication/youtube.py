@@ -12,7 +12,7 @@ import json
 import os
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from typing import Protocol
+from typing import Protocol, runtime_checkable
 
 import httpx
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -108,11 +108,23 @@ class YouTubeSessionStore(Protocol):
     async def save(self, session: _YouTubeEdgeSession) -> _YouTubeEdgeSession: ...
 
 
+@runtime_checkable
+class DurableYouTubeSessionStore(YouTubeSessionStore, Protocol):
+    """Production edge-state storage for opaque resumable locations."""
+
+    @property
+    def is_durable(self) -> bool: ...
+
+
 class InMemoryYouTubeSessionStore:
     """Test-only edge store; production supplies durable isolated edge storage."""
 
     def __init__(self) -> None:
         self._sessions: dict[str, _YouTubeEdgeSession] = {}
+
+    @property
+    def is_durable(self) -> bool:
+        return False
 
     async def load(self, idempotency_key: str) -> _YouTubeEdgeSession | None:
         return self._sessions.get(idempotency_key)
@@ -144,14 +156,18 @@ class YouTubePublisherAdapter:
         client: httpx.AsyncClient,
         connection_reference: str,
         enabled: bool = False,
-        session_store: YouTubeSessionStore | None = None,
+        session_store: DurableYouTubeSessionStore | None = None,
     ) -> None:
         if not connection_reference:
             raise ValueError("YouTube publisher requires a secret-reference-only connection identity")
         self._client = client
         self._connection_reference = connection_reference
         self._enabled = enabled
-        self._session_store = session_store or InMemoryYouTubeSessionStore()
+        if session_store is None or not isinstance(session_store, DurableYouTubeSessionStore):
+            raise ValueError("YouTube publisher requires an explicit durable edge session store")
+        if not session_store.is_durable:
+            raise ValueError("YouTube publisher requires an explicit durable edge session store")
+        self._session_store = session_store
 
     @property
     def capabilities(self) -> PublisherCapabilityProfile:

@@ -1,5 +1,6 @@
 """Direct PostgreSQL contracts for the governed-publication migration."""
 
+import asyncio
 import os
 from uuid import uuid4
 
@@ -70,7 +71,7 @@ def test_publication_hardening_adds_distinct_approval_budget_and_immutable_decis
 
 @pytest.mark.asyncio
 async def test_publication_plan_schedule_and_attempt_reject_direct_mutation() -> None:
-    from test_creative_release_gate_migration import _approved_ready_package
+    from test_creative_release_gate_migration import _approved_publication_approval, _approved_ready_package
 
     ready = await _approved_ready_package()
     repository = PublicationRepository(os.environ["TEST_DATABASE_URL"])
@@ -86,6 +87,7 @@ async def test_publication_plan_schedule_and_attempt_reject_direct_mutation() ->
         workspace_id=ready["workspace_id"],
         content_program_id=ready["program_id"],
         publisher_account_id=account.id,
+        publication_approval_request_id=await _approved_publication_approval(ready, account.id),
         idempotency_key=f"immutable-{uuid4()}",
     )
     plan = await repository.create_plan(
@@ -108,10 +110,14 @@ async def test_publication_plan_schedule_and_attempt_reject_direct_mutation() ->
         job_type="governed_publication",
         payload={"publication_request_id": request.id, "publication_plan_id": plan.id},
     )
+    budget_id = await _active_budget(
+        os.environ["TEST_DATABASE_URL"], ready["workspace_id"], ready["program_id"]
+    )
     schedule = await repository.create_schedule(
         publication_request_id=request.id,
         publication_plan_id=plan.id,
         job_schedule_id=job_schedule.schedule_id,
+        budget_id=budget_id,
         version=1,
         schedule_fingerprint="a" * 64,
     )
@@ -131,3 +137,19 @@ async def test_publication_plan_schedule_and_attempt_reject_direct_mutation() ->
             ):
                 with connection.transaction():
                     connection.execute(statement, (identifier,))
+
+
+async def _active_budget(database_url: str, workspace_id: str, program_id: str) -> str:
+    def insert() -> str:
+        with psycopg.connect(database_url) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                INSERT INTO budgets (workspace_id, content_program_id, name, scope, limit_amount, status)
+                VALUES (%s, %s, %s, 'publication', 1.000000, 'active')
+                RETURNING id::text
+                """,
+                (workspace_id, program_id, f"immutable-budget-{uuid4()}"),
+            )
+            return str(cursor.fetchone()[0])
+
+    return await asyncio.to_thread(insert)

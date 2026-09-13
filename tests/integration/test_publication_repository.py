@@ -1,5 +1,6 @@
 """Idempotent canonical publication persistence contracts."""
 
+import asyncio
 import os
 from uuid import uuid4
 
@@ -11,9 +12,78 @@ from salience.publication.repository import ImmutablePublicationConflict, Public
 from salience.workflows.persistence import CanonicalJobStore
 
 
+async def _active_budget(database_url: str, workspace_id: str, program_id: str) -> str:
+    def insert() -> str:
+        with psycopg.connect(database_url) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                INSERT INTO budgets (workspace_id, content_program_id, name, scope, limit_amount, status)
+                VALUES (%s, %s, %s, 'publication', 1.000000, 'active')
+                RETURNING id::text
+                """,
+                (workspace_id, program_id, f"publication-budget-{uuid4()}"),
+            )
+            return str(cursor.fetchone()[0])
+
+    return await asyncio.to_thread(insert)
+
+
+@pytest.mark.asyncio
+async def test_publication_request_rejects_creative_approval_as_publish_authority() -> None:
+    from test_creative_release_gate_migration import _approved_ready_package
+
+    ready = await _approved_ready_package()
+    repository = PublicationRepository(os.environ["TEST_DATABASE_URL"])
+    account = await repository.create_account(
+        workspace_id=ready["workspace_id"],
+        platform="fixture",
+        account_key="creative-approval-account",
+        account_type="creator",
+        external_account_reference="fixture:creative-approval",
+    )
+
+    with pytest.raises(KeyError, match="publication approval"):
+        await repository.create_request(
+            ready_package_id=ready["ready_package_id"],
+            workspace_id=ready["workspace_id"],
+            content_program_id=ready["program_id"],
+            publisher_account_id=account.id,
+            publication_approval_request_id=ready["ready_package_id"],
+            idempotency_key="creative-approval-is-not-publish-approval",
+        )
+
+
+@pytest.mark.asyncio
+async def test_current_authorization_fails_closed_without_policy_and_asset_rights_proof() -> None:
+    from test_creative_release_gate_migration import _approved_publication_approval, _approved_ready_package
+
+    ready = await _approved_ready_package(publication_proofs=False)
+    repository = PublicationRepository(os.environ["TEST_DATABASE_URL"])
+    account = await repository.create_account(
+        workspace_id=ready["workspace_id"],
+        platform="fixture",
+        account_key="missing-proof-account",
+        account_type="creator",
+        external_account_reference="fixture:missing-proof",
+    )
+    request = await repository.create_request(
+        ready_package_id=ready["ready_package_id"],
+        workspace_id=ready["workspace_id"],
+        content_program_id=ready["program_id"],
+        publisher_account_id=account.id,
+        publication_approval_request_id=await _approved_publication_approval(ready, account.id),
+        idempotency_key="missing-policy-and-rights-proof",
+    )
+
+    current = await repository.load_current_authorization(request.id)
+
+    assert current.policy_allowed is False
+    assert current.rights_allowed is False
+
+
 @pytest.mark.asyncio
 async def test_ready_package_can_create_multiple_workspace_bound_publication_requests() -> None:
-    from test_creative_release_gate_migration import _approved_ready_package
+    from test_creative_release_gate_migration import _approved_publication_approval, _approved_ready_package
 
     ready = await _approved_ready_package()
     repository = PublicationRepository(os.environ["TEST_DATABASE_URL"])
@@ -36,6 +106,7 @@ async def test_ready_package_can_create_multiple_workspace_bound_publication_req
         workspace_id=ready["workspace_id"],
         content_program_id=ready["program_id"],
         publisher_account_id=first_account.id,
+        publication_approval_request_id=await _approved_publication_approval(ready, first_account.id),
         idempotency_key="publication-request-a",
     )
     second = await repository.create_request(
@@ -43,6 +114,7 @@ async def test_ready_package_can_create_multiple_workspace_bound_publication_req
         workspace_id=ready["workspace_id"],
         content_program_id=ready["program_id"],
         publisher_account_id=second_account.id,
+        publication_approval_request_id=await _approved_publication_approval(ready, second_account.id),
         idempotency_key="publication-request-b",
     )
 
@@ -52,7 +124,7 @@ async def test_ready_package_can_create_multiple_workspace_bound_publication_req
 
 @pytest.mark.asyncio
 async def test_repeated_publication_request_returns_original_identity() -> None:
-    from test_creative_release_gate_migration import _approved_ready_package
+    from test_creative_release_gate_migration import _approved_publication_approval, _approved_ready_package
 
     ready = await _approved_ready_package()
     repository = PublicationRepository(os.environ["TEST_DATABASE_URL"])
@@ -68,6 +140,7 @@ async def test_repeated_publication_request_returns_original_identity() -> None:
         "workspace_id": ready["workspace_id"],
         "content_program_id": ready["program_id"],
         "publisher_account_id": account.id,
+        "publication_approval_request_id": await _approved_publication_approval(ready, account.id),
         "idempotency_key": "publication-request-idempotent",
     }
 
@@ -79,7 +152,7 @@ async def test_repeated_publication_request_returns_original_identity() -> None:
 
 @pytest.mark.asyncio
 async def test_loaded_publication_request_is_the_exact_canonical_effect_input() -> None:
-    from test_creative_release_gate_migration import _approved_ready_package
+    from test_creative_release_gate_migration import _approved_publication_approval, _approved_ready_package
 
     ready = await _approved_ready_package()
     repository = PublicationRepository(os.environ["TEST_DATABASE_URL"])
@@ -90,11 +163,13 @@ async def test_loaded_publication_request_is_the_exact_canonical_effect_input() 
         account_type="creator",
         external_account_reference="fixture:canonical-request",
     )
+    publication_approval_request_id = await _approved_publication_approval(ready, account.id)
     persisted = await repository.create_request(
         ready_package_id=ready["ready_package_id"],
         workspace_id=ready["workspace_id"],
         content_program_id=ready["program_id"],
         publisher_account_id=account.id,
+        publication_approval_request_id=publication_approval_request_id,
         idempotency_key="canonical-request-key",
         platform="fixture",
         destination="fixture://canonical-destination",
@@ -110,6 +185,7 @@ async def test_loaded_publication_request_is_the_exact_canonical_effect_input() 
         content_program_id=ready["program_id"],
         ready_package_id=ready["ready_package_id"],
         publisher_account_id=account.id,
+        publication_approval_request_id=publication_approval_request_id,
         platform="fixture",
         destination="fixture://canonical-destination",
         locale="fr-CA",
@@ -117,14 +193,14 @@ async def test_loaded_publication_request_is_the_exact_canonical_effect_input() 
         visibility="private",
         capability_profile_version=1,
         idempotency_key="canonical-request-key",
-        approval_reference=f"ready-package:{ready['ready_package_id']}",
+        approval_reference=f"publication-approval:{publication_approval_request_id}",
         publisher_id="fixture-publisher",
     )
 
 
 @pytest.mark.asyncio
 async def test_current_authorization_facts_follow_the_persisted_connection_and_profile() -> None:
-    from test_creative_release_gate_migration import _approved_ready_package
+    from test_creative_release_gate_migration import _approved_publication_approval, _approved_ready_package
 
     ready = await _approved_ready_package()
     database_url = os.environ["TEST_DATABASE_URL"]
@@ -141,6 +217,7 @@ async def test_current_authorization_facts_follow_the_persisted_connection_and_p
         workspace_id=ready["workspace_id"],
         content_program_id=ready["program_id"],
         publisher_account_id=account.id,
+        publication_approval_request_id=await _approved_publication_approval(ready, account.id),
         idempotency_key="authorization-facts-key",
     )
 
@@ -160,7 +237,7 @@ async def test_current_authorization_facts_follow_the_persisted_connection_and_p
 
 @pytest.mark.asyncio
 async def test_remote_receipt_is_immutable_after_insert() -> None:
-    from test_creative_release_gate_migration import _approved_ready_package
+    from test_creative_release_gate_migration import _approved_publication_approval, _approved_ready_package
 
     ready = await _approved_ready_package()
     repository = PublicationRepository(os.environ["TEST_DATABASE_URL"])
@@ -176,6 +253,7 @@ async def test_remote_receipt_is_immutable_after_insert() -> None:
         workspace_id=ready["workspace_id"],
         content_program_id=ready["program_id"],
         publisher_account_id=account.id,
+        publication_approval_request_id=await _approved_publication_approval(ready, account.id),
         idempotency_key="publication-receipt-request",
     )
     plan = await repository.create_plan(
@@ -211,7 +289,7 @@ async def test_remote_receipt_is_immutable_after_insert() -> None:
 
 @pytest.mark.asyncio
 async def test_publication_schedule_persists_exact_request_plan_and_job_schedule() -> None:
-    from test_creative_release_gate_migration import _approved_ready_package
+    from test_creative_release_gate_migration import _approved_publication_approval, _approved_ready_package
 
     ready = await _approved_ready_package()
     database_url = os.environ["TEST_DATABASE_URL"]
@@ -228,6 +306,7 @@ async def test_publication_schedule_persists_exact_request_plan_and_job_schedule
         workspace_id=ready["workspace_id"],
         content_program_id=ready["program_id"],
         publisher_account_id=account.id,
+        publication_approval_request_id=await _approved_publication_approval(ready, account.id),
         idempotency_key="publication-schedule-request",
     )
     plan = await repository.create_plan(
@@ -244,11 +323,13 @@ async def test_publication_schedule_persists_exact_request_plan_and_job_schedule
         job_type="governed_publication",
         payload={"publication_request_id": request.id, "publication_plan_id": plan.id},
     )
+    budget_id = await _active_budget(database_url, ready["workspace_id"], ready["program_id"])
 
     first = await repository.create_schedule(
         publication_request_id=request.id,
         publication_plan_id=plan.id,
         job_schedule_id=job_schedule.schedule_id,
+        budget_id=budget_id,
         version=1,
         schedule_fingerprint="a" * 64,
     )
@@ -256,6 +337,7 @@ async def test_publication_schedule_persists_exact_request_plan_and_job_schedule
         publication_request_id=request.id,
         publication_plan_id=plan.id,
         job_schedule_id=job_schedule.schedule_id,
+        budget_id=budget_id,
         version=1,
         schedule_fingerprint="a" * 64,
     )
@@ -267,6 +349,7 @@ async def test_publication_schedule_persists_exact_request_plan_and_job_schedule
             publication_request_id=request.id,
             publication_plan_id=plan.id,
             job_schedule_id=job_schedule.schedule_id,
+            budget_id=budget_id,
             version=1,
             schedule_fingerprint="b" * 64,
         )
@@ -274,7 +357,7 @@ async def test_publication_schedule_persists_exact_request_plan_and_job_schedule
 
 @pytest.mark.asyncio
 async def test_scheduled_execution_loads_only_its_exact_immutable_request_and_plan() -> None:
-    from test_creative_release_gate_migration import _approved_ready_package
+    from test_creative_release_gate_migration import _approved_publication_approval, _approved_ready_package
 
     ready = await _approved_ready_package()
     database_url = os.environ["TEST_DATABASE_URL"]
@@ -291,6 +374,7 @@ async def test_scheduled_execution_loads_only_its_exact_immutable_request_and_pl
         workspace_id=ready["workspace_id"],
         content_program_id=ready["program_id"],
         publisher_account_id=account.id,
+        publication_approval_request_id=await _approved_publication_approval(ready, account.id),
         idempotency_key="scheduled-execution-key",
         destination="fixture://scheduled-canonical",
     )
@@ -301,10 +385,27 @@ async def test_scheduled_execution_loads_only_its_exact_immutable_request_and_pl
         publisher_version="1",
     )
 
-    execution = await repository.load_scheduled_execution(request.id, plan.id)
+    job_schedule = await CanonicalJobStore(database_url).create_schedule(
+        workspace_id=ready["workspace_id"],
+        content_program_id=ready["program_id"],
+        name=f"scheduled-execution-{uuid4()}",
+        schedule_expression="every 60s",
+        job_type="governed_publication",
+        payload={"publication_request_id": request.id, "publication_plan_id": plan.id},
+    )
+    schedule = await repository.create_schedule(
+        publication_request_id=request.id,
+        publication_plan_id=plan.id,
+        job_schedule_id=job_schedule.schedule_id,
+        budget_id=await _active_budget(database_url, ready["workspace_id"], ready["program_id"]),
+        version=1,
+        schedule_fingerprint="c" * 64,
+    )
+
+    execution = await repository.load_scheduled_execution(schedule.id)
 
     assert execution.request.id == request.id
     assert execution.request.destination == "fixture://scheduled-canonical"
     assert execution.plan_id == plan.id
     with pytest.raises(KeyError):
-        await repository.load_scheduled_execution(request.id, str(uuid4()))
+        await repository.load_scheduled_execution(str(uuid4()))

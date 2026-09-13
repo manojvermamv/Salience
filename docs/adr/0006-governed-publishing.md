@@ -29,9 +29,10 @@ returns an opaque `Location` URI for the subsequent byte transfer.
 - Keep provider behavior behind the owned, versioned `PublisherAdapter`
   contract and `PublisherRegistry`; provider metadata controls selection rather
   than conditional branches in canonical publication logic.
-- Run publisher effects in `GovernedPublicationWorkflow`. It re-authorizes
-  ready-package/account/profile/policy/rights/disclosure/approval/budget/quota
-  facts, writes an effect plan before the remote boundary, reconciles the same
+- Run publisher effects in `GovernedPublicationWorkflow`. It requires a distinct
+  publication approval and re-authorizes ready-package/account/profile/policy/rights/
+  disclosure/approval/budget/quota facts immediately before remote submission,
+  writes an effect plan before the remote boundary, reconciles the same
   idempotency key after ambiguity or restart, and records a safe receipt before
   terminal publication.
 - Adopt a small direct `httpx` YouTube adapter, not a Google SDK or a custom
@@ -40,7 +41,7 @@ returns an opaque `Location` URI for the subsequent byte transfer.
   remain the mature/reusable components for those concerns.
 - Make `YouTubePublisherAdapter` disabled by default and private-only. It may
   start a resumable session only with an injected, current `youtube.upload`
-  lease and explicit connection reference. An injected edge session store keeps
+  lease, explicit connection reference, and durable edge-session store. The store keeps
   the bearer-adjacent opaque URI outside canonical data; a SHA-256 session
   identity is the safe DTO projection and restart reconciliation key.
 - Fail generic YouTube submission closed until a future explicit edge

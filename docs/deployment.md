@@ -38,7 +38,7 @@ No live publisher is enabled in this release. The verified publication fixture
 and control routes use canonical PostgreSQL/Temporal services already in the
 Compose topology. The optional YouTube boundary is disabled by default and
 requires an operator-managed connection reference, a scoped ephemeral lease,
-private visibility, an approved edge media-handoff deployment, current policy,
+private visibility, a durable edge-session store, an approved edge media-handoff deployment, current policy,
 approval, and budget before it may be enabled. It must run as a separate
 least-privileged effect boundary and consume only an approved
 `ReadyToPublishPackage@v1`; it cannot inherit creative-provider secrets or

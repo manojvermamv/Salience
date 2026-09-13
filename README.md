@@ -118,11 +118,14 @@ SVG/PNG export. Its checked source is
 - **Recovery and callbacks** reconcile one accepted fixture effect after an
   interruption, record duplicate-safe verified webhook receipts, and keep
   cancellation/dead-letter lifecycle transitions canonical.
-- **Governed publishing** creates a fresh publisher request, plan, attempt, and
-  receipt from an approved package; it rechecks policy, approval, scope,
-  account, capability, and budget rather than inheriting creative authority.
+- **Governed publishing** requires a distinct current `publication` approval,
+  then creates a publisher request, plan, attempt, and receipt from an approved
+  package; it rechecks policy, rights, approval, scope, account, capability,
+  and budget immediately before an external submit rather than inheriting
+  creative authority.
 - **YouTube is opt-in and private-only.** Its official resumable-session boundary
-  accepts an injected scoped lease but stores no bearer token or opaque session URI.
+  requires an injected scoped lease and durable edge session store, and stores no
+  bearer token or opaque session URI in canonical data.
 
 ### Provider-Neutral Extensions
 
@@ -299,10 +302,11 @@ Run the Phase 9 governed-publishing verifier after the same environment is ready
 bash scripts/verify-phase-9.sh
 ```
 
-It applies migrations through `0009_governed_publication`, checks the canonical
+It applies migrations through `0011_publication_plan_lifecycle`, checks the canonical
 publisher request/plan/schedule/attempt/receipt tables, API/CLI/SDK controls,
-fixture restart/reconciliation, cost/policy/approval gates, signed webhook
-deduplication, and the private-only YouTube session contract. Without explicit
+fixture restart/reconciliation, final-write cost/policy/rights/approval gates,
+signed webhook deduplication, and the durable private-only YouTube session
+contract. Without explicit
 operator configuration it reports the live YouTube status as `NOT RUN`; it does
 not publish a video.
 

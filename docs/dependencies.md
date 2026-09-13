@@ -52,6 +52,6 @@ upload scope and starts a resumable session whose opaque `Location` URI is used
 for subsequent transfer; [the API reference](https://developers.google.com/youtube/v3/docs/videos/insert)
 and [resumable protocol guide](https://developers.google.com/youtube/v3/guides/using_resumable_upload_protocol)
 are the compatibility sources. The adapter is disabled by default, allows only
-private visibility, and keeps bearer material/session URIs out of canonical
-records. A future edge uploader, other publisher adapter, or official SDK can
+private visibility, requires a durable edge-session store, and keeps bearer
+material/session URIs out of canonical records. A future edge uploader, other publisher adapter, or official SDK can
 replace it without changing publication identities or receipts.

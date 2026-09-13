@@ -178,6 +178,7 @@ class PublicationRunRequest(BaseModel):
     content_program_id: str = Field(min_length=1)
     ready_package_id: str = Field(min_length=1)
     publisher_account_id: str = Field(min_length=1)
+    publication_approval_request_id: str = Field(min_length=1)
     budget_id: str = Field(min_length=1)
     idempotency_key: str = Field(min_length=1, max_length=255)
     platform: str = Field(default="fixture", min_length=1, max_length=64)
@@ -206,16 +207,7 @@ class PublicationScheduleRequest(BaseModel):
     schedule_version: int = Field(gt=0)
     name: str = Field(min_length=1, max_length=128, pattern=r"^[a-z0-9-]+$")
     every_seconds: int = Field(gt=0, le=31_536_000)
-    ready_package_id: str = Field(min_length=1)
-    publisher_account_id: str = Field(min_length=1)
     budget_id: str = Field(min_length=1)
-    idempotency_key: str = Field(min_length=1, max_length=255)
-    platform: str = Field(default="fixture", min_length=1, max_length=64)
-    destination: str = Field(default="fixture://account", min_length=1, max_length=255)
-    locale: str = Field(default="en", min_length=1, max_length=32)
-    territory: str = Field(default="global", min_length=1, max_length=64)
-    visibility: Literal["private", "unlisted", "public"] = "private"
-    capability_profile_version: int = Field(default=1, gt=0)
 
 
 class PublicationScheduleResponse(BaseModel):

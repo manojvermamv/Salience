@@ -87,12 +87,13 @@ to publish.
 ## Governed publication
 
 `POST /v1/publications/requests` requires `control:write`, canonical workspace,
-content-program, approved ready-package, publisher-account, explicit budget,
-and idempotency identities. It rejects undeclared fields, including token or
+content-program, approved ready-package, publisher-account, distinct current
+publication-approval, explicit budget, and idempotency identities. It rejects undeclared fields, including token or
 secret fields. `GET /v1/publications/runs/{job_id}` requires `control:read` and
 returns only canonical IDs, state, trace, and safe output. Scheduling and
-cancellation require `control:write`; a schedule names immutable publication
-request and plan identities in addition to its exact workflow inputs.
+cancellation require `control:write`; a schedule names only immutable publication
+request, plan, and budget identities. Temporal receives only the resulting
+canonical publication-schedule ID and the worker reloads all effect inputs.
 
 The `content publication start|schedule|inspect|cancel` commands and
 `SalienceClient.publication` use those same HTTP routes and never access
@@ -102,4 +103,4 @@ only a credential-free verified event projection and returns a duplicate-safe
 receipt identity. There is no raw credential endpoint, package mutation route,
 or public-publish endpoint. The disabled YouTube adapter accepts private
 resumable-session requests only at its internal edge; it is not exposed as a
-live video-upload API.
+live video-upload API and requires a durable edge-session store.

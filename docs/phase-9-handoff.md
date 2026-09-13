@@ -22,8 +22,10 @@ The fixture-first publishing capability now:
 - accepts only a resolved `ReadyToPublishPackage@v1` and its immutable package
   lineage; it must never rebuild creative or research decisions from scratch;
 - adds a separate, versioned publisher request and account/credential boundary;
-- re-authorizes the proposed publish effect for the selected profile, locale,
-  territory, policy version, scopes, approval, and remaining budget;
+- requires a distinct current `publication` approval for the exact ready package
+  and account, then re-authorizes the proposed publish effect for the selected
+  profile, locale, territory, policy version, rights, scopes, and remaining budget
+  immediately before the external submit;
 - persists an idempotent external-effect plan before calling a publisher, then
   reconciles the same key after timeout, retry, or process interruption;
 - records the remote receipt, audit event, provenance record, cost settlement,
@@ -46,10 +48,11 @@ control API/CLI/SDK, fixture reconciliation, and signed-webhook ingress. The
 fixture path is explicitly configured for the end-to-end verifier; the deployed
 control plane still defaults to dry-run and does not create a ready package.
 
-`YouTubePublisherAdapter` is disabled by default and private-only. It uses the
+`YouTubePublisherAdapter` is disabled by default and private-only. It requires a
+durable injected edge-session store and uses the
 official YouTube Data API to start a resumable session from an injected scoped
 lease, but no bearer token or opaque session URI enters canonical records. It
-uses an injected edge session store to reconcile the safe session identity after
+uses that durable edge session store to reconcile the safe session identity after
 adapter replacement, but does not yet stream package bytes or create a video.
 Its live status remains `NOT RUN` without explicit operator configuration.
 TikTok, Instagram, LinkedIn, and future providers remain independently

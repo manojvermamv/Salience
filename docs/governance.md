@@ -100,10 +100,11 @@ territory, and visibility; current policy/rights/disclosure/approval facts; an
 explicit budget reservation; and available rate/quota facts. A creative approval
 or credential never confers publishing authority.
 
-The durable workflow rechecks that decision before remote submission, writes an
+The durable workflow rechecks that decision immediately before remote submission, writes an
 external-effect plan and reservation first, and settles known actual cost before
 terminal publication. Publisher callbacks are adapter-verified before a
 credential-free hash/identity projection reaches PostgreSQL. The private-only
-YouTube session boundary requires the official `youtube.upload` lease scope;
+YouTube session boundary requires the official `youtube.upload` lease scope and
+a durable edge-session store;
 neither its bearer value nor opaque upload URI enters audit, provenance,
 checkpoint, or canonical publication records.

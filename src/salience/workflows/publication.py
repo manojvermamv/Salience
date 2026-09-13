@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from collections.abc import Callable, Mapping
 from typing import Any
@@ -39,31 +39,36 @@ PUBLICATION_POLL_INTERVAL_SECONDS = 0.05
 
 @dataclass(frozen=True)
 class PublicationWorkflowRequest:
-    workspace_id: str
-    content_program_id: str
-    ready_package_id: str
-    publisher_account_id: str
-    budget_id: str
-    idempotency_key: str
+    workspace_id: str = ""
+    content_program_id: str = ""
+    ready_package_id: str = ""
+    publisher_account_id: str = ""
+    publication_approval_request_id: str = ""
+    budget_id: str = ""
+    idempotency_key: str = ""
     platform: str = "fixture"
     destination: str = "fixture://account"
     locale: str = "en"
     territory: str = "global"
     visibility: str = "private"
     capability_profile_version: int = 1
-    scheduled_publication_request_id: str | None = None
-    scheduled_publication_plan_id: str | None = None
+    scheduled_publication_schedule_id: str | None = None
     contract_version: str = "PublicationWorkflowRequest@v1"
 
     def __post_init__(self) -> None:
         if self.contract_version != "PublicationWorkflowRequest@v1":
             raise ValueError("unsupported publication workflow request contract")
+        if self.scheduled_publication_schedule_id is not None:
+            if not self.scheduled_publication_schedule_id:
+                raise ValueError("scheduled publication requires its canonical schedule identity")
+            return
         if not all(
             (
                 self.workspace_id,
                 self.content_program_id,
                 self.ready_package_id,
                 self.publisher_account_id,
+                self.publication_approval_request_id,
                 self.budget_id,
                 self.idempotency_key,
             )
@@ -71,10 +76,6 @@ class PublicationWorkflowRequest:
             raise ValueError("publication requires canonical workspace, package, account, budget, and key")
         if self.capability_profile_version <= 0:
             raise ValueError("capability profile version must be positive")
-        if (self.scheduled_publication_request_id is None) != (
-            self.scheduled_publication_plan_id is None
-        ):
-            raise ValueError("scheduled publication references must be supplied together")
 
 
 @dataclass(frozen=True)
@@ -119,52 +120,41 @@ class PublicationWorkflowState:
 
 @dataclass(frozen=True)
 class PublicationScheduleRequest:
-    publication_request_id: str
-    publication_plan_id: str
-    schedule_version: int
+    publication_schedule_id: str
     name: str
     every: timedelta
-    workflow_request: PublicationWorkflowRequest
 
     def __post_init__(self) -> None:
         if not all(
             (
-                self.publication_request_id,
-                self.publication_plan_id,
+                self.publication_schedule_id,
                 self.name,
             )
         ):
             raise ValueError("publication schedule requires immutable request, plan, and name")
-        if self.schedule_version <= 0:
-            raise ValueError("publication schedule version must be positive")
         if self.every <= timedelta():
             raise ValueError("publication schedule interval must be positive")
 
 
 class PublicationScheduleService:
-    """Delegate timing to Temporal while preserving exact canonical publication inputs."""
+    """Delegate timing to Temporal with a canonical schedule identity only."""
 
     def __init__(self, client: TemporalScheduleClient, *, task_queue: str) -> None:
         self._schedules = TemporalScheduleService(client)
         self._task_queue = task_queue
 
     async def create_every(self, request: PublicationScheduleRequest) -> str:
-        schedule_id = (
-            f"publication:{request.publication_request_id}:{request.publication_plan_id}:"
-            f"{request.schedule_version}"
-        )
-        workflow_request = replace(
-            request.workflow_request,
-            scheduled_publication_request_id=request.publication_request_id,
-            scheduled_publication_plan_id=request.publication_plan_id,
-        )
         return await self._schedules.create_every(
             ScheduleRequest(
-                schedule_id=schedule_id,
+                schedule_id=f"publication:{request.publication_schedule_id}",
                 task_queue=self._task_queue,
                 every=request.every,
                 workflow_type=PUBLICATION_WORKFLOW_TYPE,
-                payload=_workflow_request_payload(workflow_request),
+                payload=_workflow_request_payload(
+                    PublicationWorkflowRequest(
+                        scheduled_publication_schedule_id=request.publication_schedule_id
+                    )
+                ),
             )
         )
 
@@ -195,18 +185,80 @@ class PublicationActivities:
             return _fixture_lease()
         raise RuntimeError("publisher credential lease resolver is not configured")
 
+    async def _current_authorization_denial(self, request: PublicationRequest) -> str | None:
+        current = await self._state.repository.load_current_authorization(request.id)
+        if current.request != request:
+            return "publication_request_changed"
+        adapter = self._adapter_for(request)
+        if current.profile is None:
+            return "capability_profile_missing"
+        if (adapter.capabilities.publisher_id, adapter.capabilities.version) != (
+            current.profile.publisher_id,
+            current.profile.version,
+        ):
+            return "registered_publisher_profile_changed"
+        decision = await self._state.authorizer.reauthorize(
+            PublicationAuthorizationContext(
+                request=request,
+                profile=current.profile,
+                ready_package_id=request.ready_package_id,
+                ready_package_workspace_id=current.request.workspace_id,
+                ready_package_program_id=current.request.content_program_id,
+                ready_package_approval_state=current.ready_package_approval_state,
+                account_workspace_id=current.account_workspace_id,
+                connection_account_id=current.connection_account_id or "missing",
+                account_type=current.account_type,
+                account_status=current.account_status,
+                connection_status=current.connection_status or "missing",
+                connection_scopes=current.connection_scopes,
+                content_type="video",
+                authorized_destination=current.request.destination,
+                authorized_locale=current.request.locale,
+                authorized_territory=current.request.territory,
+                authorized_visibility=current.request.visibility,
+                policy_allowed=self._state.policy_allowed and current.policy_allowed,
+                rights_allowed=self._state.rights_allowed and current.rights_allowed,
+                disclosure_allowed=(
+                    self._state.disclosure_allowed and current.disclosure_status == "approved"
+                ),
+                publishing_approval_state=(
+                    current.publication_approval_state
+                    if self._state.publishing_approval_state == "approved"
+                    else self._state.publishing_approval_state
+                ),
+                budget_status="reserved",
+                rate_quota_available=self._state.rate_quota_available,
+                capability_profile_version=current.request.capability_profile_version,
+            )
+        )
+        return ",".join(decision.reasons) if decision.reasons else None
+
     @activity.defn(name="salience.publication.request")
     async def request(self, workflow_request: PublicationWorkflowRequest) -> dict[str, Any]:
         run = await self._run()
         scheduled_plan: dict[str, str] = {}
-        if workflow_request.scheduled_publication_request_id is not None:
+        if workflow_request.scheduled_publication_schedule_id is not None:
             execution = await self._state.repository.load_scheduled_execution(
-                workflow_request.scheduled_publication_request_id,
-                workflow_request.scheduled_publication_plan_id or "",
+                workflow_request.scheduled_publication_schedule_id
             )
             request = execution.request
-            if not _workflow_request_matches_publication(workflow_request, request):
-                raise ValueError("scheduled publication payload differs from its immutable request")
+            if execution.budget_id is None:
+                raise RuntimeError("scheduled publication has no canonical budget")
+            workflow_request = PublicationWorkflowRequest(
+                workspace_id=request.workspace_id,
+                content_program_id=request.content_program_id,
+                ready_package_id=request.ready_package_id,
+                publisher_account_id=request.publisher_account_id,
+                publication_approval_request_id=request.publication_approval_request_id,
+                budget_id=execution.budget_id,
+                idempotency_key=request.idempotency_key,
+                platform=request.platform,
+                destination=request.destination,
+                locale=request.locale,
+                territory=request.territory,
+                visibility=request.visibility,
+                capability_profile_version=request.capability_profile_version,
+            )
             scheduled_plan = {
                 "publication_plan_id": execution.plan_id,
                 "scheduled_publisher_id": execution.publisher_id,
@@ -218,6 +270,7 @@ class PublicationActivities:
                 workspace_id=workflow_request.workspace_id,
                 content_program_id=workflow_request.content_program_id,
                 publisher_account_id=workflow_request.publisher_account_id,
+                publication_approval_request_id=workflow_request.publication_approval_request_id,
                 idempotency_key=workflow_request.idempotency_key,
                 platform=workflow_request.platform,
                 destination=workflow_request.destination,
@@ -340,7 +393,7 @@ class PublicationActivities:
                     self._state.disclosure_allowed and current.disclosure_status == "approved"
                 ),
                 publishing_approval_state=(
-                    current.ready_package_approval_state
+                    current.publication_approval_state
                     if self._state.publishing_approval_state == "approved"
                     else self._state.publishing_approval_state
                 ),
@@ -382,6 +435,14 @@ class PublicationActivities:
         effect_key = f"{request.idempotency_key}:publish"
         submitting = await self._state.store.begin_effect_submission(run, effect_key)
         if submitting:
+            denial_reason = await self._current_authorization_denial(request)
+            if denial_reason is not None:
+                await self._checkpoint("publication.authorization.revoked_before_submit")
+                return {
+                    **payload,
+                    "authorization_revoked": True,
+                    "denial_reason": denial_reason,
+                }
             receipt = await self._adapter_for(request).submit(request, self._lease_for(request))
             reconciled = False
         else:
@@ -534,6 +595,8 @@ class PublicationActivities:
     @activity.defn(name="salience.publication.denied")
     async def denied(self, payload: dict[str, Any]) -> PublicationWorkflowResult:
         run = await self._run()
+        if isinstance(payload.get("budget_reservation_id"), str) and self._state.cost_repository is not None:
+            await self._state.cost_repository.release_unused(payload["budget_reservation_id"])
         await self._checkpoint("publication.denied")
         await self._state.store.terminal(run, "denied")
         return PublicationWorkflowResult(
@@ -621,6 +684,8 @@ class GovernedPublicationWorkflow:
         if self._cancellation_requested:
             return await _execute_terminal("salience.publication.cancel", payload)
         payload = await _execute_stage("salience.publication.submit_or_reconcile", payload)
+        if payload.get("authorization_revoked"):
+            return await _execute_terminal("salience.publication.denied", payload)
         while payload["publication_state"] in {"accepted", "processing"}:
             if self._cancellation_requested:
                 return await _execute_terminal("salience.publication.cancel", payload)
@@ -679,11 +744,17 @@ def build_publication_worker(
 
 
 def _workflow_request_payload(request: PublicationWorkflowRequest) -> dict[str, object]:
+    if request.scheduled_publication_schedule_id is not None:
+        return {
+            "scheduled_publication_schedule_id": request.scheduled_publication_schedule_id,
+            "contract_version": request.contract_version,
+        }
     return {
         "workspace_id": request.workspace_id,
         "content_program_id": request.content_program_id,
         "ready_package_id": request.ready_package_id,
         "publisher_account_id": request.publisher_account_id,
+        "publication_approval_request_id": request.publication_approval_request_id,
         "budget_id": request.budget_id,
         "idempotency_key": request.idempotency_key,
         "platform": request.platform,
@@ -692,8 +763,6 @@ def _workflow_request_payload(request: PublicationWorkflowRequest) -> dict[str, 
         "territory": request.territory,
         "visibility": request.visibility,
         "capability_profile_version": request.capability_profile_version,
-        "scheduled_publication_request_id": request.scheduled_publication_request_id,
-        "scheduled_publication_plan_id": request.scheduled_publication_plan_id,
         "contract_version": request.contract_version,
     }
 

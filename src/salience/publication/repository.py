@@ -39,6 +39,8 @@ class PersistedPublicationExecution:
     plan_id: str
     publisher_id: str
     publisher_version: str
+    schedule_id: str | None = None
+    budget_id: str | None = None
 
 
 @dataclass(frozen=True)
@@ -47,6 +49,7 @@ class CurrentPublicationAuthorization:
 
     request: PublicationRequest
     ready_package_approval_state: str
+    publication_approval_state: str | None
     disclosure_status: str
     account_workspace_id: str
     account_type: str
@@ -147,6 +150,7 @@ class PublicationRepository:
         workspace_id: str,
         content_program_id: str,
         publisher_account_id: str,
+        publication_approval_request_id: str,
         idempotency_key: str,
         platform: str = "fixture",
         destination: str = "fixture://account",
@@ -161,6 +165,7 @@ class PublicationRepository:
             workspace_id,
             content_program_id,
             publisher_account_id,
+            publication_approval_request_id,
             idempotency_key,
             platform,
             destination,
@@ -173,12 +178,8 @@ class PublicationRepository:
     async def load_request(self, publication_request_id: str) -> PublicationRequest:
         return await asyncio.to_thread(self._load_request, publication_request_id)
 
-    async def load_scheduled_execution(
-        self, publication_request_id: str, publication_plan_id: str
-    ) -> PersistedPublicationExecution:
-        return await asyncio.to_thread(
-            self._load_scheduled_execution, publication_request_id, publication_plan_id
-        )
+    async def load_scheduled_execution(self, publication_schedule_id: str) -> PersistedPublicationExecution:
+        return await asyncio.to_thread(self._load_scheduled_execution, publication_schedule_id)
 
     async def load_current_authorization(
         self, publication_request_id: str
@@ -227,6 +228,7 @@ class PublicationRepository:
         publication_request_id: str,
         publication_plan_id: str,
         job_schedule_id: str,
+        budget_id: str,
         version: int,
         schedule_fingerprint: str,
     ) -> PersistedPublicationSchedule:
@@ -235,6 +237,7 @@ class PublicationRepository:
             publication_request_id,
             publication_plan_id,
             job_schedule_id,
+            budget_id,
             version,
             schedule_fingerprint,
         )
@@ -410,6 +413,7 @@ class PublicationRepository:
         workspace_id: str,
         content_program_id: str,
         publisher_account_id: str,
+        publication_approval_request_id: str,
         idempotency_key: str,
         platform: str,
         destination: str,
@@ -425,6 +429,7 @@ class PublicationRepository:
                 "workspace_id": workspace_id,
                 "content_program_id": content_program_id,
                 "publisher_account_id": publisher_account_id,
+                "publication_approval_request_id": publication_approval_request_id,
                 "idempotency_key": idempotency_key,
                 "publisher_id": publisher_id,
                 "platform": platform,
@@ -441,21 +446,30 @@ class PublicationRepository:
                 """
                 INSERT INTO publication_requests (
                     tenant_id, workspace_id, content_program_id, ready_package_id,
-                    publisher_account_id, approval_request_id, request_key, version,
+                    publisher_account_id, approval_request_id, publication_approval_request_id,
+                    request_key, version,
                     publisher_id, platform, destination, locale, territory, visibility,
                     capability_profile_version, approval_reference, state, request_fingerprint,
                     disclosure_projection, policy_references, rights_references
                 )
                 SELECT ready.tenant_id, ready.workspace_id, ready.content_program_id, ready.id,
-                       account.id, ready.approval_request_id, %s, 1,
+                       account.id, ready.approval_request_id, approval.id, %s, 1,
                        %s, %s, %s, %s, %s, %s,
-                       %s, 'ready-package:' || ready.id::text, 'planned', %s,
+                       %s, 'publication-approval:' || approval.id::text, 'planned', %s,
                        jsonb_build_object(
                            'ready_package_id', ready.id::text,
                            'disclosure_id', ready.disclosure_id::text
                        ), ready.policy_versions, '[]'::jsonb
                 FROM ready_to_publish_packages ready
                 JOIN publisher_accounts account ON account.id = %s
+                JOIN approval_requests approval ON approval.id = %s
+                                                AND approval.workspace_id = ready.workspace_id
+                                                AND approval.effect_type = 'publication'
+                                                AND approval.status = 'approved'
+                                                AND approval.request_context @> jsonb_build_object(
+                                                    'ready_package_id', ready.id::text,
+                                                    'publisher_account_id', account.id::text
+                                                )
                 WHERE ready.id = %s
                   AND ready.workspace_id = %s
                   AND ready.content_program_id = %s
@@ -476,6 +490,7 @@ class PublicationRepository:
                     capability_profile_version,
                     fingerprint,
                     publisher_account_id,
+                    publication_approval_request_id,
                     ready_package_id,
                     workspace_id,
                     content_program_id,
@@ -487,7 +502,8 @@ class PublicationRepository:
             cursor.execute(
                 """
                 SELECT id::text, ready_package_id::text, workspace_id::text,
-                       content_program_id::text, publisher_account_id::text, request_fingerprint
+                       content_program_id::text, publisher_account_id::text,
+                       publication_approval_request_id::text, request_fingerprint
                 FROM publication_requests
                 WHERE content_program_id = %s AND request_key = %s AND version = 1
                 """,
@@ -495,19 +511,31 @@ class PublicationRepository:
             )
             existing = cursor.fetchone()
             if existing is None:
-                raise KeyError("approved ready package and active publisher account are required")
-            identifier, existing_ready, existing_workspace, existing_program, existing_account, existing_hash = existing
+                raise KeyError(
+                    "approved ready package, active publisher account, and publication approval are required"
+                )
+            (
+                identifier,
+                existing_ready,
+                existing_workspace,
+                existing_program,
+                existing_account,
+                existing_approval,
+                existing_hash,
+            ) = existing
             if (
                 existing_ready,
                 existing_workspace,
                 existing_program,
                 existing_account,
+                existing_approval,
                 existing_hash,
             ) != (
                 ready_package_id,
                 workspace_id,
                 content_program_id,
                 publisher_account_id,
+                publication_approval_request_id,
                 fingerprint,
             ):
                 raise ImmutablePublicationConflict("publication request differs from its immutable version")
@@ -520,8 +548,8 @@ class PublicationRepository:
                 SELECT id::text, workspace_id::text, content_program_id::text,
                        ready_package_id::text, publisher_account_id::text, platform,
                        destination, locale, territory, visibility,
-                       capability_profile_version, request_key, approval_reference,
-                       publisher_id
+                       capability_profile_version, request_key, publication_approval_request_id::text,
+                       approval_reference, publisher_id
                 FROM publication_requests
                 WHERE id = %s
                 """,
@@ -532,9 +560,7 @@ class PublicationRepository:
             raise KeyError(publication_request_id)
         return _publication_request_from_row(row)
 
-    def _load_scheduled_execution(
-        self, publication_request_id: str, publication_plan_id: str
-    ) -> PersistedPublicationExecution:
+    def _load_scheduled_execution(self, publication_schedule_id: str) -> PersistedPublicationExecution:
         with self._connect() as connection, connection.cursor() as cursor:
             cursor.execute(
                 """
@@ -543,23 +569,29 @@ class PublicationRepository:
                        request.publisher_account_id::text, request.platform,
                        request.destination, request.locale, request.territory,
                        request.visibility, request.capability_profile_version,
-                       request.request_key, request.approval_reference,
-                       request.publisher_id, plan.id::text, plan.publisher_id,
-                       plan.publisher_version
-                FROM publication_requests request
-                JOIN publication_plans plan ON plan.publication_request_id = request.id
-                WHERE request.id = %s AND plan.id = %s
+                       request.request_key, request.publication_approval_request_id::text,
+                       request.approval_reference, request.publisher_id,
+                       plan.id::text, plan.publisher_id, plan.publisher_version,
+                       schedule.id::text, schedule.budget_id::text
+                FROM publication_schedules schedule
+                JOIN publication_requests request ON request.id = schedule.publication_request_id
+                JOIN publication_plans plan ON plan.id = schedule.publication_plan_id
+                                           AND plan.publication_request_id = request.id
+                WHERE schedule.id = %s AND schedule.status = 'scheduled'
+                  AND schedule.budget_id IS NOT NULL
                 """,
-                (publication_request_id, publication_plan_id),
+                (publication_schedule_id,),
             )
             row = cursor.fetchone()
         if row is None:
-            raise KeyError("publication request and plan must form one immutable execution")
+            raise KeyError("publication schedule must name one immutable request, plan, and budget")
         return PersistedPublicationExecution(
-            request=_publication_request_from_row(row[:14]),
-            plan_id=row[14],
-            publisher_id=row[15],
-            publisher_version=row[16],
+            request=_publication_request_from_row(row[:15]),
+            plan_id=row[15],
+            publisher_id=row[16],
+            publisher_version=row[17],
+            schedule_id=row[18],
+            budget_id=row[19],
         )
 
     def _load_current_authorization(
@@ -573,18 +605,46 @@ class PublicationRepository:
                        request.publisher_account_id::text, request.platform,
                        request.destination, request.locale, request.territory,
                        request.visibility, request.capability_profile_version,
-                       request.request_key, request.approval_reference,
-                       request.publisher_id, ready.approval_state, disclosure.status,
-                       account.workspace_id::text, account.account_type, account.status,
-                       connection.publisher_account_id::text, connection.status,
+                       request.request_key, request.publication_approval_request_id::text,
+                       request.approval_reference, request.publisher_id, ready.approval_state,
+                       CASE
+                           WHEN publication_approval.status = 'approved'
+                            AND publication_approval.workspace_id = request.workspace_id
+                            AND publication_approval.effect_type = 'publication'
+                            AND publication_approval.request_context @> jsonb_build_object(
+                                'ready_package_id', request.ready_package_id::text,
+                                'publisher_account_id', request.publisher_account_id::text
+                            ) THEN 'approved'
+                           ELSE publication_approval.status
+                       END,
+                       disclosure.status, account.workspace_id::text, account.account_type,
+                       account.status, connection.publisher_account_id::text, connection.status,
                        connection.granted_scopes, profile.capability_facts,
-                       NOT EXISTS (
+                       jsonb_array_length(request.policy_references) > 0
+                       AND NOT EXISTS (
                            SELECT 1
                            FROM jsonb_array_elements_text(request.policy_references) AS reference(id)
                            LEFT JOIN policy_versions policy ON policy.id::text = reference.id
-                           WHERE policy.id IS NULL OR policy.status <> 'active'
+                           WHERE policy.id IS NULL
+                              OR policy.workspace_id IS DISTINCT FROM request.workspace_id
+                              OR policy.status <> 'active'
                        ),
-                       NOT EXISTS (
+                       EXISTS (
+                           SELECT 1
+                           FROM distribution_package_assets package_asset
+                           WHERE package_asset.distribution_package_id = ready.distribution_package_id
+                       )
+                       AND NOT EXISTS (
+                           SELECT 1
+                           FROM distribution_package_assets package_asset
+                           WHERE package_asset.distribution_package_id = ready.distribution_package_id
+                             AND NOT EXISTS (
+                                 SELECT 1
+                                 FROM asset_rights_links rights
+                                 WHERE rights.asset_id = package_asset.asset_id
+                             )
+                       )
+                       AND NOT EXISTS (
                            SELECT 1
                            FROM distribution_package_assets package_asset
                            JOIN asset_rights_links rights
@@ -637,6 +697,8 @@ class PublicationRepository:
                 JOIN ready_to_publish_packages ready ON ready.id = request.ready_package_id
                 JOIN synthetic_media_disclosures disclosure ON disclosure.id = ready.disclosure_id
                 JOIN publisher_accounts account ON account.id = request.publisher_account_id
+                LEFT JOIN approval_requests publication_approval
+                  ON publication_approval.id = request.publication_approval_request_id
                 LEFT JOIN LATERAL (
                     SELECT publisher_account_id, status, granted_scopes
                     FROM publisher_connections
@@ -660,22 +722,21 @@ class PublicationRepository:
             row = cursor.fetchone()
         if row is None:
             raise KeyError(publication_request_id)
-        profile = (
-            PublisherCapabilityProfile.model_validate(row[22]) if row[22] is not None else None
-        )
+        profile = PublisherCapabilityProfile.model_validate(row[24]) if row[24] is not None else None
         return CurrentPublicationAuthorization(
-            request=_publication_request_from_row(row[:14]),
-            ready_package_approval_state=row[14],
-            disclosure_status=row[15],
-            account_workspace_id=row[16],
-            account_type=row[17],
-            account_status=row[18],
-            connection_account_id=row[19],
-            connection_status=row[20],
-            connection_scopes=frozenset(row[21] or ()),
+            request=_publication_request_from_row(row[:15]),
+            ready_package_approval_state=row[15],
+            publication_approval_state=row[16],
+            disclosure_status=row[17],
+            account_workspace_id=row[18],
+            account_type=row[19],
+            account_status=row[20],
+            connection_account_id=row[21],
+            connection_status=row[22],
+            connection_scopes=frozenset(row[23] or ()),
             profile=profile,
-            policy_allowed=row[23],
-            rights_allowed=row[24],
+            policy_allowed=row[25],
+            rights_allowed=row[26],
         )
 
     @staticmethod
@@ -887,6 +948,7 @@ class PublicationRepository:
         publication_request_id: str,
         publication_plan_id: str,
         job_schedule_id: str,
+        budget_id: str,
         version: int,
         schedule_fingerprint: str,
     ) -> PersistedPublicationSchedule:
@@ -894,16 +956,20 @@ class PublicationRepository:
             cursor.execute(
                 """
                 INSERT INTO publication_schedules (
-                    publication_request_id, publication_plan_id, job_schedule_id, version,
+                    publication_request_id, publication_plan_id, job_schedule_id, budget_id, version,
                     scheduled_for, schedule_fingerprint, status
                 )
-                SELECT request.id, plan.id, schedule.id, %s, CURRENT_TIMESTAMP, %s, 'scheduled'
+                SELECT request.id, plan.id, schedule.id, budget.id, %s, CURRENT_TIMESTAMP, %s, 'scheduled'
                 FROM publication_requests request
                 JOIN publication_plans plan ON plan.publication_request_id = request.id
                 JOIN job_schedules schedule ON schedule.id = %s
                                            AND schedule.workspace_id = request.workspace_id
                                            AND schedule.content_program_id = request.content_program_id
                                            AND schedule.job_type = 'governed_publication'
+                JOIN budgets budget ON budget.id = %s
+                                  AND budget.workspace_id = request.workspace_id
+                                  AND budget.content_program_id = request.content_program_id
+                                  AND budget.status = 'active'
                 WHERE request.id = %s AND plan.id = %s
                 ON CONFLICT (publication_request_id, version) DO NOTHING
                 RETURNING id::text, publication_request_id::text, publication_plan_id::text,
@@ -913,6 +979,7 @@ class PublicationRepository:
                     version,
                     schedule_fingerprint,
                     job_schedule_id,
+                    budget_id,
                     publication_request_id,
                     publication_plan_id,
                 ),
@@ -923,7 +990,7 @@ class PublicationRepository:
             cursor.execute(
                 """
                 SELECT id::text, publication_request_id::text, publication_plan_id::text,
-                       job_schedule_id::text, version, schedule_fingerprint
+                       job_schedule_id::text, budget_id::text, version, schedule_fingerprint
                 FROM publication_schedules
                 WHERE publication_request_id = %s AND version = %s
                 """,
@@ -932,11 +999,20 @@ class PublicationRepository:
             existing = cursor.fetchone()
             if existing is None:
                 raise KeyError("publication request, plan, and job schedule are required")
-            identifier, found_request, found_plan, found_job_schedule, found_version, found_hash = existing
-            if (found_request, found_plan, found_job_schedule, found_version, found_hash) != (
+            (
+                identifier,
+                found_request,
+                found_plan,
+                found_job_schedule,
+                found_budget,
+                found_version,
+                found_hash,
+            ) = existing
+            if (found_request, found_plan, found_job_schedule, found_budget, found_version, found_hash) != (
                 publication_request_id,
                 publication_plan_id,
                 job_schedule_id,
+                budget_id,
                 version,
                 schedule_fingerprint,
             ):
@@ -1186,6 +1262,7 @@ def _publication_request_from_row(row: tuple[Any, ...]) -> PublicationRequest:
         visibility=row[9],
         capability_profile_version=row[10],
         idempotency_key=row[11],
-        approval_reference=row[12],
-        publisher_id=row[13],
+        publication_approval_request_id=row[12],
+        approval_reference=row[13],
+        publisher_id=row[14],
     )

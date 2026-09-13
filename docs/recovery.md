@@ -48,5 +48,5 @@ audit/provenance/trace records. Ambiguous outcomes become reconciliation work;
 the workflow never blindly repeats a publisher create.
 
 The opt-in YouTube adapter currently starts only a private resumable session.
-It keeps the session URI in transient edge memory and persists no video transfer
+It requires a durable injected edge session store for the opaque URI and persists no video transfer
 or public post, so it does not weaken the fixture recovery guarantee.

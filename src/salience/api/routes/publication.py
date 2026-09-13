@@ -34,6 +34,7 @@ async def start_publication(
             content_program_id=payload.content_program_id,
             ready_package_id=payload.ready_package_id,
             publisher_account_id=payload.publisher_account_id,
+            publication_approval_request_id=payload.publication_approval_request_id,
             budget_id=payload.budget_id,
             idempotency_key=payload.idempotency_key,
             platform=payload.platform,

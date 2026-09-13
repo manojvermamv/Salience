@@ -81,6 +81,7 @@ class PublicationRequest(BaseModel):
     content_program_id: str = Field(min_length=1, max_length=128)
     ready_package_id: str = Field(min_length=1, max_length=128)
     publisher_account_id: str = Field(min_length=1, max_length=128)
+    publication_approval_request_id: str = Field(min_length=1, max_length=128)
     platform: str = Field(min_length=1, max_length=64)
     destination: str = Field(min_length=1, max_length=255)
     locale: str = Field(min_length=1, max_length=32)

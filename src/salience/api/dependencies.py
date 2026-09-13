@@ -181,6 +181,7 @@ class ControlPlane(Protocol):
         content_program_id: str,
         ready_package_id: str,
         publisher_account_id: str,
+        publication_approval_request_id: str,
         budget_id: str,
         idempotency_key: str,
         platform: str = "fixture",
@@ -205,16 +206,7 @@ class ControlPlane(Protocol):
         schedule_version: int,
         name: str,
         every_seconds: int,
-        ready_package_id: str,
-        publisher_account_id: str,
         budget_id: str,
-        idempotency_key: str,
-        platform: str = "fixture",
-        destination: str = "fixture://account",
-        locale: str = "en",
-        territory: str = "global",
-        visibility: str = "private",
-        capability_profile_version: int = 1,
     ) -> ControlSchedule: ...
 
     async def get_ready_package_lineage(
@@ -408,6 +400,7 @@ class InMemoryControlPlane:
         content_program_id: str,
         ready_package_id: str,
         publisher_account_id: str,
+        publication_approval_request_id: str,
         budget_id: str,
         idempotency_key: str,
         platform: str = "fixture",
@@ -441,6 +434,7 @@ class InMemoryControlPlane:
                 "contract_version": "PublicationWorkflowRequest@v1",
                 "ready_package_id": ready_package_id,
                 "publisher_account_id": publisher_account_id,
+                "publication_approval_request_id": publication_approval_request_id,
                 "budget_id": budget_id,
                 "idempotency_key": idempotency_key,
                 "platform": platform,
@@ -475,16 +469,7 @@ class InMemoryControlPlane:
         schedule_version: int,
         name: str,
         every_seconds: int,
-        ready_package_id: str,
-        publisher_account_id: str,
         budget_id: str,
-        idempotency_key: str,
-        platform: str = "fixture",
-        destination: str = "fixture://account",
-        locale: str = "en",
-        territory: str = "global",
-        visibility: str = "private",
-        capability_profile_version: int = 1,
     ) -> ControlSchedule:
         if every_seconds <= 0 or schedule_version <= 0:
             raise ValueError("publication schedule interval and version must be positive")
@@ -492,14 +477,11 @@ class InMemoryControlPlane:
             (
                 publication_request_id,
                 publication_plan_id,
-                ready_package_id,
-                publisher_account_id,
                 budget_id,
-                idempotency_key,
             )
         ):
             raise ValueError(
-                "publication schedule requires immutable request, plan, package, account, budget, and key"
+                "publication schedule requires immutable request, plan, and budget"
             )
         if not any(
             program.content_program_id == content_program_id and program.workspace_id == workspace_id
@@ -772,6 +754,7 @@ class TemporalControlPlane:
         content_program_id: str,
         ready_package_id: str,
         publisher_account_id: str,
+        publication_approval_request_id: str,
         budget_id: str,
         idempotency_key: str,
         platform: str = "fixture",
@@ -802,6 +785,7 @@ class TemporalControlPlane:
                 content_program_id=content_program_id,
                 ready_package_id=ready_package_id,
                 publisher_account_id=publisher_account_id,
+                publication_approval_request_id=publication_approval_request_id,
                 budget_id=budget_id,
                 idempotency_key=idempotency_key,
                 platform=platform,
@@ -823,6 +807,7 @@ class TemporalControlPlane:
                 "contract_version": "PublicationWorkflowRequest@v1",
                 "ready_package_id": ready_package_id,
                 "publisher_account_id": publisher_account_id,
+                "publication_approval_request_id": publication_approval_request_id,
                 "budget_id": budget_id,
                 "idempotency_key": idempotency_key,
             },
@@ -872,33 +857,10 @@ class TemporalControlPlane:
         schedule_version: int,
         name: str,
         every_seconds: int,
-        ready_package_id: str,
-        publisher_account_id: str,
         budget_id: str,
-        idempotency_key: str,
-        platform: str = "fixture",
-        destination: str = "fixture://account",
-        locale: str = "en",
-        territory: str = "global",
-        visibility: str = "private",
-        capability_profile_version: int = 1,
     ) -> ControlSchedule:
         if every_seconds <= 0 or schedule_version <= 0:
             raise ValueError("publication schedule interval and version must be positive")
-        workflow_request = PublicationWorkflowRequest(
-            workspace_id=workspace_id,
-            content_program_id=content_program_id,
-            ready_package_id=ready_package_id,
-            publisher_account_id=publisher_account_id,
-            budget_id=budget_id,
-            idempotency_key=idempotency_key,
-            platform=platform,
-            destination=destination,
-            locale=locale,
-            territory=territory,
-            visibility=visibility,
-            capability_profile_version=capability_profile_version,
-        )
         fingerprint = hashlib.sha256(
             json.dumps(
                 {
@@ -907,7 +869,7 @@ class TemporalControlPlane:
                     "schedule_version": schedule_version,
                     "name": name,
                     "every_seconds": every_seconds,
-                    "workflow_request": workflow_request.__dict__,
+                    "budget_id": budget_id,
                 },
                 default=str,
                 sort_keys=True,
@@ -918,8 +880,9 @@ class TemporalControlPlane:
         schedule_payload = {
             "publication_request_id": publication_request_id,
             "publication_plan_id": publication_plan_id,
+            "budget_id": budget_id,
             "schedule_version": schedule_version,
-            "contract_version": workflow_request.contract_version,
+            "contract_version": "PublicationSchedule@v1",
         }
         existing_schedule_matches = await self._store.publication_schedule_matches(
             workspace_id=workspace_id,
@@ -938,22 +901,20 @@ class TemporalControlPlane:
             job_type="governed_publication",
             payload=schedule_payload,
         )
-        await self._publication.create_schedule(
+        publication_schedule = await self._publication.create_schedule(
             publication_request_id=publication_request_id,
             publication_plan_id=publication_plan_id,
             job_schedule_id=canonical.schedule_id,
+            budget_id=budget_id,
             version=schedule_version,
             schedule_fingerprint=fingerprint,
         )
         client = await Client.connect(self._temporal_target)
         await PublicationScheduleService(client, task_queue=self._task_queue).create_every(
             DurablePublicationScheduleRequest(
-                publication_request_id=publication_request_id,
-                publication_plan_id=publication_plan_id,
-                schedule_version=schedule_version,
+                publication_schedule_id=publication_schedule.id,
                 name=name,
                 every=timedelta(seconds=every_seconds),
-                workflow_request=workflow_request,
             )
         )
         return ControlSchedule(

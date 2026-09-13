@@ -64,7 +64,7 @@ async def _remote_receipt_count(database_url: str, job_id: str) -> int:
 
 @pytest.mark.asyncio
 async def test_publication_restart_after_remote_acceptance_does_not_duplicate_post() -> None:
-    from test_creative_release_gate_migration import _approved_ready_package
+    from test_creative_release_gate_migration import _approved_publication_approval, _approved_ready_package
 
     database_url = os.environ["TEST_DATABASE_URL"]
     temporal_client = await Client.connect(os.environ["TEST_TEMPORAL_TARGET"])
@@ -77,6 +77,7 @@ async def test_publication_restart_after_remote_acceptance_does_not_duplicate_po
         account_type="creator",
         external_account_reference=f"fixture:restart:{uuid4()}",
     )
+    publication_approval_request_id = await _approved_publication_approval(ready, account.id)
     idempotency_key = f"publication-restart-{uuid4()}"
     task_queue = f"salience-publication-restart-{uuid4()}"
     workflow_id = f"publication-restart-{uuid4()}"
@@ -104,6 +105,7 @@ async def test_publication_restart_after_remote_acceptance_does_not_duplicate_po
         content_program_id=ready["program_id"],
         ready_package_id=ready["ready_package_id"],
         publisher_account_id=account.id,
+        publication_approval_request_id=publication_approval_request_id,
         budget_id=await _budget(database_url, ready["workspace_id"], ready["program_id"]),
         idempotency_key=idempotency_key,
     )

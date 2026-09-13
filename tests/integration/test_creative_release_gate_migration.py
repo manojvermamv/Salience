@@ -1,5 +1,7 @@
 """Direct PostgreSQL contracts for the Phase 7-8 release-gate migration."""
 
+import asyncio
+import json
 import os
 
 import psycopg
@@ -36,7 +38,7 @@ def test_release_gate_migration_has_canonical_effect_and_webhook_uniqueness() ->
         }
 
 
-async def _approved_ready_package() -> dict[str, str]:
+async def _approved_ready_package(*, publication_proofs: bool = True) -> dict[str, str]:
     from test_creative_repository import _seed_brief
 
     seeded = await _seed_brief()
@@ -117,6 +119,22 @@ async def _approved_ready_package() -> dict[str, str]:
         decision={"required": True, "label": "Synthetic media"},
         status="approved",
     )
+    policy_versions, creative_approval_id = await asyncio.to_thread(
+        _insert_ready_package_governance,
+        os.environ["TEST_DATABASE_URL"],
+        seeded["workspace_id"],
+        asset.asset_id,
+        distribution_package_id,
+        publication_proofs,
+    )
+    if publication_proofs:
+        assert policy_versions is not None
+        await repository.record_asset_rights_link(
+            asset_id=asset.asset_id,
+            link_key="publication-license",
+            relation="asset_license",
+            reference_id=policy_versions[1],
+        )
     ready_package_id = await repository.record_ready_package(
         workspace_id=seeded["workspace_id"],
         program_id=seeded["program_id"],
@@ -130,6 +148,8 @@ async def _approved_ready_package() -> dict[str, str]:
         approval_state="approved",
         verifier_results={"all_passed": True},
         lineage={"brief_id": seeded["brief_id"]},
+        approval_request_id=creative_approval_id,
+        policy_versions=[policy_versions[0]] if policy_versions is not None else [],
     )
     return {
         "ready_package_id": ready_package_id,
@@ -138,7 +158,90 @@ async def _approved_ready_package() -> dict[str, str]:
         "disclosure_id": disclosure_id,
         "distribution_package_id": distribution_package_id,
         "candidate_id": candidate_id,
+        "asset_id": asset.asset_id,
+        "creative_approval_id": creative_approval_id,
     }
+
+
+async def _approved_publication_approval(ready: dict[str, str], publisher_account_id: str) -> str:
+    def insert() -> str:
+        with psycopg.connect(os.environ["TEST_DATABASE_URL"]) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                INSERT INTO approval_requests (
+                    workspace_id, effect_type, status, request_context, requested_by,
+                    decided_by, decided_at, decision_reason
+                ) VALUES (
+                    %s, 'publication', 'approved', %s::jsonb, 'fixture-operator',
+                    'fixture-operator', CURRENT_TIMESTAMP, 'fixture governed publication approval'
+                )
+                RETURNING id::text
+                """,
+                (
+                    ready["workspace_id"],
+                    json.dumps(
+                        {
+                            "ready_package_id": ready["ready_package_id"],
+                            "publisher_account_id": publisher_account_id,
+                        },
+                        sort_keys=True,
+                    ),
+                ),
+            )
+            return str(cursor.fetchone()[0])
+
+    return await asyncio.to_thread(insert)
+
+
+def _insert_ready_package_governance(
+    database_url: str,
+    workspace_id: str,
+    asset_id: str,
+    distribution_package_id: str,
+    publication_proofs: bool,
+) -> tuple[tuple[str, str] | None, str]:
+    with psycopg.connect(database_url) as connection, connection.cursor() as cursor:
+        policy_id: str | None = None
+        license_id: str | None = None
+        if publication_proofs:
+            cursor.execute(
+                """
+                INSERT INTO policy_versions (
+                    workspace_id, policy_name, version, status, document, document_hash
+                ) VALUES (%s, 'release-gate-publication', '1', 'active', '{}'::jsonb, %s)
+                RETURNING id::text
+                """,
+                (workspace_id, "p" * 64),
+            )
+            policy_id = str(cursor.fetchone()[0])
+            cursor.execute(
+                """
+                INSERT INTO asset_licenses (
+                    asset_id, license_type, commercial_use, terms, status
+                ) VALUES (%s, 'fixture', true, '{}'::jsonb, 'active')
+                RETURNING id::text
+                """,
+                (asset_id,),
+            )
+            license_id = str(cursor.fetchone()[0])
+        cursor.execute(
+            """
+            INSERT INTO approval_requests (
+                workspace_id, effect_type, status, request_context, requested_by,
+                decided_by, decided_at, decision_reason
+            ) VALUES (
+                %s, 'creative_distribution', 'approved', %s::jsonb, 'fixture-operator',
+                'fixture-operator', CURRENT_TIMESTAMP, 'fixture ready package approval'
+            )
+            RETURNING id::text
+            """,
+            (
+                workspace_id,
+                json.dumps({"distribution_package_id": distribution_package_id}, sort_keys=True),
+            ),
+        )
+        creative_approval_id = str(cursor.fetchone()[0])
+        return (policy_id, license_id) if policy_id and license_id else None, creative_approval_id
 
 
 @pytest.mark.asyncio

@@ -269,6 +269,7 @@ class PublicationClient(_ControlClient):
         content_program_id: str,
         ready_package_id: str,
         publisher_account_id: str,
+        publication_approval_request_id: str,
         budget_id: str,
         idempotency_key: str,
     ) -> PublicationRunView:
@@ -282,6 +283,7 @@ class PublicationClient(_ControlClient):
                     "content_program_id": content_program_id,
                     "ready_package_id": ready_package_id,
                     "publisher_account_id": publisher_account_id,
+                    "publication_approval_request_id": publication_approval_request_id,
                     "budget_id": budget_id,
                     "idempotency_key": idempotency_key,
                 },
@@ -303,10 +305,7 @@ class PublicationClient(_ControlClient):
         schedule_version: int,
         name: str,
         every_seconds: int,
-        ready_package_id: str,
-        publisher_account_id: str,
         budget_id: str,
-        idempotency_key: str,
     ) -> PublicationScheduleView:
         return PublicationScheduleView.model_validate(
             self._request(
@@ -320,10 +319,7 @@ class PublicationClient(_ControlClient):
                     "schedule_version": schedule_version,
                     "name": name,
                     "every_seconds": every_seconds,
-                    "ready_package_id": ready_package_id,
-                    "publisher_account_id": publisher_account_id,
                     "budget_id": budget_id,
-                    "idempotency_key": idempotency_key,
                 },
             )
         )

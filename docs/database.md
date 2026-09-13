@@ -7,7 +7,7 @@ stores immutable artifact bytes; neither replaces a canonical database row.
 
 The first migration is a static schema snapshot at
 `migrations/versions/0001_canonical_foundation.py`. The implemented history
-reaches `0009_governed_publication.py`; `0004_intelligence_loop.py` adds the
+reaches `0011_publication_plan_lifecycle.py`; `0004_intelligence_loop.py` adds the
 source-to-brief lineage tables, `0006_creative_production_distribution.py` adds
 the Phase 7–8 canonical production/distribution model, and `0007` anchors
 provider and package-asset reconciliation lineage. `0008` adds creative-job
@@ -17,7 +17,10 @@ of approved decision lineage. `0009_governed_publication` adds publisher
 accounts, secret-reference-only connections, capability profiles, immutable
 ready-package-bound requests, idempotent plans/schedules/attempts, append-only
 status and webhook receipts, remote receipts, publication records, and their
-trace/cost links. Historical migrations do not import application
+trace/cost links. `0010` adds the distinct publication-approval and
+schedule-budget references plus database-enforced immutable identity fields;
+`0011` permits only their bounded durable cost lifecycle transitions.
+Historical migrations do not import application
 metadata, so future model changes cannot alter an already-applied migration.
 
 Use an SQLAlchemy async URL for Alembic:
@@ -73,17 +76,17 @@ publishing-effect identity and does not mutate this lineage.
 `publisher_accounts`, `publisher_connections`, and
 `publisher_capability_profiles` retain account identity, secret reference,
 scope/profile facts, protocol compatibility, and source timestamps without a
-secret value. `publication_requests` binds an approved ready package to one
-active workspace-bound account. `publication_plans`, `publication_schedules`,
+secret value. `publication_requests` binds an approved ready package, a distinct approved
+publication authority, and one active workspace-bound account. `publication_plans`, `publication_schedules`,
 `publication_attempts`, `publication_status_events`,
 `publisher_webhook_receipts`, `remote_publication_receipts`, and `publications`
 preserve the governed decision, external-effect/reconciliation state, cost
 reservation, safe callback hash, trace, and final receipt relationships.
-Requests, callback/remote receipts, status history, and final publication
-references are database-immutable; plans, schedules, and attempts are
-idempotent repository records that receive only their initially missing effect
-or reservation link. Repository writers replay exact identities or reject a
-changed immutable fact.
+Requests, schedules, attempts, callback/remote receipts, status history, and
+final publication references are database-immutable. Plans preserve their
+identity fields and admit only a one-time effect/reservation link plus bounded
+cost-settlement lifecycle transitions. Repository writers replay exact
+identities or reject a changed immutable fact.
 
 ## Durable Runs
 

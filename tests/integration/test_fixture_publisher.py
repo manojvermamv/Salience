@@ -15,6 +15,7 @@ def _request(idempotency_key: str = "publication-effect-1") -> PublicationReques
         content_program_id="program-1",
         ready_package_id="ready-package-1",
         publisher_account_id="publisher-account-1",
+        publication_approval_request_id="publication-approval-1",
         platform="fixture",
         destination="fixture://account-1",
         locale="en",

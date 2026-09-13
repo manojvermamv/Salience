@@ -13,6 +13,12 @@ from salience.publication.youtube import (
 )
 
 
+class _DurableSessionStore(InMemoryYouTubeSessionStore):
+    @property
+    def is_durable(self) -> bool:
+        return True
+
+
 def _publication(*, visibility: str = "private") -> PublicationRequest:
     return PublicationRequest(
         id="publication-attempt-1",
@@ -20,6 +26,7 @@ def _publication(*, visibility: str = "private") -> PublicationRequest:
         content_program_id="program-1",
         ready_package_id="ready-package-1",
         publisher_account_id="publisher-account-1",
+        publication_approval_request_id="publication-approval-1",
         platform="youtube",
         destination="youtube://channel-1",
         locale="en",
@@ -59,6 +66,7 @@ async def test_youtube_adapter_starts_private_resumable_session_without_persisti
             client=client,
             connection_reference="secret://youtube/private-test-connection",
             enabled=True,
+            session_store=_DurableSessionStore(),
         )
         attempt = await adapter.prepare_upload(
             YouTubeUploadRequest(
@@ -93,6 +101,7 @@ async def test_youtube_adapter_fails_closed_for_non_private_uploads_without_http
             client=client,
             connection_reference="secret://youtube/private-test-connection",
             enabled=True,
+            session_store=_DurableSessionStore(),
         )
         with pytest.raises(ValueError, match="private"):
             await adapter.prepare_upload(
@@ -110,7 +119,7 @@ async def test_youtube_adapter_fails_closed_for_non_private_uploads_without_http
 
 @pytest.mark.asyncio
 async def test_youtube_session_reconciles_after_adapter_replacement_without_exposing_uri() -> None:
-    store = InMemoryYouTubeSessionStore()
+    store = _DurableSessionStore()
 
     def handler(_request: httpx.Request) -> httpx.Response:
         return httpx.Response(
@@ -146,3 +155,19 @@ async def test_youtube_session_reconciles_after_adapter_replacement_without_expo
     assert receipt.remote_id == attempt.upload_session_id
     assert receipt.state == "accepted"
     assert "session-restart" not in receipt.model_dump_json()
+
+
+@pytest.mark.asyncio
+async def test_youtube_adapter_requires_an_explicit_durable_edge_store() -> None:
+    async with httpx.AsyncClient() as client:
+        with pytest.raises(ValueError, match="durable edge session store"):
+            YouTubePublisherAdapter(
+                client=client,
+                connection_reference="secret://youtube/private-test-connection",
+            )
+        with pytest.raises(ValueError, match="durable edge session store"):
+            YouTubePublisherAdapter(
+                client=client,
+                connection_reference="secret://youtube/private-test-connection",
+                session_store=InMemoryYouTubeSessionStore(),
+            )

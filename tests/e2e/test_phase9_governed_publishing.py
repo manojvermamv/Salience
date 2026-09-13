@@ -99,9 +99,21 @@ async def _set_connection_status(database_url: str, account_id: str, status: str
     await asyncio.to_thread(update)
 
 
+class _RevokingFixturePublisher(FixturePublisherAdapter):
+    def __init__(self, database_url: str, publisher_account_id: str) -> None:
+        super().__init__(scenario="published")
+        self._database_url = database_url
+        self._publisher_account_id = publisher_account_id
+
+    async def prepare_delivery(self, request, delivery_url: str) -> str:
+        prepared = await super().prepare_delivery(request, delivery_url)
+        await _set_connection_status(self._database_url, self._publisher_account_id, "revoked")
+        return prepared
+
+
 @pytest.mark.asyncio
 async def test_poll_and_duplicate_webhook_converge_to_one_receipt() -> None:
-    from test_creative_release_gate_migration import _approved_ready_package
+    from test_creative_release_gate_migration import _approved_publication_approval, _approved_ready_package
 
     database_url = os.environ["TEST_DATABASE_URL"]
     temporal_client = await Client.connect(os.environ["TEST_TEMPORAL_TARGET"])
@@ -114,6 +126,7 @@ async def test_poll_and_duplicate_webhook_converge_to_one_receipt() -> None:
         account_type="creator",
         external_account_reference=f"fixture:webhook:{uuid4()}",
     )
+    publication_approval_request_id = await _approved_publication_approval(ready, account.id)
     idempotency_key = f"publication-webhook-{uuid4()}"
     task_queue = f"salience-publication-webhook-{uuid4()}"
     workflow_id = f"publication-webhook-{uuid4()}"
@@ -145,6 +158,7 @@ async def test_poll_and_duplicate_webhook_converge_to_one_receipt() -> None:
                 content_program_id=ready["program_id"],
                 ready_package_id=ready["ready_package_id"],
                 publisher_account_id=account.id,
+                publication_approval_request_id=publication_approval_request_id,
                 budget_id=await _budget(
                     database_url, ready["workspace_id"], ready["program_id"]
                 ),
@@ -169,7 +183,7 @@ async def test_poll_and_duplicate_webhook_converge_to_one_receipt() -> None:
 
 @pytest.mark.asyncio
 async def test_revoked_canonical_connection_denies_before_fixture_submission() -> None:
-    from test_creative_release_gate_migration import _approved_ready_package
+    from test_creative_release_gate_migration import _approved_publication_approval, _approved_ready_package
 
     database_url = os.environ["TEST_DATABASE_URL"]
     temporal_client = await Client.connect(os.environ["TEST_TEMPORAL_TARGET"])
@@ -182,6 +196,7 @@ async def test_revoked_canonical_connection_denies_before_fixture_submission() -
         account_type="creator",
         external_account_reference=f"fixture:revoked:{uuid4()}",
     )
+    publication_approval_request_id = await _approved_publication_approval(ready, account.id)
     await _set_connection_status(database_url, account.id, "revoked")
     idempotency_key = f"publication-revoked-{uuid4()}"
     task_queue = f"salience-publication-revoked-{uuid4()}"
@@ -214,6 +229,72 @@ async def test_revoked_canonical_connection_denies_before_fixture_submission() -
                 content_program_id=ready["program_id"],
                 ready_package_id=ready["ready_package_id"],
                 publisher_account_id=account.id,
+                publication_approval_request_id=publication_approval_request_id,
+                budget_id=await _budget(database_url, ready["workspace_id"], ready["program_id"]),
+                idempotency_key=idempotency_key,
+            ),
+            id=workflow_id,
+            task_queue=task_queue,
+        )
+        result = await asyncio.wait_for(handle.result(), timeout=30)
+    finally:
+        await asyncio.wait_for(worker.shutdown(), timeout=10)
+        await asyncio.wait_for(worker_task, timeout=10)
+
+    assert result.publication_state == "denied"
+    assert result.denial_reason is not None
+    assert "connection_status" in result.denial_reason
+    assert provider.submit_count == 0
+
+
+@pytest.mark.asyncio
+async def test_authority_revoked_after_delivery_denies_before_fixture_submission() -> None:
+    from test_creative_release_gate_migration import _approved_publication_approval, _approved_ready_package
+
+    database_url = os.environ["TEST_DATABASE_URL"]
+    temporal_client = await Client.connect(os.environ["TEST_TEMPORAL_TARGET"])
+    ready = await _approved_ready_package()
+    repository = PublicationRepository(database_url)
+    account = await repository.create_account(
+        workspace_id=ready["workspace_id"],
+        platform="fixture",
+        account_key=f"revoked-after-delivery-{uuid4()}",
+        account_type="creator",
+        external_account_reference=f"fixture:revoked-after-delivery:{uuid4()}",
+    )
+    publication_approval_request_id = await _approved_publication_approval(ready, account.id)
+    idempotency_key = f"publication-revoked-after-delivery-{uuid4()}"
+    task_queue = f"salience-publication-revoked-after-delivery-{uuid4()}"
+    workflow_id = f"publication-revoked-after-delivery-{uuid4()}"
+    store = CanonicalJobStore(database_url)
+    await store.create_publication_run(
+        workflow_run_id=workflow_id,
+        task_queue=task_queue,
+        workspace_id=ready["workspace_id"],
+        content_program_id=ready["program_id"],
+        ready_package_id=ready["ready_package_id"],
+        publisher_account_id=account.id,
+        idempotency_key=idempotency_key,
+    )
+    provider = _RevokingFixturePublisher(database_url, account.id)
+    state = PublicationWorkflowState(
+        store=store,
+        repository=repository,
+        provider=provider,
+        delivery=PublicationDelivery("publication-delivery-key"),
+        cost_repository=CostReservationRepository(database_url),
+    )
+    worker = build_publication_worker(temporal_client, task_queue=task_queue, state=state)
+    worker_task = asyncio.create_task(worker.run())
+    try:
+        handle = await temporal_client.start_workflow(
+            GovernedPublicationWorkflow.run,
+            PublicationWorkflowRequest(
+                workspace_id=ready["workspace_id"],
+                content_program_id=ready["program_id"],
+                ready_package_id=ready["ready_package_id"],
+                publisher_account_id=account.id,
+                publication_approval_request_id=publication_approval_request_id,
                 budget_id=await _budget(database_url, ready["workspace_id"], ready["program_id"]),
                 idempotency_key=idempotency_key,
             ),
@@ -233,7 +314,7 @@ async def test_revoked_canonical_connection_denies_before_fixture_submission() -
 
 @pytest.mark.asyncio
 async def test_scheduled_execution_uses_its_exact_persisted_request_and_plan() -> None:
-    from test_creative_release_gate_migration import _approved_ready_package
+    from test_creative_release_gate_migration import _approved_publication_approval, _approved_ready_package
 
     database_url = os.environ["TEST_DATABASE_URL"]
     temporal_client = await Client.connect(os.environ["TEST_TEMPORAL_TARGET"])
@@ -246,12 +327,14 @@ async def test_scheduled_execution_uses_its_exact_persisted_request_and_plan() -
         account_type="creator",
         external_account_reference=f"fixture:scheduled:{uuid4()}",
     )
+    publication_approval_request_id = await _approved_publication_approval(ready, account.id)
     idempotency_key = f"publication-scheduled-{uuid4()}"
     request = await repository.create_request(
         ready_package_id=ready["ready_package_id"],
         workspace_id=ready["workspace_id"],
         content_program_id=ready["program_id"],
         publisher_account_id=account.id,
+        publication_approval_request_id=publication_approval_request_id,
         idempotency_key=idempotency_key,
         destination="fixture://scheduled-canonical",
     )
@@ -272,10 +355,11 @@ async def test_scheduled_execution_uses_its_exact_persisted_request_and_plan() -
         job_type="governed_publication",
         payload={"publication_request_id": request.id, "publication_plan_id": plan.id},
     )
-    await repository.create_schedule(
+    publication_schedule = await repository.create_schedule(
         publication_request_id=request.id,
         publication_plan_id=plan.id,
         job_schedule_id=job_schedule.schedule_id,
+        budget_id=await _budget(database_url, ready["workspace_id"], ready["program_id"]),
         version=1,
         schedule_fingerprint="b" * 64,
     )
@@ -302,15 +386,7 @@ async def test_scheduled_execution_uses_its_exact_persisted_request_and_plan() -
         handle = await temporal_client.start_workflow(
             GovernedPublicationWorkflow.run,
             PublicationWorkflowRequest(
-                workspace_id=ready["workspace_id"],
-                content_program_id=ready["program_id"],
-                ready_package_id=ready["ready_package_id"],
-                publisher_account_id=account.id,
-                budget_id=await _budget(database_url, ready["workspace_id"], ready["program_id"]),
-                idempotency_key=idempotency_key,
-                destination="fixture://scheduled-canonical",
-                scheduled_publication_request_id=request.id,
-                scheduled_publication_plan_id=plan.id,
+                scheduled_publication_schedule_id=publication_schedule.id,
             ),
             id=workflow_id,
             task_queue=task_queue,

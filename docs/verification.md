@@ -116,9 +116,9 @@ bash scripts/verify-phase-9.sh
 ```
 
 The verifier starts/reuses project PostgreSQL and Temporal, applies migrations
-through `0009_governed_publication`, and checks publisher contract/registry,
+through `0011_publication_plan_lifecycle`, and checks publisher contract/registry,
 canonical persistence, scoped API/CLI/SDK surfaces, immutable scheduling,
-policy/budget/approval gates, fixture submission/reconciliation, duplicate-safe
+policy/rights/budget/approval gates including final-write reauthorization, fixture submission/reconciliation, duplicate-safe
 signed webhook receipts, and an interruption after remote acceptance. Its latest
 recorded run passed 47 focused fixture tests and the complete 221-test non-live
 suite, each with only the existing third-party Starlette deprecation warning. It

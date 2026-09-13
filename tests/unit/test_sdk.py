@@ -112,6 +112,7 @@ def test_client_starts_and_inspects_governed_publication_through_http(monkeypatc
         content_program_id="program-1",
         ready_package_id="ready-1",
         publisher_account_id="account-1",
+        publication_approval_request_id="publication-approval-1",
         budget_id="budget-1",
         idempotency_key="publication-key",
     )
@@ -129,6 +130,7 @@ def test_client_starts_and_inspects_governed_publication_through_http(monkeypatc
                 "content_program_id": "program-1",
                 "ready_package_id": "ready-1",
                 "publisher_account_id": "account-1",
+                "publication_approval_request_id": "publication-approval-1",
                 "budget_id": "budget-1",
                 "idempotency_key": "publication-key",
             },
@@ -158,8 +160,7 @@ def test_client_schedules_governed_publication_through_http(monkeypatch) -> None
         workspace_id="workspace-1", content_program_id="program-1",
         publication_request_id="publication-request-1", publication_plan_id="publication-plan-1",
         schedule_version=1, name="weekday-private-release", every_seconds=86_400,
-        ready_package_id="ready-1", publisher_account_id="account-1", budget_id="budget-1",
-        idempotency_key="publication-schedule-1",
+        budget_id="budget-1",
     )
 
     assert schedule.schedule_id == "schedule-1"
@@ -170,8 +171,7 @@ def test_client_schedules_governed_publication_through_http(monkeypatch) -> None
                 "workspace_id": "workspace-1", "content_program_id": "program-1",
                 "publication_request_id": "publication-request-1", "publication_plan_id": "publication-plan-1",
                 "schedule_version": 1, "name": "weekday-private-release", "every_seconds": 86_400,
-                "ready_package_id": "ready-1", "publisher_account_id": "account-1", "budget_id": "budget-1",
-                "idempotency_key": "publication-schedule-1",
+                "budget_id": "budget-1",
             },
         )
     ]

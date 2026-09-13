@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-- Add revision `0010_publication_hardening` (the canonical Alembic version column is `VARCHAR(32)`); never modify a migration that may already be applied.
+- Add revision `0010_publication_hardening` (the canonical Alembic version column is `VARCHAR(32)`) and use the additive `0011_publication_plan_lifecycle` for later lifecycle-trigger repairs; never modify a migration that may already be applied.
 - A `ReadyToPublishPackage` approval is not a publish approval. New requests require an approved `approval_requests` row with `effect_type = 'publication'` and exact package/account context.
 - Missing policy references, package assets, or asset-rights links deny authorization.
 - A scheduled Temporal payload names a canonical publication schedule only; all effect fields load from PostgreSQL.
@@ -78,7 +78,7 @@ Expected: PASS. Commit: `feat: harden publication governance schema`.
 
 **Interfaces:** `PublicationRequest` and `PublicationWorkflowRequest` carry `publication_approval_request_id`. `load_scheduled_execution(schedule_id)` returns one active request, plan, and budget from a canonical schedule.
 
-- [ ] **Step 1: Write failing authority tests**
+- [x] **Step 1: Write failing authority tests**
 
 ```python
 async def test_request_rejects_creative_or_unbound_publish_approval(repository, ready, account):
@@ -91,13 +91,13 @@ async def test_current_authorization_denies_empty_policy_and_missing_rights(repo
     assert current.rights_allowed is False
 ```
 
-- [ ] **Step 2: Confirm the focused suite fails**
+- [x] **Step 2: Confirm the focused suite fails**
 
 Run: `PYTHONPATH=src .venv/bin/pytest tests/integration/test_publication_repository.py tests/integration/test_publication_control_api.py -q`
 
 Expected: failure because the request currently inherits ready-package approval and empty proof sets allow publication.
 
-- [ ] **Step 3: Implement exact approval/proof/schedule bindings**
+- [x] **Step 3: Implement exact approval/proof/schedule bindings**
 
 ```python
 async def load_scheduled_execution(self, publication_schedule_id: str) -> PersistedPublicationExecution:
@@ -106,7 +106,7 @@ async def load_scheduled_execution(self, publication_schedule_id: str) -> Persis
 
 Require an active workspace policy and a valid rights link for every distributed asset. Persist and exact-match the schedule budget in both `job_schedules.payload` and `publication_schedules`. Extend fixture ready packages with active policy, active asset license link, and a separate approved publication approval whose JSON context names the package/account.
 
-- [ ] **Step 4: Verify and checkpoint**
+- [x] **Step 4: Verify and checkpoint**
 
 Run: `PYTHONPATH=src .venv/bin/pytest tests/integration/test_publication_repository.py tests/integration/test_publication_control_api.py tests/e2e/test_phase9_governed_publishing.py -q && .venv/bin/python -m compileall -q src && git diff --check`
 
@@ -123,7 +123,7 @@ Expected: PASS. Commit: `feat: bind governed publication authority`.
 
 **Interfaces:** Scheduled workflow payloads contain `scheduled_publication_schedule_id` only. The request activity hydrates a canonical normal workflow payload. The submission activity reuses `_reauthorize_current(request, plan_id, budget_id, adapter)` immediately before a first effect submission.
 
-- [ ] **Step 1: Write failing schedule and revocation-race tests**
+- [x] **Step 1: Write failing schedule and revocation-race tests**
 
 ```python
 def test_schedule_payload_contains_only_its_canonical_identity(request):
@@ -138,13 +138,13 @@ async def test_connection_revoked_after_delivery_denies_before_submit(workflow):
     assert workflow.provider.submit_count == 0
 ```
 
-- [ ] **Step 2: Confirm the workflow suite fails**
+- [x] **Step 2: Confirm the workflow suite fails**
 
 Run: `PYTHONPATH=src .venv/bin/pytest tests/unit/test_publication_schedule.py tests/e2e/test_phase9_governed_publishing.py tests/e2e/test_phase9_publication_recovery.py -q`
 
 Expected: failure because schedule payload fields and final submit are currently trusted without a same-activity recheck.
 
-- [ ] **Step 3: Implement hydration and final authorization**
+- [x] **Step 3: Implement hydration and final authorization**
 
 ```python
 if workflow_request.scheduled_publication_schedule_id:
@@ -157,7 +157,7 @@ submitting = await self._state.store.begin_effect_submission(run, effect_key)
 
 The schedule identity is the sole trusted scheduled input. A test-only hook runs before the final check to prove a current connection revocation prevents `adapter.submit`; post-acceptance reconciliation remains duplicate-safe.
 
-- [ ] **Step 4: Verify and checkpoint**
+- [x] **Step 4: Verify and checkpoint**
 
 Run: `PYTHONPATH=src .venv/bin/pytest tests/unit/test_publication_schedule.py tests/e2e/test_phase9_governed_publishing.py tests/e2e/test_phase9_publication_recovery.py -q && .venv/bin/python -m compileall -q src && git diff --check`
 
@@ -181,7 +181,7 @@ Expected: PASS. Commit: `fix: close governed publication write race`.
 
 **Interfaces:** `YouTubePublisherAdapter` rejects absent/nondurable stores. `DurableYouTubeSessionStore` is edge-only and retains opaque locations; canonical DTOs retain only a hash identity.
 
-- [ ] **Step 1: Write failing durable-store tests**
+- [x] **Step 1: Write failing durable-store tests**
 
 ```python
 def test_youtube_adapter_requires_explicit_durable_store(client):
@@ -189,13 +189,13 @@ def test_youtube_adapter_requires_explicit_durable_store(client):
         YouTubePublisherAdapter(client=client, connection_reference="secret-ref")
 ```
 
-- [ ] **Step 2: Confirm the contract fails**
+- [x] **Step 2: Confirm the contract fails**
 
 Run: `PYTHONPATH=src .venv/bin/pytest tests/integration/test_youtube_publisher_contract.py -q`
 
 Expected: failure because a process-local store is silently created.
 
-- [ ] **Step 3: Implement the durable-store contract and truthful docs**
+- [x] **Step 3: Implement the durable-store contract and truthful docs**
 
 ```python
 @runtime_checkable

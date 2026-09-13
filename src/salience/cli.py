@@ -82,6 +82,7 @@ def main(arguments: Sequence[str] | None = None) -> None:
     publication_start.add_argument("--program-id", required=True)
     publication_start.add_argument("--ready-package-id", required=True)
     publication_start.add_argument("--publisher-account-id", required=True)
+    publication_start.add_argument("--publication-approval-request-id", required=True)
     publication_start.add_argument("--budget-id", required=True)
     publication_start.add_argument("--idempotency-key", required=True)
     publication_inspect = publication_commands.add_parser("inspect")
@@ -96,10 +97,7 @@ def main(arguments: Sequence[str] | None = None) -> None:
     publication_schedule.add_argument("--schedule-version", required=True, type=int)
     publication_schedule.add_argument("--name", required=True)
     publication_schedule.add_argument("--every-seconds", required=True, type=int)
-    publication_schedule.add_argument("--ready-package-id", required=True)
-    publication_schedule.add_argument("--publisher-account-id", required=True)
     publication_schedule.add_argument("--budget-id", required=True)
-    publication_schedule.add_argument("--idempotency-key", required=True)
     agents = subcommands.add_parser("agents")
     agent_commands = agents.add_subparsers(dest="agent_command", required=True)
     agent_commands.add_parser("list")
@@ -191,6 +189,7 @@ def main(arguments: Sequence[str] | None = None) -> None:
                 "content_program_id": parsed.program_id,
                 "ready_package_id": parsed.ready_package_id,
                 "publisher_account_id": parsed.publisher_account_id,
+                "publication_approval_request_id": parsed.publication_approval_request_id,
                 "budget_id": parsed.budget_id,
                 "idempotency_key": parsed.idempotency_key,
             },
@@ -207,10 +206,7 @@ def main(arguments: Sequence[str] | None = None) -> None:
                 "schedule_version": parsed.schedule_version,
                 "name": parsed.name,
                 "every_seconds": parsed.every_seconds,
-                "ready_package_id": parsed.ready_package_id,
-                "publisher_account_id": parsed.publisher_account_id,
                 "budget_id": parsed.budget_id,
-                "idempotency_key": parsed.idempotency_key,
             },
         )
     elif parsed.command == "publication" and parsed.publication_command == "inspect":

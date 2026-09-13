@@ -13,6 +13,7 @@ def _request(*, visibility: str = "private") -> PublicationRequest:
         content_program_id="program-1",
         ready_package_id="ready-1",
         publisher_account_id="account-1",
+        publication_approval_request_id="publication-approval-1",
         platform="fixture",
         destination="fixture-channel-1",
         locale="en",

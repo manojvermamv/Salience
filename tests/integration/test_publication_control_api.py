@@ -45,6 +45,7 @@ def test_publication_start_requires_ready_package_account_and_rejects_secret_fie
             "content_program_id": program_id,
             "ready_package_id": "ready-1",
             "publisher_account_id": "account-1",
+            "publication_approval_request_id": "publication-approval-1",
             "budget_id": "budget-1",
             "idempotency_key": "publication-control-1",
             "access_token": "must-never-enter-control-plane",
@@ -58,6 +59,7 @@ def test_publication_start_requires_ready_package_account_and_rejects_secret_fie
             "content_program_id": program_id,
             "ready_package_id": "ready-1",
             "publisher_account_id": "account-1",
+            "publication_approval_request_id": "publication-approval-1",
             "budget_id": "budget-1",
             "idempotency_key": "publication-control-2",
         },
@@ -88,10 +90,7 @@ def test_publication_schedule_requires_scoped_immutable_references() -> None:
         "schedule_version": 1,
         "name": "weekday-private-release",
         "every_seconds": 86_400,
-        "ready_package_id": "ready-1",
-        "publisher_account_id": "account-1",
         "budget_id": "budget-1",
-        "idempotency_key": "publication-schedule-1",
     }
 
     denied = client.post("/v1/publications/schedules", headers=_headers("control:read"), json=payload)
@@ -133,6 +132,7 @@ def test_publisher_webhook_duplicate_returns_the_same_safe_receipt() -> None:
         content_program_id="program-1",
         ready_package_id="ready-1",
         publisher_account_id="account-1",
+        publication_approval_request_id="publication-approval-1",
         platform="fixture",
         destination="fixture://account-1",
         locale="en",

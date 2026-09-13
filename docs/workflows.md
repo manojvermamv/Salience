@@ -56,8 +56,9 @@ immutable plan, private delivery, submit-or-reconcile, polling/webhook status,
 receipt, settlement, and terminal publication/cancellation/dead-letter stages.
 Each remote decision uses bounded Temporal timeouts/retries and an existing
 external-effect identity. `PublicationScheduleService` delegates timing to
-Temporal while preserving immutable publication request/plan references; a
-changed schedule must create a different governed version.
+Temporal with only one immutable publication-schedule identity; the activity
+reloads its request/plan/budget from PostgreSQL, and a changed schedule must
+create a different governed version.
 
 The workflow remains fixture-first. Publisher capability metadata validates the
 persisted publisher identity and the worker resolves a matching injected adapter,
