@@ -246,6 +246,7 @@ class DistributionPackage(BaseModel):
     selected_title_key: str = Field(min_length=1)
     locale: str = Field(min_length=1, max_length=32)
     asset_ids: tuple[str, ...] = Field(min_length=1)
+    version: int = Field(default=1, gt=0)
 
 
 class ReadyToPublishPackage(BaseModel):

@@ -103,6 +103,15 @@ async def _approved_ready_package() -> dict[str, str]:
         status="validated",
         asset_ids=[asset.asset_id],
     )
+    candidate_id = await repository.record_title_thumbnail_candidate(
+        distribution_package_id=distribution_package_id,
+        candidate_key="primary",
+        title="Release-gate evidence",
+        thumbnail_asset_id=asset.asset_id,
+        selection_state="selected",
+        reason="fixture",
+        score=1.0,
+    )
     disclosure_id = await repository.record_synthetic_media_disclosure(
         distribution_package_id=distribution_package_id,
         decision={"required": True, "label": "Synthetic media"},
@@ -126,6 +135,7 @@ async def _approved_ready_package() -> dict[str, str]:
         "ready_package_id": ready_package_id,
         "disclosure_id": disclosure_id,
         "distribution_package_id": distribution_package_id,
+        "candidate_id": candidate_id,
     }
 
 
@@ -156,4 +166,19 @@ async def test_ready_package_referenced_distribution_rejects_direct_update() -> 
             connection.execute(
                 "UPDATE distribution_packages SET status = 'rejected' WHERE id = %s",
                 (approved_package["distribution_package_id"],),
+            )
+
+
+@pytest.mark.asyncio
+async def test_ready_package_referenced_title_candidate_rejects_direct_update() -> None:
+    approved_package = await _approved_ready_package()
+
+    with psycopg.connect(os.environ["TEST_DATABASE_URL"]) as connection:
+        with pytest.raises(
+            psycopg.errors.RaiseException,
+            match="immutable approved distribution decision",
+        ):
+            connection.execute(
+                "UPDATE title_thumbnail_candidates SET title = 'changed' WHERE id = %s",
+                (approved_package["candidate_id"],),
             )

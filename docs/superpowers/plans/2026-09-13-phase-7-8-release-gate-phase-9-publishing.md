@@ -411,7 +411,7 @@ Expected: PASS. Commit: `feat: enforce creative rights provenance`.
 
 **Interfaces:** A changed title/thumbnail/localization/originality/disclosure/profile/approval selection returns a new distribution-package version and requires a new ready-package version; writers never issue a mutable upsert for approved lineage.
 
-- [ ] **Step 1: Write direct and repository red tests**
+- [x] **Step 1: Write direct and repository red tests**
 
 ```python
 async def test_changed_title_after_ready_package_creates_new_distribution_and_ready_versions(repository, approved_package):
@@ -424,17 +424,17 @@ def test_direct_update_of_ready_package_referenced_candidate_is_rejected(connect
         connection.execute("UPDATE title_thumbnail_candidates SET title = 'new' WHERE id = %s", (approved_package.title_candidate_id,))
 ```
 
-- [ ] **Step 2: Run immutability tests and confirm they fail**
+- [x] **Step 2: Run immutability tests and confirm they fail**
 
 Run: `pytest tests/integration/test_distribution_package_repository.py tests/integration/test_creative_release_gate_migration.py -q`
 
 Expected: FAIL because existing writers upsert mutable decision rows.
 
-- [ ] **Step 3: Implement insert-only revisions**
+- [x] **Step 3: Implement insert-only revisions**
 
 Replace the `ON CONFLICT ... DO UPDATE` paths for governed decisions with exact-match read-or-insert behaviour before approval and explicit new package/version creation afterwards. Include final approval in the immutable referenced graph. Preserve original lineage and make finalization require the new approved version.
 
-- [ ] **Step 4: Verify**
+- [x] **Step 4: Verify**
 
 Run: `pytest tests/integration/test_distribution_package_repository.py tests/integration/test_creative_release_gate_migration.py tests/evals/test_phase8_ready_package_eval.py -q`
 

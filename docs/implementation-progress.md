@@ -4,11 +4,13 @@
 
 - Branch: `phase7-8-release-gate-phase9` (isolated worktree from `main`)
 - Plan: `docs/superpowers/plans/2026-09-13-phase-7-8-release-gate-phase-9-publishing.md`
-- Active task: Gate One, Task 9 — immutable approved distribution decisions.
-- Current TDD step: Add direct PostgreSQL and repository red tests for an approved package revision before replacing mutable decision upserts.
-- Last verified state: Gate One Task 8 passed canonical rights/provenance policy evaluation and the fixture creative E2E/recovery path (15 focused tests). Phase 7–8 remains unapproved; Task 11’s complete release ladder and independent review remain mandatory before any Phase 9 code.
+- Active task: Gate One, Task 10 — complete fixture release-gate verifier and truthful documentation.
+- Current TDD step: Add a single end-to-end release-gate test that exercises reservation, recovery, fixture effects, rights/provenance, immutable finalization, and truthful optional-status reporting.
+- Last verified state: Gate One Task 9 passed immutable-version/replay/direct-mutation coverage (20 focused tests). Phase 7–8 remains unapproved; Task 11’s complete release ladder and independent review remain mandatory before any Phase 9 code.
 
 ## Checkpoints
+
+- 2026-09-13: Completed Gate One Task 9 red-green. Governed writers now use insert-or-exact-match semantics rather than mutable upserts. An approved package that receives a changed governed decision explicitly creates a new distribution version; its idempotency identity is a deterministic fingerprint over candidates/originality, selected candidate, profile key/version/rules, localization, disclosure, and package metadata, so distinct decisions cannot collide merely because their selected title is the same. The revision carries original lineage and assets, while the service writes a new candidate/localization/originality/disclosure graph and a new Ready-to-Publish version. Direct SQL mutation of a referenced title candidate joins the existing disclosure/distribution mutation rejection coverage. The focused migration, repository, evaluator, creative-loop, and crash-recovery suite passed 20/20; compilation and whitespace checks were clean. Next: Task 10 release-gate harness and documentation.
 
 - 2026-09-13: Completed Gate One Task 8 red-green. `CreativeRepository.asset_rights_context` now follows each FK-backed asset link to direct consent, likeness/voice identity consent, asset license, usage restriction, and reference lineage without accepting caller-supplied facts. `CreativeService` evaluates those persisted facts before both distribution assembly and finalization: linked identity state, consent revocation/expiry/channel/territory/commercial scope, license status/expiry/scope, and active restriction scope all fail closed; voice has its own missing-consent code. C2PA finalization reloads the canonical validation status and only requires `valid` when the profile declares C2PA mandatory. The PostgreSQL rights/provenance, Phase-8 evaluator, E2E creative-loop, and recovery suite passed 15/15 with compilation and whitespace checks clean. Next: Task 9 immutable approved-decision revisions.
 

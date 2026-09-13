@@ -5,9 +5,12 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+import hashlib
+import json
 from typing import Any
 
 from salience.creative.contracts import DistributionPackage, ReadyToPublishPackage
+from salience.creative.repository import DistributionRevisionRequired
 from salience.creative.governance import (
     DisclosurePolicy,
     OriginalityValidator,
@@ -107,26 +110,44 @@ class CreativeService:
             rules=dict(production.profile_rules),
             status="active",
         )
-        package_id = await self._repository.record_distribution_package(
-            workspace_id=production.workspace_id,
-            program_id=production.content_program_id,
-            brief_id=production.brief_id,
-            script_id=production.script_id,
-            platform_profile_id=profile_id,
-            package_key=self._package_key(production),
-            version=1,
-            locale=production.locale,
-            package_metadata=dict(production.package_metadata),
-            status="validated",
-            asset_ids=[production.asset_id],
-            verifier_results={
-                "platform": {"allowed": True},
-                "disclosure": {
-                    "required": disclosure.required,
-                    "labels": list(disclosure.labels),
-                },
-            },
+        decision_fingerprint = _decision_fingerprint(
+            production, candidate_decisions, disclosure.labels
         )
+        package_metadata = dict(production.package_metadata)
+        verifier_results = {
+            "platform": {"allowed": True},
+            "disclosure": {
+                "required": disclosure.required,
+                "labels": list(disclosure.labels),
+            },
+            "decision_fingerprint": decision_fingerprint,
+        }
+        try:
+            package_id = await self._repository.record_distribution_package(
+                workspace_id=production.workspace_id,
+                program_id=production.content_program_id,
+                brief_id=production.brief_id,
+                script_id=production.script_id,
+                platform_profile_id=profile_id,
+                package_key=self._package_key(production),
+                version=1,
+                locale=production.locale,
+                package_metadata=package_metadata,
+                status="validated",
+                asset_ids=[production.asset_id],
+                verifier_results=verifier_results,
+            )
+            package_version = 1
+        except DistributionRevisionRequired as revision_required:
+            revision = await self._repository.create_distribution_revision(
+                revision_required.distribution_package_id,
+                selected_title=selected["title"],
+                package_metadata=package_metadata,
+                verifier_results=verifier_results,
+                decision_fingerprint=decision_fingerprint,
+            )
+            package_id = revision.distribution_package_id
+            package_version = revision.version
 
         for candidate, allowed, reason, metrics in candidate_decisions:
             selection_state = (
@@ -185,6 +206,7 @@ class CreativeService:
             selected_title_key=selected["key"],
             locale=production.locale,
             asset_ids=(production.asset_id,),
+            version=package_version,
         )
 
     async def finalize_ready_package(
@@ -212,7 +234,7 @@ class CreativeService:
             platform_profile_id=package.platform_profile_id,
             disclosure_id=package.disclosure_decision_id,
             ready_package_key=f"{self._package_key(production)}:ready",
-            version=1,
+            version=package.version,
             approval_state="approved",
             verifier_results={
                 "distribution_contract": package.contract_version,
@@ -482,3 +504,31 @@ def _require_scope(value: object, actual: str, blocker: str) -> None:
     allowed = _string_values(value)
     if allowed and actual not in allowed:
         raise CreativeGovernanceDenied(blocker)
+
+
+def _decision_fingerprint(
+    production: ApprovedProduction,
+    candidate_decisions: Sequence[tuple[dict[str, Any], bool, str, dict[str, float]]],
+    disclosure_labels: Sequence[str],
+) -> str:
+    payload = {
+        "candidates": [
+            {
+                "candidate": candidate,
+                "allowed": allowed,
+                "reason": reason,
+                "metrics": metrics,
+            }
+            for candidate, allowed, reason, metrics in candidate_decisions
+        ],
+        "selected_title_key": production.selected_title_key,
+        "package_metadata": dict(production.package_metadata),
+        "profile": {
+            "key": production.profile_key,
+            "version": production.profile_version,
+            "rules": dict(production.profile_rules),
+        },
+        "localizations": list(production.localizations),
+        "disclosure_labels": list(disclosure_labels),
+    }
+    return hashlib.sha256(json.dumps(payload, sort_keys=True, default=str).encode()).hexdigest()
