@@ -3,7 +3,7 @@ import os
 from fastapi import FastAPI
 
 from salience.api.dependencies import ControlPlane, InMemoryControlPlane, TemporalControlPlane
-from salience.api.routes import agents, control, health, intelligence
+from salience.api.routes import agents, control, creative, health, intelligence
 from salience.agents.execution import AgentService
 from salience.agents.fixtures import fixture_agent_service
 from salience.config import Settings
@@ -23,6 +23,7 @@ def create_app(
     app.include_router(control.router)
     app.include_router(agents.router)
     app.include_router(intelligence.router)
+    app.include_router(creative.router)
     return app
 
 

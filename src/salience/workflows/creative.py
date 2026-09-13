@@ -15,11 +15,12 @@ from temporalio.common import RetryPolicy
 from temporalio.worker import Worker
 
 from salience.agents.execution import AgentInvocation, AgentService
-from salience.creative.contracts import CreativeCapabilityRequest
-from salience.creative.governance import DisclosurePolicy, OriginalityValidator, PlatformValidator, RightsPolicy
+from salience.creative.contracts import CreativeCapabilityRequest, DistributionPackage
+from salience.creative.governance import RightsPolicy
 from salience.creative.media import MediaEngine
 from salience.creative.repository import CreativeRepository
 from salience.creative.scripts import ScriptVerifier
+from salience.creative.service import ApprovedProduction, CreativeService
 from salience.intelligence.repository import IntelligenceRepository
 from salience.workflows.persistence import CanonicalJobStore, CanonicalRun
 
@@ -330,84 +331,27 @@ class CreativeActivities:
     async def distribute(self, payload: dict[str, Any]) -> dict[str, Any]:
         if payload.get("provider_state") == "dry_run":
             return payload
-        request = payload["request"]
-        profile_id = await self._state.creative_repository.record_platform_profile(
-            workspace_id=request["workspace_id"],
-            program_id=request["content_program_id"],
-            profile_key=request["target_profile_key"],
-            version=request["target_profile_version"],
-            target_platform="fixture-platform",
-            rules={"aspect_ratio": "9:16", "caption_limit": 100, "requires_disclosure": True},
-            status="active",
-        )
-        package = {
-            "aspect_ratio": "9:16",
-            "caption": "Evidence-linked fixture media.",
-            "duration_seconds": 30,
-            "locale": "en",
-            "disclosure": "Synthetic media",
-        }
-        validation = PlatformValidator().validate(
-            package, {"aspect_ratio": "9:16", "caption_limit": 100, "requires_disclosure": True}
-        )
-        if not validation.allowed:
-            raise ValueError(f"platform validation failed: {','.join(validation.blocker_codes)}")
-        distribution_package_id = await self._state.creative_repository.record_distribution_package(
-            workspace_id=request["workspace_id"],
-            program_id=request["content_program_id"],
-            brief_id=payload["brief"]["brief_id"],
-            script_id=payload["script_id"],
-            platform_profile_id=profile_id,
-            package_key=f"distribution-{payload['script_id']}",
-            version=1,
-            locale="en",
-            package_metadata=package,
-            status="validated",
-            asset_ids=[payload["asset_id"]],
-            verifier_results={"platform": "passed"},
+        package = await CreativeService(self._state.creative_repository).build_distribution(
+            _approved_production(payload)
         )
         await self._checkpoint("creative.distribution.persisted")
-        return {**payload, "platform_profile_id": profile_id, "distribution_package_id": distribution_package_id}
+        return {
+            **payload,
+            "distribution": package.model_dump(),
+            "platform_profile_id": package.platform_profile_id,
+            "distribution_package_id": package.distribution_package_id,
+        }
 
     @activity.defn(name="salience.creative.final_gate")
     async def final_gate(self, payload: dict[str, Any]) -> dict[str, Any]:
         if payload.get("provider_state") == "dry_run":
             return payload
-        disclosure = DisclosurePolicy().decide(
-            {"generated": True, "profile_requires_disclosure": True, "c2pa_status": "not_configured"}
-        )
-        originality = OriginalityValidator().evaluate(
-            {
-                "title": "Evidence-linked fixture media",
-                "narrative_fingerprint": payload["script_id"],
-                "thumbnail_fingerprint": payload["asset_id"],
-                "template_key": "fixture-short-video",
-            },
-            [],
-        )
-        if not originality.allowed:
-            raise ValueError(f"originality validation failed: {','.join(originality.blocker_codes)}")
-        disclosure_id = await self._state.creative_repository.record_synthetic_media_disclosure(
-            distribution_package_id=payload["distribution_package_id"],
-            decision={"required": disclosure.required, "labels": list(disclosure.labels)},
-            status="approved",
-        )
-        ready_package_id = await self._state.creative_repository.record_ready_package(
-            workspace_id=payload["request"]["workspace_id"],
-            program_id=payload["request"]["content_program_id"],
-            brief_id=payload["brief"]["brief_id"],
-            script_id=payload["script_id"],
-            distribution_package_id=payload["distribution_package_id"],
-            platform_profile_id=payload["platform_profile_id"],
-            disclosure_id=disclosure_id,
-            ready_package_key=f"ready-{payload['script_id']}",
-            version=1,
-            approval_state="approved",
-            verifier_results={"platform": "passed", "originality": originality.metrics},
-            lineage={"brief_id": payload["brief"]["brief_id"], "asset_id": payload["asset_id"]},
+        ready = await CreativeService(self._state.creative_repository).finalize_ready_package(
+            _approved_production(payload),
+            distribution=DistributionPackage.model_validate(payload["distribution"]),
         )
         await self._checkpoint("creative.final_gate.passed")
-        return {**payload, "ready_package_id": ready_package_id}
+        return {**payload, "ready_package_id": ready.ready_package_id}
 
     @activity.defn(name="salience.creative.complete")
     async def complete(self, payload: dict[str, Any]) -> CreativeProductionResult:
@@ -537,6 +481,47 @@ def _request_payload(request: CreativeProductionRequest) -> dict[str, Any]:
         "target_profile_key": request.target_profile_key,
         "target_profile_version": request.target_profile_version,
     }
+
+
+def _approved_production(payload: dict[str, Any]) -> ApprovedProduction:
+    request = payload["request"]
+    asset_id = payload["asset_id"]
+    script_id = payload["script_id"]
+    return ApprovedProduction(
+        workspace_id=request["workspace_id"],
+        content_program_id=request["content_program_id"],
+        brief_id=payload["brief"]["brief_id"],
+        script_id=script_id,
+        asset_id=asset_id,
+        profile_key=request["target_profile_key"],
+        profile_version=request["target_profile_version"],
+        profile_rules={
+            "target_platform": "fixture-platform",
+            "aspect_ratio": "9:16",
+            "caption_limit": 100,
+            "allowed_locales": ["en"],
+            "requires_disclosure": True,
+        },
+        title_candidates=[
+            {
+                "key": "primary",
+                "title": "Evidence-linked fixture media",
+                "thumbnail_asset_id": asset_id,
+                "narrative_fingerprint": script_id,
+                "thumbnail_fingerprint": asset_id,
+                "template_key": request["target_profile_key"],
+            }
+        ],
+        selected_title_key="primary",
+        caption="Evidence-linked fixture media.",
+        aspect_ratio="9:16",
+        duration_seconds=30,
+        locale="en",
+        claim_ids=payload["brief"]["claim_ids"],
+        generated=True,
+        approval_state="approved",
+        c2pa_status="not_configured",
+    )
 
 
 def _fingerprint(value: dict[str, Any]) -> str:

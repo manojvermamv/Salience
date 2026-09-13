@@ -12,8 +12,13 @@ from salience.workflows.intelligence import (
     INTELLIGENCE_WORKFLOW_TYPE,
     IntelligenceLoopRequest,
 )
+from salience.workflows.creative import (
+    CREATIVE_WORKFLOW_TYPE,
+    CreativeProductionRequest,
+)
 from salience.workflows.persistence import CanonicalJobStore
 from salience.workflows.schedules import ScheduleRequest, TemporalScheduleService
+from salience.creative.repository import CreativeRepository
 from salience.intelligence.repository import IntelligenceRepository
 
 
@@ -52,6 +57,15 @@ class ControlContentProgram:
 
 @dataclass(frozen=True)
 class ControlIntelligenceRun:
+    job_id: str
+    state: str
+    dry_run: bool
+    trace_id: str
+    output: dict[str, object] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class ControlCreativeRun:
     job_id: str
     state: str
     dry_run: bool
@@ -125,6 +139,24 @@ class ControlPlane(Protocol):
 
     async def get_content_brief_lineage(self, brief_id: str) -> dict[str, object] | None: ...
 
+    async def start_creative(
+        self,
+        *,
+        workspace_id: str,
+        content_program_id: str,
+        brief_id: str,
+        idempotency_key: str,
+        target_profile_key: str,
+        target_profile_version: int,
+        dry_run: bool,
+    ) -> ControlCreativeRun: ...
+
+    async def get_creative(self, job_id: str) -> ControlCreativeRun | None: ...
+
+    async def get_ready_package_lineage(
+        self, ready_package_id: str
+    ) -> dict[str, object] | None: ...
+
 
 @dataclass
 class InMemoryControlPlane:
@@ -136,6 +168,8 @@ class InMemoryControlPlane:
         default_factory=dict
     )
     _intelligence_runs: dict[str, ControlIntelligenceRun] = field(default_factory=dict)
+    _creative_runs: dict[str, ControlCreativeRun] = field(default_factory=dict)
+    _ready_package_lineages: dict[str, dict[str, object]] = field(default_factory=dict)
     _schedules: dict[tuple[str, str], ControlSchedule] = field(default_factory=dict)
     _briefs: dict[str, ControlContentBrief] = field(default_factory=dict)
 
@@ -232,6 +266,48 @@ class InMemoryControlPlane:
             selected_opportunity_id=opportunity_id,
         )
 
+    async def start_creative(
+        self,
+        *,
+        workspace_id: str,
+        content_program_id: str,
+        brief_id: str,
+        idempotency_key: str,
+        target_profile_key: str,
+        target_profile_version: int,
+        dry_run: bool,
+    ) -> ControlCreativeRun:
+        if not any(
+            program.content_program_id == content_program_id and program.workspace_id == workspace_id
+            for program in self._content_programs.values()
+        ):
+            raise KeyError(content_program_id)
+        existing = next(
+            (
+                run
+                for run in self._creative_runs.values()
+                if run.output.get("idempotency_key") == idempotency_key
+            ),
+            None,
+        )
+        if existing is not None:
+            return existing
+        run = ControlCreativeRun(
+            job_id=str(uuid4()),
+            state="succeeded",
+            dry_run=dry_run,
+            trace_id=token_hex(16),
+            output={
+                "contract_version": "CreativeProductionRequest@v1",
+                "brief_id": brief_id,
+                "idempotency_key": idempotency_key,
+                "target_profile_key": target_profile_key,
+                "target_profile_version": target_profile_version,
+            },
+        )
+        self._creative_runs[run.job_id] = run
+        return run
+
     async def get_content_brief(self, brief_id: str) -> ControlContentBrief | None:
         return self._briefs.get(brief_id)
 
@@ -250,6 +326,14 @@ class InMemoryControlPlane:
 
     async def get_intelligence(self, job_id: str) -> ControlIntelligenceRun | None:
         return self._intelligence_runs.get(job_id)
+
+    async def get_creative(self, job_id: str) -> ControlCreativeRun | None:
+        return self._creative_runs.get(job_id)
+
+    async def get_ready_package_lineage(
+        self, ready_package_id: str
+    ) -> dict[str, object] | None:
+        return self._ready_package_lineages.get(ready_package_id)
 
     async def create_intelligence_schedule(
         self,
@@ -314,12 +398,19 @@ class TemporalControlPlane:
     """Production control-plane adapter backed by canonical data and Temporal."""
 
     def __init__(
-        self, *, database_url: str, temporal_target: str, task_queue: str
+        self,
+        *,
+        database_url: str,
+        temporal_target: str,
+        task_queue: str,
+        creative_effects_enabled: bool = False,
     ) -> None:
         self._store = CanonicalJobStore(database_url)
         self._intelligence = IntelligenceRepository(database_url)
+        self._creative = CreativeRepository(database_url)
         self._temporal_target = temporal_target
         self._task_queue = task_queue
+        self._creative_effects_enabled = creative_effects_enabled
 
     async def start_dummy(self, *, dry_run: bool, idempotency_key: str) -> ControlJob:
         if not dry_run:
@@ -420,6 +511,62 @@ class TemporalControlPlane:
             selected_opportunity_id=opportunity_id,
         )
 
+    async def start_creative(
+        self,
+        *,
+        workspace_id: str,
+        content_program_id: str,
+        brief_id: str,
+        idempotency_key: str,
+        target_profile_key: str,
+        target_profile_version: int,
+        dry_run: bool,
+    ) -> ControlCreativeRun:
+        if not dry_run and not self._creative_effects_enabled:
+            raise PermissionError(
+                "non-dry-run creative effects require an explicitly enabled worker policy"
+            )
+        existing = await self._store.job_by_idempotency_key(idempotency_key)
+        if existing is not None:
+            return _creative_from_job(existing)
+        workflow_id = f"control-creative-{uuid4()}"
+        run = await self._store.create_creative_run(
+            workflow_run_id=workflow_id,
+            task_queue=self._task_queue,
+            workspace_id=workspace_id,
+            content_program_id=content_program_id,
+            brief_id=brief_id,
+            idempotency_key=idempotency_key,
+            dry_run=dry_run,
+        )
+        client = await Client.connect(self._temporal_target)
+        await client.start_workflow(
+            CREATIVE_WORKFLOW_TYPE,
+            CreativeProductionRequest(
+                workspace_id=workspace_id,
+                content_program_id=content_program_id,
+                brief_id=brief_id,
+                idempotency_key=idempotency_key,
+                dry_run=dry_run,
+                target_profile_key=target_profile_key,
+                target_profile_version=target_profile_version,
+            ),
+            id=workflow_id,
+            task_queue=self._task_queue,
+        )
+        return ControlCreativeRun(
+            job_id=str(run.job_id),
+            state="running",
+            dry_run=dry_run,
+            trace_id=run.trace_context.trace_id,
+            output={
+                "contract_version": "CreativeProductionRequest@v1",
+                "brief_id": brief_id,
+                "target_profile_key": target_profile_key,
+                "target_profile_version": target_profile_version,
+            },
+        )
+
     async def get_content_brief(self, brief_id: str) -> ControlContentBrief | None:
         details = await self._intelligence.brief_details(brief_id)
         return _content_brief_from_details(details) if details is not None else None
@@ -433,6 +580,18 @@ class TemporalControlPlane:
     async def get_intelligence(self, job_id: str) -> ControlIntelligenceRun | None:
         snapshot = await self._store.job_snapshot(job_id)
         return _intelligence_from_job(snapshot) if snapshot is not None else None
+
+    async def get_creative(self, job_id: str) -> ControlCreativeRun | None:
+        snapshot = await self._store.job_snapshot(job_id)
+        return _creative_from_job(snapshot) if snapshot is not None else None
+
+    async def get_ready_package_lineage(
+        self, ready_package_id: str
+    ) -> dict[str, object] | None:
+        try:
+            return await self._creative.lineage_for_ready_package(ready_package_id)
+        except KeyError:
+            return None
 
     async def create_intelligence_schedule(
         self,
@@ -521,6 +680,16 @@ class TemporalControlPlane:
 
 def _intelligence_from_job(snapshot) -> ControlIntelligenceRun:
     return ControlIntelligenceRun(
+        job_id=snapshot.job_id,
+        state=snapshot.state,
+        dry_run=snapshot.dry_run,
+        trace_id=snapshot.trace_id,
+        output=snapshot.output_payload,
+    )
+
+
+def _creative_from_job(snapshot) -> ControlCreativeRun:
+    return ControlCreativeRun(
         job_id=snapshot.job_id,
         state=snapshot.state,
         dry_run=snapshot.dry_run,

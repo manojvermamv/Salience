@@ -61,6 +61,20 @@ def main(arguments: Sequence[str] | None = None) -> None:
     intelligence_brief.add_argument("--dry-run", action=argparse.BooleanOptionalAction, default=True)
     intelligence_inspect_brief = intelligence_commands.add_parser("inspect-brief")
     intelligence_inspect_brief.add_argument("brief_id")
+    creative = subcommands.add_parser("creative")
+    creative_commands = creative.add_subparsers(dest="creative_command", required=True)
+    creative_start = creative_commands.add_parser("start")
+    creative_start.add_argument("--workspace-id", required=True)
+    creative_start.add_argument("--program-id", required=True)
+    creative_start.add_argument("--brief-id", required=True)
+    creative_start.add_argument("--idempotency-key", required=True)
+    creative_start.add_argument("--profile-key", required=True)
+    creative_start.add_argument("--profile-version", type=int, default=1)
+    creative_start.add_argument("--dry-run", action=argparse.BooleanOptionalAction, default=True)
+    creative_inspect = creative_commands.add_parser("inspect")
+    creative_inspect.add_argument("job_id")
+    creative_lineage = creative_commands.add_parser("package-lineage")
+    creative_lineage.add_argument("ready_package_id")
     agents = subcommands.add_parser("agents")
     agent_commands = agents.add_subparsers(dest="agent_command", required=True)
     agent_commands.add_parser("list")
@@ -119,6 +133,28 @@ def main(arguments: Sequence[str] | None = None) -> None:
                 "every_seconds": parsed.every_seconds,
                 "niche": parsed.niche,
             },
+        )
+    elif parsed.command == "creative" and parsed.creative_command == "start":
+        result = _request(
+            method="POST",
+            path="/v1/creative/runs",
+            payload={
+                "contract_version": "CreativeProductionRequest@v1",
+                "workspace_id": parsed.workspace_id,
+                "content_program_id": parsed.program_id,
+                "brief_id": parsed.brief_id,
+                "idempotency_key": parsed.idempotency_key,
+                "target_profile_key": parsed.profile_key,
+                "target_profile_version": parsed.profile_version,
+                "dry_run": parsed.dry_run,
+            },
+        )
+    elif parsed.command == "creative" and parsed.creative_command == "inspect":
+        result = _request(method="GET", path=f"/v1/creative/runs/{parsed.job_id}")
+    elif parsed.command == "creative":
+        result = _request(
+            method="GET",
+            path=f"/v1/creative/packages/{parsed.ready_package_id}/lineage",
         )
     elif parsed.agent_command == "list":
         result = _request(method="GET", path="/v1/agents")

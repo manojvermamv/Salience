@@ -175,7 +175,7 @@ class CreativeService:
                 "labels": list(disclosure.labels),
                 "status": disclosure.status,
             },
-            status=disclosure.status,
+            status="approved",
         )
         return DistributionPackage(
             distribution_package_id=package_id,
@@ -187,10 +187,20 @@ class CreativeService:
         )
 
     async def finalize_ready_package(
-        self, production: ApprovedProduction
+        self,
+        production: ApprovedProduction,
+        distribution: DistributionPackage | None = None,
     ) -> ReadyToPublishPackage:
         """Create the immutable, approved handoff for a future publishing phase."""
-        package = await self.build_distribution(production)
+        self._require_approved(production)
+        self._ensure_publication_metadata_is_absent(production.package_metadata)
+        self._authorize_rights(production)
+        package = distribution or await self.build_distribution(production)
+        if (
+            package.locale != production.locale
+            or package.asset_ids != (production.asset_id,)
+        ):
+            raise CreativeGovernanceDenied("distribution_mismatch")
         ready_id = await self._repository.record_ready_package(
             workspace_id=production.workspace_id,
             program_id=production.content_program_id,
