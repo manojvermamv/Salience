@@ -6,11 +6,11 @@
     "locale": "en",
     "quality_profile": "showcase",
     "output": "salience-phase-1-9.architecture.html",
-    "viewBox": [1700, 900],
+    "viewBox": [1700, 880],
     "repository": {
       "url": "https://github.com/manojvermamv/Salience.git",
       "provider": "github",
-      "revision": "888552cf09f979c1f85f730a3d5a02969d5684b0"
+      "revision": "c4c881a288841bc3de2b57428be7e66ba9bb189e"
     },
     "views": [
       {"id": "governed-start", "label": "Governed start", "focus": ["operators", "control-api", "temporal", "postgres"], "note": "Scoped HTTP requests create canonical identities before durable work begins."},

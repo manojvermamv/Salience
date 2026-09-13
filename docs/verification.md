@@ -139,11 +139,11 @@ lease are available; it never attempts a public video post.
 `docs/salience-phase-1-9.architecture.html` was delivered from its checked JSON
 source with all nine Archify showcase checks, zero warnings, and 18
 repository-grounded references. Its SHA-256 values are
-`ed4313a4a0c21891442846ab10eb91de44b6295523dc86abc6d651ef6bfa02dc` for the
+`a2bfdb1ff9dc935b624cba5155ba9e1a26cbe7594f8469c431e709a26269796b` for the
 specification and
-`c914a1d51a012f8aa3e87b1165014515693ae063431b5c09bf53939a791df95e` for the
-HTML at repository revision `888552cf09f979c1f85f730a3d5a02969d5684b0`.
-The current host has no Chrome/Chromium executable, so the current
-automated containment/readability capture is `NOT RUN`; the deterministic
-Archify composition checks remain green. The visual explains the
+`f4861980432083493d2bd1d9b14ccb56487e46bfa6833370acff3ccf187af68e` for the
+HTML at repository revision `c4c881a288841bc3de2b57428be7e66ba9bb189e`.
+Chromium visual-check passed containment/readability and viewer-chrome checks
+for 1440x900, 1600x1000, 1920x1080, and 2048x1320 in light mode, with captured
+light/dark evidence at 1440x900 and 2048x1320. The visual explains the
 fixture-verified boundary and is not evidence of an enabled live publisher.

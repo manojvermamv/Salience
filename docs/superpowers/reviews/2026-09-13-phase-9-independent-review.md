@@ -13,8 +13,9 @@ boundary, including the additive `0012_publication_profile_scope` migration.
   whitespace integrity, Archify composition validation (9/9, zero diagnostics),
   and the YouTube live-status contract (`NOT RUN` without a configured private
   connection reference).
-- The current host has no Chrome/Chromium executable; the requested visual
-  containment/readability capture is therefore explicitly `NOT RUN`.
+- Debian Chromium 152.0.7977.82 visual-check passed containment/readability and
+  viewer-chrome checks at 1440x900, 1600x1000, 1920x1080, and 2048x1320 in
+  light mode, with light/dark captures at 1440x900 and 2048x1320.
 
 ## Finding closure audit
 

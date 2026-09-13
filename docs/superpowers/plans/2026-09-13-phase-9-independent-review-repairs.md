@@ -272,11 +272,12 @@ the exact remaining limitation are recorded in
 - [x] **Step 4: Commit only verified Phase 9 code/docs and integrate only after a clean worktree audit**
 
 Task 8 Step 3 is blocked by the external reviewer service usage limit after two
-requests. Chromium visual inspection was attempted and reported `NOT RUN`
-because no Chrome/Chromium executable exists on this host; deterministic
-Archify validation remains green. The branch and every other worktree were
-audited clean apart from the ignored local `.superpowers/` scratch directory;
-all verified commits are ready for integration.
+requests. Chromium visual inspection now passes after installing the Debian
+package: all required viewports are contained/readable in both supported themes
+where captured, and deterministic Archify validation remains green. The branch
+and every other worktree were audited clean apart from the ignored local
+`.superpowers/` scratch directory; all verified commits are ready for
+integration.
 
 ## Plan Self-Review
 
