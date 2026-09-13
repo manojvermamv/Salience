@@ -391,6 +391,32 @@ class CreativeRepository:
     async def asset_provenance(self, asset_id: str) -> dict[str, Any] | None:
         return await asyncio.to_thread(self._asset_provenance, asset_id)
 
+    async def record_asset_rights_link(
+        self, *, asset_id: str, link_key: str, relation: str, reference_id: str
+    ) -> str:
+        columns = {
+            "asset_license": "asset_license_id",
+            "consent": "consent_record_id",
+            "likeness": "likeness_identity_id",
+            "voice": "voice_identity_id",
+            "usage_restriction": "usage_restriction_id",
+            "reference_asset": "reference_asset_id",
+        }
+        try:
+            column = columns[relation]
+        except KeyError as error:
+            raise ValueError(f"unsupported asset rights relation: {relation}") from error
+        return await self._returning_id(
+            f"""
+            INSERT INTO asset_rights_links (asset_id, link_key, {column})
+            VALUES (%s, %s, %s)
+            ON CONFLICT (asset_id, link_key) DO UPDATE SET {column} = EXCLUDED.{column},
+                updated_at = CURRENT_TIMESTAMP
+            RETURNING id::text
+            """,
+            (asset_id, link_key, reference_id),
+        )
+
     async def select_asset(
         self, *, asset_variant_id: str, reason: str
     ) -> str:
