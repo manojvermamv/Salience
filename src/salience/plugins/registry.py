@@ -60,10 +60,17 @@ class PluginRegistry:
         versions = self._manifests.get(plugin_id, {})
         return tuple(versions[version] for version in sorted(versions, key=self._version_key))
 
+    def manifests(self, *, include_disabled: bool = False) -> tuple[PluginManifest, ...]:
+        manifests: list[PluginManifest] = []
+        for plugin_id in sorted(self._manifests):
+            for manifest in self.history(plugin_id):
+                if include_disabled or manifest.status != "disabled":
+                    manifests.append(manifest)
+        return tuple(manifests)
+
     @staticmethod
     def _version_key(version: str) -> tuple[int, ...]:
         try:
             return tuple(int(part) for part in version.split("."))
         except ValueError as error:
             raise CompatibilityError(f"invalid plugin version: {version}") from error
-

@@ -41,3 +41,12 @@ def test_registry_preserves_disabled_history_and_validates_capabilities() -> Non
     assert registry.resolve("mock.external.effect", include_disabled=True).status == "disabled"
     assert registry.history("mock.external.effect") == (registered.model_copy(update={"status": "disabled"}),)
 
+
+def test_registry_lists_only_enabled_versions_by_default() -> None:
+    registry = PluginRegistry(supported_contract_version="1.0")
+    registry.register(manifest(plugin_id="creative.fixture", version="1.0.0"))
+    registry.register(manifest(plugin_id="creative.fixture", version="1.1.0"))
+    registry.disable("creative.fixture", "1.1.0")
+
+    assert [item.version for item in registry.manifests()] == ["1.0.0"]
+    assert [item.version for item in registry.manifests(include_disabled=True)] == ["1.0.0", "1.1.0"]
