@@ -1,6 +1,6 @@
 # Current limits
 
-Phases 1–8 provide a deterministic substrate, SDK compatibility adapters,
+Phases 1–9 provide a deterministic substrate, SDK compatibility adapters,
 bounded read-only research, source-linked intelligence records, strategic
 packages, claim/evidence checks, immutable ContentBriefs, versioned scripts and
 creative direction, deterministic fixture-provider media flow, canonical asset
@@ -37,3 +37,21 @@ signed-webhook ingress are implemented against fixture/provider contracts, not
 as a configured live-provider deployment. A final package grants no authority
 to publish, purchase, expand scopes, or bypass future publisher policy. See
 [`docs/phase-9-handoff.md`](phase-9-handoff.md).
+
+## Phase 9 boundary
+
+Phase 9 adds canonical governed-publication records, a fixture-first durable
+workflow, scoped control API/CLI/SDK, schedules, cancellation, reconciliation,
+and signed-webhook ingress. It does not publish a video or enable a real social
+account in the deployed Compose application. The YouTube adapter is disabled by
+default and starts only a private resumable upload session when an injected
+lease and explicit connection identity are supplied. It does not stream package
+bytes, persist a resumable session URI in canonical records, create a public
+post, verify a YouTube webhook, or provide a production live-smoke upload.
+
+TikTok, Instagram, LinkedIn, and other publishers remain future independently
+registered adapters. A production enablement still needs an approved edge media
+handoff, encrypted/managed durable session-store and lease resolver,
+provider-specific transfer reconciliation and cost usage, current platform-policy
+review, operator-approved private test, and explicit release evidence. Analytics,
+experiments, and learning remain outside the implemented loop.

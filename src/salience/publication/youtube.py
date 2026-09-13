@@ -10,7 +10,9 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+from dataclasses import dataclass
 from datetime import UTC, datetime
+from typing import Protocol
 
 import httpx
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -79,6 +81,52 @@ class YouTubeUploadAttempt(BaseModel):
     state: str = "session_started"
 
 
+@dataclass(frozen=True, repr=False)
+class _YouTubeEdgeSession:
+    """Edge-only resumable session state; its URI must never enter a DTO or database row."""
+
+    idempotency_key: str
+    publication_attempt_id: str
+    upload_session_id: str
+    request_hash: str
+    _location: str
+
+    def __repr__(self) -> str:
+        return (
+            "_YouTubeEdgeSession("
+            f"idempotency_key={self.idempotency_key!r}, "
+            f"publication_attempt_id={self.publication_attempt_id!r}, "
+            f"upload_session_id={self.upload_session_id!r}, request_hash=<redacted>, location=<redacted>)"
+        )
+
+
+class YouTubeSessionStore(Protocol):
+    """Secure edge-state storage for opaque resumable locations, keyed by request identity."""
+
+    async def load(self, idempotency_key: str) -> _YouTubeEdgeSession | None: ...
+
+    async def save(self, session: _YouTubeEdgeSession) -> _YouTubeEdgeSession: ...
+
+
+class InMemoryYouTubeSessionStore:
+    """Test-only edge store; production supplies durable isolated edge storage."""
+
+    def __init__(self) -> None:
+        self._sessions: dict[str, _YouTubeEdgeSession] = {}
+
+    async def load(self, idempotency_key: str) -> _YouTubeEdgeSession | None:
+        return self._sessions.get(idempotency_key)
+
+    async def save(self, session: _YouTubeEdgeSession) -> _YouTubeEdgeSession:
+        existing = self._sessions.setdefault(session.idempotency_key, session)
+        if (
+            existing.upload_session_id != session.upload_session_id
+            or existing.request_hash != session.request_hash
+        ):
+            raise YouTubePublisherError("YouTube resumable session differs from idempotent request")
+        return existing
+
+
 class YouTubePublisherAdapter:
     """Owned HTTP adapter for official YouTube private resumable sessions.
 
@@ -96,14 +144,14 @@ class YouTubePublisherAdapter:
         client: httpx.AsyncClient,
         connection_reference: str,
         enabled: bool = False,
+        session_store: YouTubeSessionStore | None = None,
     ) -> None:
         if not connection_reference:
             raise ValueError("YouTube publisher requires a secret-reference-only connection identity")
         self._client = client
         self._connection_reference = connection_reference
         self._enabled = enabled
-        self._session_locations: dict[str, str] = {}
-        self._receipts_by_key: dict[str, RemotePublicationReceipt] = {}
+        self._session_store = session_store or InMemoryYouTubeSessionStore()
 
     @property
     def capabilities(self) -> PublisherCapabilityProfile:
@@ -145,6 +193,15 @@ class YouTubePublisherAdapter:
     ) -> YouTubeUploadAttempt:
         await self.preflight(request.publication)
         self._require_upload_lease(lease)
+        request_hash = _safe_request_hash(request)
+        existing = await self._session_store.load(request.publication.idempotency_key)
+        if existing is not None:
+            if existing.request_hash != request_hash:
+                raise YouTubePublisherError("YouTube resumable session differs from idempotent request")
+            return YouTubeUploadAttempt(
+                publication_attempt_id=existing.publication_attempt_id,
+                upload_session_id=existing.upload_session_id,
+            )
         metadata = {
             "snippet": {
                 "title": request.title,
@@ -170,7 +227,15 @@ class YouTubePublisherAdapter:
             raise YouTubeProviderResponseError(response.status_code, "missing resumable session location")
         self._validate_session_location(session_location)
         session_id = _safe_session_id(request.publication.idempotency_key, session_location)
-        self._session_locations[session_id] = session_location
+        await self._session_store.save(
+            _YouTubeEdgeSession(
+                idempotency_key=request.publication.idempotency_key,
+                publication_attempt_id=request.publication.id,
+                upload_session_id=session_id,
+                request_hash=request_hash,
+                _location=session_location,
+            )
+        )
         return YouTubeUploadAttempt(
             publication_attempt_id=request.publication.id,
             upload_session_id=session_id,
@@ -186,7 +251,7 @@ class YouTubePublisherAdapter:
     ) -> RemotePublicationReceipt:
         await self.preflight(request)
         self._require_upload_lease(lease)
-        existing = self._receipts_by_key.get(request.idempotency_key)
+        existing = await self.reconcile(request.idempotency_key)
         if existing is not None:
             return existing
         raise YouTubePublisherError(
@@ -194,13 +259,20 @@ class YouTubePublisherAdapter:
         )
 
     async def reconcile(self, idempotency_key: str) -> RemotePublicationReceipt | None:
-        return self._receipts_by_key.get(idempotency_key)
+        session = await self._session_store.load(idempotency_key)
+        if session is None:
+            return None
+        return RemotePublicationReceipt(
+            id=f"youtube-session-{session.upload_session_id[:24]}",
+            publication_attempt_id=session.publication_attempt_id,
+            publisher_id=self.publisher_id,
+            remote_id=session.upload_session_id,
+            state="accepted",
+            safe_metadata_hash=_safe_session_metadata_hash(session.upload_session_id),
+        )
 
     async def status(self, remote_id: str) -> RemotePublicationReceipt | None:
-        return next(
-            (receipt for receipt in self._receipts_by_key.values() if receipt.remote_id == remote_id),
-            None,
-        )
+        return None
 
     async def cancel(self, remote_id: str) -> RemotePublicationReceipt | None:
         return await self.status(remote_id)
@@ -254,3 +326,13 @@ def run_live_smoke() -> str:
 
 def _safe_session_id(idempotency_key: str, session_location: str) -> str:
     return hashlib.sha256(f"{idempotency_key}:{session_location}".encode()).hexdigest()
+
+
+def _safe_request_hash(request: YouTubeUploadRequest) -> str:
+    return hashlib.sha256(
+        request.model_dump_json(exclude={"delivery_url"}).encode()
+    ).hexdigest()
+
+
+def _safe_session_metadata_hash(upload_session_id: str) -> str:
+    return hashlib.sha256(f"youtube-session:{upload_session_id}".encode()).hexdigest()

@@ -771,7 +771,7 @@ Expected: PASS. Commit: `feat: expose governed publication control surface`.
 
 **Interfaces:** `YouTubePublisherAdapter` uses injected `CredentialLease`, private-only capability profile, resumable session identity, and owned DTOs. The live smoke test is opt-in and private/test-only.
 
-- [ ] **Step 1: Write adapter and live-status red tests**
+- [x] **Step 1: Write adapter and live-status red tests**
 
 ```python
 async def test_youtube_adapter_starts_resumable_session_without_persisting_bearer_token(adapter, request):
@@ -783,13 +783,13 @@ def test_live_youtube_smoke_reports_not_run_without_explicit_configuration(capsy
     assert run_live_smoke() == "NOT RUN: YOUTUBE_PUBLISHER_CONNECTION_REF is not configured"
 ```
 
-- [ ] **Step 2: Run tests and confirm failure**
+- [x] **Step 2: Run tests and confirm failure**
 
 Run: `pytest tests/integration/test_youtube_publisher_contract.py tests/live/test_youtube_publisher_smoke.py -q`
 
 Expected: FAIL because the adapter and status reporting are absent.
 
-- [ ] **Step 3: Implement the disabled-by-default official adapter**
+- [x] **Step 3: Implement the disabled-by-default official adapter**
 
 Use `POST /upload/youtube/v3/videos?uploadType=resumable` only with an injected valid lease, explicit connection/profile, private visibility allowance, and adapter configuration. Persist only a safe resumable session identifier and remote response IDs. Map HTTP failures to typed provider errors and reconcile session/video IDs before retry. The live test uses private/test visibility only, never runs in normal CI, and treats missing credentials/configuration as `NOT RUN`.
 

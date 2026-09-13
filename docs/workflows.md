@@ -48,3 +48,20 @@ and never turn source content into authority. Creative work starts only from the
 selected immutable brief. The ready package is an immutable Phase-9 handoff,
 not a workflow activity that publishes; analytics, experiments, and learning
 remain outside the current workflow.
+
+`GovernedPublicationWorkflow` is the implemented Phase 9 durable boundary. It
+accepts canonical workspace/program/ready-package/publisher-account/budget and
+idempotency identities, then checkpoints request, authorization, reservation,
+immutable plan, private delivery, submit-or-reconcile, polling/webhook status,
+receipt, settlement, and terminal publication/cancellation/dead-letter stages.
+Each remote decision uses bounded Temporal timeouts/retries and an existing
+external-effect identity. `PublicationScheduleService` delegates timing to
+Temporal while preserving immutable publication request/plan references; a
+changed schedule must create a different governed version.
+
+The workflow remains fixture-first. Publisher capability metadata validates the
+persisted publisher identity and the worker resolves a matching injected adapter,
+not a platform-specific canonical type. The disabled YouTube boundary can start
+and edge-store/reconcile a private resumable session with an injected lease but
+deliberately fails closed for generic submit until a future approved edge
+media-handoff contract supplies package bytes and transfer reconciliation.

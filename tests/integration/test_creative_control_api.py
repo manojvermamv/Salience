@@ -58,7 +58,8 @@ def test_creative_control_defaults_to_dry_run_and_exposes_safe_inspection() -> N
     assert client.get(f"/v1/creative/runs/{payload['job_id']}/asset", headers=_headers()).status_code == 404
     assert client.get(f"/v1/creative/runs/{payload['job_id']}/package", headers=_headers()).status_code == 404
     assert client.get("/v1/creative/packages/no-package/lineage", headers=_headers()).status_code == 404
-    assert all("publish" not in path for path in app.openapi()["paths"])
+    assert "publication" not in payload["output"]
+    assert app.state.publisher_adapters == {}
 
 
 def test_creative_control_requires_scoped_read_and_write_access() -> None:

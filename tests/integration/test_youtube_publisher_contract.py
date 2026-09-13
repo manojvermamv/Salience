@@ -6,7 +6,11 @@ import httpx
 import pytest
 
 from salience.publication.contracts import CredentialLease, PublicationRequest, PublisherAdapter
-from salience.publication.youtube import YouTubePublisherAdapter, YouTubeUploadRequest
+from salience.publication.youtube import (
+    InMemoryYouTubeSessionStore,
+    YouTubePublisherAdapter,
+    YouTubeUploadRequest,
+)
 
 
 def _publication(*, visibility: str = "private") -> PublicationRequest:
@@ -102,3 +106,43 @@ async def test_youtube_adapter_fails_closed_for_non_private_uploads_without_http
                 ),
                 _lease(),
             )
+
+
+@pytest.mark.asyncio
+async def test_youtube_session_reconciles_after_adapter_replacement_without_exposing_uri() -> None:
+    store = InMemoryYouTubeSessionStore()
+
+    def handler(_request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            headers={"Location": "https://www.googleapis.com/upload/resumable/session-restart"},
+        )
+
+    upload_request = YouTubeUploadRequest(
+        publication=_publication(),
+        delivery_url="https://delivery.example/assets/ready-package-1",
+        content_length=1_024,
+        content_type="video/mp4",
+        title="Private recovery upload",
+        description="Session reconciliation contract",
+    )
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        first = YouTubePublisherAdapter(
+            client=client,
+            connection_reference="secret://youtube/private-test-connection",
+            enabled=True,
+            session_store=store,
+        )
+        attempt = await first.prepare_upload(upload_request, _lease())
+        replacement = YouTubePublisherAdapter(
+            client=client,
+            connection_reference="secret://youtube/private-test-connection",
+            enabled=True,
+            session_store=store,
+        )
+        receipt = await replacement.reconcile(upload_request.publication.idempotency_key)
+
+    assert receipt is not None
+    assert receipt.remote_id == attempt.upload_session_id
+    assert receipt.state == "accepted"
+    assert "session-restart" not in receipt.model_dump_json()

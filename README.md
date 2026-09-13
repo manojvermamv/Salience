@@ -8,12 +8,14 @@ then creates a governed script, media-asset, distribution, and immutable
 `ReadyToPublishPackage@v1` handoff without making an AI, creative tool, storage
 service, or future publisher the system of record.
 
-**Status: Phases 1–8 implemented and fixture verified.** The complete safe path
+**Status: Phases 1–9 implemented and fixture verified.** The complete safe path
 is source evidence → intelligence → immutable brief → creative production →
-governed distribution → approved package. It deliberately stops before live
-social publishing, analytics, experiments, and learning.
+governed distribution → approved package → separately governed publication
+fixture. A disabled-by-default YouTube adapter can start a private resumable
+session, but this release deliberately stops before a configured live video
+transfer or social post, analytics, experiments, and learning.
 
-[Open the interactive Phase 1–8 Archify architecture map](docs/salience-phase-1-8-final.architecture.html)
+[Open the interactive Phase 1–9 Archify architecture map](docs/salience-phase-1-9.architecture.html)
 
 ## Architecture At A Glance
 
@@ -35,6 +37,11 @@ flowchart LR
     Governance --> Distribution[Distribution package]
     Asset --> Distribution
     Distribution --> Ready[Approved ReadyToPublishPackage@v1]
+    Ready -->|new account-bound governed request| Publish[Publication workflow]
+    Publish -->|policy, approval, scope, reserve| Governance
+    Publish -.->|selected adapter, reconcile, webhook| Publisher[Fixture / opt-in publisher adapter]
+    Storage -.->|short-lived HTTPS delivery| Publisher
+    Publish -->|immutable request, plan, attempt, receipt| PG
     Loop -->|source to immutable brief lineage| PG[(PostgreSQL)]
     API -->|identity, scope, policy, budget| PG
     Worker -.->|artifact references| Storage[Object-store contract]
@@ -44,11 +51,11 @@ flowchart LR
 The Mermaid view is a quick GitHub-native overview. Browser evidence remains an
 optional, read-only path: its text is untrusted and its text, screenshot, and
 trace artifacts remain behind the object-store contract. The linked
-[Archify viewer](docs/salience-phase-1-8-final.architecture.html) is the checked,
-interactive source for the implemented Phase 1–8 architecture: it supports
+[Archify viewer](docs/salience-phase-1-9.architecture.html) is the checked,
+interactive source for the implemented Phase 1–9 architecture: it supports
 theme switching, focus views, relationship tracing, source evidence, and local
 SVG/PNG export. Its checked source is
-[`docs/salience-phase-1-8-final.architecture.json`](docs/salience-phase-1-8-final.architecture.json).
+[`docs/salience-phase-1-9.architecture.json`](docs/salience-phase-1-9.architecture.json).
 
 ## What You Can Rely On Today
 
@@ -111,6 +118,11 @@ SVG/PNG export. Its checked source is
 - **Recovery and callbacks** reconcile one accepted fixture effect after an
   interruption, record duplicate-safe verified webhook receipts, and keep
   cancellation/dead-letter lifecycle transitions canonical.
+- **Governed publishing** creates a fresh publisher request, plan, attempt, and
+  receipt from an approved package; it rechecks policy, approval, scope,
+  account, capability, and budget rather than inheriting creative authority.
+- **YouTube is opt-in and private-only.** Its official resumable-session boundary
+  accepts an injected scoped lease but stores no bearer token or opaque session URI.
 
 ### Provider-Neutral Extensions
 
@@ -121,7 +133,8 @@ SVG/PNG export. Its checked source is
 | MCP | Official SDK adapter for `2026-07-28` plus legacy negotiation | Unneeded optional extensions |
 | A2A | Official SDK adapter for A2A `1.0` plus explicit `0.3` behavior | Mandatory remote agents |
 | Research and strategy | RSS/HN/browser contracts, source-linked signals, opportunities, packages, claims, and immutable briefs | General crawling and learning |
-| Creative production | Script/creative/media/distribution contracts, deterministic fixture workflow, rights/profile/disclosure gates, immutable ready package | Enabled live media provider, FFmpeg execution, C2PA signing, publishing, analytics, and experiments |
+| Creative production | Script/creative/media/distribution contracts, deterministic fixture workflow, rights/profile/disclosure gates, immutable ready package | Enabled live media provider, FFmpeg execution, C2PA signing, analytics, and experiments |
+| Publishing | Fixture-first governed request/plan/attempt/receipt workflow, scoped control API, schedule/cancel/reconcile/webhook contracts, and disabled private YouTube session adapter | Configured media handoff, live upload/post, TikTok/Instagram/LinkedIn adapters, and publishing analytics |
 | Plugins | Versioned capability registry and provider-compatibility metadata | Large platform integrations |
 
 The data model also keeps hooks for tenant isolation, agent/tool trust and
@@ -167,7 +180,7 @@ docker compose logs -f worker
 
 `content jobs start-dummy` defaults to `--dry-run`. The configured Temporal
 control plane rejects non-dry-run calls until an operator supplies the required
-policy adapter; direct production effects are not a default Phase 1–8 feature.
+policy adapter; direct production effects are not a default Phase 1–9 feature.
 
 To run the implemented intelligence loop, create a workspace and program with
 the control API, then pass their returned IDs to the same HTTP-only CLI:
@@ -233,6 +246,11 @@ creates identities and starts jobs; `control:read` retrieves state and records.
 | `GET /v1/creative/runs/{job_id}` | Inspect creative state, trace, and output IDs |
 | `GET /v1/creative/runs/{job_id}/script`, `/asset`, `/package` | Retrieve canonical creative output identities |
 | `GET /v1/creative/packages/{ready_package_id}/lineage` | Retrieve immutable ready-package lineage |
+| `POST /v1/publications/requests` | Start a governed publisher request from canonical IDs |
+| `POST /v1/publications/schedules` | Store an immutable request/plan-backed publication cadence |
+| `GET /v1/publications/runs/{job_id}` | Inspect safe publication state and trace output |
+| `POST /v1/publications/runs/{job_id}/cancel` | Signal cooperative cancellation before a terminal effect |
+| `POST /v1/publishers/{provider_id}/webhooks` | Accept only a provider-verified callback projection |
 
 The command-line client and Python SDK both use these public schemas; neither
 reaches into the database.
@@ -275,6 +293,19 @@ ready-package lineage, and evaluation contracts. Optional FFmpeg/C2PA and
 live-provider/publishing checks are explicitly reported as `NOT RUN` when they
 are not executed by the configured fixture path.
 
+Run the Phase 9 governed-publishing verifier after the same environment is ready:
+
+```bash
+bash scripts/verify-phase-9.sh
+```
+
+It applies migrations through `0009_governed_publication`, checks the canonical
+publisher request/plan/schedule/attempt/receipt tables, API/CLI/SDK controls,
+fixture restart/reconciliation, cost/policy/approval gates, signed webhook
+deduplication, and the private-only YouTube session contract. Without explicit
+operator configuration it reports the live YouTube status as `NOT RUN`; it does
+not publish a video.
+
 ## Verify Browser Evidence
 
 Browser evidence remains optional to the dry-run control plane, but the current
@@ -300,7 +331,7 @@ Salience is not presented as a finished autonomous content system. This phase
 does not include:
 
 - AI content or media generation providers
-- Live publishing automation or broad platform integrations
+- Live publishing automation, media transfer, or broad platform integrations
 - Unbounded browser-driven production research
 - Learning, analytics, or optimization loops
 - A required model credential or production publishing provider
@@ -326,7 +357,7 @@ For the focused Phase 5–6 verifier and optional real-feed configuration, see
 | [`docs/trust-model.md`](docs/trust-model.md) | Untrusted-input and memory-write rules |
 | [`docs/model-execution.md`](docs/model-execution.md) | Structured model gateway and lineage behavior |
 | [`docs/phase-7-handoff.md`](docs/phase-7-handoff.md) | Consumed Phase 6 → Phase 7 contract |
-| [`docs/phase-9-handoff.md`](docs/phase-9-handoff.md) | The only allowed future publishing input |
+| [`docs/phase-9-handoff.md`](docs/phase-9-handoff.md) | Governed publishing boundary and remaining live-enable work |
 | [`docs/implementation-progress.md`](docs/implementation-progress.md) | Persistent build checkpoints and resume context |
 | [`docs/adr/`](docs/adr/) | Build-vs-adopt decisions for durable runtime, storage, API persistence, and governance |
 | [`docs/contracts/adapter-contracts.md`](docs/contracts/adapter-contracts.md) | Project-owned adapter and compatibility contracts |

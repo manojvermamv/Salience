@@ -7,6 +7,7 @@ import hashlib
 import json
 from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime, timedelta
+from collections.abc import Callable, Mapping
 from typing import Any
 
 from temporalio import activity, workflow
@@ -15,7 +16,7 @@ from temporalio.worker import Worker
 
 from salience.governance.cost_repository import CostReservationRepository
 from salience.governance.costs import BudgetExceeded, CostSettlementStatus
-from salience.publication.contracts import CredentialLease, PublicationRequest
+from salience.publication.contracts import CredentialLease, PublicationRequest, PublisherAdapter
 from salience.publication.delivery import PublicationDelivery
 from salience.publication.governance import (
     PublicationAuthorizationContext,
@@ -95,6 +96,8 @@ class PublicationWorkflowState:
     store: CanonicalJobStore
     repository: PublicationRepository
     provider: FixturePublisherAdapter = field(default_factory=FixturePublisherAdapter)
+    publisher_adapters: Mapping[str, PublisherAdapter] = field(default_factory=dict)
+    credential_lease_factory: Callable[[PublicationRequest], CredentialLease] | None = None
     delivery: PublicationDelivery = field(
         default_factory=lambda: PublicationDelivery("fixture-publication-delivery-key")
     )
@@ -176,39 +179,62 @@ class PublicationActivities:
     async def _checkpoint(self, name: str) -> None:
         await self._state.store.checkpoint(await self._run(), name)
 
+    def _adapter_for(self, request: PublicationRequest) -> PublisherAdapter:
+        if request.publisher_id is not None:
+            configured = self._state.publisher_adapters.get(request.publisher_id)
+            if configured is not None:
+                return configured
+        if self._state.provider.capabilities.publisher_id == request.publisher_id:
+            return self._state.provider
+        raise RuntimeError(f"no registered publisher adapter for {request.publisher_id}")
+
+    def _lease_for(self, request: PublicationRequest) -> CredentialLease:
+        if self._state.credential_lease_factory is not None:
+            return self._state.credential_lease_factory(request)
+        if request.publisher_id == self._state.provider.capabilities.publisher_id:
+            return _fixture_lease()
+        raise RuntimeError("publisher credential lease resolver is not configured")
+
     @activity.defn(name="salience.publication.request")
     async def request(self, workflow_request: PublicationWorkflowRequest) -> dict[str, Any]:
         run = await self._run()
-        persisted = await self._state.repository.create_request(
-            ready_package_id=workflow_request.ready_package_id,
-            workspace_id=workflow_request.workspace_id,
-            content_program_id=workflow_request.content_program_id,
-            publisher_account_id=workflow_request.publisher_account_id,
-            idempotency_key=workflow_request.idempotency_key,
-        )
-        request = PublicationRequest(
-            id=persisted.id,
-            workspace_id=workflow_request.workspace_id,
-            content_program_id=workflow_request.content_program_id,
-            ready_package_id=workflow_request.ready_package_id,
-            publisher_account_id=workflow_request.publisher_account_id,
-            platform=workflow_request.platform,
-            destination=workflow_request.destination,
-            locale=workflow_request.locale,
-            territory=workflow_request.territory,
-            visibility=workflow_request.visibility,
-            capability_profile_version=workflow_request.capability_profile_version,
-            idempotency_key=workflow_request.idempotency_key,
-            approval_reference=f"ready-package:{workflow_request.ready_package_id}",
-            publisher_id="fixture-publisher",
-        )
+        scheduled_plan: dict[str, str] = {}
+        if workflow_request.scheduled_publication_request_id is not None:
+            execution = await self._state.repository.load_scheduled_execution(
+                workflow_request.scheduled_publication_request_id,
+                workflow_request.scheduled_publication_plan_id or "",
+            )
+            request = execution.request
+            if not _workflow_request_matches_publication(workflow_request, request):
+                raise ValueError("scheduled publication payload differs from its immutable request")
+            scheduled_plan = {
+                "publication_plan_id": execution.plan_id,
+                "scheduled_publisher_id": execution.publisher_id,
+                "scheduled_publisher_version": execution.publisher_version,
+            }
+        else:
+            persisted = await self._state.repository.create_request(
+                ready_package_id=workflow_request.ready_package_id,
+                workspace_id=workflow_request.workspace_id,
+                content_program_id=workflow_request.content_program_id,
+                publisher_account_id=workflow_request.publisher_account_id,
+                idempotency_key=workflow_request.idempotency_key,
+                platform=workflow_request.platform,
+                destination=workflow_request.destination,
+                locale=workflow_request.locale,
+                territory=workflow_request.territory,
+                visibility=workflow_request.visibility,
+                capability_profile_version=workflow_request.capability_profile_version,
+            )
+            request = await self._state.repository.load_request(persisted.id)
         await self._checkpoint("publication.request.created")
         return {
             "workflow_request": _workflow_request_payload(workflow_request),
             "request": request.model_dump(mode="json"),
-            "publication_request_id": persisted.id,
+            "publication_request_id": request.id,
             "trace_id": run.trace_context.trace_id,
             "span_id": run.trace_context.span_id,
+            **scheduled_plan,
         }
 
     @activity.defn(name="salience.publication.authorize")
@@ -216,20 +242,28 @@ class PublicationActivities:
         run = await self._run()
         workflow_request = PublicationWorkflowRequest(**payload["workflow_request"])
         request = PublicationRequest.model_validate(payload["request"])
+        adapter = self._adapter_for(request)
         effect_key = f"{request.idempotency_key}:publish"
         await self._state.store.plan_effect(run, effect_key)
         effect = await self._state.store.effect(run, effect_key)
         if effect is None:
             raise RuntimeError("publication external effect was not persisted")
-        plan = await self._state.repository.create_plan(
-            publication_request_id=request.id,
-            version=1,
-            publisher_id=request.publisher_id or "fixture-publisher",
-            publisher_version=self._state.provider.capabilities.version,
-            external_effect_id=effect.effect_id,
-            trace_id=run.trace_context.trace_id,
-            span_id=run.trace_context.span_id,
-        )
+        if "publication_plan_id" in payload:
+            plan_id = str(payload["publication_plan_id"])
+            await self._state.repository.attach_external_effect(
+                publication_plan_id=plan_id, external_effect_id=effect.effect_id
+            )
+        else:
+            plan = await self._state.repository.create_plan(
+                publication_request_id=request.id,
+                version=1,
+                publisher_id=request.publisher_id or "fixture-publisher",
+                publisher_version=adapter.capabilities.version,
+                external_effect_id=effect.effect_id,
+                trace_id=run.trace_context.trace_id,
+                span_id=run.trace_context.span_id,
+            )
+            plan_id = plan.id
         if self._state.cost_repository is None:
             return {**payload, "authorized": False, "denial_reason": "cost_infrastructure_unavailable"}
         try:
@@ -238,37 +272,81 @@ class PublicationActivities:
                 reservation_key=effect_key,
                 job_id=str(run.job_id),
                 external_effect_id=effect.effect_id,
-                publication_plan_id=plan.id,
+                publication_plan_id=plan_id,
                 estimated_micros=0,
             )
         except (BudgetExceeded, KeyError):
             return {**payload, "authorized": False, "denial_reason": "budget_exceeded"}
+        await self._state.repository.attach_reservation(
+            publication_plan_id=plan_id, budget_reservation_id=reservation.reservation_id
+        )
+        current = await self._state.repository.load_current_authorization(request.id)
+        if current.request != request:
+            raise RuntimeError("publication request changed after canonical load")
+        if current.profile is None:
+            return {
+                **payload,
+                "authorized": False,
+                "denial_reason": "capability_profile_missing",
+                "publication_plan_id": plan_id,
+                "external_effect_id": effect.effect_id,
+                "budget_reservation_id": reservation.reservation_id,
+            }
+        if (adapter.capabilities.publisher_id, adapter.capabilities.version) != (
+            current.profile.publisher_id,
+            current.profile.version,
+        ):
+            return {
+                **payload,
+                "authorized": False,
+                "denial_reason": "registered_publisher_profile_changed",
+                "publication_plan_id": plan_id,
+                "external_effect_id": effect.effect_id,
+                "budget_reservation_id": reservation.reservation_id,
+            }
+        if "scheduled_publisher_id" in payload and (
+            payload["scheduled_publisher_id"], payload["scheduled_publisher_version"]
+        ) != (current.profile.publisher_id, current.profile.version):
+            return {
+                **payload,
+                "authorized": False,
+                "denial_reason": "scheduled_publisher_profile_changed",
+                "publication_plan_id": plan_id,
+                "external_effect_id": effect.effect_id,
+                "budget_reservation_id": reservation.reservation_id,
+            }
         decision = await self._state.authorizer.reauthorize(
             PublicationAuthorizationContext(
                 request=request,
-                profile=self._state.provider.capabilities,
+                profile=current.profile,
                 ready_package_id=request.ready_package_id,
-                ready_package_workspace_id=request.workspace_id,
-                ready_package_program_id=request.content_program_id,
-                ready_package_approval_state="approved",
-                account_workspace_id=request.workspace_id,
-                connection_account_id=request.publisher_account_id,
-                account_type="creator",
-                account_status="active",
-                connection_status=self._state.connection_status,
-                connection_scopes=self._state.connection_scopes,
+                ready_package_workspace_id=current.request.workspace_id,
+                ready_package_program_id=current.request.content_program_id,
+                ready_package_approval_state=current.ready_package_approval_state,
+                account_workspace_id=current.account_workspace_id,
+                connection_account_id=current.connection_account_id or "missing",
+                account_type=current.account_type,
+                account_status=current.account_status,
+                connection_status=current.connection_status or "missing",
+                connection_scopes=current.connection_scopes,
                 content_type="video",
-                authorized_destination=request.destination,
-                authorized_locale=request.locale,
-                authorized_territory=request.territory,
-                authorized_visibility=request.visibility,
-                policy_allowed=self._state.policy_allowed,
-                rights_allowed=self._state.rights_allowed,
-                disclosure_allowed=self._state.disclosure_allowed,
-                publishing_approval_state=self._state.publishing_approval_state,
+                authorized_destination=current.request.destination,
+                authorized_locale=current.request.locale,
+                authorized_territory=current.request.territory,
+                authorized_visibility=current.request.visibility,
+                policy_allowed=self._state.policy_allowed and current.policy_allowed,
+                rights_allowed=self._state.rights_allowed and current.rights_allowed,
+                disclosure_allowed=(
+                    self._state.disclosure_allowed and current.disclosure_status == "approved"
+                ),
+                publishing_approval_state=(
+                    current.ready_package_approval_state
+                    if self._state.publishing_approval_state == "approved"
+                    else self._state.publishing_approval_state
+                ),
                 budget_status=reservation.status.value,
                 rate_quota_available=self._state.rate_quota_available,
-                capability_profile_version=workflow_request.capability_profile_version,
+                capability_profile_version=current.request.capability_profile_version,
             )
         )
         await self._checkpoint("publication.authorization.checked")
@@ -276,7 +354,7 @@ class PublicationActivities:
             **payload,
             "authorized": decision.allowed,
             "denial_reason": ",".join(decision.reasons) if decision.reasons else None,
-            "publication_plan_id": plan.id,
+            "publication_plan_id": plan_id,
             "external_effect_id": effect.effect_id,
             "budget_reservation_id": reservation.reservation_id,
         }
@@ -288,7 +366,7 @@ class PublicationActivities:
             asset_id=request.ready_package_id,
             expires_in=timedelta(minutes=5),
         )
-        await self._state.provider.prepare_delivery(request, capability.delivery_url)
+        await self._adapter_for(request).prepare_delivery(request, capability.delivery_url)
         await self._checkpoint("publication.delivery.prepared")
         return payload
 
@@ -304,10 +382,10 @@ class PublicationActivities:
         effect_key = f"{request.idempotency_key}:publish"
         submitting = await self._state.store.begin_effect_submission(run, effect_key)
         if submitting:
-            receipt = await self._state.provider.submit(request, _fixture_lease())
+            receipt = await self._adapter_for(request).submit(request, self._lease_for(request))
             reconciled = False
         else:
-            receipt = await self._state.provider.reconcile(request.idempotency_key)
+            receipt = await self._adapter_for(request).reconcile(request.idempotency_key)
             if receipt is None:
                 raise RuntimeError("ambiguous publication outcome requires reconciliation")
             reconciled = True
@@ -350,7 +428,8 @@ class PublicationActivities:
     async def await_publication(self, payload: dict[str, Any]) -> dict[str, Any]:
         run = await self._run()
         request = PublicationRequest.model_validate(payload["request"])
-        remote = await self._state.provider.status(payload["remote_id"])
+        adapter = self._adapter_for(request)
+        remote = await adapter.status(payload["remote_id"])
         if remote is None:
             raise RuntimeError("ambiguous publication status requires reconciliation")
         state = remote.state
@@ -363,11 +442,15 @@ class PublicationActivities:
                 "poll_count": poll_count,
                 "failure_reason": "publisher_timeout",
             }
-        if state == "processing" and self._state.emit_duplicate_webhook:
+        if (
+            state == "processing"
+            and self._state.emit_duplicate_webhook
+            and adapter is self._state.provider
+        ):
             signed = self._state.provider.signed_webhook(
                 remote, state="processing", delivery_identity=f"{request.idempotency_key}:processing"
             )
-            verified = await self._state.provider.verify_webhook(signed)
+            verified = await adapter.verify_webhook(signed)
             status_event = await self._state.repository.record_status_event(
                 publication_attempt_id=payload["publication_attempt_id"],
                 state=verified.state,
@@ -464,7 +547,8 @@ class PublicationActivities:
     async def cancel(self, payload: dict[str, Any] | None = None) -> PublicationWorkflowResult:
         run = await self._run()
         if payload is not None and isinstance(payload.get("remote_id"), str):
-            receipt = await self._state.provider.cancel(payload["remote_id"])
+            request = PublicationRequest.model_validate(payload["request"])
+            receipt = await self._adapter_for(request).cancel(payload["remote_id"])
             if receipt is not None and isinstance(payload.get("publication_attempt_id"), str):
                 await self._state.repository.record_status_event(
                     publication_attempt_id=payload["publication_attempt_id"],
@@ -619,6 +703,36 @@ def _fixture_lease() -> CredentialLease:
         "fixture-publication-lease",
         expires_at=datetime.now(UTC) + timedelta(minutes=5),
         granted_scopes=frozenset({"publish:create"}),
+    )
+
+
+def _workflow_request_matches_publication(
+    workflow_request: PublicationWorkflowRequest, request: PublicationRequest
+) -> bool:
+    return (
+        workflow_request.workspace_id,
+        workflow_request.content_program_id,
+        workflow_request.ready_package_id,
+        workflow_request.publisher_account_id,
+        workflow_request.idempotency_key,
+        workflow_request.platform,
+        workflow_request.destination,
+        workflow_request.locale,
+        workflow_request.territory,
+        workflow_request.visibility,
+        workflow_request.capability_profile_version,
+    ) == (
+        request.workspace_id,
+        request.content_program_id,
+        request.ready_package_id,
+        request.publisher_account_id,
+        request.idempotency_key,
+        request.platform,
+        request.destination,
+        request.locale,
+        request.territory,
+        request.visibility,
+        request.capability_profile_version,
     )
 
 

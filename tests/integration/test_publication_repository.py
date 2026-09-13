@@ -1,10 +1,12 @@
 """Idempotent canonical publication persistence contracts."""
 
 import os
+from uuid import uuid4
 
 import psycopg
 import pytest
 
+from salience.publication.contracts import PublicationRequest
 from salience.publication.repository import ImmutablePublicationConflict, PublicationRepository
 from salience.workflows.persistence import CanonicalJobStore
 
@@ -73,6 +75,87 @@ async def test_repeated_publication_request_returns_original_identity() -> None:
     replay = await repository.create_request(**request_arguments)
 
     assert replay.id == first.id
+
+
+@pytest.mark.asyncio
+async def test_loaded_publication_request_is_the_exact_canonical_effect_input() -> None:
+    from test_creative_release_gate_migration import _approved_ready_package
+
+    ready = await _approved_ready_package()
+    repository = PublicationRepository(os.environ["TEST_DATABASE_URL"])
+    account = await repository.create_account(
+        workspace_id=ready["workspace_id"],
+        platform="fixture",
+        account_key="canonical-request-account",
+        account_type="creator",
+        external_account_reference="fixture:canonical-request",
+    )
+    persisted = await repository.create_request(
+        ready_package_id=ready["ready_package_id"],
+        workspace_id=ready["workspace_id"],
+        content_program_id=ready["program_id"],
+        publisher_account_id=account.id,
+        idempotency_key="canonical-request-key",
+        platform="fixture",
+        destination="fixture://canonical-destination",
+        locale="fr-CA",
+        territory="CA",
+        visibility="private",
+        capability_profile_version=1,
+    )
+
+    assert await repository.load_request(persisted.id) == PublicationRequest(
+        id=persisted.id,
+        workspace_id=ready["workspace_id"],
+        content_program_id=ready["program_id"],
+        ready_package_id=ready["ready_package_id"],
+        publisher_account_id=account.id,
+        platform="fixture",
+        destination="fixture://canonical-destination",
+        locale="fr-CA",
+        territory="CA",
+        visibility="private",
+        capability_profile_version=1,
+        idempotency_key="canonical-request-key",
+        approval_reference=f"ready-package:{ready['ready_package_id']}",
+        publisher_id="fixture-publisher",
+    )
+
+
+@pytest.mark.asyncio
+async def test_current_authorization_facts_follow_the_persisted_connection_and_profile() -> None:
+    from test_creative_release_gate_migration import _approved_ready_package
+
+    ready = await _approved_ready_package()
+    database_url = os.environ["TEST_DATABASE_URL"]
+    repository = PublicationRepository(database_url)
+    account = await repository.create_account(
+        workspace_id=ready["workspace_id"],
+        platform="fixture",
+        account_key="authorization-facts-account",
+        account_type="creator",
+        external_account_reference="fixture:authorization-facts",
+    )
+    persisted = await repository.create_request(
+        ready_package_id=ready["ready_package_id"],
+        workspace_id=ready["workspace_id"],
+        content_program_id=ready["program_id"],
+        publisher_account_id=account.id,
+        idempotency_key="authorization-facts-key",
+    )
+
+    active = await repository.load_current_authorization(persisted.id)
+    assert active.connection_status == "active"
+    assert active.connection_scopes == frozenset({"publish:create"})
+    assert active.profile.publisher_id == "fixture-publisher"
+
+    with psycopg.connect(database_url) as connection:
+        connection.execute(
+            "UPDATE publisher_connections SET status = 'revoked' WHERE publisher_account_id = %s",
+            (account.id,),
+        )
+
+    assert (await repository.load_current_authorization(persisted.id)).connection_status == "revoked"
 
 
 @pytest.mark.asyncio
@@ -187,3 +270,41 @@ async def test_publication_schedule_persists_exact_request_plan_and_job_schedule
             version=1,
             schedule_fingerprint="b" * 64,
         )
+
+
+@pytest.mark.asyncio
+async def test_scheduled_execution_loads_only_its_exact_immutable_request_and_plan() -> None:
+    from test_creative_release_gate_migration import _approved_ready_package
+
+    ready = await _approved_ready_package()
+    database_url = os.environ["TEST_DATABASE_URL"]
+    repository = PublicationRepository(database_url)
+    account = await repository.create_account(
+        workspace_id=ready["workspace_id"],
+        platform="fixture",
+        account_key="scheduled-execution-account",
+        account_type="creator",
+        external_account_reference="fixture:scheduled-execution",
+    )
+    request = await repository.create_request(
+        ready_package_id=ready["ready_package_id"],
+        workspace_id=ready["workspace_id"],
+        content_program_id=ready["program_id"],
+        publisher_account_id=account.id,
+        idempotency_key="scheduled-execution-key",
+        destination="fixture://scheduled-canonical",
+    )
+    plan = await repository.create_plan(
+        publication_request_id=request.id,
+        version=1,
+        publisher_id="fixture-publisher",
+        publisher_version="1",
+    )
+
+    execution = await repository.load_scheduled_execution(request.id, plan.id)
+
+    assert execution.request.id == request.id
+    assert execution.request.destination == "fixture://scheduled-canonical"
+    assert execution.plan_id == plan.id
+    with pytest.raises(KeyError):
+        await repository.load_scheduled_execution(request.id, str(uuid4()))

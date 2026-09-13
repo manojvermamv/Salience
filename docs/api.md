@@ -16,6 +16,9 @@ The control API requires a configured bearer `CONTROL_PLANE_TOKEN` and an
 - `POST /v1/creative/runs` and `GET /v1/creative/runs/{job_id}`
 - `GET /v1/creative/runs/{job_id}/script`, `/asset`, and `/package`
 - `GET /v1/creative/packages/{ready_package_id}/lineage`
+- `POST /v1/publications/requests`, `POST /v1/publications/schedules`
+- `GET /v1/publications/runs/{job_id}`, `POST /v1/publications/runs/{job_id}/cancel`
+- `POST /v1/publishers/{provider_id}/webhooks`
 
 `POST /v1/jobs/dummy` accepts an idempotency key. The deployed adapter returns
 the same canonical job for repeat keys rather than scheduling another workflow.
@@ -80,3 +83,23 @@ content creative package-lineage <ready_package_id>
 `asset`, `package`, and `package_lineage` calls. `ReadyToPublishPackage@v1` is
 inspection data only; it contains no credentials, publisher target, or action
 to publish.
+
+## Governed publication
+
+`POST /v1/publications/requests` requires `control:write`, canonical workspace,
+content-program, approved ready-package, publisher-account, explicit budget,
+and idempotency identities. It rejects undeclared fields, including token or
+secret fields. `GET /v1/publications/runs/{job_id}` requires `control:read` and
+returns only canonical IDs, state, trace, and safe output. Scheduling and
+cancellation require `control:write`; a schedule names immutable publication
+request and plan identities in addition to its exact workflow inputs.
+
+The `content publication start|schedule|inspect|cancel` commands and
+`SalienceClient.publication` use those same HTTP routes and never access
+PostgreSQL. `POST /v1/publishers/{provider_id}/webhooks` has no bearer-token
+requirement because the selected adapter verifies the signed delivery. It stores
+only a credential-free verified event projection and returns a duplicate-safe
+receipt identity. There is no raw credential endpoint, package mutation route,
+or public-publish endpoint. The disabled YouTube adapter accepts private
+resumable-session requests only at its internal edge; it is not exposed as a
+live video-upload API.

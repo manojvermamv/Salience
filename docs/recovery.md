@@ -37,3 +37,16 @@ webhook receipt, and complete script/asset/distribution/ready-package lineage.
 Ready-package lineage cannot be directly rewritten after approval; an altered
 governed decision needs a new version. No recovery path converts a ready package
 into live publishing.
+
+The Phase 9 publication fixture applies the same interruption rule after a
+publisher accepts the request. It persists a request/plan/attempt/effect before
+the remote boundary, crashes after acceptance, and resumes by reconciling the
+same provider idempotency key. It proves one remote receipt, bounded polling,
+duplicate-safe signed webhook convergence, reservation/actual settlement,
+policy/approval denial before submit, cancellation signalling, and canonical
+audit/provenance/trace records. Ambiguous outcomes become reconciliation work;
+the workflow never blindly repeats a publisher create.
+
+The opt-in YouTube adapter currently starts only a private resumable session.
+It keeps the session URI in transient edge memory and persists no video transfer
+or public post, so it does not weaken the fixture recovery guarantee.

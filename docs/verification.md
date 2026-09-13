@@ -91,8 +91,8 @@ Phase 7–8 deliberately performs no live publish effect.
 
 ## Architecture Evidence
 
-The Phase 1-8 Archify source and standalone HTML were refreshed for the release
-gate. `deliver` validated all nine showcase checks with zero warnings/errors;
+The Phase 1–8 Archify source and standalone HTML remain the release-gate
+evidence. `deliver` validated all nine showcase checks with zero warnings/errors;
 the specification SHA-256 is
 `f06d8d549297cd8614c2da36e266a133160673220ccfe441acde565540d6fd97` and the
 HTML SHA-256 is `e888dd64671a5c456f166234ec84ae422b223e4944772c69ff6c704512260603`.
@@ -106,3 +106,41 @@ For a full non-live regression before integration, run:
 ```bash
 pytest tests/contracts tests/unit tests/integration tests/e2e tests/evals -m 'not live' -q
 ```
+
+## Phase 9 Governed Publishing
+
+Run the complete fixture-first publishing gate from a prepared checkout:
+
+```bash
+bash scripts/verify-phase-9.sh
+```
+
+The verifier starts/reuses project PostgreSQL and Temporal, applies migrations
+through `0009_governed_publication`, and checks publisher contract/registry,
+canonical persistence, scoped API/CLI/SDK surfaces, immutable scheduling,
+policy/budget/approval gates, fixture submission/reconciliation, duplicate-safe
+signed webhook receipts, and an interruption after remote acceptance. Its latest
+recorded run passed 47 focused fixture tests and the complete 221-test non-live
+suite, each with only the existing third-party Starlette deprecation warning. It
+also executes the YouTube contract and live-status test. The verifier disables
+pytest's optional cache provider so a constrained host cannot turn cache writes
+into a false release failure.
+
+The live status is intentionally `NOT RUN: YOUTUBE_PUBLISHER_CONNECTION_REF is
+not configured` unless an operator explicitly supplies its connection reference
+and enables the private-only smoke configuration. Even then the current smoke
+returns `NOT RUN` until an operator-managed private test asset and credential
+lease are available; it never attempts a public video post.
+
+## Phase 1–9 Architecture Evidence
+
+`docs/salience-phase-1-9.architecture.html` was delivered from its checked JSON
+source with all nine Archify showcase checks, zero warnings, and 16
+repository-grounded references. Its SHA-256 values are
+`d125fe394311c90dd0379374d4222aed43492690065dd5e24633261104138c74` for the
+specification and
+`8e74f980769730e1fec0e0dc4f7109200609c33fb1abd8f3ce8b64c038a88540` for the
+HTML. Automated Chromium containment/readability passed at 1440x900, 1600x1000,
+1920x1080, and 2048x1320 with no overflow; light and dark captures were
+visually reviewed. The visual explains the fixture-verified boundary and is not
+evidence of an enabled live publisher.

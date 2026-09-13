@@ -10,7 +10,11 @@ from typing import Any
 
 import psycopg
 
-from salience.publication.contracts import PublisherWebhookEvent
+from salience.publication.contracts import (
+    PublicationRequest,
+    PublisherCapabilityProfile,
+    PublisherWebhookEvent,
+)
 
 
 @dataclass(frozen=True)
@@ -25,6 +29,34 @@ class PersistedPublisherAccount:
 class PersistedPublicationRequest:
     id: str
     ready_package_id: str
+
+
+@dataclass(frozen=True)
+class PersistedPublicationExecution:
+    """Immutable request and plan selected for one governed effect."""
+
+    request: PublicationRequest
+    plan_id: str
+    publisher_id: str
+    publisher_version: str
+
+
+@dataclass(frozen=True)
+class CurrentPublicationAuthorization:
+    """Fresh canonical facts required immediately before an external effect."""
+
+    request: PublicationRequest
+    ready_package_approval_state: str
+    disclosure_status: str
+    account_workspace_id: str
+    account_type: str
+    account_status: str
+    connection_account_id: str | None
+    connection_status: str | None
+    connection_scopes: frozenset[str]
+    profile: PublisherCapabilityProfile | None
+    policy_allowed: bool
+    rights_allowed: bool
 
 
 @dataclass(frozen=True)
@@ -116,6 +148,12 @@ class PublicationRepository:
         content_program_id: str,
         publisher_account_id: str,
         idempotency_key: str,
+        platform: str = "fixture",
+        destination: str = "fixture://account",
+        locale: str = "en",
+        territory: str = "global",
+        visibility: str = "private",
+        capability_profile_version: int = 1,
     ) -> PersistedPublicationRequest:
         return await asyncio.to_thread(
             self._create_request,
@@ -124,7 +162,28 @@ class PublicationRepository:
             content_program_id,
             publisher_account_id,
             idempotency_key,
+            platform,
+            destination,
+            locale,
+            territory,
+            visibility,
+            capability_profile_version,
         )
+
+    async def load_request(self, publication_request_id: str) -> PublicationRequest:
+        return await asyncio.to_thread(self._load_request, publication_request_id)
+
+    async def load_scheduled_execution(
+        self, publication_request_id: str, publication_plan_id: str
+    ) -> PersistedPublicationExecution:
+        return await asyncio.to_thread(
+            self._load_scheduled_execution, publication_request_id, publication_plan_id
+        )
+
+    async def load_current_authorization(
+        self, publication_request_id: str
+    ) -> CurrentPublicationAuthorization:
+        return await asyncio.to_thread(self._load_current_authorization, publication_request_id)
 
     async def create_plan(
         self,
@@ -205,6 +264,13 @@ class PublicationRepository:
     ) -> None:
         await asyncio.to_thread(
             self._attach_reservation, publication_plan_id, budget_reservation_id
+        )
+
+    async def attach_external_effect(
+        self, *, publication_plan_id: str, external_effect_id: str
+    ) -> None:
+        await asyncio.to_thread(
+            self._attach_external_effect, publication_plan_id, external_effect_id
         )
 
     async def record_status_event(
@@ -334,6 +400,8 @@ class PublicationRepository:
             identifier, found_workspace, found_platform, found_key, found_type, found_reference = row
             if (found_type, found_reference) != (account_type, external_account_reference):
                 raise ImmutablePublicationConflict("publisher account differs from its canonical identity")
+            if found_platform == "fixture":
+                self._ensure_fixture_governance(cursor, identifier, found_workspace)
             return PersistedPublisherAccount(identifier, found_workspace, found_platform, found_key)
 
     def _create_request(
@@ -343,7 +411,14 @@ class PublicationRepository:
         content_program_id: str,
         publisher_account_id: str,
         idempotency_key: str,
+        platform: str,
+        destination: str,
+        locale: str,
+        territory: str,
+        visibility: str,
+        capability_profile_version: int,
     ) -> PersistedPublicationRequest:
+        publisher_id = _publisher_id_for_platform(platform)
         fingerprint = _fingerprint(
             {
                 "ready_package_id": ready_package_id,
@@ -351,6 +426,13 @@ class PublicationRepository:
                 "content_program_id": content_program_id,
                 "publisher_account_id": publisher_account_id,
                 "idempotency_key": idempotency_key,
+                "publisher_id": publisher_id,
+                "platform": platform,
+                "destination": destination,
+                "locale": locale,
+                "territory": territory,
+                "visibility": visibility,
+                "capability_profile_version": capability_profile_version,
                 "version": 1,
             }
         )
@@ -366,9 +448,8 @@ class PublicationRepository:
                 )
                 SELECT ready.tenant_id, ready.workspace_id, ready.content_program_id, ready.id,
                        account.id, ready.approval_request_id, %s, 1,
-                       account.platform, account.platform,
-                       'fixture://' || account.id::text, 'en', 'global', 'private',
-                       1, 'ready-package:' || ready.id::text, 'planned', %s,
+                       %s, %s, %s, %s, %s, %s,
+                       %s, 'ready-package:' || ready.id::text, 'planned', %s,
                        jsonb_build_object(
                            'ready_package_id', ready.id::text,
                            'disclosure_id', ready.disclosure_id::text
@@ -386,6 +467,13 @@ class PublicationRepository:
                 """,
                 (
                     idempotency_key,
+                    publisher_id,
+                    platform,
+                    destination,
+                    locale,
+                    territory,
+                    visibility,
+                    capability_profile_version,
                     fingerprint,
                     publisher_account_id,
                     ready_package_id,
@@ -424,6 +512,244 @@ class PublicationRepository:
             ):
                 raise ImmutablePublicationConflict("publication request differs from its immutable version")
             return PersistedPublicationRequest(identifier, existing_ready)
+
+    def _load_request(self, publication_request_id: str) -> PublicationRequest:
+        with self._connect() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT id::text, workspace_id::text, content_program_id::text,
+                       ready_package_id::text, publisher_account_id::text, platform,
+                       destination, locale, territory, visibility,
+                       capability_profile_version, request_key, approval_reference,
+                       publisher_id
+                FROM publication_requests
+                WHERE id = %s
+                """,
+                (publication_request_id,),
+            )
+            row = cursor.fetchone()
+        if row is None:
+            raise KeyError(publication_request_id)
+        return _publication_request_from_row(row)
+
+    def _load_scheduled_execution(
+        self, publication_request_id: str, publication_plan_id: str
+    ) -> PersistedPublicationExecution:
+        with self._connect() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT request.id::text, request.workspace_id::text,
+                       request.content_program_id::text, request.ready_package_id::text,
+                       request.publisher_account_id::text, request.platform,
+                       request.destination, request.locale, request.territory,
+                       request.visibility, request.capability_profile_version,
+                       request.request_key, request.approval_reference,
+                       request.publisher_id, plan.id::text, plan.publisher_id,
+                       plan.publisher_version
+                FROM publication_requests request
+                JOIN publication_plans plan ON plan.publication_request_id = request.id
+                WHERE request.id = %s AND plan.id = %s
+                """,
+                (publication_request_id, publication_plan_id),
+            )
+            row = cursor.fetchone()
+        if row is None:
+            raise KeyError("publication request and plan must form one immutable execution")
+        return PersistedPublicationExecution(
+            request=_publication_request_from_row(row[:14]),
+            plan_id=row[14],
+            publisher_id=row[15],
+            publisher_version=row[16],
+        )
+
+    def _load_current_authorization(
+        self, publication_request_id: str
+    ) -> CurrentPublicationAuthorization:
+        with self._connect() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT request.id::text, request.workspace_id::text,
+                       request.content_program_id::text, request.ready_package_id::text,
+                       request.publisher_account_id::text, request.platform,
+                       request.destination, request.locale, request.territory,
+                       request.visibility, request.capability_profile_version,
+                       request.request_key, request.approval_reference,
+                       request.publisher_id, ready.approval_state, disclosure.status,
+                       account.workspace_id::text, account.account_type, account.status,
+                       connection.publisher_account_id::text, connection.status,
+                       connection.granted_scopes, profile.capability_facts,
+                       NOT EXISTS (
+                           SELECT 1
+                           FROM jsonb_array_elements_text(request.policy_references) AS reference(id)
+                           LEFT JOIN policy_versions policy ON policy.id::text = reference.id
+                           WHERE policy.id IS NULL OR policy.status <> 'active'
+                       ),
+                       NOT EXISTS (
+                           SELECT 1
+                           FROM distribution_package_assets package_asset
+                           JOIN asset_rights_links rights
+                             ON rights.asset_id = package_asset.asset_id
+                           LEFT JOIN consent_records direct_consent
+                             ON direct_consent.id = rights.consent_record_id
+                           LEFT JOIN likeness_identities likeness
+                             ON likeness.id = rights.likeness_identity_id
+                           LEFT JOIN consent_records likeness_consent
+                             ON likeness_consent.id = likeness.consent_record_id
+                           LEFT JOIN voice_identities voice
+                             ON voice.id = rights.voice_identity_id
+                           LEFT JOIN consent_records voice_consent
+                             ON voice_consent.id = voice.consent_record_id
+                           LEFT JOIN asset_licenses license
+                             ON license.id = rights.asset_license_id
+                           LEFT JOIN usage_restrictions restriction
+                             ON restriction.id = rights.usage_restriction_id
+                           WHERE package_asset.distribution_package_id = ready.distribution_package_id
+                             AND (
+                                 (direct_consent.id IS NOT NULL AND (
+                                     direct_consent.status <> 'active'
+                                     OR direct_consent.revoked_at IS NOT NULL
+                                     OR (direct_consent.expires_at IS NOT NULL
+                                         AND direct_consent.expires_at <= CURRENT_TIMESTAMP)
+                                 ))
+                                 OR (likeness.id IS NOT NULL AND (
+                                     likeness.status <> 'active'
+                                     OR likeness_consent.status <> 'active'
+                                     OR likeness_consent.revoked_at IS NOT NULL
+                                     OR (likeness_consent.expires_at IS NOT NULL
+                                         AND likeness_consent.expires_at <= CURRENT_TIMESTAMP)
+                                 ))
+                                 OR (voice.id IS NOT NULL AND (
+                                     voice.status <> 'active'
+                                     OR voice_consent.status <> 'active'
+                                     OR voice_consent.revoked_at IS NOT NULL
+                                     OR (voice_consent.expires_at IS NOT NULL
+                                         AND voice_consent.expires_at <= CURRENT_TIMESTAMP)
+                                 ))
+                                 OR (license.id IS NOT NULL AND (
+                                     license.status <> 'active'
+                                     OR (license.expires_at IS NOT NULL
+                                         AND license.expires_at <= CURRENT_TIMESTAMP)
+                                 ))
+                                 OR (restriction.id IS NOT NULL AND restriction.status = 'active')
+                             )
+                       )
+                FROM publication_requests request
+                JOIN ready_to_publish_packages ready ON ready.id = request.ready_package_id
+                JOIN synthetic_media_disclosures disclosure ON disclosure.id = ready.disclosure_id
+                JOIN publisher_accounts account ON account.id = request.publisher_account_id
+                LEFT JOIN LATERAL (
+                    SELECT publisher_account_id, status, granted_scopes
+                    FROM publisher_connections
+                    WHERE publisher_account_id = account.id
+                    ORDER BY version DESC
+                    LIMIT 1
+                ) connection ON TRUE
+                LEFT JOIN LATERAL (
+                    SELECT capability_facts
+                    FROM publisher_capability_profiles
+                    WHERE workspace_id = request.workspace_id
+                      AND publisher_id = request.publisher_id
+                      AND profile_version = request.capability_profile_version
+                    ORDER BY observed_at DESC
+                    LIMIT 1
+                ) profile ON TRUE
+                WHERE request.id = %s
+                """,
+                (publication_request_id,),
+            )
+            row = cursor.fetchone()
+        if row is None:
+            raise KeyError(publication_request_id)
+        profile = (
+            PublisherCapabilityProfile.model_validate(row[22]) if row[22] is not None else None
+        )
+        return CurrentPublicationAuthorization(
+            request=_publication_request_from_row(row[:14]),
+            ready_package_approval_state=row[14],
+            disclosure_status=row[15],
+            account_workspace_id=row[16],
+            account_type=row[17],
+            account_status=row[18],
+            connection_account_id=row[19],
+            connection_status=row[20],
+            connection_scopes=frozenset(row[21] or ()),
+            profile=profile,
+            policy_allowed=row[23],
+            rights_allowed=row[24],
+        )
+
+    @staticmethod
+    def _ensure_fixture_governance(cursor: psycopg.Cursor[Any], account_id: str, workspace_id: str) -> None:
+        secret_name = f"fixture-publisher-{account_id}"
+        cursor.execute(
+            """
+            INSERT INTO secret_references (
+                workspace_id, name, reference_uri, required_scopes, data_classification, status
+            ) VALUES (%s, %s, %s, %s::jsonb, 'confidential', 'active')
+            ON CONFLICT (workspace_id, name) DO NOTHING
+            """,
+            (
+                workspace_id,
+                secret_name,
+                f"fixture://publisher/{account_id}",
+                json.dumps(["publish:create"]),
+            ),
+        )
+        cursor.execute(
+            "SELECT id::text FROM secret_references WHERE workspace_id = %s AND name = %s",
+            (workspace_id, secret_name),
+        )
+        secret_reference_id = cursor.fetchone()[0]
+        cursor.execute(
+            """
+            INSERT INTO publisher_connections (
+                publisher_account_id, version, secret_reference_id, required_scopes, granted_scopes, status
+            ) VALUES (%s, 1, %s, %s::jsonb, %s::jsonb, 'active')
+            ON CONFLICT (publisher_account_id, version) DO NOTHING
+            """,
+            (
+                account_id,
+                secret_reference_id,
+                json.dumps(["publish:create"]),
+                json.dumps(["publish:create"]),
+            ),
+        )
+        capability_facts = {
+            "publisher_id": "fixture-publisher",
+            "version": "1",
+            "platform": "fixture",
+            "account_types": ["creator"],
+            "contract_compatibility": {"publication": "1.0"},
+            "enabled": True,
+            "audit_state": "verified",
+            "granted_scopes": ["publish:create"],
+            "supported_content_types": ["video"],
+            "supported_visibilities": ["private"],
+            "disclosure_support": True,
+            "scheduling_support": True,
+            "cancellation_support": True,
+            "reconciliation_support": True,
+            "quota_state": "available",
+            "health_state": "healthy",
+        }
+        cursor.execute(
+            """
+            INSERT INTO publisher_capability_profiles (
+                workspace_id, publisher_account_id, publisher_id, publisher_version,
+                profile_version, platform, audit_state, observed_at, source_reference,
+                capability_facts, compatibility
+            ) VALUES (%s, %s, 'fixture-publisher', '1', 1, 'fixture', 'verified',
+                      CURRENT_TIMESTAMP, 'fixture://publisher-capabilities/v1', %s::jsonb, %s::jsonb)
+            ON CONFLICT (workspace_id, publisher_id, publisher_version, profile_version)
+            DO NOTHING
+            """,
+            (
+                workspace_id,
+                account_id,
+                json.dumps(capability_facts),
+                json.dumps({"publication": "1.0"}),
+            ),
+        )
 
     def _create_plan(
         self,
@@ -492,6 +818,20 @@ class PublicationRepository:
             )
             if cursor.rowcount != 1:
                 raise ImmutablePublicationConflict("publication plan already has another budget reservation")
+
+    def _attach_external_effect(self, publication_plan_id: str, external_effect_id: str) -> None:
+        with self._connect() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                UPDATE publication_plans
+                SET external_effect_id = %s, updated_at = CURRENT_TIMESTAMP
+                WHERE id = %s
+                  AND (external_effect_id IS NULL OR external_effect_id = %s)
+                """,
+                (external_effect_id, publication_plan_id, external_effect_id),
+            )
+            if cursor.rowcount != 1:
+                raise ImmutablePublicationConflict("publication plan already has another external effect")
 
     def _create_attempt(
         self,
@@ -826,3 +1166,26 @@ def _fingerprint(value: dict[str, Any]) -> str:
     return hashlib.sha256(
         json.dumps(value, sort_keys=True, separators=(",", ":"), default=str).encode()
     ).hexdigest()
+
+
+def _publisher_id_for_platform(platform: str) -> str:
+    return "fixture-publisher" if platform == "fixture" else f"{platform}-publisher"
+
+
+def _publication_request_from_row(row: tuple[Any, ...]) -> PublicationRequest:
+    return PublicationRequest(
+        id=row[0],
+        workspace_id=row[1],
+        content_program_id=row[2],
+        ready_package_id=row[3],
+        publisher_account_id=row[4],
+        platform=row[5],
+        destination=row[6],
+        locale=row[7],
+        territory=row[8],
+        visibility=row[9],
+        capability_profile_version=row[10],
+        idempotency_key=row[11],
+        approval_reference=row[12],
+        publisher_id=row[13],
+    )
