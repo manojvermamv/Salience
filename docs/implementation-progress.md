@@ -4,9 +4,9 @@
 
 - Branch: `creative-production-phases-7-8` (isolated worktree from `main`)
 - Plan: `docs/superpowers/plans/2026-09-13-creative-production-phases-7-8.md`
-- Active task: Task 1 — guarded creative runtime configuration and environment boundary.
-- Current TDD step: Task 1 green; persist dependency/environment decision and commit before Task 2 capability contracts.
-- Last verified state: Full baseline verification was accidentally invoked twice against the fixed Phase-1 Temporal queue; one complete run yielded 98 passed, 1 skipped, and a single three-second polling-window failure in `test_phase_one_control_plane_starts_and_inspects_a_durable_dry_run`. The identical test then passed alone in 2.26 seconds, identifying test-run concurrency rather than a source regression. Task 1 focused configuration/media guard suite passed 12/12 with compilation and whitespace checks clean. FFmpeg/ffprobe and C2PA remain `NOT RUN` because no executable/signer is installed; no cleanup or installation occurred.
+- Active task: Task 3 — additive canonical creative/distribution migration and typed models.
+- Current TDD step: Tasks 1–2 are committed green; write Task 3 migration invariants before adding schema code.
+- Last verified state: Full baseline verification was accidentally invoked twice against the fixed Phase-1 Temporal queue; one complete run yielded 98 passed, 1 skipped, and a single three-second polling-window failure in `test_phase_one_control_plane_starts_and_inspects_a_durable_dry_run`. The identical test then passed alone in 2.26 seconds, identifying test-run concurrency rather than a source regression. Tasks 1–2 combined configuration/media/capability/registry suite passed 19/19 with compilation and whitespace checks clean. FFmpeg/ffprobe and C2PA remain `NOT RUN` because no executable/signer is installed; no cleanup or installation occurred.
 
 ## Checkpoints
 
