@@ -4,11 +4,13 @@
 
 - Branch: `phase7-8-release-gate-phase9` (isolated worktree from `main`)
 - Plan: `docs/superpowers/plans/2026-09-13-phase-7-8-release-gate-phase-9-publishing.md`
-- Active task: Gate One, Task 8 — persisted creative rights/provenance and final-package policy.
-- Current TDD step: Add the remaining fail-closed canonical rights-link and C2PA provenance tests before changing finalization policy evaluation.
-- Last verified state: Gate One Task 7 passed registry selection, bounded multi-variant durable effects, recovery, and selected/rejected asset persistence (20 focused tests). Phase 7–8 remains unapproved; Task 11’s complete release ladder and independent review remain mandatory before any Phase 9 code.
+- Active task: Gate One, Task 9 — immutable approved distribution decisions.
+- Current TDD step: Add direct PostgreSQL and repository red tests for an approved package revision before replacing mutable decision upserts.
+- Last verified state: Gate One Task 8 passed canonical rights/provenance policy evaluation and the fixture creative E2E/recovery path (15 focused tests). Phase 7–8 remains unapproved; Task 11’s complete release ladder and independent review remain mandatory before any Phase 9 code.
 
 ## Checkpoints
+
+- 2026-09-13: Completed Gate One Task 8 red-green. `CreativeRepository.asset_rights_context` now follows each FK-backed asset link to direct consent, likeness/voice identity consent, asset license, usage restriction, and reference lineage without accepting caller-supplied facts. `CreativeService` evaluates those persisted facts before both distribution assembly and finalization: linked identity state, consent revocation/expiry/channel/territory/commercial scope, license status/expiry/scope, and active restriction scope all fail closed; voice has its own missing-consent code. C2PA finalization reloads the canonical validation status and only requires `valid` when the profile declares C2PA mandatory. The PostgreSQL rights/provenance, Phase-8 evaluator, E2E creative-loop, and recovery suite passed 15/15 with compilation and whitespace checks clean. Next: Task 9 immutable approved-decision revisions.
 
 - 2026-09-13: Completed Gate One Task 7 red-green. `CreativeCapabilityRegistry.resolve(request, constraints)` now returns an owned selected manifest plus deterministic rejection reasons and filters provider enablement, declared capability, modality, format, aspect ratio, duration, async/poll/reconciliation/webhook requirements, rate/concurrency, contract compatibility, provider allow-list, cost ceiling, explicit provider, and variant quota. The control request carries a 1–3 variant bound; the workflow derives child keys ending in `:variant:N`, creates one creative job/external effect/reservation/provider lifecycle per variant, reconciles and settles each, imports every generated asset, and persists `selected` versus `rejected` decisions deterministically. The focused agents/contracts/creative-loop/recovery suite passed 20/20 with compilation and whitespace checks clean. Next: finish canonical rights/provenance evaluation for Task 8.
 

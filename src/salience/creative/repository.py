@@ -394,6 +394,9 @@ class CreativeRepository:
     async def asset_consent(self, asset_id: str) -> dict[str, Any] | None:
         return await asyncio.to_thread(self._asset_consent, asset_id)
 
+    async def asset_rights_context(self, asset_id: str) -> dict[str, Any]:
+        return await asyncio.to_thread(self._asset_rights_context, asset_id)
+
     async def record_asset_rights_link(
         self, *, asset_id: str, link_key: str, relation: str, reference_id: str
     ) -> str:
@@ -991,6 +994,147 @@ class CreativeRepository:
                 "revoked_at": row[5],
             }
 
+    def _asset_rights_context(self, asset_id: str) -> dict[str, Any]:
+        with self._connect() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT
+                    link.consent_record_id::text,
+                    direct_consent.status, direct_consent.permitted_channels,
+                    direct_consent.commercial_use, direct_consent.territories,
+                    direct_consent.expires_at, direct_consent.revoked_at,
+                    link.likeness_identity_id::text, likeness.status,
+                    likeness_consent.status, likeness_consent.permitted_channels,
+                    likeness_consent.commercial_use, likeness_consent.territories,
+                    likeness_consent.expires_at, likeness_consent.revoked_at,
+                    link.voice_identity_id::text, voice.status,
+                    voice_consent.status, voice_consent.permitted_channels,
+                    voice_consent.commercial_use, voice_consent.territories,
+                    voice_consent.expires_at, voice_consent.revoked_at,
+                    license.id::text, license.status, license.commercial_use,
+                    license.terms, license.expires_at,
+                    restriction.id::text, restriction.status, restriction.document,
+                    link.reference_asset_id::text
+                FROM asset_rights_links link
+                LEFT JOIN consent_records direct_consent ON direct_consent.id = link.consent_record_id
+                LEFT JOIN likeness_identities likeness ON likeness.id = link.likeness_identity_id
+                LEFT JOIN consent_records likeness_consent ON likeness_consent.id = likeness.consent_record_id
+                LEFT JOIN voice_identities voice ON voice.id = link.voice_identity_id
+                LEFT JOIN consent_records voice_consent ON voice_consent.id = voice.consent_record_id
+                LEFT JOIN asset_licenses license ON license.id = link.asset_license_id
+                LEFT JOIN usage_restrictions restriction ON restriction.id = link.usage_restriction_id
+                WHERE link.asset_id = %s
+                ORDER BY link.created_at, link.link_key
+                """,
+                (asset_id,),
+            )
+            context: dict[str, Any] = {
+                "direct_consents": [],
+                "likeness_consents": [],
+                "voice_consents": [],
+                "licenses": [],
+                "restrictions": [],
+                "reference_asset_ids": [],
+            }
+            for row in cursor.fetchall():
+                (
+                    direct_id,
+                    direct_status,
+                    direct_channels,
+                    direct_commercial,
+                    direct_territories,
+                    direct_expires,
+                    direct_revoked,
+                    likeness_id,
+                    likeness_status,
+                    likeness_consent_status,
+                    likeness_channels,
+                    likeness_commercial,
+                    likeness_territories,
+                    likeness_expires,
+                    likeness_revoked,
+                    voice_id,
+                    voice_status,
+                    voice_consent_status,
+                    voice_channels,
+                    voice_commercial,
+                    voice_territories,
+                    voice_expires,
+                    voice_revoked,
+                    license_id,
+                    license_status,
+                    license_commercial,
+                    license_terms,
+                    license_expires,
+                    restriction_id,
+                    restriction_status,
+                    restriction_document,
+                    reference_asset_id,
+                ) = row
+                if direct_id is not None:
+                    context["direct_consents"].append(
+                        _consent_facts(
+                            direct_status,
+                            direct_channels,
+                            direct_commercial,
+                            direct_territories,
+                            direct_expires,
+                            direct_revoked,
+                        )
+                    )
+                if likeness_id is not None:
+                    context["likeness_consents"].append(
+                        {
+                            "identity_status": likeness_status,
+                            "consent": (
+                                _consent_facts(
+                                    likeness_consent_status,
+                                    likeness_channels,
+                                    likeness_commercial,
+                                    likeness_territories,
+                                    likeness_expires,
+                                    likeness_revoked,
+                                )
+                                if likeness_consent_status is not None
+                                else None
+                            ),
+                        }
+                    )
+                if voice_id is not None:
+                    context["voice_consents"].append(
+                        {
+                            "identity_status": voice_status,
+                            "consent": (
+                                _consent_facts(
+                                    voice_consent_status,
+                                    voice_channels,
+                                    voice_commercial,
+                                    voice_territories,
+                                    voice_expires,
+                                    voice_revoked,
+                                )
+                                if voice_consent_status is not None
+                                else None
+                            ),
+                        }
+                    )
+                if license_id is not None:
+                    context["licenses"].append(
+                        {
+                            "status": license_status,
+                            "commercial_use": license_commercial,
+                            "terms": license_terms,
+                            "expires_at": license_expires,
+                        }
+                    )
+                if restriction_id is not None:
+                    context["restrictions"].append(
+                        {"status": restriction_status, "document": restriction_document}
+                    )
+                if reference_asset_id is not None:
+                    context["reference_asset_ids"].append(reference_asset_id)
+            return context
+
     def _record_distribution_package(
         self,
         workspace_id: str,
@@ -1250,3 +1394,21 @@ class CreativeRepository:
 
 def _json(value: object) -> str:
     return json.dumps(value, sort_keys=True, default=str)
+
+
+def _consent_facts(
+    status: object,
+    permitted_channels: object,
+    commercial_use: object,
+    territories: object,
+    expires_at: object,
+    revoked_at: object,
+) -> dict[str, Any]:
+    return {
+        "status": status,
+        "permitted_channels": permitted_channels,
+        "commercial_use": commercial_use,
+        "territories": territories,
+        "expires_at": expires_at,
+        "revoked_at": revoked_at,
+    }

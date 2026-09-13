@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from typing import Any
 
 from salience.creative.contracts import DistributionPackage, ReadyToPublishPackage
@@ -234,6 +235,12 @@ class CreativeService:
         )
 
     async def _authorize_rights(self, production: ApprovedProduction) -> None:
+        context_reader = getattr(self._repository, "asset_rights_context", None)
+        if context_reader is not None:
+            await self._authorize_persisted_rights(
+                production, await context_reader(production.asset_id)
+            )
+            return
         consent = production.consent
         reader = getattr(self._repository, "asset_consent", None)
         if reader is not None and (production.uses_real_likeness or production.uses_voice_clone):
@@ -247,6 +254,113 @@ class CreativeService:
             commercial_use=production.commercial_use,
         )
         self._require_allowed(decision.blocker_codes)
+
+    async def _authorize_persisted_rights(
+        self, production: ApprovedProduction, context: Mapping[str, Any]
+    ) -> None:
+        direct_consents = _mapping_sequence(context.get("direct_consents"))
+        if production.uses_real_likeness:
+            self._require_persisted_consent(
+                _mapping_sequence(context.get("likeness_consents")) or direct_consents,
+                uses_real_likeness=True,
+                uses_voice_clone=False,
+                missing_code="missing_consent",
+                channel=str(production.profile_rules.get("target_platform", production.profile_key)),
+                territory=production.territory,
+                commercial_use=production.commercial_use,
+                identity_inactive_code="likeness_inactive",
+            )
+        if production.uses_voice_clone:
+            self._require_persisted_consent(
+                _mapping_sequence(context.get("voice_consents")) or direct_consents,
+                uses_real_likeness=False,
+                uses_voice_clone=True,
+                missing_code="voice_consent_missing",
+                channel=str(production.profile_rules.get("target_platform", production.profile_key)),
+                territory=production.territory,
+                commercial_use=production.commercial_use,
+                identity_inactive_code="voice_inactive",
+            )
+        self._authorize_persisted_licenses(
+            _mapping_sequence(context.get("licenses")), production
+        )
+        self._authorize_persisted_restrictions(
+            _mapping_sequence(context.get("restrictions")), production
+        )
+
+    def _require_persisted_consent(
+        self,
+        entries: Sequence[Mapping[str, Any]],
+        *,
+        uses_real_likeness: bool,
+        uses_voice_clone: bool,
+        missing_code: str,
+        channel: str,
+        territory: str,
+        commercial_use: bool,
+        identity_inactive_code: str,
+    ) -> None:
+        if not entries:
+            raise CreativeGovernanceDenied(missing_code)
+        for entry in entries:
+            identity_status = entry.get("identity_status")
+            if identity_status is not None and identity_status != "active":
+                raise CreativeGovernanceDenied(identity_inactive_code)
+            consent = entry.get("consent", entry)
+            if not isinstance(consent, Mapping):
+                raise CreativeGovernanceDenied(missing_code)
+            decision = self._rights.authorize(
+                uses_real_likeness=uses_real_likeness,
+                uses_voice_clone=uses_voice_clone,
+                consent=consent,
+                channel=channel,
+                territory=territory,
+                commercial_use=commercial_use,
+            )
+            self._require_allowed(decision.blocker_codes)
+
+    @staticmethod
+    def _authorize_persisted_licenses(
+        licenses: Sequence[Mapping[str, Any]], production: ApprovedProduction
+    ) -> None:
+        current_time = datetime.now(UTC)
+        for license_facts in licenses:
+            if license_facts.get("status") != "active":
+                raise CreativeGovernanceDenied("license_inactive")
+            expires_at = license_facts.get("expires_at")
+            if isinstance(expires_at, datetime) and expires_at <= current_time:
+                raise CreativeGovernanceDenied("license_expired")
+            if production.commercial_use and license_facts.get("commercial_use") is not True:
+                raise CreativeGovernanceDenied("commercial_use_not_permitted")
+            terms = license_facts.get("terms")
+            if not isinstance(terms, Mapping):
+                raise CreativeGovernanceDenied("license_terms_invalid")
+            _require_scope(
+                terms.get("permitted_channels"),
+                str(production.profile_rules.get("target_platform", production.profile_key)),
+                "channel_not_permitted",
+            )
+            _require_scope(
+                terms.get("territories"), production.territory, "territory_not_permitted"
+            )
+
+    @staticmethod
+    def _authorize_persisted_restrictions(
+        restrictions: Sequence[Mapping[str, Any]], production: ApprovedProduction
+    ) -> None:
+        channel = str(production.profile_rules.get("target_platform", production.profile_key))
+        for restriction in restrictions:
+            if restriction.get("status") != "active":
+                continue
+            document = restriction.get("document")
+            if not isinstance(document, Mapping):
+                raise CreativeGovernanceDenied("usage_restriction_invalid")
+            if channel in _string_values(document.get("prohibited_channels")):
+                raise CreativeGovernanceDenied("channel_not_permitted")
+            if production.territory in _string_values(document.get("prohibited_territories")):
+                raise CreativeGovernanceDenied("territory_not_permitted")
+            if production.commercial_use and document.get("commercial_use_prohibited") is True:
+                raise CreativeGovernanceDenied("commercial_use_not_permitted")
 
     async def _require_c2pa(self, production: ApprovedProduction) -> None:
         persisted_status = production.c2pa_status
@@ -350,3 +464,21 @@ class CreativeService:
     @staticmethod
     def _package_key(production: ApprovedProduction) -> str:
         return f"{production.script_id}:{production.profile_key}:{production.locale}"
+
+
+def _mapping_sequence(value: object) -> tuple[Mapping[str, Any], ...]:
+    if not isinstance(value, Sequence) or isinstance(value, (str, bytes)):
+        return ()
+    return tuple(item for item in value if isinstance(item, Mapping))
+
+
+def _string_values(value: object) -> set[str]:
+    if not isinstance(value, Sequence) or isinstance(value, (str, bytes)):
+        return set()
+    return {item for item in value if isinstance(item, str) and item}
+
+
+def _require_scope(value: object, actual: str, blocker: str) -> None:
+    allowed = _string_values(value)
+    if allowed and actual not in allowed:
+        raise CreativeGovernanceDenied(blocker)

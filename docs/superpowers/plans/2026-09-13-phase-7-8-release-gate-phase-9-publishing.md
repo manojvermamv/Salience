@@ -372,7 +372,7 @@ Expected: PASS for primary, replacement, unavailable, unsupported, explicit-prov
 
 **Interfaces:** `CreativeRightsContext` carries canonical IDs and scope facts. `CreativeRepository.record_asset_rights_and_provenance(...)` links rights and C2PA state to each asset. `CreativeService.finalize_ready_package` loads persisted evidence rather than trusting workflow literals.
 
-- [ ] **Step 1: Write fail-closed red tests**
+- [x] **Step 1: Write fail-closed red tests**
 
 ```python
 @pytest.mark.parametrize("reason", ["missing_consent", "consent_revoked", "consent_expired", "territory_not_permitted", "voice_consent_missing"])
@@ -385,17 +385,17 @@ async def test_required_c2pa_not_configured_blocks_finalization(service, product
         await service.finalize_ready_package(production.with_c2pa("not_configured", required=True))
 ```
 
-- [ ] **Step 2: Run rights/provenance tests and confirm they fail**
+- [x] **Step 2: Run rights/provenance tests and confirm they fail**
 
 Run: `pytest tests/integration/test_creative_rights_provenance.py tests/evals/test_phase8_ready_package_eval.py -q`
 
 Expected: FAIL because the workflow does not persist or reload canonical rights/provenance links.
 
-- [ ] **Step 3: Implement canonical links and required-policy evaluation**
+- [x] **Step 3: Implement canonical links and required-policy evaluation**
 
 Persist asset license, consent, likeness, voice, usage restriction, reference-asset lineage, provider/model, C2PA manifest reference, validation status, and signer metadata. Preserve `not_configured` exactly. Evaluate expiry/revocation/channel/territory/commercial permission from persisted rows at finalization. Require a real valid state only when the profile/policy marks C2PA required.
 
-- [ ] **Step 4: Verify**
+- [x] **Step 4: Verify**
 
 Run: `pytest tests/integration/test_creative_rights_provenance.py tests/evals/test_phase8_ready_package_eval.py tests/e2e/test_phases_7_8_creative_loop.py -q`
 
