@@ -29,8 +29,9 @@ flowchart LR
     Loop -->|direct/delegated contract| Agents[Research and strategy agents]
     Agents -->|version-gated boundary| Providers[Model, MCP, A2A, plugin adapters]
     Loop -->|selected ContentBrief@v1| Creative[Creative workflow]
-    Creative -->|fixture or approved provider adapter| Asset[Verified asset]
-    Creative --> Governance[Rights, policy, approval, budget]
+    Creative -->|versioned capability selection| Provider[Fixture or approved provider adapter]
+    Provider -->|idempotent submit, reconcile, webhook| Asset[Verified asset]
+    Creative --> Governance[Rights, policy, approval, budget reservation]
     Governance --> Distribution[Distribution package]
     Asset --> Distribution
     Distribution --> Ready[Approved ReadyToPublishPackage@v1]
@@ -70,9 +71,10 @@ SVG/PNG export. Its checked source is
 - Token authentication and explicit permission scopes protect control operations.
 - Policy references, approvals, dry-run mode, and budget checks happen before an
   effect is attempted.
-- The foundation has durable estimated/reserved/actual cost hooks. The current
-  creative fixture has only a bounded pre-submit budget check; its durable
-  reservation and actual-settlement lifecycle remains explicitly unimplemented.
+- Non-dry creative runs require an explicit canonical budget. Each bounded
+  provider effect reserves estimated cost before submission and settles actual
+  cost once before a ready package can be created; unknown or over-budget actuals
+  fail closed.
 - Secret references remain separate from secret values and are constrained by
   permission scopes.
 - Each run records audit events, provenance, idempotency/reconciliation state,
@@ -98,11 +100,17 @@ SVG/PNG export. Its checked source is
   content-hash assets, captions, variants, and transformation lineage.
 - **Fixture Writer, Creative Director, Production, and Verifier agents** use the
   same versioned agent boundary; no model vendor is required for the verified path.
-- **Provider-neutral capability requests** support fixture execution and a
-  credential-gated adapter without persisting provider credentials in canonical data.
+- **Provider-neutral capability requests** select a versioned compatible provider
+  deterministically, bound variants to one through three, and retain rejection
+  reasons without persisting provider credentials in canonical data.
 - **Distribution governance** checks rights/consent, platform profile, metadata,
   claim integrity, originality, localization, synthetic-media disclosure, budget,
-  and approval before it creates an immutable `ReadyToPublishPackage@v1`.
+  and approval before it creates an immutable `ReadyToPublishPackage@v1`. A
+  changed approved decision creates a new distribution and ready-package version;
+  it never rewrites an approved decision graph.
+- **Recovery and callbacks** reconcile one accepted fixture effect after an
+  interruption, record duplicate-safe verified webhook receipts, and keep
+  cancellation/dead-letter lifecycle transitions canonical.
 
 ### Provider-Neutral Extensions
 
@@ -260,10 +268,12 @@ bash scripts/verify-phases-7-8.sh
 ```
 
 It starts/reuses PostgreSQL and Temporal fixtures, applies migrations through
-the creative lineage schema, and drives the API, CLI, SDK, full fixture workflow,
-interruption/recovery, reconciliation, rights/policy/budget/approval gates, and
-ready-package lineage. Optional FFmpeg/C2PA and live-provider/publishing checks
-are explicitly reported as `NOT RUN` when the required operator setup is absent.
+the creative release-gate schema, and drives the API, CLI, SDK, full fixture
+workflow, interruption/recovery, reservation/actual-cost settlement, webhook
+deduplication, registry selection, rights/policy/budget/approval gates, immutable
+ready-package lineage, and evaluation contracts. Optional FFmpeg/C2PA and
+live-provider/publishing checks are explicitly reported as `NOT RUN` when they
+are not executed by the configured fixture path.
 
 ## Verify Browser Evidence
 

@@ -6,7 +6,9 @@ workflow has retained its selected `ContentBrief@v1`, script version, creative
 brief, storyboard/shot plan, provider job history, assets, platform profile,
 distribution package, title/thumbnail decision, localization, originality
 evaluation, synthetic-media disclosure decision, approval decision, and trace
-lineage.
+lineage. Approved decisions are immutable: an exact replay retains the same
+version, while changed governed input must create a new distribution and
+ready-package version before it can be considered for publishing.
 
 `ReadyToPublishPackage@v1` intentionally contains no account identifier,
 publisher credential, post target, scheduling request, or remote publishing
@@ -44,5 +46,5 @@ publisher credential, platform account model, audience analytics, or learning
 loop. The ready-package fixture is explicitly configured for the end-to-end
 verifier; the deployed control plane defaults to dry-run and does not create a
 ready package. Optional FFmpeg execution and C2PA signing are represented by
-adapters and provenance state, but are `NOT RUN` on this checked host because
-the required host binaries/signing configuration are absent.
+adapters and provenance state, but remain `NOT RUN` unless a separate
+signer-backed media integration is executed.

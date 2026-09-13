@@ -458,7 +458,7 @@ Expected: PASS. Commit: `fix: make approved distribution decisions immutable`.
 
 **Interfaces:** The verifier executes one fixture path covering durable reservation through immutable ready package and reports optional media/C2PA/live checks accurately.
 
-- [ ] **Step 1: Write the comprehensive red E2E verifier**
+- [x] **Step 1: Write the comprehensive red E2E verifier**
 
 ```python
 async def test_release_gate_survives_crash_and_converges_cost_webhook_rights_and_immutability(release_gate_scenario):
@@ -470,17 +470,17 @@ async def test_release_gate_survives_crash_and_converges_cost_webhook_rights_and
     assert result.reverse_lineage_complete is True
 ```
 
-- [ ] **Step 2: Run it and confirm it fails**
+- [x] **Step 2: Run it and confirm it fails**
 
 Run: `pytest tests/e2e/test_phase7_8_release_gate.py -q`
 
 Expected: FAIL until all five release blockers are implemented.
 
-- [ ] **Step 3: Wire only verified checks into the project verifier**
+- [x] **Step 3: Wire only verified checks into the project verifier**
 
 Make `scripts/verify-phases-7-8.sh` run the release-gate E2E, migration, lifecycle, registry, rights, and immutability suites. It must retain `NOT RUN` for missing FFmpeg/C2PA/live configuration and must not label them `PASS`.
 
-- [ ] **Step 4: Verify the Gate-One focused ladder**
+- [x] **Step 4: Verify the Gate-One focused ladder**
 
 Run: `bash tests/scripts/test_phase_7_8_documentation.sh && bash scripts/verify-phases-7-8.sh`
 

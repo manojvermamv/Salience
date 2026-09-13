@@ -59,9 +59,12 @@ that location for inspection. It never performs global Docker or system cleanup.
 
 ## Phase 7–8 Creative Production
 
-The current Phase 1–8 non-live regression passed 139 tests on 2026-09-13. Its
-only warning was the existing third-party Starlette `BlockingPortal`
-deprecation. The focused verifier below remains the fastest complete contract
+The release gate has a dedicated crash-and-recovery fixture: it starts a
+non-dry run with an explicit budget, interrupts after provider acceptance,
+restarts a worker, reconciles the same accepted request, settles one actual-cost
+entry, converges a duplicate verified webhook, verifies asset provenance and
+source-to-ready-package lineage, and proves the approved candidate is not
+directly mutable. The focused verifier below is the complete required fixture
 check for the creative-production boundary.
 
 Run the project-owned verifier from a prepared checkout:
@@ -71,18 +74,20 @@ bash scripts/verify-phases-7-8.sh
 ```
 
 The script starts or reuses only the project PostgreSQL and Temporal fixtures,
-applies Alembic migrations through `0007_creative_lineage`, and drives the
+applies Alembic migrations through `0008_creative_release_gate`, and drives the
 creative control API, CLI, SDK, fixture provider, full Temporal workflow, and
 interruption/restart recovery. The asserted completed path is a selected brief
-through claim-linked script and direction, policy/budget/rights authorization,
-idempotent provider submission/reconciliation, hash-stable asset import,
-distribution governance, disclosure/approval, and ready-package lineage.
+through claim-linked script and direction, provider capability selection,
+policy/budget/rights authorization, durable reservation/actual settlement,
+idempotent provider submission/reconciliation, verified webhook deduplication,
+hash-stable asset import, distribution governance, disclosure/approval,
+immutable decision versions, and ready-package lineage.
 
-The script distinguishes a passing fixture path from unavailable optional
-dependencies. It reports `NOT RUN` rather than a false pass for FFmpeg media
-execution when `ffmpeg`/`ffprobe` are absent, C2PA signing when `c2patool` and
-`C2PA_SIGNER_REF` are not both configured, and live provider/publishing work
-because Phase 7–8 deliberately performs neither.
+The script distinguishes a passing fixture path from unavailable or unexecuted
+optional dependencies. It reports `NOT RUN` rather than a false pass for FFmpeg
+media execution (the fixture uses a controlled media probe even when binaries
+exist), C2PA signer-backed media execution, and live provider/publishing work;
+Phase 7–8 deliberately performs no live publish effect.
 
 For a full non-live regression before integration, run:
 

@@ -51,14 +51,19 @@ content intelligence inspect <job_id>
 
 `POST /v1/creative/runs` accepts `CreativeProductionRequest@v1`: workspace ID,
 content-program ID, selected `ContentBrief@v1` ID, idempotency key, target
-platform-profile key/version, and `dry_run` (default `true`). The caller needs
-`control:write`. The request returns the canonical job ID and W3C trace ID; a
-repeat idempotency key returns the same run rather than a second workflow.
+platform-profile key/version, one-to-three `max_variants`, and `dry_run`
+(default `true`). A non-dry request must name an explicit canonical `budget_id`.
+The caller needs `control:write`. The request returns the canonical job ID and
+W3C trace ID; a repeat idempotency key returns the same run rather than a second
+workflow.
 
 The deployed `TemporalControlPlane` rejects non-dry creative starts unless an
 operator explicitly enables an effect configuration. `GET` creative inspection
 routes require `control:read` and return only canonical identities plus the
-trace/output projection. There is no publish endpoint.
+trace/output projection. `POST /v1/creative/providers/{provider_id}/webhooks`
+accepts only a provider-verified, credential-free callback projection and
+converges duplicate deliveries into one canonical receipt. There is no publish
+endpoint.
 
 The CLI and SDK use exactly this transport contract:
 

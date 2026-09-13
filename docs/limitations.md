@@ -25,14 +25,15 @@ The implemented production loop ends at `ReadyToPublishPackage@v1`. The verified
 provider path is a dedicated deterministic test fixture; the deployed control
 plane defaults to dry-run and has no ready-package-producing effect setup. A
 credential-gated provider adapter exists only as a disabled boundary.
-FFmpeg/ffprobe and `c2patool` are absent on this host, so media
-composition/inspection and C2PA signing are explicitly `NOT RUN`, not claimed
-as production-verified. Rights/consent and asset-provenance records are schema
-and policy boundaries; this fixture path does not populate likeness, voice, or
-C2PA evidence. The creative workflow has a bounded in-memory budget check, but
-does not yet persist a budget reservation/actual-cost settlement for provider
-jobs. Provider cancellation and signed-webhook ingress are adapter contracts,
-not deployed workflow/API lifecycle behavior. A final package grants no
-authority to publish, purchase, expand scopes, or bypass future publisher
-policy. See
+The fixture release gate does not execute host FFmpeg media composition or C2PA
+signing, even if their binaries or signer configuration are present; these checks
+are explicitly `NOT RUN`, not claimed as production-verified. Rights/consent and
+asset-provenance records are canonical schema and policy boundaries; the fixture
+proves persisted rights reload and generated provenance but does not populate
+real likeness, voice, or C2PA signer evidence. Non-dry creative variants do
+persist explicit budget reservations and actual-cost settlement, but real
+provider pricing/reconciliation remains adapter-specific. Cancellation and
+signed-webhook ingress are implemented against fixture/provider contracts, not
+as a configured live-provider deployment. A final package grants no authority
+to publish, purchase, expand scopes, or bypass future publisher policy. See
 [`docs/phase-9-handoff.md`](phase-9-handoff.md).

@@ -32,6 +32,16 @@ budget denial, timeout, provider failure, and retry exhaustion remain canonical
 terminal states; a recovered worker reuses the canonical provider job and asset
 identities rather than submitting duplicate work.
 
+Before submit, the workflow resolves a versioned provider capability manifest and
+creates one to three durable variant plans. A non-dry variant needs an explicit
+canonical budget, planned external effect, and reservation; known actual cost
+settles before asset/distribution finalization. The workflow records provider
+lifecycle transitions conditionally, accepts only credential-free verified
+webhook projections, and supports cancellation/dead-letter handling without
+resubmitting an already accepted request. Its final distribution and ready
+package are immutable versioned decisions: exact replays converge, while changed
+governed inputs create a fresh version.
+
 Read-only source connectors are not external-effect providers. They retain
 untrusted source and fetch provenance, honor allowlists and byte/timeout bounds,
 and never turn source content into authority. Creative work starts only from the

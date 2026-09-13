@@ -12,9 +12,15 @@ The control API, CLI, and SDK use public schemas. `IntelligenceLoopWorkflow`
 owns source collection through immutable brief assembly. `CreativeProductionWorkflow`
 then starts only from that selected brief and checkpointingly creates scripts,
 creative plans, storyboards, provider-job reconciliation state, assets, and
-governed distribution packages. `CreativeService` makes the final immutable
-ready-package handoff only after rights, profile, metadata, claim-integrity,
-originality, synthetic-media disclosure, budget, policy, and approval gates.
+governed distribution packages. A versioned capability registry selects an
+enabled compatible provider adapter for one to three bounded variants. Each
+non-dry variant reserves canonical budget before submission, reconciles its
+idempotent effect after restart, records a verified webhook receipt without raw
+credentials, and settles actual cost before finalization. `CreativeService`
+makes the final immutable ready-package handoff only after rights, profile,
+metadata, claim-integrity, originality, synthetic-media disclosure, budget,
+policy, and approval gates. Approved decision rows are insert-only: a changed
+decision creates a new distribution and ready-package version.
 MCP/A2A SDK values never enter canonical records. RSS/Atom and HN are read-only;
 Playwright is optional and artifact-only. There is no live social publishing,
 analytics, experiments, or learning loop.

@@ -7,12 +7,14 @@ stores immutable artifact bytes; neither replaces a canonical database row.
 
 The first migration is a static schema snapshot at
 `migrations/versions/0001_canonical_foundation.py`. The implemented history
-reaches `0007_creative_lineage.py`; `0004_intelligence_loop.py` adds the
+reaches `0008_creative_release_gate.py`; `0004_intelligence_loop.py` adds the
 source-to-brief lineage tables, `0006_creative_production_distribution.py` adds
 the Phase 7–8 canonical production/distribution model, and `0007` anchors
-provider and package-asset reconciliation lineage. Historical migrations do
-not import application metadata, so future model changes cannot alter an
-already-applied migration.
+provider and package-asset reconciliation lineage. `0008` adds creative-job
+effect/reservation links, verified webhook receipts, canonical asset-rights
+links, provider lifecycle/cost fields, and triggers that reject direct mutation
+of approved decision lineage. Historical migrations do not import application
+metadata, so future model changes cannot alter an already-applied migration.
 
 Use an SQLAlchemy async URL for Alembic:
 
@@ -42,8 +44,10 @@ The creative schema is canonical, provider-neutral, and versioned. It records
 `script_versions`, `creative_briefs`, `storyboards`, `shot_plans`, and
 `creative_jobs` under the selected immutable `content_brief_versions` record.
 `provider_jobs` retains normalized requests, external-job reconciliation state,
-provider/model metadata, estimated/actual cost hooks, failure class, and trace
-context without credential values.
+verified callback receipt identity, provider/model metadata, estimated/actual
+cost facts, cancellation/failure state, and trace context without credential
+values. `creative_job_effects` ties each bounded variant to exactly one planned
+external effect and budget reservation.
 
 `assets`, variants, transformations, captions, compositions, licenses, consent,
 likeness/voice records, usage restrictions, and `asset_provenance` retain
@@ -53,8 +57,12 @@ retain its selected asset roles, title/thumbnail decision, localization,
 originality evaluation, and synthetic-media disclosure before the immutable
 `ready_to_publish_packages` record can reference an approved governance state.
 
-The final package has no publisher account or remote destination. Phase 9 must
-add a separate publishing-effect identity and must not mutate this lineage.
+Once an approved ready package references a distribution decision graph,
+PostgreSQL triggers reject direct updates to its package, disclosure, candidate,
+localization, or originality rows. Repository writers either replay identical
+data or allocate a new version that retains source lineage. The final package
+has no publisher account or remote destination. Phase 9 must add a separate
+publishing-effect identity and must not mutate this lineage.
 
 ## Durable Runs
 
