@@ -976,6 +976,22 @@ class DistributionPackageVariant(CanonicalIdentity, Base):
     status: Mapped[str] = mapped_column(String(32), nullable=False)
 
 
+class DistributionPackageAsset(CanonicalIdentity, Base):
+    __tablename__ = "distribution_package_assets"
+    __table_args__ = (
+        UniqueConstraint("distribution_package_id", "asset_role"),
+    )
+
+    distribution_package_id: Mapped[UUID] = mapped_column(
+        ForeignKey("distribution_packages.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    asset_id: Mapped[UUID] = mapped_column(
+        ForeignKey("assets.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    asset_role: Mapped[str] = mapped_column(String(64), nullable=False)
+    selection_reason: Mapped[str | None] = mapped_column(Text)
+
+
 class TitleThumbnailCandidate(CanonicalIdentity, Base):
     __tablename__ = "title_thumbnail_candidates"
     __table_args__ = (UniqueConstraint("distribution_package_id", "candidate_key"),)

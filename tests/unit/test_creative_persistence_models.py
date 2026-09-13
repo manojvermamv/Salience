@@ -26,6 +26,7 @@ def test_creative_models_register_the_canonical_phase_7_8_tables() -> None:
         "platform_profiles",
         "distribution_packages",
         "distribution_package_variants",
+        "distribution_package_assets",
         "title_thumbnail_candidates",
         "localizations",
         "originality_evaluations",
