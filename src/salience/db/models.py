@@ -717,8 +717,129 @@ class ProviderJob(CanonicalIdentity, Base):
     failure_class: Mapped[str | None] = mapped_column(String(128))
     submitted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    terminal_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    next_poll_after: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    retry_after: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    actual_cost_status: Mapped[str] = mapped_column(
+        String(32), nullable=False, default="pending"
+    )
+    cancel_requested_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     trace_id: Mapped[str | None] = mapped_column(String(64), index=True)
     span_id: Mapped[str | None] = mapped_column(String(32))
+
+
+class CreativeJobEffect(CanonicalIdentity, Base):
+    __tablename__ = "creative_job_effects"
+    __table_args__ = (
+        UniqueConstraint("creative_job_id", name="uq_creative_job_effects_creative_job"),
+        UniqueConstraint("external_effect_id", name="uq_creative_job_effects_external_effect"),
+        UniqueConstraint("budget_reservation_id", name="uq_creative_job_effects_reservation"),
+        UniqueConstraint("provider_job_id", name="uq_creative_job_effects_provider_job"),
+    )
+
+    creative_job_id: Mapped[UUID] = mapped_column(
+        ForeignKey("creative_jobs.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    external_effect_id: Mapped[UUID] = mapped_column(
+        ForeignKey("external_effects.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    budget_reservation_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("budget_reservations.id", ondelete="RESTRICT"), index=True
+    )
+    provider_job_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("provider_jobs.id", ondelete="RESTRICT"), index=True
+    )
+    request_key: Mapped[str] = mapped_column(String(255), nullable=False)
+    state: Mapped[str] = mapped_column(String(32), nullable=False, default="planned")
+    trace_id: Mapped[str | None] = mapped_column(String(64), index=True)
+    span_id: Mapped[str | None] = mapped_column(String(32))
+    provenance_record_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("provenance_records.id", ondelete="SET NULL")
+    )
+
+
+class CreativeProviderWebhookReceipt(CanonicalIdentity, Base):
+    __tablename__ = "creative_provider_webhook_receipts"
+    __table_args__ = (
+        UniqueConstraint(
+            "provider_id", "delivery_identity", name="uq_creative_webhook_provider_delivery"
+        ),
+        UniqueConstraint("provider_job_id", "safe_payload_hash", name="uq_creative_webhook_job_hash"),
+    )
+
+    provider_job_id: Mapped[UUID] = mapped_column(
+        ForeignKey("provider_jobs.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    provider_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    delivery_identity: Mapped[str] = mapped_column(String(255), nullable=False)
+    safe_payload_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    signature_verified: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    state: Mapped[str] = mapped_column(String(32), nullable=False)
+    received_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    trace_id: Mapped[str | None] = mapped_column(String(64), index=True)
+    span_id: Mapped[str | None] = mapped_column(String(32))
+    provenance_record_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("provenance_records.id", ondelete="SET NULL")
+    )
+
+
+class CreativeJobRight(CanonicalIdentity, Base):
+    __tablename__ = "creative_job_rights"
+    __table_args__ = (UniqueConstraint("creative_job_id", "link_key"),)
+
+    creative_job_id: Mapped[UUID] = mapped_column(
+        ForeignKey("creative_jobs.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    link_key: Mapped[str] = mapped_column(String(255), nullable=False)
+    asset_license_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("asset_licenses.id", ondelete="RESTRICT")
+    )
+    consent_record_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("consent_records.id", ondelete="RESTRICT")
+    )
+    likeness_identity_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("likeness_identities.id", ondelete="RESTRICT")
+    )
+    voice_identity_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("voice_identities.id", ondelete="RESTRICT")
+    )
+    usage_restriction_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("usage_restrictions.id", ondelete="RESTRICT")
+    )
+    reference_asset_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("assets.id", ondelete="RESTRICT")
+    )
+    territory: Mapped[str | None] = mapped_column(String(64))
+    channel: Mapped[str | None] = mapped_column(String(128))
+    commercial_use: Mapped[bool | None] = mapped_column(Boolean)
+
+
+class AssetRightsLink(CanonicalIdentity, Base):
+    __tablename__ = "asset_rights_links"
+    __table_args__ = (UniqueConstraint("asset_id", "link_key"),)
+
+    asset_id: Mapped[UUID] = mapped_column(
+        ForeignKey("assets.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    link_key: Mapped[str] = mapped_column(String(255), nullable=False)
+    asset_license_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("asset_licenses.id", ondelete="RESTRICT")
+    )
+    consent_record_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("consent_records.id", ondelete="RESTRICT")
+    )
+    likeness_identity_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("likeness_identities.id", ondelete="RESTRICT")
+    )
+    voice_identity_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("voice_identities.id", ondelete="RESTRICT")
+    )
+    usage_restriction_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("usage_restrictions.id", ondelete="RESTRICT")
+    )
+    reference_asset_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("assets.id", ondelete="RESTRICT")
+    )
 
 
 class Asset(CanonicalIdentity, Base):

@@ -114,7 +114,7 @@ Expected: PASS. Commit: `feat: define creative release gate contracts`.
 
 **Interfaces:** Adds `creative_job_effects`, `creative_provider_webhook_receipts`, `creative_job_rights`, and `asset_rights_links`; extends provider/job records with terminal timestamps and reservation/actual usage state; adds PostgreSQL triggers that reject mutation/deletion of decisions referenced by `ready_to_publish_packages`.
 
-- [ ] **Step 1: Write migration and direct-SQL red tests**
+- [x] **Step 1: Write migration and direct-SQL red tests**
 
 ```python
 def test_release_gate_migration_has_canonical_effect_and_webhook_uniqueness(connection):
@@ -128,17 +128,17 @@ def test_ready_package_referenced_disclosure_rejects_direct_update(connection, r
         connection.execute("UPDATE synthetic_media_disclosures SET status = 'rejected' WHERE id = %s", (ready_package.disclosure_id,))
 ```
 
-- [ ] **Step 2: Run the focused migration suite and confirm it fails**
+- [x] **Step 2: Run the focused migration suite and confirm it fails**
 
 Run: `pytest tests/integration/test_creative_release_gate_migration.py tests/unit/test_creative_persistence_models.py -q`
 
 Expected: FAIL because revision `0008` and release-gate objects are absent.
 
-- [ ] **Step 3: Implement migration `0008_creative_release_gate`**
+- [x] **Step 3: Implement migration `0008_creative_release_gate`**
 
 Use additive `CREATE TABLE`/`ALTER TABLE` statements only. Link a creative job to one canonical external effect and reservation. Store webhook raw-safe hash, verified signature state, provider delivery identity, state, received time, trace/span, and provenance references. Add rights-link tables that reference canonical license/consent/likeness/voice/restriction/asset IDs without JSON-only foreign keys. Add immutable-decision trigger functions for distribution package, title-thumbnail candidate, localization, originality evaluation, disclosure, and approval fields once a ready package reaches approved state.
 
-- [ ] **Step 4: Verify migration forwards and backwards**
+- [x] **Step 4: Verify migration forwards and backwards**
 
 Run: `alembic upgrade head && pytest tests/integration/test_creative_release_gate_migration.py tests/unit/test_creative_persistence_models.py -q`
 
