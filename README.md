@@ -8,7 +8,7 @@ then creates a governed script, media-asset, distribution, and immutable
 `ReadyToPublishPackage@v1` handoff without making an AI, creative tool, storage
 service, or future publisher the system of record.
 
-**Status: Phases 1–9 implemented and fixture verified.** The complete safe path
+**Status: Phases 1–9 implemented and fixture verified on `main`.** The complete safe path
 is source evidence → intelligence → immutable brief → creative production →
 governed distribution → approved package → separately governed publication
 fixture. A disabled-by-default YouTube adapter can start a private resumable
