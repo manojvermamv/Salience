@@ -1,4 +1,5 @@
 import pytest
+from pathlib import Path
 
 
 def test_settings_reject_an_empty_control_plane_token() -> None:
@@ -33,6 +34,12 @@ def test_settings_parse_optional_intelligence_runtime_configuration() -> None:
             "MCP_AUTH_SECRET_REF": "env://MCP_API_KEY",
             "A2A_ENDPOINT": "https://agents.example/a2a",
             "A2A_AUTH_SECRET_REF": "env://A2A_API_KEY",
+            "CREATIVE_MAX_VARIANTS": "4",
+            "CREATIVE_MAX_STORAGE_BYTES": "9000000",
+            "CREATIVE_MIN_FREE_BYTES": "2000000",
+            "CREATIVE_PROVIDER_TIMEOUT_SECONDS": "75",
+            "CREATIVE_TEMP_DIRECTORY": "/tmp/salience-creative-tests",
+            "SYNTHESIA_API_SECRET_REF": "env://SYNTHESIA_API_KEY",
         }
     )
 
@@ -54,6 +61,12 @@ def test_settings_parse_optional_intelligence_runtime_configuration() -> None:
     assert settings.mcp_auth_secret_ref.uri == "env://MCP_API_KEY"
     assert settings.a2a_endpoint == "https://agents.example/a2a"
     assert settings.a2a_auth_secret_ref.uri == "env://A2A_API_KEY"
+    assert settings.creative_max_variants == 4
+    assert settings.creative_max_storage_bytes == 9000000
+    assert settings.creative_min_free_bytes == 2000000
+    assert settings.creative_provider_timeout_seconds == 75
+    assert settings.creative_temp_directory == Path("/tmp/salience-creative-tests")
+    assert settings.creative_synthesia_secret_ref.uri == "env://SYNTHESIA_API_KEY"
 
 
 @pytest.mark.parametrize(
@@ -63,6 +76,10 @@ def test_settings_parse_optional_intelligence_runtime_configuration() -> None:
         ("RESEARCH_MAX_RESPONSE_BYTES", "0"),
         ("BROWSER_TIMEOUT_SECONDS", "0"),
         ("BROWSER_STEP_LIMIT", "0"),
+        ("CREATIVE_MAX_VARIANTS", "0"),
+        ("CREATIVE_MAX_STORAGE_BYTES", "0"),
+        ("CREATIVE_MIN_FREE_BYTES", "0"),
+        ("CREATIVE_PROVIDER_TIMEOUT_SECONDS", "0"),
     ],
 )
 def test_settings_reject_non_positive_intelligence_limits(field: str, value: str) -> None:

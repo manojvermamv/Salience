@@ -23,10 +23,19 @@ dependency pins are copied from `pyproject.toml`; image digests are copied from
 | MCP Python SDK | 2.2.0 | MIT | owned MCP adapter edge | remove adapter; retain owned DTO contract |
 | A2A Python SDK | 1.1.2 | Apache-2.0 | owned A2A adapter edge | remove adapter; retain owned DTO contract |
 | Playwright | 1.62.0 (optional extra) | Apache-2.0 | read-only browser adapter | omit optional extra; retain browser contract |
+| FFmpeg / ffprobe | host command; `NOT RUN` on 2026-09-13 | LGPL-2.1-or-later by default; optional GPL components alter obligations | `MediaEngine` command adapter | remove/replace the adapter; canonical assets remain portable |
+| C2PA 2.4 / c2patool | optional; not installed | c2pa-rs MIT/Apache-2.0 | `C2paTool` provenance adapter | retain canonical provenance status; configure another conforming validator/signer |
+| Synthesia REST | credential-gated; no live call | provider terms / paid plan | `SynthesiaCreativeProvider` owned HTTP DTO adapter | disable plugin; fixture providers and canonical provider-job history remain usable |
 
 ## Review cadence
 
 Review image and package advisories before every release. Garage has an explicit
 ADR; MCP and A2A use official SDKs only at owned, version-gated adapter edges.
 Fixtures remain the deterministic default, and protocol compatibility is tested
-rather than inferred.
+rather than inferred. Before enabling media work, `MediaEngine` must pass its
+free-space guard; it discovers but never installs `ffmpeg`/`ffprobe`. Current
+host measurement is 4.1 GiB free with neither executable present, so real media
+inspection/composition is `NOT RUN` until a guarded environment step installs
+and verifies an appropriate distribution package. C2PA signing additionally
+requires an operator-managed signer reference and is never inferred from an
+asset's availability.
