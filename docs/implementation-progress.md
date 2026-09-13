@@ -4,11 +4,13 @@
 
 - Branch: `phase7-8-release-gate-phase9` (isolated worktree from `main`)
 - Plan: `docs/superpowers/plans/2026-09-13-phase-7-8-release-gate-phase-9-publishing.md`
-- Active task: Gate One, Task 4 — implement explicit canonical budget binding for non-dry creative runs.
-- Current TDD step: Propagate the explicit budget ID through the API/control plane, then write activity-level reservation-before-submit recovery tests.
-- Last verified state: Gate One Task 3 passed its PostgreSQL cost lifecycle and existing creative recovery suite (8 tests). Phase 7–8 remains unapproved; Task 11’s complete release ladder and independent review remain mandatory before any Phase 9 code.
+- Active task: Gate One, Task 5 — persist provider lifecycle, bounded polling, cancellation, and dead-letter terminals.
+- Current TDD step: Write lifecycle/cancellation red tests before adding provider transition writers or changing retry behavior.
+- Last verified state: Gate One Task 4 passed durable reservation/settlement, crash-reconciliation, and control API tests (11 tests). Phase 7–8 remains unapproved; Task 11’s complete release ladder and independent review remain mandatory before any Phase 9 code.
 
 ## Checkpoints
+
+- 2026-09-13: Completed Gate One Task 4 red-green durable creative cost lifecycle. Non-dry `CreativeProductionRequest@v1` and control API starts now require and retain the caller-selected canonical `budget_id`; no arbitrary/default budget is selected. Authorization writes the canonical creative job and planned external effect, reserves against provider capability metadata before submission, persists the reservation/effect/provider links, and checkpoints the reservation. Completion records provider usage and settles it before media import/distribution/finalization; unknown actuals and overages fail closed before a Ready-to-Publish package. The fixture provides explicit zero actual cost solely for deterministic local completion, while its estimate remains provider metadata rather than workflow authority. Recovery proves one provider submission/reconciliation and one reservation; exhausted canonical budgets deny before submit. The recovery/control/cost/repository suite passed 11/11, with compilation and whitespace checks clean. Next: Task 5 lifecycle transition, bounded polling, cancellation, and dead-letter tests.
 
 - 2026-09-13: Started Gate One Task 4 with the explicit-budget request boundary. The new red unit contract proved `CreativeProductionRequest@v1` accepted a non-dry run without a budget. It now carries optional `budget_id`, rejects a missing ID only for non-dry execution, and preserves it in workflow payloads; dry-run behavior remains budget-free. The focused unit suite passed 3/3 with compilation and whitespace checks clean. Next: API/control-plane propagation and durable reservation before provider submission.
 

@@ -86,6 +86,9 @@ class CostReservationRepository:
     async def reservation_count(self, *, effect_id: str) -> int:
         return await asyncio.to_thread(self._reservation_count, effect_id)
 
+    async def attach_provider_job(self, *, reservation_id: str, provider_job_id: str) -> None:
+        await asyncio.to_thread(self._attach_provider_job, reservation_id, provider_job_id)
+
     def _reserve_for_effect(
         self,
         budget_id: str,
@@ -160,6 +163,10 @@ class CostReservationRepository:
                 WHERE creative.id = %s
                 """,
                 (external_effect_id, reservation_id, reservation_key, creative_job_id),
+            )
+            cursor.execute(
+                "UPDATE creative_jobs SET budget_reservation_id = %s WHERE id = %s",
+                (reservation_id, creative_job_id),
             )
             cursor.execute(
                 """
@@ -302,6 +309,22 @@ class CostReservationRepository:
                 "SELECT count(*) FROM creative_job_effects WHERE external_effect_id = %s", (effect_id,)
             )
             return int(cursor.fetchone()[0])
+
+    def _attach_provider_job(self, reservation_id: str, provider_job_id: str) -> None:
+        with psycopg.connect(self._database_url) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                UPDATE creative_job_effects
+                SET provider_job_id = COALESCE(provider_job_id, %s), state = 'submitted',
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE budget_reservation_id = %s
+                  AND (provider_job_id IS NULL OR provider_job_id = %s)
+                RETURNING creative_job_id::text
+                """,
+                (provider_job_id, reservation_id, provider_job_id),
+            )
+            if cursor.fetchone() is None:
+                raise ValueError("provider job cannot be linked to this budget reservation")
 
     @staticmethod
     def _committed_micros(cursor: psycopg.Cursor[Any], budget_id: str) -> int:

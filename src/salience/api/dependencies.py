@@ -149,6 +149,7 @@ class ControlPlane(Protocol):
         target_profile_key: str,
         target_profile_version: int,
         dry_run: bool,
+        budget_id: str | None,
     ) -> ControlCreativeRun: ...
 
     async def get_creative(self, job_id: str) -> ControlCreativeRun | None: ...
@@ -276,7 +277,10 @@ class InMemoryControlPlane:
         target_profile_key: str,
         target_profile_version: int,
         dry_run: bool,
+        budget_id: str | None,
     ) -> ControlCreativeRun:
+        if not dry_run and budget_id is None:
+            raise ValueError("non-dry creative runs require a budget identity")
         if not any(
             program.content_program_id == content_program_id and program.workspace_id == workspace_id
             for program in self._content_programs.values()
@@ -303,6 +307,7 @@ class InMemoryControlPlane:
                 "idempotency_key": idempotency_key,
                 "target_profile_key": target_profile_key,
                 "target_profile_version": target_profile_version,
+                "budget_id": budget_id,
             },
         )
         self._creative_runs[run.job_id] = run
@@ -521,11 +526,14 @@ class TemporalControlPlane:
         target_profile_key: str,
         target_profile_version: int,
         dry_run: bool,
+        budget_id: str | None,
     ) -> ControlCreativeRun:
         if not dry_run and not self._creative_effects_enabled:
             raise PermissionError(
                 "non-dry-run creative effects require an explicitly enabled worker policy"
             )
+        if not dry_run and budget_id is None:
+            raise ValueError("non-dry creative runs require a budget identity")
         existing = await self._store.job_by_idempotency_key(idempotency_key)
         if existing is not None:
             return _creative_from_job(existing)
@@ -548,6 +556,7 @@ class TemporalControlPlane:
                 brief_id=brief_id,
                 idempotency_key=idempotency_key,
                 dry_run=dry_run,
+                budget_id=budget_id,
                 target_profile_key=target_profile_key,
                 target_profile_version=target_profile_version,
             ),
@@ -564,6 +573,7 @@ class TemporalControlPlane:
                 "brief_id": brief_id,
                 "target_profile_key": target_profile_key,
                 "target_profile_version": target_profile_version,
+                "budget_id": budget_id,
             },
         )
 

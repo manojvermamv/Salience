@@ -204,7 +204,7 @@ Expected: PASS for budget denial before submit, duplicate reserve/settle, pendin
 
 **Interfaces:** `CreativeActivities.authorize_and_reserve`, `submit_or_reconcile`, `await_provider`, and `settle_cost` persist reservation/effect/provider identities in workflow payloads and checkpoints.
 
-- [ ] **Step 1: Write activity-level red tests**
+- [x] **Step 1: Write activity-level red tests**
 
 ```python
 async def test_provider_submit_is_not_called_when_durable_reservation_is_denied(state):
@@ -217,17 +217,17 @@ async def test_restart_after_submit_reuses_reservation_and_settles_once(restarte
     assert restarted_workflow.actual_ledger_entries == 1
 ```
 
-- [ ] **Step 2: Run the focused workflow tests and confirm they fail**
+- [x] **Step 2: Run the focused workflow tests and confirm they fail**
 
 Run: `pytest tests/unit/test_creative_workflow.py tests/e2e/test_phase7_creative_recovery.py -q`
 
 Expected: FAIL because authorization still uses `budget_available_micros`.
 
-- [ ] **Step 3: Replace the in-memory authority**
+- [x] **Step 3: Replace the in-memory authority**
 
 Remove `budget_available_micros` as a workflow authorization input. Plan an external effect before reserve, derive provider estimate from the selected provider capability/plan, reserve durably, and checkpoint reservation identity before submission. Persist actual usage from provider results; settle/release before distribution/finalization. Route overage and unresolved actual usage to a fail-closed terminal outcome with audit/provenance/dead-letter evidence.
 
-- [ ] **Step 4: Verify all crash seams**
+- [x] **Step 4: Verify all crash seams**
 
 Run: `pytest tests/e2e/test_phase7_creative_recovery.py tests/e2e/test_phases_7_8_creative_loop.py tests/integration/test_creative_cost_lifecycle.py -q`
 

@@ -13,6 +13,7 @@ from salience.api.dependencies import TemporalControlPlane
 from salience.creative.media import MediaEngine, StorageCapacityGuard
 from salience.creative.providers import FixtureCreativeProvider
 from salience.creative.repository import CreativeRepository
+from salience.governance.cost_repository import CostReservationRepository
 from salience.intelligence.contracts import (
     ClaimInput,
     ContentBriefInput,
@@ -151,6 +152,11 @@ async def test_control_plane_runs_fixture_brief_to_ready_package_with_reverse_li
     database_url = os.environ["TEST_DATABASE_URL"]
     temporal_target = os.environ["TEST_TEMPORAL_TARGET"]
     seeded = await _seed_content_brief(database_url)
+    budget_id = await _create_creative_budget(
+        database_url,
+        workspace_id=seeded["workspace_id"],
+        program_id=seeded["program_id"],
+    )
     task_queue = f"salience-creative-control-{uuid4()}"
     provider = FixtureCreativeProvider()
     state = CreativeWorkflowState(
@@ -160,6 +166,7 @@ async def test_control_plane_runs_fixture_brief_to_ready_package_with_reverse_li
         agents=fixture_agent_service(),
         provider=provider,
         media=_validated_fixture_media(tmp_path),
+        cost_repository=CostReservationRepository(database_url),
     )
     temporal_client = await Client.connect(temporal_target)
     worker = build_creative_worker(temporal_client, task_queue=task_queue, state=state)
@@ -179,6 +186,7 @@ async def test_control_plane_runs_fixture_brief_to_ready_package_with_reverse_li
             target_profile_key="fixture-short-video",
             target_profile_version=1,
             dry_run=False,
+            budget_id=budget_id,
         )
         completed = await _wait_for_completion(control, started.job_id)
     finally:
@@ -209,6 +217,24 @@ async def test_control_plane_runs_fixture_brief_to_ready_package_with_reverse_li
     )
     assert title_candidates == 1
     assert originality_evaluations == 1
+
+
+async def _create_creative_budget(
+    database_url: str, *, workspace_id: str, program_id: str
+) -> str:
+    def _insert() -> str:
+        with psycopg.connect(database_url) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                INSERT INTO budgets (workspace_id, content_program_id, name, scope, limit_amount, status)
+                VALUES (%s, %s, %s, 'creative', 1.000000, 'active')
+                RETURNING id::text
+                """,
+                (workspace_id, program_id, f"creative-control-{uuid4()}"),
+            )
+            return cursor.fetchone()[0]
+
+    return await asyncio.to_thread(_insert)
 
 
 async def _wait_for_completion(

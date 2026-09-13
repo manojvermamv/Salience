@@ -30,6 +30,7 @@ async def start_run(
             target_profile_key=payload.target_profile_key,
             target_profile_version=payload.target_profile_version,
             dry_run=payload.dry_run,
+            budget_id=payload.budget_id,
         )
     except KeyError as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND) from error

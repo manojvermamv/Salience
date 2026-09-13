@@ -1,6 +1,6 @@
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class DummyJobRequest(BaseModel):
@@ -128,6 +128,13 @@ class CreativeRunRequest(BaseModel):
     target_profile_key: str = Field(min_length=1, max_length=255)
     target_profile_version: int = Field(default=1, gt=0)
     dry_run: bool = True
+    budget_id: str | None = Field(default=None, min_length=1)
+
+    @model_validator(mode="after")
+    def _require_budget_for_non_dry_run(self) -> "CreativeRunRequest":
+        if not self.dry_run and self.budget_id is None:
+            raise ValueError("non-dry creative runs require a budget identity")
+        return self
 
 
 class CreativeRunResponse(BaseModel):

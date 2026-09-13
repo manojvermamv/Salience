@@ -21,6 +21,8 @@ from salience.creative.media import MediaEngine
 from salience.creative.repository import CreativeRepository
 from salience.creative.scripts import ScriptVerifier
 from salience.creative.service import ApprovedProduction, CreativeService
+from salience.governance.cost_repository import CostReservationRepository
+from salience.governance.costs import BudgetExceeded, CostSettlementStatus
 from salience.intelligence.repository import IntelligenceRepository
 from salience.workflows.persistence import CanonicalJobStore, CanonicalRun
 
@@ -78,10 +80,9 @@ class CreativeWorkflowState:
     agents: AgentService
     provider: CreativeProvider = field(default_factory=FixtureCreativeProvider)
     media: MediaEngine | None = None
+    cost_repository: CostReservationRepository | None = None
     permission_granted: bool = True
     policy_allowed: bool = True
-    budget_available_micros: int = 1_000_000
-    estimated_cost_micros: int = 100
     crash_at: str | None = None
     crash_reached: asyncio.Event = field(default_factory=asyncio.Event)
     crashed: bool = False
@@ -254,8 +255,6 @@ class CreativeActivities:
             denial_reason = "permission_denied"
         elif not self._state.policy_allowed:
             denial_reason = "policy_denied"
-        elif self._state.estimated_cost_micros > self._state.budget_available_micros:
-            denial_reason = "budget_exceeded"
         rights = RightsPolicy().authorize(
             uses_real_likeness=False,
             uses_voice_clone=False,
@@ -266,6 +265,52 @@ class CreativeActivities:
         )
         if not rights.allowed:
             denial_reason = rights.reason or "rights_denied"
+        request = payload["request"]
+        if denial_reason is None and not request["dry_run"]:
+            if self._state.cost_repository is None:
+                denial_reason = "cost_infrastructure_unavailable"
+            else:
+                run = await self._run()
+                capability_request = _capability_request(payload)
+                creative_job_id = await self._state.creative_repository.record_creative_job(
+                    workspace_id=request["workspace_id"],
+                    program_id=request["content_program_id"],
+                    brief_id=payload["brief"]["brief_id"],
+                    script_id=payload["script_id"],
+                    creative_brief_id=payload["creative_brief_id"],
+                    job_id=str(run.job_id),
+                    requested_capability=capability_request.capability,
+                    request_fingerprint=_fingerprint(capability_request.model_dump()),
+                    idempotency_key=capability_request.request_key,
+                    request=capability_request.model_dump(),
+                    timeout_seconds=60,
+                    trace_id=run.trace_context.trace_id,
+                    span_id=run.trace_context.span_id,
+                )
+                await self._state.store.plan_effect(run, capability_request.request_key)
+                effect = await self._state.store.effect(run, capability_request.request_key)
+                if effect is None:
+                    raise RuntimeError("canonical creative effect was not persisted")
+                try:
+                    reservation = await self._state.cost_repository.reserve_for_effect(
+                        budget_id=request["budget_id"],
+                        reservation_key=capability_request.request_key,
+                        job_id=str(run.job_id),
+                        external_effect_id=effect.effect_id,
+                        creative_job_id=creative_job_id,
+                        estimated_micros=self._state.provider.capabilities.estimated_cost_micros,
+                    )
+                except (BudgetExceeded, KeyError):
+                    denial_reason = "budget_exceeded"
+                else:
+                    payload = {
+                        **payload,
+                        "creative_job_id": creative_job_id,
+                        "external_effect_id": effect.effect_id,
+                        "budget_reservation_id": reservation.reservation_id,
+                        "capability_request": capability_request.model_dump(),
+                    }
+                    await self._checkpoint("creative.budget.reserved")
         await self._checkpoint("creative.authorization.checked")
         return {**payload, "authorized": denial_reason is None, "denial_reason": denial_reason}
 
@@ -276,38 +321,11 @@ class CreativeActivities:
             await self._checkpoint("creative.provider.skipped_dry_run")
             return {**payload, "provider_state": "dry_run"}
         run = await self._run()
-        capability_request = CreativeCapabilityRequest(
-            request_key=f"{request['idempotency_key']}:text-to-video",
-            content_program_id=request["content_program_id"],
-            brief_id=payload["brief"]["brief_id"],
-            script_id=payload["script_id"],
-            capability=payload["production"]["capability"],
-            expected_modality="video",
-            aspect_ratio="9:16",
-            resolution="1080x1920",
-            duration_seconds=30,
-            max_variants=payload["production"]["requested_variants"],
-            provider_extension={"script_text": "Evidence-linked fixture script"},
-        )
-        creative_job_id = await self._state.creative_repository.record_creative_job(
-            workspace_id=request["workspace_id"],
-            program_id=request["content_program_id"],
-            brief_id=payload["brief"]["brief_id"],
-            script_id=payload["script_id"],
-            creative_brief_id=payload["creative_brief_id"],
-            job_id=str(run.job_id),
-            requested_capability=capability_request.capability,
-            request_fingerprint=_fingerprint(capability_request.model_dump()),
-            idempotency_key=capability_request.request_key,
-            request=capability_request.model_dump(),
-            timeout_seconds=60,
-            trace_id=run.trace_context.trace_id,
-            span_id=run.trace_context.span_id,
-        )
+        capability_request = CreativeCapabilityRequest.model_validate(payload["capability_request"])
+        creative_job_id = payload["creative_job_id"]
         existing = await self._state.creative_repository.provider_job_for_creative(
             creative_job_id=creative_job_id, provider_id=self._state.provider.provider_id
         )
-        await self._state.store.plan_effect(run, capability_request.request_key)
         if existing is not None and existing.get("external_job_id"):
             provider_result = await self._state.provider.get_status(existing["external_job_id"])
             reconciled = True
@@ -334,9 +352,15 @@ class CreativeActivities:
             state=provider_result.state,
             normalized_request=capability_request.model_dump(),
             reconciliation_state=provider_result.metadata,
-            estimated_cost_micros=self._state.estimated_cost_micros,
+            estimated_cost_micros=provider_result.usage.estimated_micros,
+            actual_cost_micros=provider_result.usage.actual_micros,
             trace_id=run.trace_context.trace_id,
             span_id=run.trace_context.span_id,
+        )
+        if self._state.cost_repository is None:
+            raise RuntimeError("durable cost repository is required for creative submission")
+        await self._state.cost_repository.attach_provider_job(
+            reservation_id=payload["budget_reservation_id"], provider_job_id=provider_job_id
         )
         await self._state.store.complete_effect(
             run,
@@ -362,8 +386,33 @@ class CreativeActivities:
             result = await self._state.provider.get_status(payload["external_job_id"])
         if result.state != "completed":
             raise RuntimeError(f"creative provider ended in {result.state}")
+        if self._state.cost_repository is None:
+            raise RuntimeError("durable cost repository is required for creative settlement")
+        run = await self._run()
+        await self._state.creative_repository.record_provider_job(
+            creative_job_id=payload["creative_job_id"],
+            provider_id=result.provider_id,
+            provider_version=result.provider_version,
+            model_id=result.model_id,
+            external_job_id=result.external_job_id,
+            state=result.state,
+            normalized_request=payload["capability_request"],
+            reconciliation_state=result.metadata,
+            estimated_cost_micros=result.usage.estimated_micros,
+            actual_cost_micros=result.usage.actual_micros,
+            trace_id=run.trace_context.trace_id,
+            span_id=run.trace_context.span_id,
+        )
+        settlement = await self._state.cost_repository.record_actual_usage(
+            payload["budget_reservation_id"], result.usage.actual_micros
+        )
+        if settlement.status != CostSettlementStatus.SETTLED:
+            raise RuntimeError(
+                f"creative provider cost cannot pass finalization: {settlement.status.value}"
+            )
+        await self._checkpoint("creative.cost.settled")
         await self._checkpoint("creative.provider.completed")
-        return {**payload, "provider_state": result.state}
+        return {**payload, "provider_state": result.state, "cost_status": settlement.status.value}
 
     @activity.defn(name="salience.creative.import_validate")
     async def import_validate(self, payload: dict[str, Any]) -> dict[str, Any]:
@@ -593,6 +642,23 @@ def _approved_production(payload: dict[str, Any]) -> ApprovedProduction:
         generated=True,
         approval_state="approved",
         c2pa_status="not_configured",
+    )
+
+
+def _capability_request(payload: dict[str, Any]) -> CreativeCapabilityRequest:
+    request = payload["request"]
+    return CreativeCapabilityRequest(
+        request_key=f"{request['idempotency_key']}:text-to-video",
+        content_program_id=request["content_program_id"],
+        brief_id=payload["brief"]["brief_id"],
+        script_id=payload["script_id"],
+        capability=payload["production"]["capability"],
+        expected_modality="video",
+        aspect_ratio="9:16",
+        resolution="1080x1920",
+        duration_seconds=30,
+        max_variants=payload["production"]["requested_variants"],
+        provider_extension={"script_text": "Evidence-linked fixture script"},
     )
 
 

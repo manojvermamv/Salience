@@ -4,6 +4,7 @@ import os
 import subprocess
 from uuid import uuid4
 
+import psycopg
 import pytest
 from temporalio.client import Client
 
@@ -11,6 +12,7 @@ from salience.agents.fixtures import fixture_agent_service
 from salience.creative.media import MediaEngine, StorageCapacityGuard
 from salience.creative.providers import FixtureCreativeProvider
 from salience.creative.repository import CreativeRepository
+from salience.governance.cost_repository import CostReservationRepository
 from salience.intelligence.contracts import (
     ClaimInput,
     ContentBriefInput,
@@ -47,6 +49,12 @@ class ReconciliationProbeProvider(FixtureCreativeProvider):
         self.reconcile_calls += 1
         job = self._jobs_by_key.get(request_key)
         return job.result if job is not None else None
+
+
+class OverBudgetFixtureProvider(FixtureCreativeProvider):
+    @property
+    def capabilities(self):
+        return super().capabilities.model_copy(update={"estimated_cost_micros": 100})
 
 
 async def _seed_brief(database_url: str) -> dict[str, str]:
@@ -150,6 +158,24 @@ async def _seed_brief(database_url: str) -> dict[str, str]:
     }
 
 
+async def _create_creative_budget(
+    database_url: str, *, workspace_id: str, program_id: str, limit_amount: str
+) -> str:
+    def _insert() -> str:
+        with psycopg.connect(database_url) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                INSERT INTO budgets (workspace_id, content_program_id, name, scope, limit_amount, status)
+                VALUES (%s, %s, %s, 'creative', %s, 'active')
+                RETURNING id::text
+                """,
+                (workspace_id, program_id, f"creative-budget-{uuid4()}", limit_amount),
+            )
+            return cursor.fetchone()[0]
+
+    return await asyncio.to_thread(_insert)
+
+
 @pytest.mark.asyncio
 async def test_restart_after_provider_acceptance_reconciles_without_resubmission(tmp_path) -> None:
     database_url = os.environ["TEST_DATABASE_URL"]
@@ -158,6 +184,12 @@ async def test_restart_after_provider_acceptance_reconciles_without_resubmission
     task_queue = f"salience-creative-{uuid4()}"
     workflow_id = f"creative-restart-{uuid4()}"
     idempotency_key = f"creative-{uuid4()}"
+    budget_id = await _create_creative_budget(
+        database_url,
+        workspace_id=seeded["workspace_id"],
+        program_id=seeded["program_id"],
+        limit_amount="1.000000",
+    )
     store = CanonicalJobStore(database_url)
     run = await store.create_creative_run(
         workflow_run_id=workflow_id,
@@ -176,6 +208,7 @@ async def test_restart_after_provider_acceptance_reconciles_without_resubmission
         agents=fixture_agent_service(),
         provider=provider,
         media=_validated_fixture_media(tmp_path),
+        cost_repository=CostReservationRepository(database_url),
         crash_at="provider.submitted",
     )
     first_worker = build_creative_worker(temporal_client, task_queue=task_queue, state=state)
@@ -188,6 +221,7 @@ async def test_restart_after_provider_acceptance_reconciles_without_resubmission
             brief_id=seeded["brief_id"],
             idempotency_key=idempotency_key,
             dry_run=False,
+            budget_id=budget_id,
         ),
         id=workflow_id,
         task_queue=task_queue,
@@ -213,6 +247,9 @@ async def test_restart_after_provider_acceptance_reconciles_without_resubmission
     assert result.provider_submit_count == 1
     assert provider.submit_attempts == 1
     assert provider.reconcile_calls == 1
+    assert await CostReservationRepository(database_url).reservation_count(
+        effect_id=await _effect_id(database_url, seeded["workspace_id"], f"{idempotency_key}:text-to-video")
+    ) == 1
     lineage = await CreativeRepository(database_url).lineage_for_ready_package(result.ready_package_id)
     assert lineage["source_ids"] == [seeded["source_id"]]
     assert lineage["asset_ids"] == [result.asset_id]
@@ -227,6 +264,12 @@ async def test_budget_denial_happens_before_creative_provider_submission() -> No
     task_queue = f"salience-creative-denial-{uuid4()}"
     workflow_id = f"creative-denial-{uuid4()}"
     idempotency_key = f"creative-denial-{uuid4()}"
+    budget_id = await _create_creative_budget(
+        database_url,
+        workspace_id=seeded["workspace_id"],
+        program_id=seeded["program_id"],
+        limit_amount="0.000000",
+    )
     store = CanonicalJobStore(database_url)
     await store.create_creative_run(
         workflow_run_id=workflow_id,
@@ -237,14 +280,14 @@ async def test_budget_denial_happens_before_creative_provider_submission() -> No
         idempotency_key=idempotency_key,
         dry_run=False,
     )
-    provider = FixtureCreativeProvider()
+    provider = OverBudgetFixtureProvider()
     state = CreativeWorkflowState(
         store=store,
         intelligence_repository=IntelligenceRepository(database_url),
         creative_repository=CreativeRepository(database_url),
         agents=fixture_agent_service(),
         provider=provider,
-        budget_available_micros=0,
+        cost_repository=CostReservationRepository(database_url),
     )
     worker = build_creative_worker(temporal_client, task_queue=task_queue, state=state)
     worker_task = asyncio.create_task(worker.run())
@@ -257,6 +300,7 @@ async def test_budget_denial_happens_before_creative_provider_submission() -> No
                 brief_id=seeded["brief_id"],
                 idempotency_key=idempotency_key,
                 dry_run=False,
+                budget_id=budget_id,
             ),
             id=workflow_id,
             task_queue=task_queue,
@@ -269,6 +313,21 @@ async def test_budget_denial_happens_before_creative_provider_submission() -> No
     assert result.state == "denied"
     assert result.denial_reason == "budget_exceeded"
     assert provider.submit_count == 0
+
+
+async def _effect_id(database_url: str, workspace_id: str, idempotency_key: str) -> str:
+    def _select() -> str:
+        with psycopg.connect(database_url) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT id::text FROM external_effects
+                WHERE workspace_id = %s AND idempotency_key = %s
+                """,
+                (workspace_id, idempotency_key),
+            )
+            return cursor.fetchone()[0]
+
+    return await asyncio.to_thread(_select)
 
 
 def _validated_fixture_media(tmp_path):

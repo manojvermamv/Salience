@@ -28,6 +28,7 @@ class CanonicalCounts:
 
 @dataclass(frozen=True)
 class CanonicalEffect:
+    effect_id: str
     status: str
     external_id: str | None
 
@@ -556,7 +557,7 @@ class CanonicalJobStore:
         with self._connect() as connection, connection.cursor() as cursor:
             cursor.execute(
                 """
-                SELECT status, provider_reference
+                SELECT id::text, status, provider_reference
                 FROM external_effects
                 WHERE workspace_id = %s AND idempotency_key = %s
                 """,
@@ -565,7 +566,7 @@ class CanonicalJobStore:
             row = cursor.fetchone()
             if row is None:
                 return None
-            return CanonicalEffect(status=row[0], external_id=row[1])
+            return CanonicalEffect(effect_id=row[0], status=row[1], external_id=row[2])
 
     def _terminal(self, run: CanonicalRun, status: str) -> None:
         with self._connect() as connection, connection.cursor() as cursor:

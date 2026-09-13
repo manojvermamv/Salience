@@ -77,3 +77,24 @@ def test_creative_control_requires_scoped_read_and_write_access() -> None:
     )
 
     assert response.status_code == 403
+
+
+def test_creative_control_rejects_non_dry_run_without_budget_identity() -> None:
+    app = create_app(control_token="creative-token", control_plane=InMemoryControlPlane())
+    client = TestClient(app)
+    workspace_id, program_id = _program(client)
+
+    response = client.post(
+        "/v1/creative/runs",
+        headers=_headers(),
+        json={
+            "workspace_id": workspace_id,
+            "content_program_id": program_id,
+            "brief_id": "brief-1",
+            "idempotency_key": "creative-control-no-budget",
+            "target_profile_key": "fixture-short-video",
+            "dry_run": False,
+        },
+    )
+
+    assert response.status_code == 422

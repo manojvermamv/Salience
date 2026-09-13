@@ -537,7 +537,7 @@ class CreativeRepository:
                 ) VALUES (
                     %s, %s, %s, %s, %s, %s, %s, %s::jsonb, %s::jsonb, %s::jsonb, %s, %s, %s,
                     CASE WHEN %s::text IS NULL THEN NULL ELSE CURRENT_TIMESTAMP END,
-                    CASE WHEN %s IN ('succeeded', 'failed', 'cancelled') THEN CURRENT_TIMESTAMP ELSE NULL END,
+                    CASE WHEN %s IN ('completed', 'failed', 'cancelled') THEN CURRENT_TIMESTAMP ELSE NULL END,
                     %s, %s
                 )
                 ON CONFLICT (creative_job_id, provider_id)

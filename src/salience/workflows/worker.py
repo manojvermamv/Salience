@@ -36,6 +36,7 @@ from salience.workflows.creative import (
 )
 from salience.agents.fixtures import fixture_agent_service
 from salience.creative.repository import CreativeRepository
+from salience.governance.cost_repository import CostReservationRepository
 from salience.intelligence.repository import IntelligenceRepository
 from salience.research.rss import ConfiguredRssResearchConnector
 from salience.workflows.persistence import CanonicalJobStore
@@ -68,6 +69,7 @@ async def run_worker() -> None:
         intelligence_repository=IntelligenceRepository(settings.database_url),
         creative_repository=CreativeRepository(settings.database_url),
         agents=fixture_agent_service(),
+        cost_repository=CostReservationRepository(settings.database_url),
     )
     worker = build_deployable_worker(
         client,

@@ -111,7 +111,10 @@ class FixtureCreativeProvider:
             request_key=request.request_key,
             external_job_id=external_job_id,
             state="submitted",
-            usage=ProviderUsage(estimated_micros=self.capabilities.estimated_cost_micros),
+            usage=ProviderUsage(
+                estimated_micros=self.capabilities.estimated_cost_micros,
+                actual_micros=0,
+            ),
             metadata={"idempotency_key": request.request_key, "transport": "fixture"},
         )
         job = _FixtureJob(result)
