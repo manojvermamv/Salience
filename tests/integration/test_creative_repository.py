@@ -208,6 +208,30 @@ async def test_creative_repository_is_idempotent_and_preserves_ready_package_lin
         status="validated",
         asset_ids=[asset.asset_id],
     )
+    title_candidate_id = await repository.record_title_thumbnail_candidate(
+        distribution_package_id=distribution_id,
+        candidate_key="garden-primary",
+        title="Evidence-linked garden care",
+        thumbnail_asset_id=asset.asset_id,
+        selection_state="selected",
+        reason="unique",
+        score=0.0,
+    )
+    localization_id = await repository.record_localization(
+        distribution_package_id=distribution_id,
+        source_locale="en",
+        target_locale="fr",
+        content={"title": "Jardin"},
+        claim_ids=[seeded["claim_id"]],
+        status="verified",
+    )
+    originality_id = await repository.record_originality_evaluation(
+        distribution_package_id=distribution_id,
+        evaluator_version="originality@v1",
+        metrics={"title_match_count": 0.0},
+        status="allowed",
+        reason="unique",
+    )
     disclosure_id = await repository.record_synthetic_media_disclosure(
         distribution_package_id=distribution_id,
         decision={"required": True, "label": "Synthetic media"},
@@ -237,6 +261,9 @@ async def test_creative_repository_is_idempotent_and_preserves_ready_package_lin
     assert lineage["evidence_ids"] == [seeded["evidence_id"]]
     assert lineage["asset_ids"] == [asset.asset_id]
     assert lineage["provider_job_ids"] == [first_provider_id]
+    assert title_candidate_id
+    assert localization_id
+    assert originality_id
 
 
 @pytest.mark.asyncio

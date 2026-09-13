@@ -371,6 +371,88 @@ class CreativeRepository:
             (distribution_package_id, _json(decision), status, policy_version_id),
         )
 
+    async def record_title_thumbnail_candidate(
+        self,
+        *,
+        distribution_package_id: str,
+        candidate_key: str,
+        title: str,
+        thumbnail_asset_id: str | None,
+        selection_state: str,
+        reason: str | None = None,
+        score: float | None = None,
+    ) -> str:
+        return await self._returning_id(
+            """
+            INSERT INTO title_thumbnail_candidates (
+                distribution_package_id, candidate_key, title, thumbnail_asset_id, score,
+                selection_state, reason
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+            ON CONFLICT (distribution_package_id, candidate_key)
+            DO UPDATE SET updated_at = CURRENT_TIMESTAMP
+            RETURNING id::text
+            """,
+            (
+                distribution_package_id,
+                candidate_key,
+                title,
+                thumbnail_asset_id,
+                score,
+                selection_state,
+                reason,
+            ),
+        )
+
+    async def record_localization(
+        self,
+        *,
+        distribution_package_id: str,
+        source_locale: str,
+        target_locale: str,
+        content: dict[str, Any],
+        claim_ids: list[str],
+        status: str,
+    ) -> str:
+        return await self._returning_id(
+            """
+            INSERT INTO localizations (
+                distribution_package_id, source_locale, target_locale, content, claim_ids, status
+            ) VALUES (%s, %s, %s, %s::jsonb, %s::jsonb, %s)
+            ON CONFLICT (distribution_package_id, target_locale)
+            DO UPDATE SET updated_at = CURRENT_TIMESTAMP
+            RETURNING id::text
+            """,
+            (
+                distribution_package_id,
+                source_locale,
+                target_locale,
+                _json(content),
+                _json(claim_ids),
+                status,
+            ),
+        )
+
+    async def record_originality_evaluation(
+        self,
+        *,
+        distribution_package_id: str,
+        evaluator_version: str,
+        metrics: dict[str, Any],
+        status: str,
+        reason: str,
+    ) -> str:
+        return await self._returning_id(
+            """
+            INSERT INTO originality_evaluations (
+                distribution_package_id, evaluator_version, metrics, status, reason
+            ) VALUES (%s, %s, %s::jsonb, %s, %s)
+            ON CONFLICT (distribution_package_id, evaluator_version)
+            DO UPDATE SET updated_at = CURRENT_TIMESTAMP
+            RETURNING id::text
+            """,
+            (distribution_package_id, evaluator_version, _json(metrics), status, reason),
+        )
+
     async def record_ready_package(
         self,
         *,

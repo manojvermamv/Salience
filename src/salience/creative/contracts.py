@@ -91,3 +91,30 @@ class ProviderJobResult(BaseModel):
     failure_class: str | None = Field(default=None, max_length=128)
     download_reference: str | None = None
     metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class DistributionPackage(BaseModel):
+    """Immutable provider-neutral representation of a validated platform package."""
+
+    model_config = ConfigDict(frozen=True)
+
+    contract_version: Literal["DistributionPackage@v1"] = "DistributionPackage@v1"
+    distribution_package_id: str = Field(min_length=1)
+    platform_profile_id: str = Field(min_length=1)
+    disclosure_decision_id: str = Field(min_length=1)
+    selected_title_key: str = Field(min_length=1)
+    locale: str = Field(min_length=1, max_length=32)
+    asset_ids: tuple[str, ...] = Field(min_length=1)
+
+
+class ReadyToPublishPackage(BaseModel):
+    """The sole immutable Phase-9 input; it contains no publishing credentials or targets."""
+
+    model_config = ConfigDict(frozen=True)
+
+    contract_version: Literal["ReadyToPublishPackage@v1"] = "ReadyToPublishPackage@v1"
+    ready_package_id: str = Field(min_length=1)
+    distribution_package_id: str = Field(min_length=1)
+    platform_profile_id: str = Field(min_length=1)
+    disclosure_decision_id: str = Field(min_length=1)
+    approval_state: Literal["approved"]
