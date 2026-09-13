@@ -1212,3 +1212,289 @@ class ReadyToPublishPackage(CanonicalIdentity, Base):
     verifier_results: Mapped[JsonDocument] = mapped_column(JSONB, nullable=False)
     policy_versions: Mapped[JsonDocument] = mapped_column(JSONB, default=list)
     lineage: Mapped[JsonDocument] = mapped_column(JSONB, nullable=False)
+
+
+class PublisherAccount(CanonicalIdentity, Base):
+    __tablename__ = "publisher_accounts"
+    __table_args__ = (UniqueConstraint("workspace_id", "platform", "account_key"),)
+
+    workspace_id: Mapped[UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    content_program_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("content_programs.id", ondelete="SET NULL"), index=True
+    )
+    platform: Mapped[str] = mapped_column(String(64), nullable=False)
+    account_key: Mapped[str] = mapped_column(String(255), nullable=False)
+    account_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    external_account_reference: Mapped[str] = mapped_column(String(255), nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="active")
+    data_classification: Mapped[str] = mapped_column(
+        String(32), nullable=False, default="confidential"
+    )
+    retention_policy: Mapped[str | None] = mapped_column(String(128))
+    attributes: Mapped[JsonDocument] = mapped_column(JSONB, default=dict)
+
+
+class PublisherConnection(CanonicalIdentity, Base):
+    __tablename__ = "publisher_connections"
+    __table_args__ = (UniqueConstraint("publisher_account_id", "version"),)
+
+    publisher_account_id: Mapped[UUID] = mapped_column(
+        ForeignKey("publisher_accounts.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    version: Mapped[int] = mapped_column(Integer, nullable=False)
+    secret_reference_id: Mapped[UUID] = mapped_column(
+        ForeignKey("secret_references.id", ondelete="RESTRICT"), nullable=False
+    )
+    required_scopes: Mapped[JsonDocument] = mapped_column(JSONB, default=list)
+    granted_scopes: Mapped[JsonDocument] = mapped_column(JSONB, default=list)
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    refresh_after: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class PublisherCapabilityProfile(CanonicalIdentity, Base):
+    __tablename__ = "publisher_capability_profiles"
+    __table_args__ = (
+        UniqueConstraint("workspace_id", "publisher_id", "publisher_version", "profile_version"),
+    )
+
+    workspace_id: Mapped[UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    publisher_account_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("publisher_accounts.id", ondelete="RESTRICT"), index=True
+    )
+    publisher_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    publisher_version: Mapped[str] = mapped_column(String(64), nullable=False)
+    profile_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    platform: Mapped[str] = mapped_column(String(64), nullable=False)
+    audit_state: Mapped[str] = mapped_column(String(32), nullable=False)
+    observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    source_reference: Mapped[str] = mapped_column(Text, nullable=False)
+    capability_facts: Mapped[JsonDocument] = mapped_column(JSONB, nullable=False)
+    compatibility: Mapped[JsonDocument] = mapped_column(JSONB, nullable=False)
+
+
+class PublicationRequest(CanonicalIdentity, Base):
+    __tablename__ = "publication_requests"
+    __table_args__ = (UniqueConstraint("content_program_id", "request_key", "version"),)
+
+    workspace_id: Mapped[UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    content_program_id: Mapped[UUID] = mapped_column(
+        ForeignKey("content_programs.id", ondelete="CASCADE"), nullable=False
+    )
+    ready_package_id: Mapped[UUID] = mapped_column(
+        ForeignKey("ready_to_publish_packages.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    publisher_account_id: Mapped[UUID] = mapped_column(
+        ForeignKey("publisher_accounts.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    publisher_capability_profile_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("publisher_capability_profiles.id", ondelete="RESTRICT")
+    )
+    approval_request_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("approval_requests.id", ondelete="RESTRICT")
+    )
+    request_key: Mapped[str] = mapped_column(String(255), nullable=False)
+    version: Mapped[int] = mapped_column(Integer, nullable=False)
+    publisher_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    platform: Mapped[str] = mapped_column(String(64), nullable=False)
+    destination: Mapped[str] = mapped_column(String(255), nullable=False)
+    locale: Mapped[str] = mapped_column(String(32), nullable=False)
+    territory: Mapped[str] = mapped_column(String(64), nullable=False)
+    visibility: Mapped[str] = mapped_column(String(32), nullable=False)
+    capability_profile_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    approval_reference: Mapped[str] = mapped_column(String(255), nullable=False)
+    scheduled_for: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
+    state: Mapped[str] = mapped_column(String(64), nullable=False, default="planned")
+    request_fingerprint: Mapped[str] = mapped_column(String(64), nullable=False)
+    disclosure_projection: Mapped[JsonDocument] = mapped_column(JSONB, nullable=False)
+    policy_references: Mapped[JsonDocument] = mapped_column(JSONB, default=list)
+    rights_references: Mapped[JsonDocument] = mapped_column(JSONB, default=list)
+    trace_id: Mapped[str | None] = mapped_column(String(64))
+    span_id: Mapped[str | None] = mapped_column(String(32))
+    provenance_record_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("provenance_records.id", ondelete="SET NULL")
+    )
+
+
+class PublicationPlan(CanonicalIdentity, Base):
+    __tablename__ = "publication_plans"
+    __table_args__ = (
+        UniqueConstraint("publication_request_id", "version"),
+        UniqueConstraint("external_effect_id"),
+        UniqueConstraint("budget_reservation_id"),
+    )
+
+    publication_request_id: Mapped[UUID] = mapped_column(
+        ForeignKey("publication_requests.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    version: Mapped[int] = mapped_column(Integer, nullable=False)
+    publisher_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    publisher_version: Mapped[str] = mapped_column(String(64), nullable=False)
+    external_effect_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("external_effects.id", ondelete="RESTRICT")
+    )
+    budget_reservation_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("budget_reservations.id", ondelete="RESTRICT")
+    )
+    state: Mapped[str] = mapped_column(String(64), nullable=False, default="planned")
+    estimated_cost_micros: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
+    actual_cost_micros: Mapped[int | None] = mapped_column(BigInteger)
+    cost_currency: Mapped[str] = mapped_column(String(3), nullable=False, default="USD")
+    trace_id: Mapped[str | None] = mapped_column(String(64))
+    span_id: Mapped[str | None] = mapped_column(String(32))
+    audit_event_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("audit_events.id", ondelete="SET NULL")
+    )
+    provenance_record_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("provenance_records.id", ondelete="SET NULL")
+    )
+
+
+class PublicationSchedule(CanonicalIdentity, Base):
+    __tablename__ = "publication_schedules"
+    __table_args__ = (
+        UniqueConstraint("publication_request_id", "version"),
+        UniqueConstraint("publication_plan_id"),
+    )
+
+    publication_request_id: Mapped[UUID] = mapped_column(
+        ForeignKey("publication_requests.id", ondelete="RESTRICT"), nullable=False
+    )
+    publication_plan_id: Mapped[UUID] = mapped_column(
+        ForeignKey("publication_plans.id", ondelete="RESTRICT"), nullable=False
+    )
+    job_schedule_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("job_schedules.id", ondelete="RESTRICT")
+    )
+    version: Mapped[int] = mapped_column(Integer, nullable=False)
+    scheduled_for: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
+    timezone: Mapped[str] = mapped_column(String(64), nullable=False, default="UTC")
+    schedule_fingerprint: Mapped[str] = mapped_column(String(64), nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="scheduled")
+
+
+class PublicationAttempt(CanonicalIdentity, Base):
+    __tablename__ = "publication_attempts"
+    __table_args__ = (
+        UniqueConstraint("publication_plan_id", "attempt_number"),
+        UniqueConstraint("publication_plan_id", "idempotency_key"),
+    )
+
+    publication_plan_id: Mapped[UUID] = mapped_column(
+        ForeignKey("publication_plans.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    attempt_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    idempotency_key: Mapped[str] = mapped_column(String(255), nullable=False)
+    state: Mapped[str] = mapped_column(String(64), nullable=False)
+    request_fingerprint: Mapped[str] = mapped_column(String(64), nullable=False)
+    timeout_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    retry_after: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    submitted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    trace_id: Mapped[str | None] = mapped_column(String(64))
+    span_id: Mapped[str | None] = mapped_column(String(32))
+    reconciliation: Mapped[JsonDocument] = mapped_column(JSONB, default=dict)
+
+
+class PublicationStatusEvent(CanonicalIdentity, Base):
+    __tablename__ = "publication_status_events"
+    __table_args__ = (
+        UniqueConstraint("publication_attempt_id", "sequence_no"),
+        UniqueConstraint("publication_attempt_id", "source", "safe_payload_hash"),
+    )
+
+    publication_attempt_id: Mapped[UUID] = mapped_column(
+        ForeignKey("publication_attempts.id", ondelete="RESTRICT"), nullable=False
+    )
+    sequence_no: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    state: Mapped[str] = mapped_column(String(64), nullable=False)
+    source: Mapped[str] = mapped_column(String(32), nullable=False)
+    safe_payload_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    occurred_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    trace_id: Mapped[str | None] = mapped_column(String(64))
+    span_id: Mapped[str | None] = mapped_column(String(32))
+    provenance_record_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("provenance_records.id", ondelete="SET NULL")
+    )
+
+
+class PublisherWebhookReceipt(CanonicalIdentity, Base):
+    __tablename__ = "publisher_webhook_receipts"
+    __table_args__ = (
+        UniqueConstraint("publisher_id", "delivery_identity"),
+        UniqueConstraint("publication_attempt_id", "safe_payload_hash"),
+    )
+
+    publication_attempt_id: Mapped[UUID] = mapped_column(
+        ForeignKey("publication_attempts.id", ondelete="RESTRICT"), nullable=False
+    )
+    publication_status_event_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("publication_status_events.id", ondelete="RESTRICT")
+    )
+    publisher_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    delivery_identity: Mapped[str] = mapped_column(String(255), nullable=False)
+    safe_payload_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    signature_verified: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    state: Mapped[str] = mapped_column(String(64), nullable=False)
+    received_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    trace_id: Mapped[str | None] = mapped_column(String(64))
+    span_id: Mapped[str | None] = mapped_column(String(32))
+    provenance_record_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("provenance_records.id", ondelete="SET NULL")
+    )
+
+
+class RemotePublicationReceipt(CanonicalIdentity, Base):
+    __tablename__ = "remote_publication_receipts"
+    __table_args__ = (
+        UniqueConstraint("publication_attempt_id"),
+        UniqueConstraint("publisher_id", "remote_id"),
+    )
+
+    publication_attempt_id: Mapped[UUID] = mapped_column(
+        ForeignKey("publication_attempts.id", ondelete="RESTRICT"), nullable=False
+    )
+    publisher_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    remote_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    state: Mapped[str] = mapped_column(String(64), nullable=False)
+    remote_url: Mapped[str | None] = mapped_column(Text)
+    safe_metadata_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    disclosure_projection: Mapped[JsonDocument] = mapped_column(JSONB, default=dict)
+    actual_cost_micros: Mapped[int | None] = mapped_column(BigInteger)
+    cost_currency: Mapped[str] = mapped_column(String(3), nullable=False, default="USD")
+    accepted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    trace_id: Mapped[str | None] = mapped_column(String(64))
+    span_id: Mapped[str | None] = mapped_column(String(32))
+    provenance_record_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("provenance_records.id", ondelete="SET NULL")
+    )
+
+
+class Publication(CanonicalIdentity, Base):
+    __tablename__ = "publications"
+    __table_args__ = (
+        UniqueConstraint("publication_request_id"),
+        UniqueConstraint("remote_publication_receipt_id"),
+    )
+
+    publication_request_id: Mapped[UUID] = mapped_column(
+        ForeignKey("publication_requests.id", ondelete="RESTRICT"), nullable=False
+    )
+    remote_publication_receipt_id: Mapped[UUID] = mapped_column(
+        ForeignKey("remote_publication_receipts.id", ondelete="RESTRICT"), nullable=False
+    )
+    state: Mapped[str] = mapped_column(String(32), nullable=False)
+    published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    trace_id: Mapped[str | None] = mapped_column(String(64))
+    span_id: Mapped[str | None] = mapped_column(String(32))
+    provenance_record_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("provenance_records.id", ondelete="SET NULL")
+    )

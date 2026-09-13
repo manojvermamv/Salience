@@ -12,7 +12,10 @@ def test_governed_publication_tables_are_canonical_and_additive() -> None:
         "publisher_capability_profiles",
         "publication_requests",
         "publication_plans",
+        "publication_schedules",
         "publication_attempts",
+        "publication_status_events",
+        "publisher_webhook_receipts",
         "remote_publication_receipts",
         "publications",
     }

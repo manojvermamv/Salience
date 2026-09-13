@@ -4,11 +4,15 @@
 
 - Branch: `phase7-8-release-gate-phase9` (isolated worktree from `main`)
 - Plan: `docs/superpowers/plans/2026-09-13-phase-7-8-release-gate-phase-9-publishing.md`
-- Active task: Gate Two, Task 13 — canonical publication migration and repository.
-- Current TDD step: Implement the additive `0009_governed_publication` migration and repository required by the confirmed red migration/repository suite.
-- Last verified state: Gate Two Task 12 passed owned contract/credential/registry tests (5/5) with compilation and whitespace checks clean. Publication remains fixture-first, provider-neutral, and behind the canonical ready-package boundary.
+- Active task: Gate Two, Task 14 — publisher policy, private delivery, and fixture lifecycle.
+- Current TDD step: Specify red policy, private delivery, and fixture-adapter lifecycle tests before implementation.
+- Last verified state: Gate Two Task 13 passed the canonical publication migration/repository suite (4/4) after Alembic applied `0009_governed_publication`; compilation was clean. Publication remains fixture-first, provider-neutral, and behind the canonical ready-package boundary.
 
 ## Checkpoints
+
+- 2026-09-13: Completed Gate Two Task 13 red-green. Added additive revision `0009_governed_publication` with tenant/workspace hooks and canonical publisher accounts, secret-reference-only versioned connections, capability profile facts, immutable ready-package-bound requests, plans, schedules, attempts, append-only status/webhook records, immutable remote receipts, and immutable publication receipt references. The typed PostgreSQL repository owns idempotent exact-match account/request/plan/attempt/remote-receipt writes and fails closed if an idempotency identity is replayed with a changed governed decision. The focused migration/repository suite passed 4/4 after the migration applied; compilation passed. Next: Task 14 red publisher policy, private delivery, and fixture lifecycle contracts.
+
+- 2026-09-13: Re-verified Task 13 after a repeat-run isolation failure. Database inspection showed a new test attempt collided correctly with the provider-global `(publisher_id, remote_id)` receipt identity left by an earlier run; the persisted receipt was otherwise exact. The fixture now derives its remote ID from its canonical attempt identity rather than weakening the cross-attempt uniqueness invariant. The migration/repository suite again passed 4/4; compilation and whitespace checks passed.
 
 - 2026-09-13: Began Gate Two Task 13 with additive PostgreSQL and repository red tests. The focused suite correctly fails at collection because `salience.publication.repository` and the governed-publication migration/tables do not yet exist. The test contract requires independent workspace-bound requests from one immutable ready package and future immutable remote receipts. Next: create only the `0009` canonical tables and a typed idempotent repository, then repair the red fixture to use canonical account identities.
 

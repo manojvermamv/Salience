@@ -133,6 +133,8 @@ async def _approved_ready_package() -> dict[str, str]:
     )
     return {
         "ready_package_id": ready_package_id,
+        "workspace_id": seeded["workspace_id"],
+        "program_id": seeded["program_id"],
         "disclosure_id": disclosure_id,
         "distribution_package_id": distribution_package_id,
         "candidate_id": candidate_id,

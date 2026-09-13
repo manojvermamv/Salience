@@ -584,7 +584,7 @@ Expected: PASS. Commit: `feat: define governed publication contracts`.
 
 **Interfaces:** Persists versioned accounts/connections/profiles/requests/plans/schedules/attempts/status events/webhook receipts/remote receipts/publications and their immutable links to `ReadyToPublishPackage@v1`, external effects, reservations, audit, provenance, and traces.
 
-- [ ] **Step 1: Write migration red tests**
+- [x] **Step 1: Write migration red tests**
 
 ```python
 async def test_ready_package_can_create_multiple_publication_requests_without_mutation(repository, ready_package, accounts):
@@ -598,17 +598,17 @@ def test_remote_receipt_is_immutable(connection, receipt):
         connection.execute("UPDATE remote_publication_receipts SET remote_url = 'changed' WHERE id = %s", (receipt.id,))
 ```
 
-- [ ] **Step 2: Run migration/repository tests and confirm failure**
+- [x] **Step 2: Run migration/repository tests and confirm failure**
 
 Run: `pytest tests/integration/test_publication_migrations.py tests/integration/test_publication_repository.py -q`
 
 Expected: FAIL because revision `0009` and publication repository are absent.
 
-- [ ] **Step 3: Implement additive schema and idempotent writes**
+- [x] **Step 3: Implement additive schema and idempotent writes**
 
 Create immutable/versioned tables with workspace and tenant hooks. Add unique request/effect/attempt/receipt keys, safe webhook payload hashes, status history, account scope, profile facts/source timestamps, publish schedule mapping, remote identifiers, metadata hash, disclosure projection, cost links, and reverse lineage. Add triggers that reject changes to immutable request version, remote receipt, and publication receipt references.
 
-- [ ] **Step 4: Verify**
+- [x] **Step 4: Verify**
 
 Run: `alembic upgrade head && pytest tests/integration/test_publication_migrations.py tests/integration/test_publication_repository.py -q`
 
