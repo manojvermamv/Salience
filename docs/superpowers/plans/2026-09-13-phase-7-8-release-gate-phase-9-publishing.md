@@ -56,7 +56,7 @@
 
 **Interfaces:** Produces immutable `CreativeRightsContext`, `CreativeVariantPlan`, `ProviderUsage`, `ProviderWebhookEvent`, and lifecycle states `planned`, `submitting`, `submitted`, `running`, `completed`, `failed`, `cancelled`, and `dead_lettered`. `CreativeProvider` exposes `capabilities`, `submit`, `reconcile`, `get_status`, `cancel`, `verify_webhook`, and `download` using owned DTOs.
 
-- [ ] **Step 1: Write failing contract tests**
+- [x] **Step 1: Write failing contract tests**
 
 ```python
 def test_capability_request_rejects_a_variant_count_above_configured_quota():
@@ -74,13 +74,13 @@ async def test_fixture_webhook_has_a_stable_delivery_identity_and_no_secret_fiel
     assert "secret" not in event.model_dump_json().casefold()
 ```
 
-- [ ] **Step 2: Run the contract tests and confirm they fail**
+- [x] **Step 2: Run the contract tests and confirm they fail**
 
 Run: `pytest tests/unit/test_creative_contracts.py tests/unit/test_creative_providers.py tests/contracts/test_plugin_registry.py -q`
 
 Expected: FAIL because the new rights, usage, webhook, and capability metadata contracts do not exist.
 
-- [ ] **Step 3: Add the minimal versioned DTOs and metadata filtering inputs**
+- [x] **Step 3: Add the minimal versioned DTOs and metadata filtering inputs**
 
 ```python
 class ProviderUsage(BaseModel):
@@ -98,7 +98,7 @@ class ProviderWebhookEvent(BaseModel):
 
 Require plugin metadata to declare supported capability, modality, formats, aspect ratios, duration range, polling/webhook/cancel support, enabled state, contract compatibility, concurrency, and rate state. Validate every declared lifecycle/usage value before repository use.
 
-- [ ] **Step 4: Verify and checkpoint**
+- [x] **Step 4: Verify and checkpoint**
 
 Run: `pytest tests/unit/test_creative_contracts.py tests/unit/test_creative_providers.py tests/contracts/test_plugin_registry.py -q && python -m compileall -q src && git diff --check`
 
