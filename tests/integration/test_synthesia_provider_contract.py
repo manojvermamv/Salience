@@ -66,3 +66,42 @@ async def test_synthesia_adapter_normalizes_provider_rejection() -> None:
     with pytest.raises(ProviderResponseError, match="rate_limited"):
         await provider.submit(_request())
     await provider.aclose()
+
+
+@pytest.mark.asyncio
+async def test_synthesia_adapter_never_forwards_api_secret_to_signed_download_url() -> None:
+    observed: list[tuple[str, str | None]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        observed.append((str(request.url), request.headers.get("Authorization")))
+        if request.url.host == "api.synthesia.io" and request.method == "POST":
+            return httpx.Response(201, json={"id": "synthesia-video-download"})
+        if request.url.host == "api.synthesia.io":
+            return httpx.Response(
+                200,
+                json={
+                    "id": "synthesia-video-download",
+                    "status": "complete",
+                    "download": "https://signed-cdn.example/video.mp4?signature=opaque",
+                },
+            )
+        return httpx.Response(200, content=b"fixture-video-bytes")
+
+    provider = SynthesiaCreativeProvider(
+        client=httpx.AsyncClient(transport=httpx.MockTransport(handler)),
+        secret_resolver=SecretResolver({"env://SYNTHESIA": "very-secret-token"}),
+        secret_reference=SecretReference(
+            "env://SYNTHESIA", frozenset({"creative.provider.synthesia"})
+        ),
+        scopes=frozenset({"creative.provider.synthesia"}),
+    )
+    submitted = await provider.submit(_request())
+    completed = await provider.get_status(submitted.external_job_id)
+
+    assert completed.state == "completed"
+    assert await provider.download(submitted.external_job_id) == b"fixture-video-bytes"
+    assert observed[-1] == (
+        "https://signed-cdn.example/video.mp4?signature=opaque",
+        None,
+    )
+    await provider.aclose()

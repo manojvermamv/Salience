@@ -267,7 +267,7 @@ class SynthesiaCreativeProvider:
         current = self._jobs.get(external_job_id)
         if current is None or current.state != "completed" or not current.download_reference:
             raise ProviderResponseError("download_not_ready")
-        response = await self._client.get(current.download_reference, headers=self._headers())
+        response = await self._client.get(current.download_reference)
         self._raise_for_response(response)
         return response.content
 
@@ -351,7 +351,7 @@ def _normalize_state(value: str) -> str:
 
 
 def _download_reference(payload: Mapping[str, Any]) -> str | None:
-    for key in ("download_url", "downloadUrl", "url"):
+    for key in ("download", "download_url", "downloadUrl", "url"):
         value = payload.get(key)
         if isinstance(value, str) and value.startswith("https://"):
             return value
