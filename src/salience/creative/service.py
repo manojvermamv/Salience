@@ -65,7 +65,7 @@ class CreativeService:
         """Validate all Phase 8 gates and persist a provider-neutral package."""
         self._require_approved(production)
         self._ensure_publication_metadata_is_absent(production.package_metadata)
-        self._authorize_rights(production)
+        await self._authorize_rights(production)
 
         disclosure = self._disclosure.decide(
             {
@@ -194,7 +194,7 @@ class CreativeService:
         """Create the immutable, approved handoff for a future publishing phase."""
         self._require_approved(production)
         self._ensure_publication_metadata_is_absent(production.package_metadata)
-        self._authorize_rights(production)
+        await self._authorize_rights(production)
         await self._require_c2pa(production)
         package = distribution or await self.build_distribution(production)
         if (
@@ -233,11 +233,15 @@ class CreativeService:
             approval_state="approved",
         )
 
-    def _authorize_rights(self, production: ApprovedProduction) -> None:
+    async def _authorize_rights(self, production: ApprovedProduction) -> None:
+        consent = production.consent
+        reader = getattr(self._repository, "asset_consent", None)
+        if reader is not None and (production.uses_real_likeness or production.uses_voice_clone):
+            consent = await reader(production.asset_id)
         decision = self._rights.authorize(
             uses_real_likeness=production.uses_real_likeness,
             uses_voice_clone=production.uses_voice_clone,
-            consent=production.consent,
+            consent=consent,
             channel=str(production.profile_rules.get("target_platform", production.profile_key)),
             territory=production.territory,
             commercial_use=production.commercial_use,

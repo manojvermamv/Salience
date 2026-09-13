@@ -10,6 +10,8 @@
 
 ## Checkpoints
 
+- 2026-09-13: Advanced Gate One Task 8 with canonical consent reload. When likeness or cloned voice is involved, distribution and finalization now await `asset_consent` from an FK-backed asset-rights link and evaluate that record instead of a transient caller-supplied consent object. The Phase 8 evaluation/full-loop suite passed 5/5 with compilation and whitespace checks clean. Next: complete any remaining Task 8 provenance coverage, then Task 9 approved-decision immutability.
+
 - 2026-09-13: Advanced Gate One Task 8 with typed canonical asset-rights links. `CreativeRepository.record_asset_rights_link` accepts only a fixed relation vocabulary, writes exactly one FK-backed rights/reference identity per link row, and preserves the database `num_nonnulls = 1` invariant. The repository/full-loop suite passed 3/3 with compilation and whitespace checks clean. Remaining Task 8 work: load policy facts from these canonical records at finalization.
 
 - 2026-09-13: Advanced Gate One Task 8 with persisted provenance reload. Finalization now reads canonical `asset_provenance` and uses its validation status over any workflow-supplied C2PA literal; a regression proves a transient `valid` claim cannot bypass a persisted `not_configured` record. The focused Phase 8/full-loop suite passed 4/4 with compilation and whitespace checks clean. Remaining Task 8 work: canonical rights-link persistence and policy reload.

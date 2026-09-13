@@ -391,6 +391,9 @@ class CreativeRepository:
     async def asset_provenance(self, asset_id: str) -> dict[str, Any] | None:
         return await asyncio.to_thread(self._asset_provenance, asset_id)
 
+    async def asset_consent(self, asset_id: str) -> dict[str, Any] | None:
+        return await asyncio.to_thread(self._asset_consent, asset_id)
+
     async def record_asset_rights_link(
         self, *, asset_id: str, link_key: str, relation: str, reference_id: str
     ) -> str:
@@ -960,6 +963,32 @@ class CreativeRepository:
                 "signer_metadata": row[3],
                 "ingredients": row[4],
                 "transformations": row[5],
+            }
+
+    def _asset_consent(self, asset_id: str) -> dict[str, Any] | None:
+        with self._connect() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT consent.status, consent.permitted_channels, consent.commercial_use,
+                       consent.territories, consent.expires_at, consent.revoked_at
+                FROM asset_rights_links link
+                JOIN consent_records consent ON consent.id = link.consent_record_id
+                WHERE link.asset_id = %s
+                ORDER BY link.created_at
+                LIMIT 1
+                """,
+                (asset_id,),
+            )
+            row = cursor.fetchone()
+            if row is None:
+                return None
+            return {
+                "status": row[0],
+                "permitted_channels": row[1],
+                "commercial_use": row[2],
+                "territories": row[3],
+                "expires_at": row[4],
+                "revoked_at": row[5],
             }
 
     def _record_distribution_package(
