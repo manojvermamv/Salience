@@ -2,13 +2,15 @@
 
 ## Active Context
 
-- Branch: `creative-production-phases-7-8` (isolated worktree from `main`)
-- Plan: `docs/superpowers/plans/2026-09-13-creative-production-phases-7-8.md`
-- Active task: Review-repair checkpoint — resolve Phase 7–8 pre-merge safety findings before re-verification and integration.
-- Current TDD step: Root-cause investigation is complete. Add focused failing contracts, then repair provider-secret routing, request-key reconciliation, draft/approval transitions, technical-validation gating, durable cost accounting, cancellation/webhook lifecycle, capability/Production-Agent selection, and deployment/documentation truthfulness one causal seam at a time.
-- Last verified state: Pre-review Task 12 verification remains green (139 non-live tests), but independent review found release-blocking implementation gaps. The branch must not merge until focused red-green repair tests and the full verification ladder pass again.
+- Branch: `phase7-8-release-gate-phase9` (isolated worktree from `main`)
+- Plan: `docs/superpowers/plans/2026-09-13-phase-7-8-release-gate-phase-9-publishing.md`
+- Active task: Gate One, Task 2 — add the canonical creative release-gate migration after the Task 1 contract checkpoint.
+- Current TDD step: Write and run direct-SQL migration/model tests red, then add only the additive schema and immutable-decision guards they require.
+- Last verified state: Gate One Task 1 passed its focused contract suite (14 tests), the existing Synthesia boundary suite (3 tests), compilation, and whitespace validation. Phase 7–8 remains unapproved; Task 11’s complete release ladder and independent review remain mandatory before any Phase 9 code.
 
 ## Checkpoints
+
+- 2026-09-13: Completed Gate One Task 1 red-green lifecycle-contract checkpoint in the isolated `phase7-8-release-gate-phase9` worktree. Added frozen rights and bounded-variant DTOs, the full provider lifecycle vocabulary, explicit pending-versus-known provider usage, credential-free verified webhook events with stable delivery IDs and payload hashes, and complete provider capability metadata. The creative registry now rejects incomplete capability/lifecycle selection facts before registration; fixture and Synthesia adapters expose owned capability/usage/webhook projections without secrets. The intentional red suite failed on the six absent validation/DTO/webhook/metadata seams; after implementation, the Task 1 contract suite passed 14/14, the existing Synthesia adapter suite passed 3/3, compilation and `git diff --check` were clean. A Pydantic warning caused by returning a replacement from an `after` validator was root-caused and repaired by pre-validation normalization before the checkpoint. Next: Task 2 canonical migration red tests; no Phase 9 code is permitted.
 
 - 2026-09-13: Repaired a portion of the capability/Production-Agent review finding with a red-green E2E lineage assertion. The workflow now records Creative Director and Production Agent runs under the canonical creative job alongside Writer, passes the director’s selected capability through the bounded Production Agent plan, and derives the provider capability/max variants from that plan instead of hard-coding `text_to_video`. The focused creative-loop and agent suite passed 4/4 with compilation and whitespace checks clean. Registry-based provider selection, richer multi-variant persistence, and remaining lifecycle blockers still require repair.
 

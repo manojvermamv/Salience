@@ -10,7 +10,13 @@ from typing import Any, Awaitable, Callable, Protocol
 
 import httpx
 
-from salience.creative.contracts import CreativeCapabilityRequest, ProviderJobResult
+from salience.creative.contracts import (
+    CreativeCapabilityRequest,
+    CreativeProviderCapabilities,
+    ProviderJobResult,
+    ProviderUsage,
+    ProviderWebhookEvent,
+)
 from salience.governance.secrets import SecretReference, SecretResolver
 
 
@@ -30,6 +36,9 @@ class ProviderWebhookRejected(ProviderError):
 
 
 class CreativeProvider(Protocol):
+    @property
+    def capabilities(self) -> CreativeProviderCapabilities: ...
+
     async def submit(self, request: CreativeCapabilityRequest) -> ProviderJobResult: ...
 
     async def reconcile(self, request_key: str) -> ProviderJobResult | None: ...
@@ -40,7 +49,7 @@ class CreativeProvider(Protocol):
 
     async def verify_webhook(
         self, payload: Mapping[str, Any], *, signature: str | None
-    ) -> ProviderJobResult: ...
+    ) -> ProviderWebhookEvent: ...
 
     async def download(self, external_job_id: str) -> bytes: ...
 
@@ -56,6 +65,28 @@ class FixtureCreativeProvider:
 
     provider_id = "fixture-creative"
     provider_version = "1.0.0"
+
+    @property
+    def capabilities(self) -> CreativeProviderCapabilities:
+        return CreativeProviderCapabilities(
+            supported_capabilities=("text_to_video",),
+            modalities=("video",),
+            formats=("video/mp4",),
+            aspect_ratios=("9:16", "16:9"),
+            minimum_duration_seconds=1,
+            maximum_duration_seconds=60,
+            async_support=True,
+            polling_support=True,
+            webhook_support=True,
+            cancellation_support=True,
+            reconciliation_support=True,
+            enabled=True,
+            contract_compatibility={"creative": "1.0"},
+            max_concurrency=1,
+            rate_state="available",
+            estimated_cost_micros=0,
+            limitations=("fixture only",),
+        )
 
     def __init__(self) -> None:
         self._jobs_by_key: dict[str, _FixtureJob] = {}
@@ -80,6 +111,7 @@ class FixtureCreativeProvider:
             request_key=request.request_key,
             external_job_id=external_job_id,
             state="submitted",
+            usage=ProviderUsage(estimated_micros=self.capabilities.estimated_cost_micros),
             metadata={"idempotency_key": request.request_key, "transport": "fixture"},
         )
         job = _FixtureJob(result)
@@ -114,7 +146,7 @@ class FixtureCreativeProvider:
 
     async def verify_webhook(
         self, payload: Mapping[str, Any], *, signature: str | None
-    ) -> ProviderJobResult:
+    ) -> ProviderWebhookEvent:
         if signature != "fixture-signature":
             raise ProviderWebhookRejected("provider webhook signature was not accepted")
         external_job_id = payload.get("id")
@@ -131,7 +163,14 @@ class FixtureCreativeProvider:
                 ),
             }
         )
-        return job.result
+        return ProviderWebhookEvent(
+            provider_id=self.provider_id,
+            delivery_id=_delivery_id(payload),
+            external_job_id=external_job_id,
+            state=state,
+            safe_payload_hash=_safe_payload_hash(payload),
+            usage=job.result.usage,
+        )
 
     async def download(self, external_job_id: str) -> bytes:
         job = self._job(external_job_id)
@@ -165,6 +204,28 @@ class SynthesiaCreativeProvider:
 
     provider_id = "synthesia"
     provider_version = "v2"
+
+    @property
+    def capabilities(self) -> CreativeProviderCapabilities:
+        return CreativeProviderCapabilities(
+            supported_capabilities=("avatar_video",),
+            modalities=("video",),
+            formats=("video/mp4",),
+            aspect_ratios=("16:9", "9:16"),
+            minimum_duration_seconds=1,
+            maximum_duration_seconds=21_600,
+            async_support=True,
+            polling_support=True,
+            webhook_support=self._webhook_verifier is not None,
+            cancellation_support=True,
+            reconciliation_support=False,
+            enabled=self._secret_reference is not None,
+            contract_compatibility={"creative": "1.0"},
+            max_concurrency=1,
+            rate_state="available",
+            estimated_cost_micros=0,
+            limitations=("reconciliation by idempotency key is unavailable",),
+        )
 
     def __init__(
         self,
@@ -206,6 +267,7 @@ class SynthesiaCreativeProvider:
             request_key=request.request_key,
             external_job_id=external_job_id,
             state="submitted",
+            usage=ProviderUsage(estimated_micros=self.capabilities.estimated_cost_micros),
             metadata={
                 "idempotency_key": request.request_key,
                 "rate_limit": _rate_limit_metadata(response),
@@ -256,7 +318,7 @@ class SynthesiaCreativeProvider:
 
     async def verify_webhook(
         self, payload: Mapping[str, Any], *, signature: str | None
-    ) -> ProviderJobResult:
+    ) -> ProviderWebhookEvent:
         if self._webhook_verifier is None:
             raise ProviderWebhookRejected("provider webhook signature verifier is not configured")
         accepted = self._webhook_verifier(payload, signature)
@@ -272,7 +334,14 @@ class SynthesiaCreativeProvider:
             update={"state": _normalize_state(_string_or_none(payload.get("status")) or "running")}
         )
         self._jobs[external_job_id] = result
-        return result
+        return ProviderWebhookEvent(
+            provider_id=self.provider_id,
+            delivery_id=_delivery_id(payload),
+            external_job_id=external_job_id,
+            state=result.state,
+            safe_payload_hash=_safe_payload_hash(payload),
+            usage=result.usage,
+        )
 
     async def download(self, external_job_id: str) -> bytes:
         current = self._jobs.get(external_job_id)
@@ -359,6 +428,23 @@ def _normalize_state(value: str) -> str:
     if normalized in {"submitted", "queued", "pending"}:
         return "submitted"
     return "running"
+
+
+def _delivery_id(payload: Mapping[str, Any]) -> str | None:
+    delivery_id = payload.get("delivery_id")
+    if delivery_id is None:
+        return None
+    if not isinstance(delivery_id, str) or not delivery_id:
+        raise ProviderWebhookRejected("provider webhook delivery identity is malformed")
+    return delivery_id
+
+
+def _safe_payload_hash(payload: Mapping[str, Any]) -> str:
+    try:
+        encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str).encode()
+    except (TypeError, ValueError) as error:
+        raise ProviderWebhookRejected("provider webhook payload is not hashable") from error
+    return sha256(encoded).hexdigest()
 
 
 def _download_reference(payload: Mapping[str, Any]) -> str | None:

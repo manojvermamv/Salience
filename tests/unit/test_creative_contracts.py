@@ -13,12 +13,21 @@ def creative_manifest(**overrides: object) -> PluginManifest:
         "capabilities": ["text_to_video"],
         "effect_classification": "write",
         "provider_metadata": {
+            "supported_capabilities": ["text_to_video"],
             "modalities": ["video"],
             "formats": ["video/mp4"],
+            "aspect_ratios": ["9:16", "16:9"],
+            "minimum_duration_seconds": 1,
+            "maximum_duration_seconds": 60,
             "async_support": True,
             "polling_support": True,
             "webhook_support": True,
+            "cancellation_support": True,
+            "reconciliation_support": True,
+            "enabled": True,
+            "contract_compatibility": {"creative": "1.0"},
             "max_concurrency": 1,
+            "rate_state": "available",
             "estimated_cost_micros": 0,
             "limitations": ["fixture only"],
         },
@@ -94,3 +103,63 @@ def test_capability_resolution_rejects_unsupported_capability() -> None:
 def test_creative_plugin_rejects_incomplete_provider_metadata() -> None:
     with pytest.raises(ValidationError, match="provider_metadata"):
         creative_manifest(provider_metadata={"modalities": ["video"]})
+
+
+def test_capability_request_rejects_a_variant_count_above_configured_quota() -> None:
+    from salience.creative.contracts import CreativeCapabilityRequest
+
+    with pytest.raises(ValidationError, match="max_variants"):
+        CreativeCapabilityRequest(
+            request_key="render-over-quota",
+            content_program_id="program-1",
+            brief_id="brief-1",
+            script_id="script-1",
+            capability="text_to_video",
+            expected_modality="video",
+            aspect_ratio="9:16",
+            resolution="1080x1920",
+            duration_seconds=30,
+            max_variants=4,
+        )
+
+
+def test_provider_result_preserves_explicit_unknown_actual_cost() -> None:
+    from salience.creative.contracts import ProviderJobResult, ProviderUsage
+
+    result = ProviderJobResult(
+        provider_id="fixture-creative",
+        capability="text_to_video",
+        request_key="render-1",
+        external_job_id="fixture-1",
+        state="submitted",
+        usage=ProviderUsage(estimated_micros=100, actual_micros=None),
+    )
+
+    assert result.usage.actual_micros is None
+    assert result.usage.actual_cost_status == "pending"
+
+
+def test_creative_variant_plan_rejects_a_variant_outside_its_bounded_plan() -> None:
+    from salience.creative.contracts import CreativeVariantPlan
+
+    with pytest.raises(ValidationError, match="variant_index"):
+        CreativeVariantPlan(
+            request_key="render-1",
+            variant_key="render-1:2",
+            variant_index=2,
+            max_variants=1,
+        )
+
+
+def test_creative_rights_context_is_immutable() -> None:
+    from salience.creative.contracts import CreativeRightsContext
+
+    rights = CreativeRightsContext(
+        asset_license_ids=("license-1",),
+        territory="US",
+        channel="video",
+        commercial_use=True,
+    )
+
+    with pytest.raises(ValidationError):
+        rights.territory = "CA"
