@@ -79,7 +79,9 @@ publishing-effect identity and does not mutate this lineage.
 `publisher_capability_profiles` retain account identity, secret reference,
 scope/profile facts, protocol compatibility, and source timestamps without a
 secret value. `publication_requests` binds an approved ready package, a distinct approved
-publication authority, and one active workspace-bound account. `publication_plans`, `publication_schedules`,
+publication authority, one active workspace- and platform-bound account, and the
+exact destination/locale/territory/visibility/profile scope. `publication_plans`,
+`publication_schedules`,
 `publication_attempts`, `publication_status_events`,
 `publisher_webhook_receipts`, `remote_publication_receipts`, and `publications`
 preserve the governed decision, external-effect/reconciliation state, cost
@@ -88,7 +90,9 @@ Requests, schedules, attempts, callback/remote receipts, status history, and
 final publication references are database-immutable. Plans preserve their
 identity fields and admit only a one-time effect/reservation link plus bounded
 cost-settlement lifecycle transitions. Repository writers replay exact
-identities or reject a changed immutable fact.
+identities or reject a changed immutable fact. Temporal schedule payloads are
+exact-matched against the canonical request, plan, budget, version, and contract;
+each scheduler execution receives its own canonical job identity.
 
 ## Durable Runs
 

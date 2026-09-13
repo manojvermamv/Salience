@@ -22,7 +22,7 @@ transfer or social post, analytics, experiments, and learning.
 ```mermaid
 flowchart LR
     Operator[Operators, API clients, CLI, SDK] -->|scoped request| API[Control API]
-    API -->|idempotent start| Temporal[Temporal adapter]
+    API -->|prevalidated idempotent start + schedules| Temporal[Temporal adapter]
     Temporal -->|tasks and timers| Worker[Salience worker]
     Worker -->|checkpointed activities| Loop[Intelligence loop]
     Sources[RSS and HN sources] -.->|untrusted evidence| Loop
@@ -38,7 +38,8 @@ flowchart LR
     Asset --> Distribution
     Distribution --> Ready[Approved ReadyToPublishPackage@v1]
     Ready -->|new account-bound governed request| Publish[Publication workflow]
-    Publish -->|policy, approval, scope, reserve| Governance
+    Publish -->|final policy, rights, approval, scope, reserve| Governance
+    Publish -.->|canonical schedule run per Temporal execution| Temporal
     Publish -.->|selected adapter, reconcile, webhook| Publisher[Fixture / opt-in publisher adapter]
     Storage -.->|short-lived HTTPS delivery| Publisher
     Publish -->|immutable request, plan, attempt, receipt| PG
@@ -56,6 +57,9 @@ interactive source for the implemented Phase 1–9 architecture: it supports
 theme switching, focus views, relationship tracing, source evidence, and local
 SVG/PNG export. Its checked source is
 [`docs/salience-phase-1-9.architecture.json`](docs/salience-phase-1-9.architecture.json).
+Scheduled publication payloads carry only a canonical schedule identity; each
+Temporal execution materializes one canonical job before publication activities
+load the immutable request, plan, and budget.
 
 ## What You Can Rely On Today
 

@@ -22,10 +22,11 @@ The fixture-first publishing capability now:
 - accepts only a resolved `ReadyToPublishPackage@v1` and its immutable package
   lineage; it must never rebuild creative or research decisions from scratch;
 - adds a separate, versioned publisher request and account/credential boundary;
-- requires a distinct current `publication` approval for the exact ready package
-  and account, then re-authorizes the proposed publish effect for the selected
-  profile, locale, territory, policy version, rights, scopes, and remaining budget
-  immediately before the external submit;
+- requires a distinct current `publication` approval for the exact ready package,
+  account, platform, destination, locale, territory, visibility, and capability
+  profile revision, then re-authorizes the proposed effect against current policy,
+  rights, connection scopes, and remaining budget immediately before the external
+  submit;
 - persists an idempotent external-effect plan before calling a publisher, then
   reconciles the same key after timeout, retry, or process interruption;
 - records the remote receipt, audit event, provenance record, cost settlement,
@@ -43,7 +44,8 @@ asset as live-published media.
 ## Current boundary
 
 Phase 9 adds publisher/account/profile identities, immutable request/plan/
-schedule/attempt/receipt facts, policy/approval/budget reauthorization, scoped
+schedule/attempt/receipt facts, exact schedule payload matching, per-execution
+canonical job materialization, policy/approval/budget reauthorization, scoped
 control API/CLI/SDK, fixture reconciliation, and signed-webhook ingress. The
 fixture path is explicitly configured for the end-to-end verifier; the deployed
 control plane still defaults to dry-run and does not create a ready package.

@@ -95,7 +95,8 @@ boundaries.
 Phase 9 introduces a separate fail-closed authorization immediately before a
 publisher effect. It requires the ready package to remain approved and bound to
 the same workspace/program; an active account/connection with current required
-scopes; a compatible, verified capability profile; allowed destination, locale,
+scopes; a compatible, verified account- and platform-bound capability profile;
+allowed platform, destination, locale,
 territory, and visibility; current policy/rights/disclosure/approval facts; an
 explicit budget reservation; and available rate/quota facts. A creative approval
 or credential never confers publishing authority.

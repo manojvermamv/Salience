@@ -47,3 +47,4 @@ is the interactive master diagram. It distinguishes canonical records from
 replaceable object storage and fixture/credential-gated publisher adapters, and
 shows that publishing uses a new governed identity after the ready package.
 Its checked source is [the Phase 1–9 architecture specification](salience-phase-1-9.architecture.json).
+No secret value is represented in the canonical database schema.
