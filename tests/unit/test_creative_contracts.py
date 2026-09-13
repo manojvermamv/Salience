@@ -100,6 +100,32 @@ def test_capability_resolution_rejects_unsupported_capability() -> None:
         )
 
 
+def test_capability_resolution_rejects_rate_limited_or_incompatible_provider() -> None:
+    from salience.creative.capabilities import CreativeCapabilityRegistry
+    from salience.creative.contracts import CreativeCapabilityRequest
+
+    registry = CreativeCapabilityRegistry(PluginRegistry(supported_contract_version="1.0"))
+    registry.register(
+        creative_manifest(provider_metadata={**creative_manifest().provider_metadata, "rate_state": "rate_limited"})
+    )
+
+    with pytest.raises(CapabilityNotSupported):
+        registry.resolve(
+            CreativeCapabilityRequest(
+                request_key="render-rate-limited",
+                content_program_id="program-1",
+                brief_id="brief-1",
+                script_id="script-1",
+                capability="text_to_video",
+                expected_modality="video",
+                aspect_ratio="9:16",
+                resolution="1080x1920",
+                duration_seconds=30,
+                max_variants=1,
+            )
+        )
+
+
 def test_creative_plugin_rejects_incomplete_provider_metadata() -> None:
     with pytest.raises(ValidationError, match="provider_metadata"):
         creative_manifest(provider_metadata={"modalities": ["video"]})

@@ -21,6 +21,13 @@ class CreativeCapabilityRegistry:
             and request.capability in _capabilities(manifest).supported_capabilities
             and request.expected_modality in _capabilities(manifest).modalities
             and _capabilities(manifest).enabled
+            and request.aspect_ratio in _capabilities(manifest).aspect_ratios
+            and _capabilities(manifest).minimum_duration_seconds
+            <= request.duration_seconds
+            <= _capabilities(manifest).maximum_duration_seconds
+            and _capabilities(manifest).async_support
+            and _capabilities(manifest).polling_support
+            and _capabilities(manifest).rate_state == "available"
             and (request.provider_id is None or manifest.plugin_id == request.provider_id)
         ]
         if not candidates:
