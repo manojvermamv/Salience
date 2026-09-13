@@ -67,6 +67,20 @@ class CreativePackageView(BaseModel):
     ready_package_id: str
 
 
+class PublicationRunView(BaseModel):
+    job_id: str
+    state: str
+    dry_run: bool
+    trace_id: str
+    output: dict[str, Any] = Field(default_factory=dict)
+
+
+class PublicationScheduleView(BaseModel):
+    schedule_id: str
+    job_type: str
+    schedule_expression: str
+
+
 @dataclass
 class _ControlClient:
     base_url: str
@@ -246,8 +260,83 @@ class CreativeClient(_ControlClient):
         )
 
 
+@dataclass
+class PublicationClient(_ControlClient):
+    def start(
+        self,
+        *,
+        workspace_id: str,
+        content_program_id: str,
+        ready_package_id: str,
+        publisher_account_id: str,
+        budget_id: str,
+        idempotency_key: str,
+    ) -> PublicationRunView:
+        return PublicationRunView.model_validate(
+            self._request(
+                "POST",
+                "/v1/publications/requests",
+                {
+                    "contract_version": "PublicationWorkflowRequest@v1",
+                    "workspace_id": workspace_id,
+                    "content_program_id": content_program_id,
+                    "ready_package_id": ready_package_id,
+                    "publisher_account_id": publisher_account_id,
+                    "budget_id": budget_id,
+                    "idempotency_key": idempotency_key,
+                },
+            )
+        )
+
+    def inspect(self, job_id: str) -> PublicationRunView:
+        return PublicationRunView.model_validate(
+            self._request("GET", f"/v1/publications/runs/{job_id}")
+        )
+
+    def schedule(
+        self,
+        *,
+        workspace_id: str,
+        content_program_id: str,
+        publication_request_id: str,
+        publication_plan_id: str,
+        schedule_version: int,
+        name: str,
+        every_seconds: int,
+        ready_package_id: str,
+        publisher_account_id: str,
+        budget_id: str,
+        idempotency_key: str,
+    ) -> PublicationScheduleView:
+        return PublicationScheduleView.model_validate(
+            self._request(
+                "POST",
+                "/v1/publications/schedules",
+                {
+                    "workspace_id": workspace_id,
+                    "content_program_id": content_program_id,
+                    "publication_request_id": publication_request_id,
+                    "publication_plan_id": publication_plan_id,
+                    "schedule_version": schedule_version,
+                    "name": name,
+                    "every_seconds": every_seconds,
+                    "ready_package_id": ready_package_id,
+                    "publisher_account_id": publisher_account_id,
+                    "budget_id": budget_id,
+                    "idempotency_key": idempotency_key,
+                },
+            )
+        )
+
+    def cancel(self, job_id: str) -> PublicationRunView:
+        return PublicationRunView.model_validate(
+            self._request("POST", f"/v1/publications/runs/{job_id}/cancel")
+        )
+
+
 class SalienceClient:
     def __init__(self, base_url: str, token: str) -> None:
         self.agents = AgentsClient(base_url, token)
         self.intelligence = IntelligenceClient(base_url, token)
         self.creative = CreativeClient(base_url, token)
+        self.publication = PublicationClient(base_url, token)

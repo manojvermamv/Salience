@@ -10,6 +10,8 @@ from typing import Any
 
 import psycopg
 
+from salience.publication.contracts import PublisherWebhookEvent
+
 
 @dataclass(frozen=True)
 class PersistedPublisherAccount:
@@ -57,12 +59,25 @@ class PersistedPublisherWebhookReceipt:
     publication_attempt_id: str
     state: str
 
+    @property
+    def receipt_id(self) -> str:
+        return self.id
+
 
 @dataclass(frozen=True)
 class PersistedPublication:
     id: str
     publication_request_id: str
     remote_receipt_id: str
+
+
+@dataclass(frozen=True)
+class PersistedPublicationSchedule:
+    id: str
+    publication_request_id: str
+    publication_plan_id: str
+    job_schedule_id: str
+    version: int
 
 
 class ImmutablePublicationConflict(ValueError):
@@ -147,6 +162,24 @@ class PublicationRepository:
             idempotency_key,
         )
 
+    async def create_schedule(
+        self,
+        *,
+        publication_request_id: str,
+        publication_plan_id: str,
+        job_schedule_id: str,
+        version: int,
+        schedule_fingerprint: str,
+    ) -> PersistedPublicationSchedule:
+        return await asyncio.to_thread(
+            self._create_schedule,
+            publication_request_id,
+            publication_plan_id,
+            job_schedule_id,
+            version,
+            schedule_fingerprint,
+        )
+
     async def record_remote_receipt(
         self,
         *,
@@ -216,6 +249,29 @@ class PublicationRepository:
             state,
             trace_id,
             span_id,
+        )
+
+    async def record_verified_webhook_event(
+        self, event: PublisherWebhookEvent, *, trace_id: str
+    ) -> PersistedPublisherWebhookReceipt:
+        attempt_id = await asyncio.to_thread(
+            self._attempt_for_remote, event.publisher_id, event.remote_id
+        )
+        status_event = await self.record_status_event(
+            publication_attempt_id=attempt_id,
+            state=event.state,
+            source="webhook",
+            safe_payload_hash=event.safe_payload_hash,
+            trace_id=trace_id,
+        )
+        return await self.record_verified_webhook(
+            publication_attempt_id=attempt_id,
+            status_event_id=status_event.id,
+            publisher_id=event.publisher_id,
+            delivery_identity=event.delivery_identity,
+            safe_payload_hash=event.safe_payload_hash,
+            state=event.state,
+            trace_id=trace_id,
         )
 
     async def record_publication(
@@ -486,6 +542,69 @@ class PublicationRepository:
                 raise ImmutablePublicationConflict("publication attempt differs from its idempotency key")
             return PersistedPublicationAttempt(identifier, found_plan)
 
+    def _create_schedule(
+        self,
+        publication_request_id: str,
+        publication_plan_id: str,
+        job_schedule_id: str,
+        version: int,
+        schedule_fingerprint: str,
+    ) -> PersistedPublicationSchedule:
+        with self._connect() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                INSERT INTO publication_schedules (
+                    publication_request_id, publication_plan_id, job_schedule_id, version,
+                    scheduled_for, schedule_fingerprint, status
+                )
+                SELECT request.id, plan.id, schedule.id, %s, CURRENT_TIMESTAMP, %s, 'scheduled'
+                FROM publication_requests request
+                JOIN publication_plans plan ON plan.publication_request_id = request.id
+                JOIN job_schedules schedule ON schedule.id = %s
+                                           AND schedule.workspace_id = request.workspace_id
+                                           AND schedule.content_program_id = request.content_program_id
+                                           AND schedule.job_type = 'governed_publication'
+                WHERE request.id = %s AND plan.id = %s
+                ON CONFLICT (publication_request_id, version) DO NOTHING
+                RETURNING id::text, publication_request_id::text, publication_plan_id::text,
+                          job_schedule_id::text, version
+                """,
+                (
+                    version,
+                    schedule_fingerprint,
+                    job_schedule_id,
+                    publication_request_id,
+                    publication_plan_id,
+                ),
+            )
+            row = cursor.fetchone()
+            if row is not None:
+                return PersistedPublicationSchedule(*row)
+            cursor.execute(
+                """
+                SELECT id::text, publication_request_id::text, publication_plan_id::text,
+                       job_schedule_id::text, version, schedule_fingerprint
+                FROM publication_schedules
+                WHERE publication_request_id = %s AND version = %s
+                """,
+                (publication_request_id, version),
+            )
+            existing = cursor.fetchone()
+            if existing is None:
+                raise KeyError("publication request, plan, and job schedule are required")
+            identifier, found_request, found_plan, found_job_schedule, found_version, found_hash = existing
+            if (found_request, found_plan, found_job_schedule, found_version, found_hash) != (
+                publication_request_id,
+                publication_plan_id,
+                job_schedule_id,
+                version,
+                schedule_fingerprint,
+            ):
+                raise ImmutablePublicationConflict("publication schedule differs from its immutable version")
+            return PersistedPublicationSchedule(
+                identifier, found_request, found_plan, found_job_schedule, found_version
+            )
+
     def _record_remote_receipt(
         self,
         publication_attempt_id: str,
@@ -648,6 +767,21 @@ class PublicationRepository:
             ):
                 raise ImmutablePublicationConflict("publisher webhook receipt differs from verified delivery")
             return PersistedPublisherWebhookReceipt(identifier, found_attempt, found_state)
+
+    def _attempt_for_remote(self, publisher_id: str, remote_id: str) -> str:
+        with self._connect() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT publication_attempt_id::text
+                FROM remote_publication_receipts
+                WHERE publisher_id = %s AND remote_id = %s
+                """,
+                (publisher_id, remote_id),
+            )
+            row = cursor.fetchone()
+            if row is None:
+                raise KeyError(remote_id)
+            return row[0]
 
     def _record_publication(
         self,

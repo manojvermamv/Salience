@@ -82,3 +82,96 @@ def test_client_starts_and_inspects_provider_neutral_creative_runs(monkeypatch) 
         ),
         ("GET", "https://api.example/v1/creative/runs/creative-job-1", None),
     ]
+
+
+def test_client_starts_and_inspects_governed_publication_through_http(monkeypatch) -> None:
+    requests: list[tuple[str, str, dict[str, object] | None]] = []
+
+    class PublicationResponse:
+        def raise_for_status(self) -> None:
+            pass
+
+        def json(self) -> dict[str, object]:
+            return {
+                "job_id": "publication-job-1",
+                "state": "running",
+                "dry_run": False,
+                "trace_id": "trace-1",
+                "output": {"publication_request_id": "request-1"},
+            }
+
+    def request(method, url, **kwargs):
+        requests.append((method, url, kwargs.get("json")))
+        return PublicationResponse()
+
+    monkeypatch.setattr("salience.sdk.client.httpx.request", request)
+    client = SalienceClient("https://api.example", "token")
+
+    started = client.publication.start(
+        workspace_id="workspace-1",
+        content_program_id="program-1",
+        ready_package_id="ready-1",
+        publisher_account_id="account-1",
+        budget_id="budget-1",
+        idempotency_key="publication-key",
+    )
+    inspected = client.publication.inspect("publication-job-1")
+
+    assert started.trace_id == "trace-1"
+    assert inspected.job_id == "publication-job-1"
+    assert requests == [
+        (
+            "POST",
+            "https://api.example/v1/publications/requests",
+            {
+                "contract_version": "PublicationWorkflowRequest@v1",
+                "workspace_id": "workspace-1",
+                "content_program_id": "program-1",
+                "ready_package_id": "ready-1",
+                "publisher_account_id": "account-1",
+                "budget_id": "budget-1",
+                "idempotency_key": "publication-key",
+            },
+        ),
+        ("GET", "https://api.example/v1/publications/runs/publication-job-1", None),
+    ]
+
+
+def test_client_schedules_governed_publication_through_http(monkeypatch) -> None:
+    requests: list[tuple[str, str, dict[str, object] | None]] = []
+
+    class ScheduleResponse:
+        def raise_for_status(self) -> None:
+            pass
+
+        def json(self) -> dict[str, object]:
+            return {"schedule_id": "schedule-1", "job_type": "governed_publication", "schedule_expression": "every 86400s"}
+
+    def request(method, url, **kwargs):
+        requests.append((method, url, kwargs.get("json")))
+        return ScheduleResponse()
+
+    monkeypatch.setattr("salience.sdk.client.httpx.request", request)
+    client = SalienceClient("https://api.example", "token")
+
+    schedule = client.publication.schedule(
+        workspace_id="workspace-1", content_program_id="program-1",
+        publication_request_id="publication-request-1", publication_plan_id="publication-plan-1",
+        schedule_version=1, name="weekday-private-release", every_seconds=86_400,
+        ready_package_id="ready-1", publisher_account_id="account-1", budget_id="budget-1",
+        idempotency_key="publication-schedule-1",
+    )
+
+    assert schedule.schedule_id == "schedule-1"
+    assert requests == [
+        (
+            "POST", "https://api.example/v1/publications/schedules",
+            {
+                "workspace_id": "workspace-1", "content_program_id": "program-1",
+                "publication_request_id": "publication-request-1", "publication_plan_id": "publication-plan-1",
+                "schedule_version": 1, "name": "weekday-private-release", "every_seconds": 86_400,
+                "ready_package_id": "ready-1", "publisher_account_id": "account-1", "budget_id": "budget-1",
+                "idempotency_key": "publication-schedule-1",
+            },
+        )
+    ]

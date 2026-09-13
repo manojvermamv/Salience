@@ -1,6 +1,6 @@
 from typing import Literal
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class DummyJobRequest(BaseModel):
@@ -167,4 +167,67 @@ class CreativePackageResponse(BaseModel):
 class CreativeWebhookResponse(BaseModel):
     receipt_id: str
     provider_job_id: str
+    state: str
+
+
+class PublicationRunRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    contract_version: Literal["PublicationWorkflowRequest@v1"] = "PublicationWorkflowRequest@v1"
+    workspace_id: str = Field(min_length=1)
+    content_program_id: str = Field(min_length=1)
+    ready_package_id: str = Field(min_length=1)
+    publisher_account_id: str = Field(min_length=1)
+    budget_id: str = Field(min_length=1)
+    idempotency_key: str = Field(min_length=1, max_length=255)
+    platform: str = Field(default="fixture", min_length=1, max_length=64)
+    destination: str = Field(default="fixture://account", min_length=1, max_length=255)
+    locale: str = Field(default="en", min_length=1, max_length=32)
+    territory: str = Field(default="global", min_length=1, max_length=64)
+    visibility: Literal["private", "unlisted", "public"] = "private"
+    capability_profile_version: int = Field(default=1, gt=0)
+
+
+class PublicationRunResponse(BaseModel):
+    job_id: str
+    state: str
+    dry_run: bool
+    trace_id: str
+    output: dict[str, object] = Field(default_factory=dict)
+
+
+class PublicationScheduleRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    workspace_id: str = Field(min_length=1)
+    content_program_id: str = Field(min_length=1)
+    publication_request_id: str = Field(min_length=1)
+    publication_plan_id: str = Field(min_length=1)
+    schedule_version: int = Field(gt=0)
+    name: str = Field(min_length=1, max_length=128, pattern=r"^[a-z0-9-]+$")
+    every_seconds: int = Field(gt=0, le=31_536_000)
+    ready_package_id: str = Field(min_length=1)
+    publisher_account_id: str = Field(min_length=1)
+    budget_id: str = Field(min_length=1)
+    idempotency_key: str = Field(min_length=1, max_length=255)
+    platform: str = Field(default="fixture", min_length=1, max_length=64)
+    destination: str = Field(default="fixture://account", min_length=1, max_length=255)
+    locale: str = Field(default="en", min_length=1, max_length=32)
+    territory: str = Field(default="global", min_length=1, max_length=64)
+    visibility: Literal["private", "unlisted", "public"] = "private"
+    capability_profile_version: int = Field(default=1, gt=0)
+
+
+class PublicationScheduleResponse(BaseModel):
+    schedule_id: str
+    workspace_id: str
+    content_program_id: str
+    name: str
+    job_type: str
+    schedule_expression: str
+
+
+class PublicationWebhookResponse(BaseModel):
+    receipt_id: str
+    publication_attempt_id: str
     state: str

@@ -5,7 +5,8 @@ import os
 import psycopg
 import pytest
 
-from salience.publication.repository import PublicationRepository
+from salience.publication.repository import ImmutablePublicationConflict, PublicationRepository
+from salience.workflows.persistence import CanonicalJobStore
 
 
 @pytest.mark.asyncio
@@ -123,3 +124,66 @@ async def test_remote_receipt_is_immutable_after_insert() -> None:
                 "UPDATE remote_publication_receipts SET remote_url = 'changed' WHERE id = %s",
                 (receipt.id,),
             )
+
+
+@pytest.mark.asyncio
+async def test_publication_schedule_persists_exact_request_plan_and_job_schedule() -> None:
+    from test_creative_release_gate_migration import _approved_ready_package
+
+    ready = await _approved_ready_package()
+    database_url = os.environ["TEST_DATABASE_URL"]
+    repository = PublicationRepository(database_url)
+    account = await repository.create_account(
+        workspace_id=ready["workspace_id"],
+        platform="fixture",
+        account_key="schedule-account",
+        account_type="creator",
+        external_account_reference="fixture:schedule-account",
+    )
+    request = await repository.create_request(
+        ready_package_id=ready["ready_package_id"],
+        workspace_id=ready["workspace_id"],
+        content_program_id=ready["program_id"],
+        publisher_account_id=account.id,
+        idempotency_key="publication-schedule-request",
+    )
+    plan = await repository.create_plan(
+        publication_request_id=request.id,
+        version=1,
+        publisher_id="fixture-publisher",
+        publisher_version="1",
+    )
+    job_schedule = await CanonicalJobStore(database_url).create_schedule(
+        workspace_id=ready["workspace_id"],
+        content_program_id=ready["program_id"],
+        name="weekday-private-release",
+        schedule_expression="every 86400s",
+        job_type="governed_publication",
+        payload={"publication_request_id": request.id, "publication_plan_id": plan.id},
+    )
+
+    first = await repository.create_schedule(
+        publication_request_id=request.id,
+        publication_plan_id=plan.id,
+        job_schedule_id=job_schedule.schedule_id,
+        version=1,
+        schedule_fingerprint="a" * 64,
+    )
+    replay = await repository.create_schedule(
+        publication_request_id=request.id,
+        publication_plan_id=plan.id,
+        job_schedule_id=job_schedule.schedule_id,
+        version=1,
+        schedule_fingerprint="a" * 64,
+    )
+
+    assert replay.id == first.id
+    assert first.publication_plan_id == plan.id
+    with pytest.raises(ImmutablePublicationConflict):
+        await repository.create_schedule(
+            publication_request_id=request.id,
+            publication_plan_id=plan.id,
+            job_schedule_id=job_schedule.schedule_id,
+            version=1,
+            schedule_fingerprint="b" * 64,
+        )

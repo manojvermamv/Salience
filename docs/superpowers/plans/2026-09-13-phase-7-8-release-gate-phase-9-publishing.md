@@ -716,7 +716,7 @@ Expected: PASS. Commit: `feat: add durable governed publication workflow`.
 
 **Interfaces:** Scoped request/plan/schedule/inspect/cancel endpoints and commands; `POST /v1/publishers/{provider_id}/webhooks` verifies and deduplicates a signed receipt. There is no API for raw credentials or package mutation.
 
-- [ ] **Step 1: Write public-surface red tests**
+- [x] **Step 1: Write public-surface red tests**
 
 ```python
 async def test_publication_start_requires_ready_package_and_explicit_account(api_client):
@@ -729,17 +729,17 @@ async def test_publisher_webhook_duplicate_returns_same_receipt(api_client, sign
     assert first.json()["receipt_id"] == second.json()["receipt_id"]
 ```
 
-- [ ] **Step 2: Run tests and confirm failure**
+- [x] **Step 2: Run tests and confirm failure**
 
 Run: `pytest tests/integration/test_publication_control_api.py tests/unit/test_cli.py tests/unit/test_sdk.py -q`
 
 Expected: FAIL because publication routes and clients are absent.
 
-- [ ] **Step 3: Implement HTTP-only operator surfaces**
+- [x] **Step 3: Implement HTTP-only operator surfaces**
 
 Require `control:write` for request/schedule/cancel and `control:read` for inspection. Return canonical IDs, state, trace, safe reason, and receipt IDs only. Validate workspace/account/ready-package binding. CLI and SDK must call the same routes; neither connects to PostgreSQL. Reject any payload carrying token/secret fields.
 
-- [ ] **Step 4: Verify**
+- [x] **Step 4: Verify**
 
 Run: `pytest tests/integration/test_publication_control_api.py tests/unit/test_cli.py tests/unit/test_sdk.py -q`
 

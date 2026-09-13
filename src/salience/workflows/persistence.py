@@ -200,6 +200,9 @@ class CanonicalJobStore:
     async def run_for_workflow(self, workflow_run_id: str) -> CanonicalRun:
         return await asyncio.to_thread(self._run_for_workflow, workflow_run_id)
 
+    async def workflow_run_id_for_job(self, job_id: str) -> str | None:
+        return await asyncio.to_thread(self._workflow_run_id_for_job, job_id)
+
     async def effect_was_reconciled(
         self, run: CanonicalRun, idempotency_key: str
     ) -> bool:
@@ -244,6 +247,24 @@ class CanonicalJobStore:
             name,
             schedule_expression,
             job_type,
+            payload,
+        )
+
+    async def publication_schedule_matches(
+        self,
+        *,
+        workspace_id: str,
+        content_program_id: str,
+        name: str,
+        schedule_expression: str,
+        payload: dict[str, object],
+    ) -> bool | None:
+        return await asyncio.to_thread(
+            self._publication_schedule_matches,
+            workspace_id,
+            content_program_id,
+            name,
+            schedule_expression,
             payload,
         )
 
@@ -805,6 +826,12 @@ class CanonicalJobStore:
                 trace_context=TraceContext(trace_id=trace_id, span_id=span_id),
             )
 
+    def _workflow_run_id_for_job(self, job_id: str) -> str | None:
+        with self._connect() as connection, connection.cursor() as cursor:
+            cursor.execute("SELECT workflow_run_id FROM jobs WHERE id = %s", (job_id,))
+            row = cursor.fetchone()
+            return row[0] if row is not None else None
+
     def _effect_was_reconciled(self, run: CanonicalRun, idempotency_key: str) -> bool:
         with self._connect() as connection, connection.cursor() as cursor:
             cursor.execute(
@@ -971,6 +998,34 @@ class CanonicalJobStore:
                 ),
             )
             return CanonicalSchedule(*cursor.fetchone())
+
+    def _publication_schedule_matches(
+        self,
+        workspace_id: str,
+        content_program_id: str,
+        name: str,
+        schedule_expression: str,
+        payload: dict[str, object],
+    ) -> bool | None:
+        with self._connect() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT content_program_id::text, job_type, schedule_expression, payload
+                FROM job_schedules
+                WHERE workspace_id = %s AND name = %s
+                """,
+                (workspace_id, name),
+            )
+            row = cursor.fetchone()
+            if row is None:
+                return None
+            existing_program, existing_type, existing_expression, existing_payload = row
+            return (
+                existing_program == content_program_id
+                and existing_type == "governed_publication"
+                and existing_expression == schedule_expression
+                and existing_payload == payload
+            )
 
     @staticmethod
     def _insert_audit(

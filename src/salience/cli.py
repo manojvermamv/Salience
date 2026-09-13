@@ -75,6 +75,31 @@ def main(arguments: Sequence[str] | None = None) -> None:
     creative_inspect.add_argument("job_id")
     creative_lineage = creative_commands.add_parser("package-lineage")
     creative_lineage.add_argument("ready_package_id")
+    publication = subcommands.add_parser("publication")
+    publication_commands = publication.add_subparsers(dest="publication_command", required=True)
+    publication_start = publication_commands.add_parser("start")
+    publication_start.add_argument("--workspace-id", required=True)
+    publication_start.add_argument("--program-id", required=True)
+    publication_start.add_argument("--ready-package-id", required=True)
+    publication_start.add_argument("--publisher-account-id", required=True)
+    publication_start.add_argument("--budget-id", required=True)
+    publication_start.add_argument("--idempotency-key", required=True)
+    publication_inspect = publication_commands.add_parser("inspect")
+    publication_inspect.add_argument("job_id")
+    publication_cancel = publication_commands.add_parser("cancel")
+    publication_cancel.add_argument("job_id")
+    publication_schedule = publication_commands.add_parser("schedule")
+    publication_schedule.add_argument("--workspace-id", required=True)
+    publication_schedule.add_argument("--program-id", required=True)
+    publication_schedule.add_argument("--publication-request-id", required=True)
+    publication_schedule.add_argument("--publication-plan-id", required=True)
+    publication_schedule.add_argument("--schedule-version", required=True, type=int)
+    publication_schedule.add_argument("--name", required=True)
+    publication_schedule.add_argument("--every-seconds", required=True, type=int)
+    publication_schedule.add_argument("--ready-package-id", required=True)
+    publication_schedule.add_argument("--publisher-account-id", required=True)
+    publication_schedule.add_argument("--budget-id", required=True)
+    publication_schedule.add_argument("--idempotency-key", required=True)
     agents = subcommands.add_parser("agents")
     agent_commands = agents.add_subparsers(dest="agent_command", required=True)
     agent_commands.add_parser("list")
@@ -156,6 +181,42 @@ def main(arguments: Sequence[str] | None = None) -> None:
             method="GET",
             path=f"/v1/creative/packages/{parsed.ready_package_id}/lineage",
         )
+    elif parsed.command == "publication" and parsed.publication_command == "start":
+        result = _request(
+            method="POST",
+            path="/v1/publications/requests",
+            payload={
+                "contract_version": "PublicationWorkflowRequest@v1",
+                "workspace_id": parsed.workspace_id,
+                "content_program_id": parsed.program_id,
+                "ready_package_id": parsed.ready_package_id,
+                "publisher_account_id": parsed.publisher_account_id,
+                "budget_id": parsed.budget_id,
+                "idempotency_key": parsed.idempotency_key,
+            },
+        )
+    elif parsed.command == "publication" and parsed.publication_command == "schedule":
+        result = _request(
+            method="POST",
+            path="/v1/publications/schedules",
+            payload={
+                "workspace_id": parsed.workspace_id,
+                "content_program_id": parsed.program_id,
+                "publication_request_id": parsed.publication_request_id,
+                "publication_plan_id": parsed.publication_plan_id,
+                "schedule_version": parsed.schedule_version,
+                "name": parsed.name,
+                "every_seconds": parsed.every_seconds,
+                "ready_package_id": parsed.ready_package_id,
+                "publisher_account_id": parsed.publisher_account_id,
+                "budget_id": parsed.budget_id,
+                "idempotency_key": parsed.idempotency_key,
+            },
+        )
+    elif parsed.command == "publication" and parsed.publication_command == "inspect":
+        result = _request(method="GET", path=f"/v1/publications/runs/{parsed.job_id}")
+    elif parsed.command == "publication":
+        result = _request(method="POST", path=f"/v1/publications/runs/{parsed.job_id}/cancel")
     elif parsed.agent_command == "list":
         result = _request(method="GET", path="/v1/agents")
     elif parsed.agent_command == "describe":

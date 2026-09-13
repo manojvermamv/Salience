@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
@@ -186,6 +187,11 @@ class FixturePublisherAdapter:
         )
 
     async def verify_webhook(self, webhook: object) -> PublisherWebhookEvent:
+        if isinstance(webhook, Mapping):
+            try:
+                webhook = SignedFixtureWebhook(**webhook)
+            except TypeError as error:
+                raise FixturePublisherError("invalid fixture webhook payload") from error
         if not isinstance(webhook, SignedFixtureWebhook):
             raise FixturePublisherError("unsupported fixture webhook payload")
         payload = {

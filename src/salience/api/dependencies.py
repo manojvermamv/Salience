@@ -1,4 +1,6 @@
-from dataclasses import dataclass, field
+import hashlib
+import json
+from dataclasses import dataclass, field, replace
 from datetime import timedelta
 from secrets import token_hex
 from typing import Protocol
@@ -16,10 +18,18 @@ from salience.workflows.creative import (
     CREATIVE_WORKFLOW_TYPE,
     CreativeProductionRequest,
 )
+from salience.workflows.publication import (
+    PUBLICATION_WORKFLOW_TYPE,
+    GovernedPublicationWorkflow,
+    PublicationScheduleRequest as DurablePublicationScheduleRequest,
+    PublicationScheduleService,
+    PublicationWorkflowRequest,
+)
 from salience.workflows.persistence import CanonicalJobStore
 from salience.workflows.schedules import ScheduleRequest, TemporalScheduleService
 from salience.creative.repository import CreativeRepository
 from salience.intelligence.repository import IntelligenceRepository
+from salience.publication.repository import PublicationRepository
 
 
 @dataclass(frozen=True)
@@ -66,6 +76,15 @@ class ControlIntelligenceRun:
 
 @dataclass(frozen=True)
 class ControlCreativeRun:
+    job_id: str
+    state: str
+    dry_run: bool
+    trace_id: str
+    output: dict[str, object] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class ControlPublicationRun:
     job_id: str
     state: str
     dry_run: bool
@@ -155,6 +174,49 @@ class ControlPlane(Protocol):
 
     async def get_creative(self, job_id: str) -> ControlCreativeRun | None: ...
 
+    async def start_publication(
+        self,
+        *,
+        workspace_id: str,
+        content_program_id: str,
+        ready_package_id: str,
+        publisher_account_id: str,
+        budget_id: str,
+        idempotency_key: str,
+        platform: str = "fixture",
+        destination: str = "fixture://account",
+        locale: str = "en",
+        territory: str = "global",
+        visibility: str = "private",
+        capability_profile_version: int = 1,
+    ) -> ControlPublicationRun: ...
+
+    async def get_publication(self, job_id: str) -> ControlPublicationRun | None: ...
+
+    async def cancel_publication(self, job_id: str) -> ControlPublicationRun | None: ...
+
+    async def create_publication_schedule(
+        self,
+        *,
+        workspace_id: str,
+        content_program_id: str,
+        publication_request_id: str,
+        publication_plan_id: str,
+        schedule_version: int,
+        name: str,
+        every_seconds: int,
+        ready_package_id: str,
+        publisher_account_id: str,
+        budget_id: str,
+        idempotency_key: str,
+        platform: str = "fixture",
+        destination: str = "fixture://account",
+        locale: str = "en",
+        territory: str = "global",
+        visibility: str = "private",
+        capability_profile_version: int = 1,
+    ) -> ControlSchedule: ...
+
     async def get_ready_package_lineage(
         self, ready_package_id: str
     ) -> dict[str, object] | None: ...
@@ -171,6 +233,7 @@ class InMemoryControlPlane:
     )
     _intelligence_runs: dict[str, ControlIntelligenceRun] = field(default_factory=dict)
     _creative_runs: dict[str, ControlCreativeRun] = field(default_factory=dict)
+    _publication_runs: dict[str, ControlPublicationRun] = field(default_factory=dict)
     _ready_package_lineages: dict[str, dict[str, object]] = field(default_factory=dict)
     _schedules: dict[tuple[str, str], ControlSchedule] = field(default_factory=dict)
     _briefs: dict[str, ControlContentBrief] = field(default_factory=dict)
@@ -338,6 +401,124 @@ class InMemoryControlPlane:
     async def get_creative(self, job_id: str) -> ControlCreativeRun | None:
         return self._creative_runs.get(job_id)
 
+    async def start_publication(
+        self,
+        *,
+        workspace_id: str,
+        content_program_id: str,
+        ready_package_id: str,
+        publisher_account_id: str,
+        budget_id: str,
+        idempotency_key: str,
+        platform: str = "fixture",
+        destination: str = "fixture://account",
+        locale: str = "en",
+        territory: str = "global",
+        visibility: str = "private",
+        capability_profile_version: int = 1,
+    ) -> ControlPublicationRun:
+        if not any(
+            program.content_program_id == content_program_id and program.workspace_id == workspace_id
+            for program in self._content_programs.values()
+        ):
+            raise KeyError(content_program_id)
+        existing = next(
+            (
+                run
+                for run in self._publication_runs.values()
+                if run.output.get("idempotency_key") == idempotency_key
+            ),
+            None,
+        )
+        if existing is not None:
+            return existing
+        run = ControlPublicationRun(
+            job_id=str(uuid4()),
+            state="running",
+            dry_run=False,
+            trace_id=token_hex(16),
+            output={
+                "contract_version": "PublicationWorkflowRequest@v1",
+                "ready_package_id": ready_package_id,
+                "publisher_account_id": publisher_account_id,
+                "budget_id": budget_id,
+                "idempotency_key": idempotency_key,
+                "platform": platform,
+                "destination": destination,
+                "locale": locale,
+                "territory": territory,
+                "visibility": visibility,
+                "capability_profile_version": capability_profile_version,
+            },
+        )
+        self._publication_runs[run.job_id] = run
+        return run
+
+    async def get_publication(self, job_id: str) -> ControlPublicationRun | None:
+        return self._publication_runs.get(job_id)
+
+    async def cancel_publication(self, job_id: str) -> ControlPublicationRun | None:
+        run = await self.get_publication(job_id)
+        if run is None:
+            return None
+        cancelled = replace(run, state="cancelled")
+        self._publication_runs[job_id] = cancelled
+        return cancelled
+
+    async def create_publication_schedule(
+        self,
+        *,
+        workspace_id: str,
+        content_program_id: str,
+        publication_request_id: str,
+        publication_plan_id: str,
+        schedule_version: int,
+        name: str,
+        every_seconds: int,
+        ready_package_id: str,
+        publisher_account_id: str,
+        budget_id: str,
+        idempotency_key: str,
+        platform: str = "fixture",
+        destination: str = "fixture://account",
+        locale: str = "en",
+        territory: str = "global",
+        visibility: str = "private",
+        capability_profile_version: int = 1,
+    ) -> ControlSchedule:
+        if every_seconds <= 0 or schedule_version <= 0:
+            raise ValueError("publication schedule interval and version must be positive")
+        if not all(
+            (
+                publication_request_id,
+                publication_plan_id,
+                ready_package_id,
+                publisher_account_id,
+                budget_id,
+                idempotency_key,
+            )
+        ):
+            raise ValueError(
+                "publication schedule requires immutable request, plan, package, account, budget, and key"
+            )
+        if not any(
+            program.content_program_id == content_program_id and program.workspace_id == workspace_id
+            for program in self._content_programs.values()
+        ):
+            raise KeyError(content_program_id)
+        schedule = ControlSchedule(
+            schedule_id=(
+                f"publication:{publication_request_id}:{publication_plan_id}:{schedule_version}"
+            ),
+            workspace_id=workspace_id,
+            content_program_id=content_program_id,
+            name=name,
+            job_type="governed_publication",
+            schedule_expression=f"every {every_seconds}s",
+        )
+        self._schedules[(workspace_id, name)] = schedule
+        return schedule
+
     async def get_ready_package_lineage(
         self, ready_package_id: str
     ) -> dict[str, object] | None:
@@ -416,6 +597,7 @@ class TemporalControlPlane:
         self._store = CanonicalJobStore(database_url)
         self._intelligence = IntelligenceRepository(database_url)
         self._creative = CreativeRepository(database_url)
+        self._publication = PublicationRepository(database_url)
         self._temporal_target = temporal_target
         self._task_queue = task_queue
         self._creative_effects_enabled = creative_effects_enabled
@@ -583,6 +765,69 @@ class TemporalControlPlane:
             },
         )
 
+    async def start_publication(
+        self,
+        *,
+        workspace_id: str,
+        content_program_id: str,
+        ready_package_id: str,
+        publisher_account_id: str,
+        budget_id: str,
+        idempotency_key: str,
+        platform: str = "fixture",
+        destination: str = "fixture://account",
+        locale: str = "en",
+        territory: str = "global",
+        visibility: str = "private",
+        capability_profile_version: int = 1,
+    ) -> ControlPublicationRun:
+        existing = await self._store.job_by_idempotency_key(idempotency_key)
+        if existing is not None:
+            return _publication_from_job(existing)
+        workflow_id = f"control-publication-{uuid4()}"
+        run = await self._store.create_publication_run(
+            workflow_run_id=workflow_id,
+            task_queue=self._task_queue,
+            workspace_id=workspace_id,
+            content_program_id=content_program_id,
+            ready_package_id=ready_package_id,
+            publisher_account_id=publisher_account_id,
+            idempotency_key=idempotency_key,
+        )
+        client = await Client.connect(self._temporal_target)
+        await client.start_workflow(
+            PUBLICATION_WORKFLOW_TYPE,
+            PublicationWorkflowRequest(
+                workspace_id=workspace_id,
+                content_program_id=content_program_id,
+                ready_package_id=ready_package_id,
+                publisher_account_id=publisher_account_id,
+                budget_id=budget_id,
+                idempotency_key=idempotency_key,
+                platform=platform,
+                destination=destination,
+                locale=locale,
+                territory=territory,
+                visibility=visibility,
+                capability_profile_version=capability_profile_version,
+            ),
+            id=workflow_id,
+            task_queue=self._task_queue,
+        )
+        return ControlPublicationRun(
+            job_id=str(run.job_id),
+            state="running",
+            dry_run=False,
+            trace_id=run.trace_context.trace_id,
+            output={
+                "contract_version": "PublicationWorkflowRequest@v1",
+                "ready_package_id": ready_package_id,
+                "publisher_account_id": publisher_account_id,
+                "budget_id": budget_id,
+                "idempotency_key": idempotency_key,
+            },
+        )
+
     async def get_content_brief(self, brief_id: str) -> ControlContentBrief | None:
         details = await self._intelligence.brief_details(brief_id)
         return _content_brief_from_details(details) if details is not None else None
@@ -600,6 +845,125 @@ class TemporalControlPlane:
     async def get_creative(self, job_id: str) -> ControlCreativeRun | None:
         snapshot = await self._store.job_snapshot(job_id)
         return _creative_from_job(snapshot) if snapshot is not None else None
+
+    async def get_publication(self, job_id: str) -> ControlPublicationRun | None:
+        snapshot = await self._store.job_snapshot(job_id)
+        return _publication_from_job(snapshot) if snapshot is not None else None
+
+    async def cancel_publication(self, job_id: str) -> ControlPublicationRun | None:
+        publication = await self.get_publication(job_id)
+        if publication is None:
+            return None
+        workflow_run_id = await self._store.workflow_run_id_for_job(job_id)
+        if workflow_run_id is None:
+            return None
+        client = await Client.connect(self._temporal_target)
+        handle = client.get_workflow_handle(workflow_run_id)
+        await handle.signal(GovernedPublicationWorkflow.request_cancellation)
+        return replace(publication, state="cancelling")
+
+    async def create_publication_schedule(
+        self,
+        *,
+        workspace_id: str,
+        content_program_id: str,
+        publication_request_id: str,
+        publication_plan_id: str,
+        schedule_version: int,
+        name: str,
+        every_seconds: int,
+        ready_package_id: str,
+        publisher_account_id: str,
+        budget_id: str,
+        idempotency_key: str,
+        platform: str = "fixture",
+        destination: str = "fixture://account",
+        locale: str = "en",
+        territory: str = "global",
+        visibility: str = "private",
+        capability_profile_version: int = 1,
+    ) -> ControlSchedule:
+        if every_seconds <= 0 or schedule_version <= 0:
+            raise ValueError("publication schedule interval and version must be positive")
+        workflow_request = PublicationWorkflowRequest(
+            workspace_id=workspace_id,
+            content_program_id=content_program_id,
+            ready_package_id=ready_package_id,
+            publisher_account_id=publisher_account_id,
+            budget_id=budget_id,
+            idempotency_key=idempotency_key,
+            platform=platform,
+            destination=destination,
+            locale=locale,
+            territory=territory,
+            visibility=visibility,
+            capability_profile_version=capability_profile_version,
+        )
+        fingerprint = hashlib.sha256(
+            json.dumps(
+                {
+                    "publication_request_id": publication_request_id,
+                    "publication_plan_id": publication_plan_id,
+                    "schedule_version": schedule_version,
+                    "name": name,
+                    "every_seconds": every_seconds,
+                    "workflow_request": workflow_request.__dict__,
+                },
+                default=str,
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode()
+        ).hexdigest()
+        schedule_expression = f"every {every_seconds}s"
+        schedule_payload = {
+            "publication_request_id": publication_request_id,
+            "publication_plan_id": publication_plan_id,
+            "schedule_version": schedule_version,
+            "contract_version": workflow_request.contract_version,
+        }
+        existing_schedule_matches = await self._store.publication_schedule_matches(
+            workspace_id=workspace_id,
+            content_program_id=content_program_id,
+            name=name,
+            schedule_expression=schedule_expression,
+            payload=schedule_payload,
+        )
+        if existing_schedule_matches is False:
+            raise ValueError("publication schedule name already identifies a different immutable schedule")
+        canonical = await self._store.create_schedule(
+            workspace_id=workspace_id,
+            content_program_id=content_program_id,
+            name=name,
+            schedule_expression=schedule_expression,
+            job_type="governed_publication",
+            payload=schedule_payload,
+        )
+        await self._publication.create_schedule(
+            publication_request_id=publication_request_id,
+            publication_plan_id=publication_plan_id,
+            job_schedule_id=canonical.schedule_id,
+            version=schedule_version,
+            schedule_fingerprint=fingerprint,
+        )
+        client = await Client.connect(self._temporal_target)
+        await PublicationScheduleService(client, task_queue=self._task_queue).create_every(
+            DurablePublicationScheduleRequest(
+                publication_request_id=publication_request_id,
+                publication_plan_id=publication_plan_id,
+                schedule_version=schedule_version,
+                name=name,
+                every=timedelta(seconds=every_seconds),
+                workflow_request=workflow_request,
+            )
+        )
+        return ControlSchedule(
+            schedule_id=canonical.schedule_id,
+            workspace_id=canonical.workspace_id,
+            content_program_id=canonical.content_program_id,
+            name=canonical.name,
+            job_type=canonical.job_type,
+            schedule_expression=canonical.schedule_expression,
+        )
 
     async def get_ready_package_lineage(
         self, ready_package_id: str
@@ -706,6 +1070,16 @@ def _intelligence_from_job(snapshot) -> ControlIntelligenceRun:
 
 def _creative_from_job(snapshot) -> ControlCreativeRun:
     return ControlCreativeRun(
+        job_id=snapshot.job_id,
+        state=snapshot.state,
+        dry_run=snapshot.dry_run,
+        trace_id=snapshot.trace_id,
+        output=snapshot.output_payload,
+    )
+
+
+def _publication_from_job(snapshot) -> ControlPublicationRun:
+    return ControlPublicationRun(
         job_id=snapshot.job_id,
         state=snapshot.state,
         dry_run=snapshot.dry_run,
