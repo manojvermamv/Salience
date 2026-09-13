@@ -5,10 +5,12 @@
 - Branch: `phase7-8-release-gate-phase9` (isolated worktree from `main`)
 - Plan: `docs/superpowers/plans/2026-09-13-phase-7-8-release-gate-phase-9-publishing.md`
 - Active task: Gate One, Task 4 — implement explicit canonical budget binding for non-dry creative runs.
-- Current TDD step: Write the request/control/workflow red tests, then reserve against the selected budget before any provider submission.
+- Current TDD step: Propagate the explicit budget ID through the API/control plane, then write activity-level reservation-before-submit recovery tests.
 - Last verified state: Gate One Task 3 passed its PostgreSQL cost lifecycle and existing creative recovery suite (8 tests). Phase 7–8 remains unapproved; Task 11’s complete release ladder and independent review remain mandatory before any Phase 9 code.
 
 ## Checkpoints
+
+- 2026-09-13: Started Gate One Task 4 with the explicit-budget request boundary. The new red unit contract proved `CreativeProductionRequest@v1` accepted a non-dry run without a budget. It now carries optional `budget_id`, rejects a missing ID only for non-dry execution, and preserves it in workflow payloads; dry-run behavior remains budget-free. The focused unit suite passed 3/3 with compilation and whitespace checks clean. Next: API/control-plane propagation and durable reservation before provider submission.
 
 - 2026-09-13: Accepted decision A for the Task 4 blocker: every non-dry creative run must carry an explicit canonical `budget_id`; dry runs reserve no cost. The release-gate design also records the user’s Phase 9 direction that canonical publication must select versioned, capability-compatible `PublisherAdapter` implementations through a registry, keeping YouTube, TikTok, Instagram, LinkedIn, fixture, and future adapters independently replaceable. Next: red request/control/workflow tests for the explicit creative budget binding; Phase 9 implementation remains behind the Gate One barrier.
 

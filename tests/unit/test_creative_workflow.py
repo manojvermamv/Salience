@@ -13,6 +13,17 @@ def test_creative_request_requires_exact_brief_identity_and_idempotency_key() ->
         )
 
 
+def test_non_dry_creative_request_requires_an_explicit_budget_identity() -> None:
+    with pytest.raises(ValueError, match="budget"):
+        CreativeProductionRequest(
+            workspace_id="workspace-1",
+            content_program_id="program-1",
+            brief_id="brief-1",
+            idempotency_key="creative-1",
+            dry_run=False,
+        )
+
+
 def test_creative_result_is_a_publish_free_ready_package_reference() -> None:
     result = CreativeProductionResult(
         state="completed",

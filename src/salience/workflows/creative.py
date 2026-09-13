@@ -39,6 +39,7 @@ class CreativeProductionRequest:
     brief_id: str
     idempotency_key: str
     dry_run: bool = True
+    budget_id: str | None = None
     target_profile_key: str = "fixture-short-video"
     target_profile_version: int = 1
     contract_version: str = "CreativeProductionRequest@v1"
@@ -50,6 +51,8 @@ class CreativeProductionRequest:
             raise ValueError("workspace, content program, and brief identities are required")
         if not self.idempotency_key:
             raise ValueError("idempotency_key is required")
+        if not self.dry_run and not self.budget_id:
+            raise ValueError("non-dry creative runs require a budget identity")
         if self.target_profile_version <= 0:
             raise ValueError("target profile version must be positive")
 
@@ -546,6 +549,7 @@ def _request_payload(request: CreativeProductionRequest) -> dict[str, Any]:
         "brief_id": request.brief_id,
         "idempotency_key": request.idempotency_key,
         "dry_run": request.dry_run,
+        "budget_id": request.budget_id,
         "target_profile_key": request.target_profile_key,
         "target_profile_version": request.target_profile_version,
     }
