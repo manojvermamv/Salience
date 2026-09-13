@@ -302,7 +302,7 @@ Run the Phase 9 governed-publishing verifier after the same environment is ready
 bash scripts/verify-phase-9.sh
 ```
 
-It applies migrations through `0011_publication_plan_lifecycle`, checks the canonical
+It applies migrations through `0012_publication_profile_scope`, checks the canonical
 publisher request/plan/schedule/attempt/receipt tables, API/CLI/SDK controls,
 fixture restart/reconciliation, final-write cost/policy/rights/approval gates,
 signed webhook deduplication, and the durable private-only YouTube session

@@ -767,6 +767,35 @@ class TemporalControlPlane:
         existing = await self._store.job_by_idempotency_key(idempotency_key)
         if existing is not None:
             return _publication_from_job(existing)
+        workflow_request = PublicationWorkflowRequest(
+            workspace_id=workspace_id,
+            content_program_id=content_program_id,
+            ready_package_id=ready_package_id,
+            publisher_account_id=publisher_account_id,
+            publication_approval_request_id=publication_approval_request_id,
+            budget_id=budget_id,
+            idempotency_key=idempotency_key,
+            platform=platform,
+            destination=destination,
+            locale=locale,
+            territory=territory,
+            visibility=visibility,
+            capability_profile_version=capability_profile_version,
+        )
+        await self._publication.create_request(
+            ready_package_id=workflow_request.ready_package_id,
+            workspace_id=workflow_request.workspace_id,
+            content_program_id=workflow_request.content_program_id,
+            publisher_account_id=workflow_request.publisher_account_id,
+            publication_approval_request_id=workflow_request.publication_approval_request_id,
+            idempotency_key=workflow_request.idempotency_key,
+            platform=workflow_request.platform,
+            destination=workflow_request.destination,
+            locale=workflow_request.locale,
+            territory=workflow_request.territory,
+            visibility=workflow_request.visibility,
+            capability_profile_version=workflow_request.capability_profile_version,
+        )
         workflow_id = f"control-publication-{uuid4()}"
         run = await self._store.create_publication_run(
             workflow_run_id=workflow_id,
@@ -780,21 +809,7 @@ class TemporalControlPlane:
         client = await Client.connect(self._temporal_target)
         await client.start_workflow(
             PUBLICATION_WORKFLOW_TYPE,
-            PublicationWorkflowRequest(
-                workspace_id=workspace_id,
-                content_program_id=content_program_id,
-                ready_package_id=ready_package_id,
-                publisher_account_id=publisher_account_id,
-                publication_approval_request_id=publication_approval_request_id,
-                budget_id=budget_id,
-                idempotency_key=idempotency_key,
-                platform=platform,
-                destination=destination,
-                locale=locale,
-                territory=territory,
-                visibility=visibility,
-                capability_profile_version=capability_profile_version,
-            ),
+            workflow_request,
             id=workflow_id,
             task_queue=self._task_queue,
         )

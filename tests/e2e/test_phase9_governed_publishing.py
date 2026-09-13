@@ -3,6 +3,7 @@
 import asyncio
 import os
 import sys
+from datetime import timedelta
 from pathlib import Path
 from uuid import uuid4
 
@@ -17,6 +18,8 @@ from salience.publication.repository import PublicationRepository
 from salience.workflows.persistence import CanonicalJobStore
 from salience.workflows.publication import (
     GovernedPublicationWorkflow,
+    PublicationScheduleRequest as DurablePublicationScheduleRequest,
+    PublicationScheduleService,
     PublicationWorkflowRequest,
     PublicationWorkflowState,
     build_publication_worker,
@@ -88,6 +91,36 @@ async def _publication_destination(database_url: str, request_key: str) -> str:
     return await asyncio.to_thread(inspect)
 
 
+async def _scheduled_job_snapshot(database_url: str, publication_schedule_id: str):
+    def find_job_id() -> str | None:
+        with psycopg.connect(database_url) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT id::text
+                FROM jobs
+                WHERE idempotency_key LIKE %s
+                ORDER BY started_at DESC
+                LIMIT 1
+                """,
+                (f"publication-schedule:{publication_schedule_id}:%",),
+            )
+            row = cursor.fetchone()
+            return str(row[0]) if row is not None else None
+
+    store = CanonicalJobStore(database_url)
+    latest = None
+    for _ in range(30):
+        job_id = await asyncio.to_thread(find_job_id)
+        if job_id is not None:
+            snapshot = await store.job_snapshot(job_id)
+            if snapshot is not None:
+                latest = snapshot
+                if snapshot.state in {"succeeded", "denied", "cancelled", "dead_lettered"}:
+                    return snapshot
+        await asyncio.sleep(1)
+    return latest
+
+
 async def _set_connection_status(database_url: str, account_id: str, status: str) -> None:
     def update() -> None:
         with psycopg.connect(database_url) as connection:
@@ -117,7 +150,17 @@ async def test_poll_and_duplicate_webhook_converge_to_one_receipt() -> None:
 
     database_url = os.environ["TEST_DATABASE_URL"]
     temporal_client = await Client.connect(os.environ["TEST_TEMPORAL_TARGET"])
-    ready = await _approved_ready_package()
+    ready = await _approved_ready_package(
+        publication_policy_document={
+            "publication_scope": {
+                "platform": "fixture",
+                "destination": "fixture://canonical-effect-input",
+                "locale": "en",
+                "territory": "global",
+                "visibility": "private",
+            }
+        },
+    )
     repository = PublicationRepository(database_url)
     account = await repository.create_account(
         workspace_id=ready["workspace_id"],
@@ -126,7 +169,9 @@ async def test_poll_and_duplicate_webhook_converge_to_one_receipt() -> None:
         account_type="creator",
         external_account_reference=f"fixture:webhook:{uuid4()}",
     )
-    publication_approval_request_id = await _approved_publication_approval(ready, account.id)
+    publication_approval_request_id = await _approved_publication_approval(
+        ready, account.id, destination="fixture://canonical-effect-input"
+    )
     idempotency_key = f"publication-webhook-{uuid4()}"
     task_queue = f"salience-publication-webhook-{uuid4()}"
     workflow_id = f"publication-webhook-{uuid4()}"
@@ -318,7 +363,17 @@ async def test_scheduled_execution_uses_its_exact_persisted_request_and_plan() -
 
     database_url = os.environ["TEST_DATABASE_URL"]
     temporal_client = await Client.connect(os.environ["TEST_TEMPORAL_TARGET"])
-    ready = await _approved_ready_package()
+    ready = await _approved_ready_package(
+        publication_policy_document={
+            "publication_scope": {
+                "platform": "fixture",
+                "destination": "fixture://scheduled-canonical",
+                "locale": "en",
+                "territory": "global",
+                "visibility": "private",
+            }
+        },
+    )
     repository = PublicationRepository(database_url)
     account = await repository.create_account(
         workspace_id=ready["workspace_id"],
@@ -327,7 +382,9 @@ async def test_scheduled_execution_uses_its_exact_persisted_request_and_plan() -
         account_type="creator",
         external_account_reference=f"fixture:scheduled:{uuid4()}",
     )
-    publication_approval_request_id = await _approved_publication_approval(ready, account.id)
+    publication_approval_request_id = await _approved_publication_approval(
+        ready, account.id, destination="fixture://scheduled-canonical"
+    )
     idempotency_key = f"publication-scheduled-{uuid4()}"
     request = await repository.create_request(
         ready_package_id=ready["ready_package_id"],
@@ -345,32 +402,29 @@ async def test_scheduled_execution_uses_its_exact_persisted_request_and_plan() -
         publisher_version="1",
     )
     task_queue = f"salience-publication-scheduled-{uuid4()}"
-    workflow_id = f"publication-scheduled-{uuid4()}"
     store = CanonicalJobStore(database_url)
+    budget_id = await _budget(database_url, ready["workspace_id"], ready["program_id"])
     job_schedule = await store.create_schedule(
         workspace_id=ready["workspace_id"],
         content_program_id=ready["program_id"],
         name=f"scheduled-{uuid4()}",
         schedule_expression="every 86400s",
         job_type="governed_publication",
-        payload={"publication_request_id": request.id, "publication_plan_id": plan.id},
+        payload={
+            "publication_request_id": request.id,
+            "publication_plan_id": plan.id,
+            "budget_id": budget_id,
+            "schedule_version": 1,
+            "contract_version": "PublicationSchedule@v1",
+        },
     )
     publication_schedule = await repository.create_schedule(
         publication_request_id=request.id,
         publication_plan_id=plan.id,
         job_schedule_id=job_schedule.schedule_id,
-        budget_id=await _budget(database_url, ready["workspace_id"], ready["program_id"]),
+        budget_id=budget_id,
         version=1,
         schedule_fingerprint="b" * 64,
-    )
-    await store.create_publication_run(
-        workflow_run_id=workflow_id,
-        task_queue=task_queue,
-        workspace_id=ready["workspace_id"],
-        content_program_id=ready["program_id"],
-        ready_package_id=ready["ready_package_id"],
-        publisher_account_id=account.id,
-        idempotency_key=idempotency_key,
     )
     provider = FixturePublisherAdapter(scenario="published")
     state = PublicationWorkflowState(
@@ -382,22 +436,26 @@ async def test_scheduled_execution_uses_its_exact_persisted_request_and_plan() -
     )
     worker = build_publication_worker(temporal_client, task_queue=task_queue, state=state)
     worker_task = asyncio.create_task(worker.run())
-    try:
-        handle = await temporal_client.start_workflow(
-            GovernedPublicationWorkflow.run,
-            PublicationWorkflowRequest(
-                scheduled_publication_schedule_id=publication_schedule.id,
-            ),
-            id=workflow_id,
-            task_queue=task_queue,
+    schedule_service = PublicationScheduleService(temporal_client, task_queue=task_queue)
+    temporal_schedule_id = await schedule_service.create_every(
+        DurablePublicationScheduleRequest(
+            publication_schedule_id=publication_schedule.id,
+            name=f"scheduled-{publication_schedule.id}",
+            every=timedelta(hours=1),
         )
-        result = await asyncio.wait_for(handle.result(), timeout=30)
+    )
+    try:
+        await temporal_client.get_schedule_handle(temporal_schedule_id).trigger()
+        snapshot = await _scheduled_job_snapshot(database_url, publication_schedule.id)
     finally:
+        await temporal_client.get_schedule_handle(temporal_schedule_id).delete()
         await asyncio.wait_for(worker.shutdown(), timeout=10)
         await asyncio.wait_for(worker_task, timeout=10)
 
-    assert result.publication_state == "published"
-    assert result.publication_request_id == request.id
-    assert result.publication_plan_id == plan.id
+    assert snapshot is not None
+    assert snapshot.state == "succeeded"
+    assert snapshot.output_payload["publication_state"] == "published"
+    assert snapshot.output_payload["publication_request_id"] == request.id
+    assert snapshot.output_payload["publication_plan_id"] == plan.id
     assert provider.submit_count == 1
     assert await _publication_destination(database_url, idempotency_key) == "fixture://scheduled-canonical"

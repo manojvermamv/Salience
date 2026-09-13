@@ -68,7 +68,7 @@ fi
 
 database_url="postgresql+asyncpg://salience:salience@${postgres_ip}:5432/salience"
 if DATABASE_URL="$database_url" "$python_bin" -m alembic upgrade head; then
-  pass "Canonical migrations apply through 0009_governed_publication"
+  pass "Canonical migrations apply through 0012_publication_profile_scope"
 else
   fail "Canonical migrations did not apply"
   exit "$result"

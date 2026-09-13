@@ -7,7 +7,7 @@ stores immutable artifact bytes; neither replaces a canonical database row.
 
 The first migration is a static schema snapshot at
 `migrations/versions/0001_canonical_foundation.py`. The implemented history
-reaches `0011_publication_plan_lifecycle.py`; `0004_intelligence_loop.py` adds the
+reaches `0012_publication_profile_scope.py`; `0004_intelligence_loop.py` adds the
 source-to-brief lineage tables, `0006_creative_production_distribution.py` adds
 the Phase 7–8 canonical production/distribution model, and `0007` anchors
 provider and package-asset reconciliation lineage. `0008` adds creative-job
@@ -19,7 +19,9 @@ ready-package-bound requests, idempotent plans/schedules/attempts, append-only
 status and webhook receipts, remote receipts, publication records, and their
 trace/cost links. `0010` adds the distinct publication-approval and
 schedule-budget references plus database-enforced immutable identity fields;
-`0011` permits only their bounded durable cost lifecycle transitions.
+`0011` permits only their bounded durable cost lifecycle transitions, and `0012`
+binds capability-profile identity to the exact publisher account and publication
+profile revision selected by each immutable request.
 Historical migrations do not import application
 metadata, so future model changes cannot alter an already-applied migration.
 

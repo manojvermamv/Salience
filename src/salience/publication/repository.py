@@ -446,14 +446,15 @@ class PublicationRepository:
                 """
                 INSERT INTO publication_requests (
                     tenant_id, workspace_id, content_program_id, ready_package_id,
-                    publisher_account_id, approval_request_id, publication_approval_request_id,
+                    publisher_account_id, publisher_capability_profile_id,
+                    approval_request_id, publication_approval_request_id,
                     request_key, version,
                     publisher_id, platform, destination, locale, territory, visibility,
                     capability_profile_version, approval_reference, state, request_fingerprint,
                     disclosure_projection, policy_references, rights_references
                 )
                 SELECT ready.tenant_id, ready.workspace_id, ready.content_program_id, ready.id,
-                       account.id, ready.approval_request_id, approval.id, %s, 1,
+                       account.id, profile.id, ready.approval_request_id, approval.id, %s, 1,
                        %s, %s, %s, %s, %s, %s,
                        %s, 'publication-approval:' || approval.id::text, 'planned', %s,
                        jsonb_build_object(
@@ -462,13 +463,25 @@ class PublicationRepository:
                        ), ready.policy_versions, '[]'::jsonb
                 FROM ready_to_publish_packages ready
                 JOIN publisher_accounts account ON account.id = %s
+                JOIN publisher_capability_profiles profile
+                  ON profile.workspace_id = ready.workspace_id
+                 AND profile.publisher_account_id = account.id
+                 AND profile.publisher_id = %s
+                 AND profile.profile_version = %s
+                 AND profile.audit_state = 'verified'
+                 AND (profile.expires_at IS NULL OR profile.expires_at > CURRENT_TIMESTAMP)
                 JOIN approval_requests approval ON approval.id = %s
                                                 AND approval.workspace_id = ready.workspace_id
                                                 AND approval.effect_type = 'publication'
                                                 AND approval.status = 'approved'
                                                 AND approval.request_context @> jsonb_build_object(
                                                     'ready_package_id', ready.id::text,
-                                                    'publisher_account_id', account.id::text
+                                                    'publisher_account_id', account.id::text,
+                                                    'destination', %s::text,
+                                                    'locale', %s::text,
+                                                    'territory', %s::text,
+                                                    'visibility', %s::text,
+                                                    'capability_profile_version', %s::integer
                                                 )
                 WHERE ready.id = %s
                   AND ready.workspace_id = %s
@@ -490,7 +503,14 @@ class PublicationRepository:
                     capability_profile_version,
                     fingerprint,
                     publisher_account_id,
+                    publisher_id,
+                    capability_profile_version,
                     publication_approval_request_id,
+                    destination,
+                    locale,
+                    territory,
+                    visibility,
+                    capability_profile_version,
                     ready_package_id,
                     workspace_id,
                     content_program_id,
@@ -613,12 +633,23 @@ class PublicationRepository:
                             AND publication_approval.effect_type = 'publication'
                             AND publication_approval.request_context @> jsonb_build_object(
                                 'ready_package_id', request.ready_package_id::text,
-                                'publisher_account_id', request.publisher_account_id::text
+                                'publisher_account_id', request.publisher_account_id::text,
+                                'destination', request.destination,
+                                'locale', request.locale,
+                                'territory', request.territory,
+                                'visibility', request.visibility,
+                                'capability_profile_version', request.capability_profile_version
                             ) THEN 'approved'
                            ELSE publication_approval.status
                        END,
                        disclosure.status, account.workspace_id::text, account.account_type,
-                       account.status, connection.publisher_account_id::text, connection.status,
+                       account.status, connection.publisher_account_id::text,
+                       CASE
+                           WHEN connection.revoked_at IS NOT NULL THEN 'revoked'
+                           WHEN connection.expires_at IS NOT NULL
+                            AND connection.expires_at <= CURRENT_TIMESTAMP THEN 'expired'
+                           ELSE connection.status
+                       END,
                        connection.granted_scopes, profile.capability_facts,
                        jsonb_array_length(request.policy_references) > 0
                        AND NOT EXISTS (
@@ -628,6 +659,15 @@ class PublicationRepository:
                            WHERE policy.id IS NULL
                               OR policy.workspace_id IS DISTINCT FROM request.workspace_id
                               OR policy.status <> 'active'
+                              OR NOT (policy.document @> jsonb_build_object(
+                                  'publication_scope', jsonb_build_object(
+                                      'platform', request.platform,
+                                      'destination', request.destination,
+                                      'locale', request.locale,
+                                      'territory', request.territory,
+                                      'visibility', request.visibility
+                                  )
+                              ))
                        ),
                        EXISTS (
                            SELECT 1
@@ -668,6 +708,9 @@ class PublicationRepository:
                                  (direct_consent.id IS NOT NULL AND (
                                      direct_consent.status <> 'active'
                                      OR direct_consent.revoked_at IS NOT NULL
+                                     OR direct_consent.commercial_use IS NOT TRUE
+                                     OR NOT (direct_consent.permitted_channels @> jsonb_build_array(request.platform))
+                                     OR NOT (direct_consent.territories @> jsonb_build_array(request.territory))
                                      OR (direct_consent.expires_at IS NOT NULL
                                          AND direct_consent.expires_at <= CURRENT_TIMESTAMP)
                                  ))
@@ -675,6 +718,9 @@ class PublicationRepository:
                                      likeness.status <> 'active'
                                      OR likeness_consent.status <> 'active'
                                      OR likeness_consent.revoked_at IS NOT NULL
+                                     OR likeness_consent.commercial_use IS NOT TRUE
+                                     OR NOT (likeness_consent.permitted_channels @> jsonb_build_array(request.platform))
+                                     OR NOT (likeness_consent.territories @> jsonb_build_array(request.territory))
                                      OR (likeness_consent.expires_at IS NOT NULL
                                          AND likeness_consent.expires_at <= CURRENT_TIMESTAMP)
                                  ))
@@ -682,15 +728,30 @@ class PublicationRepository:
                                      voice.status <> 'active'
                                      OR voice_consent.status <> 'active'
                                      OR voice_consent.revoked_at IS NOT NULL
+                                     OR voice_consent.commercial_use IS NOT TRUE
+                                     OR NOT (voice_consent.permitted_channels @> jsonb_build_array(request.platform))
+                                     OR NOT (voice_consent.territories @> jsonb_build_array(request.territory))
                                      OR (voice_consent.expires_at IS NOT NULL
                                          AND voice_consent.expires_at <= CURRENT_TIMESTAMP)
                                  ))
                                  OR (license.id IS NOT NULL AND (
                                      license.status <> 'active'
+                                     OR license.commercial_use IS NOT TRUE
+                                     OR NOT (license.terms @> jsonb_build_object(
+                                         'permitted_channels', jsonb_build_array(request.platform),
+                                         'territories', jsonb_build_array(request.territory)
+                                     ))
                                      OR (license.expires_at IS NOT NULL
                                          AND license.expires_at <= CURRENT_TIMESTAMP)
                                  ))
                                  OR (restriction.id IS NOT NULL AND restriction.status = 'active')
+                                 OR (
+                                     direct_consent.id IS NULL
+                                     AND likeness.id IS NULL
+                                     AND voice.id IS NULL
+                                     AND license.id IS NULL
+                                     AND restriction.id IS NULL
+                                 )
                              )
                        )
                 FROM publication_requests request
@@ -700,7 +761,7 @@ class PublicationRepository:
                 LEFT JOIN approval_requests publication_approval
                   ON publication_approval.id = request.publication_approval_request_id
                 LEFT JOIN LATERAL (
-                    SELECT publisher_account_id, status, granted_scopes
+                    SELECT publisher_account_id, status, granted_scopes, expires_at, revoked_at
                     FROM publisher_connections
                     WHERE publisher_account_id = account.id
                     ORDER BY version DESC
@@ -709,9 +770,13 @@ class PublicationRepository:
                 LEFT JOIN LATERAL (
                     SELECT capability_facts
                     FROM publisher_capability_profiles
-                    WHERE workspace_id = request.workspace_id
+                    WHERE id = request.publisher_capability_profile_id
+                      AND workspace_id = request.workspace_id
+                      AND publisher_account_id = request.publisher_account_id
                       AND publisher_id = request.publisher_id
                       AND profile_version = request.capability_profile_version
+                      AND audit_state = 'verified'
+                      AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)
                     ORDER BY observed_at DESC
                     LIMIT 1
                 ) profile ON TRUE
@@ -801,7 +866,7 @@ class PublicationRepository:
                 capability_facts, compatibility
             ) VALUES (%s, %s, 'fixture-publisher', '1', 1, 'fixture', 'verified',
                       CURRENT_TIMESTAMP, 'fixture://publisher-capabilities/v1', %s::jsonb, %s::jsonb)
-            ON CONFLICT (workspace_id, publisher_id, publisher_version, profile_version)
+            ON CONFLICT (workspace_id, publisher_account_id, publisher_id, publisher_version, profile_version)
             DO NOTHING
             """,
             (
@@ -966,6 +1031,13 @@ class PublicationRepository:
                                            AND schedule.workspace_id = request.workspace_id
                                            AND schedule.content_program_id = request.content_program_id
                                            AND schedule.job_type = 'governed_publication'
+                                           AND schedule.payload = jsonb_build_object(
+                                               'publication_request_id', request.id::text,
+                                               'publication_plan_id', plan.id::text,
+                                               'budget_id', %s::text,
+                                               'schedule_version', %s::integer,
+                                               'contract_version', 'PublicationSchedule@v1'
+                                           )
                 JOIN budgets budget ON budget.id = %s
                                   AND budget.workspace_id = request.workspace_id
                                   AND budget.content_program_id = request.content_program_id
@@ -979,6 +1051,8 @@ class PublicationRepository:
                     version,
                     schedule_fingerprint,
                     job_schedule_id,
+                    budget_id,
+                    version,
                     budget_id,
                     publication_request_id,
                     publication_plan_id,
@@ -998,7 +1072,7 @@ class PublicationRepository:
             )
             existing = cursor.fetchone()
             if existing is None:
-                raise KeyError("publication request, plan, and job schedule are required")
+                raise KeyError("job schedule payload or publication request, plan, and budget are required")
             (
                 identifier,
                 found_request,

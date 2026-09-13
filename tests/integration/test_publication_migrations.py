@@ -36,6 +36,25 @@ def _immutable_trigger_tables(connection: psycopg.Connection) -> set[str]:
     return {str(name) for (name,) in rows}
 
 
+def _unique_columns(connection: psycopg.Connection, table_name: str) -> set[tuple[str, ...]]:
+    rows = connection.execute(
+        """
+        SELECT array_agg(attribute.attname ORDER BY key_columns.ordinality)
+        FROM pg_constraint constraint_entry
+        JOIN pg_class relation ON relation.oid = constraint_entry.conrelid
+        JOIN unnest(constraint_entry.conkey) WITH ORDINALITY AS key_columns(attribute_number, ordinality)
+            ON TRUE
+        JOIN pg_attribute attribute
+            ON attribute.attrelid = relation.oid
+           AND attribute.attnum = key_columns.attribute_number
+        WHERE relation.relname = %s AND constraint_entry.contype = 'u'
+        GROUP BY constraint_entry.oid
+        """,
+        (table_name,),
+    ).fetchall()
+    return {tuple(str(column) for column in columns) for (columns,) in rows}
+
+
 def test_governed_publication_tables_are_canonical_and_additive() -> None:
     expected_tables = {
         "publisher_accounts",
@@ -67,6 +86,17 @@ def test_publication_hardening_adds_distinct_approval_budget_and_immutable_decis
         assert {"publication_plans", "publication_schedules", "publication_attempts"}.issubset(
             _immutable_trigger_tables(connection)
         )
+
+
+def test_capability_profile_identity_is_account_scoped() -> None:
+    with psycopg.connect(os.environ["TEST_DATABASE_URL"]) as connection:
+        assert (
+            "workspace_id",
+            "publisher_account_id",
+            "publisher_id",
+            "publisher_version",
+            "profile_version",
+        ) in _unique_columns(connection, "publisher_capability_profiles")
 
 
 @pytest.mark.asyncio
@@ -102,16 +132,22 @@ async def test_publication_plan_schedule_and_attempt_reject_direct_mutation() ->
         idempotency_key=f"immutable-attempt-{uuid4()}",
     )
     store = CanonicalJobStore(os.environ["TEST_DATABASE_URL"])
+    budget_id = await _active_budget(
+        os.environ["TEST_DATABASE_URL"], ready["workspace_id"], ready["program_id"]
+    )
     job_schedule = await store.create_schedule(
         workspace_id=ready["workspace_id"],
         content_program_id=ready["program_id"],
         name=f"immutable-{uuid4()}",
         schedule_expression="every 60s",
         job_type="governed_publication",
-        payload={"publication_request_id": request.id, "publication_plan_id": plan.id},
-    )
-    budget_id = await _active_budget(
-        os.environ["TEST_DATABASE_URL"], ready["workspace_id"], ready["program_id"]
+        payload={
+            "publication_request_id": request.id,
+            "publication_plan_id": plan.id,
+            "budget_id": budget_id,
+            "schedule_version": 1,
+            "contract_version": "PublicationSchedule@v1",
+        },
     )
     schedule = await repository.create_schedule(
         publication_request_id=request.id,

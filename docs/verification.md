@@ -116,11 +116,11 @@ bash scripts/verify-phase-9.sh
 ```
 
 The verifier starts/reuses project PostgreSQL and Temporal, applies migrations
-through `0011_publication_plan_lifecycle`, and checks publisher contract/registry,
+through `0012_publication_profile_scope`, and checks publisher contract/registry,
 canonical persistence, scoped API/CLI/SDK surfaces, immutable scheduling,
 policy/rights/budget/approval gates including final-write reauthorization, fixture submission/reconciliation, duplicate-safe
 signed webhook receipts, and an interruption after remote acceptance. Its latest
-recorded run passed 47 focused fixture tests and the complete 221-test non-live
+recorded run passed 52 focused fixture tests and the complete 226-test non-live
 suite, each with only the existing third-party Starlette deprecation warning. It
 also executes the YouTube contract and live-status test. The verifier disables
 pytest's optional cache provider so a constrained host cannot turn cache writes
@@ -135,11 +135,11 @@ lease are available; it never attempts a public video post.
 ## Phase 1–9 Architecture Evidence
 
 `docs/salience-phase-1-9.architecture.html` was delivered from its checked JSON
-source with all nine Archify showcase checks, zero warnings, and 16
+source with all nine Archify showcase checks, zero warnings, and 17
 repository-grounded references. Its SHA-256 values are
-`d125fe394311c90dd0379374d4222aed43492690065dd5e24633261104138c74` for the
+`83f8b1fed7e0f243f3972e42aa9a076e84b1d0a1c474fa26592942258ee58927` for the
 specification and
-`8e74f980769730e1fec0e0dc4f7109200609c33fb1abd8f3ce8b64c038a88540` for the
+`c394a31a810fd744d2583ce0e966a2a4e205983af74eb10655bc6d110bb771d6` for the
 HTML. Automated Chromium containment/readability passed at 1440x900, 1600x1000,
 1920x1080, and 2048x1320 with no overflow; light and dark captures were
 visually reviewed. The visual explains the fixture-verified boundary and is not

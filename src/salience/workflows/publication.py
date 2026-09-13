@@ -164,7 +164,10 @@ class PublicationActivities:
         self._state = state
 
     async def _run(self) -> CanonicalRun:
-        return await self._state.store.run_for_workflow(activity.info().workflow_id)
+        info = activity.info()
+        if info.workflow_id is None:
+            raise RuntimeError("publication activity is missing its workflow identity")
+        return await self._state.store.run_for_workflow(info.workflow_id, info.workflow_run_id)
 
     async def _checkpoint(self, name: str) -> None:
         await self._state.store.checkpoint(await self._run(), name)
@@ -235,7 +238,6 @@ class PublicationActivities:
 
     @activity.defn(name="salience.publication.request")
     async def request(self, workflow_request: PublicationWorkflowRequest) -> dict[str, Any]:
-        run = await self._run()
         scheduled_plan: dict[str, str] = {}
         if workflow_request.scheduled_publication_schedule_id is not None:
             execution = await self._state.repository.load_scheduled_execution(
@@ -244,6 +246,22 @@ class PublicationActivities:
             request = execution.request
             if execution.budget_id is None:
                 raise RuntimeError("scheduled publication has no canonical budget")
+            info = activity.info()
+            if info.workflow_id is None:
+                raise RuntimeError("scheduled publication activity is missing its workflow identity")
+            temporal_run_id = info.workflow_run_id or info.workflow_id
+            run = await self._state.store.create_scheduled_publication_run(
+                workflow_run_id=temporal_run_id,
+                task_queue=info.task_queue,
+                workspace_id=request.workspace_id,
+                content_program_id=request.content_program_id,
+                ready_package_id=request.ready_package_id,
+                publisher_account_id=request.publisher_account_id,
+                idempotency_key=(
+                    f"publication-schedule:{workflow_request.scheduled_publication_schedule_id}:"
+                    f"{temporal_run_id}"
+                ),
+            )
             workflow_request = PublicationWorkflowRequest(
                 workspace_id=request.workspace_id,
                 content_program_id=request.content_program_id,
@@ -265,6 +283,7 @@ class PublicationActivities:
                 "scheduled_publisher_version": execution.publisher_version,
             }
         else:
+            run = await self._run()
             persisted = await self._state.repository.create_request(
                 ready_package_id=workflow_request.ready_package_id,
                 workspace_id=workflow_request.workspace_id,
@@ -783,6 +802,7 @@ def _workflow_request_matches_publication(
         workflow_request.content_program_id,
         workflow_request.ready_package_id,
         workflow_request.publisher_account_id,
+        workflow_request.publication_approval_request_id,
         workflow_request.idempotency_key,
         workflow_request.platform,
         workflow_request.destination,
@@ -795,6 +815,7 @@ def _workflow_request_matches_publication(
         request.content_program_id,
         request.ready_package_id,
         request.publisher_account_id,
+        request.publication_approval_request_id,
         request.idempotency_key,
         request.platform,
         request.destination,

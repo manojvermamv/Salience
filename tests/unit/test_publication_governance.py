@@ -1,6 +1,8 @@
 """Fail-closed reauthorization contracts for publication effects."""
 
 from dataclasses import replace
+from types import SimpleNamespace
+from unittest.mock import AsyncMock
 
 import pytest
 
@@ -128,3 +130,38 @@ async def test_reauthorization_allows_only_a_complete_current_governed_context()
 
     assert decision.allowed is True
     assert decision.reasons == ()
+
+
+@pytest.mark.asyncio
+async def test_control_plane_rejects_invalid_publication_before_job_creation(monkeypatch) -> None:
+    from salience.api.dependencies import TemporalControlPlane
+
+    control = TemporalControlPlane(
+        database_url="postgresql://unused",
+        temporal_target="unused:7233",
+        task_queue="publication-test",
+    )
+    control._store = SimpleNamespace(
+        job_by_idempotency_key=AsyncMock(return_value=None),
+        create_publication_run=AsyncMock(),
+    )
+    control._publication = SimpleNamespace(
+        create_request=AsyncMock(side_effect=PermissionError("publication approval is not valid")),
+    )
+    monkeypatch.setattr(
+        "salience.api.dependencies.Client.connect",
+        AsyncMock(side_effect=AssertionError("Temporal must not start after validation fails")),
+    )
+
+    with pytest.raises(PermissionError, match="publication approval is not valid"):
+        await control.start_publication(
+            workspace_id="workspace-1",
+            content_program_id="program-1",
+            ready_package_id="ready-1",
+            publisher_account_id="account-1",
+            publication_approval_request_id="approval-1",
+            budget_id="budget-1",
+            idempotency_key="publication-control-invalid",
+        )
+
+    control._store.create_publication_run.assert_not_awaited()

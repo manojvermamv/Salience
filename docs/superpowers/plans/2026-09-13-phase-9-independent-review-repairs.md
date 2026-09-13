@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-- Add revision `0010_publication_hardening` (the canonical Alembic version column is `VARCHAR(32)`) and use the additive `0011_publication_plan_lifecycle` for later lifecycle-trigger repairs; never modify a migration that may already be applied.
+- Add revision `0010_publication_hardening` (the canonical Alembic version column is `VARCHAR(32)`), retain additive `0011_publication_plan_lifecycle` for bounded lifecycle transitions, and use additive `0012_publication_profile_scope` for account-scoped capability identity; never modify a migration that may already be applied.
 - A `ReadyToPublishPackage` approval is not a publish approval. New requests require an approved `approval_requests` row with `effect_type = 'publication'` and exact package/account context.
 - Missing policy references, package assets, or asset-rights links deny authorization.
 - A scheduled Temporal payload names a canonical publication schedule only; all effect fields load from PostgreSQL.
@@ -29,7 +29,7 @@
 - Modify: `src/salience/db/models.py`
 - Modify: `tests/integration/test_publication_migrations.py`
 
-**Interfaces:** Adds `publication_requests.publication_approval_request_id` and `publication_schedules.budget_id`. Plan, schedule, and attempt decision identities are immutable; only initially-null plan effect/reservation foreign keys may be bound once.
+**Interfaces:** Adds `publication_requests.publication_approval_request_id` and `publication_schedules.budget_id`. Plan, schedule, and attempt decision identities are immutable; the additive lifecycle trigger permits only the explicit, bounded plan cost/effect transitions needed for durable reservation and settlement.
 
 - [x] **Step 1: Write failing direct-SQL tests**
 
@@ -211,6 +211,59 @@ Reject missing/nondurable stores. Keep the in-memory store test-only with `is_du
 Run: `bash scripts/verify-phase-9.sh && PYTHONPATH=src .venv/bin/pytest tests/contracts tests/unit tests/integration tests/e2e tests/evals -m 'not live' -q && .venv/bin/python -m compileall -q src && git diff --check`
 
 Expected: all fixture checks pass, live status is `NOT RUN` without explicit private configuration, and a fresh review reports no critical/important finding. Commit: `docs: complete governed publishing phase`.
+
+### Task 5: Bind approval, policy, rights, connection, and capability scope
+
+**Files:**
+- Create: `migrations/versions/0012_publication_profile_scope.py`
+- Modify: `src/salience/publication/repository.py`
+- Modify: `src/salience/workflows/publication.py`
+- Modify: `tests/integration/test_creative_release_gate_migration.py`
+- Modify: `tests/integration/test_publication_repository.py`
+- Modify: `tests/e2e/test_phase9_governed_publishing.py`
+
+**Interfaces:** A publication approval names the exact package, account, destination, locale, territory, visibility, and capability-profile revision. Active referenced policy versions must independently contain the same publication scope. Every distributed asset must have a current, commercial, channel-and-territory-permitting consent or license path. The selected immutable capability profile is account-scoped, verified, and unexpired; the current connection must be unrevoked and unexpired.
+
+- [x] **Step 1: Write failing scope and current-fact tests**
+- [x] **Step 2: Confirm the new tests fail because the current request supplies its own authority facts**
+- [x] **Step 3: Add additive profile-identity migration and fail-closed scope evaluation**
+- [x] **Step 4: Verify focused persistence/workflow scope coverage and checkpoint**
+
+### Task 6: Materialize canonical jobs for scheduler-fired executions
+
+**Files:**
+- Modify: `src/salience/workflows/persistence.py`
+- Modify: `src/salience/workflows/publication.py`
+- Modify: `src/salience/publication/repository.py`
+- Modify: `tests/integration/test_publication_repository.py`
+- Modify: `tests/e2e/test_phase9_governed_publishing.py`
+
+**Interfaces:** A `job_schedules` payload must exact-match the canonical request, plan, budget, version, and contract. A scheduler fire creates or retrieves one canonical run using Temporal's execution run ID as its unique idempotency identity before the first publication activity accesses a run.
+
+- [x] **Step 1: Write failing payload-mismatch and unseeded scheduler-fire tests**
+- [x] **Step 2: Confirm failures identify absent payload validation and canonical run creation**
+- [x] **Step 3: Implement exact schedule matching and scheduler-run materialization**
+- [x] **Step 4: Verify real Temporal schedule trigger and recovery coverage**
+
+### Task 7: Validate normal starts before creating durable jobs
+
+**Files:**
+- Modify: `src/salience/api/dependencies.py`
+- Modify: `tests/integration/test_publication_control_api.py`
+
+**Interfaces:** Production control validates the canonical publication request before it creates a running job or starts Temporal; an invalid approval cannot leave an orphaned nonterminal job.
+
+- [x] **Step 1: Write a failing invalid-start persistence test**
+- [x] **Step 2: Confirm the test exposes a prematurely created job**
+- [x] **Step 3: Prevalidate through the canonical repository and verify idempotent normal start**
+- [x] **Step 4: Run focused control coverage and checkpoint**
+
+### Task 8: Re-certify the repaired gate
+
+- [ ] **Step 1: Update all affected docs, progress evidence, and the Phase 1–9 architecture visual**
+- [ ] **Step 2: Run the complete Phase 9 verifier, standalone non-live suite, compilation, whitespace, Archify delivery, and Chromium visual inspection**
+- [ ] **Step 3: Request a fresh independent review; repair every critical or important finding and repeat this task until clear**
+- [ ] **Step 4: Commit only verified Phase 9 code/docs and integrate only after a clean worktree audit**
 
 ## Plan Self-Review
 

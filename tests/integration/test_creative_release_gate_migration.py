@@ -38,8 +38,29 @@ def test_release_gate_migration_has_canonical_effect_and_webhook_uniqueness() ->
         }
 
 
-async def _approved_ready_package(*, publication_proofs: bool = True) -> dict[str, str]:
+async def _approved_ready_package(
+    *,
+    publication_proofs: bool = True,
+    publication_policy_document: dict[str, object] | None = None,
+    asset_license_terms: dict[str, object] | None = None,
+) -> dict[str, str]:
     from test_creative_repository import _seed_brief
+
+    if publication_policy_document is None:
+        publication_policy_document = {
+            "publication_scope": {
+                "platform": "fixture",
+                "destination": "fixture://account",
+                "locale": "en",
+                "territory": "global",
+                "visibility": "private",
+            }
+        }
+    if asset_license_terms is None:
+        asset_license_terms = {
+            "permitted_channels": ["fixture"],
+            "territories": ["global"],
+        }
 
     seeded = await _seed_brief()
     repository = CreativeRepository(os.environ["TEST_DATABASE_URL"])
@@ -126,6 +147,8 @@ async def _approved_ready_package(*, publication_proofs: bool = True) -> dict[st
         asset.asset_id,
         distribution_package_id,
         publication_proofs,
+        publication_policy_document,
+        asset_license_terms,
     )
     if publication_proofs:
         assert policy_versions is not None
@@ -163,7 +186,16 @@ async def _approved_ready_package(*, publication_proofs: bool = True) -> dict[st
     }
 
 
-async def _approved_publication_approval(ready: dict[str, str], publisher_account_id: str) -> str:
+async def _approved_publication_approval(
+    ready: dict[str, str],
+    publisher_account_id: str,
+    *,
+    destination: str = "fixture://account",
+    locale: str = "en",
+    territory: str = "global",
+    visibility: str = "private",
+    capability_profile_version: int = 1,
+) -> str:
     def insert() -> str:
         with psycopg.connect(os.environ["TEST_DATABASE_URL"]) as connection, connection.cursor() as cursor:
             cursor.execute(
@@ -183,6 +215,11 @@ async def _approved_publication_approval(ready: dict[str, str], publisher_accoun
                         {
                             "ready_package_id": ready["ready_package_id"],
                             "publisher_account_id": publisher_account_id,
+                            "destination": destination,
+                            "locale": locale,
+                            "territory": territory,
+                            "visibility": visibility,
+                            "capability_profile_version": capability_profile_version,
                         },
                         sort_keys=True,
                     ),
@@ -199,6 +236,8 @@ def _insert_ready_package_governance(
     asset_id: str,
     distribution_package_id: str,
     publication_proofs: bool,
+    publication_policy_document: dict[str, object] | None,
+    asset_license_terms: dict[str, object] | None,
 ) -> tuple[tuple[str, str] | None, str]:
     with psycopg.connect(database_url) as connection, connection.cursor() as cursor:
         policy_id: str | None = None
@@ -208,20 +247,20 @@ def _insert_ready_package_governance(
                 """
                 INSERT INTO policy_versions (
                     workspace_id, policy_name, version, status, document, document_hash
-                ) VALUES (%s, 'release-gate-publication', '1', 'active', '{}'::jsonb, %s)
+                ) VALUES (%s, 'release-gate-publication', '1', 'active', %s::jsonb, %s)
                 RETURNING id::text
                 """,
-                (workspace_id, "p" * 64),
+                (workspace_id, json.dumps(publication_policy_document or {}), "p" * 64),
             )
             policy_id = str(cursor.fetchone()[0])
             cursor.execute(
                 """
                 INSERT INTO asset_licenses (
                     asset_id, license_type, commercial_use, terms, status
-                ) VALUES (%s, 'fixture', true, '{}'::jsonb, 'active')
+                ) VALUES (%s, 'fixture', true, %s::jsonb, 'active')
                 RETURNING id::text
                 """,
-                (asset_id,),
+                (asset_id, json.dumps(asset_license_terms or {})),
             )
             license_id = str(cursor.fetchone()[0])
         cursor.execute(

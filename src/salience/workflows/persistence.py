@@ -155,6 +155,34 @@ class CanonicalJobStore:
             idempotency_key,
         )
 
+    async def create_scheduled_publication_run(
+        self,
+        *,
+        workflow_run_id: str,
+        task_queue: str,
+        workspace_id: str,
+        content_program_id: str,
+        ready_package_id: str,
+        publisher_account_id: str,
+        idempotency_key: str,
+    ) -> CanonicalRun:
+        """Materialize one durable canonical job for a scheduler firing.
+
+        Temporal schedule actions can start a workflow without an API caller
+        first creating a job row.  The scheduler's immutable execution/run
+        identity is therefore used as the job workflow identity, while the
+        schedule-scoped idempotency key makes retries safe.
+        """
+        return await self.create_publication_run(
+            workflow_run_id=workflow_run_id,
+            task_queue=task_queue,
+            workspace_id=workspace_id,
+            content_program_id=content_program_id,
+            ready_package_id=ready_package_id,
+            publisher_account_id=publisher_account_id,
+            idempotency_key=idempotency_key,
+        )
+
     async def checkpoint(self, run: CanonicalRun, checkpoint_name: str) -> None:
         await asyncio.to_thread(self._checkpoint, run, checkpoint_name)
 
@@ -197,8 +225,10 @@ class CanonicalJobStore:
     async def counts(self, run: CanonicalRun) -> CanonicalCounts:
         return await asyncio.to_thread(self._counts, run)
 
-    async def run_for_workflow(self, workflow_run_id: str) -> CanonicalRun:
-        return await asyncio.to_thread(self._run_for_workflow, workflow_run_id)
+    async def run_for_workflow(
+        self, workflow_id: str, workflow_run_id: str | None = None
+    ) -> CanonicalRun:
+        return await asyncio.to_thread(self._run_for_workflow, workflow_id, workflow_run_id)
 
     async def workflow_run_id_for_job(self, job_id: str) -> str | None:
         return await asyncio.to_thread(self._workflow_run_id_for_job, job_id)
@@ -804,19 +834,23 @@ class CanonicalJobStore:
             )
             return CanonicalCounts(*cursor.fetchone())
 
-    def _run_for_workflow(self, workflow_run_id: str) -> CanonicalRun:
+    def _run_for_workflow(
+        self, workflow_id: str, workflow_run_id: str | None = None
+    ) -> CanonicalRun:
         with self._connect() as connection, connection.cursor() as cursor:
             cursor.execute(
                 """
                 SELECT workspace_id, content_program_id, id, workflow_run_id, trace_id, span_id
                 FROM jobs
-                WHERE workflow_run_id = %s
+                WHERE workflow_run_id = %s OR workflow_run_id = %s
+                ORDER BY CASE WHEN workflow_run_id = %s THEN 0 ELSE 1 END
+                LIMIT 1
                 """,
-                (workflow_run_id,),
+                (workflow_run_id or workflow_id, workflow_id, workflow_run_id or workflow_id),
             )
             row = cursor.fetchone()
             if row is None:
-                raise KeyError(f"canonical job not found for workflow {workflow_run_id}")
+                raise KeyError(f"canonical job not found for workflow {workflow_id}")
             workspace_id, content_program_id, job_id, run_id, trace_id, span_id = row
             return CanonicalRun(
                 workspace_id=workspace_id,
