@@ -41,6 +41,8 @@ asset as live-published media.
 
 Phase 7–8 stops at the ready package. It has no social-platform adapter,
 publisher credential, platform account model, audience analytics, or learning
-loop. Optional FFmpeg execution and C2PA signing are represented by adapters
-and provenance state, but are `NOT RUN` on this checked host because the
-required host binaries/signing configuration are absent.
+loop. The ready-package fixture is explicitly configured for the end-to-end
+verifier; the deployed control plane defaults to dry-run and does not create a
+ready package. Optional FFmpeg execution and C2PA signing are represented by
+adapters and provenance state, but are `NOT RUN` on this checked host because
+the required host binaries/signing configuration are absent.

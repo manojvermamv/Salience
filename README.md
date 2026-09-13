@@ -181,11 +181,13 @@ docker compose exec api content creative start \
   --idempotency-key creative-demo-001
 ```
 
-`content creative start` defaults to `--dry-run`. Inspect the returned job with
-`content creative inspect <job_id>` and retrieve the immutable handoff lineage
-with `content creative package-lineage <ready_package_id>`. A ready package is
-not a publishing command: it contains no publisher account, credential,
-destination, or remote-post receipt. See [`docs/phase-9-handoff.md`](docs/phase-9-handoff.md).
+`content creative start` defaults to `--dry-run`. Inspect its returned job with
+`content creative inspect <job_id>`. A dry run deliberately stops before a
+provider request, asset import, distribution, and ready package; use
+`bash scripts/verify-phases-7-8.sh` for the explicitly configured deterministic
+fixture path that proves a ready-package lineage. A ready package is not a
+publishing command: it contains no publisher account, credential, destination,
+or remote-post receipt. See [`docs/phase-9-handoff.md`](docs/phase-9-handoff.md).
 
 Stop the local stack when finished:
 
