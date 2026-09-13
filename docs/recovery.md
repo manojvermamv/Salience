@@ -26,7 +26,27 @@ The creative workflow applies the same rules to the provider boundary. It
 persists the creative request and `provider_jobs` reconciliation state before
 remote submission; a restart asks the provider for the same external job rather
 than generating another asset. Imported asset bytes are content-hashed and
-deduplicated under the content program. The full Phase 7 recovery fixture
-interrupts after provider acceptance, resumes on a replacement worker, and
-requires one provider submission plus complete script/asset/distribution/ready
-package lineage. No recovery path converts a ready package into live publishing.
+deduplicated under the content program. Every non-dry variant records a planned
+effect and explicit budget reservation before submission, then settles known
+actual cost once before it can cross the final gate. Verified provider webhooks
+are duplicate-safe by provider delivery identity and converge the same provider
+job lifecycle as polling. The full Phase 7 recovery fixture interrupts after
+provider acceptance, resumes on a replacement worker, and requires one provider
+submission, one reservation, one actual-cost settlement, a duplicate-safe
+webhook receipt, and complete script/asset/distribution/ready-package lineage.
+Ready-package lineage cannot be directly rewritten after approval; an altered
+governed decision needs a new version. No recovery path converts a ready package
+into live publishing.
+
+The Phase 9 publication fixture applies the same interruption rule after a
+publisher accepts the request. It persists a request/plan/attempt/effect before
+the remote boundary, crashes after acceptance, and resumes by reconciling the
+same provider idempotency key. It proves one remote receipt, bounded polling,
+duplicate-safe signed webhook convergence, reservation/actual settlement,
+policy/approval denial before submit, cancellation signalling, and canonical
+audit/provenance/trace records. Ambiguous outcomes become reconciliation work;
+the workflow never blindly repeats a publisher create.
+
+The opt-in YouTube adapter currently starts only a private resumable session.
+It requires a durable injected edge session store for the opaque URI and persists no video transfer
+or public post, so it does not weaken the fixture recovery guarantee.

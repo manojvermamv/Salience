@@ -37,6 +37,7 @@ mutating the ready package or bypassing platform authority.
 | --- | --- | --- |
 | Durable jobs, scheduling, retries, cancellation | Continue using Temporal behind project-owned workflow contracts. | Canonical PostgreSQL job/schedule/effect state permits a different backend to replay safe work. |
 | Canonical financial accounting | Implement a small PostgreSQL transactional repository; do not adopt a payment ledger because Salience must own effect-to-run provenance and arbitrary provider costs. | `CostReservationRepository` uses the existing `budgets`, `budget_reservations`, and `cost_ledger_entries` records and can later call an accounting export adapter. |
+| Creative budget binding | Require an explicit canonical `budget_id` for every non-dry creative request; dry runs reserve no cost. | The control API and `CreativeProductionRequest@v1` carry the ID, and authorization rejects a missing, inactive, out-of-scope, or insufficient budget before provider submission. |
 | Webhook delivery | Use FastAPI's existing HTTP control plane plus canonical receipt persistence and provider-owned signature verification. Do not introduce a queue or webhook SaaS. | `CreativeProvider` and `PublisherAdapter` own signature/DTO conversion; receipts are portable canonical rows. |
 | OAuth and publisher credentials | Do not build OAuth or store OAuth material. Use a project-owned credential-resolver contract backed by an operator-managed secure resolver; a missing secure resolver disables the real adapter. | Publisher adapters consume an ephemeral credential lease at the edge; a future OpenBao/OIDC/OAuth resolver changes only that boundary. |
 | First official publisher | Implement a credential-gated YouTube Data API adapter using existing `httpx`; do not add a Google SDK dependency. | The adapter uses owned DTOs, least-privilege `youtube.upload`, resumable-upload session IDs, and private-only capability metadata until an operator records a verified audit state. A future SDK can replace its HTTP edge. |
@@ -184,6 +185,12 @@ prepare-delivery, create/resume upload, submit, reconcile, status, cancel or
 delete where supported, webhook verification, and capability refresh. Optional
 methods are advertised through capability metadata; platform SDK values never
 cross the contract.
+
+Publisher selection is registry- and capability-driven rather than platform-
+specific. YouTube, TikTok, Instagram, LinkedIn, deterministic fixtures, and
+future adapters are independently versioned candidates; canonical publication
+logic selects a compatible enabled adapter without importing or special-casing
+any platform SDK.
 
 The deterministic publisher fixture simulates private account-bound submission,
 accepted remote IDs, delayed processing, signed duplicate webhooks, polling,

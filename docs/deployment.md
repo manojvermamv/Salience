@@ -27,14 +27,19 @@ performs no Docker/system cleanup, and retains local output under
 `artifacts/browser-evidence/`.
 
 No model credential, MCP server, A2A endpoint, creative-provider credential,
-publisher, or browser binary is required to deploy the Phase 1–8 dry-run loop.
+publisher, or browser binary is required to deploy the Phase 1–9 dry-run loop.
 The worker registers `CreativeProductionWorkflow`, but the deployed control
 plane fails closed for non-dry creative effects unless an operator explicitly
 wires an approved effect configuration. Configure a creative adapter only with
 a scope-limited secret reference, selected plugin/provider version, policy,
 budget, rights/consent evidence, and compatibility check.
 
-There is no publisher deployment in this release. A future publisher must run
-as a separate least-privileged effect boundary and consume only an approved
-`ReadyToPublishPackage@v1`; it must not inherit creative-provider secrets or
+No live publisher is enabled in this release. The verified publication fixture
+and control routes use canonical PostgreSQL/Temporal services already in the
+Compose topology. The optional YouTube boundary is disabled by default and
+requires an operator-managed connection reference, a scoped ephemeral lease,
+private visibility, a durable edge-session store, an approved edge media-handoff deployment, current policy,
+approval, and budget before it may be enabled. It must run as a separate
+least-privileged effect boundary and consume only an approved
+`ReadyToPublishPackage@v1`; it cannot inherit creative-provider secrets or
 approval as publishing authority.

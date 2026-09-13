@@ -1,5 +1,11 @@
+"""Immutable distribution revision contracts backed by PostgreSQL."""
+
+import os
+from dataclasses import replace
+
 import pytest
 
+from salience.creative.repository import CreativeRepository
 from salience.creative.service import (
     ApprovedProduction,
     CreativeGovernanceDenied,
@@ -69,6 +75,76 @@ def _approved_production(**overrides: object) -> ApprovedProduction:
     }
     values.update(overrides)
     return ApprovedProduction(**values)
+
+
+@pytest.mark.asyncio
+async def test_changed_title_after_ready_package_creates_a_new_distribution_revision() -> None:
+    from test_creative_release_gate_migration import _approved_ready_package
+
+    approved = await _approved_ready_package()
+    revision = await CreativeRepository(os.environ["TEST_DATABASE_URL"]).create_distribution_revision(
+        approved["distribution_package_id"], selected_title="A revised evidence-linked title"
+    )
+
+    assert revision.distribution_package_id != approved["distribution_package_id"]
+    assert revision.version == 2
+
+
+@pytest.mark.asyncio
+async def test_approved_decisions_replay_exactly_or_create_new_distribution_and_ready_versions() -> None:
+    from test_creative_rights_provenance import _production_fixture
+
+    repository, production = await _production_fixture()
+    service = CreativeService(repository)
+    original_distribution = await service.build_distribution(production)
+    original_ready = await service.finalize_ready_package(production, original_distribution)
+
+    replayed = await service.build_distribution(production)
+    replayed_ready = await service.finalize_ready_package(production, replayed)
+    revised = await service.build_distribution(
+        replace(
+            production,
+            title_candidates=[
+                {**production.title_candidates[0], "title": "A revised evidence-linked title"}
+            ],
+        )
+    )
+    revised_ready = await service.finalize_ready_package(
+        replace(
+            production,
+            title_candidates=[
+                {**production.title_candidates[0], "title": "A revised evidence-linked title"}
+            ],
+        ),
+        revised,
+    )
+
+    assert replayed.distribution_package_id == original_distribution.distribution_package_id
+    assert replayed_ready.ready_package_id == original_ready.ready_package_id
+    assert revised.distribution_package_id != original_distribution.distribution_package_id
+    assert revised.version == original_distribution.version + 1
+    assert revised_ready.ready_package_id != original_ready.ready_package_id
+
+
+@pytest.mark.asyncio
+async def test_different_approved_decision_fingerprints_receive_distinct_revisions() -> None:
+    from test_creative_rights_provenance import _production_fixture
+
+    repository, production = await _production_fixture()
+    service = CreativeService(repository)
+    original = await service.build_distribution(production)
+    await service.finalize_ready_package(production, original)
+
+    first = await service.build_distribution(
+        replace(production, package_metadata={"description": "first revision"})
+    )
+    second = await service.build_distribution(
+        replace(production, package_metadata={"description": "second revision"})
+    )
+
+    assert first.version == 2
+    assert second.version == 3
+    assert second.distribution_package_id != first.distribution_package_id
 
 
 @pytest.mark.asyncio

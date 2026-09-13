@@ -34,8 +34,15 @@ from salience.workflows.creative import (
     CreativeProductionWorkflow,
     CreativeWorkflowState,
 )
+from salience.workflows.publication import (
+    GovernedPublicationWorkflow,
+    PublicationActivities,
+    PublicationWorkflowState,
+)
+from salience.publication.repository import PublicationRepository
 from salience.agents.fixtures import fixture_agent_service
 from salience.creative.repository import CreativeRepository
+from salience.governance.cost_repository import CostReservationRepository
 from salience.intelligence.repository import IntelligenceRepository
 from salience.research.rss import ConfiguredRssResearchConnector
 from salience.workflows.persistence import CanonicalJobStore
@@ -68,6 +75,13 @@ async def run_worker() -> None:
         intelligence_repository=IntelligenceRepository(settings.database_url),
         creative_repository=CreativeRepository(settings.database_url),
         agents=fixture_agent_service(),
+        cost_repository=CostReservationRepository(settings.database_url),
+        provider_timeout_seconds=settings.creative_provider_timeout_seconds,
+    )
+    publication_state = PublicationWorkflowState(
+        store=CanonicalJobStore(settings.database_url),
+        repository=PublicationRepository(settings.database_url),
+        cost_repository=CostReservationRepository(settings.database_url),
     )
     worker = build_deployable_worker(
         client,
@@ -75,6 +89,7 @@ async def run_worker() -> None:
         dummy_state=state,
         intelligence_state=intelligence_state,
         creative_state=creative_state,
+        publication_state=publication_state,
     )
     await worker.run()
 
@@ -86,12 +101,14 @@ def build_deployable_worker(
     dummy_state: WorkflowScenarioState,
     intelligence_state: IntelligenceWorkflowState,
     creative_state: CreativeWorkflowState | None = None,
+    publication_state: PublicationWorkflowState | None = None,
 ) -> Worker:
     """Register every owned workflow on one task queue without split ownership."""
 
     dummy = DummyActivities(dummy_state)
     intelligence = IntelligenceActivities(intelligence_state)
     creative = CreativeActivities(creative_state) if creative_state is not None else None
+    publication = PublicationActivities(publication_state) if publication_state is not None else None
     workflows = [DurableDummyWorkflow, IntelligenceLoopWorkflow]
     activities = [
         dummy.checkpoint,
@@ -126,6 +143,21 @@ def build_deployable_worker(
                 creative.complete,
                 creative.denied,
                 creative.cancel,
+            ]
+        )
+    if publication is not None:
+        workflows.append(GovernedPublicationWorkflow)
+        activities.extend(
+            [
+                publication.request,
+                publication.authorize,
+                publication.delivery,
+                publication.submit_or_reconcile,
+                publication.await_publication,
+                publication.complete,
+                publication.denied,
+                publication.cancel,
+                publication.dead_letter,
             ]
         )
     return Worker(

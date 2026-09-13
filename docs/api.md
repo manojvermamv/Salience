@@ -16,6 +16,9 @@ The control API requires a configured bearer `CONTROL_PLANE_TOKEN` and an
 - `POST /v1/creative/runs` and `GET /v1/creative/runs/{job_id}`
 - `GET /v1/creative/runs/{job_id}/script`, `/asset`, and `/package`
 - `GET /v1/creative/packages/{ready_package_id}/lineage`
+- `POST /v1/publications/requests`, `POST /v1/publications/schedules`
+- `GET /v1/publications/runs/{job_id}`, `POST /v1/publications/runs/{job_id}/cancel`
+- `POST /v1/publishers/{provider_id}/webhooks`
 
 `POST /v1/jobs/dummy` accepts an idempotency key. The deployed adapter returns
 the same canonical job for repeat keys rather than scheduling another workflow.
@@ -51,14 +54,19 @@ content intelligence inspect <job_id>
 
 `POST /v1/creative/runs` accepts `CreativeProductionRequest@v1`: workspace ID,
 content-program ID, selected `ContentBrief@v1` ID, idempotency key, target
-platform-profile key/version, and `dry_run` (default `true`). The caller needs
-`control:write`. The request returns the canonical job ID and W3C trace ID; a
-repeat idempotency key returns the same run rather than a second workflow.
+platform-profile key/version, one-to-three `max_variants`, and `dry_run`
+(default `true`). A non-dry request must name an explicit canonical `budget_id`.
+The caller needs `control:write`. The request returns the canonical job ID and
+W3C trace ID; a repeat idempotency key returns the same run rather than a second
+workflow.
 
 The deployed `TemporalControlPlane` rejects non-dry creative starts unless an
 operator explicitly enables an effect configuration. `GET` creative inspection
 routes require `control:read` and return only canonical identities plus the
-trace/output projection. There is no publish endpoint.
+trace/output projection. `POST /v1/creative/providers/{provider_id}/webhooks`
+accepts only a provider-verified, credential-free callback projection and
+converges duplicate deliveries into one canonical receipt. There is no publish
+endpoint.
 
 The CLI and SDK use exactly this transport contract:
 
@@ -75,3 +83,24 @@ content creative package-lineage <ready_package_id>
 `asset`, `package`, and `package_lineage` calls. `ReadyToPublishPackage@v1` is
 inspection data only; it contains no credentials, publisher target, or action
 to publish.
+
+## Governed publication
+
+`POST /v1/publications/requests` requires `control:write`, canonical workspace,
+content-program, approved ready-package, publisher-account, distinct current
+publication-approval, explicit budget, and idempotency identities. It rejects undeclared fields, including token or
+secret fields. `GET /v1/publications/runs/{job_id}` requires `control:read` and
+returns only canonical IDs, state, trace, and safe output. Scheduling and
+cancellation require `control:write`; a schedule names only immutable publication
+request, plan, and budget identities. Temporal receives only the resulting
+canonical publication-schedule ID and the worker reloads all effect inputs.
+
+The `content publication start|schedule|inspect|cancel` commands and
+`SalienceClient.publication` use those same HTTP routes and never access
+PostgreSQL. `POST /v1/publishers/{provider_id}/webhooks` has no bearer-token
+requirement because the selected adapter verifies the signed delivery. It stores
+only a credential-free verified event projection and returns a duplicate-safe
+receipt identity. There is no raw credential endpoint, package mutation route,
+or public-publish endpoint. The disabled YouTube adapter accepts private
+resumable-session requests only at its internal edge; it is not exposed as a
+live video-upload API and requires a durable edge-session store.

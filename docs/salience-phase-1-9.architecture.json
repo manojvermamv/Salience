@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Salience: Governed Content to Private Publishing, Phase 1–9",
+    "locale": "en",
+    "quality_profile": "showcase",
+    "output": "salience-phase-1-9.architecture.html",
+    "viewBox": [1700, 900],
+    "repository": {
+      "url": "https://github.com/manojvermamv/Salience.git",
+      "provider": "github",
+      "revision": "888552cf09f979c1f85f730a3d5a02969d5684b0"
+    },
+    "views": [
+      {"id": "governed-start", "label": "Governed start", "focus": ["operators", "control-api", "temporal", "postgres"], "note": "Scoped HTTP requests create canonical identities before durable work begins."},
+      {"id": "content-to-ready", "label": "Content to ready", "focus": ["intelligence", "creative", "ready-package", "object-storage"], "note": "Evidence-linked intelligence and governed creative work produce an immutable approved package."},
+      {"id": "governed-publication", "label": "Governed publication", "focus": ["ready-package", "publication", "governance", "publisher-adapters", "postgres"], "note": "A distinct account-specific publication approval, policy, rights, and budget are re-authorized immediately before an external effect."},
+      {"id": "recovery-and-receipts", "label": "Recovery and receipts", "focus": ["publication", "temporal", "publisher-adapters", "postgres"], "note": "Checkpointed submit-or-reconcile and duplicate-safe webhook receipts preserve one remote effect across interruption."}
+    ]
+  },
+  "components": [
+    {"id": "operators", "type": "external", "label": "Operators, CLI & SDK", "tag": "scoped HTTP only", "pos": [20, 170], "size": [170, 76], "sources": [{"path": "src/salience/cli.py", "label": "HTTP-only CLI"}, {"path": "src/salience/sdk/client.py", "label": "HTTP-only SDK"}]},
+    {"id": "control-api", "type": "backend", "label": "Control API", "tag": "request, schedule, inspect, cancel", "pos": [230, 170], "size": [180, 76], "sources": [{"path": "src/salience/api/routes/publication.py", "label": "publication controls"}]},
+    {"id": "temporal", "type": "messagebus", "label": "Temporal adapter", "tag": "durable workflows + schedules", "pos": [450, 170], "size": [170, 76], "sources": [{"path": "src/salience/api/dependencies.py", "label": "Temporal control"}]},
+    {"id": "worker", "type": "backend", "label": "Salience worker", "tag": "checkpointed activities", "pos": [660, 170], "size": [160, 76], "sources": [{"path": "src/salience/workflows/worker.py", "label": "worker registration"}]},
+    {"id": "intelligence", "type": "backend", "label": "Intelligence loop", "tag": "evidence → ContentBrief@v1", "pos": [860, 170], "size": [170, 76], "sources": [{"path": "src/salience/workflows/intelligence.py", "label": "brief workflow"}]},
+    {"id": "creative", "type": "backend", "label": "Creative workflow", "tag": "bounded variants + rights", "pos": [1070, 170], "size": [160, 76], "sources": [{"path": "src/salience/workflows/creative.py", "label": "creative workflow"}]},
+    {"id": "ready-package", "type": "security", "label": "Ready-to-Publish Package", "tag": "immutable approved handoff", "pos": [1260, 170], "size": [180, 76], "sources": [{"path": "src/salience/creative/contracts.py", "label": "ready contract"}]},
+    {"id": "publication", "type": "backend", "label": "Publication workflow", "tag": "schedule + plan + reauth", "pos": [1470, 170], "size": [180, 76], "sources": [{"path": "src/salience/workflows/publication.py", "label": "governed workflow"}, {"path": "src/salience/workflows/persistence.py", "label": "canonical scheduler runs"}]},
+    {"id": "governance", "type": "security", "label": "Publisher governance", "tag": "policy, rights, approval, scope, budget", "pos": [1050, 500], "size": [200, 76], "sources": [{"path": "src/salience/publication/governance.py", "label": "fail-closed authorization"}, {"path": "src/salience/governance/cost_repository.py", "label": "reservation + settlement"}]},
+    {"id": "publisher-adapters", "type": "external", "label": "Publisher adapters + registry", "tag": "fixture; YouTube durable-edge opt-in", "pos": [1320, 500], "size": [220, 76], "sources": [{"path": "src/salience/publication/registry.py", "label": "capability selection"}, {"path": "src/salience/publication/youtube.py", "label": "private durable session boundary"}]},
+    {"id": "postgres", "type": "database", "label": "PostgreSQL record of truth", "tag": "migrations 0001–0012", "pos": [500, 500], "size": [250, 76], "sources": [{"path": "migrations/versions/0010_publication_governance_hardening.py", "label": "approval + schedule budget + bounded lifecycle"}, {"path": "migrations/versions/0012_publication_profile_scope.py", "label": "account-scoped capability identity"}, {"path": "src/salience/publication/repository.py", "label": "immutable records"}]},
+    {"id": "object-storage", "type": "cloud", "label": "Object-store contract", "tag": "private asset bytes", "pos": [795, 500], "size": [195, 76], "sources": [{"path": "src/salience/publication/delivery.py", "label": "short-lived delivery"}]}
+  ],
+  "connections": [
+    {"id": "operator-request", "from": "operators", "to": "control-api", "label": "authenticated control", "variant": "emphasis", "labelDy": 62},
+    {"id": "start-workflow", "from": "control-api", "to": "temporal", "label": "prevalidated idempotent start + schedules", "labelDy": 62},
+    {"id": "dispatch", "from": "temporal", "to": "worker", "label": "tasks, timers, retries", "labelDy": 62},
+    {"id": "assemble-brief", "from": "worker", "to": "intelligence", "label": "durable evidence stages", "labelDy": 62},
+    {"id": "produce", "from": "intelligence", "to": "creative", "label": "selected ContentBrief@v1", "labelDy": 62},
+    {"id": "ready-handoff", "from": "creative", "to": "ready-package", "label": "approved immutable package", "variant": "emphasis", "labelDy": 62},
+    {"id": "publish-request", "from": "ready-package", "to": "publication", "label": "new request + distinct approval", "variant": "emphasis", "labelDy": 62},
+    {"id": "publication-governance", "from": "publication", "to": "governance", "label": "final reauthorization before submit", "fromSide": "bottom", "toSide": "top", "route": "orthogonal-h", "via": [[1560, 395], [1150, 395]], "labelAt": [1310, 365]},
+    {"id": "select-adapter", "from": "publication", "to": "publisher-adapters", "label": "capability-selected effect + webhook", "variant": "dashed", "fromSide": "bottom", "toSide": "top", "labelAt": [1450, 440]},
+    {"id": "private-delivery", "from": "object-storage", "to": "publisher-adapters", "label": "short-lived HTTPS delivery", "variant": "dashed", "fromSide": "bottom", "toSide": "bottom", "route": "orthogonal-h", "via": [[892.5, 640], [1430, 640]], "labelAt": [1160, 660]},
+    {"id": "canonical-facts", "from": "worker", "to": "postgres", "label": "jobs, trace, audit, provenance", "fromSide": "bottom", "toSide": "top", "labelAt": [735, 405]},
+    {"id": "publication-records", "from": "publication", "to": "postgres", "label": "scoped approval/profile, schedule run, plans, receipts, cost", "fromSide": "bottom", "toSide": "bottom", "route": "orthogonal-h", "via": [[1560, 740], [625, 740]], "labelAt": [1130, 720]}
+  ],
+  "cards": [
+    {"dot": "violet", "title": "Phase 9 verified boundary", "items": ["Fixture-first publication survives interruption after acceptance, reconciles one remote effect, and deduplicates verified webhook receipts.", "Only an account-specific publication approval can add account, destination, locale, territory, visibility, schedule, and publisher capability selection to an approved package; scheduled Temporal payloads carry only one canonical schedule ID and materialize a job per execution run.", "YouTube is disabled by default and starts private resumable sessions only with a durable edge store; no bearer token or opaque session URI enters canonical records."]}
+  ]
+}

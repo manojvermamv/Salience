@@ -50,3 +50,34 @@ def test_registry_lists_only_enabled_versions_by_default() -> None:
 
     assert [item.version for item in registry.manifests()] == ["1.0.0"]
     assert [item.version for item in registry.manifests(include_disabled=True)] == ["1.0.0", "1.1.0"]
+
+
+def test_creative_registry_rejects_provider_metadata_without_lifecycle_selection_facts() -> None:
+    from salience.creative.capabilities import CreativeCapabilityRegistry
+
+    registry = CreativeCapabilityRegistry(PluginRegistry(supported_contract_version="1.0"))
+    incomplete = manifest(
+        plugin_id="fixture.creative.video",
+        capabilities=["text_to_video"],
+        provider_metadata={
+            "supported_capabilities": ["text_to_video"],
+            "modalities": ["video"],
+            "formats": ["video/mp4"],
+            "aspect_ratios": ["9:16"],
+            "minimum_duration_seconds": 1,
+            "maximum_duration_seconds": 60,
+            "async_support": True,
+            "polling_support": True,
+            "webhook_support": True,
+            "cancellation_support": True,
+            "reconciliation_support": True,
+            "enabled": True,
+            "contract_compatibility": {"creative": "1.0"},
+            "max_concurrency": 1,
+            "estimated_cost_micros": 0,
+            "limitations": ["fixture only"],
+        },
+    )
+
+    with pytest.raises(ValueError, match="rate_state"):
+        registry.register(incomplete)

@@ -22,6 +22,14 @@ class CostKind(StrEnum):
     ACTUAL = "actual"
 
 
+class CostSettlementStatus(StrEnum):
+    RESERVED = "reserved"
+    PENDING_ACTUAL = "pending_actual"
+    SETTLED = "settled"
+    RELEASED = "released"
+    OVERAGE_PENDING_APPROVAL = "overage_pending_approval"
+
+
 @dataclass(frozen=True)
 class BudgetReservation:
     id: UUID
@@ -129,4 +137,3 @@ class BudgetService:
             )
         )
         return entry
-

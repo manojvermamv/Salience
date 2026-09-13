@@ -48,8 +48,27 @@ async def test_fixture_provider_rejects_unsigned_webhook_and_replacement_preserv
         await fixture.verify_webhook({"id": fixture_result.external_job_id}, signature=None)
 
     accepted = await fixture.verify_webhook(
-        {"id": fixture_result.external_job_id, "status": "completed"}, signature="fixture-signature"
+        {
+            "id": fixture_result.external_job_id,
+            "status": "completed",
+            "delivery_id": "delivery-1",
+        },
+        signature="fixture-signature",
     )
     assert accepted.state == "completed"
+    assert accepted.delivery_id == "delivery-1"
+    assert "secret" not in accepted.model_dump_json().casefold()
     assert replacement_result.provider_id == "replacement-fixture-creative"
     assert replacement_result.capability == fixture_result.capability == "text_to_video"
+
+
+@pytest.mark.asyncio
+async def test_fixture_provider_cancellation_is_explicit_and_idempotent() -> None:
+    provider = FixtureCreativeProvider()
+    submitted = await provider.submit(_request())
+
+    first = await provider.cancel(submitted.external_job_id)
+    second = await provider.cancel(submitted.external_job_id)
+
+    assert first.state == second.state == "cancelled"
+    assert provider.cancel_count == 1

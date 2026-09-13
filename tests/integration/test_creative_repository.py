@@ -186,6 +186,12 @@ async def test_creative_repository_is_idempotent_and_preserves_ready_package_lin
         selection_reason="best deterministic fixture",
         trace_id="trace-asset",
     )
+    rights_link_id = await repository.record_asset_rights_link(
+        asset_id=asset.asset_id,
+        link_key="source-reference",
+        relation="reference_asset",
+        reference_id=asset.asset_id,
+    )
     profile_id = await repository.record_platform_profile(
         workspace_id=seeded["workspace_id"],
         program_id=seeded["program_id"],
@@ -261,6 +267,7 @@ async def test_creative_repository_is_idempotent_and_preserves_ready_package_lin
     assert lineage["evidence_ids"] == [seeded["evidence_id"]]
     assert lineage["asset_ids"] == [asset.asset_id]
     assert lineage["provider_job_ids"] == [first_provider_id]
+    assert rights_link_id
     assert title_candidate_id
     assert localization_id
     assert originality_id

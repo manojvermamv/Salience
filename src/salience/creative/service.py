@@ -4,9 +4,13 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
+import hashlib
+import json
 from typing import Any
 
 from salience.creative.contracts import DistributionPackage, ReadyToPublishPackage
+from salience.creative.repository import DistributionRevisionRequired
 from salience.creative.governance import (
     DisclosurePolicy,
     OriginalityValidator,
@@ -65,7 +69,7 @@ class CreativeService:
         """Validate all Phase 8 gates and persist a provider-neutral package."""
         self._require_approved(production)
         self._ensure_publication_metadata_is_absent(production.package_metadata)
-        self._authorize_rights(production)
+        await self._authorize_rights(production)
 
         disclosure = self._disclosure.decide(
             {
@@ -106,26 +110,44 @@ class CreativeService:
             rules=dict(production.profile_rules),
             status="active",
         )
-        package_id = await self._repository.record_distribution_package(
-            workspace_id=production.workspace_id,
-            program_id=production.content_program_id,
-            brief_id=production.brief_id,
-            script_id=production.script_id,
-            platform_profile_id=profile_id,
-            package_key=self._package_key(production),
-            version=1,
-            locale=production.locale,
-            package_metadata=dict(production.package_metadata),
-            status="validated",
-            asset_ids=[production.asset_id],
-            verifier_results={
-                "platform": {"allowed": True},
-                "disclosure": {
-                    "required": disclosure.required,
-                    "labels": list(disclosure.labels),
-                },
-            },
+        decision_fingerprint = _decision_fingerprint(
+            production, candidate_decisions, disclosure.labels
         )
+        package_metadata = dict(production.package_metadata)
+        verifier_results = {
+            "platform": {"allowed": True},
+            "disclosure": {
+                "required": disclosure.required,
+                "labels": list(disclosure.labels),
+            },
+            "decision_fingerprint": decision_fingerprint,
+        }
+        try:
+            package_id = await self._repository.record_distribution_package(
+                workspace_id=production.workspace_id,
+                program_id=production.content_program_id,
+                brief_id=production.brief_id,
+                script_id=production.script_id,
+                platform_profile_id=profile_id,
+                package_key=self._package_key(production),
+                version=1,
+                locale=production.locale,
+                package_metadata=package_metadata,
+                status="validated",
+                asset_ids=[production.asset_id],
+                verifier_results=verifier_results,
+            )
+            package_version = 1
+        except DistributionRevisionRequired as revision_required:
+            revision = await self._repository.create_distribution_revision(
+                revision_required.distribution_package_id,
+                selected_title=selected["title"],
+                package_metadata=package_metadata,
+                verifier_results=verifier_results,
+                decision_fingerprint=decision_fingerprint,
+            )
+            package_id = revision.distribution_package_id
+            package_version = revision.version
 
         for candidate, allowed, reason, metrics in candidate_decisions:
             selection_state = (
@@ -184,6 +206,7 @@ class CreativeService:
             selected_title_key=selected["key"],
             locale=production.locale,
             asset_ids=(production.asset_id,),
+            version=package_version,
         )
 
     async def finalize_ready_package(
@@ -194,7 +217,8 @@ class CreativeService:
         """Create the immutable, approved handoff for a future publishing phase."""
         self._require_approved(production)
         self._ensure_publication_metadata_is_absent(production.package_metadata)
-        self._authorize_rights(production)
+        await self._authorize_rights(production)
+        await self._require_c2pa(production)
         package = distribution or await self.build_distribution(production)
         if (
             package.locale != production.locale
@@ -210,7 +234,7 @@ class CreativeService:
             platform_profile_id=package.platform_profile_id,
             disclosure_id=package.disclosure_decision_id,
             ready_package_key=f"{self._package_key(production)}:ready",
-            version=1,
+            version=package.version,
             approval_state="approved",
             verifier_results={
                 "distribution_contract": package.contract_version,
@@ -232,16 +256,143 @@ class CreativeService:
             approval_state="approved",
         )
 
-    def _authorize_rights(self, production: ApprovedProduction) -> None:
+    async def _authorize_rights(self, production: ApprovedProduction) -> None:
+        context_reader = getattr(self._repository, "asset_rights_context", None)
+        if context_reader is not None:
+            await self._authorize_persisted_rights(
+                production, await context_reader(production.asset_id)
+            )
+            return
+        consent = production.consent
+        reader = getattr(self._repository, "asset_consent", None)
+        if reader is not None and (production.uses_real_likeness or production.uses_voice_clone):
+            consent = await reader(production.asset_id)
         decision = self._rights.authorize(
             uses_real_likeness=production.uses_real_likeness,
             uses_voice_clone=production.uses_voice_clone,
-            consent=production.consent,
+            consent=consent,
             channel=str(production.profile_rules.get("target_platform", production.profile_key)),
             territory=production.territory,
             commercial_use=production.commercial_use,
         )
         self._require_allowed(decision.blocker_codes)
+
+    async def _authorize_persisted_rights(
+        self, production: ApprovedProduction, context: Mapping[str, Any]
+    ) -> None:
+        direct_consents = _mapping_sequence(context.get("direct_consents"))
+        if production.uses_real_likeness:
+            self._require_persisted_consent(
+                _mapping_sequence(context.get("likeness_consents")) or direct_consents,
+                uses_real_likeness=True,
+                uses_voice_clone=False,
+                missing_code="missing_consent",
+                channel=str(production.profile_rules.get("target_platform", production.profile_key)),
+                territory=production.territory,
+                commercial_use=production.commercial_use,
+                identity_inactive_code="likeness_inactive",
+            )
+        if production.uses_voice_clone:
+            self._require_persisted_consent(
+                _mapping_sequence(context.get("voice_consents")) or direct_consents,
+                uses_real_likeness=False,
+                uses_voice_clone=True,
+                missing_code="voice_consent_missing",
+                channel=str(production.profile_rules.get("target_platform", production.profile_key)),
+                territory=production.territory,
+                commercial_use=production.commercial_use,
+                identity_inactive_code="voice_inactive",
+            )
+        self._authorize_persisted_licenses(
+            _mapping_sequence(context.get("licenses")), production
+        )
+        self._authorize_persisted_restrictions(
+            _mapping_sequence(context.get("restrictions")), production
+        )
+
+    def _require_persisted_consent(
+        self,
+        entries: Sequence[Mapping[str, Any]],
+        *,
+        uses_real_likeness: bool,
+        uses_voice_clone: bool,
+        missing_code: str,
+        channel: str,
+        territory: str,
+        commercial_use: bool,
+        identity_inactive_code: str,
+    ) -> None:
+        if not entries:
+            raise CreativeGovernanceDenied(missing_code)
+        for entry in entries:
+            identity_status = entry.get("identity_status")
+            if identity_status is not None and identity_status != "active":
+                raise CreativeGovernanceDenied(identity_inactive_code)
+            consent = entry.get("consent", entry)
+            if not isinstance(consent, Mapping):
+                raise CreativeGovernanceDenied(missing_code)
+            decision = self._rights.authorize(
+                uses_real_likeness=uses_real_likeness,
+                uses_voice_clone=uses_voice_clone,
+                consent=consent,
+                channel=channel,
+                territory=territory,
+                commercial_use=commercial_use,
+            )
+            self._require_allowed(decision.blocker_codes)
+
+    @staticmethod
+    def _authorize_persisted_licenses(
+        licenses: Sequence[Mapping[str, Any]], production: ApprovedProduction
+    ) -> None:
+        current_time = datetime.now(UTC)
+        for license_facts in licenses:
+            if license_facts.get("status") != "active":
+                raise CreativeGovernanceDenied("license_inactive")
+            expires_at = license_facts.get("expires_at")
+            if isinstance(expires_at, datetime) and expires_at <= current_time:
+                raise CreativeGovernanceDenied("license_expired")
+            if production.commercial_use and license_facts.get("commercial_use") is not True:
+                raise CreativeGovernanceDenied("commercial_use_not_permitted")
+            terms = license_facts.get("terms")
+            if not isinstance(terms, Mapping):
+                raise CreativeGovernanceDenied("license_terms_invalid")
+            _require_scope(
+                terms.get("permitted_channels"),
+                str(production.profile_rules.get("target_platform", production.profile_key)),
+                "channel_not_permitted",
+            )
+            _require_scope(
+                terms.get("territories"), production.territory, "territory_not_permitted"
+            )
+
+    @staticmethod
+    def _authorize_persisted_restrictions(
+        restrictions: Sequence[Mapping[str, Any]], production: ApprovedProduction
+    ) -> None:
+        channel = str(production.profile_rules.get("target_platform", production.profile_key))
+        for restriction in restrictions:
+            if restriction.get("status") != "active":
+                continue
+            document = restriction.get("document")
+            if not isinstance(document, Mapping):
+                raise CreativeGovernanceDenied("usage_restriction_invalid")
+            if channel in _string_values(document.get("prohibited_channels")):
+                raise CreativeGovernanceDenied("channel_not_permitted")
+            if production.territory in _string_values(document.get("prohibited_territories")):
+                raise CreativeGovernanceDenied("territory_not_permitted")
+            if production.commercial_use and document.get("commercial_use_prohibited") is True:
+                raise CreativeGovernanceDenied("commercial_use_not_permitted")
+
+    async def _require_c2pa(self, production: ApprovedProduction) -> None:
+        persisted_status = production.c2pa_status
+        reader = getattr(self._repository, "asset_provenance", None)
+        if reader is not None:
+            provenance = await reader(production.asset_id)
+            if provenance is not None:
+                persisted_status = provenance["validation_status"]
+        if production.profile_rules.get("requires_c2pa") is True and persisted_status != "valid":
+            raise CreativeGovernanceDenied("c2pa_required")
 
     def _validate_candidates(
         self, production: ApprovedProduction
@@ -335,3 +486,49 @@ class CreativeService:
     @staticmethod
     def _package_key(production: ApprovedProduction) -> str:
         return f"{production.script_id}:{production.profile_key}:{production.locale}"
+
+
+def _mapping_sequence(value: object) -> tuple[Mapping[str, Any], ...]:
+    if not isinstance(value, Sequence) or isinstance(value, (str, bytes)):
+        return ()
+    return tuple(item for item in value if isinstance(item, Mapping))
+
+
+def _string_values(value: object) -> set[str]:
+    if not isinstance(value, Sequence) or isinstance(value, (str, bytes)):
+        return set()
+    return {item for item in value if isinstance(item, str) and item}
+
+
+def _require_scope(value: object, actual: str, blocker: str) -> None:
+    allowed = _string_values(value)
+    if allowed and actual not in allowed:
+        raise CreativeGovernanceDenied(blocker)
+
+
+def _decision_fingerprint(
+    production: ApprovedProduction,
+    candidate_decisions: Sequence[tuple[dict[str, Any], bool, str, dict[str, float]]],
+    disclosure_labels: Sequence[str],
+) -> str:
+    payload = {
+        "candidates": [
+            {
+                "candidate": candidate,
+                "allowed": allowed,
+                "reason": reason,
+                "metrics": metrics,
+            }
+            for candidate, allowed, reason, metrics in candidate_decisions
+        ],
+        "selected_title_key": production.selected_title_key,
+        "package_metadata": dict(production.package_metadata),
+        "profile": {
+            "key": production.profile_key,
+            "version": production.profile_version,
+            "rules": dict(production.profile_rules),
+        },
+        "localizations": list(production.localizations),
+        "disclosure_labels": list(disclosure_labels),
+    }
+    return hashlib.sha256(json.dumps(payload, sort_keys=True, default=str).encode()).hexdigest()

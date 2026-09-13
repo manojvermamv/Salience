@@ -1,6 +1,6 @@
 # Dependency Inventory
 
-This is the review record for the implemented Phase 1–8 branch. Exact Python
+This is the review record for the implemented Phase 1–9 branch. Exact Python
 dependency pins are copied from `pyproject.toml`; image digests are copied from
 `compose.yaml`.
 
@@ -26,6 +26,7 @@ dependency pins are copied from `pyproject.toml`; image digests are copied from
 | FFmpeg / ffprobe | host command; `NOT RUN` on 2026-09-13 | LGPL-2.1-or-later by default; optional GPL components alter obligations | `MediaEngine` command adapter | remove/replace the adapter; canonical assets remain portable |
 | C2PA 2.4 / c2patool | optional; not installed | c2pa-rs MIT/Apache-2.0 | `C2paTool` provenance adapter | retain canonical provenance status; configure another conforming validator/signer |
 | Synthesia REST | credential-gated; no live call | provider terms / paid plan | `SynthesiaCreativeProvider` owned HTTP DTO adapter | disable plugin; fixture providers and canonical provider-job history remain usable |
+| YouTube Data API v3 | direct HTTPS, disabled by default; no live call | Google API terms | `YouTubePublisherAdapter` private resumable-session edge | disable adapter; fixture publishers and canonical publication history remain usable |
 
 ## Review cadence
 
@@ -41,3 +42,16 @@ inspection/composition is `NOT RUN` until a guarded environment step installs
 and verifies an appropriate distribution package. C2PA signing additionally
 requires an operator-managed signer reference and is never inferred from an
 asset's availability.
+
+## Governed publishing decision
+
+The project adopts the official YouTube Data API resumable-upload protocol at a
+small owned `httpx` boundary rather than adding a Google SDK or a platform-wide
+publishing abstraction. The official `videos.insert` endpoint requires an OAuth
+upload scope and starts a resumable session whose opaque `Location` URI is used
+for subsequent transfer; [the API reference](https://developers.google.com/youtube/v3/docs/videos/insert)
+and [resumable protocol guide](https://developers.google.com/youtube/v3/guides/using_resumable_upload_protocol)
+are the compatibility sources. The adapter is disabled by default, allows only
+private visibility, requires a durable edge-session store, and keeps bearer
+material/session URIs out of canonical records. A future edge uploader, other publisher adapter, or official SDK can
+replace it without changing publication identities or receipts.

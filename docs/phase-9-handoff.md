@@ -1,4 +1,4 @@
-# Phase 9 Handoff
+# Phase 9 Governed Publishing
 
 The only valid Phase-9 publishing input is an immutable
 `ReadyToPublishPackage@v1`. It is produced only after the Phase 7–8 creative
@@ -6,29 +6,33 @@ workflow has retained its selected `ContentBrief@v1`, script version, creative
 brief, storyboard/shot plan, provider job history, assets, platform profile,
 distribution package, title/thumbnail decision, localization, originality
 evaluation, synthetic-media disclosure decision, approval decision, and trace
-lineage.
+lineage. Approved decisions are immutable: an exact replay retains the same
+version, while changed governed input must create a new distribution and
+ready-package version before it can be considered for publishing.
 
 `ReadyToPublishPackage@v1` intentionally contains no account identifier,
 publisher credential, post target, scheduling request, or remote publishing
 receipt. Its `approval_state` is literally `approved`; it is a governed handoff,
 not a command to publish.
 
-## Phase 9 contract
+## Implemented contract
 
-A later publishing capability must:
+The fixture-first publishing capability now:
 
-- accept only a resolved `ReadyToPublishPackage@v1` and its immutable package
+- accepts only a resolved `ReadyToPublishPackage@v1` and its immutable package
   lineage; it must never rebuild creative or research decisions from scratch;
-- add a separate, versioned publisher request and account/credential boundary;
-- re-authorize the proposed publish effect for the selected profile, locale,
-  territory, policy version, scopes, approval, and remaining budget;
-- persist an idempotent external-effect plan before calling a publisher, then
-  reconcile the same key after timeout, retry, or process interruption;
-- record the remote receipt, audit event, provenance record, cost settlement,
+- adds a separate, versioned publisher request and account/credential boundary;
+- requires a distinct current `publication` approval for the exact ready package,
+  account, platform, destination, locale, territory, visibility, and capability
+  profile revision, then re-authorizes the proposed effect against current policy,
+  rights, connection scopes, and remaining budget immediately before the external
+  submit;
+- persists an idempotent external-effect plan before calling a publisher, then
+  reconciles the same key after timeout, retry, or process interruption;
+- records the remote receipt, audit event, provenance record, cost settlement,
   and W3C/OpenTelemetry-compatible trace links without mutating the ready
   package;
-- provide its own fixture-first recovery verifier before a live provider is
-  enabled.
+- provides a fixture-first recovery verifier before a live provider is enabled.
 
 ## Explicit non-inheritance
 
@@ -39,10 +43,22 @@ asset as live-published media.
 
 ## Current boundary
 
-Phase 7–8 stops at the ready package. It has no social-platform adapter,
-publisher credential, platform account model, audience analytics, or learning
-loop. The ready-package fixture is explicitly configured for the end-to-end
-verifier; the deployed control plane defaults to dry-run and does not create a
-ready package. Optional FFmpeg execution and C2PA signing are represented by
-adapters and provenance state, but are `NOT RUN` on this checked host because
-the required host binaries/signing configuration are absent.
+Phase 9 adds publisher/account/profile identities, immutable request/plan/
+schedule/attempt/receipt facts, exact schedule payload matching, per-execution
+canonical job materialization, policy/approval/budget reauthorization, scoped
+control API/CLI/SDK, fixture reconciliation, and signed-webhook ingress. The
+fixture path is explicitly configured for the end-to-end verifier; the deployed
+control plane still defaults to dry-run and does not create a ready package.
+
+`YouTubePublisherAdapter` is disabled by default and private-only. It requires a
+durable injected edge-session store and uses the
+official YouTube Data API to start a resumable session from an injected scoped
+lease, but no bearer token or opaque session URI enters canonical records. It
+uses that durable edge session store to reconcile the safe session identity after
+adapter replacement, but does not yet stream package bytes or create a video.
+Its live status remains `NOT RUN` without explicit operator configuration.
+TikTok, Instagram, LinkedIn, and future providers remain independently
+selectable/replaceable registry adapters rather than branches in canonical
+publication logic. Optional FFmpeg execution and C2PA signing are represented
+by adapters and provenance state, but remain `NOT RUN` unless a separate
+signer-backed media integration is executed.

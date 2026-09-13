@@ -1,5 +1,7 @@
 """Scoped inspection and start routes for provider-neutral creative workflows."""
 
+import json
+
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 from salience.api.dependencies import RequestContext, require_scope
@@ -9,10 +11,44 @@ from salience.api.schemas import (
     CreativeRunRequest,
     CreativeRunResponse,
     CreativeScriptResponse,
+    CreativeWebhookResponse,
 )
+from salience.creative.providers import ProviderWebhookRejected
 
 
 router = APIRouter(prefix="/v1/creative", tags=["creative"])
+
+
+@router.post(
+    "/providers/{provider_id}/webhooks",
+    response_model=CreativeWebhookResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+async def receive_provider_webhook(provider_id: str, request: Request) -> CreativeWebhookResponse:
+    provider = request.app.state.creative_providers.get(provider_id)
+    repository = request.app.state.creative_repository
+    if provider is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    if repository is None:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE)
+    try:
+        payload = json.loads((await request.body()).decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT) from error
+    if not isinstance(payload, dict):
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT)
+    try:
+        event = await provider.verify_webhook(
+            payload, signature=request.headers.get("X-Salience-Signature")
+        )
+        if event.provider_id != provider_id:
+            raise ProviderWebhookRejected("provider webhook identity does not match route")
+        receipt = await repository.record_verified_webhook(event=event, trace_id="webhook-ingress")
+    except ProviderWebhookRejected as error:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(error)) from error
+    except KeyError as error:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND) from error
+    return CreativeWebhookResponse(**receipt.__dict__)
 
 
 @router.post("/runs", response_model=CreativeRunResponse, status_code=status.HTTP_202_ACCEPTED)
@@ -30,6 +66,8 @@ async def start_run(
             target_profile_key=payload.target_profile_key,
             target_profile_version=payload.target_profile_version,
             dry_run=payload.dry_run,
+            budget_id=payload.budget_id,
+            max_variants=payload.max_variants,
         )
     except KeyError as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND) from error

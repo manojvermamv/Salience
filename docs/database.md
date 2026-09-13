@@ -7,12 +7,23 @@ stores immutable artifact bytes; neither replaces a canonical database row.
 
 The first migration is a static schema snapshot at
 `migrations/versions/0001_canonical_foundation.py`. The implemented history
-reaches `0007_creative_lineage.py`; `0004_intelligence_loop.py` adds the
+reaches `0012_publication_profile_scope.py`; `0004_intelligence_loop.py` adds the
 source-to-brief lineage tables, `0006_creative_production_distribution.py` adds
 the Phase 7–8 canonical production/distribution model, and `0007` anchors
-provider and package-asset reconciliation lineage. Historical migrations do
-not import application metadata, so future model changes cannot alter an
-already-applied migration.
+provider and package-asset reconciliation lineage. `0008` adds creative-job
+effect/reservation links, verified webhook receipts, canonical asset-rights
+links, provider lifecycle/cost fields, and triggers that reject direct mutation
+of approved decision lineage. `0009_governed_publication` adds publisher
+accounts, secret-reference-only connections, capability profiles, immutable
+ready-package-bound requests, idempotent plans/schedules/attempts, append-only
+status and webhook receipts, remote receipts, publication records, and their
+trace/cost links. `0010` adds the distinct publication-approval and
+schedule-budget references plus database-enforced immutable identity fields;
+`0011` permits only their bounded durable cost lifecycle transitions, and `0012`
+binds capability-profile identity to the exact publisher account and publication
+profile revision selected by each immutable request.
+Historical migrations do not import application
+metadata, so future model changes cannot alter an already-applied migration.
 
 Use an SQLAlchemy async URL for Alembic:
 
@@ -42,8 +53,10 @@ The creative schema is canonical, provider-neutral, and versioned. It records
 `script_versions`, `creative_briefs`, `storyboards`, `shot_plans`, and
 `creative_jobs` under the selected immutable `content_brief_versions` record.
 `provider_jobs` retains normalized requests, external-job reconciliation state,
-provider/model metadata, estimated/actual cost hooks, failure class, and trace
-context without credential values.
+verified callback receipt identity, provider/model metadata, estimated/actual
+cost facts, cancellation/failure state, and trace context without credential
+values. `creative_job_effects` ties each bounded variant to exactly one planned
+external effect and budget reservation.
 
 `assets`, variants, transformations, captions, compositions, licenses, consent,
 likeness/voice records, usage restrictions, and `asset_provenance` retain
@@ -53,8 +66,33 @@ retain its selected asset roles, title/thumbnail decision, localization,
 originality evaluation, and synthetic-media disclosure before the immutable
 `ready_to_publish_packages` record can reference an approved governance state.
 
-The final package has no publisher account or remote destination. Phase 9 must
-add a separate publishing-effect identity and must not mutate this lineage.
+Once an approved ready package references a distribution decision graph,
+PostgreSQL triggers reject direct updates to its package, disclosure, candidate,
+localization, or originality rows. Repository writers either replay identical
+data or allocate a new version that retains source lineage. The final package
+has no publisher account or remote destination. Phase 9 adds a separate
+publishing-effect identity and does not mutate this lineage.
+
+## Governed Publication Lineage
+
+`publisher_accounts`, `publisher_connections`, and
+`publisher_capability_profiles` retain account identity, secret reference,
+scope/profile facts, protocol compatibility, and source timestamps without a
+secret value. `publication_requests` binds an approved ready package, a distinct approved
+publication authority, one active workspace- and platform-bound account, and the
+exact destination/locale/territory/visibility/profile scope. `publication_plans`,
+`publication_schedules`,
+`publication_attempts`, `publication_status_events`,
+`publisher_webhook_receipts`, `remote_publication_receipts`, and `publications`
+preserve the governed decision, external-effect/reconciliation state, cost
+reservation, safe callback hash, trace, and final receipt relationships.
+Requests, schedules, attempts, callback/remote receipts, status history, and
+final publication references are database-immutable. Plans preserve their
+identity fields and admit only a one-time effect/reservation link plus bounded
+cost-settlement lifecycle transitions. Repository writers replay exact
+identities or reject a changed immutable fact. Temporal schedule payloads are
+exact-matched against the canonical request, plan, budget, version, and contract;
+each scheduler execution receives its own canonical job identity.
 
 ## Durable Runs
 
@@ -93,7 +131,7 @@ protocol compatibility metadata. `plugin_versions` and `plugin_capabilities` hol
 versioned capability declarations without embedding a provider SDK or protocol object
 in canonical rows.
 
-Those fields remain extension hooks. The deterministic Phase 1–8 implementation
+Those fields remain extension hooks. The deterministic Phase 1–9 implementation
 enforces its present scope, policy, approval, trust, workflow, protocol-gateway,
 and callable-agent boundaries without treating a future tenant, publisher, or
 provider deployment as already configured.

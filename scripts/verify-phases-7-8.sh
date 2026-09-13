@@ -60,31 +60,45 @@ if [[ -z $postgres_ip ]]; then
 fi
 
 if DATABASE_URL="postgresql+asyncpg://salience:salience@${postgres_ip}:5432/salience" "$python_bin" -m alembic upgrade head; then
-  pass "Canonical migrations apply through 0007_creative_lineage"
+  pass "Canonical migrations apply through 0008_creative_release_gate"
 else
   fail "Canonical migrations did not apply"
   exit "$result"
 fi
 
 if "$python_bin" -m pytest \
-  tests/integration/test_creative_control_api.py \
-  tests/unit/test_cli.py \
-  tests/unit/test_sdk.py \
+  tests/e2e/test_phase7_8_release_gate.py \
   tests/e2e/test_phases_7_8_creative_loop.py \
-  tests/e2e/test_phase7_creative_recovery.py -q; then
-  pass "Phase 7–8 fixture control loop, recovery, CLI, SDK, and API contracts"
+  tests/e2e/test_phase7_creative_recovery.py \
+  tests/integration/test_creative_control_api.py \
+  tests/integration/test_creative_migrations.py \
+  tests/integration/test_creative_cost_lifecycle.py \
+  tests/integration/test_creative_provider_lifecycle.py \
+  tests/integration/test_creative_webhook_ingress.py \
+  tests/integration/test_creative_rights_provenance.py \
+  tests/integration/test_creative_release_gate_migration.py \
+  tests/integration/test_distribution_package_repository.py \
+  tests/evals/test_phase7_script_eval.py \
+  tests/evals/test_phase8_distribution_eval.py \
+  tests/evals/test_phase8_ready_package_eval.py \
+  tests/contracts/test_plugin_registry.py \
+  tests/unit/test_creative_contracts.py \
+  tests/unit/test_cli.py \
+  tests/unit/test_sdk.py -q; then
+  pass "Phase 7-8 fixture release gate: recovery, costs, lifecycle, webhooks, registry, rights, immutability, API, CLI, SDK, and evaluations"
 else
-  fail "Phase 7–8 fixture control loop test suite"
+  fail "Phase 7-8 fixture release-gate test suite"
 fi
 
 if command -v ffmpeg >/dev/null 2>&1 && command -v ffprobe >/dev/null 2>&1; then
-  pass "FFmpeg and ffprobe are available for optional media-engine execution"
+  pass "FFmpeg and ffprobe prerequisites are available"
+  not_run "FFmpeg media-engine execution — the deterministic fixture uses a controlled probe rather than host codecs"
 else
   not_run "FFmpeg media-engine execution — ffmpeg and/or ffprobe are not installed"
 fi
 
 if command -v c2patool >/dev/null 2>&1 && [[ -n ${C2PA_SIGNER_REF:-} ]]; then
-  pass "C2PA signing tool and signer reference are configured"
+  not_run "C2PA signing — a signer is configured but no signer-backed media integration is executed by the fixture gate"
 else
   not_run "C2PA signing — c2patool and C2PA_SIGNER_REF are not both configured"
 fi

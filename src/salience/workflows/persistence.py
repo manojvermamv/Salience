@@ -28,6 +28,7 @@ class CanonicalCounts:
 
 @dataclass(frozen=True)
 class CanonicalEffect:
+    effect_id: str
     status: str
     external_id: str | None
 
@@ -132,6 +133,56 @@ class CanonicalJobStore:
             dry_run,
         )
 
+    async def create_publication_run(
+        self,
+        *,
+        workflow_run_id: str,
+        task_queue: str,
+        workspace_id: str,
+        content_program_id: str,
+        ready_package_id: str,
+        publisher_account_id: str,
+        idempotency_key: str,
+    ) -> CanonicalRun:
+        return await asyncio.to_thread(
+            self._create_publication_run,
+            workflow_run_id,
+            task_queue,
+            workspace_id,
+            content_program_id,
+            ready_package_id,
+            publisher_account_id,
+            idempotency_key,
+        )
+
+    async def create_scheduled_publication_run(
+        self,
+        *,
+        workflow_run_id: str,
+        task_queue: str,
+        workspace_id: str,
+        content_program_id: str,
+        ready_package_id: str,
+        publisher_account_id: str,
+        idempotency_key: str,
+    ) -> CanonicalRun:
+        """Materialize one durable canonical job for a scheduler firing.
+
+        Temporal schedule actions can start a workflow without an API caller
+        first creating a job row.  The scheduler's immutable execution/run
+        identity is therefore used as the job workflow identity, while the
+        schedule-scoped idempotency key makes retries safe.
+        """
+        return await self.create_publication_run(
+            workflow_run_id=workflow_run_id,
+            task_queue=task_queue,
+            workspace_id=workspace_id,
+            content_program_id=content_program_id,
+            ready_package_id=ready_package_id,
+            publisher_account_id=publisher_account_id,
+            idempotency_key=idempotency_key,
+        )
+
     async def checkpoint(self, run: CanonicalRun, checkpoint_name: str) -> None:
         await asyncio.to_thread(self._checkpoint, run, checkpoint_name)
 
@@ -174,8 +225,13 @@ class CanonicalJobStore:
     async def counts(self, run: CanonicalRun) -> CanonicalCounts:
         return await asyncio.to_thread(self._counts, run)
 
-    async def run_for_workflow(self, workflow_run_id: str) -> CanonicalRun:
-        return await asyncio.to_thread(self._run_for_workflow, workflow_run_id)
+    async def run_for_workflow(
+        self, workflow_id: str, workflow_run_id: str | None = None
+    ) -> CanonicalRun:
+        return await asyncio.to_thread(self._run_for_workflow, workflow_id, workflow_run_id)
+
+    async def workflow_run_id_for_job(self, job_id: str) -> str | None:
+        return await asyncio.to_thread(self._workflow_run_id_for_job, job_id)
 
     async def effect_was_reconciled(
         self, run: CanonicalRun, idempotency_key: str
@@ -221,6 +277,24 @@ class CanonicalJobStore:
             name,
             schedule_expression,
             job_type,
+            payload,
+        )
+
+    async def publication_schedule_matches(
+        self,
+        *,
+        workspace_id: str,
+        content_program_id: str,
+        name: str,
+        schedule_expression: str,
+        payload: dict[str, object],
+    ) -> bool | None:
+        return await asyncio.to_thread(
+            self._publication_schedule_matches,
+            workspace_id,
+            content_program_id,
+            name,
+            schedule_expression,
             payload,
         )
 
@@ -457,6 +531,107 @@ class CanonicalJobStore:
             )
         return run
 
+    def _create_publication_run(
+        self,
+        workflow_run_id: str,
+        task_queue: str,
+        workspace_id: str,
+        content_program_id: str,
+        ready_package_id: str,
+        publisher_account_id: str,
+        idempotency_key: str,
+    ) -> CanonicalRun:
+        trace_context = TraceContext.new_root()
+        with self._connect() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT ready.id
+                FROM ready_to_publish_packages ready
+                JOIN publisher_accounts account ON account.id = %s
+                WHERE ready.id = %s
+                  AND ready.workspace_id = %s
+                  AND ready.content_program_id = %s
+                  AND ready.approval_state = 'approved'
+                  AND account.workspace_id = ready.workspace_id
+                  AND account.status = 'active'
+                """,
+                (publisher_account_id, ready_package_id, workspace_id, content_program_id),
+            )
+            if cursor.fetchone() is None:
+                raise KeyError("ready package and publisher account are not publishable together")
+            cursor.execute(
+                """
+                INSERT INTO jobs (
+                    workspace_id, content_program_id, job_type, state, workflow_run_id,
+                    task_queue, idempotency_key, input_payload, retry_policy, trace_id, span_id,
+                    dry_run, started_at
+                ) VALUES (
+                    %s, %s, 'governed_publication', 'running', %s,
+                    %s, %s, %s::jsonb, %s::jsonb, %s, %s, FALSE, CURRENT_TIMESTAMP
+                )
+                ON CONFLICT (workspace_id, idempotency_key) DO NOTHING
+                RETURNING id, trace_id, span_id
+                """,
+                (
+                    workspace_id,
+                    content_program_id,
+                    workflow_run_id,
+                    task_queue,
+                    idempotency_key,
+                    json.dumps(
+                        {
+                            "ready_package_id": ready_package_id,
+                            "publisher_account_id": publisher_account_id,
+                            "contract_version": "PublicationWorkflowRequest@v1",
+                        }
+                    ),
+                    json.dumps({"maximum_attempts": 3, "initial_backoff_ms": 100}),
+                    trace_context.trace_id,
+                    trace_context.span_id,
+                ),
+            )
+            inserted = cursor.fetchone()
+            if inserted is None:
+                cursor.execute(
+                    """
+                    SELECT id, workflow_run_id, trace_id, span_id
+                    FROM jobs
+                    WHERE workspace_id = %s AND idempotency_key = %s
+                    """,
+                    (workspace_id, idempotency_key),
+                )
+                job_id, existing_workflow_id, trace_id, span_id = cursor.fetchone()
+                return CanonicalRun(
+                    workspace_id=UUID(workspace_id),
+                    content_program_id=UUID(content_program_id),
+                    job_id=job_id,
+                    workflow_run_id=existing_workflow_id,
+                    trace_context=TraceContext(trace_id=trace_id, span_id=span_id),
+                )
+            job_id, trace_id, span_id = inserted
+            run = CanonicalRun(
+                workspace_id=UUID(workspace_id),
+                content_program_id=UUID(content_program_id),
+                job_id=job_id,
+                workflow_run_id=workflow_run_id,
+                trace_context=TraceContext(trace_id=trace_id, span_id=span_id),
+            )
+            self._insert_audit(
+                cursor,
+                run.workspace_id,
+                run.job_id,
+                run.workflow_run_id,
+                run.trace_context,
+                "publication_run.started",
+                "allowed",
+                {
+                    "task_queue": task_queue,
+                    "ready_package_id": ready_package_id,
+                    "publisher_account_id": publisher_account_id,
+                },
+            )
+        return run
+
     def _checkpoint(self, run: CanonicalRun, checkpoint_name: str) -> None:
         with self._connect() as connection, connection.cursor() as cursor:
             cursor.execute(
@@ -556,7 +731,7 @@ class CanonicalJobStore:
         with self._connect() as connection, connection.cursor() as cursor:
             cursor.execute(
                 """
-                SELECT status, provider_reference
+                SELECT id::text, status, provider_reference
                 FROM external_effects
                 WHERE workspace_id = %s AND idempotency_key = %s
                 """,
@@ -565,7 +740,7 @@ class CanonicalJobStore:
             row = cursor.fetchone()
             if row is None:
                 return None
-            return CanonicalEffect(status=row[0], external_id=row[1])
+            return CanonicalEffect(effect_id=row[0], status=row[1], external_id=row[2])
 
     def _terminal(self, run: CanonicalRun, status: str) -> None:
         with self._connect() as connection, connection.cursor() as cursor:
@@ -659,19 +834,23 @@ class CanonicalJobStore:
             )
             return CanonicalCounts(*cursor.fetchone())
 
-    def _run_for_workflow(self, workflow_run_id: str) -> CanonicalRun:
+    def _run_for_workflow(
+        self, workflow_id: str, workflow_run_id: str | None = None
+    ) -> CanonicalRun:
         with self._connect() as connection, connection.cursor() as cursor:
             cursor.execute(
                 """
                 SELECT workspace_id, content_program_id, id, workflow_run_id, trace_id, span_id
                 FROM jobs
-                WHERE workflow_run_id = %s
+                WHERE workflow_run_id = %s OR workflow_run_id = %s
+                ORDER BY CASE WHEN workflow_run_id = %s THEN 0 ELSE 1 END
+                LIMIT 1
                 """,
-                (workflow_run_id,),
+                (workflow_run_id or workflow_id, workflow_id, workflow_run_id or workflow_id),
             )
             row = cursor.fetchone()
             if row is None:
-                raise KeyError(f"canonical job not found for workflow {workflow_run_id}")
+                raise KeyError(f"canonical job not found for workflow {workflow_id}")
             workspace_id, content_program_id, job_id, run_id, trace_id, span_id = row
             return CanonicalRun(
                 workspace_id=workspace_id,
@@ -680,6 +859,12 @@ class CanonicalJobStore:
                 workflow_run_id=run_id,
                 trace_context=TraceContext(trace_id=trace_id, span_id=span_id),
             )
+
+    def _workflow_run_id_for_job(self, job_id: str) -> str | None:
+        with self._connect() as connection, connection.cursor() as cursor:
+            cursor.execute("SELECT workflow_run_id FROM jobs WHERE id = %s", (job_id,))
+            row = cursor.fetchone()
+            return row[0] if row is not None else None
 
     def _effect_was_reconciled(self, run: CanonicalRun, idempotency_key: str) -> bool:
         with self._connect() as connection, connection.cursor() as cursor:
@@ -847,6 +1032,34 @@ class CanonicalJobStore:
                 ),
             )
             return CanonicalSchedule(*cursor.fetchone())
+
+    def _publication_schedule_matches(
+        self,
+        workspace_id: str,
+        content_program_id: str,
+        name: str,
+        schedule_expression: str,
+        payload: dict[str, object],
+    ) -> bool | None:
+        with self._connect() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT content_program_id::text, job_type, schedule_expression, payload
+                FROM job_schedules
+                WHERE workspace_id = %s AND name = %s
+                """,
+                (workspace_id, name),
+            )
+            row = cursor.fetchone()
+            if row is None:
+                return None
+            existing_program, existing_type, existing_expression, existing_payload = row
+            return (
+                existing_program == content_program_id
+                and existing_type == "governed_publication"
+                and existing_expression == schedule_expression
+                and existing_payload == payload
+            )
 
     @staticmethod
     def _insert_audit(
