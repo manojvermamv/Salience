@@ -202,6 +202,19 @@ class CreativeCapabilityRequest(BaseModel):
         return capability
 
 
+class CreativeSelectionConstraints(BaseModel):
+    """Runtime-owned limits used to select a compatible creative provider."""
+
+    model_config = ConfigDict(frozen=True)
+
+    contract_version: Literal["CreativeSelectionConstraints@v1"] = "CreativeSelectionConstraints@v1"
+    max_variants: int = Field(default=3, gt=0, le=3)
+    output_format: str = Field(default="video/mp4", min_length=1, max_length=128)
+    maximum_estimated_cost_micros: int | None = Field(default=None, ge=0)
+    require_webhook: bool = False
+    allowed_provider_ids: tuple[str, ...] | None = None
+
+
 class ProviderJobResult(BaseModel):
     """Provider-neutral lifecycle projection with no credential-bearing fields."""
 

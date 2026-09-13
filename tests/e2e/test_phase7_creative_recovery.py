@@ -255,7 +255,11 @@ async def test_restart_after_provider_acceptance_reconciles_without_resubmission
     assert provider.submit_attempts == 1
     assert provider.reconcile_calls == 1
     assert await CostReservationRepository(database_url).reservation_count(
-        effect_id=await _effect_id(database_url, seeded["workspace_id"], f"{idempotency_key}:text-to-video")
+        effect_id=await _effect_id(
+            database_url,
+            seeded["workspace_id"],
+            f"{idempotency_key}:text-to-video:variant:1",
+        )
     ) == 1
     lineage = await CreativeRepository(database_url).lineage_for_ready_package(result.ready_package_id)
     assert lineage["source_ids"] == [seeded["source_id"]]

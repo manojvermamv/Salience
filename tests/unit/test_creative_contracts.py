@@ -53,7 +53,7 @@ def test_script_draft_request_requires_brief_and_claim_links() -> None:
 
 def test_capability_resolution_selects_an_enabled_compatible_provider() -> None:
     from salience.creative.capabilities import CreativeCapabilityRegistry
-    from salience.creative.contracts import CreativeCapabilityRequest
+    from salience.creative.contracts import CreativeCapabilityRequest, CreativeSelectionConstraints
 
     registry = CreativeCapabilityRegistry(PluginRegistry(supported_contract_version="1.0"))
     registered = registry.register(creative_manifest())
@@ -73,7 +73,74 @@ def test_capability_resolution_selects_an_enabled_compatible_provider() -> None:
         )
     )
 
-    assert selected == registered
+    assert selected.selected == registered
+    assert selected.rejected_candidates == {}
+
+
+def test_capability_resolution_selects_compatible_replacement_with_rejection_reason() -> None:
+    from salience.creative.capabilities import CreativeCapabilityRegistry
+    from salience.creative.contracts import CreativeCapabilityRequest, CreativeSelectionConstraints
+
+    registry = CreativeCapabilityRegistry(PluginRegistry(supported_contract_version="1.0"))
+    registry.register(
+        creative_manifest(
+            plugin_id="primary-fixture-creative",
+            version="2.0.0",
+            provider_metadata={**creative_manifest().provider_metadata, "enabled": False},
+        )
+    )
+    registry.register(creative_manifest(plugin_id="replacement-fixture-creative"))
+
+    selection = registry.resolve(
+        CreativeCapabilityRequest(
+            request_key="render-replacement",
+            content_program_id="program-1",
+            brief_id="brief-1",
+            script_id="script-1",
+            capability="text_to_video",
+            expected_modality="video",
+            aspect_ratio="9:16",
+            resolution="1080x1920",
+            duration_seconds=30,
+            max_variants=2,
+        ),
+        constraints=CreativeSelectionConstraints(max_variants=2),
+    )
+
+    assert selection.selected.plugin_id == "replacement-fixture-creative"
+    assert selection.rejected_candidates == {
+        "primary-fixture-creative@2.0.0": "provider_disabled"
+    }
+
+
+def test_capability_resolution_rejects_an_explicit_unavailable_provider() -> None:
+    from salience.creative.capabilities import CreativeCapabilityRegistry
+    from salience.creative.contracts import CreativeCapabilityRequest
+
+    registry = CreativeCapabilityRegistry(PluginRegistry(supported_contract_version="1.0"))
+    registry.register(
+        creative_manifest(
+            plugin_id="disabled-provider",
+            provider_metadata={**creative_manifest().provider_metadata, "enabled": False},
+        )
+    )
+
+    with pytest.raises(CapabilityNotSupported, match="explicit provider"):
+        registry.resolve(
+            CreativeCapabilityRequest(
+                request_key="render-disabled",
+                content_program_id="program-1",
+                brief_id="brief-1",
+                script_id="script-1",
+                capability="text_to_video",
+                expected_modality="video",
+                aspect_ratio="9:16",
+                resolution="1080x1920",
+                duration_seconds=30,
+                max_variants=1,
+                provider_id="disabled-provider",
+            )
+        )
 
 
 def test_capability_resolution_rejects_unsupported_capability() -> None:
@@ -171,6 +238,37 @@ def test_workflow_derives_stable_bounded_variant_identities() -> None:
         ("render-variants:variant:2", "variant-2"),
         ("render-variants:variant:3", "variant-3"),
     ]
+
+
+def test_workflow_derives_independently_reconcilable_requests_for_each_variant() -> None:
+    from salience.creative.contracts import CreativeCapabilityRequest
+    from salience.workflows.creative import _variant_requests
+
+    request = CreativeCapabilityRequest(
+        request_key="render-variants",
+        content_program_id="program-1",
+        brief_id="brief-1",
+        script_id="script-1",
+        capability="text_to_video",
+        expected_modality="video",
+        aspect_ratio="9:16",
+        resolution="1080x1920",
+        duration_seconds=30,
+        max_variants=2,
+        provider_extension={"script_text": "evidence-linked script"},
+    )
+
+    variants = _variant_requests(request)
+
+    assert [variant.request_key for variant in variants] == [
+        "render-variants:variant:1",
+        "render-variants:variant:2",
+    ]
+    assert [variant.provider_extension["variant_key"] for variant in variants] == [
+        "variant-1",
+        "variant-2",
+    ]
+    assert all(variant.max_variants == 1 for variant in variants)
 
 
 def test_provider_result_preserves_explicit_unknown_actual_cost() -> None:

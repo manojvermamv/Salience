@@ -127,6 +127,7 @@ class CreativeRunRequest(BaseModel):
     idempotency_key: str = Field(min_length=1, max_length=255)
     target_profile_key: str = Field(min_length=1, max_length=255)
     target_profile_version: int = Field(default=1, gt=0)
+    max_variants: int = Field(default=1, gt=0, le=3)
     dry_run: bool = True
     budget_id: str | None = Field(default=None, min_length=1)
 

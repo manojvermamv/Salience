@@ -67,6 +67,7 @@ async def start_run(
             target_profile_version=payload.target_profile_version,
             dry_run=payload.dry_run,
             budget_id=payload.budget_id,
+            max_variants=payload.max_variants,
         )
     except KeyError as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND) from error

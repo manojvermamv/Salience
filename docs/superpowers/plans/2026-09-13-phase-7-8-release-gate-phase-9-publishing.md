@@ -330,7 +330,7 @@ Expected: PASS. Commit: `feat: reconcile creative provider webhooks`.
 
 **Interfaces:** `CreativeCapabilityRegistry.resolve(request, constraints)` returns the selected manifest and rejected-candidate reasons. `CreativeRepository.record_asset_variant` persists every produced variant and a selected/rejected reason.
 
-- [ ] **Step 1: Write provider-selection red tests**
+- [x] **Step 1: Write provider-selection red tests**
 
 ```python
 def test_registry_selects_compatible_replacement_when_primary_is_disabled(registry, request):
@@ -342,17 +342,17 @@ def test_registry_rejects_an_explicit_unavailable_provider(registry, request):
         registry.resolve(request.model_copy(update={"provider_id": "disabled-provider"}))
 ```
 
-- [ ] **Step 2: Run the registry/E2E suite and confirm it fails**
+- [x] **Step 2: Run the registry/E2E suite and confirm it fails**
 
 Run: `pytest tests/unit/test_creative_agents.py tests/unit/test_creative_contracts.py tests/e2e/test_phases_7_8_creative_loop.py -q`
 
 Expected: FAIL because selection does not filter all declared constraints or persist variant decisions.
 
-- [ ] **Step 3: Implement candidate filtering and variant persistence**
+- [x] **Step 3: Implement candidate filtering and variant persistence**
 
 Pass Creative Director request and Production Agent bounded plan into registry resolution. Filter enabled/compatible manifests by capability, modality, controls, policy, explicit provider, formats, aspect ratio, duration, concurrency/rate state, budget, and variant quota. Submit each allowed variant with a stable derived request key, import/validate each result, and preserve non-selected variants with deterministic rejection reason.
 
-- [ ] **Step 4: Verify**
+- [x] **Step 4: Verify**
 
 Run: `pytest tests/unit/test_creative_agents.py tests/unit/test_creative_contracts.py tests/e2e/test_phases_7_8_creative_loop.py -q`
 

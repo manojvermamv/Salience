@@ -49,6 +49,7 @@ class CreativeProductionRequest:
     budget_id: str | None = None
     target_profile_key: str = "fixture-short-video"
     target_profile_version: int = 1
+    max_variants: int = 1
     contract_version: str = "CreativeProductionRequest@v1"
 
     def __post_init__(self) -> None:
@@ -62,6 +63,8 @@ class CreativeProductionRequest:
             raise ValueError("non-dry creative runs require a budget identity")
         if self.target_profile_version <= 0:
             raise ValueError("target profile version must be positive")
+        if not 1 <= self.max_variants <= 3:
+            raise ValueError("max_variants must be between 1 and 3")
 
 
 @dataclass(frozen=True)
@@ -109,7 +112,7 @@ class CreativeActivities:
     def _select_provider(self, request: CreativeCapabilityRequest) -> tuple[CreativeProvider, str | None]:
         if self._state.provider_registry is None:
             return self._state.provider, None
-        manifest = self._state.provider_registry.resolve(request)
+        manifest = self._state.provider_registry.resolve(request).selected
         provider = self._state.provider_adapters.get(manifest.plugin_id)
         if provider is None:
             raise RuntimeError(f"selected creative provider adapter is unavailable: {manifest.plugin_id}")
@@ -230,7 +233,7 @@ class CreativeActivities:
             "brief_id": payload["brief"]["brief_id"],
             "script_id": payload["script_id"],
             "capability": capability,
-            "max_variants": 1,
+            "max_variants": request["max_variants"],
         }
         production_run = await self._state.agents.invoke_by_id("production_agent", production_input)
         production_run_id = _stage_run_id(run, "production")
@@ -299,48 +302,60 @@ class CreativeActivities:
                 run = await self._run()
                 capability_request = _capability_request(payload)
                 provider, selected_manifest = self._select_provider(capability_request)
-                creative_job_id = await self._state.creative_repository.record_creative_job(
-                    workspace_id=request["workspace_id"],
-                    program_id=request["content_program_id"],
-                    brief_id=payload["brief"]["brief_id"],
-                    script_id=payload["script_id"],
-                    creative_brief_id=payload["creative_brief_id"],
-                    job_id=str(run.job_id),
-                    requested_capability=capability_request.capability,
-                    request_fingerprint=_fingerprint(capability_request.model_dump()),
-                    idempotency_key=capability_request.request_key,
-                    request=capability_request.model_dump(),
-                    timeout_seconds=60,
-                    trace_id=run.trace_context.trace_id,
-                    span_id=run.trace_context.span_id,
-                )
-                await self._state.store.plan_effect(run, capability_request.request_key)
-                effect = await self._state.store.effect(run, capability_request.request_key)
-                if effect is None:
-                    raise RuntimeError("canonical creative effect was not persisted")
+                variants: list[dict[str, Any]] = []
                 try:
-                    reservation = await self._state.cost_repository.reserve_for_effect(
-                        budget_id=request["budget_id"],
-                        reservation_key=capability_request.request_key,
-                        job_id=str(run.job_id),
-                        external_effect_id=effect.effect_id,
-                        creative_job_id=creative_job_id,
-                        estimated_micros=provider.capabilities.estimated_cost_micros,
-                    )
+                    for variant_request in _variant_requests(capability_request):
+                        creative_job_id = await self._state.creative_repository.record_creative_job(
+                            workspace_id=request["workspace_id"],
+                            program_id=request["content_program_id"],
+                            brief_id=payload["brief"]["brief_id"],
+                            script_id=payload["script_id"],
+                            creative_brief_id=payload["creative_brief_id"],
+                            job_id=str(run.job_id),
+                            requested_capability=variant_request.capability,
+                            request_fingerprint=_fingerprint(variant_request.model_dump()),
+                            idempotency_key=variant_request.request_key,
+                            request=variant_request.model_dump(),
+                            timeout_seconds=60,
+                            trace_id=run.trace_context.trace_id,
+                            span_id=run.trace_context.span_id,
+                        )
+                        await self._state.store.plan_effect(run, variant_request.request_key)
+                        effect = await self._state.store.effect(run, variant_request.request_key)
+                        if effect is None:
+                            raise RuntimeError("canonical creative effect was not persisted")
+                        reservation = await self._state.cost_repository.reserve_for_effect(
+                            budget_id=request["budget_id"],
+                            reservation_key=variant_request.request_key,
+                            job_id=str(run.job_id),
+                            external_effect_id=effect.effect_id,
+                            creative_job_id=creative_job_id,
+                            estimated_micros=provider.capabilities.estimated_cost_micros,
+                        )
+                        variants.append(
+                            {
+                                "variant_key": variant_request.provider_extension["variant_key"],
+                                "capability_request": variant_request.model_dump(),
+                                "creative_job_id": creative_job_id,
+                                "external_effect_id": effect.effect_id,
+                                "budget_reservation_id": reservation.reservation_id,
+                            }
+                        )
                 except (BudgetExceeded, KeyError):
+                    for variant in variants:
+                        await self._state.cost_repository.release_unused(
+                            variant["budget_reservation_id"]
+                        )
                     denial_reason = "budget_exceeded"
                 else:
-                    payload = {
-                        **payload,
-                        "creative_job_id": creative_job_id,
-                        "external_effect_id": effect.effect_id,
-                        "budget_reservation_id": reservation.reservation_id,
-                        "capability_request": capability_request.model_dump(),
-                        "selected_provider_plugin_id": (
+                    payload = _with_variants(
+                        payload,
+                        variants,
+                        selected_provider_plugin_id=(
                             selected_manifest.split("@", 1)[0] if selected_manifest else None
                         ),
-                        "selected_provider_manifest": selected_manifest,
-                    }
+                        selected_provider_manifest=selected_manifest,
+                    )
                     await self._checkpoint("creative.budget.reserved")
         await self._checkpoint("creative.authorization.checked")
         return {**payload, "authorized": denial_reason is None, "denial_reason": denial_reason}
@@ -353,10 +368,23 @@ class CreativeActivities:
             return {**payload, "provider_state": "dry_run"}
         run = await self._run()
         provider = self._provider_for(payload)
-        capability_request = CreativeCapabilityRequest.model_validate(payload["capability_request"])
-        creative_job_id = payload["creative_job_id"]
+        variants = [
+            await self._submit_variant(payload, variant, provider, run)
+            for variant in payload["variants"]
+        ]
+        await self._checkpoint("creative.provider.reconciled")
+        return _with_variants(payload, variants)
+
+    async def _submit_variant(
+        self,
+        payload: dict[str, Any],
+        variant: dict[str, Any],
+        provider: CreativeProvider,
+        run: CanonicalRun,
+    ) -> dict[str, Any]:
+        capability_request = CreativeCapabilityRequest.model_validate(variant["capability_request"])
         existing = await self._state.creative_repository.provider_job_for_creative(
-            creative_job_id=creative_job_id, provider_id=provider.provider_id
+            creative_job_id=variant["creative_job_id"], provider_id=provider.provider_id
         )
         if existing is not None and existing.get("external_job_id"):
             provider_result = await provider.get_status(existing["external_job_id"])
@@ -376,7 +404,7 @@ class CreativeActivities:
                 )
             reconciled = True
         provider_job_id = await self._state.creative_repository.record_provider_job(
-            creative_job_id=creative_job_id,
+            creative_job_id=variant["creative_job_id"],
             provider_id=provider_result.provider_id,
             provider_version=provider_result.provider_version,
             model_id=provider_result.model_id,
@@ -392,7 +420,7 @@ class CreativeActivities:
         if self._state.cost_repository is None:
             raise RuntimeError("durable cost repository is required for creative submission")
         await self._state.cost_repository.attach_provider_job(
-            reservation_id=payload["budget_reservation_id"], provider_job_id=provider_job_id
+            reservation_id=variant["budget_reservation_id"], provider_job_id=provider_job_id
         )
         await self._state.store.complete_effect(
             run,
@@ -400,10 +428,8 @@ class CreativeActivities:
             external_id=provider_result.external_job_id,
             reconciled=reconciled,
         )
-        await self._checkpoint("creative.provider.reconciled")
         return {
-            **payload,
-            "creative_job_id": creative_job_id,
+            **variant,
             "provider_job_id": provider_job_id,
             "external_job_id": provider_result.external_job_id,
             "provider_state": provider_result.state,
@@ -417,13 +443,30 @@ class CreativeActivities:
             raise RuntimeError("durable cost repository is required for creative settlement")
         run = await self._run()
         provider = self._provider_for(payload)
-        poll_count = int(payload.get("provider_poll_count", 0)) + 1
+        variants = [
+            await self._await_provider_variant(variant, provider, run)
+            for variant in payload["variants"]
+        ]
+        provider_state = (
+            "completed"
+            if all(variant["provider_state"] == "completed" for variant in variants)
+            else "running"
+        )
+        if provider_state == "completed":
+            await self._checkpoint("creative.cost.settled")
+            await self._checkpoint("creative.provider.completed")
+        return _with_variants(payload, variants, provider_state=provider_state)
+
+    async def _await_provider_variant(
+        self, variant: dict[str, Any], provider: CreativeProvider, run: CanonicalRun
+    ) -> dict[str, Any]:
+        poll_count = int(variant.get("provider_poll_count", 0)) + 1
         try:
-            result = await provider.get_status(payload["external_job_id"])
+            result = await provider.get_status(variant["external_job_id"])
         except ProviderResponseError as error:
             retry_after_seconds = _retry_after_seconds(error.retry_after)
             await self._state.creative_repository.transition_provider_job(
-                provider_job_id=payload["provider_job_id"],
+                provider_job_id=variant["provider_job_id"],
                 state="running",
                 trace_id=run.trace_context.trace_id,
                 span_id=run.trace_context.span_id,
@@ -434,23 +477,23 @@ class CreativeActivities:
         if result.state in {"submitted", "running"}:
             if poll_count > self._state.provider_timeout_seconds * PROVIDER_POLLS_PER_TIMEOUT_SECOND:
                 await self._dead_letter_provider(
-                    payload,
+                    variant,
                     run,
                     failure_class="provider_timeout",
                     message="creative provider did not complete before timeout",
                 )
                 raise ApplicationError("creative provider timed out", non_retryable=True)
             await self._state.creative_repository.transition_provider_job(
-                provider_job_id=payload["provider_job_id"],
+                provider_job_id=variant["provider_job_id"],
                 state=result.state,
                 trace_id=run.trace_context.trace_id,
                 span_id=run.trace_context.span_id,
                 next_poll_after_seconds=1,
             )
-            return {**payload, "provider_state": result.state, "provider_poll_count": poll_count}
+            return {**variant, "provider_state": result.state, "provider_poll_count": poll_count}
         if result.state != "completed":
             await self._retry_or_dead_letter_provider(
-                payload,
+                variant,
                 run,
                 failure_class=result.failure_class or "provider_terminal_failure",
                 message=f"creative provider ended in {result.state}",
@@ -461,29 +504,31 @@ class CreativeActivities:
                 )
             raise RuntimeError(f"creative provider ended in {result.state}")
         await self._state.creative_repository.transition_provider_job(
-            provider_job_id=payload["provider_job_id"],
+            provider_job_id=variant["provider_job_id"],
             state="completed",
             trace_id=run.trace_context.trace_id,
             span_id=run.trace_context.span_id,
             actual_cost_micros=result.usage.actual_micros,
         )
         settlement = await self._state.cost_repository.record_actual_usage(
-            payload["budget_reservation_id"], result.usage.actual_micros
+            variant["budget_reservation_id"], result.usage.actual_micros
         )
         if settlement.status != CostSettlementStatus.SETTLED:
             raise RuntimeError(
                 f"creative provider cost cannot pass finalization: {settlement.status.value}"
             )
-        await self._checkpoint("creative.cost.settled")
-        await self._checkpoint("creative.provider.completed")
-        return {**payload, "provider_state": result.state, "cost_status": settlement.status.value}
+        return {
+            **variant,
+            "provider_state": result.state,
+            "cost_status": settlement.status.value,
+        }
 
     async def _retry_or_dead_letter_provider(
-        self, payload: dict[str, Any], run: CanonicalRun, *, failure_class: str, message: str
+        self, variant: dict[str, Any], run: CanonicalRun, *, failure_class: str, message: str
     ) -> None:
         if activity.info().attempt < MAX_CREATIVE_ATTEMPTS:
             await self._state.creative_repository.transition_provider_job(
-                provider_job_id=payload["provider_job_id"],
+                provider_job_id=variant["provider_job_id"],
                 state="running",
                 trace_id=run.trace_context.trace_id,
                 span_id=run.trace_context.span_id,
@@ -491,7 +536,7 @@ class CreativeActivities:
             )
             return
         await self._state.creative_repository.transition_provider_job(
-            provider_job_id=payload["provider_job_id"],
+            provider_job_id=variant["provider_job_id"],
             state="dead_lettered",
             trace_id=run.trace_context.trace_id,
             span_id=run.trace_context.span_id,
@@ -505,10 +550,10 @@ class CreativeActivities:
         )
 
     async def _dead_letter_provider(
-        self, payload: dict[str, Any], run: CanonicalRun, *, failure_class: str, message: str
+        self, variant: dict[str, Any], run: CanonicalRun, *, failure_class: str, message: str
     ) -> None:
         await self._state.creative_repository.transition_provider_job(
-            provider_job_id=payload["provider_job_id"],
+            provider_job_id=variant["provider_job_id"],
             state="dead_lettered",
             trace_id=run.trace_context.trace_id,
             span_id=run.trace_context.span_id,
@@ -528,40 +573,55 @@ class CreativeActivities:
         if self._state.media is None:
             raise RuntimeError("creative media engine is not configured")
         run = await self._run()
-        data = await self._provider_for(payload).download(payload["external_job_id"])
-        inspection = self._state.media.inspect_bytes(data)
-        if inspection.status != "valid" or not inspection.properties.get("video_codec"):
-            raise RuntimeError(
-                f"creative media technical validation failed: {inspection.reason or inspection.status}"
+        provider = self._provider_for(payload)
+        variants: list[dict[str, Any]] = []
+        for index, variant in enumerate(payload["variants"], start=1):
+            data = await provider.download(variant["external_job_id"])
+            inspection = self._state.media.inspect_bytes(data)
+            if inspection.status != "valid" or not inspection.properties.get("video_codec"):
+                raise RuntimeError(
+                    f"creative media technical validation failed: {inspection.reason or inspection.status}"
+                )
+            receipt = await self._state.media.store_download(data, media_type="video/mp4")
+            selected = index == 1
+            asset = await self._state.creative_repository.record_asset_variant(
+                workspace_id=payload["request"]["workspace_id"],
+                program_id=payload["request"]["content_program_id"],
+                creative_job_id=variant["creative_job_id"],
+                provider_job_id=variant["provider_job_id"],
+                storage_key=receipt.storage_key,
+                content_hash=receipt.content_hash,
+                media_type=receipt.media_type,
+                byte_size=receipt.byte_size,
+                origin_type="generated",
+                variant_key=variant["variant_key"],
+                selection_state="selected" if selected else "rejected",
+                selection_reason=(
+                    "deterministic_primary_variant"
+                    if selected
+                    else "not_selected_after_deterministic_primary_selection"
+                ),
+                trace_id=run.trace_context.trace_id,
+                technical_properties=dict(inspection.properties),
             )
-        receipt = await self._state.media.store_download(data, media_type="video/mp4")
-        asset = await self._state.creative_repository.record_asset_variant(
-            workspace_id=payload["request"]["workspace_id"],
-            program_id=payload["request"]["content_program_id"],
-            creative_job_id=payload["creative_job_id"],
-            provider_job_id=payload["provider_job_id"],
-            storage_key=receipt.storage_key,
-            content_hash=receipt.content_hash,
-            media_type=receipt.media_type,
-            byte_size=receipt.byte_size,
-            origin_type="generated",
-            variant_key="primary",
-            selection_state="selected",
-            selection_reason="single bounded fixture variant",
-            trace_id=run.trace_context.trace_id,
-            technical_properties=dict(inspection.properties),
-        )
-        await self._state.creative_repository.record_asset_provenance(
-            asset_id=asset.asset_id,
-            origin_type="generated",
-            validation_status="not_configured",
-            c2pa_manifest_reference=None,
-            signer_metadata={},
-            ingredients=[],
-            transformations=[{"provider_job_id": payload["provider_job_id"]}],
-        )
+            await self._state.creative_repository.record_asset_provenance(
+                asset_id=asset.asset_id,
+                origin_type="generated",
+                validation_status="not_configured",
+                c2pa_manifest_reference=None,
+                signer_metadata={},
+                ingredients=[],
+                transformations=[{"provider_job_id": variant["provider_job_id"]}],
+            )
+            variants.append(
+                {
+                    **variant,
+                    "asset_id": asset.asset_id,
+                    "asset_variant_id": asset.asset_variant_id,
+                }
+            )
         await self._checkpoint("creative.asset.imported")
-        return {**payload, "asset_id": asset.asset_id, "asset_variant_id": asset.asset_variant_id}
+        return _with_variants(payload, variants)
 
     @activity.defn(name="salience.creative.distribute")
     async def distribute(self, payload: dict[str, Any]) -> dict[str, Any]:
@@ -632,9 +692,16 @@ class CreativeActivities:
     ) -> None:
         if self._state.cost_repository is None:
             raise RuntimeError("durable cost repository is required for creative cancellation")
-        reservation_id = payload.get("budget_reservation_id")
-        provider_job_id = payload.get("provider_job_id")
-        external_job_id = payload.get("external_job_id")
+        variants = payload.get("variants") or [payload]
+        for variant in variants:
+            await self._cancel_variant(variant, payload, run)
+
+    async def _cancel_variant(
+        self, variant: dict[str, Any], payload: dict[str, Any], run: CanonicalRun
+    ) -> None:
+        reservation_id = variant.get("budget_reservation_id")
+        provider_job_id = variant.get("provider_job_id")
+        external_job_id = variant.get("external_job_id")
         if isinstance(provider_job_id, str) and isinstance(external_job_id, str):
             await self._state.creative_repository.request_provider_cancellation(
                 provider_job_id=provider_job_id,
@@ -766,6 +833,7 @@ def _request_payload(request: CreativeProductionRequest) -> dict[str, Any]:
         "budget_id": request.budget_id,
         "target_profile_key": request.target_profile_key,
         "target_profile_version": request.target_profile_version,
+        "max_variants": request.max_variants,
     }
 
 
@@ -837,6 +905,49 @@ def _variant_plans(request: CreativeCapabilityRequest) -> tuple[CreativeVariantP
         )
         for index in range(1, request.max_variants + 1)
     )
+
+
+def _variant_requests(request: CreativeCapabilityRequest) -> tuple[CreativeCapabilityRequest, ...]:
+    return tuple(
+        request.model_copy(
+            update={
+                "request_key": plan.request_key,
+                "max_variants": 1,
+                "provider_extension": {
+                    **request.provider_extension,
+                    "variant_key": plan.variant_key,
+                    "variant_index": plan.variant_index,
+                },
+            }
+        )
+        for plan in _variant_plans(request)
+    )
+
+
+def _with_variants(
+    payload: dict[str, Any], variants: list[dict[str, Any]], **updates: object
+) -> dict[str, Any]:
+    if not variants:
+        raise ValueError("creative production requires at least one variant")
+    primary = variants[0]
+    primary_fields = {
+        key: primary[key]
+        for key in (
+            "capability_request",
+            "creative_job_id",
+            "external_effect_id",
+            "budget_reservation_id",
+            "provider_job_id",
+            "external_job_id",
+            "provider_state",
+            "provider_poll_count",
+            "cost_status",
+            "asset_id",
+            "asset_variant_id",
+        )
+        if key in primary
+    }
+    return {**payload, "variants": variants, **primary_fields, **updates}
 
 
 def _fingerprint(value: dict[str, Any]) -> str:

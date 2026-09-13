@@ -4,11 +4,13 @@
 
 - Branch: `phase7-8-release-gate-phase9` (isolated worktree from `main`)
 - Plan: `docs/superpowers/plans/2026-09-13-phase-7-8-release-gate-phase-9-publishing.md`
-- Active task: Gate One, Task 7 — registry-driven provider selection and bounded variant persistence.
-- Current TDD step: Add red selection constraints and bounded variant contracts before changing workflow provider resolution.
-- Last verified state: Gate One Task 6 passed signed ingress, duplicate receipt persistence, and lifecycle convergence tests (7 tests). Phase 7–8 remains unapproved; Task 11’s complete release ladder and independent review remain mandatory before any Phase 9 code.
+- Active task: Gate One, Task 8 — persisted creative rights/provenance and final-package policy.
+- Current TDD step: Add the remaining fail-closed canonical rights-link and C2PA provenance tests before changing finalization policy evaluation.
+- Last verified state: Gate One Task 7 passed registry selection, bounded multi-variant durable effects, recovery, and selected/rejected asset persistence (20 focused tests). Phase 7–8 remains unapproved; Task 11’s complete release ladder and independent review remain mandatory before any Phase 9 code.
 
 ## Checkpoints
+
+- 2026-09-13: Completed Gate One Task 7 red-green. `CreativeCapabilityRegistry.resolve(request, constraints)` now returns an owned selected manifest plus deterministic rejection reasons and filters provider enablement, declared capability, modality, format, aspect ratio, duration, async/poll/reconciliation/webhook requirements, rate/concurrency, contract compatibility, provider allow-list, cost ceiling, explicit provider, and variant quota. The control request carries a 1–3 variant bound; the workflow derives child keys ending in `:variant:N`, creates one creative job/external effect/reservation/provider lifecycle per variant, reconciles and settles each, imports every generated asset, and persists `selected` versus `rejected` decisions deterministically. The focused agents/contracts/creative-loop/recovery suite passed 20/20 with compilation and whitespace checks clean. Next: finish canonical rights/provenance evaluation for Task 8.
 
 - 2026-09-13: Advanced Gate One Task 8 with canonical consent reload. When likeness or cloned voice is involved, distribution and finalization now await `asset_consent` from an FK-backed asset-rights link and evaluate that record instead of a transient caller-supplied consent object. The Phase 8 evaluation/full-loop suite passed 5/5 with compilation and whitespace checks clean. Next: complete any remaining Task 8 provenance coverage, then Task 9 approved-decision immutability.
 

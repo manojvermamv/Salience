@@ -187,6 +187,7 @@ async def test_control_plane_runs_fixture_brief_to_ready_package_with_reverse_li
             target_profile_version=1,
             dry_run=False,
             budget_id=budget_id,
+            max_variants=2,
         )
         completed = await _wait_for_completion(control, started.job_id)
     finally:
@@ -196,7 +197,7 @@ async def test_control_plane_runs_fixture_brief_to_ready_package_with_reverse_li
     ready_package_id = completed.output["ready_package_id"]
     assert completed.state == "succeeded"
     assert isinstance(ready_package_id, str) and ready_package_id
-    assert provider.submit_count == 1
+    assert provider.submit_count == 2
     lineage = await control.get_ready_package_lineage(ready_package_id)
     assert lineage is not None
     assert lineage["source_ids"] == [seeded["source_id"]]
@@ -208,6 +209,10 @@ async def test_control_plane_runs_fixture_brief_to_ready_package_with_reverse_li
         "production_agent",
     }
     assert _asset_inspection(database_url, completed.output["asset_id"])["video_codec"] == "h264"
+    assert _asset_variant_decisions(database_url, completed.job_id) == [
+        ("variant-1", "selected", "deterministic_primary_variant"),
+        ("variant-2", "rejected", "not_selected_after_deterministic_primary_selection"),
+    ]
     assert _script_history(database_url, completed.output["script_id"]) == [
         (1, "draft"),
         (2, "approved"),
@@ -293,6 +298,24 @@ def _asset_inspection(database_url: str, asset_id: str) -> dict[str, object]:
     if row is None:
         raise AssertionError("asset was not persisted")
     return dict(row[0])
+
+
+def _asset_variant_decisions(
+    database_url: str, job_id: str
+) -> list[tuple[str, str, str | None]]:
+    with psycopg.connect(database_url) as connection, connection.cursor() as cursor:
+        cursor.execute(
+            """
+            SELECT variant.variant_key, variant.selection_state, variant.selection_reason
+            FROM asset_variants variant
+            JOIN provider_jobs provider_job ON provider_job.id = variant.provider_job_id
+            JOIN creative_jobs creative_job ON creative_job.id = provider_job.creative_job_id
+            WHERE creative_job.job_id = %s
+            ORDER BY variant_key
+            """,
+            (job_id,),
+        )
+        return [(str(key), str(state), reason) for key, state, reason in cursor.fetchall()]
 
 
 def _creative_agent_ids(database_url: str, job_id: str) -> set[str]:

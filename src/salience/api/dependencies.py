@@ -150,6 +150,7 @@ class ControlPlane(Protocol):
         target_profile_version: int,
         dry_run: bool,
         budget_id: str | None,
+        max_variants: int = 1,
     ) -> ControlCreativeRun: ...
 
     async def get_creative(self, job_id: str) -> ControlCreativeRun | None: ...
@@ -278,6 +279,7 @@ class InMemoryControlPlane:
         target_profile_version: int,
         dry_run: bool,
         budget_id: str | None,
+        max_variants: int = 1,
     ) -> ControlCreativeRun:
         if not dry_run and budget_id is None:
             raise ValueError("non-dry creative runs require a budget identity")
@@ -308,6 +310,7 @@ class InMemoryControlPlane:
                 "target_profile_key": target_profile_key,
                 "target_profile_version": target_profile_version,
                 "budget_id": budget_id,
+                "max_variants": max_variants,
             },
         )
         self._creative_runs[run.job_id] = run
@@ -527,6 +530,7 @@ class TemporalControlPlane:
         target_profile_version: int,
         dry_run: bool,
         budget_id: str | None,
+        max_variants: int = 1,
     ) -> ControlCreativeRun:
         if not dry_run and not self._creative_effects_enabled:
             raise PermissionError(
@@ -559,6 +563,7 @@ class TemporalControlPlane:
                 budget_id=budget_id,
                 target_profile_key=target_profile_key,
                 target_profile_version=target_profile_version,
+                max_variants=max_variants,
             ),
             id=workflow_id,
             task_queue=self._task_queue,
@@ -574,6 +579,7 @@ class TemporalControlPlane:
                 "target_profile_key": target_profile_key,
                 "target_profile_version": target_profile_version,
                 "budget_id": budget_id,
+                "max_variants": max_variants,
             },
         )
 
