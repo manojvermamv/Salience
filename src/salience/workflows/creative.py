@@ -17,6 +17,7 @@ from temporalio.worker import Worker
 
 from salience.agents.execution import AgentInvocation, AgentService
 from salience.creative.contracts import CreativeCapabilityRequest, DistributionPackage
+from salience.creative.capabilities import CreativeCapabilityRegistry
 from salience.creative.governance import RightsPolicy
 from salience.creative.media import MediaEngine
 from salience.creative.repository import CreativeRepository
@@ -83,6 +84,8 @@ class CreativeWorkflowState:
     creative_repository: CreativeRepository
     agents: AgentService
     provider: CreativeProvider = field(default_factory=FixtureCreativeProvider)
+    provider_registry: CreativeCapabilityRegistry | None = None
+    provider_adapters: dict[str, CreativeProvider] = field(default_factory=dict)
     media: MediaEngine | None = None
     cost_repository: CostReservationRepository | None = None
     provider_timeout_seconds: int = 300
@@ -102,6 +105,24 @@ class CreativeActivities:
 
     async def _checkpoint(self, name: str) -> None:
         await self._state.store.checkpoint(await self._run(), name)
+
+    def _select_provider(self, request: CreativeCapabilityRequest) -> tuple[CreativeProvider, str | None]:
+        if self._state.provider_registry is None:
+            return self._state.provider, None
+        manifest = self._state.provider_registry.resolve(request)
+        provider = self._state.provider_adapters.get(manifest.plugin_id)
+        if provider is None:
+            raise RuntimeError(f"selected creative provider adapter is unavailable: {manifest.plugin_id}")
+        return provider, f"{manifest.plugin_id}@{manifest.version}"
+
+    def _provider_for(self, payload: dict[str, Any]) -> CreativeProvider:
+        selected_plugin_id = payload.get("selected_provider_plugin_id")
+        if not isinstance(selected_plugin_id, str):
+            return self._state.provider
+        try:
+            return self._state.provider_adapters[selected_plugin_id]
+        except KeyError as error:
+            raise RuntimeError(f"selected creative provider adapter is unavailable: {selected_plugin_id}") from error
 
     @activity.defn(name="salience.creative.load_brief")
     async def load_brief(self, request: CreativeProductionRequest) -> dict[str, Any]:
@@ -277,6 +298,7 @@ class CreativeActivities:
             else:
                 run = await self._run()
                 capability_request = _capability_request(payload)
+                provider, selected_manifest = self._select_provider(capability_request)
                 creative_job_id = await self._state.creative_repository.record_creative_job(
                     workspace_id=request["workspace_id"],
                     program_id=request["content_program_id"],
@@ -303,7 +325,7 @@ class CreativeActivities:
                         job_id=str(run.job_id),
                         external_effect_id=effect.effect_id,
                         creative_job_id=creative_job_id,
-                        estimated_micros=self._state.provider.capabilities.estimated_cost_micros,
+                        estimated_micros=provider.capabilities.estimated_cost_micros,
                     )
                 except (BudgetExceeded, KeyError):
                     denial_reason = "budget_exceeded"
@@ -314,6 +336,10 @@ class CreativeActivities:
                         "external_effect_id": effect.effect_id,
                         "budget_reservation_id": reservation.reservation_id,
                         "capability_request": capability_request.model_dump(),
+                        "selected_provider_plugin_id": (
+                            selected_manifest.split("@", 1)[0] if selected_manifest else None
+                        ),
+                        "selected_provider_manifest": selected_manifest,
                     }
                     await self._checkpoint("creative.budget.reserved")
         await self._checkpoint("creative.authorization.checked")
@@ -326,23 +352,24 @@ class CreativeActivities:
             await self._checkpoint("creative.provider.skipped_dry_run")
             return {**payload, "provider_state": "dry_run"}
         run = await self._run()
+        provider = self._provider_for(payload)
         capability_request = CreativeCapabilityRequest.model_validate(payload["capability_request"])
         creative_job_id = payload["creative_job_id"]
         existing = await self._state.creative_repository.provider_job_for_creative(
-            creative_job_id=creative_job_id, provider_id=self._state.provider.provider_id
+            creative_job_id=creative_job_id, provider_id=provider.provider_id
         )
         if existing is not None and existing.get("external_job_id"):
-            provider_result = await self._state.provider.get_status(existing["external_job_id"])
+            provider_result = await provider.get_status(existing["external_job_id"])
             reconciled = True
         elif await self._state.store.begin_effect_submission(run, capability_request.request_key):
-            provider_result = await self._state.provider.submit(capability_request)
+            provider_result = await provider.submit(capability_request)
             reconciled = False
             if self._state.crash_at == "provider.submitted" and not self._state.crashed:
                 self._state.crashed = True
                 self._state.crash_reached.set()
                 await asyncio.Event().wait()
         else:
-            provider_result = await self._state.provider.reconcile(capability_request.request_key)
+            provider_result = await provider.reconcile(capability_request.request_key)
             if provider_result is None:
                 raise RuntimeError(
                     "creative provider submission is ambiguous and cannot be reconciled"
@@ -389,9 +416,10 @@ class CreativeActivities:
         if self._state.cost_repository is None:
             raise RuntimeError("durable cost repository is required for creative settlement")
         run = await self._run()
+        provider = self._provider_for(payload)
         poll_count = int(payload.get("provider_poll_count", 0)) + 1
         try:
-            result = await self._state.provider.get_status(payload["external_job_id"])
+            result = await provider.get_status(payload["external_job_id"])
         except ProviderResponseError as error:
             retry_after_seconds = _retry_after_seconds(error.retry_after)
             await self._state.creative_repository.transition_provider_job(
@@ -500,7 +528,7 @@ class CreativeActivities:
         if self._state.media is None:
             raise RuntimeError("creative media engine is not configured")
         run = await self._run()
-        data = await self._state.provider.download(payload["external_job_id"])
+        data = await self._provider_for(payload).download(payload["external_job_id"])
         inspection = self._state.media.inspect_bytes(data)
         if inspection.status != "valid" or not inspection.properties.get("video_codec"):
             raise RuntimeError(
@@ -564,7 +592,7 @@ class CreativeActivities:
             script_id=payload.get("script_id"),
             asset_id=payload.get("asset_id"),
             provider_job_id=payload.get("provider_job_id"),
-            provider_submit_count=getattr(self._state.provider, "submit_count", 0),
+            provider_submit_count=getattr(self._provider_for(payload), "submit_count", 0),
         )
         await self._state.store.complete_with_output(run, status="succeeded", output=_result_payload(result))
         return result
@@ -604,10 +632,11 @@ class CreativeActivities:
                 trace_id=run.trace_context.trace_id,
                 span_id=run.trace_context.span_id,
             )
-            current = await self._state.provider.get_status(external_job_id)
+            provider = self._provider_for(payload)
+            current = await provider.get_status(external_job_id)
             if current.state not in {"completed", "failed", "cancelled"}:
-                if self._state.provider.capabilities.cancellation_support:
-                    current = await self._state.provider.cancel(external_job_id)
+                if provider.capabilities.cancellation_support:
+                    current = await provider.cancel(external_job_id)
                 else:
                     raise RuntimeError("selected creative provider does not support cancellation")
             await self._state.creative_repository.transition_provider_job(
