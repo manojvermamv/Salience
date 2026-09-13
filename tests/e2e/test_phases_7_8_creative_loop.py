@@ -194,6 +194,11 @@ async def test_control_plane_runs_fixture_brief_to_ready_package_with_reverse_li
     assert lineage["source_ids"] == [seeded["source_id"]]
     assert lineage["asset_ids"]
     assert lineage["agent_run_ids"]
+    assert _creative_agent_ids(database_url, completed.job_id) == {
+        "writer_agent",
+        "creative_director_agent",
+        "production_agent",
+    }
     assert _asset_inspection(database_url, completed.output["asset_id"])["video_codec"] == "h264"
     assert _script_history(database_url, completed.output["script_id"]) == [
         (1, "draft"),
@@ -262,6 +267,20 @@ def _asset_inspection(database_url: str, asset_id: str) -> dict[str, object]:
     if row is None:
         raise AssertionError("asset was not persisted")
     return dict(row[0])
+
+
+def _creative_agent_ids(database_url: str, job_id: str) -> set[str]:
+    with psycopg.connect(database_url) as connection, connection.cursor() as cursor:
+        cursor.execute(
+            """
+            SELECT version.agent_id
+            FROM agent_runs run
+            JOIN agent_versions version ON version.id = run.agent_version_id
+            WHERE run.job_id = %s
+            """,
+            (job_id,),
+        )
+        return {str(agent_id) for (agent_id,) in cursor.fetchall()}
 
 
 def _validated_fixture_media(tmp_path):

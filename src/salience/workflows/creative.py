@@ -183,6 +183,38 @@ class CreativeActivities:
         request = payload["request"]
         agent_input = {"brief_id": payload["brief"]["brief_id"], "script_id": payload["script_id"]}
         agent_run = await self._state.agents.invoke_by_id("creative_director_agent", agent_input)
+        director_run_id = _stage_run_id(run, "creative_director")
+        await self._state.intelligence_repository.record_agent_run(
+            run_id=director_run_id,
+            workspace_id=request["workspace_id"],
+            program_id=request["content_program_id"],
+            job_id=str(run.job_id),
+            manifest=self._state.agents.describe_agent("creative_director_agent"),
+            input_payload=agent_input,
+            output_payload=agent_run.output,
+            trace_id=run.trace_context.trace_id,
+            span_id=run.trace_context.span_id,
+        )
+        capability = agent_run.output["capability_requests"][0]["capability"]
+        production_input = {
+            "brief_id": payload["brief"]["brief_id"],
+            "script_id": payload["script_id"],
+            "capability": capability,
+            "max_variants": 1,
+        }
+        production_run = await self._state.agents.invoke_by_id("production_agent", production_input)
+        production_run_id = _stage_run_id(run, "production")
+        await self._state.intelligence_repository.record_agent_run(
+            run_id=production_run_id,
+            workspace_id=request["workspace_id"],
+            program_id=request["content_program_id"],
+            job_id=str(run.job_id),
+            manifest=self._state.agents.describe_agent("production_agent"),
+            input_payload=production_input,
+            output_payload=production_run.output,
+            trace_id=run.trace_context.trace_id,
+            span_id=run.trace_context.span_id,
+        )
         creative_brief_id = await self._state.creative_repository.record_creative_brief(
             workspace_id=request["workspace_id"],
             program_id=request["content_program_id"],
@@ -209,6 +241,7 @@ class CreativeActivities:
             "creative_brief_id": creative_brief_id,
             "storyboard_id": storyboard_id,
             "direction": agent_run.output,
+            "production": production_run.output,
         }
 
     @activity.defn(name="salience.creative.authorize")
@@ -245,12 +278,12 @@ class CreativeActivities:
             content_program_id=request["content_program_id"],
             brief_id=payload["brief"]["brief_id"],
             script_id=payload["script_id"],
-            capability="text_to_video",
+            capability=payload["production"]["capability"],
             expected_modality="video",
             aspect_ratio="9:16",
             resolution="1080x1920",
             duration_seconds=30,
-            max_variants=1,
+            max_variants=payload["production"]["requested_variants"],
             provider_extension={"script_text": "Evidence-linked fixture script"},
         )
         creative_job_id = await self._state.creative_repository.record_creative_job(
