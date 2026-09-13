@@ -42,3 +42,9 @@ async def test_verified_webhook_is_idempotent_and_converges_provider_state() -> 
     assert first.receipt_id == second.receipt_id
     assert first.provider_job_id == provider_job_id
     assert first.state == "completed"
+
+    conflicting_delivery = event.model_copy(update={"safe_payload_hash": "b" * 64})
+    with pytest.raises(ValueError, match="webhook receipt differs"):
+        await repository.record_verified_webhook(
+            event=conflicting_delivery, trace_id="trace-webhook"
+        )

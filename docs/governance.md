@@ -56,8 +56,9 @@ permission to make a publish effect.
 
 Verified provider callbacks are converted at the adapter boundary to a
 credential-free event projection before persistence. Their delivery identity and
-safe payload hash make replay idempotent, and lifecycle transitions remain
-conditional and terminal. An approved decision graph is immutable: identical
+safe payload hash make replay idempotent; a repeated delivery identity with
+different canonical facts is rejected. Lifecycle transitions remain conditional
+and terminal. An approved decision graph is immutable: identical
 replay returns the original row, while altered governed input must allocate a
 new distribution and ready-package version.
 

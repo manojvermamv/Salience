@@ -856,14 +856,35 @@ class CreativeRepository:
                     provider_job_id, provider_id, delivery_identity, safe_payload_hash,
                     signature_verified, state, trace_id, span_id
                 ) VALUES (%s, %s, %s, %s, TRUE, %s, %s, %s)
-                ON CONFLICT (provider_id, delivery_identity)
-                DO UPDATE SET updated_at = CURRENT_TIMESTAMP
+                ON CONFLICT (provider_id, delivery_identity) DO NOTHING
                 RETURNING id::text, provider_job_id::text, state
                 """,
                 (provider_job_id, event.provider_id, delivery_identity, event.safe_payload_hash,
                  event.state, trace_id, span_id),
             )
-            receipt_id, persisted_provider_job_id, state = cursor.fetchone()
+            inserted = cursor.fetchone()
+            if inserted is not None:
+                receipt_id, persisted_provider_job_id, state = inserted
+            else:
+                cursor.execute(
+                    """
+                    SELECT id::text, provider_job_id::text, safe_payload_hash, state
+                    FROM creative_provider_webhook_receipts
+                    WHERE provider_id = %s AND delivery_identity = %s
+                    FOR UPDATE
+                    """,
+                    (event.provider_id, delivery_identity),
+                )
+                existing = cursor.fetchone()
+                if existing is None:
+                    raise RuntimeError("webhook receipt conflict could not be loaded")
+                receipt_id, persisted_provider_job_id, payload_hash, state = existing
+                if (persisted_provider_job_id, payload_hash, state) != (
+                    provider_job_id,
+                    event.safe_payload_hash,
+                    event.state,
+                ):
+                    raise ValueError("webhook receipt differs from its immutable delivery identity")
         self._transition_provider_job(
             provider_job_id, event.state, trace_id, span_id,
             event.usage.actual_micros if event.usage is not None else None,
