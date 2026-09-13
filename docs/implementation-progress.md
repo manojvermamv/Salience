@@ -5,10 +5,12 @@
 - Branch: `phase7-8-release-gate-phase9` (isolated worktree from `main`)
 - Plan: `docs/superpowers/plans/2026-09-13-phase-7-8-release-gate-phase-9-publishing.md`
 - Active task: Gate Two, Task 13 — canonical publication migration and repository.
-- Current TDD step: Add migration/repository red tests proving versioned ready-package requests and immutable remote receipts before creating publication tables.
+- Current TDD step: Implement the additive `0009_governed_publication` migration and repository required by the confirmed red migration/repository suite.
 - Last verified state: Gate Two Task 12 passed owned contract/credential/registry tests (5/5) with compilation and whitespace checks clean. Publication remains fixture-first, provider-neutral, and behind the canonical ready-package boundary.
 
 ## Checkpoints
+
+- 2026-09-13: Began Gate Two Task 13 with additive PostgreSQL and repository red tests. The focused suite correctly fails at collection because `salience.publication.repository` and the governed-publication migration/tables do not yet exist. The test contract requires independent workspace-bound requests from one immutable ready package and future immutable remote receipts. Next: create only the `0009` canonical tables and a typed idempotent repository, then repair the red fixture to use canonical account identities.
 
 - 2026-09-13: Completed Gate Two Task 12 red-green. Added immutable owned DTOs for workspace-bound publisher accounts, secret-reference-only connections, capability profiles, explicit versioned publication requests/plans/attempts/receipts/publications, and a non-serializable redacted credential lease. The provider-neutral registry deterministically filters explicit publisher selection, enablement, contract compatibility, platform, account type, verified audit state, `publish:create` scope, content type, visibility, disclosure, scheduling, quota, and health. The initial contract run failed at the intentionally absent package import; the contract/registry suite then passed 5/5 with compilation and whitespace checks clean. Next: Task 13 additive canonical publication migration and idempotent repository.
 
