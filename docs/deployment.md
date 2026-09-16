@@ -13,17 +13,16 @@ used for production effects.
 The worker stays deterministic unless `RESEARCH_RSS_FEED_URLS` contains public
 HTTPS feed URLs and `RESEARCH_ALLOWED_DOMAINS` contains their exact hostnames.
 The connector does not follow redirects, records untrusted evidence, and fails
-closed outside scope. Browser evidence is optional and installed through the
-project-owned command:
+closed outside scope. Browser evidence is optional and runs only when an
+operator has provisioned a compatible Playwright environment outside Salience:
 
 ```bash
-bash scripts/verify-browser-evidence.sh --install
+bash scripts/verify-browser-evidence.sh
 ```
 
-It measures disk, creates or reuses `.venv`, runs Playwright's official
-`install-deps chromium` then `install chromium` path, and executes the local
-browser-evidence suite. It installs no Firefox/WebKit, requires no credential,
-performs no Docker/system cleanup, and retains local output under
+Without that environment it reports `NOT RUN`; it does not create a virtual
+environment or download a browser. It requires no credential, performs no
+Docker/system cleanup, and retains local output under
 `artifacts/browser-evidence/`.
 
 No model credential, MCP server, A2A endpoint, creative-provider credential,

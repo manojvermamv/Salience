@@ -5,8 +5,12 @@ root_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)
 cd "$root_dir"
 
 for document in README.md docs/deployment.md docs/verification.md; do
-  if ! grep -F 'bash scripts/verify-browser-evidence.sh --install' "$document" >/dev/null; then
+  if ! grep -F 'bash scripts/verify-browser-evidence.sh' "$document" >/dev/null; then
     printf 'missing browser verifier command in %s\n' "$document" >&2
+    exit 1
+  fi
+  if grep -F 'bash scripts/verify-browser-evidence.sh --install' "$document" >/dev/null; then
+    printf 'obsolete browser provisioning command remains in %s\n' "$document" >&2
     exit 1
   fi
 done

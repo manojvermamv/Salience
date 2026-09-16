@@ -22,9 +22,10 @@ bounds, and object-store text/screenshot/trace artifacts. Each receipt records a
 fetch time, Playwright/Chromium versions, agent/tool/trace IDs, artifact type, and SHA-256 hash.
 Browser text is `untrusted_external` evidence, not instruction, authority, or verified memory.
 
-Run `bash scripts/verify-browser-evidence.sh --install` to install only the pinned Playwright
-Chromium runtime/dependencies and execute the self-contained HTTPS fixture suite. It needs no
-credential or public network source and leaves the PNG, trace ZIP, text, and JSON receipts under
+Run `bash scripts/verify-browser-evidence.sh` to execute the self-contained HTTPS fixture suite
+against an operator-provisioned Playwright environment. If that environment is absent, it reports
+`NOT RUN` and does not provision dependencies or a browser. It needs no credential or public
+network source and leaves the PNG, trace ZIP, text, and JSON receipts under
 `artifacts/browser-evidence/`. The fixture alone explicitly permits loopback and its self-signed
 certificate; production callers retain private-network and certificate checks. The adapter must
 not bypass CAPTCHA, paywalls, access controls, or platform restrictions. Normal CI uses fixtures;

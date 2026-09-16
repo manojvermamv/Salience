@@ -41,21 +41,22 @@ Compose verifier; no global Docker cleanup is part of verification.
 
 ## Browser Evidence
 
-Run the single operator/CI workflow below on supported Linux hosts:
+Run the browser verifier below when a compatible Playwright environment has
+already been provisioned outside Salience:
 
 ```bash
-bash scripts/verify-browser-evidence.sh --install
+bash scripts/verify-browser-evidence.sh
 ```
 
-Without `--install`, the verifier reports `NOT RUN` with an actionable setup
-message if the project venv or Chromium runtime is absent. With it, the script
-uses the official Playwright Chromium dependency/browser installation path,
-launches Chromium once as a preflight, then runs the browser-marked suite.
-The suite proves JavaScript rendering, structured text/PNG/ZIP evidence,
-source/fetch/version/run/hash receipts, blocked domains and redirects, disabled
-downloads, retained timeout traces without secrets, and untrusted hostile text.
-It retains every run below `artifacts/browser-evidence/`; a test failure prints
-that location for inspection. It never performs global Docker or system cleanup.
+The verifier reports `NOT RUN` if its environment or Chromium runtime is absent;
+it does not create a virtual environment, install dependencies, or download a
+browser. When available, it launches Chromium once as a preflight and then runs
+the browser-marked suite. The suite proves JavaScript rendering, structured
+text/PNG/ZIP evidence, source/fetch/version/run/hash receipts, blocked domains
+and redirects, disabled downloads, retained timeout traces without secrets, and
+untrusted hostile text. It retains every run below
+`artifacts/browser-evidence/`; a test failure prints that location for
+inspection. It never performs global Docker or system cleanup.
 
 ## Phase 7–8 Creative Production
 
