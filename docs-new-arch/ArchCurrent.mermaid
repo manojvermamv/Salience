@@ -1,0 +1,27 @@
+flowchart LR
+    Operator[Operators, API clients, CLI, SDK] -->|scoped request| API[Control API]
+    API -->|prevalidated idempotent start + schedules| Temporal[Temporal adapter]
+    Temporal -->|tasks and timers| Worker[Salience worker]
+    Worker -->|checkpointed activities| Loop[Intelligence loop]
+    Sources[RSS and HN sources] -.->|untrusted evidence| Loop
+    Browser[Governed browser evidence] -.->|untrusted evidence| Loop
+    Browser -.->|text, screenshot, trace receipts| Storage
+    Loop -->|direct/delegated contract| Agents[Research and strategy agents]
+    Agents -->|version-gated boundary| Providers[Model, MCP, A2A, plugin adapters]
+    Loop -->|selected ContentBrief@v1| Creative[Creative workflow]
+    Creative -->|versioned capability selection| Provider[Fixture or approved provider adapter]
+    Provider -->|idempotent submit, reconcile, webhook| Asset[Verified asset]
+    Creative --> Governance[Rights, policy, approval, budget reservation]
+    Governance --> Distribution[Distribution package]
+    Asset --> Distribution
+    Distribution --> Ready[Approved ReadyToPublishPackage@v1]
+    Ready -->|new account-bound governed request| Publish[Publication workflow]
+    Publish -->|final policy, rights, approval, scope, reserve| Governance
+    Publish -.->|canonical schedule run per Temporal execution| Temporal
+    Publish -.->|selected adapter, reconcile, webhook| Publisher[Fixture / opt-in publisher adapter]
+    Storage -.->|short-lived HTTPS delivery| Publisher
+    Publish -->|immutable request, plan, attempt, receipt| PG
+    Loop -->|source to immutable brief lineage| PG[(PostgreSQL)]
+    API -->|identity, scope, policy, budget| PG
+    Worker -.->|artifact references| Storage[Object-store contract]
+    Creative -.->|hash-stable bytes| Storage

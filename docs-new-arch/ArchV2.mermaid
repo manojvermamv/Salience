@@ -1,0 +1,356 @@
+graph TD
+
+    %% =====================================================
+    %% 1. ENTRY AND CONTROL
+    %% =====================================================
+
+    Operator["Operators / API Clients / CLI / SDK"]
+    API["Control API"]
+    PG[(PostgreSQL)]
+    Temporal["Temporal Adapter"]
+    Worker["Salience Worker"]
+    Loop["Intelligence Loop"]
+
+    Operator --> API
+    API --> PG
+    API --> Temporal
+    Temporal --> Worker
+    Worker --> Loop
+
+
+    %% =====================================================
+    %% 2. EXTERNAL INTELLIGENCE
+    %% =====================================================
+
+    Sources["RSS / HN / Approved Sources"]
+    Browser["Governed Browser Evidence"]
+    PlatformSignals["Platform and Trend Signals"]
+    FutureSources["Future Approved Sources"]
+    Evidence["Evidence Intake and Quality"]
+
+    Sources --> Evidence
+    Browser --> Evidence
+    PlatformSignals --> Evidence
+    FutureSources --> Evidence
+    Evidence --> Loop
+
+
+    %% =====================================================
+    %% 3. STORAGE AND INTERNAL INTELLIGENCE
+    %% =====================================================
+
+    Storage[(Object Store)]
+    Retrieval["Knowledge and Retrieval Service"]
+
+    Browser --> Storage
+    PG --> Retrieval
+    Storage --> Retrieval
+    Retrieval --> Loop
+
+
+    %% =====================================================
+    %% 4. RESEARCH AND STRATEGY
+    %% =====================================================
+
+    Research["Research and Strategy Workflow"]
+    CapabilityGateway["Shared Capability Gateway"]
+    ProviderRegistry["Approved Provider Registry"]
+    ProviderAdapters["Model / MCP / A2A / Plugin / Tool Adapters"]
+    CapabilityBackends["Models / Tools / Agents / Future AI"]
+
+    Loop --> Research
+    Research --> CapabilityGateway
+    CapabilityGateway --> ProviderRegistry
+    ProviderRegistry --> ProviderAdapters
+    ProviderAdapters --> CapabilityBackends
+    CapabilityBackends --> ProviderAdapters
+    ProviderAdapters --> CapabilityGateway
+    CapabilityGateway --> Research
+
+
+    %% =====================================================
+    %% 5. CANDIDATES AND DECISION
+    %% =====================================================
+
+    Candidates["Candidate Opportunities and Briefs"]
+    Allocation["Explore / Exploit Allocation"]
+    Selection["Decision and Selection Engine"]
+    DecisionRecord["DecisionRecord v1"]
+    Brief["ContentBrief v1"]
+
+    Research --> Candidates
+    Candidates --> Allocation
+    Allocation --> Selection
+
+    Selection --> DecisionRecord
+    DecisionRecord --> PG
+
+    Selection --> Brief
+    Brief --> PG
+
+
+    %% =====================================================
+    %% 6. PRE-CREATION GOVERNANCE
+    %% =====================================================
+
+    PreCreateGate["Pre-Creation Governance Gate"]
+    Creative["Creative Workflow"]
+
+    Brief --> PreCreateGate
+    PreCreateGate --> Creative
+
+
+    %% =====================================================
+    %% 7. CREATIVE CAPABILITIES
+    %% =====================================================
+
+    Creative --> CapabilityGateway
+    CapabilityGateway --> Creative
+
+    AssetVerify["Asset Verification"]
+    Asset["Verified Versioned Asset"]
+
+    Creative --> AssetVerify
+    AssetVerify --> Asset
+    Asset --> Storage
+
+
+    %% =====================================================
+    %% 8. CONTENT EVALUATION AND BUILD GATE
+    %% =====================================================
+
+    ContentEval["Content and Asset Evaluation"]
+    BuildGate["Pre-Publish Governance Gate"]
+    Distribution["Distribution Package"]
+    Ready["ReadyToPublishPackage v1"]
+
+    Asset --> ContentEval
+    ContentEval --> BuildGate
+    BuildGate --> Distribution
+    Distribution --> Ready
+
+
+    %% =====================================================
+    %% 9. PUBLICATION
+    %% =====================================================
+
+    Publish["Publication Workflow"]
+    PublishGate["Final Publication Gate"]
+    Publisher["Publisher Adapter"]
+    ExternalPlatform["External Publishing Platform"]
+
+    Ready --> Publish
+    Publish --> PublishGate
+    Publish --> Temporal
+
+    PublishGate --> Publisher
+    Storage --> Publisher
+    Publisher --> ExternalPlatform
+
+    ExternalPlatform --> Publisher
+    Publisher --> Publish
+
+    Publish --> PG
+
+
+    %% =====================================================
+    %% 10. VERIFIED PUBLICATION
+    %% =====================================================
+
+    Receipt["PublicationReceipt v1"]
+
+    Publish --> Receipt
+    Receipt --> PG
+
+
+    %% =====================================================
+    %% 11. OBSERVATION
+    %% =====================================================
+
+    ObservationPlan["Observation Plan"]
+    Observation["Observation Workflow"]
+    ObservationAdapter["Read-Only Analytics Adapter"]
+    RawObs["ObservationRecord v1"]
+
+    Receipt --> ObservationPlan
+    ObservationPlan --> Temporal
+
+    Worker --> Observation
+    Observation --> ObservationAdapter
+    ObservationAdapter --> ExternalPlatform
+    ExternalPlatform --> ObservationAdapter
+    ObservationAdapter --> RawObs
+
+    RawObs --> PG
+
+
+    %% =====================================================
+    %% 12. MEASUREMENT
+    %% =====================================================
+
+    Outcome["Outcome and Measurement Engine"]
+    OutcomeRecord["OutcomeRecord v1"]
+
+    RawObs --> Outcome
+    Outcome --> OutcomeRecord
+    OutcomeRecord --> PG
+
+
+    %% =====================================================
+    %% 13. ATTRIBUTION
+    %% =====================================================
+
+    Attribution["Attribution Engine"]
+    AttributionRecord["AttributionRecord v1"]
+
+    OutcomeRecord --> Attribution
+    PG --> Attribution
+
+    Attribution --> AttributionRecord
+    AttributionRecord --> PG
+
+
+    %% =====================================================
+    %% 14. LEARNING
+    %% =====================================================
+
+    Learning["Learning and Evidence Engine"]
+    Pattern["LearningEvidence v1"]
+    Hypothesis["Hypothesis v1"]
+    FailureKnowledge["Failure and Correction Knowledge"]
+
+    AttributionRecord --> Learning
+
+    Learning --> Pattern
+    Learning --> Hypothesis
+    Learning --> FailureKnowledge
+
+    Pattern --> PG
+    Hypothesis --> PG
+    FailureKnowledge --> PG
+
+
+    %% =====================================================
+    %% 15. STRATEGY EVOLUTION
+    %% =====================================================
+
+    StrategyCandidate["StrategyCandidate v1"]
+    ExperimentPlan["ExperimentPlan v1"]
+
+    Pattern --> StrategyCandidate
+    Hypothesis --> ExperimentPlan
+    StrategyCandidate --> ExperimentPlan
+
+    StrategyCandidate --> PG
+    ExperimentPlan --> PG
+
+
+    %% =====================================================
+    %% 16. OFFLINE EVALUATION
+    %% =====================================================
+
+    OfflineEval["Historical and Offline Evaluation"]
+    EvaluationReport["EvaluationReport v1"]
+    TrialEligibility{"Eligible for Controlled Trial?"}
+
+    ExperimentPlan --> OfflineEval
+    OfflineEval --> EvaluationReport
+    EvaluationReport --> PG
+    EvaluationReport --> TrialEligibility
+
+    Rejected["Archive / Rework"]
+
+    TrialEligibility -->|No| Rejected
+
+
+    %% =====================================================
+    %% 17. CONTROLLED TRIAL
+    %% =====================================================
+
+    TrialController["Controlled Trial Controller"]
+
+    TrialEligibility -->|Yes| TrialController
+    TrialController --> Temporal
+
+
+    %% =====================================================
+    %% 18. EXPERIMENT EVALUATION
+    %% =====================================================
+
+    ExperimentEvaluator["Experiment Evaluation Engine"]
+    ExperimentOutcome["ExperimentOutcome v1"]
+
+    AttributionRecord --> ExperimentEvaluator
+    ExperimentPlan --> ExperimentEvaluator
+    EvaluationReport --> ExperimentEvaluator
+
+    ExperimentEvaluator --> ExperimentOutcome
+    ExperimentOutcome --> PG
+    ExperimentOutcome --> Learning
+
+
+    %% =====================================================
+    %% 19. STRATEGY PROMOTION
+    %% =====================================================
+
+    Promotion["Strategy Promotion Gate"]
+    PromotionReceipt["StrategyPromotionReceipt v1"]
+    ActiveStrategy["Active Strategy Registry"]
+
+    ExperimentOutcome --> Promotion
+    EvaluationReport --> Promotion
+
+    Promotion -->|Accepted| PromotionReceipt
+    Promotion -->|Rejected| Rejected
+
+    PromotionReceipt --> PG
+    PromotionReceipt --> ActiveStrategy
+
+    ActiveStrategy --> PG
+    ActiveStrategy --> Loop
+
+
+    %% =====================================================
+    %% 20. COMPOUNDING KNOWLEDGE LOOP
+    %% =====================================================
+
+    PG --> Retrieval
+    Storage --> Retrieval
+    Retrieval --> Loop
+
+
+    %% =====================================================
+    %% 21. OPTIONAL MODEL EVOLUTION
+    %% =====================================================
+
+    TrainingData["Curated Training Dataset"]
+    ModelEvolution["Optional Model Evolution"]
+    ModelEvaluation["Model and Capability Evaluation"]
+
+    PG --> TrainingData
+    TrainingData --> ModelEvolution
+    ModelEvolution --> ModelEvaluation
+    ModelEvaluation --> ProviderRegistry
+
+
+    %% =====================================================
+    %% 22. CROSS-CUTTING CONTROL
+    %% =====================================================
+
+    Controls["Cross-Cutting Control Plane"]
+
+    Controls --> API
+    Controls --> Temporal
+    Controls --> Retrieval
+    Controls --> Loop
+    Controls --> CapabilityGateway
+    Controls --> PreCreateGate
+    Controls --> ContentEval
+    Controls --> BuildGate
+    Controls --> PublishGate
+    Controls --> Observation
+    Controls --> Attribution
+    Controls --> Learning
+    Controls --> TrialController
+    Controls --> Promotion
+    Controls --> ModelEvaluation

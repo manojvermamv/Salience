@@ -1,0 +1,114 @@
+flowchart TB
+    %% SALIENCE V3 — Autonomous Content Intelligence and Learning
+    %% Consolidates ArchV1 / ArchV2 as an extension of implemented ArchCurrent.
+    %% Logical responsibilities; boxes are not separate deployment requirements.
+    %% Solid: work / evidence flow. Dotted: shared dependencies / control.
+    %% All workflows use the existing Temporal adapter and Salience worker.
+    %% All transitions persist versioned records, lineage and operation identity.
+    %% Governance applies to ALL stages, including retrieval, learning and training.
+    %% Detailed contracts, publication states and release flows are in the notes.
+
+    Operator["Operator / API client / CLI / SDK"]
+    API["Control API"]
+    Goal["Versioned business goal and autonomy limits"]
+    Runtime["Temporal adapter and Salience worker"]
+    Loop["Intelligence loop: bounded recurring cycles"]
+
+    Operator --> API --> Goal
+    Goal -->|committed, idempotent start| Runtime
+    Runtime --> Loop
+
+    Intake["Approved sources: intake, provenance and quality"]
+    Memory["Scoped retrieval from canonical history"]
+    Select["Research, candidates and constrained explore / exploit"]
+    Intake -->|untrusted evidence snapshot| Select
+    Memory -->|cited experience and current strategy| Select
+    Loop -->|goal and pinned run context| Select
+
+    PreCreate{"Creation authorized and budget reserved?"}
+    Creative["Creative workflow and built-in AI generator"]
+    Build{"Assets, claims, rights and brand pass?"}
+    Publish["Publication workflow: final gate, submit, reconcile"]
+    Verified{"Remote publication verified?"}
+    Select -->|"DecisionRecord and ContentBrief@v1"| PreCreate
+    PreCreate -->|allow| Creative
+    Creative -->|versioned assets and evaluation| Build
+    Build -->|"ReadyToPublishPackage@v1"| Publish
+    Publish --> Verified
+
+    Observe["Observation plan and read-only collection"]
+    Measure["Versioned outcomes and lineage attribution"]
+    Learn["Evidence, hypotheses and failure lessons"]
+    Verified -->|"PublicationReceipt@v1"| Observe
+    Observe -->|snapshots, completeness and corrections| Measure
+    Measure -->|mature outcomes and uncertainty| Learn
+    Learn -->|next due cycle while goal is active| Loop
+
+    Change["Versioned strategy or capability candidate"]
+    Offline{"Offline evaluation and eligibility pass?"}
+    Trial["Capped trial with frozen assignment plan"]
+    TrialEval["Experiment evaluation and stopping rules"]
+    Promote{"Evidence and promotion authority satisfied?"}
+    Active["Strategy and capability release registries"]
+    Learn -->|propose, with supporting and contrary evidence| Change
+    Change --> Offline
+    Offline -->|eligible| Trial
+    Trial -->|trial context through normal workflows| Runtime
+    Trial -->|logged assignments and exposure| TrialEval
+    Measure -->|trial outcomes| TrialEval
+    TrialEval -->|continue within existing caps| Trial
+    TrialEval -->|completed result| Promote
+    Promote -->|promote with receipt| Active
+    Active -->|pin strategy and approved capability versions| Loop
+
+    Recovery["Pause, reconcile, bounded rework or escalation"]
+    Archive["Archive reasons and evidence in canonical history"]
+    Wait["Wait for the next authorized cycle"]
+    Select -->|defer or abstain| Wait
+    Wait --> Runtime
+    PreCreate -->|deny or approval required| Recovery
+    Build -->|fail; revision limit applies| Recovery
+    Publish -->|final gate denies| Recovery
+    Verified -->|unknown, pending or failed| Recovery
+    Recovery -->|authorized resume at saved state| Runtime
+    Offline -->|fail or unsupported| Archive
+    Promote -->|reject or inconclusive| Archive
+
+    %% Shared mechanisms are intentionally shown once instead of at every caller.
+    Controls["All stages: identity, policy, rights, brand, budget, audit"]
+    Gateway["Typed capability gateway and approved adapters"]
+    History[("PostgreSQL records and object-store artifacts")]
+    Monitor["Health, cost, data drift and outcome guardrails"]
+    Adapt["Provider upgrades or optional curated model training"]
+
+    Controls -.->|authority and stop controls for every workflow| Runtime
+    Gateway -.->|versioned model, tool, agent and creative calls| Runtime
+    Runtime -.->|every stage persists records and lineage| History
+    History --> Memory
+    History -.->|rights-cleared dataset versions| Adapt
+    Adapt -->|candidate only; no direct activation| Change
+    Runtime -.->|workflow and adapter telemetry| Monitor
+    Measure -.->|performance and data quality| Monitor
+    Monitor -->|breach| Recovery
+    Recovery -->|rollback to eligible version or suspend| Active
+
+    %% Canonical persistence includes every learning, archive and release record.
+    %% DB-to-runtime handoff uses a transactional outbox and deduplicated consumers.
+    %% Every external effect uses stable operation IDs and adapter reconciliation.
+    %% Publishing and analytics platforms sit behind their separately scoped adapters.
+    %% Active defaults are distinct from candidate and scoped trial eligibility.
+    %% A failed gate never advances to a side effect. Rework creates a new version.
+    %% A rollback affects future use; published content needs a separate correction.
+
+    classDef runtime fill:#eaf2ff,stroke:#416ca4,color:#182f4a;
+    classDef gate fill:#fff4d5,stroke:#a67516,color:#503909;
+    classDef intelligence fill:#e6f5ee,stroke:#398369,color:#193f32;
+    classDef future fill:#f0eafa,stroke:#8a68a4,color:#45295d;
+    classDef store fill:#edf1f5,stroke:#6c8090,color:#253744;
+    classDef recovery fill:#fff0e9,stroke:#b3714a,color:#60381f;
+    class API,Runtime,Loop runtime;
+    class PreCreate,Build,Verified,Offline,Promote gate;
+    class Intake,Memory,Select,Observe,Measure,Learn intelligence;
+    class Adapt future;
+    class History,Active store;
+    class Recovery,Archive,Monitor recovery;

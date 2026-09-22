@@ -1,0 +1,355 @@
+flowchart TB
+
+    %% =========================================================
+    %% EXISTING SALIENCE ENTRY PATH — PRESERVE
+    %% =========================================================
+
+    Operator["Operators / API Clients / CLI / SDK"]
+        -->|scoped business request| API["Control API"]
+
+    API -->|identity / scope / policy / budget| PG[("PostgreSQL")]
+
+    API -->|prevalidated idempotent start + schedules| Temporal["Temporal Adapter"]
+
+    Temporal -->|tasks / timers / retries| Worker["Salience Worker"]
+
+    Worker -->|checkpointed activities| Loop["Intelligence Loop"]
+
+
+    %% =========================================================
+    %% EXTERNAL INTELLIGENCE — EVOLVE
+    %% =========================================================
+
+    subgraph External["External Intelligence"]
+
+        Sources["RSS / HN / Approved Sources"]
+        Browser["Governed Browser Evidence"]
+        PlatformSignals["Platform / Trend Signals"]
+        FutureSources["Future Approved Evidence Sources"]
+
+    end
+
+    Sources --> Evidence["Evidence Intake & Quality"]
+    Browser --> Evidence
+    PlatformSignals --> Evidence
+    FutureSources --> Evidence
+
+    Evidence -->|normalized untrusted evidence| Loop
+
+    Browser -.->|text / screenshot / trace receipts| Storage[("Object-Store Contract")]
+
+
+    %% =========================================================
+    %% INTERNAL INTELLIGENCE — NEW
+    %% =========================================================
+
+    subgraph Internal["Salience Internal Intelligence"]
+
+        Retrieval["Knowledge & Retrieval Service"]
+
+        ContentHistory["Content / Asset History"]
+        DecisionHistory["Decision History"]
+        PublicationHistory["Publication History"]
+        AudienceHistory["Audience / Performance History"]
+        ExperimentHistory["Experiment History"]
+        StrategyHistory["Strategy / Learning History"]
+
+    end
+
+    PG --> Retrieval
+    Storage --> Retrieval
+
+    ContentHistory --> Retrieval
+    DecisionHistory --> Retrieval
+    PublicationHistory --> Retrieval
+    AudienceHistory --> Retrieval
+    ExperimentHistory --> Retrieval
+    StrategyHistory --> Retrieval
+
+    Retrieval -->|relevant historical context| Loop
+
+
+    %% =========================================================
+    %% RESEARCH + STRATEGY CAPABILITIES
+    %% =========================================================
+
+    Loop -->|direct / delegated capability contract| Agents["Research & Strategy Capabilities"]
+
+    Agents --> CapabilityGateway["Capability Gateway
+        Versioned Capability Contract
+        Routing
+        Cost
+        Quality
+        Provider Identity
+        Fallback / Abstention"]
+
+    CapabilityGateway --> Providers["Model / MCP / A2A / Plugin / Future Adapters"]
+
+    Providers --> CapabilityGateway
+    CapabilityGateway --> Agents
+
+
+    %% =========================================================
+    %% DECISION LAYER — NEW / IMPORTANT
+    %% =========================================================
+
+    Agents --> Candidates["Candidate Opportunities / Briefs"]
+
+    Candidates --> Allocation["Exploration / Exploitation Allocation"]
+
+    Allocation --> Selection["Decision & Selection Engine
+        Compare
+        Rank
+        Cost / Risk
+        Evidence
+        Record Why"]
+
+    Selection --> DecisionRecord["DecisionRecord@v1"]
+
+    DecisionRecord --> PG
+
+    Selection -->|selected output| Brief["ContentBrief@v1"]
+
+    Brief --> Creative["Creative Workflow"]
+
+
+    %% =========================================================
+    %% CREATIVE CAPABILITY LAYER — EVOLVE EXISTING PROVIDER
+    %% =========================================================
+
+    Creative --> CreativeRouter["Creative Capability Router"]
+
+    CreativeRouter --> CreativeProviders["Approved Provider Adapters
+        Text
+        Image
+        Video
+        Audio
+        Editing
+        Future Multimodal AI"]
+
+    CreativeProviders -->|idempotent submit / reconcile / webhook| Asset["Verified Asset"]
+
+    Asset -.->|hash-stable bytes| Storage
+
+
+    %% =========================================================
+    %% GOVERNANCE / DISTRIBUTION — PRESERVE, CLARIFY
+    %% =========================================================
+
+    Creative --> BuildGate["Governance Gate
+        Rights
+        Policy
+        Approval
+        Brand
+        Budget Reservation"]
+
+    Asset --> BuildGate
+
+    BuildGate --> Distribution["Distribution Package"]
+
+    Distribution --> Ready["ReadyToPublishPackage@v1"]
+
+
+    %% =========================================================
+    %% PUBLICATION — PRESERVE
+    %% =========================================================
+
+    Ready -->|new account-bound governed request| Publish["Publication Workflow"]
+
+    Publish --> PublishGate["Final Governance Gate
+        Policy
+        Rights
+        Approval
+        Scope
+        Current Budget / Reserve"]
+
+    Publish -.->|canonical schedule per Temporal execution| Temporal
+
+    PublishGate --> Publisher["Fixture / Opt-In Publisher Adapter"]
+
+    Storage -.->|short-lived governed HTTPS delivery| Publisher
+
+    Publisher --> ExternalPlatform["Publishing Platform"]
+
+    Publish -->|immutable request / plan / attempt| PG
+
+
+    %% =========================================================
+    %% VERIFIED PUBLICATION — NEW EXPLICIT CONTRACT
+    %% =========================================================
+
+    ExternalPlatform --> Receipt["PublicationReceipt@v1"]
+
+    Receipt --> PG
+
+
+    %% =========================================================
+    %% OBSERVATION — MAJOR NEW PLANE
+    %% =========================================================
+
+    ExternalPlatform --> Observation["Observation Workflow"]
+
+    Receipt --> Observation
+
+    Observation --> RawObs["ObservationRecord@v1
+        Timestamp
+        Publication Age
+        Platform
+        Audience Context
+        Impressions
+        Views
+        Engagement
+        Retention
+        Conversion
+        Revenue
+        Data Quality"]
+
+    RawObs --> PG
+
+
+    %% =========================================================
+    %% MEASUREMENT + ATTRIBUTION
+    %% =========================================================
+
+    RawObs --> Outcome["Outcome Engine
+        Deterministic Metrics
+        Normalization
+        Time Windows
+        Cost / Value"]
+
+    Outcome --> OutcomeRecord["OutcomeRecord@v1"]
+
+    OutcomeRecord --> Attribution["Attribution Engine
+        Outcome ↔ Publication
+        Outcome ↔ Content
+        Outcome ↔ Decision
+        Outcome ↔ Strategy
+        Outcome ↔ Experiment"]
+
+    Attribution --> AttributionRecord["AttributionRecord@v1"]
+
+    AttributionRecord --> PG
+
+
+    %% =========================================================
+    %% LEARNING — SYSTEM INTELLIGENCE
+    %% =========================================================
+
+    AttributionRecord --> Learning["Learning & Evidence Engine"]
+
+    Learning --> Pattern["LearningEvidence@v1
+        Evidence-Backed Pattern"]
+
+    Learning --> Hypothesis["Hypothesis@v1"]
+
+    Learning --> FailureKnowledge["Failure / Correction Knowledge"]
+
+    Pattern --> PG
+    Hypothesis --> PG
+    FailureKnowledge --> PG
+
+
+    %% =========================================================
+    %% STRATEGY EVOLUTION — NEW
+    %% =========================================================
+
+    Pattern --> StrategyCandidate["StrategyCandidate@v1"]
+
+    Hypothesis --> ExperimentPlan["ExperimentPlan@v1"]
+
+    StrategyCandidate --> ExperimentPlan
+
+    ExperimentPlan --> OfflineEval["Historical / Offline Evaluation"]
+
+    OfflineEval --> EvaluationReport["EvaluationReport@v1"]
+
+    EvaluationReport --> ControlledTrial["Controlled Production Trial"]
+
+    ControlledTrial -->|same normal production path| Temporal
+
+    ControlledTrial --> Observation
+
+    Observation --> ExperimentOutcome["ExperimentOutcome@v1"]
+
+    ExperimentOutcome --> Promotion["Strategy Promotion Gate"]
+
+    EvaluationReport --> Promotion
+
+    Promotion -->|accepted| PromotionReceipt["StrategyPromotionReceipt@v1"]
+
+    Promotion -->|rejected / inconclusive| Rejected["Archive + Evidence + Reason"]
+
+    PromotionReceipt --> ActiveStrategy["Active Strategy Registry"]
+
+    ActiveStrategy --> PG
+
+    ActiveStrategy -->|versioned strategy context| Loop
+
+
+    %% =========================================================
+    %% DAILY COMPOUNDING KNOWLEDGE
+    %% =========================================================
+
+    PG --> DecisionHistory
+    PG --> PublicationHistory
+    PG --> AudienceHistory
+    PG --> ExperimentHistory
+    PG --> StrategyHistory
+
+    Storage --> ContentHistory
+
+
+    %% =========================================================
+    %% EXISTING LINEAGE — PRESERVE
+    %% =========================================================
+
+    Loop -->|source → immutable brief lineage| PG
+
+    Worker -.->|artifact references| Storage
+
+    Creative -.->|hash-stable content / media| Storage
+
+
+    %% =========================================================
+    %% OPTIONAL FUTURE MODEL ADAPTATION
+    %% =========================================================
+
+    PG -.->|curated promoted evidence only| ModelEvolution["Optional Model Evolution
+        Fine-Tuning
+        Distillation
+        Custom Models
+        Future Learning Methods"]
+
+    ModelEvolution -.->|validated provider version| Providers
+
+
+    %% =========================================================
+    %% ONE GOVERNANCE / CONTROL SYSTEM, MANY ENFORCEMENT POINTS
+    %% =========================================================
+
+    CrossCutting["Salience Cross-Cutting Control Plane
+        Identity
+        Authority
+        Security
+        Policy
+        Rights
+        Budget
+        Provenance
+        Versioning
+        Evaluation
+        Observability
+        Audit
+        Idempotency
+        Recovery
+        Reconciliation"]
+
+    CrossCutting -.-> API
+    CrossCutting -.-> Temporal
+    CrossCutting -.-> Loop
+    CrossCutting -.-> CapabilityGateway
+    CrossCutting -.-> Creative
+    CrossCutting -.-> BuildGate
+    CrossCutting -.-> PublishGate
+    CrossCutting -.-> Observation
+    CrossCutting -.-> Learning
+    CrossCutting -.-> Promotion
