@@ -1,0 +1,137 @@
+flowchart TB
+    %% SALIENCE V4 — Autonomous Content Intelligence and Learning
+    %% Supersedes V3 as a design specification; deployed behavior is not certified.
+    %% Existing runtime: Temporal adapter plus Salience workers. Nodes are modules.
+    %% Solid arrows carry work or records; dotted arrows supply policy or context.
+    %% G0-G5 are enforced gates defined in ArchV4-implementation-notes.md.
+    %% Every stage persists canonical records; selected writes are explicit below.
+    %% Detailed cycle, dispatch, recovery, experiment and training views are in notes.
+
+    Operator["Operators / API clients / CLI / SDK"]
+    API["Control API and versioned goals"]
+    Ingress["Temporal and Salience worker: due cycle intents"]
+    Admission{"G0: admit one logical cycle?"}
+    Context["Resolve and persist immutable RunContext"]
+    Wait["Durable wait until due time or authorized event"]
+    Operator --> API
+    API -->|committed new-cycle intent| Ingress
+    Ingress --> Admission
+    Admission -->|admit once| Context
+    Admission -->|defer with reason| Wait
+    Admission -->|deny or review required| Recovery
+    Wait -->|durable timer or schedule fires| Ingress
+
+    Evidence["Governed source intake and evidence quality"]
+    Memory["Scoped retrieval and versioned context"]
+    Select["Research, candidates and explore / exploit selection"]
+    Gateway["Guarded typed AI, tool and agent gateway"]
+    Evidence -->|untrusted evidence snapshot| Select
+    Memory -->|cited history and lessons| Select
+    Context -->|authorized versions and assignment| Select
+    Gateway -.->|per-call authorization and reservation| Select
+    Select -->|bounded evidence request in current cycle| Evidence
+    Select -->|defer or abstain; close cycle| Wait
+
+    PreCreate{"G1: brief, rights and spend authorized?"}
+    Creative["Creative workflow and built-in AI generator"]
+    Build{"G2: assets, claims and brand verified?"}
+    Dispatch{"G3: current publication authority valid?"}
+    Publish["Publisher adapter: submit and reconcile"]
+    Select -->|"DecisionRecord and ContentBrief@v1"| PreCreate
+    PreCreate -->|allow| Creative
+    Gateway -.->|versioned generation and editing| Creative
+    Creative -->|verified bytes and content assessments| Build
+    Build -->|"ReadyToPublishPackage@v1 and account-bound request"| Dispatch
+    Dispatch -->|permit consumed for stable operation ID| Publish
+    PreCreate -->|deny or require approval| Recovery
+    Build -->|fail; bounded revision only| Recovery
+    Dispatch -->|deny, expired or revoked| Recovery
+    Publish -->|unknown, pending or failed| Recovery
+
+    Observe["Durable observation plans and read-only collection"]
+    Measure["Versioned outcomes and lineage attribution"]
+    Learn["Evidence, hypotheses and failure learning"]
+    Publish -->|"verified PublicationReceipt@v1"| Observe
+    Observe -->|snapshots, completeness and corrections| Measure
+    Measure -->|mature evidence and uncertainty| Learn
+
+    Change["Versioned strategy or capability candidate"]
+    Offline{"G4a: offline pass and trial authorized?"}
+    TrialPlans["Trial controller: approved plans and assignments"]
+    TrialEval["Evaluate actual exposure at defined windows"]
+    EvalWait["Durable wait for new data or evaluation deadline"]
+    Promote{"G4b: evidence and release authority pass?"}
+    Registry["Strategy and capability release registries"]
+    Learn -->|propose with supporting and contrary evidence| Change
+    Change --> Offline
+    Offline -->|register capped trial plan| TrialPlans
+    TrialPlans -.->|eligible assignment; never an extra cycle| Context
+    Registry -.->|eligible versions and baseline defaults| Context
+    TrialPlans -->|frozen plan and assignment references| TrialEval
+    Measure -->|matched trial outcomes and corrections| TrialEval
+    TrialEval -->|continue within unchanged caps| EvalWait
+    EvalWait -->|deduplicated wake and status recheck| TrialEval
+    TrialEval -->|completed or inconclusive result| Promote
+    Promote -->|atomic promotion and rollout receipt| Registry
+    Offline -->|reject or insufficient evidence| Archive
+    Promote -->|reject or inconclusive| Archive
+    Offline -->|approval required| Recovery
+    Promote -->|approval required| Recovery
+
+    Monitor["Health, cost, drift and release guardrails"]
+    Recovery["Persist and classify recovery case"]
+    Resume["Authorized signal to existing workflow and saved stage"]
+    Review["Durable review queue with expiry and owner"]
+    Reviewer["Authorized human reviewer"]
+    Archive["Commit terminal disposition, reason and evidence"]
+    History[("Canonical history: PostgreSQL and object store")]
+    Monitor -->|persist stop or breach before follow-up| Recovery
+    Measure -.->|quality, performance and evidence invalidation| Monitor
+    Recovery -->|safe retry, reconcile or rework command| Resume
+    Recovery -->|human authority required| Review
+    Review --> Reviewer
+    Reviewer -->|bound approval or rejection| API
+    API -->|record and validate case decision| Recovery
+    Recovery -->|terminal or exhausted| Archive
+    Recovery -->|eligible rollback or suspend; record receipt| Registry
+    Recovery -->|failure record and case lineage| History
+    Archive -->|durable archival record| History
+    History -->|scoped canonical records| Memory
+    History -->|eligible failure, correction and experiment events| Learn
+    Learn -->|append lessons and counterevidence| History
+
+    Dataset["Optional rights-cleared dataset proposal"]
+    TrainGate{"G5: data use, export and compute authorized?"}
+    Train["Isolated curation, training and artifact verification"]
+    Upgrade["Proposed provider or model upgrade"]
+    History -->|scoped eligible references and provenance| Dataset
+    Dataset --> TrainGate
+    TrainGate -->|allow before export or training spend| Train
+    TrainGate -->|deny or approval required| Recovery
+    Train -->|candidate artifact and training lineage only| Change
+    Upgrade -->|candidate manifest; no training prerequisite| Change
+
+    %% Policies are checked at named gates AND every adapter / retrieval boundary.
+    %% The enforcement matrix is normative; authority never comes from model output.
+    %% Resume targets an existing workflow ID and operation ID, not cycle admission.
+    %% Resume always rechecks the target stage gate before a new external effect.
+    %% Learning updates canonical context; it does not start or spin the cycle clock.
+    %% Source requests, evaluation wakes and learning events are bounded and deduped.
+    %% Candidate / trial eligibility never changes a default active release pointer.
+
+    classDef runtime fill:#eaf2ff,stroke:#416ca4,color:#182f4a;
+    classDef gate fill:#fff4d5,stroke:#a67516,color:#503909;
+    classDef intelligence fill:#e6f5ee,stroke:#398369,color:#193f32;
+    classDef production fill:#e9f2fa,stroke:#377898,color:#193f55;
+    classDef experiment fill:#edeafa,stroke:#7866a2,color:#392958;
+    classDef future fill:#f4e9f6,stroke:#97699b,color:#512d54;
+    classDef store fill:#edf1f5,stroke:#6c8090,color:#253744;
+    classDef recovery fill:#fff0e9,stroke:#b3714a,color:#60381f;
+    class Operator,API,Ingress,Context,Wait,Gateway runtime;
+    class Admission,PreCreate,Build,Dispatch,Offline,Promote,TrainGate gate;
+    class Evidence,Memory,Select,Observe,Measure,Learn intelligence;
+    class Creative,Publish production;
+    class Change,TrialPlans,TrialEval,EvalWait experiment;
+    class Dataset,Train,Upgrade future;
+    class Registry,History store;
+    class Monitor,Recovery,Resume,Review,Reviewer,Archive recovery;
