@@ -3,23 +3,17 @@ set -euo pipefail
 
 root_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 venv_dir=${SALIENCE_BROWSER_EVIDENCE_VENV:-"$root_dir/.venv"}
-install=false
 
 case ${1:-} in
   '') ;;
-  --install) install=true ;;
   *)
-    printf 'NOT RUN: expected no argument or --install.\n' >&2
+    printf 'NOT RUN: expected no argument.\n' >&2
     exit 2
     ;;
 esac
 
-if "$install"; then
-  SALIENCE_BROWSER_EVIDENCE_VENV="$venv_dir" bash "$root_dir/scripts/setup-browser-evidence.sh"
-fi
-
 if [[ ! -x "$venv_dir/bin/python" ]]; then
-  printf 'NOT RUN: Playwright environment is absent; run bash scripts/setup-browser-evidence.sh first.\n' >&2
+  printf 'NOT RUN: Playwright environment is absent; provision it outside Salience before running this verifier.\n' >&2
   exit 2
 fi
 
@@ -36,7 +30,7 @@ with sync_playwright() as playwright:
         browser.close()
 PY
 ); then
-  printf 'NOT RUN: Playwright Chromium is unavailable; run bash scripts/setup-browser-evidence.sh first.\n' >&2
+  printf 'NOT RUN: Playwright Chromium is unavailable; provision it outside Salience before running this verifier.\n' >&2
   exit 2
 fi
 

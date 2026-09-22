@@ -53,7 +53,7 @@ class PlaywrightBrowserResearchTool:
                 browser = await playwright.chromium.launch(headless=True)
             except Exception as error:
                 raise BrowserUnavailable(
-                    "browser launch failed; run scripts/setup-browser-evidence.sh"
+                    "browser launch failed; provision a compatible browser outside Salience"
                 ) from error
             try:
                 return await self._capture(

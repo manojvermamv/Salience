@@ -2,6 +2,10 @@
 
 **Status:** Approved by the requested browser-evidence goal on 2026-09-12.
 
+Historical design only: the project-owned browser installer was retired on
+2026-09-16. Do not run its installation instructions; the current verifier
+requires an externally provisioned browser and never downloads one.
+
 ## Purpose
 
 This design makes the existing `BrowserResearchTool` a production-compatible, read-only evidence collector before Phase 7 begins. It validates a real Playwright Chromium session on the current Debian 13 EC2 host without adding a second browser architecture, a provider dependency, publishing automation, or Phase 7/8 capabilities.

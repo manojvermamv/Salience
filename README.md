@@ -316,22 +316,21 @@ not publish a video.
 
 ## Verify Browser Evidence
 
-Browser evidence remains optional to the dry-run control plane, but the current
-Linux operator workflow is project-owned and reproducible:
+Browser evidence remains optional to the dry-run control plane. It runs only
+against an operator-provisioned Playwright environment:
 
 ```bash
-bash scripts/verify-browser-evidence.sh --install
+bash scripts/verify-browser-evidence.sh
 ```
 
-The command creates or reuses `.venv`, installs the pinned `playwright==1.62.0`
-package and only Playwright Chromium with its documented Linux dependencies,
-then runs the governed browser integration/security suite. It requires no
-credential or paid provider, makes no Docker cleanup, and writes retained local
-proof under `artifacts/browser-evidence/`. It verifies JavaScript rendering,
-artifact hashes/metadata, private-network and redirect denial, download denial,
-timeout traces, and hostile-text isolation. See [`docs/research.md`](docs/research.md)
-for execution limits and [`docs/verification.md`](docs/verification.md) for the
-test coverage.
+When the environment or Chromium runtime is absent, it reports `NOT RUN`; it
+does not create a virtual environment, install dependencies, or download a
+browser. It requires no credential or paid provider, makes no Docker cleanup,
+and writes retained local proof under `artifacts/browser-evidence/`. It verifies
+JavaScript rendering, artifact hashes/metadata, private-network and redirect
+denial, download denial, timeout traces, and hostile-text isolation. See
+[`docs/research.md`](docs/research.md) for execution limits and
+[`docs/verification.md`](docs/verification.md) for the test coverage.
 
 ## What Is Deliberately Not Here
 

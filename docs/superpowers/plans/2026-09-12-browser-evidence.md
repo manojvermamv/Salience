@@ -1,5 +1,9 @@
 # Governed Browser Evidence Implementation Plan
 
+Historical completed plan: the project-owned installer was retired on
+2026-09-16. Do not execute the installation commands below; current verification
+requires an externally provisioned browser and does not download one.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Install revision-matched Chromium and prove that the existing Salience browser adapter captures governed, traceable, untrusted evidence through a real headless session.
