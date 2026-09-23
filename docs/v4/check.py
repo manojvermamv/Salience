@@ -17,6 +17,14 @@ from urllib.parse import unquote, urlsplit
 ROOT = Path(__file__).resolve().parents[2]
 BLUEPRINT = "docs/v4/IMPLEMENTATION-BLUEPRINT.md"
 EXPECTED = {f"R{number:02d}" for number in range(1, 71)} | {"R14F", "R16F", "R23F", "R25F", "R50F"}
+EXTERNAL_CHECKS = {
+    "independent safety review",
+    "production identity and ingress",
+    "production storage and restore",
+    "production collector and alert delivery",
+    "remote repository gate enforcement",
+}
+DEVELOPMENT_CHECKS = {"isolated no-effects profile", "restricted database role", "P0 regression", "documentation contract", "deferral contract"}
 
 
 def digest(data: bytes) -> str:
@@ -258,12 +266,86 @@ def html_link_errors(path: Path, root: Path) -> list[str]:
 def release_errors(content: str, release: dict) -> list[str]:
     errors = []
     p0_requirements = {line.split("|")[1].strip() for line in content.splitlines() if re.match(r"\| R\d\dF? \|", line) and line.split("|")[3].strip() == "P0"}
-    if set(release["requirements"]) != p0_requirements:
+    requirements = release.get("requirements", [])
+    if not isinstance(requirements, list) or Counter(requirements) != Counter(p0_requirements):
         errors.append("P0 release ledger does not cover its mapped obligations")
-    if release["production_effects_enabled"]:
+    if release.get("phase") != "P0" or release.get("release_gate") != "RG0":
+        errors.append("invalid release ledger identity")
+    if release.get("production_effects_enabled") is not False:
         errors.append("P0 must not enable production effects")
-    if any(check["status"] != "PASS" for check in release["external_checks"]) and release["release_status"] != "HELD":
+    if release.get("release_status") not in {"PASS", "HELD", "FAIL"}:
+        errors.append("invalid release status")
+    checks = release.get("external_checks")
+    errors += qualification_errors(checks, EXTERNAL_CHECKS)
+    if release.get("release_status") == "PASS" and (not isinstance(checks, list) or not checks or any(not isinstance(check, dict) or check.get("status") != "PASS" for check in checks)):
         errors.append("unverified external qualification cannot pass RG0")
+    local = release.get("local_qualification")
+    if local not in {"PASS", "FAIL", "NOT RUN"}:
+        errors.append("invalid local qualification status")
+    if release.get("release_status") == "PASS" and local != "PASS":
+        errors.append("unsuccessful local qualification cannot pass RG0")
+    verification = release.get("verification")
+    if not isinstance(verification, dict) or not verification:
+        errors.append("missing local verification")
+    elif local == "PASS":
+        for name in ["focused_p0", "full_non_live", "documentation_tests"]:
+            result = verification.get(name, {})
+            if not isinstance(result, dict) or type(result.get("passed")) is not int or result["passed"] <= 0 or any(result.get(field, 0) != 0 for field in ["failed", "skipped", "errors", "exit_code"]):
+                errors.append(f"unsuccessful local suite: {name}")
+        diagrams = verification.get("mermaid_diagrams", {})
+        if not isinstance(diagrams, dict) or diagrams.get("rendered") != 6 or diagrams.get("failed") != 0:
+            errors.append("missing successful diagram qualification")
+    artifacts = release.get("evidence_artifacts")
+    if not isinstance(artifacts, list) or not artifacts:
+        errors.append("missing qualification evidence")
+    else:
+        if all(artifact.get("local_only", False) for artifact in artifacts if isinstance(artifact, dict)):
+            errors.append("qualification requires durable repository evidence")
+        for artifact in artifacts:
+            if not isinstance(artifact, dict) or not isinstance(artifact.get("path"), str) or not artifact["path"] or not re.fullmatch(r"[a-f0-9]{64}", str(artifact.get("sha256", ""))):
+                errors.append("invalid qualification evidence")
+            elif Path(artifact["path"]).is_absolute() or ".." in Path(artifact["path"]).parts:
+                errors.append("qualification evidence must be repository-relative")
+            elif not artifact.get("local_only", False) and (not artifact["path"].startswith("docs/v4/") or not artifact["path"].endswith("-evidence.json")):
+                errors.append("durable qualification must use a repository evidence report")
+    if "development_entry" in release:
+        entry = release["development_entry"]
+        if not isinstance(entry, dict):
+            errors.append("invalid development entry")
+        else:
+            errors += qualification_errors(entry.get("checks"), DEVELOPMENT_CHECKS)
+            if entry.get("status") not in {"PASS", "HELD", "FAIL"}:
+                errors.append("invalid development entry status")
+            development_checks = entry.get("checks")
+            if entry.get("status") == "PASS" and (local != "PASS" or not isinstance(development_checks, list) or any(not isinstance(check, dict) or check.get("status") != "PASS" for check in development_checks)):
+                errors.append("unqualified local development entry")
+    return errors
+
+
+def qualification_errors(checks, required: set[str]) -> list[str]:
+    if not isinstance(checks, list) or any(not isinstance(check, dict) for check in checks):
+        return ["missing or invalid qualification checklist"]
+    errors = []
+    if Counter(str(check.get("check")) for check in checks) != Counter(required):
+        errors.append("mandatory qualification checks must each appear exactly once")
+    for check in checks:
+        if check.get("status") not in {"PASS", "FAIL", "NOT RUN"}:
+            errors.append("invalid qualification status")
+        field = "evidence" if check.get("status") == "PASS" else "reason"
+        if not isinstance(check.get(field), str) or not check[field].strip():
+            errors.append(f"qualification requires {field}: {check.get('check')}")
+    return errors
+
+
+def evidence_report_errors(report) -> list[str]:
+    if not isinstance(report, dict) or not isinstance(report.get("commands"), list) or not report["commands"]:
+        return ["missing durable command evidence"]
+    errors = []
+    for command in report["commands"]:
+        if not isinstance(command, dict) or not command.get("command") or type(command.get("tests")) is not int or command["tests"] <= 0 or any(type(command.get(field)) is not int or command[field] != 0 for field in ["exit_code", "failures", "errors", "skipped"]):
+            errors.append("unsuccessful or incomplete durable command evidence")
+        elif not re.fullmatch(r"[a-f0-9]{64}", str(command.get("junit_sha256", ""))):
+            errors.append("missing durable execution evidence digest")
     return errors
 
 
@@ -275,6 +357,14 @@ def verify(root: Path, draft: bool = False) -> tuple[list[str], dict]:
     inventory = json.loads((root / "docs/v4/inventory.json").read_text())
     errors = requirement_errors(content) + gate_errors(content) + source_errors(content, coverage, root)
     errors += release_errors(content, release)
+    for record in release.get("evidence_artifacts", []):
+        if not (root / record["path"]).resolve().is_relative_to(root.resolve()):
+            errors.append("qualification evidence resolves outside repository")
+        elif not record.get("local_only", False) and (root / record["path"]).is_file():
+            try:
+                errors += evidence_report_errors(json.loads((root / record["path"]).read_text()))
+            except (ValueError, UnicodeError):
+                errors.append("invalid durable evidence JSON")
     errors += hash_errors([record for record in release.get("evidence_artifacts", []) if not record.get("local_only") or (root / record["path"]).exists()], root)
     errors += hash_errors(evidence["files"], root)
     expected_paths = {record["path"] for record in evidence["files"]}

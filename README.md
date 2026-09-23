@@ -6,13 +6,13 @@ Salience is a self-hostable, provider-neutral content operating system built aro
 
 The existing Phase 1–9 foundation provides fixture-tested research, creative and governed publication workflows. Live media publishing, observation, learning, experiments and V4 admission/release controls still require the work identified in the blueprint. Approved creative changes produce a new distribution and ready-package version.
 
-P0 now provides an isolated authenticated control boundary, effects lockout, scoped credential leases, immutable verified storage and retention hooks, and correlated audit/tracing. Verification: **269 non-live tests pass, with no skips**, including 37 focused P0 checks. See [verification details](docs/v4/validation.md). Production remains disabled; [RG0's release ledger](docs/v4/p0-release.json) records outstanding external qualification.
+P0 provides an isolated authenticated control boundary, effects lockout, scoped credential leases, immutable verified storage and retention hooks, and correlated audit/tracing. DG1 local-development entry passes; the first P1 increment adds dry-run-only canonical admission and distinct deferral/recovery/closure semantics. Verification: **284 non-live tests pass, with no skips**, including 39 focused P0 checks and 13 P1 admission cases. See [verification details](docs/v4/validation.md). Production remains disabled; [the release ledger](docs/v4/p0-release.json) keeps RG0 and full P1/RG1 **HELD** with remaining obligations explicit.
 
 ```bash
 python3 docs/v4/check.py --self-test
 ```
 
-This documentation gate verifies source intent, 70 original requirements plus five foundational obligations, acyclic phase/release dependencies, evidence drift, preserved archives and links. The documentation CI workflow runs it on pushes and pull requests.
+This documentation gate verifies source intent, 70 original requirements plus five foundational obligations, acyclic phase/release dependencies, evidence drift, preserved archives and links. CI runs documentation and non-live application regressions. Main requires both checks, strict up-to-date status and independent PR approval with administrator enforcement; local test success alone cannot authorize a merge.
 
 Existing fixture verification commands remain available:
 

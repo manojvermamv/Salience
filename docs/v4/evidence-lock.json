@@ -87,6 +87,18 @@
       "sha256": "09956259c02a701ac1dd75e76c4b02e3bd5c564e4bded5819d29bac28678d165"
     },
     {
+      "path": "migrations/versions/0015_identity_lock.py",
+      "sha256": "050eb9924235dc8733982501e8a8ca2a28afe6473246849919a443f4e23b1ec3"
+    },
+    {
+      "path": "migrations/versions/0016_cycle_admission.py",
+      "sha256": "302f0dd59cdaa23ce487f09032e36083d2ebc9636b96afdf8f9cb0429544d7f9"
+    },
+    {
+      "path": "migrations/versions/0017_cycle_identity_guards.py",
+      "sha256": "7edb440523a591ddb145859c1cf02390510842c620fcc5e2df653fc533d7ddcb"
+    },
+    {
       "path": "migrations/versions/__init__.py",
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
@@ -192,7 +204,7 @@
     },
     {
       "path": "src/salience/api/p0.py",
-      "sha256": "028bee202c51b616403c9d8f7d3e784a3260d00708396deed772286888c264dd"
+      "sha256": "4dfabe0bc6fb3f58405e704d6b9ec6b097d92893b16c2222f55d242ad3ecc2a0"
     },
     {
       "path": "src/salience/api/routes/__init__.py",
@@ -329,6 +341,18 @@
     {
       "path": "src/salience/creative/service.py",
       "sha256": "5c6934edad3b424d9a01afcce08c52e53573cd21d3f9c332e2e81b067ff0d327"
+    },
+    {
+      "path": "src/salience/cycles/__init__.py",
+      "sha256": "dbe40e450cda71a75bda21b5d7c1a553a2f61578f55ff46b4d2d8637337a9206"
+    },
+    {
+      "path": "src/salience/cycles/admission.py",
+      "sha256": "f1f0cd3031565b25503d1322d4defa6dd970eb1096c71847b1787916be74c32e"
+    },
+    {
+      "path": "src/salience/cycles/contracts.py",
+      "sha256": "3dc2bd826d4f55607db4ab2cd0f45e22f077ef10d08f3231a0605d6fc1f84bba"
     },
     {
       "path": "src/salience/db/__init__.py",
@@ -863,12 +887,16 @@
       "sha256": "f0ff0bcd0f94d378663321aa66b8a3e62d5c6ec5e29e7976171acd00ff9a680a"
     },
     {
+      "path": "tests/integration/test_v4_cycle_admission.py",
+      "sha256": "9e240bec6f630f77e1daedb7c8956b327522624ae48d126c72fd3c5e4dfb1aec"
+    },
+    {
       "path": "tests/integration/test_v4_identity_isolation.py",
-      "sha256": "3f308e0edf9f64f7f03519c9ea23467c7b0e011e5e417694b5e76088937f5045"
+      "sha256": "5db6d320416570adb03e122b9061161108f06e9945829925b6555b1edd640f32"
     },
     {
       "path": "tests/integration/test_v4_migrations.py",
-      "sha256": "f7c34132c85d7c227c9760c9684fe47ef19f5549f2f797963a631a907f8b92ac"
+      "sha256": "887b9b5783780615add2e1e1605da1a37fb827e7dbd49870a28a73d5cdbb5b4a"
     },
     {
       "path": "tests/integration/test_v4_object_retention.py",

@@ -1,0 +1,37 @@
+{
+  "recorded_at": "2026-09-23",
+  "scope": "DG1 local development prerequisite; no production authorization",
+  "source_evidence_lock_sha256": "3cc6c6ef311f1129bc7d4055957bdaa983841b208a3db93787ae85b1fa6bcedb",
+  "commands": [
+    {
+      "command": ".venv/bin/python -m pytest -p no:cacheprovider tests/integration/test_v4_*.py tests/unit/test_v4_*.py -q",
+      "exit_code": 0,
+      "tests": 39,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 16.559,
+      "junit": "artifacts/v4-p0/review-focused.xml",
+      "junit_sha256": "0002170e3a5ce86569794a41b775fbfbda8ba295bb6b4e092e7e56d2ee6dc714",
+      "log_sha256": "6c58629dee6c0959f8cd2b107fcfd3264985eb00dd3c3237e3e22592f99816ba"
+    },
+    {
+      "command": ".venv/bin/python -m pytest -p no:cacheprovider tests/contracts tests/unit tests/integration tests/e2e tests/evals -m 'not live' -q",
+      "exit_code": 0,
+      "tests": 271,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 262.12,
+      "junit": "artifacts/v4-p0/review-regression.xml",
+      "junit_sha256": "f10f9098898bf2e8bf27681b25a448a296ffd324aabc5857e821ff90ae2b46cd",
+      "log_sha256": "b2cacad489ced6b50f35743876fc719dcc646dc4b7c6dca2cbc46aa621bbcdc4"
+    }
+  ],
+  "documentation": {
+    "tests_passed": 12,
+    "diagrams_rendered": 6,
+    "diagram_report_sha256": "6ab6bcbe4a8d1d0af7521e51fbf8d76836f012e2d67974f37c7d9c202784f0ae"
+  },
+  "independent_review": "NOT RUN; no independent approval asserted"
+}

@@ -1,6 +1,7 @@
 import os
 from datetime import datetime, timedelta, timezone
 from uuid import uuid4
+from urllib.parse import urlsplit, urlunsplit
 
 from cryptography.hazmat.primitives.asymmetric import rsa
 import jwt
@@ -30,6 +31,57 @@ def boundary():
 
 def headers(key, claims):
     return {"Authorization": "Bearer " + jwt.encode(claims, key, algorithm="RS256"), "X-Salience-Scopes": "control:read,control:write,admin:*"}
+
+
+@pytest.fixture
+def restricted_boundary(boundary):
+    _, key, claims, workspace, subject, database = boundary
+    role = "p0_reader_" + uuid4().hex
+    password = uuid4().hex
+    with psycopg.connect(database, autocommit=True) as admin:
+        admin.execute(psycopg.sql.SQL("CREATE ROLE {} LOGIN PASSWORD {} NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOBYPASSRLS").format(psycopg.sql.Identifier(role), psycopg.sql.Literal(password)))
+        try:
+            admin.execute(psycopg.sql.SQL("GRANT USAGE ON SCHEMA public TO {}").format(psycopg.sql.Identifier(role)))
+            admin.execute(psycopg.sql.SQL("GRANT SELECT ON workspaces, identity_subjects, permission_grants, jobs TO {}").format(psycopg.sql.Identifier(role)))
+            admin.execute(psycopg.sql.SQL("GRANT INSERT ON identity_access_events TO {}").format(psycopg.sql.Identifier(role)))
+            if admin.execute("SELECT to_regprocedure('p0_lock_identity(text,text,uuid)')").fetchone()[0]:
+                admin.execute(psycopg.sql.SQL("GRANT EXECUTE ON FUNCTION p0_lock_identity(text,text,uuid) TO {}").format(psycopg.sql.Identifier(role)))
+            parts = urlsplit(database)
+            restricted = urlunsplit(parts._replace(netloc=f"{role}:{password}@{parts.hostname}:{parts.port or 5432}"))
+            app = create_p0_app(database_url=restricted, workspace_id=workspace, issuer=claims["iss"], audience=claims["aud"], public_key=key.public_key())
+            with TestClient(app) as client:
+                yield client, key, claims, workspace, subject, database, restricted
+        finally:
+            admin.execute(psycopg.sql.SQL("DROP OWNED BY {}").format(psycopg.sql.Identifier(role)))
+            admin.execute(psycopg.sql.SQL("DROP ROLE {}").format(psycopg.sql.Identifier(role)))
+
+
+def test_nonowner_authorization_without_authority_edit_privileges(restricted_boundary):
+    client, key, claims, workspace, subject, database, restricted = restricted_boundary
+    with psycopg.connect(restricted) as connection:
+        assert connection.execute("SELECT rolsuper, rolcreaterole, rolbypassrls FROM pg_roles WHERE rolname=current_user").fetchone() == (False, False, False)
+        assert connection.execute("SELECT has_table_privilege(current_user, 'identity_subjects', 'UPDATE'), has_table_privilege(current_user, 'permission_grants', 'INSERT'), has_table_privilege(current_user, 'identity_access_events', 'DELETE')").fetchone() == (False, False, False)
+        for statement in ["UPDATE identity_subjects SET enabled=true", "DELETE FROM permission_grants", "ALTER TABLE identity_subjects ADD COLUMN unauthorized text"]:
+            with pytest.raises(psycopg.errors.InsufficientPrivilege), connection.transaction():
+                connection.execute(statement)
+    assert client.get(f"/v1/workspaces/{workspace}/identity", headers=headers(key, claims)).status_code == 200
+    with psycopg.connect(database) as admin:
+        admin.execute("UPDATE identity_subjects SET enabled=false, revision=revision+1 WHERE id=%s", (subject,))
+    assert client.get(f"/v1/workspaces/{workspace}/identity", headers=headers(key, claims)).status_code == 401
+
+
+def test_restricted_identity_lock_serializes_revocation(restricted_boundary):
+    _, _, claims, workspace, subject, database, restricted = restricted_boundary
+    with psycopg.connect(restricted) as reader:
+        assert reader.execute("SELECT * FROM p0_lock_identity(%s,%s,%s)", (claims["iss"], claims["sub"], workspace)).fetchone() == (subject, 1)
+        with psycopg.connect(database) as admin:
+            with pytest.raises(psycopg.errors.LockNotAvailable), admin.transaction():
+                admin.execute("SET LOCAL lock_timeout='100ms'")
+                admin.execute("UPDATE identity_subjects SET enabled=false WHERE id=%s", (subject,))
+    with psycopg.connect(database) as admin:
+        admin.execute("UPDATE identity_subjects SET enabled=false WHERE id=%s", (subject,))
+    with psycopg.connect(restricted) as reader:
+        assert reader.execute("SELECT * FROM p0_lock_identity(%s,%s,%s)", (claims["iss"], claims["sub"], workspace)).fetchone() is None
 
 
 def test_scopes_are_server_authority_and_audit_is_durable(boundary):

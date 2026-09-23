@@ -49,7 +49,7 @@ class IdentityBoundary:
             await connection.execute("SET LOCAL statement_timeout = '3s'")
             subject = None
             if claims:
-                cursor = await connection.execute("SELECT id, revision FROM identity_subjects WHERE issuer=%s AND subject=%s AND workspace_id=%s AND enabled AND expires_at > clock_timestamp() AND EXISTS (SELECT 1 FROM workspaces WHERE id=identity_subjects.workspace_id AND status='active') FOR SHARE", (self.issuer, claims["sub"], self.workspace_id))
+                cursor = await connection.execute("SELECT id, revision FROM public.p0_lock_identity(%s,%s,%s)", (self.issuer, claims["sub"], self.workspace_id))
                 subject = await cursor.fetchone()
             if subject:
                 cursor = await connection.execute("SELECT scope, effect FROM permission_grants WHERE workspace_id=%s AND principal_type='identity' AND principal_id=%s AND expires_at > clock_timestamp() AND constraints='{}'::jsonb", (self.workspace_id, str(subject[0])))

@@ -23,6 +23,7 @@ def test_clean_upgrade_empty_rollback_and_populated_preservation():
             assert migrate("upgrade", "head").returncode == 0
             workspace = uuid4()
             with psycopg.connect(database) as connection:
+                expected_revision = connection.execute("SELECT version_num FROM alembic_version").fetchone()[0]
                 connection.execute("INSERT INTO workspaces (id,slug,display_name) VALUES (%s,%s,'preservation')", (workspace, str(workspace)))
                 connection.execute("INSERT INTO object_inventory (storage_key,workspace_id,content_hash,byte_size,content_type,retain_until) VALUES (%s,%s,%s,1,'text/plain',now())", (str(workspace) + "/key", workspace, "a" * 64))
             result = migrate("downgrade", "0012_publication_profile_scope")
@@ -30,6 +31,13 @@ def test_clean_upgrade_empty_rollback_and_populated_preservation():
             assert "preserve object identity" in result.stderr
             with psycopg.connect(database) as connection:
                 assert connection.execute("SELECT count(*) FROM object_inventory").fetchone()[0] == 1
-                assert connection.execute("SELECT version_num FROM alembic_version").fetchone()[0] == "0014_object_inventory"
+                assert connection.execute("SELECT version_num FROM alembic_version").fetchone()[0] == expected_revision
+                connection.execute("INSERT INTO v4_goals (id,workspace_id,state) VALUES (%s,%s,'active')", (uuid4(),workspace))
+            result = migrate("downgrade", "0015_identity_lock")
+            assert result.returncode != 0
+            assert "preserve V4 cycle guards" in result.stderr
+            with psycopg.connect(database) as connection:
+                assert connection.execute("SELECT count(*) FROM v4_goals").fetchone()[0] == 1
+                assert connection.execute("SELECT version_num FROM alembic_version").fetchone()[0] == expected_revision
         finally:
             admin.execute(psycopg.sql.SQL("DROP DATABASE {} WITH (FORCE)").format(psycopg.sql.Identifier(name)))
