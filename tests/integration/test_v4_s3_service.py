@@ -69,13 +69,16 @@ def s3_service(tmp_path_factory):
         {"name": "isolated-writer", "credentials": [{"accessKey": writer_key, "secretKey": writer_secret}], "actions": ["Read:p0-fixture", "Write:p0-fixture", "List:p0-fixture"]},
     ]}))
     config.chmod(0o600)
-    container = subprocess.check_output(["docker", "run", "-d", "--rm", "--read-only", "--memory=512m", "--cpus=1", "--tmpfs", "/data:rw,size=256m", "--tmpfs", "/tmp:rw,size=16m", "-v", f"{config}:/etc/s3.json:ro", SEAWEED_IMAGE, "server", "-dir=/data", "-ip=127.0.0.1", "-ip.bind=0.0.0.0", "-filer", "-s3", "-s3.config=/etc/s3.json", "-volume.max=1", "-master.volumeSizeLimitMB=16"], text=True).strip()
+    uid, gid = os.getuid(), os.getgid()
+    container = subprocess.check_output(["docker", "run", "-d", "--rm", "--read-only", "--user", f"{uid}:{gid}", "--memory=512m", "--cpus=1", "--tmpfs", f"/data:rw,size=256m,uid={uid},gid={gid},mode=0700", "--tmpfs", "/tmp:rw,size=16m", "-v", f"{config}:/etc/s3.json:ro", SEAWEED_IMAGE, "server", "-dir=/data", "-ip=127.0.0.1", "-ip.bind=0.0.0.0", "-filer", "-s3", "-s3.config=/etc/s3.json", "-volume.max=1", "-master.volumeSizeLimitMB=16"], text=True).strip()
     try:
         address = subprocess.check_output(["docker", "inspect", "-f", "{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}", container], text=True).strip()
 
         def client(access_key, secret_key):
             return boto3.client("s3", endpoint_url=f"http://{address}:8333", region_name="us-east-1", aws_access_key_id=access_key, aws_secret_access_key=secret_key, config=Config(connect_timeout=2, read_timeout=5, retries={"max_attempts": 0}, s3={"addressing_style": "path"}))
 
+        assert subprocess.check_output(["docker", "exec", container, "id", "-u"], text=True).strip() == str(uid)
+        subprocess.run(["docker", "exec", container, "test", "-r", "/etc/s3.json"], check=True)
         admin = client(admin_key, admin_secret)
         for attempt in range(45):
             try:

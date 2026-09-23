@@ -908,7 +908,7 @@
     },
     {
       "path": "tests/integration/test_v4_s3_service.py",
-      "sha256": "58833778563c052ccac096d84f03c978eed854d66c6627a6188babb14f619513"
+      "sha256": "d5aebee88caaddd76d15aca40e70bf249c7478adbf4663d457ee24592954f4f5"
     },
     {
       "path": "tests/integration/test_v4_storage_integrity.py",

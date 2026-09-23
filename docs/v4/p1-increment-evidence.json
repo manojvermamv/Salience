@@ -1,7 +1,7 @@
 {
   "recorded_at": "2026-09-23",
   "scope": "P1a dry-run local increment; not RG1 qualification",
-  "source_evidence_lock_sha256": "016048ee649ce421b33064031a1cac6686d9d7b72652cfe62323cd23bcbdec4d",
+  "source_evidence_lock_sha256": "f01dc3092b59defb5f6bb0dbdccb814ebbbd579e253fe7607db910dd681168ed",
   "commands": [
     {
       "command": ".venv/bin/python -m pytest -p no:cacheprovider tests/integration/test_v4_cycle_admission.py tests/integration/test_v4_identity_isolation.py tests/integration/test_v4_migrations.py -q",
@@ -24,12 +24,24 @@
       "seconds": 259.625,
       "junit": "artifacts/v4-p0/p1-regression.xml",
       "junit_sha256": "e90ed2b1e0c538a9ac58bdffec0a6348141ef79180af549a25cd14e54ae49fd9"
+    },
+    {
+      "command": ".venv/bin/python -m pytest -p no:cacheprovider tests/integration/test_v4_s3_service.py -q",
+      "exit_code": 0,
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 14.267,
+      "junit": "artifacts/v4-p0/ci-storage-repair.xml",
+      "junit_sha256": "7b724652a637cb9f2029cf09ba2b4cfbec4d8b303063ea6cdefe8f79582b0db3"
     }
   ],
   "additional_verification": {
     "migration_after_preservation_assertion": "1 passed; tests/integration/test_v4_migrations.py",
     "documentation_tests": 13,
     "diagrams": 6,
-    "independent_code_review": "Two Important validator findings repaired and re-reviewed; no unresolved Critical or Important finding; not production safety approval"
+    "independent_code_review": "Two Important validator findings repaired and re-reviewed; no unresolved Critical or Important finding; not production safety approval",
+    "remote_initial_run": "35860805982: documentation PASS, application 280 passed/4 errors; restricted SeaweedFS config ownership differed from runtime UID; repaired without broadening credential permissions"
   }
 }

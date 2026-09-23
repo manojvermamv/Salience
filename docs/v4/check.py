@@ -290,7 +290,7 @@ def release_errors(content: str, release: dict) -> list[str]:
     elif local == "PASS":
         for name in ["focused_p0", "full_non_live", "documentation_tests"]:
             result = verification.get(name, {})
-            if not isinstance(result, dict) or type(result.get("passed")) is not int or result["passed"] <= 0 or any(result.get(field, 0) != 0 for field in ["failed", "skipped", "errors", "exit_code"]):
+            if not isinstance(result, dict) or type(result.get("passed")) is not int or result["passed"] <= 0 or any(type(result.get(field)) is not int or result[field] != 0 for field in ["failed", "skipped", "errors", "exit_code"]):
                 errors.append(f"unsuccessful local suite: {name}")
         diagrams = verification.get("mermaid_diagrams", {})
         if not isinstance(diagrams, dict) or diagrams.get("rendered") != 6 or diagrams.get("failed") != 0:

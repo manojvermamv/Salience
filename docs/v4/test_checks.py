@@ -59,6 +59,9 @@ class GateChecks(unittest.TestCase):
             release = deepcopy(baseline)
             release["verification"]["focused_p0"][field] = 1
             self.assertTrue(CHECK.release_errors(BLUEPRINT, release))
+            release = deepcopy(baseline)
+            release["verification"]["focused_p0"].pop(field)
+            self.assertTrue(CHECK.release_errors(BLUEPRINT, release))
         release = deepcopy(baseline)
         release["external_checks"][0].pop("evidence")
         self.assertTrue(CHECK.release_errors(BLUEPRINT, release))

@@ -72,7 +72,7 @@
     },
     {
       "path": "docs/v4/p1-increment-evidence.json",
-      "sha256": "a89df24d427a95c25fc553e0459039f691541e840c2d712ae7b4a7531be35e94",
+      "sha256": "0ff2183c8993d72b05832db167e82433c2bced74e047b3609574877701ac591f",
       "local_only": false
     }
   ],
@@ -103,7 +103,7 @@
     {
       "check": "remote repository gate enforcement",
       "status": "FAIL",
-      "reason": "Main enforcement now verified strict/app-bound with administrators and PR approval; baseline CI has only verify. New p0-regression job must be published and pass on current implementation head before merge.",
+      "reason": "Strict app-bound main protection verified; run 35860805982 failed storage fixture ownership despite 280 passing tests. Matching-UID fixture repair passes five local storage tests; repaired-head remote CI pending.",
       "evidence": "artifacts/v4-p0/repository-review-before-publication.json"
     }
   ],
