@@ -1,11 +1,8 @@
 # Niche bootstrap
 
-`ContentProgramService.create_from_niche` accepts only a niche, creates a
-canonical workspace and content program, invokes the deterministic research and
-strategy agent contracts, and persists fixture evidence, scoped evidence and
-semantic memory, assumptions, provenance, and an immutable strategy version.
+Superseded by the [V4 production implementation blueprint](<v4/IMPLEMENTATION-BLUEPRINT.md>). Use that document for all future work; this page preserves navigation only.
 
-Fixture research is the default clean-deployment connector. It makes no browser
-or account request and labels its output as provisional. Production connectors
-must implement the same bounded `ResearchConnector` contract and provide their
-own policy, consent, provenance, jurisdiction, and retention handling.
+[Original historical evidence](<archive/2026-09-22/docs/bootstrap.md.snapshot>) is retained with its inventory hash. It is superseded source text, not a current execution plan.
+
+<!-- Historical heading anchors retained for incoming links. -->
+<a id="niche-bootstrap"></a>

@@ -1,0 +1,27 @@
+services:
+  p0-api:
+    build: .
+    command: ["uvicorn", "salience.api.app:create_configured_app", "--factory", "--host", "0.0.0.0", "--port", "8000", "--limit-concurrency", "32", "--timeout-keep-alive", "5", "--no-access-log"]
+    environment:
+      SALIENCE_DEPLOYMENT_MODE: p0
+      SALIENCE_TENANCY: single-workspace
+      SALIENCE_EFFECTS_ENABLED: "false"
+      DATABASE_URL: ${P0_DATABASE_URL:?Use an isolated database and scoped application role}
+      SALIENCE_WORKSPACE_ID: ${P0_WORKSPACE_ID:?Select the isolated workspace}
+      SALIENCE_IDENTITY_ISSUER: ${P0_IDENTITY_ISSUER:?Configure the approved issuer}
+      SALIENCE_IDENTITY_AUDIENCE: ${P0_IDENTITY_AUDIENCE:?Configure the control API audience}
+      SALIENCE_IDENTITY_PUBLIC_KEY_FILE: /run/identity/public.pem
+    volumes:
+      - ${P0_IDENTITY_PUBLIC_KEY_FILE:?Provide a reviewed RSA public key}:/run/identity/public.pem:ro
+    ports:
+      - "127.0.0.1:18000:8000"
+    read_only: true
+    user: "65532:65532"
+    tmpfs:
+      - /tmp:size=16m
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 512m
+    cpus: 1
+    pids_limit: 128
+    stop_grace_period: 10s

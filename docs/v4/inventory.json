@@ -1,0 +1,2887 @@
+{
+  "baseline_commit": "8e50d68efbf2bec2aabfb2fe3226e01635de2adb",
+  "inventory_date": "2026-09-22",
+  "scope": "All docs, prompts, master docs, architecture assets, repository-owned instructions and discovered local/worktree trace/checkpoint evidence; excludes Git internals, dependency installations and generated build/cache trees. No source was consolidated at inventory time.",
+  "files": [
+    {
+      "path": ".agents/skills/archify/SKILL.md",
+      "sha256": "10094272d6d1b4ad0f2c2e0880cb646fe4991454a2dc3d854aecb27e7407ee1f",
+      "bytes": 16396,
+      "tracked_in_main": true,
+      "category": "instruction",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".agents/skills/archify/THIRD_PARTY_NOTICES.md",
+      "sha256": "0b7fb59365dc21c93b0f62526d74ee913aeec9ae532c112bc76afa7edcd56e14",
+      "bytes": 5248,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".agents/skills/archify/bin/preview.mjs",
+      "sha256": "6d41e491d42070c05b5e278548714da1fcef6e6adfd84a0391ab2bf12f47373c",
+      "bytes": 23722,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".agents/skills/archify/brand-marks/README.md",
+      "sha256": "8b771a16322ce9ea47fdc00b9935e33adf0f3af608f2d735235443e15ef622e2",
+      "bytes": 1449,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".agents/skills/archify/references/authoring-contract.md",
+      "sha256": "873494557cf9be91d9eed8ecce37072886c0e98b851ad59ab8938f405c6fbc5e",
+      "bytes": 13962,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".agents/skills/archify/references/brand-marks.md",
+      "sha256": "8010869da70677e686ecb312d9c3eec2d20723a44f817ab2bbf5525361c8a136",
+      "bytes": 2179,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".agents/skills/archify/references/delivery-contract.md",
+      "sha256": "a614c31f41d270995a5aee99036532470a43722f8208fdc8ef922805914d1d01",
+      "bytes": 8604,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".agents/skills/archify/references/viewer-runtime.md",
+      "sha256": "dc0d9ffe6b9987d73d2d48710fce5ab4c120bbf1940ff1eb9355259c5d4f32b6",
+      "bytes": 4243,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".agents/skills/archify/renderers/dataflow/README.md",
+      "sha256": "18c4f86ba62fcee371d9fe38094625b3a68cc76231c36ab8c8124acb4c1ffa42",
+      "bytes": 4202,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".agents/skills/archify/renderers/lifecycle/README.md",
+      "sha256": "f8ef88dc859189bb18bad7bb2e27d997cbc9d30936cf20f8bf401bae7f57deec",
+      "bytes": 5197,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".agents/skills/archify/renderers/sequence/README.md",
+      "sha256": "a442335dcf44b1587d3ad88809e31b001a4fafdf7a134040e8b1927455af4206",
+      "bytes": 4828,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".agents/skills/archify/renderers/workflow/README.md",
+      "sha256": "7e1bd65cc5cc38206304ae2f61f4f0f493da98d71a111a61d0754c9da362c5c9",
+      "bytes": 10386,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".agents/skills/archify/schemas/README.md",
+      "sha256": "f4ca94ec18cf60ad02211f2c5bb64e9c26a87467a22215e06db34dbfc5d6145f",
+      "bytes": 11462,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".agents/skills/archify/test/artifact-receipt-flush.test.mjs",
+      "sha256": "666118920612f0b2c479c0521e86bcc1a4be1e46f0972fbf53f9bac77c80dce7",
+      "bytes": 5299,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".agents/skills/archify/test/chapter-delta-preview.test.mjs",
+      "sha256": "834fab9360c66e333e028879d12c751e540e26618ee39cdcb6def1699376dbe3",
+      "bytes": 7538,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".agents/skills/archify/test/intent-trace-browser.test.mjs",
+      "sha256": "1b7b8db09d1e31e23ff9d662d0b7dff09e69f519db2ecdb4ec0922cf8df277e1",
+      "bytes": 21100,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".agents/skills/archify/test/intent-trace.test.mjs",
+      "sha256": "055a23bed7698ba3273dddc602bc76d8b0bc01298ed2ac9c91600991334bf7f6",
+      "bytes": 5747,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".agents/skills/archify/test/preview-contract.test.mjs",
+      "sha256": "fab520b1c709e23b6393684f57db76fcf1aff5425bef838652efa355e63cccd3",
+      "bytes": 2066,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".agents/skills/archify/test/preview.test.mjs",
+      "sha256": "c7a8a5f4ac26082ca362e75fc3f7e183c2219612f47754f94aec1d0e669958a4",
+      "bytes": 24185,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".agents/skills/archify/test/repair-receipt.test.mjs",
+      "sha256": "f0618c73c372d11dc68e9706e6995cc0d5cfde2a13614a12c8f5ff4e9ae0a522",
+      "bytes": 8065,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/.agents/skills/archify/SKILL.md",
+      "sha256": "10094272d6d1b4ad0f2c2e0880cb646fe4991454a2dc3d854aecb27e7407ee1f",
+      "bytes": 16396,
+      "tracked_in_main": false,
+      "category": "instruction",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/.agents/skills/archify/THIRD_PARTY_NOTICES.md",
+      "sha256": "0b7fb59365dc21c93b0f62526d74ee913aeec9ae532c112bc76afa7edcd56e14",
+      "bytes": 5248,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/.agents/skills/archify/bin/preview.mjs",
+      "sha256": "6d41e491d42070c05b5e278548714da1fcef6e6adfd84a0391ab2bf12f47373c",
+      "bytes": 23722,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/.agents/skills/archify/brand-marks/README.md",
+      "sha256": "8b771a16322ce9ea47fdc00b9935e33adf0f3af608f2d735235443e15ef622e2",
+      "bytes": 1449,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/.agents/skills/archify/references/authoring-contract.md",
+      "sha256": "873494557cf9be91d9eed8ecce37072886c0e98b851ad59ab8938f405c6fbc5e",
+      "bytes": 13962,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/.agents/skills/archify/references/brand-marks.md",
+      "sha256": "8010869da70677e686ecb312d9c3eec2d20723a44f817ab2bbf5525361c8a136",
+      "bytes": 2179,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/.agents/skills/archify/references/delivery-contract.md",
+      "sha256": "a614c31f41d270995a5aee99036532470a43722f8208fdc8ef922805914d1d01",
+      "bytes": 8604,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/.agents/skills/archify/references/viewer-runtime.md",
+      "sha256": "dc0d9ffe6b9987d73d2d48710fce5ab4c120bbf1940ff1eb9355259c5d4f32b6",
+      "bytes": 4243,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/.agents/skills/archify/renderers/dataflow/README.md",
+      "sha256": "18c4f86ba62fcee371d9fe38094625b3a68cc76231c36ab8c8124acb4c1ffa42",
+      "bytes": 4202,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/.agents/skills/archify/renderers/lifecycle/README.md",
+      "sha256": "f8ef88dc859189bb18bad7bb2e27d997cbc9d30936cf20f8bf401bae7f57deec",
+      "bytes": 5197,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/.agents/skills/archify/renderers/sequence/README.md",
+      "sha256": "a442335dcf44b1587d3ad88809e31b001a4fafdf7a134040e8b1927455af4206",
+      "bytes": 4828,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/.agents/skills/archify/renderers/workflow/README.md",
+      "sha256": "7e1bd65cc5cc38206304ae2f61f4f0f493da98d71a111a61d0754c9da362c5c9",
+      "bytes": 10386,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/.agents/skills/archify/schemas/README.md",
+      "sha256": "f4ca94ec18cf60ad02211f2c5bb64e9c26a87467a22215e06db34dbfc5d6145f",
+      "bytes": 11462,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/.agents/skills/archify/test/artifact-receipt-flush.test.mjs",
+      "sha256": "666118920612f0b2c479c0521e86bcc1a4be1e46f0972fbf53f9bac77c80dce7",
+      "bytes": 5299,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/.agents/skills/archify/test/chapter-delta-preview.test.mjs",
+      "sha256": "834fab9360c66e333e028879d12c751e540e26618ee39cdcb6def1699376dbe3",
+      "bytes": 7538,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/.agents/skills/archify/test/intent-trace-browser.test.mjs",
+      "sha256": "1b7b8db09d1e31e23ff9d662d0b7dff09e69f519db2ecdb4ec0922cf8df277e1",
+      "bytes": 21100,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/.agents/skills/archify/test/intent-trace.test.mjs",
+      "sha256": "055a23bed7698ba3273dddc602bc76d8b0bc01298ed2ac9c91600991334bf7f6",
+      "bytes": 5747,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/.agents/skills/archify/test/preview-contract.test.mjs",
+      "sha256": "fab520b1c709e23b6393684f57db76fcf1aff5425bef838652efa355e63cccd3",
+      "bytes": 2066,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/.agents/skills/archify/test/preview.test.mjs",
+      "sha256": "c7a8a5f4ac26082ca362e75fc3f7e183c2219612f47754f94aec1d0e669958a4",
+      "bytes": 24185,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/.agents/skills/archify/test/repair-receipt.test.mjs",
+      "sha256": "f0618c73c372d11dc68e9706e6995cc0d5cfde2a13614a12c8f5ff4e9ae0a522",
+      "bytes": 8065,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/README.md",
+      "sha256": "f3763825b3bc615561cdd878102dde58889ca2f4978c6132aa5b0c625f1ca089",
+      "bytes": 17681,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/docs/adr/0001-durable-runtime.md",
+      "sha256": "b41c23fe0a9d2e180d30e4ac233a22f4bf466b5b62cab5b0e9b1548062c530cd",
+      "bytes": 1815,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/docs/adr/0002-object-storage.md",
+      "sha256": "1c0ba49fc0aa928715b4dc3f6ea8dba6c0de16157e9f79cb67cfb644ce4f1feb",
+      "bytes": 1897,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/docs/adr/0003-api-persistence-and-contracts.md",
+      "sha256": "c7182cd23c08b65213c6fa58212b402f546c117d7ed652133530553a2f04b3ac",
+      "bytes": 1917,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/docs/adr/0004-governance-secrets-and-protocols.md",
+      "sha256": "0f7f8ce508222398e6a743beeac9b060c658f2aadcfaec0b10428ae8ed4d1031",
+      "bytes": 1926,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/docs/adr/0005-mcp-a2a-and-browser-sdk-adoption.md",
+      "sha256": "8bc7fbf513356b2804f1931c271614f9bd7813328a48056734b083048d56bc47",
+      "bytes": 2995,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/docs/agents.md",
+      "sha256": "6a3f7c19371f5a7daa87e34ece22a11baf55ef1d17208f46c13c9cb5904b8ae7",
+      "bytes": 2410,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/docs/api.md",
+      "sha256": "d25e39178f7310e7acea8bc795596085cf2cecf92d4538be0e3847d42a9fd1bb",
+      "bytes": 3486,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/docs/architecture.md",
+      "sha256": "946ea8aacea9d168294eafc6dbbd24edc5d0f2c69fbf5fece7c116e63589eb00",
+      "bytes": 1675,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/docs/bootstrap.md",
+      "sha256": "143320985d501ab5aab18798534ed792ea3d9c9ca4779bfe7e18725224b9a077",
+      "bytes": 637,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/docs/compatibility.md",
+      "sha256": "de9745608fb57014eff8372af3168030f8071c92b4b5f9c82722f01ca8a69473",
+      "bytes": 1187,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/docs/contracts/adapter-contracts.md",
+      "sha256": "7572693b70598a0ba1f7829b33492133a643267410217e67c26e119bd27ff3dd",
+      "bytes": 2050,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/docs/core/00_BUILD_AGENT_PROMPT.md",
+      "sha256": "9c24cc3b232cad25f0650f18438a9106a5dbeda6e7f6ddfc764c6ac90413613c",
+      "bytes": 6393,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/docs/core/01_PRODUCT_CONTEXT_AND_INTENT.md",
+      "sha256": "2f0ab3a836a37ff9815af4c0f840ace52a577471c0af4bb28b00364000d1adf9",
+      "bytes": 7239,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/docs/core/02_REFERENCE_RESEARCH.md",
+      "sha256": "c1bda4694f36b51e157499144310425a1e895ff4fb3a21d968f1d74257c39f48",
+      "bytes": 20260,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/docs/core/03_TARGET_ARCHITECTURE.md",
+      "sha256": "de4ff15e13b35d354bc69a1976ea8a1b83e139b4d30c69f5ac9e3a570e991d63",
+      "bytes": 15762,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/docs/core/04_BROWSER_APP_AND_RESEARCH_CONTROL.md",
+      "sha256": "8d3f48448e995e0e035c2bf3e01f05fac03c24993a8b8d833b74a46555ce8c35",
+      "bytes": 4183,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/docs/core/05_IMPLEMENTATION_PLAN.md",
+      "sha256": "03e12a8610f01cda5f85b393870e1ad021d9655940654f7262b3c6bf8bd608f2",
+      "bytes": 7825,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/docs/core/06_ACCEPTANCE_TESTS_AND_GUARDRAILS.md",
+      "sha256": "45140b8ea60f0dcf7b22ee5e1da3d6bcb473d6709345f23bed2df6aab4abc8ec",
+      "bytes": 8187,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/docs/core/07_REUSE_EXTENSION_AND_FUTURE_PROOFING.md",
+      "sha256": "2fe977ebe26442c13bb7a30ac8678584f98a02fb7a8c9b7d5c6bd09f58d8b9cf",
+      "bytes": 6214,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/docs/core/08_LEAD_AGENT_AND_CREATIVE_TOOL_RUNTIME.md",
+      "sha256": "e09519b29e5bd72b60385cf11c9f7ca15cac57b1316bb0a38eeb91d3eb46b0a2",
+      "bytes": 5830,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/docs/core/09_CALLABLE_AGENTS_AND_ENGINEERING_METHOD.md",
+      "sha256": "ae7e580d0a4b43f1a1df19049208f92bf5b3fa39caa7c6033b75862ca9d64369",
+      "bytes": 6400,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/docs/core/README.md",
+      "sha256": "7960ef750a38a63b2982a1494c373f8b6b406f74836da550c898b67a7807e58d",
+      "bytes": 3315,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/docs/database.md",
+      "sha256": "676c120810424adcdbca9a9c0dc0c638248778832fe9d40e9ce980bbee80a3d6",
+      "bytes": 4923,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/docs/dependencies.md",
+      "sha256": "abd60fd401115c506e2ca80ec386736e0006d734db5a2237bf6746da7b5079af",
+      "bytes": 3482,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/docs/deployment.md",
+      "sha256": "13a317829842542d308cd1c39f8619ff86c8b774f5cbbdd4a4d9f107131a3185",
+      "bytes": 2087,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/docs/governance.md",
+      "sha256": "262bc0d2086fb10f6132bccca5d74d5ed3c56baa900fcd3ee59b146e668accc2",
+      "bytes": 3833,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/docs/implementation-progress.md",
+      "sha256": "665128fcaf1219b0517db068160eea9666c2445f0c8f218d32e8acde249f4e47",
+      "bytes": 45049,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/docs/limitations.md",
+      "sha256": "06104b16ec7002167ce193e0b7e8cfe781c5fbe67f14f8e1fd542f6d14ea9271",
+      "bytes": 2484,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/docs/local-development.md",
+      "sha256": "10dad0fefd10e08b55d37b78fc7841a908a6669fc18893d069e661fd6f33e055",
+      "bytes": 738,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/docs/mcp-a2a.md",
+      "sha256": "c536b468768d1b280365de86670aeaf790284d68dd316f8b6ddedabb9380bc06",
+      "bytes": 1071,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/docs/memory.md",
+      "sha256": "aeeabd0d30f2ab2ca41a6f024ccd0406bc20c0c28f49e7ece7cf798713d05e6d",
+      "bytes": 714,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/docs/model-execution.md",
+      "sha256": "3a0095f817ec9fbb4c33ebc1b00c6516340b6fa593f905ceec7a7d57710d8fc9",
+      "bytes": 833,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/docs/model-gateway.md",
+      "sha256": "5e055f63f7fea4e4edc239298eb4a0e47acb39ef079e0fec8a6d9ffcc5c72f5d",
+      "bytes": 593,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/docs/phase-7-handoff.md",
+      "sha256": "107bbe282b895f08937968f407d6b6f9dcfc52a3b7b3b02cc5de5b0b44e7d76a",
+      "bytes": 778,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/docs/phase-9-handoff.md",
+      "sha256": "1a54aa6fdbade9f7c865119dc1e16a28c04ce48d123d991030fc0fc0ccb74a9d",
+      "bytes": 2410,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/docs/plugins.md",
+      "sha256": "51a22f5565311f2e2ac575dbb12941805a4e87675e28f62590f443c9db65c3d9",
+      "bytes": 1457,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/docs/recovery.md",
+      "sha256": "0c0b62e9fba9faefe9bdeae3c62905454a384b744b0fc632150acb181c25946d",
+      "bytes": 1943,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/docs/research.md",
+      "sha256": "2e2cc0b82b3876ee69993ecd11508d34e85b572fe174886f19ce6f9971ab5053",
+      "bytes": 2131,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/docs/superpowers/plans/2026-09-12-browser-evidence.md",
+      "sha256": "12adc2327e332e219deeb41094a67873878060a58a5770f188d90d3a1019b38b",
+      "bytes": 18891,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/docs/superpowers/plans/2026-09-12-intelligence-loop-phases-5-6.md",
+      "sha256": "005432e80f72297e3c4c44766b77199931e9bf5f5c5d7290a415565d32ada1e3",
+      "bytes": 33787,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/docs/superpowers/plans/2026-09-12-phases-1-4-foundation.md",
+      "sha256": "a54a3ae82e027663782e832b1d615b98896bc96d55b3ea2f90482d5e62e9b6b9",
+      "bytes": 33964,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/docs/superpowers/plans/2026-09-13-creative-production-phases-7-8.md",
+      "sha256": "786eea554dc9997868063cf86a66911db98ef9a7d824b919a9a5d1bfc170eddf",
+      "bytes": 33066,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/docs/superpowers/plans/2026-09-13-phase-7-8-review-repairs.md",
+      "sha256": "9bc7e49558f7293907cb390a6b7be0cc5e51ba53bdbecac73420a3441ca766ab",
+      "bytes": 4019,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/docs/superpowers/specs/2026-09-12-browser-evidence-design.md",
+      "sha256": "815e4909402ff5df957a607f9d5129d1c90b2f1f1067502955bc984ca2768364",
+      "bytes": 8346,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/docs/superpowers/specs/2026-09-12-intelligence-loop-phases-5-6-design.md",
+      "sha256": "560ff30bf09f2fd196f3cfaf5ac226833d6bd9c4e9ff3f6fd5bf83d8c56ebb25",
+      "bytes": 19338,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/docs/superpowers/specs/2026-09-13-creative-production-phases-7-8-design.md",
+      "sha256": "40ad68143c171862afe0de7d8e6e3ada38a3df791562dae3639ead67a94b6ba5",
+      "bytes": 14444,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/docs/trust-model.md",
+      "sha256": "726b8b2fcba6206aac0d9855e2454ea2b97b166d4ad774b74d4449bc49eb3633",
+      "bytes": 1205,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/docs/verification.md",
+      "sha256": "c44e5bff041988618044f13ac58319e314de9a36c2b21fc5f531263dbc9564c9",
+      "bytes": 4378,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/docs/workflows.md",
+      "sha256": "86fd259b690923b52753b047f3f41902def2ddefb2377f134607d1bbc58c267f",
+      "bytes": 2429,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/prompts/Build Creative Production Loop \u2014 Phases 7\u20138 End-to-End.md",
+      "sha256": "06f16aa324b72b3ea80ac3f6844db1829480a7439644928516e6b30610678d93",
+      "bytes": 25427,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/prompts/Build Phases 1\u20134 End-to-End.md",
+      "sha256": "4486a0868585423a951e1a874eb55714cd35242963f9a0f47c9d53420d7c101a",
+      "bytes": 22791,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/prompts/Build Real Intelligence Loop \u2014 Pre-Phase 5 + Phases 5\u20136 End-to-End.md",
+      "sha256": "8222763df2b907f23e2495dfcd8cbba05d0d4d81c59e278c88dc148e2fab567e",
+      "bytes": 18142,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/creative-production-phases-7-8/prompts/Install and Verify Browser Evidence on Linux EC2.md",
+      "sha256": "3bb10ab3e6f9b4cb159813e9100cb86c5847b448ce97e07ad3afbb0d2af808bb",
+      "bytes": 3102,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/.agents/skills/archify/SKILL.md",
+      "sha256": "10094272d6d1b4ad0f2c2e0880cb646fe4991454a2dc3d854aecb27e7407ee1f",
+      "bytes": 16396,
+      "tracked_in_main": false,
+      "category": "instruction",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/.agents/skills/archify/THIRD_PARTY_NOTICES.md",
+      "sha256": "0b7fb59365dc21c93b0f62526d74ee913aeec9ae532c112bc76afa7edcd56e14",
+      "bytes": 5248,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/.agents/skills/archify/bin/preview.mjs",
+      "sha256": "6d41e491d42070c05b5e278548714da1fcef6e6adfd84a0391ab2bf12f47373c",
+      "bytes": 23722,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/.agents/skills/archify/brand-marks/README.md",
+      "sha256": "8b771a16322ce9ea47fdc00b9935e33adf0f3af608f2d735235443e15ef622e2",
+      "bytes": 1449,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/.agents/skills/archify/references/authoring-contract.md",
+      "sha256": "873494557cf9be91d9eed8ecce37072886c0e98b851ad59ab8938f405c6fbc5e",
+      "bytes": 13962,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/.agents/skills/archify/references/brand-marks.md",
+      "sha256": "8010869da70677e686ecb312d9c3eec2d20723a44f817ab2bbf5525361c8a136",
+      "bytes": 2179,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/.agents/skills/archify/references/delivery-contract.md",
+      "sha256": "a614c31f41d270995a5aee99036532470a43722f8208fdc8ef922805914d1d01",
+      "bytes": 8604,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/.agents/skills/archify/references/viewer-runtime.md",
+      "sha256": "dc0d9ffe6b9987d73d2d48710fce5ab4c120bbf1940ff1eb9355259c5d4f32b6",
+      "bytes": 4243,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/.agents/skills/archify/renderers/dataflow/README.md",
+      "sha256": "18c4f86ba62fcee371d9fe38094625b3a68cc76231c36ab8c8124acb4c1ffa42",
+      "bytes": 4202,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/.agents/skills/archify/renderers/lifecycle/README.md",
+      "sha256": "f8ef88dc859189bb18bad7bb2e27d997cbc9d30936cf20f8bf401bae7f57deec",
+      "bytes": 5197,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/.agents/skills/archify/renderers/sequence/README.md",
+      "sha256": "a442335dcf44b1587d3ad88809e31b001a4fafdf7a134040e8b1927455af4206",
+      "bytes": 4828,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/.agents/skills/archify/renderers/workflow/README.md",
+      "sha256": "7e1bd65cc5cc38206304ae2f61f4f0f493da98d71a111a61d0754c9da362c5c9",
+      "bytes": 10386,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/.agents/skills/archify/schemas/README.md",
+      "sha256": "f4ca94ec18cf60ad02211f2c5bb64e9c26a87467a22215e06db34dbfc5d6145f",
+      "bytes": 11462,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/.agents/skills/archify/test/artifact-receipt-flush.test.mjs",
+      "sha256": "666118920612f0b2c479c0521e86bcc1a4be1e46f0972fbf53f9bac77c80dce7",
+      "bytes": 5299,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/.agents/skills/archify/test/chapter-delta-preview.test.mjs",
+      "sha256": "834fab9360c66e333e028879d12c751e540e26618ee39cdcb6def1699376dbe3",
+      "bytes": 7538,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/.agents/skills/archify/test/intent-trace-browser.test.mjs",
+      "sha256": "1b7b8db09d1e31e23ff9d662d0b7dff09e69f519db2ecdb4ec0922cf8df277e1",
+      "bytes": 21100,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/.agents/skills/archify/test/intent-trace.test.mjs",
+      "sha256": "055a23bed7698ba3273dddc602bc76d8b0bc01298ed2ac9c91600991334bf7f6",
+      "bytes": 5747,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/.agents/skills/archify/test/preview-contract.test.mjs",
+      "sha256": "fab520b1c709e23b6393684f57db76fcf1aff5425bef838652efa355e63cccd3",
+      "bytes": 2066,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/.agents/skills/archify/test/preview.test.mjs",
+      "sha256": "c7a8a5f4ac26082ca362e75fc3f7e183c2219612f47754f94aec1d0e669958a4",
+      "bytes": 24185,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/.agents/skills/archify/test/repair-receipt.test.mjs",
+      "sha256": "f0618c73c372d11dc68e9706e6995cc0d5cfde2a13614a12c8f5ff4e9ae0a522",
+      "bytes": 8065,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/.superpowers/sdd/phase9-final-review.md",
+      "sha256": "635e02dd2fcf87de84cb61d7226fe232f77b92212f1f2b8b4d0b5fad6bb51467",
+      "bytes": 5326,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/README.md",
+      "sha256": "a90bc3255e1ca1e6071feb98d6dc731c1a5c52f10bcb6df35a70ce51b2ab76e1",
+      "bytes": 21082,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/docs/adr/0001-durable-runtime.md",
+      "sha256": "b41c23fe0a9d2e180d30e4ac233a22f4bf466b5b62cab5b0e9b1548062c530cd",
+      "bytes": 1815,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/docs/adr/0002-object-storage.md",
+      "sha256": "1c0ba49fc0aa928715b4dc3f6ea8dba6c0de16157e9f79cb67cfb644ce4f1feb",
+      "bytes": 1897,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/docs/adr/0003-api-persistence-and-contracts.md",
+      "sha256": "c7182cd23c08b65213c6fa58212b402f546c117d7ed652133530553a2f04b3ac",
+      "bytes": 1917,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/docs/adr/0004-governance-secrets-and-protocols.md",
+      "sha256": "0f7f8ce508222398e6a743beeac9b060c658f2aadcfaec0b10428ae8ed4d1031",
+      "bytes": 1926,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/docs/adr/0005-mcp-a2a-and-browser-sdk-adoption.md",
+      "sha256": "8bc7fbf513356b2804f1931c271614f9bd7813328a48056734b083048d56bc47",
+      "bytes": 2995,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/docs/adr/0006-governed-publishing.md",
+      "sha256": "a50e696679d19fba9a755e6dbc62a062e7da22fd4826abb21d19d9d9a22ee8d7",
+      "bytes": 3981,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/docs/agents.md",
+      "sha256": "6a3f7c19371f5a7daa87e34ece22a11baf55ef1d17208f46c13c9cb5904b8ae7",
+      "bytes": 2410,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/docs/api.md",
+      "sha256": "fcd25d5066336629cd667ebeef7228c696b638fe37684ec9a2e8a4d80940c930",
+      "bytes": 5325,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/docs/architecture.md",
+      "sha256": "244d933d845c0c2527765f1525c13c48af7608ef1ea49770cf73a31bc515fa83",
+      "bytes": 3511,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/docs/bootstrap.md",
+      "sha256": "143320985d501ab5aab18798534ed792ea3d9c9ca4779bfe7e18725224b9a077",
+      "bytes": 637,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/docs/compatibility.md",
+      "sha256": "de9745608fb57014eff8372af3168030f8071c92b4b5f9c82722f01ca8a69473",
+      "bytes": 1187,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/docs/contracts/adapter-contracts.md",
+      "sha256": "7572693b70598a0ba1f7829b33492133a643267410217e67c26e119bd27ff3dd",
+      "bytes": 2050,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/docs/core/00_BUILD_AGENT_PROMPT.md",
+      "sha256": "9c24cc3b232cad25f0650f18438a9106a5dbeda6e7f6ddfc764c6ac90413613c",
+      "bytes": 6393,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/docs/core/01_PRODUCT_CONTEXT_AND_INTENT.md",
+      "sha256": "2f0ab3a836a37ff9815af4c0f840ace52a577471c0af4bb28b00364000d1adf9",
+      "bytes": 7239,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/docs/core/02_REFERENCE_RESEARCH.md",
+      "sha256": "c1bda4694f36b51e157499144310425a1e895ff4fb3a21d968f1d74257c39f48",
+      "bytes": 20260,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/docs/core/03_TARGET_ARCHITECTURE.md",
+      "sha256": "de4ff15e13b35d354bc69a1976ea8a1b83e139b4d30c69f5ac9e3a570e991d63",
+      "bytes": 15762,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/docs/core/04_BROWSER_APP_AND_RESEARCH_CONTROL.md",
+      "sha256": "8d3f48448e995e0e035c2bf3e01f05fac03c24993a8b8d833b74a46555ce8c35",
+      "bytes": 4183,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/docs/core/05_IMPLEMENTATION_PLAN.md",
+      "sha256": "03e12a8610f01cda5f85b393870e1ad021d9655940654f7262b3c6bf8bd608f2",
+      "bytes": 7825,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/docs/core/06_ACCEPTANCE_TESTS_AND_GUARDRAILS.md",
+      "sha256": "45140b8ea60f0dcf7b22ee5e1da3d6bcb473d6709345f23bed2df6aab4abc8ec",
+      "bytes": 8187,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/docs/core/07_REUSE_EXTENSION_AND_FUTURE_PROOFING.md",
+      "sha256": "2fe977ebe26442c13bb7a30ac8678584f98a02fb7a8c9b7d5c6bd09f58d8b9cf",
+      "bytes": 6214,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/docs/core/08_LEAD_AGENT_AND_CREATIVE_TOOL_RUNTIME.md",
+      "sha256": "e09519b29e5bd72b60385cf11c9f7ca15cac57b1316bb0a38eeb91d3eb46b0a2",
+      "bytes": 5830,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/docs/core/09_CALLABLE_AGENTS_AND_ENGINEERING_METHOD.md",
+      "sha256": "ae7e580d0a4b43f1a1df19049208f92bf5b3fa39caa7c6033b75862ca9d64369",
+      "bytes": 6400,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/docs/core/README.md",
+      "sha256": "7960ef750a38a63b2982a1494c373f8b6b406f74836da550c898b67a7807e58d",
+      "bytes": 3315,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/docs/database.md",
+      "sha256": "ba4215b0a69d6182a1bc386e7f947a2a9bd3d307b3363ab99cf732d490842766",
+      "bytes": 7550,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/docs/dependencies.md",
+      "sha256": "a12ea9edc5458bf49feec48a6e7886312376670c48db51821f48470a88fddccf",
+      "bytes": 4628,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/docs/deployment.md",
+      "sha256": "acc10344ac1ed8c7da3bd806ee1f5f02719f41b7fdb53f96ded3c50a46f8e7d7",
+      "bytes": 2483,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/docs/governance.md",
+      "sha256": "b3f32490b58c24841dc2cf015c09c866f21fd062e3731f3b2fe43fc7035313f9",
+      "bytes": 5889,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/docs/implementation-progress.md",
+      "sha256": "4a1aa5797fc4bcb2c7955ea2d6594d3aa669e027adba4cc0a850ffc0286ad036",
+      "bytes": 79856,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/docs/limitations.md",
+      "sha256": "0c2a992b192070f7b170d656a177775b5874147e3e0ce19e16a24c98f4e7c58c",
+      "bytes": 3781,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/docs/local-development.md",
+      "sha256": "10dad0fefd10e08b55d37b78fc7841a908a6669fc18893d069e661fd6f33e055",
+      "bytes": 738,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/docs/mcp-a2a.md",
+      "sha256": "c536b468768d1b280365de86670aeaf790284d68dd316f8b6ddedabb9380bc06",
+      "bytes": 1071,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/docs/memory.md",
+      "sha256": "aeeabd0d30f2ab2ca41a6f024ccd0406bc20c0c28f49e7ece7cf798713d05e6d",
+      "bytes": 714,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/docs/model-execution.md",
+      "sha256": "3a0095f817ec9fbb4c33ebc1b00c6516340b6fa593f905ceec7a7d57710d8fc9",
+      "bytes": 833,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/docs/model-gateway.md",
+      "sha256": "5e055f63f7fea4e4edc239298eb4a0e47acb39ef079e0fec8a6d9ffcc5c72f5d",
+      "bytes": 593,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/docs/phase-7-handoff.md",
+      "sha256": "107bbe282b895f08937968f407d6b6f9dcfc52a3b7b3b02cc5de5b0b44e7d76a",
+      "bytes": 778,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/docs/phase-9-handoff.md",
+      "sha256": "41758937d0470a7dc07ab8896c62e408f6d7df5e3fdc1778dac0ce4b668627a0",
+      "bytes": 3637,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/docs/plugins.md",
+      "sha256": "26f92a545483b717c14989f5d7b469eaa854697fcbc7b7956ee36cfb95e80b8e",
+      "bytes": 1457,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/docs/recovery.md",
+      "sha256": "e430889320462cd423fab1ab0b018ca4e110464a1939ac281d9b60b905aab08a",
+      "bytes": 3288,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/docs/research.md",
+      "sha256": "2e2cc0b82b3876ee69993ecd11508d34e85b572fe174886f19ce6f9971ab5053",
+      "bytes": 2131,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/docs/superpowers/plans/2026-09-12-browser-evidence.md",
+      "sha256": "12adc2327e332e219deeb41094a67873878060a58a5770f188d90d3a1019b38b",
+      "bytes": 18891,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/docs/superpowers/plans/2026-09-12-intelligence-loop-phases-5-6.md",
+      "sha256": "005432e80f72297e3c4c44766b77199931e9bf5f5c5d7290a415565d32ada1e3",
+      "bytes": 33787,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/docs/superpowers/plans/2026-09-12-phases-1-4-foundation.md",
+      "sha256": "a54a3ae82e027663782e832b1d615b98896bc96d55b3ea2f90482d5e62e9b6b9",
+      "bytes": 33964,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/docs/superpowers/plans/2026-09-13-creative-production-phases-7-8.md",
+      "sha256": "786eea554dc9997868063cf86a66911db98ef9a7d824b919a9a5d1bfc170eddf",
+      "bytes": 33066,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/docs/superpowers/plans/2026-09-13-phase-7-8-release-gate-phase-9-publishing.md",
+      "sha256": "c97dcd0ffb9337bb1b30e22ec2d5c32f99cc317a4cc0236a3053711b4801dded",
+      "bytes": 46999,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/docs/superpowers/plans/2026-09-13-phase-7-8-review-repairs.md",
+      "sha256": "9bc7e49558f7293907cb390a6b7be0cc5e51ba53bdbecac73420a3441ca766ab",
+      "bytes": 4019,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/docs/superpowers/plans/2026-09-13-phase-9-independent-review-repairs.md",
+      "sha256": "239209e92831d2265bdefd13439e7b885100b1238fabc0222d8d46f007c12818",
+      "bytes": 16617,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/docs/superpowers/reviews/2026-09-13-phase-7-8-release-gate.md",
+      "sha256": "ed1d7fec0f8b7ef512286a294e6d073278d8407dd8888ce7ca25d971f54fa305",
+      "bytes": 2858,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/docs/superpowers/reviews/2026-09-13-phase-9-independent-review.md",
+      "sha256": "dbd912b72ba8961efc1923e99445d601478a772a8f60197f1bb31f5ca3e188f0",
+      "bytes": 2692,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/docs/superpowers/specs/2026-09-12-browser-evidence-design.md",
+      "sha256": "815e4909402ff5df957a607f9d5129d1c90b2f1f1067502955bc984ca2768364",
+      "bytes": 8346,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/docs/superpowers/specs/2026-09-12-intelligence-loop-phases-5-6-design.md",
+      "sha256": "560ff30bf09f2fd196f3cfaf5ac226833d6bd9c4e9ff3f6fd5bf83d8c56ebb25",
+      "bytes": 19338,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/docs/superpowers/specs/2026-09-13-creative-production-phases-7-8-design.md",
+      "sha256": "40ad68143c171862afe0de7d8e6e3ada38a3df791562dae3639ead67a94b6ba5",
+      "bytes": 14444,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/docs/superpowers/specs/2026-09-13-phase-7-8-release-gate-phase-9-publishing-design.md",
+      "sha256": "604ca8184ee1f42c22cfa80db8101640ccf1bc3e773c55a17a2075d2d063e025",
+      "bytes": 15146,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/docs/trust-model.md",
+      "sha256": "726b8b2fcba6206aac0d9855e2454ea2b97b166d4ad774b74d4449bc49eb3633",
+      "bytes": 1205,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/docs/verification.md",
+      "sha256": "e8db643fd80e5e5f598b425348575bd38cdf9f1bcd326359938fcfa00ea77baf",
+      "bytes": 7595,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/docs/workflows.md",
+      "sha256": "6301ff82f4816f7300de6b1101b802e5af27475219faa9241a79e9a91b5e12b1",
+      "bytes": 4303,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/prompts/Build Creative Production Loop \u2014 Phases 7\u20138 End-to-End.md",
+      "sha256": "06f16aa324b72b3ea80ac3f6844db1829480a7439644928516e6b30610678d93",
+      "bytes": 25427,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/prompts/Build Phases 1\u20134 End-to-End.md",
+      "sha256": "4486a0868585423a951e1a874eb55714cd35242963f9a0f47c9d53420d7c101a",
+      "bytes": 22791,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/prompts/Build Real Intelligence Loop \u2014 Pre-Phase 5 + Phases 5\u20136 End-to-End.md",
+      "sha256": "8222763df2b907f23e2495dfcd8cbba05d0d4d81c59e278c88dc148e2fab567e",
+      "bytes": 18142,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/prompts/Complete Phase 7\u20138 Release Gate, Then Build Phase 9 Governed Publishing.md",
+      "sha256": "a0056d08b55b64389950552b6fba92b9f58334cdb79a5d832c54f0166857d3a5",
+      "bytes": 22397,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phase7-8-release-gate-phase9/prompts/Install and Verify Browser Evidence on Linux EC2.md",
+      "sha256": "3bb10ab3e6f9b4cb159813e9100cb86c5847b448ce97e07ad3afbb0d2af808bb",
+      "bytes": 3102,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phases-1-4/Build Phases 1\u20134 End-to-End.md",
+      "sha256": "4486a0868585423a951e1a874eb55714cd35242963f9a0f47c9d53420d7c101a",
+      "bytes": 22791,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phases-1-4/README.md",
+      "sha256": "64af69578ee48366cd57b139881e557f4cd708735ff04f0bca11d6d682b8808f",
+      "bytes": 14,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phases-1-4/docs/adr/0001-durable-runtime.md",
+      "sha256": "b41c23fe0a9d2e180d30e4ac233a22f4bf466b5b62cab5b0e9b1548062c530cd",
+      "bytes": 1815,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phases-1-4/docs/adr/0002-object-storage.md",
+      "sha256": "1c0ba49fc0aa928715b4dc3f6ea8dba6c0de16157e9f79cb67cfb644ce4f1feb",
+      "bytes": 1897,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phases-1-4/docs/adr/0003-api-persistence-and-contracts.md",
+      "sha256": "c7182cd23c08b65213c6fa58212b402f546c117d7ed652133530553a2f04b3ac",
+      "bytes": 1917,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phases-1-4/docs/adr/0004-governance-secrets-and-protocols.md",
+      "sha256": "0f7f8ce508222398e6a743beeac9b060c658f2aadcfaec0b10428ae8ed4d1031",
+      "bytes": 1926,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phases-1-4/docs/agents.md",
+      "sha256": "f670bff9041b070ce78a6a8cf207d9932646628c47e472fe718a51955cf076ed",
+      "bytes": 1170,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phases-1-4/docs/api.md",
+      "sha256": "e189009147885b258e33973f77fde639949d1f57086ce4d108ad645effd5f492",
+      "bytes": 1114,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phases-1-4/docs/architecture.md",
+      "sha256": "c33a46825dc821c5ad95592c83de425ac6665315b5b65aa48e57173f3dfabcb0",
+      "bytes": 609,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phases-1-4/docs/bootstrap.md",
+      "sha256": "143320985d501ab5aab18798534ed792ea3d9c9ca4779bfe7e18725224b9a077",
+      "bytes": 637,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phases-1-4/docs/contracts/adapter-contracts.md",
+      "sha256": "fcd604360b8fcdf7f98020f007749ea561dadc3cd6a716ed546cff7797ab7801",
+      "bytes": 1541,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phases-1-4/docs/core/00_BUILD_AGENT_PROMPT.md",
+      "sha256": "9c24cc3b232cad25f0650f18438a9106a5dbeda6e7f6ddfc764c6ac90413613c",
+      "bytes": 6393,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phases-1-4/docs/core/01_PRODUCT_CONTEXT_AND_INTENT.md",
+      "sha256": "2f0ab3a836a37ff9815af4c0f840ace52a577471c0af4bb28b00364000d1adf9",
+      "bytes": 7239,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phases-1-4/docs/core/02_REFERENCE_RESEARCH.md",
+      "sha256": "c1bda4694f36b51e157499144310425a1e895ff4fb3a21d968f1d74257c39f48",
+      "bytes": 20260,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phases-1-4/docs/core/03_TARGET_ARCHITECTURE.md",
+      "sha256": "de4ff15e13b35d354bc69a1976ea8a1b83e139b4d30c69f5ac9e3a570e991d63",
+      "bytes": 15762,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phases-1-4/docs/core/04_BROWSER_APP_AND_RESEARCH_CONTROL.md",
+      "sha256": "8d3f48448e995e0e035c2bf3e01f05fac03c24993a8b8d833b74a46555ce8c35",
+      "bytes": 4183,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phases-1-4/docs/core/05_IMPLEMENTATION_PLAN.md",
+      "sha256": "03e12a8610f01cda5f85b393870e1ad021d9655940654f7262b3c6bf8bd608f2",
+      "bytes": 7825,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phases-1-4/docs/core/06_ACCEPTANCE_TESTS_AND_GUARDRAILS.md",
+      "sha256": "45140b8ea60f0dcf7b22ee5e1da3d6bcb473d6709345f23bed2df6aab4abc8ec",
+      "bytes": 8187,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phases-1-4/docs/core/07_REUSE_EXTENSION_AND_FUTURE_PROOFING.md",
+      "sha256": "2fe977ebe26442c13bb7a30ac8678584f98a02fb7a8c9b7d5c6bd09f58d8b9cf",
+      "bytes": 6214,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phases-1-4/docs/core/08_LEAD_AGENT_AND_CREATIVE_TOOL_RUNTIME.md",
+      "sha256": "e09519b29e5bd72b60385cf11c9f7ca15cac57b1316bb0a38eeb91d3eb46b0a2",
+      "bytes": 5830,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phases-1-4/docs/core/09_CALLABLE_AGENTS_AND_ENGINEERING_METHOD.md",
+      "sha256": "ae7e580d0a4b43f1a1df19049208f92bf5b3fa39caa7c6033b75862ca9d64369",
+      "bytes": 6400,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phases-1-4/docs/core/README.md",
+      "sha256": "7960ef750a38a63b2982a1494c373f8b6b406f74836da550c898b67a7807e58d",
+      "bytes": 3315,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phases-1-4/docs/database.md",
+      "sha256": "9feaedbfd70f8953de0289207771fcdfd123f0147e6b94ebd2096194342e8680",
+      "bytes": 2969,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phases-1-4/docs/dependencies.md",
+      "sha256": "2ddbee23e6c48c64624ef0eb2db9bbc213c3659989bbce41addee30e39ec0370",
+      "bytes": 2139,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phases-1-4/docs/deployment.md",
+      "sha256": "f1188a2562de09e5c9fcb407119c82ab51f6a992075aadb9cdb679ca15b2fe8d",
+      "bytes": 532,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phases-1-4/docs/governance.md",
+      "sha256": "5adb80d09d56c578c48a6b45da1b534999aafc3e69a20a24e3596f75226c595d",
+      "bytes": 2770,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phases-1-4/docs/implementation-progress.md",
+      "sha256": "61385c13bbdd32438351e34d5fd48c361607eef00b4d616942b5f675fdb99771",
+      "bytes": 6860,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phases-1-4/docs/limitations.md",
+      "sha256": "2c0b5b2b8445933d1cd3f2148267c6ae854f3cda73d58c506613a39a3335716f",
+      "bytes": 661,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phases-1-4/docs/local-development.md",
+      "sha256": "d7b3765051b23387a5b24b3782ab0d0e1c0ab81a3738a9ed730325b232ecd9ba",
+      "bytes": 440,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phases-1-4/docs/mcp-a2a.md",
+      "sha256": "adf7394247229113a2a19873537635c1dfdccc5e73e744c8541676ae14838399",
+      "bytes": 1173,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phases-1-4/docs/memory.md",
+      "sha256": "5ce0fc26eebb798e466c9b6baee8caea7a6ce98af2f1eb1ea4789622ae6a3319",
+      "bytes": 542,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phases-1-4/docs/model-gateway.md",
+      "sha256": "5e055f63f7fea4e4edc239298eb4a0e47acb39ef079e0fec8a6d9ffcc5c72f5d",
+      "bytes": 593,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phases-1-4/docs/plugins.md",
+      "sha256": "6b2c8a540a3968287de04488049cf8b467f7b8f2af52a45cff9f5d65a889197b",
+      "bytes": 956,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phases-1-4/docs/recovery.md",
+      "sha256": "e6a4b7480ad3ea8706957469cce1eb7341b89f360ff515a1e7e5b7f605f43755",
+      "bytes": 904,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phases-1-4/docs/superpowers/plans/2026-09-12-phases-1-4-foundation.md",
+      "sha256": "a54a3ae82e027663782e832b1d615b98896bc96d55b3ea2f90482d5e62e9b6b9",
+      "bytes": 33964,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phases-1-4/docs/verification.md",
+      "sha256": "8dc4239490bc08c11da6cedb290a69071ed8a99b292fb1f1678bd0ef734ddff7",
+      "bytes": 439,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": ".worktrees/phases-1-4/docs/workflows.md",
+      "sha256": "36da697867811227a8b98f9a8d19a7bf16afcac1549d1df721e6b998ac32600b",
+      "bytes": 862,
+      "tracked_in_main": false,
+      "category": "worktree_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "README.md",
+      "sha256": "66ec85addfcd598ba745681b543df133f22af2a76e858020bebf0afd956b7310",
+      "bytes": 21021,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "artifacts/browser-evidence/20260912T184847Z-642639/13190ae0e7dd430590332d1b7017c66b/browser/31961a1c83e6873c3c017e9d95b6cc0db95c45edeb2fe11b7d772bb1d0d67c04.png",
+      "sha256": "5fd3435d40889ca5b91786c0b49d4372adfee65953ead1f37a7547596c16390a",
+      "bytes": 11028,
+      "tracked_in_main": false,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "artifacts/browser-evidence/20260912T184847Z-642639/13190ae0e7dd430590332d1b7017c66b/browser/31961a1c83e6873c3c017e9d95b6cc0db95c45edeb2fe11b7d772bb1d0d67c04.png.metadata.json",
+      "sha256": "cea7f078ee85b9aefbd33e35c06462fe7ec73da444b2c9a8c17848f3c0e8853e",
+      "bytes": 649,
+      "tracked_in_main": false,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "artifacts/browser-evidence/20260912T184847Z-642639/13190ae0e7dd430590332d1b7017c66b/browser/31961a1c83e6873c3c017e9d95b6cc0db95c45edeb2fe11b7d772bb1d0d67c04.txt",
+      "sha256": "a07a760b3379ab1bdeaca2070353ddcc329b385627b2274c5185c8c0ada90cbb",
+      "bytes": 68,
+      "tracked_in_main": false,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "artifacts/browser-evidence/20260912T184847Z-642639/13190ae0e7dd430590332d1b7017c66b/browser/31961a1c83e6873c3c017e9d95b6cc0db95c45edeb2fe11b7d772bb1d0d67c04.txt.metadata.json",
+      "sha256": "b4b5f0eddd15ddd4f8aad1e9221844b8d2437a4d96b0f56ff9ba13ffceb75383",
+      "bytes": 641,
+      "tracked_in_main": false,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "artifacts/browser-evidence/20260912T184847Z-642639/13190ae0e7dd430590332d1b7017c66b/browser/31961a1c83e6873c3c017e9d95b6cc0db95c45edeb2fe11b7d772bb1d0d67c04.zip",
+      "sha256": "e1147cb3af2c353c806eeb2c522505f397cfea93cbca37716581fb1f262af34e",
+      "bytes": 12011,
+      "tracked_in_main": false,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "artifacts/browser-evidence/20260912T184847Z-642639/13190ae0e7dd430590332d1b7017c66b/browser/31961a1c83e6873c3c017e9d95b6cc0db95c45edeb2fe11b7d772bb1d0d67c04.zip.metadata.json",
+      "sha256": "5a8c6dac17e641400815c926accf475096ce16eb4f0f11ac99cd9848898baa8f",
+      "bytes": 650,
+      "tracked_in_main": false,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "artifacts/browser-evidence/20260912T184847Z-642639/39a9ac363cc7425b9af7a6625a61ad6d/browser/03063826ab82e03c8081528ace6d44852893ce73e8f2bb082e5696e9c876021c.png",
+      "sha256": "5fd3435d40889ca5b91786c0b49d4372adfee65953ead1f37a7547596c16390a",
+      "bytes": 11028,
+      "tracked_in_main": false,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "artifacts/browser-evidence/20260912T184847Z-642639/39a9ac363cc7425b9af7a6625a61ad6d/browser/03063826ab82e03c8081528ace6d44852893ce73e8f2bb082e5696e9c876021c.png.metadata.json",
+      "sha256": "6eee1190e8ba05d329764ae5d81ed2923ef93b9c8d5947f32ae98863881a8eb0",
+      "bytes": 733,
+      "tracked_in_main": false,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "artifacts/browser-evidence/20260912T184847Z-642639/39a9ac363cc7425b9af7a6625a61ad6d/browser/03063826ab82e03c8081528ace6d44852893ce73e8f2bb082e5696e9c876021c.txt",
+      "sha256": "a07a760b3379ab1bdeaca2070353ddcc329b385627b2274c5185c8c0ada90cbb",
+      "bytes": 68,
+      "tracked_in_main": false,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "artifacts/browser-evidence/20260912T184847Z-642639/39a9ac363cc7425b9af7a6625a61ad6d/browser/03063826ab82e03c8081528ace6d44852893ce73e8f2bb082e5696e9c876021c.txt.metadata.json",
+      "sha256": "e66c03b0f179e7e79491605d3f4c0db0acbea111ea31c0f8851a289b82e35914",
+      "bytes": 725,
+      "tracked_in_main": false,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "artifacts/browser-evidence/20260912T184847Z-642639/39a9ac363cc7425b9af7a6625a61ad6d/browser/03063826ab82e03c8081528ace6d44852893ce73e8f2bb082e5696e9c876021c.zip",
+      "sha256": "e325976228f65de9008fd30e5f269c521dae9cca144fe0b5e7e4f8d5cde6cc1c",
+      "bytes": 12045,
+      "tracked_in_main": false,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "artifacts/browser-evidence/20260912T184847Z-642639/39a9ac363cc7425b9af7a6625a61ad6d/browser/03063826ab82e03c8081528ace6d44852893ce73e8f2bb082e5696e9c876021c.zip.metadata.json",
+      "sha256": "ebb2fcc1134d01867b075d342289f18fb0d89ad728dc871d88fc5493821f3886",
+      "bytes": 734,
+      "tracked_in_main": false,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "artifacts/browser-evidence/20260912T184847Z-642639/42e28ab9242a49dfaf5fe4e80b14b0a4/browser/40f2893fb68935266863ac1e955e44fe65f079f47387f60326e3e7e7852ee988.failure.zip",
+      "sha256": "c018bd57b20372e0bfe470ec0ddfff9e8fe051691daeaa620b20f2b72f6f70f0",
+      "bytes": 3727,
+      "tracked_in_main": false,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "artifacts/browser-evidence/20260912T184847Z-642639/42e28ab9242a49dfaf5fe4e80b14b0a4/browser/40f2893fb68935266863ac1e955e44fe65f079f47387f60326e3e7e7852ee988.failure.zip.metadata.json",
+      "sha256": "17f20e8931c8960292ea36f9eb7a3d8d7c7504a9dedd87e2d317dac15ffc061c",
+      "bytes": 642,
+      "tracked_in_main": false,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "artifacts/browser-evidence/20260912T184847Z-642639/9b7e752fcde54009acb7412bafacb53d/browser/6b6a8d61a28650c23d028629af04af60317195c46431510a7d0aace7ac539ec5.failure.zip",
+      "sha256": "e14902051b2cf41a39900731ce467973901e09ed66a8bf5335242dc8240b5ba4",
+      "bytes": 8614,
+      "tracked_in_main": false,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "artifacts/browser-evidence/20260912T184847Z-642639/9b7e752fcde54009acb7412bafacb53d/browser/6b6a8d61a28650c23d028629af04af60317195c46431510a7d0aace7ac539ec5.failure.zip.metadata.json",
+      "sha256": "2f52a7e0cfa24cb046f7ef304898729b14866816bec5b4b7556860eb528c206c",
+      "bytes": 641,
+      "tracked_in_main": false,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "artifacts/browser-evidence/20260912T184847Z-642639/c5fb197a9a274663b09e88d5b84f6666/browser/65fffb87ca612dbf5055ea5d1b70448a4a6264d0387d5e4e7b305812ecee56df.failure.zip",
+      "sha256": "1bfcab151f7c5429047116d105114a8cf3fe75c877afae5f12b626b3d7e51b1e",
+      "bytes": 3452,
+      "tracked_in_main": false,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "artifacts/browser-evidence/20260912T184847Z-642639/c5fb197a9a274663b09e88d5b84f6666/browser/65fffb87ca612dbf5055ea5d1b70448a4a6264d0387d5e4e7b305812ecee56df.failure.zip.metadata.json",
+      "sha256": "b478bc14eb5e86a860731269876d03ec7b52c06f1757ed55ff89cbb6de4c21c7",
+      "bytes": 648,
+      "tracked_in_main": false,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "artifacts/browser-evidence/20260912T184847Z-642639/f41ce22a3fd948e8ae384be69564c2fd/browser/bbf29a961a52dcd03fab212b7d54a62846be1e781fa9af9ee782e41297f101c7.failure.zip",
+      "sha256": "577ab04e9ca5d385bf9c3f52ca0540a16891f921a3847866c2ace313f2f1962b",
+      "bytes": 3659,
+      "tracked_in_main": false,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "artifacts/browser-evidence/20260912T184847Z-642639/f41ce22a3fd948e8ae384be69564c2fd/browser/bbf29a961a52dcd03fab212b7d54a62846be1e781fa9af9ee782e41297f101c7.failure.zip.metadata.json",
+      "sha256": "9d7c31783ca1f785943e40e33725a294fada93dd46c26d56859178d2904a155b",
+      "bytes": 633,
+      "tracked_in_main": false,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "artifacts/browser-evidence/20260912T185226Z-647576/20d1d02db5624e49b277412ec378e5b9/browser/71fba789e478daf51abdcf5578a4557c4e8e74aef13379e7dfc120582a1668ea.failure.zip",
+      "sha256": "f0bff1e434c504d5933bd9ce8aca2d7d1544e9058ff6ae20729571e98b336851",
+      "bytes": 3362,
+      "tracked_in_main": false,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "artifacts/browser-evidence/20260912T185226Z-647576/20d1d02db5624e49b277412ec378e5b9/browser/71fba789e478daf51abdcf5578a4557c4e8e74aef13379e7dfc120582a1668ea.failure.zip.metadata.json",
+      "sha256": "59f37261582a6abbc9cd486bbaa221a01b2547c3ddfd8e5e961648d7b5305bf3",
+      "bytes": 648,
+      "tracked_in_main": false,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "artifacts/browser-evidence/20260912T185226Z-647576/2d197bad19894dbeb17134b101e7c3cf/browser/718e7f37f38eadcea0fc89f6f7c788c5550bb2935c28770a1807c24f852cb33f.png",
+      "sha256": "5fd3435d40889ca5b91786c0b49d4372adfee65953ead1f37a7547596c16390a",
+      "bytes": 11028,
+      "tracked_in_main": false,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "artifacts/browser-evidence/20260912T185226Z-647576/2d197bad19894dbeb17134b101e7c3cf/browser/718e7f37f38eadcea0fc89f6f7c788c5550bb2935c28770a1807c24f852cb33f.png.metadata.json",
+      "sha256": "540de79cf13eca2e49951b8e714bcf753c8e5660f07fa033bc73fc37516a97db",
+      "bytes": 733,
+      "tracked_in_main": false,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "artifacts/browser-evidence/20260912T185226Z-647576/2d197bad19894dbeb17134b101e7c3cf/browser/718e7f37f38eadcea0fc89f6f7c788c5550bb2935c28770a1807c24f852cb33f.txt",
+      "sha256": "a07a760b3379ab1bdeaca2070353ddcc329b385627b2274c5185c8c0ada90cbb",
+      "bytes": 68,
+      "tracked_in_main": false,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "artifacts/browser-evidence/20260912T185226Z-647576/2d197bad19894dbeb17134b101e7c3cf/browser/718e7f37f38eadcea0fc89f6f7c788c5550bb2935c28770a1807c24f852cb33f.txt.metadata.json",
+      "sha256": "29bb099b759ac52852e969c86652d89fcfb1c561ecc5a5d8430909cfeb658b18",
+      "bytes": 725,
+      "tracked_in_main": false,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "artifacts/browser-evidence/20260912T185226Z-647576/2d197bad19894dbeb17134b101e7c3cf/browser/718e7f37f38eadcea0fc89f6f7c788c5550bb2935c28770a1807c24f852cb33f.zip",
+      "sha256": "319844e9227da9be549629473e4ca047279cb2607a6f52f9480af70b5a11ac63",
+      "bytes": 12050,
+      "tracked_in_main": false,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "artifacts/browser-evidence/20260912T185226Z-647576/2d197bad19894dbeb17134b101e7c3cf/browser/718e7f37f38eadcea0fc89f6f7c788c5550bb2935c28770a1807c24f852cb33f.zip.metadata.json",
+      "sha256": "c98bab3e5395fbe2758fde8846e31774a2cc88d2b5a891d9d31835c92403c072",
+      "bytes": 734,
+      "tracked_in_main": false,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "artifacts/browser-evidence/20260912T185226Z-647576/51fed700f3d2424697494671d9e1653c/browser/e260b241a18abd8e6a1e69e60c73ca95c15096c187b044efb50352563586204a.failure.zip",
+      "sha256": "9ff37ca9f3a963cf66656bb16693649d2a043687fe46ea04bfcbdfdc092e16ea",
+      "bytes": 3646,
+      "tracked_in_main": false,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "artifacts/browser-evidence/20260912T185226Z-647576/51fed700f3d2424697494671d9e1653c/browser/e260b241a18abd8e6a1e69e60c73ca95c15096c187b044efb50352563586204a.failure.zip.metadata.json",
+      "sha256": "d4dbecb39fd767569c46f2f5aa605af62e93bdf72c7eb0687745f20fad420164",
+      "bytes": 633,
+      "tracked_in_main": false,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "artifacts/browser-evidence/20260912T185226Z-647576/a776589257114873bab0731f1872e8f3/browser/fca5e298df4e7cbd7c5c478560d1ea63196f60bf8c761c6638a87319b471b362.failure.zip",
+      "sha256": "77fd64c99bab1fffc66278dbc095d4f958105577cdae11e91ec65d07ed3a468a",
+      "bytes": 3703,
+      "tracked_in_main": false,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "artifacts/browser-evidence/20260912T185226Z-647576/a776589257114873bab0731f1872e8f3/browser/fca5e298df4e7cbd7c5c478560d1ea63196f60bf8c761c6638a87319b471b362.failure.zip.metadata.json",
+      "sha256": "791c30be13d69c986640fa6751cd6b55004cdda979488f70ecb98729ecc54220",
+      "bytes": 642,
+      "tracked_in_main": false,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "artifacts/browser-evidence/20260912T185226Z-647576/c3a26ee062fa484399f56fcd08b2fb3b/browser/e663ff1640d7f052e9f61d144a49d4970bbc63cc052a1fcdda1871676edfb709.failure.zip",
+      "sha256": "0cfb74f4f02c910b46a9be20d687f459eba518538b3fb525c79ab7f7a9d30803",
+      "bytes": 8581,
+      "tracked_in_main": false,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "artifacts/browser-evidence/20260912T185226Z-647576/c3a26ee062fa484399f56fcd08b2fb3b/browser/e663ff1640d7f052e9f61d144a49d4970bbc63cc052a1fcdda1871676edfb709.failure.zip.metadata.json",
+      "sha256": "a22dd1ed214aca0517f288654302ee0bed5c882568f0fad2385001a287de48b9",
+      "bytes": 641,
+      "tracked_in_main": false,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "artifacts/browser-evidence/20260912T185226Z-647576/f866683a356e4aca83f76039985ccff3/browser/ac9b9682af3eeee0dd994e11f746ccf8526785346959cf6d955d305fe2643c7d.png",
+      "sha256": "5fd3435d40889ca5b91786c0b49d4372adfee65953ead1f37a7547596c16390a",
+      "bytes": 11028,
+      "tracked_in_main": false,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "artifacts/browser-evidence/20260912T185226Z-647576/f866683a356e4aca83f76039985ccff3/browser/ac9b9682af3eeee0dd994e11f746ccf8526785346959cf6d955d305fe2643c7d.png.metadata.json",
+      "sha256": "df461c22e850d09329dd255f04a3e612f061e0a056725a896a90a1ff6b12a911",
+      "bytes": 649,
+      "tracked_in_main": false,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "artifacts/browser-evidence/20260912T185226Z-647576/f866683a356e4aca83f76039985ccff3/browser/ac9b9682af3eeee0dd994e11f746ccf8526785346959cf6d955d305fe2643c7d.txt",
+      "sha256": "a07a760b3379ab1bdeaca2070353ddcc329b385627b2274c5185c8c0ada90cbb",
+      "bytes": 68,
+      "tracked_in_main": false,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "artifacts/browser-evidence/20260912T185226Z-647576/f866683a356e4aca83f76039985ccff3/browser/ac9b9682af3eeee0dd994e11f746ccf8526785346959cf6d955d305fe2643c7d.txt.metadata.json",
+      "sha256": "0dc7b0a9b5383056869e9972bab5f7a34c902981f09a9ff4fffb97b3e85e9751",
+      "bytes": 641,
+      "tracked_in_main": false,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "artifacts/browser-evidence/20260912T185226Z-647576/f866683a356e4aca83f76039985ccff3/browser/ac9b9682af3eeee0dd994e11f746ccf8526785346959cf6d955d305fe2643c7d.zip",
+      "sha256": "c6361f5af64d7dc47f5b4c22e5ed9a56870e7ef1e349f5253ca27bcc4464f8f1",
+      "bytes": 12000,
+      "tracked_in_main": false,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "artifacts/browser-evidence/20260912T185226Z-647576/f866683a356e4aca83f76039985ccff3/browser/ac9b9682af3eeee0dd994e11f746ccf8526785346959cf6d955d305fe2643c7d.zip.metadata.json",
+      "sha256": "16f5f805854050dde929d91377bb52b689bfb518cd2077ba133054608568f3e3",
+      "bytes": 650,
+      "tracked_in_main": false,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "artifacts/browser-evidence/20260912T213648Z-704463/29d1a74415834ba0a7e431ec16e2c13a/browser/a9d53352587acf51d03961e800add465548cfcf07f264f8d9506d194e5acd1ed.failure.zip",
+      "sha256": "c7abe95868406431f52b0e004966c9a351800aa5ea88c1b46c23e60f53342fe4",
+      "bytes": 3688,
+      "tracked_in_main": false,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "artifacts/browser-evidence/20260912T213648Z-704463/29d1a74415834ba0a7e431ec16e2c13a/browser/a9d53352587acf51d03961e800add465548cfcf07f264f8d9506d194e5acd1ed.failure.zip.metadata.json",
+      "sha256": "29139c1b559f85d61b0aebc7f53b0eb372dcb093670ca57660b5a01bc8d2225a",
+      "bytes": 642,
+      "tracked_in_main": false,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "artifacts/browser-evidence/20260912T213648Z-704463/7346d16a56524c1388109a28c3669894/browser/35d7ad1bbc61f8247faf0215a8a0c984aeb43fc39b88920deeddf4e93bc63a8f.failure.zip",
+      "sha256": "e968bd0cb5c861766ecdeb4836b9a92ffdb16938b92370e1d0eb29b8252403a2",
+      "bytes": 9024,
+      "tracked_in_main": false,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "artifacts/browser-evidence/20260912T213648Z-704463/7346d16a56524c1388109a28c3669894/browser/35d7ad1bbc61f8247faf0215a8a0c984aeb43fc39b88920deeddf4e93bc63a8f.failure.zip.metadata.json",
+      "sha256": "8109440397ac3d06c9893813788f7a1441d1e41d4834334d24309977a92eacc3",
+      "bytes": 641,
+      "tracked_in_main": false,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "artifacts/browser-evidence/20260912T213648Z-704463/8306376a630f40d4af3e8e97cb2be26c/browser/040050127462667c540c65ef73fad276ba6d9a194501578299075beb3f7423c6.failure.zip",
+      "sha256": "8601eab1713980cb431b9750639c92aed927bbfa030c597f660359b3098334ad",
+      "bytes": 3638,
+      "tracked_in_main": false,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "artifacts/browser-evidence/20260912T213648Z-704463/8306376a630f40d4af3e8e97cb2be26c/browser/040050127462667c540c65ef73fad276ba6d9a194501578299075beb3f7423c6.failure.zip.metadata.json",
+      "sha256": "c522da7a89d02737294106d9e2a48055b38202ea62df434b009f4834503148e6",
+      "bytes": 633,
+      "tracked_in_main": false,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "artifacts/browser-evidence/20260912T213648Z-704463/949a3392afc5405fba05aa93852b23e7/browser/e7a351eb7ad1108af2522b171ff5138b873bf51a86de2225cc1a83eebc595732.png",
+      "sha256": "5fd3435d40889ca5b91786c0b49d4372adfee65953ead1f37a7547596c16390a",
+      "bytes": 11028,
+      "tracked_in_main": false,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "artifacts/browser-evidence/20260912T213648Z-704463/949a3392afc5405fba05aa93852b23e7/browser/e7a351eb7ad1108af2522b171ff5138b873bf51a86de2225cc1a83eebc595732.png.metadata.json",
+      "sha256": "7d1d481ead73981ac02de759919330d7f76693a8338cadf7cd256ec51e737655",
+      "bytes": 733,
+      "tracked_in_main": false,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "artifacts/browser-evidence/20260912T213648Z-704463/949a3392afc5405fba05aa93852b23e7/browser/e7a351eb7ad1108af2522b171ff5138b873bf51a86de2225cc1a83eebc595732.txt",
+      "sha256": "a07a760b3379ab1bdeaca2070353ddcc329b385627b2274c5185c8c0ada90cbb",
+      "bytes": 68,
+      "tracked_in_main": false,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "artifacts/browser-evidence/20260912T213648Z-704463/949a3392afc5405fba05aa93852b23e7/browser/e7a351eb7ad1108af2522b171ff5138b873bf51a86de2225cc1a83eebc595732.txt.metadata.json",
+      "sha256": "45c139a01c33048f5592b545b91c91e9f558240315a1f43902935f83188f3b1c",
+      "bytes": 725,
+      "tracked_in_main": false,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "artifacts/browser-evidence/20260912T213648Z-704463/949a3392afc5405fba05aa93852b23e7/browser/e7a351eb7ad1108af2522b171ff5138b873bf51a86de2225cc1a83eebc595732.zip",
+      "sha256": "d05e39f51bf90298942b517cf151427dbd14b263ce5f73879c7faed4f82f1ef4",
+      "bytes": 8220,
+      "tracked_in_main": false,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "artifacts/browser-evidence/20260912T213648Z-704463/949a3392afc5405fba05aa93852b23e7/browser/e7a351eb7ad1108af2522b171ff5138b873bf51a86de2225cc1a83eebc595732.zip.metadata.json",
+      "sha256": "c8aa04d2a46ec9a4dd459d87e9ed627cbba971c9297ecce3f74a1540d727cadc",
+      "bytes": 733,
+      "tracked_in_main": false,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "artifacts/browser-evidence/20260912T213648Z-704463/d313c24077df44d6b10dc5c1d1668f5a/browser/d8c09ef88c14f626cf837c2c02bb87919397ab1b3a1d47cfa49b9d703f733118.png",
+      "sha256": "5fd3435d40889ca5b91786c0b49d4372adfee65953ead1f37a7547596c16390a",
+      "bytes": 11028,
+      "tracked_in_main": false,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "artifacts/browser-evidence/20260912T213648Z-704463/d313c24077df44d6b10dc5c1d1668f5a/browser/d8c09ef88c14f626cf837c2c02bb87919397ab1b3a1d47cfa49b9d703f733118.png.metadata.json",
+      "sha256": "69d9c692d61b2d3985341f70ac37ecb9175c3815ae3e849e49233a8a6fbdc023",
+      "bytes": 649,
+      "tracked_in_main": false,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "artifacts/browser-evidence/20260912T213648Z-704463/d313c24077df44d6b10dc5c1d1668f5a/browser/d8c09ef88c14f626cf837c2c02bb87919397ab1b3a1d47cfa49b9d703f733118.txt",
+      "sha256": "a07a760b3379ab1bdeaca2070353ddcc329b385627b2274c5185c8c0ada90cbb",
+      "bytes": 68,
+      "tracked_in_main": false,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "artifacts/browser-evidence/20260912T213648Z-704463/d313c24077df44d6b10dc5c1d1668f5a/browser/d8c09ef88c14f626cf837c2c02bb87919397ab1b3a1d47cfa49b9d703f733118.txt.metadata.json",
+      "sha256": "4eef403042c9ea387d6372f581944e779c62766bb869cc1f922794dd7552ba30",
+      "bytes": 641,
+      "tracked_in_main": false,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "artifacts/browser-evidence/20260912T213648Z-704463/d313c24077df44d6b10dc5c1d1668f5a/browser/d8c09ef88c14f626cf837c2c02bb87919397ab1b3a1d47cfa49b9d703f733118.zip",
+      "sha256": "b458ed9a616a6c0350c7221193f533efe1cc64616caa72cc4722945900f71b9a",
+      "bytes": 12020,
+      "tracked_in_main": false,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "artifacts/browser-evidence/20260912T213648Z-704463/d313c24077df44d6b10dc5c1d1668f5a/browser/d8c09ef88c14f626cf837c2c02bb87919397ab1b3a1d47cfa49b9d703f733118.zip.metadata.json",
+      "sha256": "9f6c5223276909ab0b586f8a9054b07cc867b9eeacdece99bc21ff6645cde95a",
+      "bytes": 650,
+      "tracked_in_main": false,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "artifacts/browser-evidence/20260912T213648Z-704463/f726bc6384384a449978af79aced372d/browser/07f21c44e5d442eb6e1998c87138af44d52b416c079c109190f2aafa2fea5d8b.failure.zip",
+      "sha256": "c3423f5654eba54db1867edfe1f497dd0368ce4cbd0d414b178ceb3ade4e6be1",
+      "bytes": 3349,
+      "tracked_in_main": false,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "artifacts/browser-evidence/20260912T213648Z-704463/f726bc6384384a449978af79aced372d/browser/07f21c44e5d442eb6e1998c87138af44d52b416c079c109190f2aafa2fea5d8b.failure.zip.metadata.json",
+      "sha256": "77f3eee70d73475ec5c4b0b14ee444b44ab6babbd1309779a92ff73117a92605",
+      "bytes": 648,
+      "tracked_in_main": false,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs-new-arch/ArchCurrent.mermaid",
+      "sha256": "8babef81879d00387499e28324c325fa10ebb0fc8255ca613b61efff0dd207ad",
+      "bytes": 1782,
+      "tracked_in_main": true,
+      "category": "source_intent",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs-new-arch/ArchV1.mermaid",
+      "sha256": "a40d2446978d2ca663518049f2ea8076479a936ddc9eb7c3b630e22827f5f0f8",
+      "bytes": 10186,
+      "tracked_in_main": true,
+      "category": "source_intent",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs-new-arch/ArchV2.mermaid",
+      "sha256": "f97c4b5519f679346f403ced265df753d9ff29f01ddbb6e40fc1e5b63ae377d8",
+      "bytes": 9931,
+      "tracked_in_main": true,
+      "category": "source_intent",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs-new-arch/ArchV3-implementation-notes.md",
+      "sha256": "7afdf8693a234cc21becba522b30bf93e01ebb747fa3105e1f1782d2058e8a1a",
+      "bytes": 27733,
+      "tracked_in_main": true,
+      "category": "source_intent",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs-new-arch/ArchV3.mermaid",
+      "sha256": "26af467c25d62f6485c4ee32a32ad9a95a74ba9489edb12f76fce38e8baab37d",
+      "bytes": 5877,
+      "tracked_in_main": true,
+      "category": "source_intent",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs-new-arch/ArchV4-implementation-notes.md",
+      "sha256": "6378d46cc347b84a1e8983263ba860faab2c44c81e84c12c32b7d2724fc0f078",
+      "bytes": 41627,
+      "tracked_in_main": true,
+      "category": "source_intent",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs-new-arch/ArchV4.mermaid",
+      "sha256": "44a0cf58e7f18129f3c6cdd8e8c5f179f0211f830456b59f0e9b48a3b9185809",
+      "bytes": 7591,
+      "tracked_in_main": true,
+      "category": "source_intent",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/adr/0001-durable-runtime.md",
+      "sha256": "b41c23fe0a9d2e180d30e4ac233a22f4bf466b5b62cab5b0e9b1548062c530cd",
+      "bytes": 1815,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/adr/0002-object-storage.md",
+      "sha256": "1c0ba49fc0aa928715b4dc3f6ea8dba6c0de16157e9f79cb67cfb644ce4f1feb",
+      "bytes": 1897,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/adr/0003-api-persistence-and-contracts.md",
+      "sha256": "c7182cd23c08b65213c6fa58212b402f546c117d7ed652133530553a2f04b3ac",
+      "bytes": 1917,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/adr/0004-governance-secrets-and-protocols.md",
+      "sha256": "0f7f8ce508222398e6a743beeac9b060c658f2aadcfaec0b10428ae8ed4d1031",
+      "bytes": 1926,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/adr/0005-mcp-a2a-and-browser-sdk-adoption.md",
+      "sha256": "8bc7fbf513356b2804f1931c271614f9bd7813328a48056734b083048d56bc47",
+      "bytes": 2995,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/adr/0006-governed-publishing.md",
+      "sha256": "a50e696679d19fba9a755e6dbc62a062e7da22fd4826abb21d19d9d9a22ee8d7",
+      "bytes": 3981,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/agents.md",
+      "sha256": "6a3f7c19371f5a7daa87e34ece22a11baf55ef1d17208f46c13c9cb5904b8ae7",
+      "bytes": 2410,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/api.md",
+      "sha256": "fcd25d5066336629cd667ebeef7228c696b638fe37684ec9a2e8a4d80940c930",
+      "bytes": 5325,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/architecture.md",
+      "sha256": "244d933d845c0c2527765f1525c13c48af7608ef1ea49770cf73a31bc515fa83",
+      "bytes": 3511,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/bootstrap.md",
+      "sha256": "143320985d501ab5aab18798534ed792ea3d9c9ca4779bfe7e18725224b9a077",
+      "bytes": 637,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/compatibility.md",
+      "sha256": "de9745608fb57014eff8372af3168030f8071c92b4b5f9c82722f01ca8a69473",
+      "bytes": 1187,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/contracts/adapter-contracts.md",
+      "sha256": "7572693b70598a0ba1f7829b33492133a643267410217e67c26e119bd27ff3dd",
+      "bytes": 2050,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/core/00_BUILD_AGENT_PROMPT.md",
+      "sha256": "9c24cc3b232cad25f0650f18438a9106a5dbeda6e7f6ddfc764c6ac90413613c",
+      "bytes": 6393,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/core/01_PRODUCT_CONTEXT_AND_INTENT.md",
+      "sha256": "2f0ab3a836a37ff9815af4c0f840ace52a577471c0af4bb28b00364000d1adf9",
+      "bytes": 7239,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/core/02_REFERENCE_RESEARCH.md",
+      "sha256": "c1bda4694f36b51e157499144310425a1e895ff4fb3a21d968f1d74257c39f48",
+      "bytes": 20260,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/core/03_TARGET_ARCHITECTURE.md",
+      "sha256": "de4ff15e13b35d354bc69a1976ea8a1b83e139b4d30c69f5ac9e3a570e991d63",
+      "bytes": 15762,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/core/04_BROWSER_APP_AND_RESEARCH_CONTROL.md",
+      "sha256": "8d3f48448e995e0e035c2bf3e01f05fac03c24993a8b8d833b74a46555ce8c35",
+      "bytes": 4183,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/core/05_IMPLEMENTATION_PLAN.md",
+      "sha256": "03e12a8610f01cda5f85b393870e1ad021d9655940654f7262b3c6bf8bd608f2",
+      "bytes": 7825,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/core/06_ACCEPTANCE_TESTS_AND_GUARDRAILS.md",
+      "sha256": "45140b8ea60f0dcf7b22ee5e1da3d6bcb473d6709345f23bed2df6aab4abc8ec",
+      "bytes": 8187,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/core/07_REUSE_EXTENSION_AND_FUTURE_PROOFING.md",
+      "sha256": "2fe977ebe26442c13bb7a30ac8678584f98a02fb7a8c9b7d5c6bd09f58d8b9cf",
+      "bytes": 6214,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/core/08_LEAD_AGENT_AND_CREATIVE_TOOL_RUNTIME.md",
+      "sha256": "e09519b29e5bd72b60385cf11c9f7ca15cac57b1316bb0a38eeb91d3eb46b0a2",
+      "bytes": 5830,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/core/09_CALLABLE_AGENTS_AND_ENGINEERING_METHOD.md",
+      "sha256": "ae7e580d0a4b43f1a1df19049208f92bf5b3fa39caa7c6033b75862ca9d64369",
+      "bytes": 6400,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/core/README.md",
+      "sha256": "7960ef750a38a63b2982a1494c373f8b6b406f74836da550c898b67a7807e58d",
+      "bytes": 3315,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/database.md",
+      "sha256": "ba4215b0a69d6182a1bc386e7f947a2a9bd3d307b3363ab99cf732d490842766",
+      "bytes": 7550,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/dependencies.md",
+      "sha256": "a12ea9edc5458bf49feec48a6e7886312376670c48db51821f48470a88fddccf",
+      "bytes": 4628,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/deployment.md",
+      "sha256": "ac4a945f9bbce9ebde35b185d7c4c3b8091d874ddf94c54eb5389e50dd26d3e1",
+      "bytes": 2435,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/governance.md",
+      "sha256": "b3f32490b58c24841dc2cf015c09c866f21fd062e3731f3b2fe43fc7035313f9",
+      "bytes": 5889,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/implementation-progress.md",
+      "sha256": "9ee94aac9260552fdeb922d549f9ff0d85c199b31ad46e460b81ee5263522303",
+      "bytes": 81165,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/limitations.md",
+      "sha256": "0c2a992b192070f7b170d656a177775b5874147e3e0ce19e16a24c98f4e7c58c",
+      "bytes": 3781,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/local-development.md",
+      "sha256": "10dad0fefd10e08b55d37b78fc7841a908a6669fc18893d069e661fd6f33e055",
+      "bytes": 738,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/mcp-a2a.md",
+      "sha256": "c536b468768d1b280365de86670aeaf790284d68dd316f8b6ddedabb9380bc06",
+      "bytes": 1071,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/memory.md",
+      "sha256": "aeeabd0d30f2ab2ca41a6f024ccd0406bc20c0c28f49e7ece7cf798713d05e6d",
+      "bytes": 714,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/model-execution.md",
+      "sha256": "3a0095f817ec9fbb4c33ebc1b00c6516340b6fa593f905ceec7a7d57710d8fc9",
+      "bytes": 833,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/model-gateway.md",
+      "sha256": "5e055f63f7fea4e4edc239298eb4a0e47acb39ef079e0fec8a6d9ffcc5c72f5d",
+      "bytes": 593,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/phase-7-handoff.md",
+      "sha256": "107bbe282b895f08937968f407d6b6f9dcfc52a3b7b3b02cc5de5b0b44e7d76a",
+      "bytes": 778,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/phase-9-handoff.md",
+      "sha256": "41758937d0470a7dc07ab8896c62e408f6d7df5e3fdc1778dac0ce4b668627a0",
+      "bytes": 3637,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/plugins.md",
+      "sha256": "26f92a545483b717c14989f5d7b469eaa854697fcbc7b7956ee36cfb95e80b8e",
+      "bytes": 1457,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/recovery.md",
+      "sha256": "e430889320462cd423fab1ab0b018ca4e110464a1939ac281d9b60b905aab08a",
+      "bytes": 3288,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/research.md",
+      "sha256": "9939d512bb71f9bbd8b2effd6355d84cf471d2d539ddd160dd9fcaabbcca0c8e",
+      "bytes": 2209,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/salience-phase-1-6.architecture.html",
+      "sha256": "d68f14807c03baf56e8e07b4829d4b08a3898f4f07c4460ee3d09d3fb416107d",
+      "bytes": 817491,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/salience-phase-1-6.architecture.json",
+      "sha256": "24bfe7c9e3f60892bc0b98de615dde858dd13f93ec7aa0008d43a0f0f6109edc",
+      "bytes": 8236,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/salience-phase-1-6.architecture.visual-check.1440x900.dark.png",
+      "sha256": "9ae540a959c9c1159e0569589ad87d8c8ab9471df21a507f89649e1eb543208e",
+      "bytes": 132653,
+      "tracked_in_main": true,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/salience-phase-1-6.architecture.visual-check.1440x900.light.png",
+      "sha256": "7c0c5f05a82dd75ae5ff9d23bb2566e6a75e668f91016c464db28db3a150502c",
+      "bytes": 139201,
+      "tracked_in_main": true,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/salience-phase-1-6.architecture.visual-check.2048x1320.dark.png",
+      "sha256": "40780a878328a91919f872231fe90013120aa2ebfea132efa1153360f42eeb98",
+      "bytes": 169251,
+      "tracked_in_main": true,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/salience-phase-1-6.architecture.visual-check.2048x1320.light.png",
+      "sha256": "77eed60758f214a91df1cebc9a6d53acf26598d947fcaf9681f257ad6eef4f92",
+      "bytes": 182145,
+      "tracked_in_main": true,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/salience-phase-1-6.architecture.visual-check.html",
+      "sha256": "b6c348b09e4d70e371f5bb3ae2b9c5039168a37f5c603204a09c64310e957fa3",
+      "bytes": 2030,
+      "tracked_in_main": true,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/salience-phase-1-6.architecture.visual-check.json",
+      "sha256": "e344a60e979a74243390666764fccc56baec2380f0d083a0f07746b7d8d1b430",
+      "bytes": 17319,
+      "tracked_in_main": true,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/salience-phase-1-8-final.architecture.html",
+      "sha256": "e888dd64671a5c456f166234ec84ae422b223e4944772c69ff6c704512260603",
+      "bytes": 819683,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/salience-phase-1-8-final.architecture.json",
+      "sha256": "f06d8d549297cd8614c2da36e266a133160673220ccfe441acde565540d6fd97",
+      "bytes": 6741,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/salience-phase-1-9.architecture.html",
+      "sha256": "f4861980432083493d2bd1d9b14ccb56487e46bfa6833370acff3ccf187af68e",
+      "bytes": 821780,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/salience-phase-1-9.architecture.json",
+      "sha256": "a2bfdb1ff9dc935b624cba5155ba9e1a26cbe7594f8469c431e709a26269796b",
+      "bytes": 7930,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/salience-phase-1-9.architecture.visual-check.1440x900.dark.png",
+      "sha256": "26b84c3c59dfdb16ec66728043cfaa51f6a459fc397dcc760b70e1688915da98",
+      "bytes": 127534,
+      "tracked_in_main": false,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/salience-phase-1-9.architecture.visual-check.1440x900.light.png",
+      "sha256": "26d6cfd76daca01f50e76d2f0f80b04370a2b530c7c7e99e2eb999030deb26d1",
+      "bytes": 134823,
+      "tracked_in_main": false,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/salience-phase-1-9.architecture.visual-check.2048x1320.dark.png",
+      "sha256": "70a347dffd8ca527dc7eb4f7959d6ef58fb1b97ccfeb559d7c7a23cab2dfaa36",
+      "bytes": 163584,
+      "tracked_in_main": false,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/salience-phase-1-9.architecture.visual-check.2048x1320.light.png",
+      "sha256": "e4c503653f612ca95cb45f9eb40a008f6c8c3de8c4e9bc071c0c620a2976e90d",
+      "bytes": 176086,
+      "tracked_in_main": false,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/salience-phase-1-9.architecture.visual-check.html",
+      "sha256": "d2f7a4ade255dcd70d1dc0af0cbf002ba082ab8a635416f8998c11a451ef8d4a",
+      "bytes": 2030,
+      "tracked_in_main": false,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/salience-phase-1-9.architecture.visual-check.json",
+      "sha256": "cfa41eb7ba99669e7f80624fe6787855656b7d2f0b09e4cfa5d0595d8f32ec19",
+      "bytes": 17340,
+      "tracked_in_main": false,
+      "category": "local_evidence",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-09-12-browser-evidence.md",
+      "sha256": "dc3580a1905d2a4cf809d1b1dfbe5eccfcb2cd7a094a89c2ec9ee4b36c7ff038",
+      "bytes": 19113,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-09-12-intelligence-loop-phases-5-6.md",
+      "sha256": "005432e80f72297e3c4c44766b77199931e9bf5f5c5d7290a415565d32ada1e3",
+      "bytes": 33787,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-09-12-phases-1-4-foundation.md",
+      "sha256": "a54a3ae82e027663782e832b1d615b98896bc96d55b3ea2f90482d5e62e9b6b9",
+      "bytes": 33964,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-09-13-creative-production-phases-7-8.md",
+      "sha256": "786eea554dc9997868063cf86a66911db98ef9a7d824b919a9a5d1bfc170eddf",
+      "bytes": 33066,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-09-13-phase-7-8-release-gate-phase-9-publishing.md",
+      "sha256": "c97dcd0ffb9337bb1b30e22ec2d5c32f99cc317a4cc0236a3053711b4801dded",
+      "bytes": 46999,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-09-13-phase-7-8-review-repairs.md",
+      "sha256": "9bc7e49558f7293907cb390a6b7be0cc5e51ba53bdbecac73420a3441ca766ab",
+      "bytes": 4019,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-09-13-phase-9-independent-review-repairs.md",
+      "sha256": "f495598ef9b40fe4eb326aa905935503234c826a89905bbdcd75ba76fce11c1a",
+      "bytes": 16660,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/superpowers/reviews/2026-09-13-phase-7-8-release-gate.md",
+      "sha256": "ed1d7fec0f8b7ef512286a294e6d073278d8407dd8888ce7ca25d971f54fa305",
+      "bytes": 2858,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/superpowers/reviews/2026-09-13-phase-9-independent-review.md",
+      "sha256": "7e2d79b46f1e8113641b78ff72ca1e38b00f089e5449b7cef18997b648c83ee7",
+      "bytes": 2769,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-09-12-browser-evidence-design.md",
+      "sha256": "000764f384f38f00ef43aaa9ea9bd6e7e71f8b4cd0b0a05903ab89750daf594b",
+      "bytes": 8565,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-09-12-intelligence-loop-phases-5-6-design.md",
+      "sha256": "560ff30bf09f2fd196f3cfaf5ac226833d6bd9c4e9ff3f6fd5bf83d8c56ebb25",
+      "bytes": 19338,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-09-13-creative-production-phases-7-8-design.md",
+      "sha256": "40ad68143c171862afe0de7d8e6e3ada38a3df791562dae3639ead67a94b6ba5",
+      "bytes": 14444,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-09-13-phase-7-8-release-gate-phase-9-publishing-design.md",
+      "sha256": "604ca8184ee1f42c22cfa80db8101640ccf1bc3e773c55a17a2075d2d063e025",
+      "bytes": 15146,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/trust-model.md",
+      "sha256": "726b8b2fcba6206aac0d9855e2454ea2b97b166d4ad774b74d4449bc49eb3633",
+      "bytes": 1205,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/verification.md",
+      "sha256": "5f1ab914d9eaa810e26cfeccc28a43ba7e0ca2d0222e54fb4ee96adc571f262a",
+      "bytes": 7616,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "docs/workflows.md",
+      "sha256": "6301ff82f4816f7300de6b1101b802e5af27475219faa9241a79e9a91b5e12b1",
+      "bytes": 4303,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "prompts/Build Creative Production Loop \u2014 Phases 7\u20138 End-to-End.md",
+      "sha256": "06f16aa324b72b3ea80ac3f6844db1829480a7439644928516e6b30610678d93",
+      "bytes": 25427,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "prompts/Build Phase 10 \u2014 Multi-Platform Production Publishing, Analytics, Attribution & Experiments.md",
+      "sha256": "8331b45cb94d4af296b3c762388a41419d8198310a342c66b89d1172ef26d267",
+      "bytes": 22580,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "prompts/Build Phases 1\u20134 End-to-End.md",
+      "sha256": "4486a0868585423a951e1a874eb55714cd35242963f9a0f47c9d53420d7c101a",
+      "bytes": 22791,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "prompts/Build Real Intelligence Loop \u2014 Pre-Phase 5 + Phases 5\u20136 End-to-End.md",
+      "sha256": "8222763df2b907f23e2495dfcd8cbba05d0d4d81c59e278c88dc148e2fab567e",
+      "bytes": 18142,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "prompts/Complete Phase 7\u20138 Release Gate, Then Build Phase 9 Governed Publishing.md",
+      "sha256": "a0056d08b55b64389950552b6fba92b9f58334cdb79a5d832c54f0166857d3a5",
+      "bytes": 22397,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    },
+    {
+      "path": "prompts/Install and Verify Browser Evidence on Linux EC2.md",
+      "sha256": "3bb10ab3e6f9b4cb159813e9100cb86c5847b448ce97e07ad3afbb0d2af808bb",
+      "bytes": 3102,
+      "tracked_in_main": true,
+      "category": "documentation",
+      "disposition": "inventory_only_pending_blueprint_validation"
+    }
+  ]
+}

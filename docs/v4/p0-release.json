@@ -1,0 +1,40 @@
+{
+  "phase": "P0",
+  "updated_at": "2026-09-23",
+  "baseline_commit": "8e50d68efbf2bec2aabfb2fe3226e01635de2adb",
+  "scope": "Isolated local foundation; no production traffic or effects",
+  "requirements": ["R01", "R22", "R69", "R16F", "R23F"],
+  "local_qualification": "PASS",
+  "verification": {
+    "focused_p0": {"passed": 37, "failed": 0, "skipped": 0},
+    "full_non_live": {"passed": 269, "failed": 0, "skipped": 0, "seconds": 254.27, "junit": "artifacts/v4-p0/final-regression.xml"},
+    "documentation_tests": {"passed": 7},
+    "mermaid_diagrams": {"rendered": 6, "failed": 0, "version": "12.0.0"},
+    "locked_evidence_files": 262,
+    "original_inventory_dispositions": 360,
+    "warning": "Pre-existing Starlette/AnyIO deprecation warning"
+  },
+  "evidence_artifacts": [
+    {"path": "artifacts/v4-p0/final-regression.xml", "sha256": "64ad3cd3e2d33e01bef4533ad59cbba8955b9e9dd7cadf723c8b9399436da4f5", "local_only": true},
+    {"path": "artifacts/v4-p0/final-regression.log", "sha256": "ef12334e80d0319986e6b78091f2a3edb8e964c048e51b42d6a38d738932d6a4", "local_only": true},
+    {"path": "artifacts/v4-p0/focused-p0.log", "sha256": "9f61d32f64a459e00a820743080465357002dc5e9ba8bf0d4de304d5417d8016", "local_only": true},
+    {"path": "artifacts/v4-p0/runtime-inventory.json", "sha256": "8e32e744334dc8f40dfa881695092d37ce1f1eea39a53b59f164b64640d5aced", "local_only": true}
+  ],
+  "release_gate": "RG0",
+  "release_status": "HELD",
+  "production_effects_enabled": false,
+  "external_checks": [
+    {"check": "independent safety review", "status": "NOT RUN", "reason": "Reviewer service returned an account usage-limit error; local inspection is not independent approval"},
+    {"check": "production identity and ingress", "status": "NOT RUN", "reason": "Approved issuer/public key, rotation ownership, TLS ingress and scoped production database role are not configured in this environment"},
+    {"check": "production storage and restore", "status": "NOT RUN", "reason": "Disposable real S3 qualification passes; managed encryption, backup restore and production credentials are not supplied or certified"},
+    {"check": "production collector and alert delivery", "status": "NOT RUN", "reason": "Local SDK export and correlation are tested; no approved remote telemetry/alert destination or on-call owner is configured"},
+    {"check": "remote repository gate enforcement", "status": "NOT RUN", "reason": "Local documentation CI definition validated; remote workflow execution and branch protection were not verified"}
+  ],
+  "later_phase_boundaries": {
+    "P1": "Outbox trace integration, re-admission revisions, G0 allocation/crash recovery and durable principal/capability envelope",
+    "P2": "G1 allocation transfer, all ready-package reference/outbox integration and enabled provider qualification",
+    "P3": "Trial/evaluation isolation and separate strategy/capability namespaces",
+    "P4": "Promotion/invalidation serialization; mandatory typed learning proposals with optional qualified semantic analyst",
+    "P5": "Advanced capability evolution, approved fallback integration and full compatibility upgrades"
+  }
+}

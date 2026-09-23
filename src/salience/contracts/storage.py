@@ -6,6 +6,18 @@ class ObjectNotFound(KeyError):
     pass
 
 
+class ObjectConflict(ValueError):
+    pass
+
+
+class ObjectIntegrityError(ValueError):
+    pass
+
+
+class ObjectStoreNotQualified(RuntimeError):
+    pass
+
+
 @dataclass(frozen=True)
 class ObjectReceipt:
     key: str
@@ -40,4 +52,3 @@ class ObjectStore(Protocol):
 
 class ArtifactRecorder(Protocol):
     def record(self, receipt: ObjectReceipt) -> None: ...
-

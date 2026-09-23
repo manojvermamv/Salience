@@ -1077,6 +1077,11 @@ def _content_brief_from_details(details: dict[str, object]) -> ControlContentBri
 
 def require_scope(required_scope: str):
     async def dependency(request: Request) -> RequestContext:
+        if hasattr(request.app.state, "identity_boundary"):
+            principal = getattr(request.state, "principal", None)
+            if principal is None or required_scope not in principal.scopes:
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
+            return RequestContext(scopes=principal.scopes)
         authorization = request.headers.get("Authorization", "")
         expected = request.app.state.control_token
         if authorization != f"Bearer {expected}":

@@ -1,9 +1,16 @@
 from dataclasses import dataclass, field
 from hashlib import sha256
 from typing import Mapping, Protocol
+from threading import Lock
+from uuid import uuid4
+
+from botocore.exceptions import ClientError
 
 from salience.contracts.storage import (
     ArtifactRecorder,
+    ObjectConflict,
+    ObjectIntegrityError,
+    ObjectStoreNotQualified,
     ObjectNotFound,
     ObjectReceipt,
     StoredObject,
@@ -19,6 +26,7 @@ class S3Client(Protocol):
         Body: bytes,
         ContentType: str,
         Metadata: dict[str, str],
+        IfNoneMatch: str,
     ) -> object: ...
 
     def get_object(self, *, Bucket: str, Key: str) -> dict[str, object]: ...
@@ -58,10 +66,37 @@ class S3ObjectStore:
         client: S3Client,
         bucket: str,
         artifact_recorder: ArtifactRecorder,
+        max_object_bytes: int = 100_000_000,
     ) -> None:
+        if max_object_bytes < 1:
+            raise ValueError("object byte limit must be positive")
+        self._max_object_bytes = max_object_bytes
         self._client = client
         self._bucket = bucket
         self._artifact_recorder = artifact_recorder
+        self._qualified = False
+        self._qualification_lock = Lock()
+
+    def qualify(self) -> None:
+        with self._qualification_lock:
+            if self._qualified:
+                return
+            key = f"__salience_qualification__/{uuid4()}"
+            first = b"a"
+            try:
+                self._client.put_object(Bucket=self._bucket, Key=key, Body=first, ContentType="application/octet-stream", Metadata={"sha256": sha256(first).hexdigest()}, IfNoneMatch="*")
+                try:
+                    self._client.put_object(Bucket=self._bucket, Key=key, Body=b"must-not-replace", ContentType="application/octet-stream", Metadata={}, IfNoneMatch="*")
+                except ClientError as error:
+                    if error.response.get("Error", {}).get("Code") not in {"PreconditionFailed", "412"}:
+                        raise
+                else:
+                    raise ObjectStoreNotQualified("S3 endpoint ignored conditional create; writes disabled")
+                if self.get(key).data != first:
+                    raise ObjectStoreNotQualified("S3 conditional create did not retain original bytes")
+            finally:
+                self._client.delete_object(Bucket=self._bucket, Key=key)
+            self._qualified = True
 
     def put(
         self,
@@ -71,15 +106,26 @@ class S3ObjectStore:
         content_type: str,
         metadata: Mapping[str, str],
     ) -> ObjectReceipt:
+        if len(data) > self._max_object_bytes:
+            raise ObjectIntegrityError("object exceeds configured byte limit")
+        self.qualify()
         content_hash = sha256(data).hexdigest()
         object_metadata = {**metadata, "sha256": content_hash}
-        self._client.put_object(
-            Bucket=self._bucket,
-            Key=key,
-            Body=data,
-            ContentType=content_type,
-            Metadata=object_metadata,
-        )
+        try:
+            self._client.put_object(
+                Bucket=self._bucket,
+                Key=key,
+                Body=data,
+                ContentType=content_type,
+                Metadata=object_metadata,
+                IfNoneMatch="*",
+            )
+        except ClientError as error:
+            if error.response.get("Error", {}).get("Code") not in {"PreconditionFailed", "412"}:
+                raise
+        stored = self.get(key)
+        if stored.data != data or stored.content_type != content_type or dict(stored.metadata) != object_metadata:
+            raise ObjectConflict(key)
         receipt = ObjectReceipt(
             key=key,
             content_hash=content_hash,
@@ -93,13 +139,22 @@ class S3ObjectStore:
     def get(self, key: str) -> StoredObject:
         try:
             response = self._client.get_object(Bucket=self._bucket, Key=key)
-        except Exception as error:
-            if error.__class__.__name__ in {"ClientError", "KeyError"}:
+        except ClientError as error:
+            if error.response.get("Error", {}).get("Code") in {"NoSuchKey", "404", "NotFound"}:
                 raise ObjectNotFound(key) from error
             raise
+        except KeyError as error:
+            raise ObjectNotFound(key) from error
         body = response["Body"]
-        data = body.read()
+        try:
+            data = body.read(self._max_object_bytes + 1)
+        finally:
+            body.close()
+        if len(data) > self._max_object_bytes:
+            raise ObjectIntegrityError("object exceeds configured byte limit")
         metadata = dict(response.get("Metadata", {}))
+        if sha256(data).hexdigest() != metadata.get("sha256"):
+            raise ObjectIntegrityError(key)
         return StoredObject(
             key=key,
             data=data,

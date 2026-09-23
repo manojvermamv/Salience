@@ -1,41 +1,8 @@
 # Callable agents
 
-Agent identity is an immutable `agent_id` plus semantic version. Manifests
-declare schemas, scopes, effect classification, timeout, protocol compatibility,
-trust classification, and delegated-authority hooks without naming a model,
-framework, or provider runtime.
+Superseded by the [V4 production implementation blueprint](<v4/IMPLEMENTATION-BLUEPRINT.md>). Use that document for all future work; this page preserves navigation only.
 
-The canonical migration stores agent versions, runs, delegation edges, teams,
-members, and events. Disabling a version retains its immutable history but
-prevents new resolution. Runtime/model/provider selection belongs only in a run
-mapping and provenance record, so adapters can be replaced without changing the
-public agent identity.
+[Original historical evidence](<archive/2026-09-22/docs/agents.md.snapshot>) is retained with its inventory hash. It is superseded source text, not a current execution plan.
 
-The Phase 2 fixture executor validates JSON input/output schemas at one shared
-boundary. Direct calls, delegated calls, and team members use that same service;
-delegated calls receive a child trace context and retain their parent run ID.
-The fixture runtimes are deterministic and do not invoke an AI/model provider.
-
-The Phase 5–6 workflow uses the same boundary for Research and Strategy
-specialists, and exposes an optional read-only Browser specialist. Their results
-are versioned, source-linked records: findings, questions, contradictions,
-assumptions, and uncertainties cross into the intelligence loop without granting
-the agent independent authority to publish, purchase, or change policy.
-
-Phase 7–8 adds deterministic fixture Writer, Creative Director, Production, and
-Verifier specialists. They draft/verify claim-linked scripts, produce a
-storyboard and bounded capability request, advance fixture provider state, and
-retain verifier decisions. They do not receive a publisher credential or an
-authority grant. `CreativeProductionWorkflow` remains the caller that binds
-their typed results to a selected brief, canonical job, policy/budget gate, and
-trace.
-
-The control API exposes listing, describing, and running the same manifests at
-`/v1/agents`. `SalienceClient.agents` and `content agents` use those HTTP
-schemas; neither bypasses the public transport with an internal runtime call.
-
-Creative agent output is provider-neutral: a capability request names a bounded
-capability/modality/format and optional provider ID, while provider
-selection/reconciliation occurs behind the owned creative-provider contract.
-Trust classification and delegated-authority fields remain manifest hooks for a
-later authority model; they do not activate autonomous action in this phase.
+<!-- Historical heading anchors retained for incoming links. -->
+<a id="callable-agents"></a>

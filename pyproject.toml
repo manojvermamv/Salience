@@ -19,6 +19,8 @@ dependencies = [
   "opentelemetry-sdk==1.44.0",
   "a2a-sdk==1.1.2",
   "pydantic==2.12.5",
+  "PyJWT[crypto]==2.14.0",
+  "cryptography==50.0.1",
   "psycopg[binary]==3.3.5",
   "sqlalchemy==2.0.52",
   "temporalio==1.32.0",

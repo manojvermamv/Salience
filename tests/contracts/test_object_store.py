@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from io import BytesIO
 
 import pytest
+from botocore.exceptions import ClientError
 
 from salience.contracts.storage import ObjectNotFound, ObjectStore
 from salience.storage.memory import MemoryObjectStore
@@ -28,7 +29,11 @@ class FakeS3Client:
         Body: bytes,
         ContentType: str,
         Metadata: dict[str, str],
+        IfNoneMatch: str,
     ) -> None:
+        assert IfNoneMatch == "*"
+        if (Bucket, Key) in self.objects:
+            raise ClientError({"Error": {"Code": "PreconditionFailed"}}, "PutObject")
         self.objects[(Bucket, Key)] = FakeS3Object(Body, ContentType, Metadata)
 
     def get_object(self, *, Bucket: str, Key: str) -> dict[str, object]:
@@ -86,4 +91,3 @@ def test_s3_object_store_contract_and_records_owned_metadata() -> None:
     )
     assert client.objects[("salience", receipt.key)].metadata["sha256"] == receipt.content_hash
     assert recorder.artifacts[-1].storage_key == receipt.key
-

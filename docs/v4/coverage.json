@@ -1,0 +1,279 @@
+{
+  "sources": [
+    {
+      "path": "docs-new-arch/ArchV4-implementation-notes.md",
+      "sha256": "6378d46cc347b84a1e8983263ba860faab2c44c81e84c12c32b7d2724fc0f078",
+      "begin": "<!-- V4 NOTES BEGIN -->",
+      "end": "<!-- V4 NOTES END -->",
+      "coverage": [
+        {
+          "start": 1,
+          "end": 26,
+          "requirements": [
+            "R01",
+            "R70"
+          ],
+          "basis": "Source section and all its prose/table/diagram lines; requirement assertions are decomposed in the blueprint matrix."
+        },
+        {
+          "start": 27,
+          "end": 47,
+          "requirements": [
+            "R01",
+            "R02",
+            "R03",
+            "R04"
+          ],
+          "basis": "Source section and all its prose/table/diagram lines; requirement assertions are decomposed in the blueprint matrix."
+        },
+        {
+          "start": 48,
+          "end": 86,
+          "requirements": [
+            "R05",
+            "R06",
+            "R07",
+            "R08",
+            "R09"
+          ],
+          "basis": "Source section and all its prose/table/diagram lines; requirement assertions are decomposed in the blueprint matrix."
+        },
+        {
+          "start": 87,
+          "end": 102,
+          "requirements": [
+            "R10",
+            "R11",
+            "R12",
+            "R13",
+            "R14",
+            "R14F"
+          ],
+          "basis": "Source section and all its prose/table/diagram lines; requirement assertions are decomposed in the blueprint matrix."
+        },
+        {
+          "start": 103,
+          "end": 132,
+          "requirements": [
+            "R15",
+            "R16",
+            "R17",
+            "R18",
+            "R19",
+            "R20",
+            "R21",
+            "R22",
+            "R23",
+            "R44",
+            "R48",
+            "R61",
+            "R16F",
+            "R23F"
+          ],
+          "basis": "Source section and all its prose/table/diagram lines; requirement assertions are decomposed in the blueprint matrix."
+        },
+        {
+          "start": 133,
+          "end": 172,
+          "requirements": [
+            "R24",
+            "R25",
+            "R26",
+            "R27",
+            "R28",
+            "R29",
+            "R30",
+            "R31",
+            "R51",
+            "R55",
+            "R25F"
+          ],
+          "basis": "Source section and all its prose/table/diagram lines; requirement assertions are decomposed in the blueprint matrix."
+        },
+        {
+          "start": 173,
+          "end": 217,
+          "requirements": [
+            "R32",
+            "R33",
+            "R34",
+            "R35"
+          ],
+          "basis": "Source section and all its prose/table/diagram lines; requirement assertions are decomposed in the blueprint matrix."
+        },
+        {
+          "start": 218,
+          "end": 233,
+          "requirements": [
+            "R36",
+            "R37",
+            "R38",
+            "R39",
+            "R40",
+            "R41",
+            "R42",
+            "R43",
+            "R56",
+            "R57",
+            "R58"
+          ],
+          "basis": "Source section and all its prose/table/diagram lines; requirement assertions are decomposed in the blueprint matrix."
+        },
+        {
+          "start": 234,
+          "end": 275,
+          "requirements": [
+            "R11",
+            "R12",
+            "R14",
+            "R44",
+            "R45",
+            "R46",
+            "R47",
+            "R48",
+            "R49",
+            "R50",
+            "R14F",
+            "R50F"
+          ],
+          "basis": "Source section and all its prose/table/diagram lines; requirement assertions are decomposed in the blueprint matrix."
+        },
+        {
+          "start": 276,
+          "end": 312,
+          "requirements": [
+            "R51",
+            "R60",
+            "R61",
+            "R62",
+            "R63",
+            "R64"
+          ],
+          "basis": "Source section and all its prose/table/diagram lines; requirement assertions are decomposed in the blueprint matrix."
+        },
+        {
+          "start": 313,
+          "end": 334,
+          "requirements": [
+            "R53",
+            "R54",
+            "R69"
+          ],
+          "basis": "Source section and all its prose/table/diagram lines; requirement assertions are decomposed in the blueprint matrix."
+        },
+        {
+          "start": 335,
+          "end": 360,
+          "requirements": [
+            "R65",
+            "R66",
+            "R67"
+          ],
+          "basis": "Source section and all its prose/table/diagram lines; requirement assertions are decomposed in the blueprint matrix."
+        },
+        {
+          "start": 361,
+          "end": 372,
+          "requirements": [
+            "R01",
+            "R52",
+            "R59",
+            "R68",
+            "R70"
+          ],
+          "basis": "Source section and all its prose/table/diagram lines; requirement assertions are decomposed in the blueprint matrix."
+        }
+      ]
+    },
+    {
+      "path": "docs-new-arch/ArchV4.mermaid",
+      "sha256": "44a0cf58e7f18129f3c6cdd8e8c5f179f0211f830456b59f0e9b48a3b9185809",
+      "begin": "<!-- V4 OVERVIEW BEGIN -->",
+      "end": "<!-- V4 OVERVIEW END -->",
+      "coverage": [
+        {
+          "start": 1,
+          "end": 137,
+          "requirements": [
+            "R01",
+            "R02",
+            "R03",
+            "R04",
+            "R05",
+            "R06",
+            "R07",
+            "R08",
+            "R09",
+            "R10",
+            "R11",
+            "R12",
+            "R13",
+            "R14",
+            "R15",
+            "R16",
+            "R17",
+            "R18",
+            "R19",
+            "R20",
+            "R21",
+            "R22",
+            "R23",
+            "R24",
+            "R25",
+            "R26",
+            "R27",
+            "R28",
+            "R29",
+            "R30",
+            "R31",
+            "R32",
+            "R33",
+            "R34",
+            "R35",
+            "R36",
+            "R37",
+            "R38",
+            "R39",
+            "R40",
+            "R41",
+            "R42",
+            "R43",
+            "R44",
+            "R45",
+            "R46",
+            "R47",
+            "R48",
+            "R49",
+            "R50",
+            "R51",
+            "R52",
+            "R53",
+            "R54",
+            "R55",
+            "R56",
+            "R57",
+            "R58",
+            "R59",
+            "R60",
+            "R61",
+            "R62",
+            "R63",
+            "R64",
+            "R65",
+            "R66",
+            "R67",
+            "R68",
+            "R69",
+            "R70",
+            "R14F",
+            "R16F",
+            "R23F",
+            "R25F",
+            "R50F"
+          ],
+          "basis": "Source section and all its prose/table/diagram lines; requirement assertions are decomposed in the blueprint matrix."
+        }
+      ]
+    }
+  ]
+}

@@ -59,6 +59,8 @@ class ComposeRestartResult:
 
 
 async def run_worker() -> None:
+    if os.environ.get("SALIENCE_DEPLOYMENT_MODE", "fixture") != "fixture":
+        raise ValueError("P0 does not authorize effect workers; production workers are not qualified")
     settings = Settings.from_environment()
     client = await Client.connect(settings.temporal_target)
     state = WorkflowScenarioState(

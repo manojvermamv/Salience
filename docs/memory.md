@@ -1,12 +1,8 @@
 # Scoped memory and bootstrap records
 
-Memory is PostgreSQL-backed and always filtered by content-program ID and
-declared scope. Records retain trust, confidence, evidence links, classification,
-retention, provenance, trace, and future supersession/conflict hooks. No vector
-database is introduced in Phases 1–6.
+Superseded by the [V4 production implementation blueprint](<v4/IMPLEMENTATION-BLUEPRINT.md>). Use that document for all future work; this page preserves navigation only.
 
-Research evidence and immutable strategy versions are separate canonical tables.
-They preserve source URI/fetch time/provenance and assumptions/evidence links so
-the Phase 4 niche bootstrap and Phase 5–6 intelligence loop remain explainable
-and replayable. Signals, opportunities, package evaluations, claims, and briefs
-carry their own canonical lineage rather than being flattened into memory.
+[Original historical evidence](<archive/2026-09-22/docs/memory.md.snapshot>) is retained with its inventory hash. It is superseded source text, not a current execution plan.
+
+<!-- Historical heading anchors retained for incoming links. -->
+<a id="scoped-memory-and-bootstrap-records"></a>

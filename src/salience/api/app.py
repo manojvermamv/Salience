@@ -1,4 +1,6 @@
 import os
+from pathlib import Path
+from uuid import UUID
 from collections.abc import Mapping
 
 from fastapi import FastAPI
@@ -42,6 +44,21 @@ def create_app(
 
 
 def create_configured_app() -> FastAPI:
+    mode = os.environ.get("SALIENCE_DEPLOYMENT_MODE", "fixture")
+    if mode == "p0":
+        from salience.api.p0 import create_p0_app
+
+        if os.environ.get("SALIENCE_TENANCY") != "single-workspace" or os.environ.get("SALIENCE_EFFECTS_ENABLED", "false") != "false":
+            raise ValueError("P0 requires single-workspace tenancy and disabled effects")
+        return create_p0_app(
+            database_url=os.environ["DATABASE_URL"],
+            workspace_id=UUID(os.environ["SALIENCE_WORKSPACE_ID"]),
+            issuer=os.environ["SALIENCE_IDENTITY_ISSUER"],
+            audience=os.environ["SALIENCE_IDENTITY_AUDIENCE"],
+            public_key=Path(os.environ["SALIENCE_IDENTITY_PUBLIC_KEY_FILE"]).read_text(),
+        )
+    if mode != "fixture":
+        raise ValueError("production deployment is not qualified; use isolated P0 or private fixture mode")
     settings = Settings.from_environment()
     return create_app(
         control_token=os.environ["CONTROL_PLANE_TOKEN"],

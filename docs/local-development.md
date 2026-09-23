@@ -1,18 +1,8 @@
 # Local development
 
-Copy `.env.example` to a local `.env` only when overriding defaults. Do not
-commit it. Start the application profile with:
+Superseded by the [V4 production implementation blueprint](<v4/IMPLEMENTATION-BLUEPRINT.md>). Use that document for all future work; this page preserves navigation only.
 
-```bash
-docker compose --profile application up --build
-docker compose run --rm migrate
-```
+[Original historical evidence](<archive/2026-09-22/docs/local-development.md.snapshot>) is retained with its inventory hash. It is superseded source text, not a current execution plan.
 
-The worker consumes `salience-phase-one`; the API creates both dummy and
-intelligence dry-run workflows on that queue. PostgreSQL is canonical, while
-Temporal and Garage remain replaceable adapters behind project-owned contracts.
-
-Use `content intelligence start` only after creating a workspace and content
-program through the control API. Configure public RSS feeds with exact
-`RESEARCH_ALLOWED_DOMAINS`; leave the browser optional unless local storage and
-operator policy permit its installation.
+<!-- Historical heading anchors retained for incoming links. -->
+<a id="local-development"></a>

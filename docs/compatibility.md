@@ -1,12 +1,8 @@
 # Protocol Compatibility
 
-Compatibility is checked at the owned gateway boundary before an external request. Unsupported revisions fail closed with a migration message; protocol SDK objects and wire payloads are not canonical domain values.
+Superseded by the [V4 production implementation blueprint](<v4/IMPLEMENTATION-BLUEPRINT.md>). Use that document for all future work; this page preserves navigation only.
 
-| Protocol revision | SDK / adapter | Supported surface | Authentication boundary | Status |
-| --- | --- | --- | --- | --- |
-| MCP `2026-07-28` | `mcp==2.2.0` | discovery and read-only `tools/call` | configured bearer/OAuth material is resolved only at the adapter edge | supported |
-| MCP `2025-11-25` | `mcp==2.2.0` negotiation path | legacy fixture discovery and read-only tools | no-auth fixture; production auth remains adapter-edge only | supported legacy |
-| A2A 1.0 | `a2a-sdk==1.1.2` | Agent Card, skills, task, artifact, cancellation | configured auth material is resolved only at the adapter edge | supported |
-| A2A 0.3 | `a2a-sdk==1.1.2` compatibility path | explicit legacy descriptor/task handling only | fixture-only until a configured adapter test is added | deprecated / migration required |
+[Original historical evidence](<archive/2026-09-22/docs/compatibility.md.snapshot>) is retained with its inventory hash. It is superseded source text, not a current execution plan.
 
-See `docs/adr/0005-mcp-a2a-and-browser-sdk-adoption.md` for the build-vs-adopt decision, fallback behavior, and replacement boundary.
+<!-- Historical heading anchors retained for incoming links. -->
+<a id="protocol-compatibility"></a>

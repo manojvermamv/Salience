@@ -1,6 +1,7 @@
 from contextlib import contextmanager
 from dataclasses import dataclass
 from secrets import token_hex
+import re
 from typing import Iterator
 
 from opentelemetry import trace
@@ -41,14 +42,17 @@ class TraceContext:
         version, trace_id, span_id, flags = carrier["traceparent"].split("-")
         if version != "00" or flags not in {"00", "01"}:
             raise ValueError("unsupported traceparent")
-        if len(trace_id) != 32 or len(span_id) != 16:
+        if not re.fullmatch(r"[0-9a-f]{32}", trace_id) or not re.fullmatch(r"[0-9a-f]{16}", span_id):
             raise ValueError("invalid traceparent identifiers")
-        int(trace_id, 16)
-        int(span_id, 16)
+        if not int(trace_id, 16) or not int(span_id, 16):
+            raise ValueError("zero traceparent identifier")
+        parent_span_id = carrier.get("x-salience-parent-span-id")
+        if parent_span_id is not None and (not re.fullmatch(r"[0-9a-f]{16}", parent_span_id) or not int(parent_span_id, 16)):
+            raise ValueError("invalid parent span identifier")
         return cls(
             trace_id=trace_id,
             span_id=span_id,
-            parent_span_id=carrier.get("x-salience-parent-span-id"),
+            parent_span_id=parent_span_id,
         )
 
     def otel_parent_context(self):
@@ -65,6 +69,16 @@ class TraceContext:
 class OpenTelemetryTraceEmitter:
     def __init__(self, tracer: trace.Tracer) -> None:
         self._tracer = tracer
+
+    @contextmanager
+    def active_span(self, context: TraceContext, name: str) -> Iterator[TraceContext]:
+        with self._tracer.start_as_current_span(name, context=context.otel_parent_context(), record_exception=False, set_status_on_exception=False) as span:
+            actual = span.get_span_context()
+            emitted = TraceContext(trace_id=f"{actual.trace_id:032x}", span_id=f"{actual.span_id:016x}", parent_span_id=context.span_id) if actual.is_valid else context
+            span.set_attribute("salience.trace_id", emitted.trace_id)
+            span.set_attribute("salience.span_id", emitted.span_id)
+            span.set_attribute("salience.parent_span_id", context.span_id)
+            yield emitted
 
     @contextmanager
     def span(self, context: TraceContext, name: str) -> Iterator[None]:
