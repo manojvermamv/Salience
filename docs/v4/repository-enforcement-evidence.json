@@ -1,6 +1,6 @@
 {
-  "inspected_at": "2026-09-23T13:59:12.844978+00:00",
-  "commit": "b1969c821485952a96433fb0ac7e4ea3fed20e31",
+  "inspected_at": "2026-09-23T17:14:17.694574+00:00",
+  "commit": "2edad82c3554805713682e2e1a75cd1d631a9555",
   "enforcement_status": "PASS",
   "ci_status": "PASS",
   "merge_status": "CHECKS PASS; independent PR approval still required",
@@ -50,23 +50,23 @@
   "effective_rules": [],
   "checks": [
     {
-      "id": 107201631175,
+      "id": 107226072425,
       "name": "p0-regression",
-      "head_sha": "b1969c821485952a96433fb0ac7e4ea3fed20e31",
+      "head_sha": "2edad82c3554805713682e2e1a75cd1d631a9555",
       "status": "completed",
       "conclusion": "success",
-      "details_url": "https://github.com/manojvermamv/Salience/actions/runs/35867175746/job/107201631175",
-      "completed_at": "2026-09-23T13:32:44Z"
+      "details_url": "https://github.com/manojvermamv/Salience/actions/runs/35874288819/job/107226072425",
+      "completed_at": "2026-09-23T14:32:09Z"
     },
     {
-      "id": 107201630820,
+      "id": 107226072137,
       "name": "verify",
-      "head_sha": "b1969c821485952a96433fb0ac7e4ea3fed20e31",
+      "head_sha": "2edad82c3554805713682e2e1a75cd1d631a9555",
       "status": "completed",
       "conclusion": "success",
-      "details_url": "https://github.com/manojvermamv/Salience/actions/runs/35867175746/job/107201630820",
-      "completed_at": "2026-09-23T13:27:29Z"
+      "details_url": "https://github.com/manojvermamv/Salience/actions/runs/35874288819/job/107226072137",
+      "completed_at": "2026-09-23T14:27:27Z"
     }
   ],
-  "raw_local_evidence_sha256": "9346cd1ec6f497376653f891266211323ae49476f2cb63f8d1a53538ffd5d50a"
+  "raw_local_evidence_sha256": "ad2eeacc21cc8bb671b10d9b6020b78475e59aeade08e37cb770abbd167b34ec"
 }

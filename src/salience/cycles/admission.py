@@ -36,10 +36,13 @@ class CycleAdmission:
             yield connection
 
     def _goal(self, connection, goal_id):
-        goal = connection.execute("SELECT goal.*, revision.payload FROM v4_goals AS goal JOIN v4_goal_revisions AS revision ON revision.goal_id=goal.id AND revision.revision=goal.revision WHERE goal.id=%s AND goal.workspace_id=%s FOR UPDATE OF goal", (goal_id,self.workspace_id)).fetchone()
+        goal = connection.execute("SELECT * FROM v4_goals WHERE id=%s AND workspace_id=%s FOR UPDATE", (goal_id,self.workspace_id)).fetchone()
         if not goal:
             raise PermissionError("goal outside current scope")
-        return goal, GoalSpec.model_validate(goal["payload"])
+        revision = connection.execute("SELECT payload FROM v4_goal_revisions WHERE goal_id=%s AND revision=%s", (goal_id,goal["revision"])).fetchone()
+        if not revision:
+            raise ValueError("goal revision payload unavailable")
+        return goal, GoalSpec.model_validate(revision["payload"])
 
     def _intent(self, connection, intent_id):
         identity = connection.execute("SELECT goal_id FROM v4_cycle_intents WHERE id=%s", (intent_id,)).fetchone()
@@ -83,18 +86,58 @@ class CycleAdmission:
             connection.execute("UPDATE v4_goals SET state=%s WHERE id=%s", (state,goal_id))
             self._event(connection,goal_id,"goal_state",{"from":goal["state"],"to":state})
 
+    def revise_goal(self, goal_id, spec: GoalSpec, *, expected_revision, idempotency_key, reason):
+        spec = GoalSpec.model_validate(spec.model_dump())
+        if type(expected_revision) is not int or expected_revision < 1:
+            raise ValueError("explicit positive expected revision required")
+        if not isinstance(idempotency_key,str) or not idempotency_key.strip() or len(idempotency_key)>256:
+            raise ValueError("bounded idempotency key required")
+        if not isinstance(reason,str) or not reason.strip() or len(reason)>2000:
+            raise ValueError("bounded revision reason required")
+        payload = spec.model_dump(mode="json")
+        fingerprint = sha256(json.dumps([str(self.subject_id),expected_revision,payload,reason],sort_keys=True,separators=(",",":")).encode()).hexdigest()
+        with self._command("goals:write") as connection:
+            goal, _ = self._goal(connection,goal_id)
+            existing = connection.execute("SELECT * FROM v4_goal_commands WHERE goal_id=%s AND idempotency_key=%s",(goal_id,idempotency_key)).fetchone()
+            if existing:
+                if existing["fingerprint"]!=fingerprint:
+                    raise ValueError("revision command fingerprint conflict")
+                return existing["resulting_revision"]
+            if goal["state"] in {"completed","cancelled"}:
+                raise ValueError("terminal goal cannot be revised")
+            if goal["revision"]!=expected_revision:
+                raise ValueError("stale expected goal revision")
+            now = connection.execute("SELECT clock_timestamp() AS now").fetchone()["now"]
+            if spec.horizon_end<=now:
+                raise ValueError("goal horizon expired")
+            resulting_revision=expected_revision+1
+            connection.execute("INSERT INTO v4_goal_revisions (goal_id,revision,payload) VALUES (%s,%s,%s)",(goal_id,resulting_revision,Jsonb(payload)))
+            connection.execute("UPDATE v4_goals SET revision=%s WHERE id=%s",(resulting_revision,goal_id))
+            connection.execute("INSERT INTO v4_goal_commands (goal_id,idempotency_key,subject_id,fingerprint,expected_revision,resulting_revision,reason) VALUES (%s,%s,%s,%s,%s,%s,%s)",(goal_id,idempotency_key,self.subject_id,fingerprint,expected_revision,resulting_revision,reason))
+            self._event(connection,goal_id,"goal_revised",{"from_revision":expected_revision,"to_revision":resulting_revision,"reason":reason,"idempotency_key":idempotency_key})
+            return resulting_revision
+
     def request_intent(self, goal_id, *, slot, due_at, expires_at, predecessor_cycle_id=None):
         if not isinstance(slot,str) or not slot.strip() or len(slot)>256 or due_at.tzinfo is None or expires_at.tzinfo is None or due_at>=expires_at:
             raise ValueError("bounded slot and aware valid time window required")
         with self._command("cycles:write") as connection:
             goal, spec = self._goal(connection,goal_id)
+            existing = connection.execute("SELECT * FROM v4_cycle_intents WHERE goal_id=%s AND slot=%s", (goal_id,slot)).fetchone()
+            bound_revision = existing["goal_revision"] if existing else goal["revision"]
+            fingerprint = sha256(json.dumps([str(goal_id),bound_revision,slot,due_at.astimezone(timezone.utc).isoformat(),expires_at.astimezone(timezone.utc).isoformat()]).encode()).hexdigest()
+            if existing and existing["fingerprint"] != fingerprint:
+                raise ValueError("intent fingerprint conflict")
+            if existing and not predecessor_cycle_id:
+                return existing["id"]
+            if existing and predecessor_cycle_id:
+                linked = connection.execute("SELECT successor_intent_id FROM v4_intent_successors WHERE predecessor_cycle_id=%s", (predecessor_cycle_id,)).fetchone()
+                if linked:
+                    if linked["successor_intent_id"] != existing["id"]:
+                        raise ValueError("strategic wake already coalesced")
+                    return existing["id"]
             now = connection.execute("SELECT clock_timestamp() AS now").fetchone()["now"]
             if goal["state"] != "active" or expires_at <= now or expires_at > spec.horizon_end:
                 raise ValueError("intent outside active goal horizon")
-            fingerprint = sha256(json.dumps([str(goal_id),goal["revision"],slot,due_at.astimezone(timezone.utc).isoformat(),expires_at.astimezone(timezone.utc).isoformat()]).encode()).hexdigest()
-            existing = connection.execute("SELECT * FROM v4_cycle_intents WHERE goal_id=%s AND slot=%s", (goal_id,slot)).fetchone()
-            if existing and existing["fingerprint"] != fingerprint:
-                raise ValueError("intent fingerprint conflict")
             predecessor = None
             if predecessor_cycle_id:
                 predecessor = connection.execute("SELECT cycle.*, intent.goal_id, intent.slot FROM v4_cycles AS cycle JOIN v4_cycle_intents AS intent ON intent.id=cycle.intent_id WHERE cycle.id=%s", (predecessor_cycle_id,)).fetchone()
@@ -148,6 +191,8 @@ class CycleAdmission:
             raise ValueError("explicit positive eligibility revision required")
         with self._command("cycles:review" if review else "cycles:write") as connection:
             goal, spec, intent = self._intent(connection,intent_id)
+            if goal["revision"] != intent["goal_revision"]:
+                raise ValueError("stale goal revision cannot wake")
             now = connection.execute("SELECT clock_timestamp() AS now").fetchone()["now"]
             if goal["state"] != "active" or now >= min(intent["expires_at"],spec.horizon_end):
                 raise ValueError("wake expired or cancelled")
@@ -174,6 +219,8 @@ class CycleAdmission:
             now = connection.execute("SELECT clock_timestamp() AS now").fetchone()["now"]
             if cycle["state"] == "closed":
                 raise ValueError("closed cycles never resume")
+            if goal["revision"] != intent["goal_revision"]:
+                raise ValueError("stale goal revision requires renewed authority")
             if goal["state"] != "active" or now >= spec.horizon_end:
                 raise ValueError("current goal does not allow recovery")
             if cycle["state"] == state:

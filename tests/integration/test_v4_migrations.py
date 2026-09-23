@@ -39,5 +39,18 @@ def test_clean_upgrade_empty_rollback_and_populated_preservation():
             with psycopg.connect(database) as connection:
                 assert connection.execute("SELECT count(*) FROM v4_goals").fetchone()[0] == 1
                 assert connection.execute("SELECT version_num FROM alembic_version").fetchone()[0] == expected_revision
+                subject=uuid4()
+                goal=connection.execute("SELECT id FROM v4_goals").fetchone()[0]
+                connection.execute("INSERT INTO identity_subjects (id,workspace_id,issuer,subject,expires_at) VALUES (%s,%s,'https://fixture.invalid',%s,now()+interval '1 hour')",(subject,workspace,str(subject)))
+                connection.execute("INSERT INTO v4_goal_revisions (goal_id,revision,payload) VALUES (%s,1,'{}'),(%s,2,'{}')",(goal,goal))
+                connection.execute("UPDATE v4_goals SET revision=2 WHERE id=%s",(goal,))
+                connection.execute("INSERT INTO v4_goal_commands (goal_id,idempotency_key,subject_id,fingerprint,expected_revision,resulting_revision,reason) VALUES (%s,'fixture',%s,'fixture',1,2,'rollback preservation')",(goal,subject))
+            result=migrate("downgrade","0018_cycle_outbox")
+            assert result.returncode!=0
+            assert "preserve goal revision command history" in result.stderr
+            with psycopg.connect(database) as connection:
+                assert connection.execute("SELECT count(*) FROM v4_goal_commands").fetchone()[0]==1
+                assert connection.execute("SELECT revision FROM v4_goals WHERE id=%s",(goal,)).fetchone()[0]==2
+                assert connection.execute("SELECT version_num FROM alembic_version").fetchone()[0]==expected_revision
         finally:
             admin.execute(psycopg.sql.SQL("DROP DATABASE {} WITH (FORCE)").format(psycopg.sql.Identifier(name)))

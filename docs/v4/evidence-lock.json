@@ -103,6 +103,10 @@
       "sha256": "e3aa49f53fe47eae4c894937110a6d27ee53705e781dd860011360b9ca99f6f7"
     },
     {
+      "path": "migrations/versions/0019_goal_revision_commands.py",
+      "sha256": "8864769068cf0a8ed67dc5f73bd9d6d355ef064579ce0a153e84c2987737d0ee"
+    },
+    {
       "path": "migrations/versions/__init__.py",
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
@@ -352,7 +356,7 @@
     },
     {
       "path": "src/salience/cycles/admission.py",
-      "sha256": "7e5ee3c457cdd8939eecad80d34ced2937ea2efd5d4024bdff4ebb8bdc9a026f"
+      "sha256": "e55dfd81156de4be8d46c5528111cd5bbc0d4ce2d332ca04c6083c05ba10fcd0"
     },
     {
       "path": "src/salience/cycles/contracts.py",
@@ -360,7 +364,7 @@
     },
     {
       "path": "src/salience/cycles/outbox.py",
-      "sha256": "a429fae0f95b593e21f643a3c51200f2397c968a1b44212d546177f82e9fc5bf"
+      "sha256": "a402b2359321bca64470cfcc28d3f39724761201435b6c65671cd84746acaa1d"
     },
     {
       "path": "src/salience/cycles/runtime.py",
@@ -911,12 +915,16 @@
       "sha256": "9e240bec6f630f77e1daedb7c8956b327522624ae48d126c72fd3c5e4dfb1aec"
     },
     {
+      "path": "tests/integration/test_v4_goal_revisions.py",
+      "sha256": "5463a9cd5e4e3caa0cf3c22a7a8521cf0490e6b4d305c89539713153c78496a8"
+    },
+    {
       "path": "tests/integration/test_v4_identity_isolation.py",
       "sha256": "5db6d320416570adb03e122b9061161108f06e9945829925b6555b1edd640f32"
     },
     {
       "path": "tests/integration/test_v4_migrations.py",
-      "sha256": "887b9b5783780615add2e1e1605da1a37fb827e7dbd49870a28a73d5cdbb5b4a"
+      "sha256": "eedae401111aad83f19dd272c020f7f743ab166a031ea9cc009a8591a080c194"
     },
     {
       "path": "tests/integration/test_v4_object_retention.py",

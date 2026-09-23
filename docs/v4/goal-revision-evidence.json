@@ -1,0 +1,38 @@
+{
+  "recorded_at": "2026-09-23",
+  "scope": "Local P1 goal revision subincrement; production effects disabled; full RG1 remains HELD",
+  "source_evidence_lock_sha256": "100829702720f26cc1a54af80f08e782bf1d859daef5b56ba299f08815d7b794",
+  "commands": [
+    {
+      "command": ".venv/bin/python -m pytest -p no:cacheprovider tests/integration/test_v4_goal_revisions.py tests/integration/test_v4_cycle_admission.py tests/integration/test_v4_outbox.py tests/integration/test_v4_migrations.py tests/e2e/test_v4_outbox_recovery.py -q --junitxml=artifacts/v4-p0/revisions-focused.xml",
+      "exit_code": 0,
+      "tests": 37,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 29.138,
+      "junit": "artifacts/v4-p0/revisions-focused.xml",
+      "junit_sha256": "9212983c08f91ee4b908690e3eb00f1c0e38b3038979ec0730a10517d7ad658f",
+      "log_sha256": "cda2d714a8300e4f489be1552cc8164a8d9e26b13051ec6cd299da9036dbe886"
+    },
+    {
+      "command": ".venv/bin/python -m pytest -p no:cacheprovider tests/contracts tests/unit tests/integration tests/e2e tests/evals -m 'not live' -q -rs --junitxml=artifacts/v4-p0/revisions-qualified-regression.xml",
+      "exit_code": 0,
+      "tests": 307,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 279.129,
+      "junit": "artifacts/v4-p0/revisions-qualified-regression.xml",
+      "junit_sha256": "920431f0ec83547ec7527d674abd67b0d382c1e207d2b67fa71e2bbe40dd4e7f",
+      "log_sha256": "4738287c7ab9cc610323af6177f13ff081df56dee9c01dcb96c37a2c74eaab09"
+    }
+  ],
+  "additional_verification": {
+    "documentation_tests": 14,
+    "mermaid_rendered": 6,
+    "mermaid_report_sha256": "6ab6bcbe4a8d1d0af7521e51fbf8d76836f012e2d67974f37c7d9c202784f0ae",
+    "independent_review": "Two shortened-horizon retry findings reproduced red, fixed and independently re-reviewed; active-goal SQL guard coverage expanded; no unresolved Important findings in this increment",
+    "production_effects_enabled": false
+  }
+}

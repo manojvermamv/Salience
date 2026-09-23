@@ -101,7 +101,7 @@ class CycleOutbox:
             missing = connection.execute("SELECT 1 FROM v4_cycle_outbox AS prior WHERE prior.cycle_id=%s AND prior.sequence<%s AND NOT EXISTS (SELECT 1 FROM v4_cycle_inbox WHERE message_id=prior.id)", (message["cycle_id"],message["sequence"])).fetchone()
             if missing:
                 raise ValueError("ordered consumption required")
-            current = connection.execute("SELECT goal.state AS goal_state, cycle.state AS cycle_state, context.payload FROM v4_goals AS goal JOIN v4_cycle_intents AS intent ON intent.goal_id=goal.id JOIN v4_cycles AS cycle ON cycle.intent_id=intent.id JOIN v4_run_contexts AS context ON context.id=cycle.context_id WHERE cycle.id=%s", (message["cycle_id"],)).fetchone()
+            current = connection.execute("SELECT goal.state AS goal_state, goal.revision AS current_revision, intent.goal_revision AS bound_revision, cycle.state AS cycle_state, context.payload FROM v4_goals AS goal JOIN v4_cycle_intents AS intent ON intent.goal_id=goal.id JOIN v4_cycles AS cycle ON cycle.intent_id=intent.id JOIN v4_run_contexts AS context ON context.id=cycle.context_id WHERE cycle.id=%s", (message["cycle_id"],)).fetchone()
             identity = connection.execute("SELECT issuer,subject FROM identity_subjects WHERE id=%s AND workspace_id=%s", (message["subject_id"],self.workspace_id)).fetchone()
             authorized = bool(identity and connection.execute("SELECT * FROM public.p0_lock_identity(%s,%s,%s)", (identity["issuer"],identity["subject"],self.workspace_id)).fetchone())
             grants = connection.execute("SELECT effect FROM permission_grants WHERE workspace_id=%s AND principal_type='identity' AND principal_id=%s AND scope='cycles:write' AND constraints='{}'::jsonb AND expires_at>clock_timestamp()", (self.workspace_id,str(message["subject_id"]))).fetchall()
@@ -110,7 +110,7 @@ class CycleOutbox:
             payload = current["payload"]
             if payload.get("production_effects_enabled") is not False or payload.get("dry_run") is not True or payload.get("provider") != "fixture.dummy@1.0.0":
                 raise ValueError("only the frozen no-effects fixture is supported")
-            state = "recorded" if authorized and current["goal_state"]=="active" else "held"
+            state = "recorded" if authorized and current["goal_state"]=="active" and current["current_revision"]==current["bound_revision"] else "held"
             if current["cycle_state"]=="closed" and message["kind"]!="close":
                 state="held"
             context = TraceContext.from_carrier({"traceparent":traceparent or message["traceparent"]})
