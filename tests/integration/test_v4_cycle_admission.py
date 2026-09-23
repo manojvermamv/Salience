@@ -21,12 +21,18 @@ def cycles():
     with psycopg.connect(database) as connection:
         connection.execute("INSERT INTO workspaces (id,slug,display_name) VALUES (%s,%s,'P1 fixture')", (workspace, str(workspace)))
         connection.execute("INSERT INTO identity_subjects (id,workspace_id,issuer,subject,expires_at) VALUES (%s,%s,'https://fixture.invalid',%s,now()+interval '1 hour')", (subject, workspace, str(subject)))
-        for scope in ["goals:write", "cycles:write", "cycles:review"]:
+        for scope in ["goals:write", "goals:approve", "cycles:write", "cycles:review"]:
             connection.execute("INSERT INTO permission_grants (workspace_id,principal_type,principal_id,scope,effect,constraints,expires_at) VALUES (%s,'identity',%s,%s,'allow','{}',now()+interval '1 hour')", (workspace,str(subject),scope))
     service = CycleAdmission(database, workspace_id=workspace, subject_id=subject)
     spec = GoalSpec(objective="Fixture evidence only", metric_versions=("fixture-quality@1",), audience="internal", account_refs=("fixture-account",), brand_scope="fixture-brand", source_policy="fixture-only", horizon_end=datetime.now(timezone.utc)+timedelta(days=1))
-    goal = service.create_goal(spec)
+    goal = approved_goal(service,spec)
     return service, goal, spec, database
+
+
+def approved_goal(service,spec):
+    goal=service.create_goal(spec)
+    service.approve_baseline(goal,expected_revision=1,expires_at=spec.horizon_end,reason="Explicit no-effects fixture baseline")
+    return goal
 
 
 def intent(service, goal, slot="slot", **changes):
@@ -53,7 +59,7 @@ def test_pre_admission_defer_reuses_intent_without_cycle(cycles):
 
 def test_review_readmission_is_cas_and_creates_only_one_cycle(cycles):
     service, _, spec, database = cycles
-    goal = service.create_goal(spec.model_copy(update={"review_required": True}))
+    goal = approved_goal(service,spec.model_copy(update={"review_required": True}))
     requested = intent(service, goal)
     assert service.admit(requested)["disposition"] == "review_required"
     with pytest.raises(PermissionError):
@@ -163,7 +169,7 @@ def test_due_wake_duplicate_and_expired_review(cycles):
     assert service.wake(requested,expected_revision=1) == 2
     assert service.wake(requested,expected_revision=1) == 2
     assert service.admit(requested)["cycle_id"] == service.admit(requested)["cycle_id"]
-    review_goal = service.create_goal(spec.model_copy(update={"review_required":True}))
+    review_goal = approved_goal(service,spec.model_copy(update={"review_required":True}))
     review = intent(service,review_goal,expires_at=datetime.now(timezone.utc)+timedelta(milliseconds=150))
     assert service.admit(review)["disposition"] == "review_required"
     time.sleep(0.2)
@@ -173,14 +179,14 @@ def test_due_wake_duplicate_and_expired_review(cycles):
 
 def test_review_permission_and_recovery_limit_are_current(cycles):
     service, _, spec, database = cycles
-    goal = service.create_goal(spec.model_copy(update={"review_required":True,"max_wakes":1}))
+    goal = approved_goal(service,spec.model_copy(update={"review_required":True,"max_wakes":1}))
     requested = intent(service,goal)
     service.admit(requested)
     with psycopg.connect(database) as connection:
         connection.execute("UPDATE permission_grants SET effect='deny' WHERE principal_id=%s AND scope='cycles:review'", (str(service.subject_id),))
     with pytest.raises(PermissionError):
         service.wake(requested,expected_revision=1,review=True)
-    plain = service.create_goal(spec.model_copy(update={"max_wakes":1}))
+    plain = approved_goal(service,spec.model_copy(update={"max_wakes":1}))
     admitted = service.admit(intent(service,plain))
     service.recover(admitted["cycle_id"],state="retry_due")
     service.recover(admitted["cycle_id"],state="runnable")

@@ -9,6 +9,7 @@ from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
 
 from salience.observability.tracing import OpenTelemetryTraceEmitter, TraceContext
+from salience.cycles.baselines import resolve_baseline
 
 
 def enqueue_cycle_message(connection, *, workspace_id, subject_id, goal_id, intent_id, cycle_id, kind, payload, traceparent):
@@ -108,6 +109,8 @@ class CycleOutbox:
             effects = {row["effect"] for row in grants}
             authorized = authorized and "allow" in effects and "deny" not in effects
             payload = current["payload"]
+            baseline_id=payload.get("baseline_approval_id")
+            authorized=authorized and baseline_id is not None and resolve_baseline(connection,message["goal_id"],current["bound_revision"],approval_id=baseline_id) is not None
             if payload.get("production_effects_enabled") is not False or payload.get("dry_run") is not True or payload.get("provider") != "fixture.dummy@1.0.0":
                 raise ValueError("only the frozen no-effects fixture is supported")
             state = "recorded" if authorized and current["goal_state"]=="active" and current["current_revision"]==current["bound_revision"] else "held"

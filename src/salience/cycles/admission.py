@@ -11,6 +11,7 @@ from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
 
 from salience.cycles.contracts import GoalSpec
+from salience.cycles.baselines import fixture_bundle, resolve_baseline
 from salience.cycles.outbox import enqueue_cycle_message
 from salience.observability.tracing import TraceContext
 
@@ -117,6 +118,45 @@ class CycleAdmission:
             self._event(connection,goal_id,"goal_revised",{"from_revision":expected_revision,"to_revision":resulting_revision,"reason":reason,"idempotency_key":idempotency_key})
             return resulting_revision
 
+    def approve_baseline(self, goal_id, *, expected_revision, expires_at, reason):
+        if type(expected_revision) is not int or expected_revision<1 or not isinstance(reason,str) or not reason.strip() or len(reason)>2000:
+            raise ValueError("explicit revision and bounded approval reason required")
+        if expires_at.tzinfo is None:
+            raise ValueError("aware approval expiry required")
+        bundle=fixture_bundle()
+        with self._command("goals:approve") as connection:
+            goal,spec=self._goal(connection,goal_id)
+            existing=connection.execute("SELECT * FROM v4_goal_baselines WHERE goal_id=%s AND goal_revision=%s",(goal_id,expected_revision)).fetchone()
+            if existing:
+                if existing["bundle"]!=bundle or existing["subject_id"]!=self.subject_id or existing["expires_at"]!=expires_at or existing["reason"]!=reason:
+                    raise ValueError("baseline approval fingerprint conflict")
+                return existing["approval_id"]
+            now=connection.execute("SELECT clock_timestamp() AS now").fetchone()["now"]
+            if goal["state"] not in {"active","paused"} or goal["revision"]!=expected_revision:
+                raise ValueError("current nonterminal goal revision required")
+            if not now<expires_at<=spec.horizon_end:
+                raise ValueError("approval expiry outside goal horizon")
+            approval_id=uuid4()
+            connection.execute("INSERT INTO v4_goal_baselines (approval_id,goal_id,goal_revision,subject_id,bundle,expires_at,reason,traceparent) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)",(approval_id,goal_id,expected_revision,self.subject_id,Jsonb(bundle),expires_at,reason,self.trace.to_carrier()["traceparent"]))
+            self._event(connection,goal_id,"baseline_approved",{"approval_id":str(approval_id),"goal_revision":expected_revision,"reason":reason,"expires_at":expires_at})
+            return approval_id
+
+    def revoke_baseline(self, goal_id, *, approval_id, reason):
+        if not isinstance(reason,str) or not reason.strip() or len(reason)>2000:
+            raise ValueError("bounded revocation reason required")
+        with self._command("goals:approve") as connection:
+            self._goal(connection,goal_id)
+            approval=connection.execute("SELECT 1 FROM v4_goal_baselines WHERE approval_id=%s AND goal_id=%s",(approval_id,goal_id)).fetchone()
+            if not approval:
+                raise PermissionError("approval outside goal scope")
+            existing=connection.execute("SELECT * FROM v4_baseline_revocations WHERE approval_id=%s",(approval_id,)).fetchone()
+            if existing:
+                if existing["subject_id"]!=self.subject_id or existing["reason"]!=reason:
+                    raise ValueError("baseline revocation fingerprint conflict")
+                return
+            connection.execute("INSERT INTO v4_baseline_revocations (approval_id,subject_id,reason,traceparent) VALUES (%s,%s,%s,%s)",(approval_id,self.subject_id,reason,self.trace.to_carrier()["traceparent"]))
+            self._event(connection,goal_id,"baseline_revoked",{"approval_id":str(approval_id),"reason":reason})
+
     def request_intent(self, goal_id, *, slot, due_at, expires_at, predecessor_cycle_id=None):
         if not isinstance(slot,str) or not slot.strip() or len(slot)>256 or due_at.tzinfo is None or expires_at.tzinfo is None or due_at>=expires_at:
             raise ValueError("bounded slot and aware valid time window required")
@@ -164,6 +204,7 @@ class CycleAdmission:
                 return existing
             now = connection.execute("SELECT clock_timestamp() AS now").fetchone()["now"]
             counts = connection.execute("SELECT count(*) AS total, count(*) FILTER (WHERE cycle.state!='closed') AS active FROM v4_cycles AS cycle JOIN v4_cycle_intents AS intent ON intent.id=cycle.intent_id WHERE intent.goal_id=%s", (goal["id"],)).fetchone()
+            baseline=resolve_baseline(connection,goal["id"],goal["revision"])
             disposition, reason = "admitted", "dry_run_baseline"
             if goal["state"] != "active" or goal["revision"] != intent["goal_revision"] or now >= min(intent["expires_at"],spec.horizon_end):
                 disposition, reason = "denied", "inactive_stale_or_expired"
@@ -171,6 +212,8 @@ class CycleAdmission:
                 disposition, reason = "denied", "cycle_quota"
             elif now < intent["due_at"]:
                 disposition, reason = "deferred", "not_due"
+            elif baseline is None:
+                disposition, reason = "review_required", "baseline_approval_required"
             elif spec.review_required and not intent["reviewed"]:
                 disposition, reason = "review_required", "bound_review_required"
             elif counts["active"] >= spec.max_concurrent:
@@ -180,6 +223,7 @@ class CycleAdmission:
                 cycle_id, context_id, operation_id = uuid4(),uuid4(),uuid4()
                 connection.execute("INSERT INTO v4_cycles (id,intent_id,context_id,operation_id,state) VALUES (%s,%s,%s,%s,'runnable')", (cycle_id,intent_id,context_id,operation_id))
                 payload = spec.model_dump(mode="json") | {"cycle_id":str(cycle_id),"goal_id":str(goal["id"]),"goal_revision":goal["revision"],"workspace_id":str(self.workspace_id),"subject_id":str(self.subject_id),"evidence_cutoff":now.isoformat(),"production_effects_enabled":False,"traceparent":self.trace.to_carrier()["traceparent"],"assignment_id":None}
+                payload.update(baseline["bundle"] | {"baseline_approval_id":str(baseline["approval_id"])})
                 connection.execute("INSERT INTO v4_run_contexts (id,cycle_id,payload) VALUES (%s,%s,%s)", (context_id,cycle_id,Jsonb(payload)))
                 enqueue_cycle_message(connection,workspace_id=self.workspace_id,subject_id=self.subject_id,goal_id=goal["id"],intent_id=intent_id,cycle_id=cycle_id,kind="start",payload={"context_id":str(context_id),"operation_id":str(operation_id)},traceparent=self.trace.to_carrier()["traceparent"])
             result = connection.execute("INSERT INTO v4_admissions (id,intent_id,eligibility_revision,disposition,reason,cycle_id) VALUES (%s,%s,%s,%s,%s,%s) RETURNING *", (uuid4(),intent_id,intent["eligibility_revision"],disposition,reason,cycle_id)).fetchone()
@@ -221,6 +265,10 @@ class CycleAdmission:
                 raise ValueError("closed cycles never resume")
             if goal["revision"] != intent["goal_revision"]:
                 raise ValueError("stale goal revision requires renewed authority")
+            context=connection.execute("SELECT payload FROM v4_run_contexts WHERE id=%s AND cycle_id=%s",(cycle["context_id"],cycle_id)).fetchone()
+            baseline_id=context["payload"].get("baseline_approval_id") if context else None
+            if baseline_id is None or resolve_baseline(connection,goal["id"],goal["revision"],approval_id=baseline_id) is None:
+                raise ValueError("current approved baseline required for recovery")
             if goal["state"] != "active" or now >= spec.horizon_end:
                 raise ValueError("current goal does not allow recovery")
             if cycle["state"] == state:

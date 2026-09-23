@@ -1,0 +1,38 @@
+{
+  "recorded_at": "2026-09-23",
+  "scope": "Explicit revision-bound local fixture baseline approval; no production effects; full RG1 remains HELD",
+  "source_evidence_lock_sha256": "70720f845fdb6ef5fb88a346721adc0ced3eb9c69c6b4a84023d7afe2771a181",
+  "commands": [
+    {
+      "command": ".venv/bin/python -m pytest -p no:cacheprovider tests/integration/test_v4_baseline_approval.py tests/integration/test_v4_goal_revisions.py tests/integration/test_v4_cycle_admission.py tests/integration/test_v4_outbox.py tests/integration/test_v4_migrations.py tests/e2e/test_v4_outbox_recovery.py -q --junitxml=artifacts/v4-p0/baseline-focused.xml",
+      "exit_code": 0,
+      "tests": 47,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 35.204,
+      "junit": "artifacts/v4-p0/baseline-focused.xml",
+      "junit_sha256": "d245fe7e4f458402867446be766ac2c64b0b0b2d9da638247c1991dab71062e2",
+      "log_sha256": "b0bbe3c1edf722d7d351d5813b9c3529c0a2c54aafef5d6505956d57ef6ccdc3"
+    },
+    {
+      "command": ".venv/bin/python -m pytest -p no:cacheprovider tests/contracts tests/unit tests/integration tests/e2e tests/evals -m 'not live' -q -rs --junitxml=artifacts/v4-p0/baseline-qualified-regression.xml",
+      "exit_code": 0,
+      "tests": 317,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 286.251,
+      "junit": "artifacts/v4-p0/baseline-qualified-regression.xml",
+      "junit_sha256": "a1ceeaccefccde448b1d976e478d53de721305d11db68e2f5eb4ae28f440df02",
+      "log_sha256": "b0d8ca2d4aebbf8e257a4c6dac46d8fc3d174594b601d83e37f35a42af208358"
+    }
+  ],
+  "additional_verification": {
+    "documentation_tests": 14,
+    "mermaid_rendered": 6,
+    "mermaid_report_sha256": "6ab6bcbe4a8d1d0af7521e51fbf8d76836f012e2d67974f37c7d9c202784f0ae",
+    "independent_review": "Historical-context recovery bypass reproduced red, fixed by binding the frozen approval ID, independently re-reviewed with no unresolved Important findings",
+    "production_effects_enabled": false
+  }
+}

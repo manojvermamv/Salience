@@ -24,11 +24,12 @@ def scenario():
     with psycopg.connect(database) as connection:
         connection.execute("INSERT INTO workspaces (id,slug,display_name) VALUES (%s,%s,'outbox fixture')",(workspace,str(workspace)))
         connection.execute("INSERT INTO identity_subjects (id,workspace_id,issuer,subject,expires_at) VALUES (%s,%s,'https://fixture.invalid',%s,now()+interval '1 hour')",(subject,workspace,str(subject)))
-        for scope in ["goals:write","cycles:write"]:
+        for scope in ["goals:write","goals:approve","cycles:write"]:
             connection.execute("INSERT INTO permission_grants (workspace_id,principal_type,principal_id,scope,effect,constraints,expires_at) VALUES (%s,'identity',%s,%s,'allow','{}',now()+interval '1 hour')",(workspace,str(subject),scope))
     service=CycleAdmission(database,workspace_id=workspace,subject_id=subject)
     now=datetime.now(timezone.utc)
     goal=service.create_goal(GoalSpec(objective="outbox crash fixture",metric_versions=("fixture@1",),audience="internal",account_refs=("fixture",),brand_scope="fixture",source_policy="fixture-only",horizon_end=now+timedelta(hours=1)))
+    service.approve_baseline(goal,expected_revision=1,expires_at=now+timedelta(hours=1),reason="Explicit process-recovery fixture baseline")
     requested=service.request_intent(goal,slot="one",due_at=now,expires_at=now+timedelta(minutes=5))
     admitted=service.admit(requested)
     return service,CycleOutbox(database,workspace_id=workspace),admitted

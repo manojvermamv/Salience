@@ -52,5 +52,12 @@ def test_clean_upgrade_empty_rollback_and_populated_preservation():
                 assert connection.execute("SELECT count(*) FROM v4_goal_commands").fetchone()[0]==1
                 assert connection.execute("SELECT revision FROM v4_goals WHERE id=%s",(goal,)).fetchone()[0]==2
                 assert connection.execute("SELECT version_num FROM alembic_version").fetchone()[0]==expected_revision
+                connection.execute("INSERT INTO v4_goal_baselines (approval_id,goal_id,goal_revision,subject_id,bundle,expires_at,reason,traceparent) VALUES (%s,%s,2,%s,'{}',now()+interval '1 hour','preservation','fixture')",(uuid4(),goal,subject))
+            result=migrate("downgrade","0019_goal_revision_commands")
+            assert result.returncode!=0
+            assert "preserve baseline approval and revocation history" in result.stderr
+            with psycopg.connect(database) as connection:
+                assert connection.execute("SELECT count(*) FROM v4_goal_baselines").fetchone()[0]==1
+                assert connection.execute("SELECT version_num FROM alembic_version").fetchone()[0]==expected_revision
         finally:
             admin.execute(psycopg.sql.SQL("DROP DATABASE {} WITH (FORCE)").format(psycopg.sql.Identifier(name)))

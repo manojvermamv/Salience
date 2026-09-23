@@ -20,13 +20,13 @@
       "exit_code": 0
     },
     "full_non_live": {
-      "passed": 307,
+      "passed": 317,
       "failed": 0,
       "errors": 0,
       "skipped": 0,
       "exit_code": 0,
-      "seconds": 277.09,
-      "junit": "artifacts/v4-p0/revisions-qualified-regression.xml"
+      "seconds": 284.55,
+      "junit": "artifacts/v4-p0/baseline-qualified-regression.xml"
     },
     "documentation_tests": {
       "passed": 14,
@@ -40,7 +40,7 @@
       "failed": 0,
       "version": "12.0.0"
     },
-    "locked_evidence_files": 277,
+    "locked_evidence_files": 280,
     "original_inventory_dispositions": 360,
     "warning": "Pre-existing Starlette/AnyIO deprecation warning"
   },
@@ -84,6 +84,11 @@
       "path": "docs/v4/goal-revision-evidence.json",
       "sha256": "97805c1b80c9ad243726c9b5e5242daa3ddb867cebdfde5e391ea0b1a63164a2",
       "local_only": false
+    },
+    {
+      "path": "docs/v4/baseline-approval-evidence.json",
+      "sha256": "66c3ca048068f29fafe6f8ed06cac5e544328c6493684ad8ef00a4de0b31a02f",
+      "local_only": false
     }
   ],
   "release_gate": "RG0",
@@ -113,7 +118,7 @@
     {
       "check": "remote repository gate enforcement",
       "status": "PASS",
-      "evidence": "docs/v4/repository-enforcement-evidence.json: 2edad82c3554805713682e2e1a75cd1d631a9555; both required checks successful with strict app-bound main protection read back. Every later head requires fresh inspection."
+      "evidence": "docs/v4/repository-enforcement-evidence.json: e296d49e87dd4aa1fa570bc6347fb8f9b35703f1; both required checks successful with strict app-bound main protection read back. Every later head requires fresh inspection."
     }
   ],
   "later_phase_boundaries": {
@@ -156,7 +161,7 @@
     ]
   },
   "p1_increment": {
-    "name": "P1a admission, P1b local outbox and goal revision integrity",
+    "name": "Local admission/outbox, goal revisions and explicit fixture baseline approval",
     "local_status": "PASS",
     "release_gate": "RG1",
     "release_status": "HELD",
@@ -175,9 +180,9 @@
       "R35",
       "R53"
     ],
-    "evidence": "docs/v4/goal-revision-evidence.json",
+    "evidence": "docs/v4/baseline-approval-evidence.json",
     "remaining": [
-      "Full goal/context authority envelopes, explicit cadence policies and approved registry baseline; reuse completed immutable revision commands",
+      "Complete goal/context authority envelopes and explicit cadence policies; general registry/provider eligibility beyond the approved no-effects fixture baseline",
       "G0 paid allocation ledger and G1 transfer/release/crash recovery contract",
       "Automatic dispatcher service, all legacy start/signal cutover, full API-to-provider outbox integration and production typed delivery recovery",
       "Stop/dispatch permits and version-bound cases/review/resume/archive",

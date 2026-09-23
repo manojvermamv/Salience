@@ -107,6 +107,10 @@
       "sha256": "8864769068cf0a8ed67dc5f73bd9d6d355ef064579ce0a153e84c2987737d0ee"
     },
     {
+      "path": "migrations/versions/0020_goal_baselines.py",
+      "sha256": "a396146de518f58f5c816dc570585d29140e7a8a8b19ef40acc9edd9670e1386"
+    },
+    {
       "path": "migrations/versions/__init__.py",
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
@@ -356,7 +360,11 @@
     },
     {
       "path": "src/salience/cycles/admission.py",
-      "sha256": "e55dfd81156de4be8d46c5528111cd5bbc0d4ce2d332ca04c6083c05ba10fcd0"
+      "sha256": "1846a415eae938b7c368cb6cca70ed3de65f5e2b80298890e491b711a48d1459"
+    },
+    {
+      "path": "src/salience/cycles/baselines.py",
+      "sha256": "1e36dd950a55dbc3ed906cdf9a89d7f1d6f6118384721e52c01ddd68a4cd9963"
     },
     {
       "path": "src/salience/cycles/contracts.py",
@@ -364,7 +372,7 @@
     },
     {
       "path": "src/salience/cycles/outbox.py",
-      "sha256": "a402b2359321bca64470cfcc28d3f39724761201435b6c65671cd84746acaa1d"
+      "sha256": "06e5ff37f7e7b82effcd0040b03b92e803e1be5efa4ed60e093e51dd1af2db30"
     },
     {
       "path": "src/salience/cycles/runtime.py",
@@ -740,7 +748,7 @@
     },
     {
       "path": "tests/e2e/test_v4_outbox_recovery.py",
-      "sha256": "15723e3e084ec10b472e5bb21191d4b61fd5567236a3219a09f9fcfd8cf3f691"
+      "sha256": "a4b17cfca59528e2ed4108866671ba4673ba5038b129d26a532efa53ebfccd27"
     },
     {
       "path": "tests/e2e/test_worker_restart.py",
@@ -911,8 +919,12 @@
       "sha256": "f0ff0bcd0f94d378663321aa66b8a3e62d5c6ec5e29e7976171acd00ff9a680a"
     },
     {
+      "path": "tests/integration/test_v4_baseline_approval.py",
+      "sha256": "111f34f17b98185e8c59ea168610d06fd2faec43805c21287e4dad539494ee45"
+    },
+    {
       "path": "tests/integration/test_v4_cycle_admission.py",
-      "sha256": "9e240bec6f630f77e1daedb7c8956b327522624ae48d126c72fd3c5e4dfb1aec"
+      "sha256": "621376d59d4bbd801ba213bffb6e5370fbf2c87a51ca7422a7298e45d7f433aa"
     },
     {
       "path": "tests/integration/test_v4_goal_revisions.py",
@@ -924,7 +936,7 @@
     },
     {
       "path": "tests/integration/test_v4_migrations.py",
-      "sha256": "eedae401111aad83f19dd272c020f7f743ab166a031ea9cc009a8591a080c194"
+      "sha256": "1e1b344fe2088c6d7dc48a7e23a55d2d6eb47ca55395b9cf6f9f2a073437a29f"
     },
     {
       "path": "tests/integration/test_v4_object_retention.py",
