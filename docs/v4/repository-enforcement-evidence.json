@@ -1,6 +1,6 @@
 {
-  "inspected_at": "2026-09-23T17:34:20.006482+00:00",
-  "commit": "e296d49e87dd4aa1fa570bc6347fb8f9b35703f1",
+  "inspected_at": "2026-09-23T17:49:03.182364+00:00",
+  "commit": "e628ccf478988b4db553983d990f43a3e3ca289a",
   "enforcement_status": "PASS",
   "ci_status": "PASS",
   "merge_status": "CHECKS PASS; independent PR approval still required",
@@ -50,23 +50,23 @@
   "effective_rules": [],
   "checks": [
     {
-      "id": 107299612147,
+      "id": 107305201737,
       "name": "verify",
-      "head_sha": "e296d49e87dd4aa1fa570bc6347fb8f9b35703f1",
+      "head_sha": "e628ccf478988b4db553983d990f43a3e3ca289a",
       "status": "completed",
       "conclusion": "success",
-      "details_url": "https://github.com/manojvermamv/Salience/actions/runs/35895897268/job/107299612147",
-      "completed_at": "2026-09-23T17:29:07Z"
+      "details_url": "https://github.com/manojvermamv/Salience/actions/runs/35897567689/job/107305201737",
+      "completed_at": "2026-09-23T17:43:39Z"
     },
     {
-      "id": 107299611881,
+      "id": 107305201306,
       "name": "p0-regression",
-      "head_sha": "e296d49e87dd4aa1fa570bc6347fb8f9b35703f1",
+      "head_sha": "e628ccf478988b4db553983d990f43a3e3ca289a",
       "status": "completed",
       "conclusion": "success",
-      "details_url": "https://github.com/manojvermamv/Salience/actions/runs/35895897268/job/107299611881",
-      "completed_at": "2026-09-23T17:33:54Z"
+      "details_url": "https://github.com/manojvermamv/Salience/actions/runs/35897567689/job/107305201306",
+      "completed_at": "2026-09-23T17:48:37Z"
     }
   ],
-  "raw_local_evidence_sha256": "0d455f916a4b0d4b335978b76816c00b54ff2ea0b98a79ee491edbb21fe27f45"
+  "raw_local_evidence_sha256": "350a25fbaa0077db901e87c185adf1159971dd98b6d82941c69b2bb84e45e32b"
 }

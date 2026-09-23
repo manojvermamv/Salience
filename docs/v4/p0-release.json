@@ -98,7 +98,7 @@
     {
       "check": "independent safety review",
       "status": "NOT RUN",
-      "reason": "Independent engineering review of this correction and P1a completed after two validator repairs; production operator safety/deployment approval is still not supplied."
+      "reason": "Independent engineering reviews and re-reviews cover the local correction, outbox, goal revision and baseline increments. Production operator safety/deployment approval remains unavailable and is not implied."
     },
     {
       "check": "production identity and ingress",
@@ -118,7 +118,7 @@
     {
       "check": "remote repository gate enforcement",
       "status": "PASS",
-      "evidence": "docs/v4/repository-enforcement-evidence.json: e296d49e87dd4aa1fa570bc6347fb8f9b35703f1; both required checks successful with strict app-bound main protection read back. Every later head requires fresh inspection."
+      "evidence": "docs/v4/repository-enforcement-evidence.json: e628ccf478988b4db553983d990f43a3e3ca289a; verify and p0-regression PASS, strict app-bound main protection and current independent PR approval requirements read back. Later heads require fresh inspection."
     }
   ],
   "later_phase_boundaries": {
