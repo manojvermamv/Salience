@@ -20,16 +20,16 @@
       "exit_code": 0
     },
     "full_non_live": {
-      "passed": 284,
+      "passed": 299,
       "failed": 0,
       "errors": 0,
       "skipped": 0,
       "exit_code": 0,
-      "seconds": 257.86,
-      "junit": "artifacts/v4-p0/p1-regression.xml"
+      "seconds": 276.72,
+      "junit": "artifacts/v4-p0/outbox-qualified-regression.xml"
     },
     "documentation_tests": {
-      "passed": 13,
+      "passed": 14,
       "failed": 0,
       "errors": 0,
       "skipped": 0,
@@ -40,7 +40,7 @@
       "failed": 0,
       "version": "12.0.0"
     },
-    "locked_evidence_files": 269,
+    "locked_evidence_files": 275,
     "original_inventory_dispositions": 360,
     "warning": "Pre-existing Starlette/AnyIO deprecation warning"
   },
@@ -74,6 +74,11 @@
       "path": "docs/v4/p1-increment-evidence.json",
       "sha256": "0ff2183c8993d72b05832db167e82433c2bced74e047b3609574877701ac591f",
       "local_only": false
+    },
+    {
+      "path": "docs/v4/outbox-increment-evidence.json",
+      "sha256": "d1200fda0921e7c46844e9a5804c68e522addf1d41f176e68210e4834fc30504",
+      "local_only": false
     }
   ],
   "release_gate": "RG0",
@@ -102,9 +107,8 @@
     },
     {
       "check": "remote repository gate enforcement",
-      "status": "FAIL",
-      "reason": "Strict app-bound main protection verified; run 35860805982 failed storage fixture ownership despite 280 passing tests. Matching-UID fixture repair passes five local storage tests; repaired-head remote CI pending.",
-      "evidence": "artifacts/v4-p0/repository-review-before-publication.json"
+      "status": "PASS",
+      "evidence": "docs/v4/repository-enforcement-evidence.json: b1969c821485952a96433fb0ac7e4ea3fed20e31; verify and p0-regression successful, strict app-bound checks and administrator/PR enforcement read back. Future heads require fresh inspection."
     }
   ],
   "later_phase_boundaries": {
@@ -147,12 +151,14 @@
     ]
   },
   "p1_increment": {
-    "name": "P1a local admission and lifecycle",
+    "name": "P1a admission/lifecycle and P1b local outbox/Temporal fixture",
     "local_status": "PASS",
     "release_gate": "RG1",
     "release_status": "HELD",
     "production_effects_enabled": false,
     "partial_requirements": [
+      "R02",
+      "R03",
       "R05",
       "R06",
       "R07",
@@ -164,14 +170,14 @@
       "R35",
       "R53"
     ],
-    "evidence": "docs/v4/p1-increment-evidence.json",
+    "evidence": "docs/v4/outbox-increment-evidence.json",
     "remaining": [
       "Full goal/revision/cadence/authority envelopes and approved registry baseline",
       "G0 paid allocation ledger and G1 transfer/release/crash recovery contract",
-      "Transactional ordered outbox/inbox and Temporal start/signal recovery",
+      "Automatic dispatcher service, all legacy start/signal cutover, full API-to-provider outbox integration and production typed delivery recovery",
       "Stop/dispatch permits and version-bound cases/review/resume/archive",
       "API/CLI/SDK parity and schedule conversion",
-      "Real workflow upgrade/replay/Continue-As-New and independent RG1 qualification"
+      "Arbitrary supported worker-version compatibility, Continue-As-New, real-time durable review deadlines and independent full RG1 qualification"
     ]
   }
 }

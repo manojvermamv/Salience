@@ -1,0 +1,72 @@
+{
+  "inspected_at": "2026-09-23T13:59:12.844978+00:00",
+  "commit": "b1969c821485952a96433fb0ac7e4ea3fed20e31",
+  "enforcement_status": "PASS",
+  "ci_status": "PASS",
+  "merge_status": "CHECKS PASS; independent PR approval still required",
+  "errors": [],
+  "protection": {
+    "required_status_checks": {
+      "url": "https://api.github.com/repos/manojvermamv/Salience/branches/main/protection/required_status_checks",
+      "strict": true,
+      "contexts": [
+        "verify",
+        "p0-regression"
+      ],
+      "contexts_url": "https://api.github.com/repos/manojvermamv/Salience/branches/main/protection/required_status_checks/contexts",
+      "checks": [
+        {
+          "context": "verify",
+          "app_id": 15368
+        },
+        {
+          "context": "p0-regression",
+          "app_id": 15368
+        }
+      ]
+    },
+    "enforce_admins": {
+      "url": "https://api.github.com/repos/manojvermamv/Salience/branches/main/protection/enforce_admins",
+      "enabled": true
+    },
+    "required_pull_request_reviews": {
+      "url": "https://api.github.com/repos/manojvermamv/Salience/branches/main/protection/required_pull_request_reviews",
+      "dismiss_stale_reviews": true,
+      "require_code_owner_reviews": false,
+      "require_last_push_approval": true,
+      "required_approving_review_count": 1
+    },
+    "allow_force_pushes": {
+      "enabled": false
+    },
+    "allow_deletions": {
+      "enabled": false
+    },
+    "required_conversation_resolution": {
+      "enabled": true
+    }
+  },
+  "rulesets": [],
+  "effective_rules": [],
+  "checks": [
+    {
+      "id": 107201631175,
+      "name": "p0-regression",
+      "head_sha": "b1969c821485952a96433fb0ac7e4ea3fed20e31",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/manojvermamv/Salience/actions/runs/35867175746/job/107201631175",
+      "completed_at": "2026-09-23T13:32:44Z"
+    },
+    {
+      "id": 107201630820,
+      "name": "verify",
+      "head_sha": "b1969c821485952a96433fb0ac7e4ea3fed20e31",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/manojvermamv/Salience/actions/runs/35867175746/job/107201630820",
+      "completed_at": "2026-09-23T13:27:29Z"
+    }
+  ],
+  "raw_local_evidence_sha256": "9346cd1ec6f497376653f891266211323ae49476f2cb63f8d1a53538ffd5d50a"
+}

@@ -99,6 +99,10 @@
       "sha256": "7edb440523a591ddb145859c1cf02390510842c620fcc5e2df653fc533d7ddcb"
     },
     {
+      "path": "migrations/versions/0018_cycle_outbox.py",
+      "sha256": "e3aa49f53fe47eae4c894937110a6d27ee53705e781dd860011360b9ca99f6f7"
+    },
+    {
       "path": "migrations/versions/__init__.py",
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
@@ -348,11 +352,23 @@
     },
     {
       "path": "src/salience/cycles/admission.py",
-      "sha256": "f1f0cd3031565b25503d1322d4defa6dd970eb1096c71847b1787916be74c32e"
+      "sha256": "7e5ee3c457cdd8939eecad80d34ced2937ea2efd5d4024bdff4ebb8bdc9a026f"
     },
     {
       "path": "src/salience/cycles/contracts.py",
       "sha256": "3dc2bd826d4f55607db4ab2cd0f45e22f077ef10d08f3231a0605d6fc1f84bba"
+    },
+    {
+      "path": "src/salience/cycles/outbox.py",
+      "sha256": "a429fae0f95b593e21f643a3c51200f2397c968a1b44212d546177f82e9fc5bf"
+    },
+    {
+      "path": "src/salience/cycles/runtime.py",
+      "sha256": "ffb335439d6319756b1038e1072f073c6362f341c92f76e899dcfce45cc87f3a"
+    },
+    {
+      "path": "src/salience/cycles/workflow.py",
+      "sha256": "ec89d03285a9a2340bb7d57ae2a02278d931cb7ce97a21e0e4cc4f002b1bdd80"
     },
     {
       "path": "src/salience/db/__init__.py",
@@ -719,6 +735,10 @@
       "sha256": "7b0b43ff64ef38811201c86d6cf56f3e98d0ab480c28ee61379dacf98e37eeb8"
     },
     {
+      "path": "tests/e2e/test_v4_outbox_recovery.py",
+      "sha256": "15723e3e084ec10b472e5bb21191d4b61fd5567236a3219a09f9fcfd8cf3f691"
+    },
+    {
       "path": "tests/e2e/test_worker_restart.py",
       "sha256": "52a726c507829e79d3c87b49209999128443dc17f1c30889e4a5a4656dc01f7c"
     },
@@ -905,6 +925,10 @@
     {
       "path": "tests/integration/test_v4_observability.py",
       "sha256": "77bea6855387e4e713f3d44d816f644ab1b46687bf66e7e45a009c75439cd628"
+    },
+    {
+      "path": "tests/integration/test_v4_outbox.py",
+      "sha256": "1225fca6ec431cecc5f0568a001c60daf0504148723896f34e29b9e7c0571663"
     },
     {
       "path": "tests/integration/test_v4_s3_service.py",

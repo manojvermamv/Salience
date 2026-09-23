@@ -1,0 +1,39 @@
+{
+  "recorded_at": "2026-09-23",
+  "scope": "P1b local ordered outbox and Temporal fixture; no production effects or full RG1 claim",
+  "source_evidence_lock_sha256": "f2d0b9d3b858ef2a1f7bd99407b0fea100bcb52dedfe33dc77e1e08c3b88c9ce",
+  "commands": [
+    {
+      "command": ".venv/bin/python -m pytest -p no:cacheprovider tests/integration/test_v4_outbox.py tests/e2e/test_v4_outbox_recovery.py tests/integration/test_v4_cycle_admission.py tests/integration/test_v4_migrations.py -q",
+      "exit_code": 0,
+      "tests": 29,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 25.794,
+      "junit": "artifacts/v4-p0/outbox-focused.xml",
+      "junit_sha256": "e54c1b31d1804d3823714505d61b9106aa718e72c26be7a76e68c79c8d36ada1",
+      "log_sha256": "af4792f56a209d0ed8f5a0d07aa0bf30e1e97a601b99c1639ea625feed943b68"
+    },
+    {
+      "command": ".venv/bin/python -m pytest -p no:cacheprovider tests/contracts tests/unit tests/integration tests/e2e tests/evals -m 'not live' -q -rs",
+      "exit_code": 0,
+      "tests": 299,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 278.598,
+      "junit": "artifacts/v4-p0/outbox-qualified-regression.xml",
+      "junit_sha256": "8d0bd563b7d0359d53347ea8bb66f6268b33cf1bdb6699dc8c3b76204637d230",
+      "log_sha256": "26e05465461ca4296aceff1d78d99e844b9eff5ec053add664e833a3b8d89931"
+    }
+  ],
+  "additional_verification": {
+    "documentation_tests": 14,
+    "mermaid_rendered": 6,
+    "mermaid_report_sha256": "6ab6bcbe4a8d1d0af7521e51fbf8d76836f012e2d67974f37c7d9c202784f0ae",
+    "independent_review": "One Important final-attempt ack-loss finding reproduced with three failing tests, repaired and independently re-reviewed with no unresolved Important finding",
+    "actual_process_failure": "SIGKILL child worker; current-source fresh worker resumes queued closure; original logical cycle and operation persist; captured Temporal history replay passes",
+    "production_effects_enabled": false
+  }
+}

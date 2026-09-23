@@ -15,6 +15,13 @@ REPO_SPEC.loader.exec_module(REPOSITORY)
 
 
 class GateChecks(unittest.TestCase):
+    def test_incremental_p1_cannot_claim_release_or_enable_effects(self):
+        release = json.loads(Path(__file__).with_name("p0-release.json").read_text())
+        for change in [{"release_status":"PASS"},{"production_effects_enabled":True},{"remaining":[]}]:
+            damaged = deepcopy(release)
+            damaged["p1_increment"].update(change)
+            self.assertTrue(CHECK.release_errors(BLUEPRINT,damaged))
+
     def test_durable_report_requires_successful_executed_commands(self):
         report = json.loads(Path(__file__).with_name("development-entry-evidence.json").read_text())
         self.assertEqual(CHECK.evidence_report_errors(report), [])
@@ -32,6 +39,10 @@ class GateChecks(unittest.TestCase):
         self.assertEqual(REPOSITORY.ci_errors(checks, "current"), [])
         self.assertTrue(REPOSITORY.ci_errors(checks, "next"))
         self.assertTrue(REPOSITORY.ci_errors(checks + [checks[0] | {"id": 100, "status": "queued", "conclusion": None}], "current"))
+        self.assertEqual(REPOSITORY.ci_status([], "current"), "NOT RUN")
+        self.assertEqual(REPOSITORY.ci_status(checks, "current"), "PASS")
+        self.assertEqual(REPOSITORY.ci_status(checks + [checks[0] | {"id":100,"status":"in_progress","conclusion":None}], "current"), "NOT RUN")
+        self.assertEqual(REPOSITORY.ci_status(checks + [checks[0] | {"id":100,"conclusion":"failure"}], "current"), "FAIL")
 
     def test_release_requires_exact_external_check_set_and_valid_statuses(self):
         baseline = json.loads(Path(__file__).with_name("p0-release.json").read_text())

@@ -319,6 +319,10 @@ def release_errors(content: str, release: dict) -> list[str]:
             development_checks = entry.get("checks")
             if entry.get("status") == "PASS" and (local != "PASS" or not isinstance(development_checks, list) or any(not isinstance(check, dict) or check.get("status") != "PASS" for check in development_checks)):
                 errors.append("unqualified local development entry")
+    if "p1_increment" in release:
+        increment = release["p1_increment"]
+        if not isinstance(increment, dict) or increment.get("release_gate") != "RG1" or increment.get("release_status") != "HELD" or increment.get("production_effects_enabled") is not False or not increment.get("remaining"):
+            errors.append("partial P1 evidence cannot release RG1 or enable production effects")
     return errors
 
 

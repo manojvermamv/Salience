@@ -42,6 +42,21 @@ def ci_errors(checks, commit):
     return errors
 
 
+def ci_status(checks, commit):
+    pending = False
+    for name in REQUIRED:
+        matches = [item for item in checks if item.get("name") == name and item.get("app", {}).get("id") == APP_ID and item.get("head_sha") == commit]
+        if not matches:
+            pending = True
+            continue
+        latest = max(matches, key=lambda item: item["id"])
+        if latest.get("status") != "completed":
+            pending = True
+        elif latest.get("conclusion") != "success":
+            return "FAIL"
+    return "NOT RUN" if pending else "PASS"
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--commit", default="HEAD")
@@ -74,7 +89,7 @@ def main():
     for name in ["rulesets", "effective_rules"]:
         if not isinstance(responses[name], list):
             inspection.append(f"cannot inspect {name}")
-    report = {"inspected_at": datetime.now(timezone.utc).isoformat(), "commit": commit, "enforcement_status": "FAIL" if enforcement or inspection else "PASS", "ci_status": "FAIL" if ci else "PASS", "merge_status": "HELD" if enforcement or inspection or ci else "CHECKS PASS; independent PR approval still required", "errors": enforcement + inspection + ci, "responses": responses}
+    report = {"inspected_at": datetime.now(timezone.utc).isoformat(), "commit": commit, "enforcement_status": "FAIL" if enforcement or inspection else "PASS", "ci_status": ci_status(checks, commit), "merge_status": "HELD" if enforcement or inspection or ci else "CHECKS PASS; independent PR approval still required", "errors": enforcement + inspection + ci, "responses": responses}
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2) + "\n")
     print(json.dumps({key: value for key, value in report.items() if key != "responses"}, indent=2))

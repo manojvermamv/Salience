@@ -11,6 +11,7 @@ from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
 
 from salience.cycles.contracts import GoalSpec
+from salience.cycles.outbox import enqueue_cycle_message
 from salience.observability.tracing import TraceContext
 
 
@@ -137,6 +138,7 @@ class CycleAdmission:
                 connection.execute("INSERT INTO v4_cycles (id,intent_id,context_id,operation_id,state) VALUES (%s,%s,%s,%s,'runnable')", (cycle_id,intent_id,context_id,operation_id))
                 payload = spec.model_dump(mode="json") | {"cycle_id":str(cycle_id),"goal_id":str(goal["id"]),"goal_revision":goal["revision"],"workspace_id":str(self.workspace_id),"subject_id":str(self.subject_id),"evidence_cutoff":now.isoformat(),"production_effects_enabled":False,"traceparent":self.trace.to_carrier()["traceparent"],"assignment_id":None}
                 connection.execute("INSERT INTO v4_run_contexts (id,cycle_id,payload) VALUES (%s,%s,%s)", (context_id,cycle_id,Jsonb(payload)))
+                enqueue_cycle_message(connection,workspace_id=self.workspace_id,subject_id=self.subject_id,goal_id=goal["id"],intent_id=intent_id,cycle_id=cycle_id,kind="start",payload={"context_id":str(context_id),"operation_id":str(operation_id)},traceparent=self.trace.to_carrier()["traceparent"])
             result = connection.execute("INSERT INTO v4_admissions (id,intent_id,eligibility_revision,disposition,reason,cycle_id) VALUES (%s,%s,%s,%s,%s,%s) RETURNING *", (uuid4(),intent_id,intent["eligibility_revision"],disposition,reason,cycle_id)).fetchone()
             self._event(connection,goal["id"],"admission",{"disposition":disposition,"reason":reason,"eligibility_revision":intent["eligibility_revision"]},intent_id,cycle_id)
             return result
@@ -180,6 +182,7 @@ class CycleAdmission:
             if count > spec.max_wakes:
                 raise ValueError("recovery limit exceeded")
             updated = connection.execute("UPDATE v4_cycles SET state=%s,recovery_count=%s WHERE id=%s RETURNING *", (state,count,cycle_id)).fetchone()
+            enqueue_cycle_message(connection,workspace_id=self.workspace_id,subject_id=self.subject_id,goal_id=goal["id"],intent_id=intent["id"],cycle_id=cycle_id,kind="recovery",payload={"state":state,"operation_id":str(cycle["operation_id"])},traceparent=self.trace.to_carrier()["traceparent"])
             self._event(connection,goal["id"],"cycle_recovery",{"state":state},intent["id"],cycle_id)
             return updated
 
@@ -193,5 +196,6 @@ class CycleAdmission:
                     raise ValueError("closed disposition is immutable")
                 return cycle
             updated = connection.execute("UPDATE v4_cycles SET state='closed',disposition=%s,reason=%s,closed_at=clock_timestamp() WHERE id=%s RETURNING *", (disposition,reason,cycle_id)).fetchone()
+            enqueue_cycle_message(connection,workspace_id=self.workspace_id,subject_id=self.subject_id,goal_id=goal["id"],intent_id=intent["id"],cycle_id=cycle_id,kind="close",payload={"disposition":disposition,"operation_id":str(cycle["operation_id"])},traceparent=self.trace.to_carrier()["traceparent"])
             self._event(connection,goal["id"],"cycle_closed",{"disposition":disposition,"reason":reason},intent["id"],cycle_id)
             return updated
