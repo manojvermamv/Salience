@@ -4,6 +4,8 @@ Superseded by the [V4 production implementation blueprint](<../v4/IMPLEMENTATION
 
 [Original historical evidence](<../archive/2026-09-22/docs/core/05_IMPLEMENTATION_PLAN.md.snapshot>) is retained with its inventory hash. It is superseded source text, not a current execution plan.
 
+Resume using [current V4 progress](../v4/progress.md#current-state--2026-09-24) and the blueprint's [remaining P1 sequence](../v4/IMPLEMENTATION-BLUEPRINT.md#p1-resume-queue). Completed local substrate and P1 slices must be reused; the archived checkboxes do not release V4 production gates.
+
 <!-- Historical heading anchors retained for incoming links. -->
 <a id="implementation-plan"></a>
 <a id="phase-0--inspect-research-and-prove-assumptions"></a>

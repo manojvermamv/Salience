@@ -2,11 +2,13 @@
 
 Salience is a self-hostable, provider-neutral content operating system built around PostgreSQL, Temporal, typed agents, governed artifacts and replaceable adapters.
 
-**Start with the [V4 production implementation blueprint](docs/v4/IMPLEMENTATION-BLUEPRINT.md).** It is the single source of truth for target architecture, verified starting state, implementation phases, requirement mappings, migration/rollback and release gates. V4 is a plan, not a production-completion claim.
+**Start with the [V4 production implementation blueprint](docs/v4/IMPLEMENTATION-BLUEPRINT.md).** It is the single source of truth for target architecture, verified implementation state, phases, requirement mappings, migration/rollback and release gates. V4 is partially implemented, not production-complete.
 
 The existing Phase 1–9 foundation provides fixture-tested research, creative and governed publication workflows. Live media publishing, observation, learning, experiments and V4 admission/release controls still require the work identified in the blueprint. Approved creative changes produce a new distribution and ready-package version.
 
-P0 provides an isolated authenticated control boundary, effects lockout, scoped credential leases, immutable verified storage and retention hooks, and correlated audit/tracing. DG1 local-development entry passes; local P1 increments add dry-run canonical admission, distinct deferral/recovery/closure semantics, ordered outbox/Temporal fixture recovery verified across process failure, atomic goal revisions with stable retries, and explicit revision-bound fixture baseline approval with expiry/revocation holds. Verification: **317 non-live tests pass, with no skips**, including the P0 and incremental P1 checks. See [verification details](docs/v4/validation.md). Production remains disabled; [the release ledger](docs/v4/p0-release.json) keeps RG0 and full P1/RG1 **HELD** with remaining obligations explicit.
+P0 provides an isolated authenticated control boundary, effects lockout, scoped credential leases, immutable verified storage and retention hooks, and correlated audit/tracing. DG1 local-development entry passes; local P1 increments add dry-run canonical admission, distinct deferral/recovery/closure semantics, ordered outbox/Temporal fixture recovery verified across process failure, atomic goal revisions with stable retries, and explicit revision-bound fixture baseline approval with expiry/revocation holds. Latest application qualification (2026-09-23): **317 non-live tests pass, with no skips**, including the P0 and incremental P1 checks. See [verification details](docs/v4/validation.md). Production remains disabled; [the release ledger](docs/v4/p0-release.json) keeps RG0 and full P1/RG1 **HELD** with remaining obligations explicit.
+
+**Current direction (2026-09-24):** P1 is ongoing; full context/cadence, G0/G1 accounting, stop/permits/review, automatic dispatch, command parity, schedule cutover and worker upgrades remain planned. P2–P7 have not started as V4 implementations. Follow the [current progress and completed checkpoints](docs/v4/progress.md#current-state--2026-09-24) and [ordered resume queue](docs/v4/IMPLEMENTATION-BLUEPRINT.md#p1-resume-queue); do not rebuild completed P0/P1 slices. Source is on `feat/archv4-p0-foundation`, not merged into `main`.
 
 ```bash
 python3 docs/v4/check.py --self-test
@@ -25,7 +27,7 @@ bash scripts/verify-browser-evidence.sh
 The pinned Playwright headless runtime is provisioned locally for tests; a fresh checkout still needs browser installation. Default Compose is for private fixtures; `compose.p0.yaml` is an effects-disabled, isolated qualification profile, not production enablement. Use the blueprint's release gates before exposing ingress or real accounts.
 
 - [Inventory and preservation record](docs/v4/inventory.json)
-- [Documentation transition checkpoint](docs/v4/progress.md)
+- [Current execution progress and historical checkpoints](docs/v4/progress.md)
 - [Historical archive and restoration instructions](docs/archive/2026-09-22/README.md)
 - [Original V4 design sources](docs-new-arch/README.md)
 - [Historical Phase 1–9 interactive architecture](docs/salience-phase-1-9.architecture.html)

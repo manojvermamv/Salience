@@ -1,6 +1,6 @@
 {
   "phase": "P0",
-  "updated_at": "2026-09-23",
+  "updated_at": "2026-09-24",
   "baseline_commit": "8e50d68efbf2bec2aabfb2fe3226e01635de2adb",
   "scope": "Isolated local foundation; no production traffic or effects",
   "requirements": [
@@ -118,11 +118,11 @@
     {
       "check": "remote repository gate enforcement",
       "status": "PASS",
-      "evidence": "docs/v4/repository-enforcement-evidence.json: e628ccf478988b4db553983d990f43a3e3ca289a; verify and p0-regression PASS, strict app-bound main protection and current independent PR approval requirements read back. Later heads require fresh inspection."
+      "evidence": "docs/v4/repository-enforcement-evidence.json: 483b905f1437c8b3291f993edbca864f7e909ce1; verify and p0-regression PASS; strict app-bound main protection re-read 2026-09-24. Independent PR approval still required, later commits require fresh checks."
     }
   ],
   "later_phase_boundaries": {
-    "P1": "Outbox trace integration, re-admission revisions, G0 allocation/crash recovery and durable principal/capability envelope",
+    "P1": "Reuse verified local admission, revisions, approved fixture baseline and outbox; complete context/cadence, G0 accounting, permits/cases, automatic dispatch, full trace/command integration and upgrade/cutover acceptance",
     "P2": "G1 allocation transfer, all ready-package reference/outbox integration and enabled provider qualification",
     "P3": "Trial/evaluation isolation and separate strategy/capability namespaces",
     "P4": "Promotion/invalidation serialization; mandatory typed learning proposals with optional qualified semantic analyst",
@@ -189,5 +189,29 @@
       "API/CLI/SDK parity and schedule conversion",
       "Arbitrary supported worker-version compatibility, Continue-As-New, real-time durable review deadlines and independent full RG1 qualification"
     ]
+  },
+  "documentation_refresh": {
+    "date": "2026-09-24",
+    "inspected_source_commit": "483b905f1437c8b3291f993edbca864f7e909ce1",
+    "application_commit": "e628ccf478988b4db553983d990f43a3e3ca289a",
+    "scope": "Documentation-only reconciliation of completed, ongoing and planned V4 work; original source/archive and historical execution reports preserved",
+    "application_tests_this_refresh": "NOT RUN; retain verified 2026-09-23 results without relabeling their execution date",
+    "current_phase": "P1 partial local implementation; remaining queue in blueprint",
+    "production_effects_enabled": false,
+    "verification": {
+      "status": "PASS",
+      "documentation_tests": 14,
+      "mapped_obligations": 75,
+      "source_evidence_files": 280,
+      "inventory_dispositions": 360,
+      "markdown_files": 82,
+      "html_files": 5,
+      "negative_controls": 6,
+      "mermaid_diagrams": 6,
+      "documentation_shell_contracts": 4,
+      "whitespace": "PASS",
+      "historical_reports_preserved": true,
+      "report": "docs/v4/validation.md#documentation-refresh-verification--2026-09-24"
+    }
   }
 }

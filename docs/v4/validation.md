@@ -1,10 +1,30 @@
 # V4 blueprint validation evidence
 
-The original documentation-only transition below is historical. The subsequent authorized P0 implementation and fresh verification appear in the final section; earlier no-code-change/browser-missing statements are not the current working-tree state.
+## Current evidence summary — 2026-09-24
+
+Current inspected source head is `483b905f1437c8b3291f993edbca864f7e909ce1`; application code is unchanged from `e628ccf478988b4db553983d990f43a3e3ca289a`. The present refresh edits documentation only. Use the [current progress summary](progress.md#current-state--2026-09-24) and [blueprint snapshot](IMPLEMENTATION-BLUEPRINT.md#current-execution), not the superseded milestone results below, to decide what to resume.
+
+| Evidence | Latest recorded outcome | Meaning and limits |
+| --- | --- | --- |
+| Full non-live application suite | 317 PASS, zero failures/errors/skips, 2026-09-23 | [Baseline qualification](baseline-approval-evidence.json); not rerun for this documentation-only task. One existing Starlette/AnyIO deprecation warning. |
+| Focused completed P1/migration suite | 47 PASS, 2026-09-23 | Includes admission, outbox, revision, approval, actual worker kill/restart/replay and destructive-rollback refusal. Full P1 is not complete. |
+| Local development entry | DG1 PASS | [Prerequisite evidence](development-entry-evidence.json) predates P1 implementation; not a production release. |
+| Documentation contract | 14 tests and 75 mapped obligations in the latest recorded qualification | Fresh refresh checks are recorded in the documentation-refresh section below; all 280 application evidence hashes and 360 inventory dispositions must still match. |
+| Diagrams | Six Mermaid diagrams rendered in the latest recorded qualification | Target diagrams, not evidence of a deployed V4 system; fresh render results recorded below. |
+| Exact-head CI and repository protection | PASS for `483b905`, freshly inspected 2026-09-24 | [Repository report](repository-enforcement-evidence.json); strict app-bound checks, administrator enforcement and current independent PR approval required. No merge approval is inferred. |
+| Production qualifications | NOT RUN; RG0 HELD | Operator safety, identity/ingress, managed storage/restore and remote collector/alerts need actual external evidence. |
+| Full P1 and later phases | RG1 HELD; remaining implementation/qualification NOT RUN | See the [remaining queue](IMPLEMENTATION-BLUEPRINT.md#p1-resume-queue); a green fixture slice is not full release acceptance. |
+
+Historical reports are immutable, commit-scoped evidence: [P1a](p1-increment-evidence.json), [outbox](outbox-increment-evidence.json), [goal revisions](goal-revision-evidence.json), and [baseline approval](baseline-approval-evidence.json). Their original source digests/counts must not be overwritten with the newest result. The repository-enforcement report is a rolling latest-inspection record, so older paragraphs identify their original commits independently.
+
+## Historical evidence chronology
+
+The original documentation-only transition and subsequent P0/P1 milestones below are historical. Earlier no-code-change/browser-missing, unprotected-main and unavailable-engineering-review statements are not the current working-tree state. No failed or interrupted run is silently converted into a pass.
 
 Baseline: `8e50d68efbf2bec2aabfb2fe3226e01635de2adb`. Inspection and verification date: 2026-09-22. This record distinguishes documentation validation, current executable behavior, and future production gates.
 
-## Current application observation
+<a id="current-application-observation"></a>
+## Original application observation — 2026-09-22
 
 Executed `.venv/bin/python -m pytest -p no:cacheprovider tests/contracts tests/unit tests/integration tests/e2e tests/evals -m 'not live' -q`: **226 passed, 6 failed**, one existing Starlette deprecation warning, 243.99 seconds. All six failures are in `tests/integration/test_browser_evidence.py` at browser launch because `/home/admin/.cache/ms-playwright/chromium_headless_shell-1234/chrome-headless-shell-linux64/chrome-headless-shell` is absent. The suite starts local PostgreSQL/Temporal and applies migrations through its existing fixture setup. No application code changed.
 
@@ -78,7 +98,7 @@ Reproduce local gates with `python3 docs/v4/test_checks.py`, `python3 docs/v4/ch
 
 ### Incremental local outbox verification
 
-The initial remote application run failed with 280 passing tests and four storage fixture setup errors; the pinned image dropped to UID 1000 while the GitHub runner's mode-0600 credentials had another owner. Matching the container/data-mount UID/GID to the fixture owner fixed the real permission mismatch without weakening file permissions or removing tests. Both required checks then passed on `b1969c8`; [repository enforcement evidence](repository-enforcement-evidence.json) records their exact head and read-back main protection. This is not an approval for a different future head.
+The initial remote application run failed with 280 passing tests and four storage fixture setup errors; the pinned image dropped to UID 1000 while the GitHub runner's mode-0600 credentials had another owner. Matching the container/data-mount UID/GID to the fixture owner fixed the real permission mismatch without weakening file permissions or removing tests. Both required checks then passed on `b1969c8`; that historical checkpoint is retained in Git and the progress log. The [repository enforcement evidence](repository-enforcement-evidence.json) now records the latest inspected head, not the old run. Neither inspection approves a different future head.
 
 P1b adds only the local outbox/consumer/Temporal fixture described in the blueprint. The focused outbox/admission/migration/runtime suite passes 27 tests. Real-process SIGKILL, lost acknowledgement, duplicate start, queued signals during downtime, a new worker, and recorded-history replay all execute against real PostgreSQL and Temporal. OpenTelemetry SDK span IDs match canonical consumption events. No live provider is called. An independent reviewer identified a final-attempt acknowledgement-loss bug; three red regressions proved it, and re-review accepted the receipt-before-exhaustion repair. Failed delivery alone does not count as consumption. Full production typed cases, automatic dispatcher service, API parity and G0/G1 financial allocation remain separate uncompleted gates.
 
@@ -92,4 +112,19 @@ Atomic revision/CAS/idempotency receipts, cross-revision intent and successor re
 
 The fixed no-effect capability is now selected through the existing registry and explicitly approved for the exact goal revision under separate `goals:approve` authority. Ten baseline regressions cover missing/current/expired/revoked/foreign/unapproved bundles, atomic audit rollback, concurrent admission/revocation and preserved historical-context boundaries. Independent review found a recovery path that could inherit a later goal approval; its failing regression now passes and re-review is clear. **47 focused and 317 complete non-live tests PASS**, zero failures/errors/skips; fourteen documentation tests, six rendered diagrams and 280 source evidence hashes pass. See [baseline approval evidence](baseline-approval-evidence.json). Production baseline/provider deployment, financial commitments, full typed authority and full RG1 remain unqualified; no production effect has been enabled.
 
-Remote application qualification is PASS for `e628ccf478988b4db553983d990f43a3e3ca289a`: both required GitHub checks succeeded and main enforcement was independently read back at 2026-09-23T17:49:03.182364+00:00. The [commit-bound repository evidence](repository-enforcement-evidence.json) records exact check IDs and URLs. No main merge or production enablement follows automatically; current independent PR approval and the four remaining production qualifications are still required.
+Remote application qualification is PASS for `e628ccf478988b4db553983d990f43a3e3ca289a`: both required GitHub checks succeeded and main enforcement was independently read back at 2026-09-23T17:49:03.182364+00:00. The subsequent documentation head `483b905` also passed both required checks; the rolling [commit-bound repository evidence](repository-enforcement-evidence.json) records the latest inspection and exact check URLs. No main merge or production enablement follows automatically; current independent PR approval and the four remaining production qualifications are still required.
+
+## Documentation refresh verification — 2026-09-24
+
+Scope: reconciled 24 active documentation/navigation/evidence files with the current code, tests, configuration, migrations and commits. Updated the master README, documentation index, implementation-progress alias, core entry/plan aliases, all thirteen historical Superpowers aliases, architecture-source index, blueprint, current handoff, validation and release/repository evidence. No application, migration, test, workflow or dependency configuration changed. Original ArchV4 requirements/diagrams, archive snapshots, original inventory/dispositions, instruction files and prior execution reports remain unchanged.
+
+Freshly executed checks:
+
+- `python3 docs/v4/test_checks.py`: **14 PASS**.
+- `python3 docs/v4/check.py --self-test`: **PASS**, 75 requirements, acyclic gates, 280 source evidence files, 360 inventory dispositions, 82 Markdown files, five HTML files and six negative controls; links and Markdown structure validated.
+- `.venv/bin/python docs/v4/verify_diagrams.py --node-modules /tmp/salience-v4-mermaid/node_modules --browser /usr/bin/chromium --output artifacts/v4-doc-refresh/diagrams`: **six PASS**, local results retained in `artifacts/v4-doc-refresh/diagrams/results.json`. Existing Mermaid 12.0.0 and Chromium tooling reused; no new dependency installed.
+- `bash tests/scripts/test_phase_7_8_documentation.sh`, `bash tests/scripts/test_phase_9_documentation.sh`, `bash tests/scripts/test_browser_documentation.sh`, and `bash tests/scripts/test_verify_browser_evidence.sh`: **PASS**.
+- `python3 docs/v4/verify_repository.py --commit HEAD --output artifacts/v4-p0/repository-doc-refresh.json`: **PASS** for `483b905`; both required checks and main enforcement inspected at 2026-09-24T01:32:00.601855+00:00. Uncommitted documentation edits are not a separately CI-qualified commit.
+- `git diff --check`: **PASS**. Historical durable execution reports are byte-identical to HEAD; latest source-lock and raw JUnit digests match. No application-code diff.
+
+Application suites and production/live checks are **NOT RUN in this documentation-only refresh**. The 317/47 application results remain their dated 2026-09-23 evidence, not newly generated test results. Production RG0 and full RG1 remain HELD; remaining implementation and external obligations are explicitly listed, not marked complete by documentation work. No commit, push, merge or production enablement is performed by this refresh.

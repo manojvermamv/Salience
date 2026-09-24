@@ -1,6 +1,55 @@
-# V4 documentation transition checkpoint
+# V4 implementation progress and checkpoints
 
-Historical scope below was documentation-only. The subsequent authorized correction/P0 execution is recorded at the end; no production effects or Git history rewriting are permitted.
+<a id="v4-documentation-transition-checkpoint"></a>
+
+## Current state — 2026-09-24
+
+The [blueprint](IMPLEMENTATION-BLUEPRINT.md#current-execution) is the execution authority; this file is its current handoff and chronological record. Read this summary before older entries. Source checkpoint: `483b905f1437c8b3291f993edbca864f7e909ce1` on `feat/archv4-p0-foundation`; application checkpoint: `e628ccf478988b4db553983d990f43a3e3ca289a`. Main remains `8e50d68efbf2bec2aabfb2fe3226e01635de2adb`; no merge or history rewrite is claimed. The present task is documentation-only, not another application implementation increment.
+
+| Area | Current status | Completed work or next obligation |
+| --- | --- | --- |
+| Documentation foundation | COMPLETE | Original inventory, reversible consolidation, source preservation, 75 requirement mappings, acyclic gates, link/Markdown/drift checks and six target diagrams. |
+| P0 local implementation | PASS | Isolated authenticated control, restricted-role authorization, secrets, immutable storage/retention, audit/OTel, migration and effects-disabled qualification. |
+| DG1 development entry | PASS | Five mandatory local prerequisites verified before P1; does not release production RG0. |
+| P1 local increments | PASS for completed slices; phase ONGOING | Admission/three deferral identities, ordered outbox and real worker restart/replay, atomic goal revisions, explicit baseline approval and historical-context holds. |
+| P1 remaining implementation | PLANNED / NOT RUN | Full context/cadence, G0/G1 accounting, stop/permits/typed review/archive, automatic dispatch, public command parity, legacy/schedule cutover and worker upgrades. |
+| P2 production records | PLANNED / NOT RUN | Reliable creative/publication records and enabled-provider qualification after RG1. |
+| P3 observation/experience | PLANNED / NOT RUN | Observation, attribution, internal experience and trial/evaluation isolation before P4. |
+| P4 strategy/release | PLANNED / NOT RUN | Explainable selection, strategy trials and controlled promotion/invalidation. |
+| P5 capability evolution | PLANNED / NOT RUN | Governed capability evolution and provider/protocol compatibility. |
+| P6 optional adaptation | PLANNED / DISABLED | No training/data-export enablement; conditional RG6 if this capability is enabled. |
+| P7 production rollout | PLANNED / NOT RUN | End-to-end live qualification, restore/upgrade, load/soak, signed deployment and constrained rollout. |
+| RG0 and full RG1 release | HELD | Four external production qualifications remain NOT RUN; full P1 acceptance also remains unfinished. |
+| GitHub controls | PASS at inspected source head | Both required checks on `483b905` and main enforcement rechecked on 2026-09-24; independent PR approval still required before merge. |
+
+### Completed checkpoints to reuse
+
+| Commit | Scope and durable proof |
+| --- | --- |
+| `ca37f6f` | Consolidated V4 blueprint and isolated P0 foundation; original source/archive history preserved. |
+| `9445348` | Release-validator/authorization/deferral corrections and P1a admission; [development entry](development-entry-evidence.json) and [admission evidence](p1-increment-evidence.json). |
+| `b1969c8` | Repaired real storage CI UID mismatch without broadening credential permissions; stricter explicit qualification result fields. |
+| `2edad82` | Transactional local outbox, receipt reconciliation and process-kill recovery; [outbox evidence](outbox-increment-evidence.json). |
+| `e296d49` | Atomic goal revisions, concurrent snapshot repair and stable cross-revision/shortened-horizon retries; [revision evidence](goal-revision-evidence.json). |
+| `e628ccf` | Exact revision-bound fixture approval, expiry/revocation and historical-context recovery denial; [baseline evidence](baseline-approval-evidence.json). |
+| `483b905` | Blueprint/release/CI checkpoint documentation; both GitHub checks subsequently passed on this exact head. |
+
+Latest application execution on 2026-09-23: **317 full non-live / 47 focused tests PASS**, zero failures/errors/skips, with the existing Starlette/AnyIO deprecation warning. These are retained execution results, not fresh application tests on 2026-09-24. Current source evidence covers 280 files; 360 original inventory dispositions remain preserved. [Validation](validation.md) distinguishes fresh documentation checks from historical application evidence. Local engineering review findings were repaired and re-reviewed; that is not production operator safety approval or GitHub PR approval.
+
+### Resume instructions
+
+1. Inspect branch/worktree/HEAD and this summary; do not restart P0 or rebuild completed P1 components. Recheck the [release ledger](p0-release.json) and source evidence for intervening changes.
+2. Execute the [ordered P1 resume queue](IMPLEMENTATION-BLUEPRINT.md#p1-resume-queue), beginning with remaining goal/context/authority and cadence contracts, then G0 allocation and its G1 transfer contract. Use red-green tests, additive migration/rollback evidence and independent review for each increment.
+3. Preserve dry-run, zero-spend and fallback denial. The private fixture worker and internal review wake are not public production controls. Never backfill authority into an old context or create a replacement cycle to bypass recovery.
+4. Preserve the three deferral identities and the phase-bound accounting, capability/R58, trial-isolation and promotion/invalidation decisions. Follow the blueprint dependencies before later-phase code.
+5. Before an implementation merge, verify the exact candidate commit with `verify_repository.py`, not a prior successful head. Keep main unmerged until current independent PR approval and all applicable merge gates pass.
+6. Update blueprint status/mappings, release evidence and this log with actual results. External identity/ingress, storage/restore, collector/alerts and operator safety qualification remain separate NOT RUN production obligations, not an excuse to label local implementation complete.
+
+"Ongoing" describes the incomplete P1 phase; it does not assert that an implementation process is running during this documentation refresh. No new application task was started here. Original ArchV4 sources, archive snapshots, historical visuals and AGENTS.md/SKILL.md instructions retain their original authority/scope and are not rewritten to look current. Superseded core/Superpowers paths remain navigation aliases, not competing plans.
+
+## Historical transition and execution log
+
+The entries below record their state at the stated milestone. Earlier statements such as "all phases planned", "no P1 code", missing Chromium, unavailable engineering review or unprotected main are superseded by the current summary, not present-day facts. They remain intact to preserve the evidence trail; no production effects or Git history rewriting are permitted.
 
 Baseline: `8e50d68efbf2bec2aabfb2fe3226e01635de2adb`, inspected 2026-09-22.
 
@@ -130,3 +179,9 @@ Final local baseline checkpoint: **317 full non-live tests PASS**, zero failures
 ### Exact-head remote qualification checkpoint
 
 At 2026-09-23T17:49:03.182364+00:00, both required GitHub checks (`verify`, `p0-regression`) PASS on `e628ccf478988b4db553983d990f43a3e3ca289a`. Main protection still requires strict app-bound checks and current independent PR approval, including administrators; no force push/deletion or bypass is enabled. The durable repository evidence and release ledger now name this verified application commit. Main remains `8e50d68efbf2bec2aabfb2fe3226e01635de2adb`, unmerged, and the feature branch is pushed. The follow-up documentation-only evidence commit must receive its own fresh remote check; prior-head evidence is never substituted for it. Local source verification is 317 full / 47 focused / 14 documentation tests, six diagrams. RG0 deployment and full RG1 remain HELD with all unresolved obligations explicitly retained.
+
+### Documentation reconciliation completed — 2026-09-24
+
+Reinspected clean `483b905` source, canonical cycle/baseline contracts, migration head 0020, regression tests, CI configuration and persisted execution evidence before editing. Confirmed both required checks on that final documentation head and main enforcement through a fresh read-only GitHub inspection. Corrected the stale "no V4 application implementation" progress alias, P0-only introductions and rolling-evidence references. Added a current completed/ongoing/planned summary, commit/evidence index and an ordered P1 handoff without changing requirements or marking partial work complete. Core and all thirteen Superpowers navigation aliases now lead to the same authoritative status and remaining queue.
+
+Verification: fourteen documentation tests PASS; complete validator PASS for 75 obligations, 280 evidence files, 360 preserved dispositions, 82 Markdown files, five HTML files and six negative controls; all six Mermaid diagrams freshly rendered; four documentation/browser command-contract scripts PASS; whitespace and preserved report/source/JUnit hashes PASS. See [fresh verification details](validation.md#documentation-refresh-verification--2026-09-24). Original source/archives/instructions remain untouched. Application tests were NOT RUN again; retain the dated 317/47 results. This task leaves documentation changes local, with no application changes, commit/push, main merge or production effects. The next application task is still queue item 1, not replaying this documentation refresh.
