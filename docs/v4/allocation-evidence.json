@@ -59,8 +59,10 @@
     "base_inspected_at": "2026-09-27T10:42:21.433661+00:00",
     "base_ci_status": "PASS",
     "base_enforcement_status": "PASS",
-    "candidate_commit": "NOT YET PUBLISHED",
-    "candidate_ci_status": "NOT RUN",
+    "candidate_commit": "4047cf95cfaab20441a065f1ad3d07916ac656d3",
+    "candidate_inspected_at": "2026-09-27T11:25:04.852057+00:00",
+    "candidate_ci_status": "PASS",
+    "candidate_enforcement_status": "PASS",
     "merge": "NOT AUTHORIZED; exact candidate checks and independent PR approval required"
   },
   "remaining": {

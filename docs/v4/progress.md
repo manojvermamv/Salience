@@ -6,7 +6,7 @@
 
 ## Current state — 2026-09-27
 
-Completed item-2 checkpoint: clean published base `0db5412836c2bf5272325b2503acc07289630552` was inspected before implementation; both required CI checks and strict main protection PASS on that exact base at 2026-09-27T10:42:21Z. The bounded fixture G0 allocation/G1 transfer contract now passes 119 focused and 371 full non-live tests. Candidate commit/CI is pending publication; no merge is authorized.
+Completed item-2 checkpoint: clean published base `0db5412836c2bf5272325b2503acc07289630552` was inspected before implementation. The bounded fixture G0 allocation/G1 transfer contract passes 119 focused and 371 full non-live tests. Implementation commit `4047cf95cfaab20441a065f1ad3d07916ac656d3` passes both required CI checks with strict protection enforced at 2026-09-27T11:25:04Z. Independent PR approval remains NOT RUN; no merge is authorized.
 
 Item-2 implementation checkpoint: caller-transaction G0 parents/G1 transfers, typed V3 frozen contexts, period/currency/scope checks, ordered canonical locks, exact command receipts and unknown-liability retention are implemented. Focused review reproduced tuple-cursor incompatibility, missing budget-scope immutability and closure depending on new accounting authority; all repaired with negative tests. Added genuine restricted-role verification, connection-loss rollback, five ArchV4 cost categories and V3 worker-kill/restart coverage. [Durable evidence](allocation-evidence.json) records 119 focused / 371 full PASS and 290 source hashes. No new provider, dependency, production effect, main merge or later queue implementation.
 
@@ -18,7 +18,7 @@ Completed bounded increment: ordered P1 item 1 (V2 goal/context/authority and ca
 
 Implementation checkpoint: V2 DTOs, frozen context, typed policy commands, bounded schedule cursor/batches, additive migrations 0021–0022, grant-edit serialization and restricted program read locking are implemented. Initial import/wording tests failed as expected. Additional tests reproduced event-identity movement and missing program revocation locking; both repaired. Independent review reproduced three more issues (freshness not rechecked at G0, obsolete revisions consuming pending capacity, coalesced slots being charged new capacity); all repaired with negative regressions and independently re-reviewed. The earlier 84-test run was superseded by **86 focused / 341 full PASS**, including bounded overlap/backfill and V2 subprocess `recorded` receipt assertions. Source HEAD `33fc483` has both required GitHub checks PASS and strict main protection reverified at 2026-09-24T18:36:38Z; this does not qualify the uncommitted increment or approve a merge.
 
-The [blueprint](IMPLEMENTATION-BLUEPRINT.md#current-execution) is the execution authority; this file is its handoff and chronological record. Item 2 is an uncommitted working-tree increment on `feat/archv4-p0-foundation` based on `0db5412836c2bf5272325b2503acc07289630552`. Main remains `8e50d68efbf2bec2aabfb2fe3226e01635de2adb`; other worktrees are unchanged. No item-2 commit, push, merge or history rewrite is yet claimed.
+The [blueprint](IMPLEMENTATION-BLUEPRINT.md#current-execution) is the execution authority; this file is its handoff and chronological record. Item 2 is published on `feat/archv4-p0-foundation` as `4047cf95cfaab20441a065f1ad3d07916ac656d3`; this documentation checkpoint is not yet committed. Main remains `8e50d68efbf2bec2aabfb2fe3226e01635de2adb`; other worktrees are unchanged. No merge or history rewrite is claimed.
 
 | Area | Current status | Completed work or next obligation |
 | --- | --- | --- |
@@ -34,7 +34,7 @@ The [blueprint](IMPLEMENTATION-BLUEPRINT.md#current-execution) is the execution 
 | P6 optional adaptation | PLANNED / DISABLED | No training/data-export enablement; conditional RG6 if this capability is enabled. |
 | P7 production rollout | PLANNED / NOT RUN | End-to-end live qualification, restore/upgrade, load/soak, signed deployment and constrained rollout. |
 | RG0 and full RG1 release | HELD | Four external production qualifications remain NOT RUN; full P1 acceptance also remains unfinished. |
-| GitHub controls | PASS on inspected base `0db5412` | Both required checks and strict main protection verified 2026-09-27T10:42:21Z. Uncommitted item-2 candidate CI NOT RUN; independent PR approval and exact candidate checks remain required. |
+| GitHub controls | PASS on item-2 implementation `4047cf9` | Both required checks and strict main protection verified 2026-09-27T11:25:04Z. Independent PR approval and exact final documentation-checkpoint CI remain required. |
 
 ### Completed checkpoints to reuse
 
