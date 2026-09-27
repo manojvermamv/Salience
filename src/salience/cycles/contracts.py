@@ -124,7 +124,8 @@ class CycleRequest(BaseModel):
 
 
 def parse_goal(payload):
-    return (GoalSpecV2 if payload.get("schema_version") == "GoalSpec.local.v2" else GoalSpec).model_validate(payload)
+    versions = {"GoalSpec.local.v2": GoalSpecV2, "GoalSpec.local.v3": GoalSpecV3}
+    return versions.get(payload.get("schema_version"), GoalSpec).model_validate(payload)
 
 
 class AuthoritySnapshot(BaseModel):
@@ -184,3 +185,34 @@ class RunContextV2(GoalSpecV2):
         if not self.evidence_cutoff < self.execution_deadline <= self.horizon_end:
             raise ValueError("bounded execution deadline required")
         return self
+
+
+class AllocationPolicy(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    budget_ids: tuple[UUID, ...] = Field(min_length=1, max_length=8)
+    account_ref: Literal["fixture-account"] = "fixture-account"
+    currency: str = Field(pattern=r"^[A-Z]{3}$")
+    period_start: AwareDatetime
+    period_end: AwareDatetime
+    ceiling_micros: int = Field(strict=True, ge=0, le=10**15)
+    accounting_mode: Literal["fixture-only"] = "fixture-only"
+
+    @model_validator(mode="after")
+    def canonical_scope(self):
+        if len(set(self.budget_ids)) != len(self.budget_ids) or self.period_start >= self.period_end:
+            raise ValueError("unique budgets and a nonempty period required")
+        return self
+
+
+class GoalSpecV3(GoalSpecV2):
+    schema_version: Literal["GoalSpec.local.v3"] = "GoalSpec.local.v3"
+    allocation: AllocationPolicy
+
+
+class RunContextV3(RunContextV2):
+    schema_version: Literal["RunContext.local.v3"] = "RunContext.local.v3"
+    goal_schema_version: Literal["GoalSpec.local.v3"]
+    allocation: AllocationPolicy
+    allocation_id: UUID
+    allocation_reservation_ids: tuple[UUID, ...] = Field(min_length=1, max_length=8)

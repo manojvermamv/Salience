@@ -539,6 +539,14 @@ class CostReservationRepository:
 
     @staticmethod
     def _reservation_for_update(cursor: psycopg.Cursor[Any], reservation_id: str) -> dict[str, Any]:
+        cursor.execute("SELECT budget_id FROM budget_reservations WHERE id=%s", (reservation_id,))
+        identity = cursor.fetchone()
+        if identity is None:
+            raise ReservationNotFound(reservation_id)
+        cursor.execute("SELECT id FROM budgets WHERE id=%s FOR UPDATE", (identity[0],))
+        cursor.execute("SELECT 1 FROM v4_allocation_reservations WHERE reservation_id=%s", (reservation_id,))
+        if cursor.fetchone():
+            raise ValueError("V4 reservations require caller-transaction cycle accounting")
         cursor.execute(
             """
             SELECT id::text, job_id::text, estimated_amount, reserved_amount, status

@@ -10,12 +10,14 @@ import psycopg
 from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
 
-from salience.cycles.contracts import GoalSpec, GoalSpecV2, RunContextV2, parse_goal
+from salience.cycles.contracts import GoalSpec, GoalSpecV2, GoalSpecV3, RunContextV2, RunContextV3, parse_goal
 from salience.cycles.cadence import CadenceCommands
 from salience.cycles.authority import current_authority, require_program, context_authorized
 from salience.cycles.baselines import fixture_bundle, resolve_baseline
 from salience.cycles.outbox import enqueue_cycle_message
 from salience.observability.tracing import TraceContext
+from salience.governance.cycle_costs import CycleCostLedger
+from salience.governance.costs import BudgetExceeded
 
 
 class CycleAdmission(CadenceCommands):
@@ -115,6 +117,8 @@ class CycleAdmission(CadenceCommands):
                 raise ValueError("stale expected goal revision")
             if isinstance(prior, GoalSpecV2) and (not isinstance(spec, GoalSpecV2) or spec.content_program_id != prior.content_program_id or spec.cadence.anchor != prior.cadence.anchor):
                 raise ValueError("V2 program and cadence anchor cannot change or downgrade")
+            if isinstance(prior, GoalSpecV3) and not isinstance(spec, GoalSpecV3):
+                raise ValueError("V3 allocation policy cannot downgrade")
             if isinstance(spec, GoalSpecV2):
                 require_program(connection, self.workspace_id, spec.content_program_id)
             now = connection.execute("SELECT clock_timestamp() AS now").fetchone()["now"]
@@ -250,9 +254,17 @@ class CycleAdmission(CadenceCommands):
             elif counts["active"] >= spec.max_concurrent:
                 disposition, reason = "deferred", "capacity"
             cycle_id = None
+            allocation = None
             if disposition == "admitted":
                 cycle_id, context_id, operation_id = uuid4(),uuid4(),uuid4()
-                connection.execute("INSERT INTO v4_cycles (id,intent_id,context_id,operation_id,state) VALUES (%s,%s,%s,%s,'runnable')", (cycle_id,intent_id,context_id,operation_id))
+                try:
+                    with connection.transaction():
+                        connection.execute("INSERT INTO v4_cycles (id,intent_id,context_id,operation_id,state) VALUES (%s,%s,%s,%s,'runnable')", (cycle_id,intent_id,context_id,operation_id))
+                        if isinstance(spec, GoalSpecV3):
+                            allocation = self._cost_ledger(connection).allocate(cycle_id)
+                except BudgetExceeded:
+                    disposition, reason, cycle_id = "deferred", "budget_capacity", None
+            if disposition == "admitted":
                 payload = spec.model_dump(mode="json") | {"cycle_id":str(cycle_id),"goal_id":str(goal["id"]),"goal_revision":goal["revision"],"workspace_id":str(self.workspace_id),"subject_id":str(self.subject_id),"evidence_cutoff":now.isoformat(),"production_effects_enabled":False,"traceparent":self.trace.to_carrier()["traceparent"],"assignment_id":None}
                 payload.update(baseline["bundle"] | {"baseline_approval_id":str(baseline["approval_id"])})
                 schema_version = "RunContext.local.v1"
@@ -268,7 +280,13 @@ class CycleAdmission(CadenceCommands):
                                     "recorded_at":now.isoformat(), "event_at":intent["due_at"].isoformat(),
                                     "correlation_id":self.trace.trace_id, "causation_id":str(intent_id),
                                     "lineage_refs":[str(goal["id"]),str(intent_id)], "origin":"fixture", "c2pa_manifest_ref":None})
-                    payload = RunContextV2.model_validate(payload).model_dump(mode="json")
+                    if allocation:
+                        schema_version = "RunContext.local.v3"
+                        payload.update({"schema_version":schema_version,"goal_schema_version":spec.schema_version,
+                                        "allocation_id":allocation["allocation_id"],"allocation_reservation_ids":allocation["reservation_ids"]})
+                        payload = RunContextV3.model_validate(payload).model_dump(mode="json")
+                    else:
+                        payload = RunContextV2.model_validate(payload).model_dump(mode="json")
                 connection.execute("INSERT INTO v4_run_contexts (id,cycle_id,schema_version,payload) VALUES (%s,%s,%s,%s)", (context_id,cycle_id,schema_version,Jsonb(payload)))
                 enqueue_cycle_message(connection,workspace_id=self.workspace_id,subject_id=self.subject_id,goal_id=goal["id"],intent_id=intent_id,cycle_id=cycle_id,kind="start",payload={"context_id":str(context_id),"operation_id":str(operation_id)},traceparent=self.trace.to_carrier()["traceparent"])
             result = connection.execute("INSERT INTO v4_admissions (id,intent_id,eligibility_revision,disposition,reason,cycle_id) VALUES (%s,%s,%s,%s,%s,%s) RETURNING *", (uuid4(),intent_id,intent["eligibility_revision"],disposition,reason,cycle_id)).fetchone()
@@ -338,6 +356,19 @@ class CycleAdmission(CadenceCommands):
                     raise ValueError("closed disposition is immutable")
                 return cycle
             updated = connection.execute("UPDATE v4_cycles SET state='closed',disposition=%s,reason=%s,closed_at=clock_timestamp() WHERE id=%s RETURNING *", (disposition,reason,cycle_id)).fetchone()
+            if connection.execute("SELECT 1 FROM v4_cycle_allocations WHERE cycle_id=%s", (cycle_id,)).fetchone():
+                self._cost_ledger(connection).release_closed(cycle_id)
             enqueue_cycle_message(connection,workspace_id=self.workspace_id,subject_id=self.subject_id,goal_id=goal["id"],intent_id=intent["id"],cycle_id=cycle_id,kind="close",payload={"disposition":disposition,"operation_id":str(cycle["operation_id"])},traceparent=self.trace.to_carrier()["traceparent"])
             self._event(connection,goal["id"],"cycle_closed",{"disposition":disposition,"reason":reason},intent["id"],cycle_id)
             return updated
+
+    def _cost_ledger(self, connection):
+        return CycleCostLedger(connection,workspace_id=self.workspace_id,subject_id=self.subject_id,traceparent=self.trace.to_carrier()["traceparent"])
+
+    def transfer_cost(self, cycle_id, **fields):
+        with self._command("cycles:accounting") as connection:
+            return self._cost_ledger(connection).transfer(cycle_id,**fields)
+
+    def cost_command(self, cycle_id, **fields):
+        with self._command("cycles:accounting") as connection:
+            return self._cost_ledger(connection).command(cycle_id,**fields)

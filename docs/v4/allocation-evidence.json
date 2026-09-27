@@ -1,0 +1,73 @@
+{
+  "recorded_at": "2026-09-27",
+  "base_commit": "0db5412836c2bf5272325b2503acc07289630552",
+  "scope": "Bounded local P1 item 2: fixture-only G0 cycle allocation and P2 G1 transfer contract over the canonical cost ledger",
+  "source_evidence_lock_sha256": "fee819da494e260dd3b66811c03fe0e2647ed651b6c713a8ae2afaf12abc7b5c",
+  "commands": [
+    {
+      "command": ".venv/bin/python -m pytest -p no:cacheprovider tests/integration/test_v4_cycle_accounting.py tests/integration/test_v4_cadence_policy.py tests/integration/test_v4_cycle_admission.py tests/integration/test_v4_goal_revisions.py tests/integration/test_v4_baseline_approval.py tests/integration/test_v4_outbox.py tests/integration/test_v4_migrations.py tests/integration/test_v4_identity_isolation.py tests/integration/test_creative_cost_lifecycle.py tests/e2e/test_v4_outbox_recovery.py -q -rs --junitxml=artifacts/v4-p0/allocation-focused.xml",
+      "exit_code": 0,
+      "tests": 119,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 89.853,
+      "junit": "artifacts/v4-p0/allocation-focused.xml",
+      "junit_sha256": "38ffc7b36783617724e600c911ddda83d81d638bfd49590c88d613f40206842a",
+      "log_sha256": "0d8bf29c3a1d1e04b958be8567790031a70b56d5dbe6cb18d121afd09c53f4a6"
+    },
+    {
+      "command": ".venv/bin/python -m pytest -p no:cacheprovider tests/contracts tests/unit tests/integration tests/e2e tests/evals -m 'not live' -q -rs --junitxml=artifacts/v4-p0/allocation-regression.xml",
+      "exit_code": 0,
+      "tests": 371,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 331.698,
+      "junit": "artifacts/v4-p0/allocation-regression.xml",
+      "junit_sha256": "a362b8c02c061fb969167edb7979fe134a5e008a52da8f6ec4028bf8026dbb73",
+      "log_sha256": "896a369b533c84daf58e7cac40152f0da788f16ca142b9b7ea55ed85528908e2"
+    }
+  ],
+  "requirement_coverage": {
+    "R05": "GoalSpec.local.v3 pins one to eight budget identities, exact workspace/program/account, currency, half-open period and integer-micro ceiling while preserving V1/V2 readers and frozen contexts.",
+    "R07": "G0 atomically commits cycle, allocation, context, admission, audit and outbox; concurrent reversed-order budgets serialize and insufficient capacity defers the existing intent without an orphan cycle.",
+    "R10": "RunContext.local.v3 freezes allocation and reservation identities; current authority, baseline, goal, program, period and budget state are rechecked before new transfer or simulated dispatch.",
+    "R13": "A genuine non-owner role uses narrow delegated subject/program/budget read locks without authority or budget UPDATE privilege; revocation blocks new transfer while canonical closure remains available.",
+    "R30": "G1 moves bounds from G0 parents into canonical operation reservations without double counting; five ArchV4 cost categories, concurrent transfer, exact duplicate and late settlement are covered.",
+    "R31": "Closure, cancellation, expiry, rollback and connection loss release only proven-unused amounts; dispatched or unknown liabilities remain until settlement and actual overage is recorded once.",
+    "R53": "Additive migrations 0023-0025 preserve immutable allocation, operation, command, reservation and ledger identities; empty rollback/re-upgrade passes and populated V3 rollback refuses."
+  },
+  "additional_verification": {
+    "documentation_tests": 15,
+    "mapped_obligations": 75,
+    "locked_source_files": 290,
+    "inventory_dispositions": 360,
+    "markdown_files": 82,
+    "html_files": 5,
+    "negative_controls": 6,
+    "mermaid_rendered": 6,
+    "mermaid_report_sha256": "6ab6bcbe4a8d1d0af7521e51fbf8d76836f012e2d67974f37c7d9c202784f0ae",
+    "shell_documentation_contracts": 4,
+    "dependency_consistency": "PASS",
+    "whitespace": "PASS",
+    "review": "Local self-review reproduced and repaired tuple-cursor, budget-scope immutability and closure-authority defects. New independent PR review is NOT RUN and remains required before merge.",
+    "production_effects_enabled": false
+  },
+  "repository_verification": {
+    "base_commit": "0db5412836c2bf5272325b2503acc07289630552",
+    "base_inspected_at": "2026-09-27T10:42:21.433661+00:00",
+    "base_ci_status": "PASS",
+    "base_enforcement_status": "PASS",
+    "candidate_commit": "NOT YET PUBLISHED",
+    "candidate_ci_status": "NOT RUN",
+    "merge": "NOT AUTHORIZED; exact candidate checks and independent PR approval required"
+  },
+  "remaining": {
+    "next_queue_item": 3,
+    "RG0": "HELD: four external production qualifications NOT RUN",
+    "RG1": "HELD: stop/permits/cases, automatic dispatch/integration, command parity/cutover, worker upgrades and independent full qualification remain",
+    "P2": "G1 contract is fixture-qualified only; authenticated provider charge identity and production effect integration remain P2 obligations",
+    "production_effects_enabled": false
+  }
+}

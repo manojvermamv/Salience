@@ -119,6 +119,18 @@
       "sha256": "0a233e4e2c823dd2da96bda893eb2f7675cb5ef566dd37b3c52319b6ae74b732"
     },
     {
+      "path": "migrations/versions/0023_cycle_allocations.py",
+      "sha256": "34355929c3ef196a476fe16c8e1bd2d664bbe0770a5e1eaa09186cb0aa095617"
+    },
+    {
+      "path": "migrations/versions/0024_allocation_guards.py",
+      "sha256": "626d3942eaeb0313a106e5238c097020db0b5b540a4478ae7ddeea1f15b3963e"
+    },
+    {
+      "path": "migrations/versions/0025_accounting_categories.py",
+      "sha256": "2704047e69bff76985eedd798afebcd9a24e64d5ece349220749cd2c82becb9c"
+    },
+    {
       "path": "migrations/versions/__init__.py",
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
@@ -368,11 +380,11 @@
     },
     {
       "path": "src/salience/cycles/admission.py",
-      "sha256": "d70db502639591d1c52bd4822de31caf1a8df6365a276425615455adaf222d73"
+      "sha256": "b72e09b8c990bc2529c8dd710d2076437a8eaf37910e69e28eb777e1a2f7baaa"
     },
     {
       "path": "src/salience/cycles/authority.py",
-      "sha256": "b1b7cf45b88b0d021905237538f4c2b57c065f3d510f6f6198c1b9fcda4a9f02"
+      "sha256": "162efc7014d42b37d7e22523233644c480a744fa4294edabb48baba868f05a48"
     },
     {
       "path": "src/salience/cycles/baselines.py",
@@ -384,7 +396,7 @@
     },
     {
       "path": "src/salience/cycles/contracts.py",
-      "sha256": "aa9c1e31e2cb33f2fba914f42c125537e15e57c032f2901ed03e1d5b3b34320d"
+      "sha256": "921d76487c9c8ebcac5497f2ea99f1f1c6dfc4463fac9fd80fc80918b533511a"
     },
     {
       "path": "src/salience/cycles/outbox.py",
@@ -436,11 +448,15 @@
     },
     {
       "path": "src/salience/governance/cost_repository.py",
-      "sha256": "432356659a0ed013697caa1f09f43d424167cef6a5d717c9557ae891651e7fb7"
+      "sha256": "2fbb9f5cf692cb93cddca4e7319ebf35bc5cb8b6655e5fce1881e4d792585ed4"
     },
     {
       "path": "src/salience/governance/costs.py",
       "sha256": "5d0b4c0293e332169ee411043795ccd66404f603423a67fdcd65231d2d13d5f3"
+    },
+    {
+      "path": "src/salience/governance/cycle_costs.py",
+      "sha256": "183cdf5290b3aa765f1abadc1d3bca9be97dc537e0a216ba569514b774364dc8"
     },
     {
       "path": "src/salience/governance/policy.py",
@@ -764,7 +780,7 @@
     },
     {
       "path": "tests/e2e/test_v4_outbox_recovery.py",
-      "sha256": "cf6a333b55dd4887a9e651c4f311f80c7bbc9c3863bd36bc3b89cc3795957e8a"
+      "sha256": "c8a572ad14f7dee744e06ffe65ec6244ccb8df5f32d60d54b55dfded0fee1503"
     },
     {
       "path": "tests/e2e/test_worker_restart.py",
@@ -943,6 +959,10 @@
       "sha256": "6dbe0eb4b7ef40d76c62549adf18e7ad7f574f933738e48524723dab35ecc4fa"
     },
     {
+      "path": "tests/integration/test_v4_cycle_accounting.py",
+      "sha256": "e0674adfbb923b4cc3953f6b1ba8945a486cd7bfb4142a4b3781c81c23f2c0ae"
+    },
+    {
       "path": "tests/integration/test_v4_cycle_admission.py",
       "sha256": "621376d59d4bbd801ba213bffb6e5370fbf2c87a51ca7422a7298e45d7f433aa"
     },
@@ -956,7 +976,7 @@
     },
     {
       "path": "tests/integration/test_v4_migrations.py",
-      "sha256": "30bf0197562b6b7c71ef0bcbb709f9f8cb40adce92bb2ca831dd6e11f901dae7"
+      "sha256": "e08f454f17063a0acb3ead48a8b8b5c9225eed922e1521ff524aea0c0b72ae8f"
     },
     {
       "path": "tests/integration/test_v4_object_retention.py",
@@ -1143,6 +1163,6 @@
       "sha256": "7f76114852b4b9d95b3517c49718ccf2e007d64d442a1b4e05ef696dd37a8bbc"
     }
   ],
-  "reviewed_at": "2026-09-23",
-  "review_scope": "P0 working-tree implementation after baseline; original hashes preserved in evidence-baseline.json. Independent review NOT RUN (external reviewer quota). No production qualification inferred."
+  "reviewed_at": "2026-09-27",
+  "review_scope": "Bounded P1 item 2 self-review: caller-owned canonical G0/G1 accounting, additive migrations and V1/V2/V3 preservation. Independent PR approval remains required; no production release inferred. Historical evidence hashes remain in their immutable reports."
 }

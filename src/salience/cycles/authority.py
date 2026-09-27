@@ -3,7 +3,7 @@
 from hashlib import sha256
 import json
 
-from salience.cycles.contracts import AuthoritySnapshot, RunContextV2
+from salience.cycles.contracts import AuthoritySnapshot, RunContextV2, RunContextV3
 
 
 def current_authority(connection, workspace_id, subject_id, scope="cycles:write"):
@@ -27,10 +27,11 @@ def require_program(connection, workspace_id, program_id):
 
 
 def context_authorized(connection, payload, workspace_id, subject_id):
-    if payload.get("schema_version") != "RunContext.local.v2":
+    if payload.get("schema_version") not in {"RunContext.local.v2", "RunContext.local.v3"}:
         return True
     try:
-        context = RunContextV2.model_validate(payload)
+        model = RunContextV3 if payload["schema_version"] == "RunContext.local.v3" else RunContextV2
+        context = model.model_validate(payload)
         require_program(connection, workspace_id, context.content_program_id)
         authority = current_authority(connection, workspace_id, subject_id)
         now = connection.execute("SELECT clock_timestamp() AS now").fetchone()["now"]

@@ -4,20 +4,26 @@
 
 ## Current evidence summary — 2026-09-27
 
-Inspected source head: `33fc48319df2f832b412a4504fe9ceb1b6136caa`. The current uncommitted V2 policy increment is identified by the reviewed 285-file source lock and [fresh requalification report](cadence-policy-recheck-evidence.json). Use [current progress](progress.md#current-state--2026-09-24) and the [blueprint snapshot](IMPLEMENTATION-BLUEPRINT.md#current-execution); dated older reports are not current-tree qualification.
+Inspected item-2 base: `0db5412836c2bf5272325b2503acc07289630552`. The qualified working tree is identified by the reviewed 290-file source lock and [allocation report](allocation-evidence.json). Use [current progress](progress.md#current-state--2026-09-24) and the [blueprint snapshot](IMPLEMENTATION-BLUEPRINT.md#current-execution); dated older reports remain historical, not current-tree qualification.
 
 | Evidence | Latest recorded outcome | Meaning and limits |
 | --- | --- | --- |
-| Full non-live application suite | 341 PASS, zero failures/errors/skips, 2026-09-27 | Fresh requalification regression, 312.74 seconds pytest wall time; existing Starlette/AnyIO warning only. |
-| Focused completed P1/migration suite | 86 PASS, zero failures/errors/skips, 2026-09-27 | V2 policy and prior slices, restricted-role authorization, migration rollback, V1/V2 actual worker kill/restart/replay with recorded receipt assertions. Full P1 remains incomplete. |
+| Full non-live application suite | 371 PASS, zero failures/errors/skips, 2026-09-27 | Item-2 regression, 331.698 seconds JUnit time; existing Starlette/AnyIO warning only. |
+| Focused completed P1/migration suite | 119 PASS, zero failures/errors/skips, 2026-09-27 | V3 accounting plus prior slices, restricted-role authorization, migrations and V1/V2/V3 actual worker kill/restart/replay. Full P1 remains incomplete. |
 | Local development entry | DG1 PASS | [Prerequisite evidence](development-entry-evidence.json) predates P1 implementation; not a production release. |
-| Documentation contract | 15 tests / 75 obligations PASS | 285 reviewed source files, 360 inventory dispositions, 82 Markdown files, five HTML files, six negative controls; four shell contracts also PASS. |
+| Documentation contract | 15 tests / 75 obligations PASS | 290 reviewed source files, 360 inventory dispositions, 82 Markdown files, five HTML files, six negative controls; four shell contracts also PASS. |
 | Diagrams | Six Mermaid 12.0.0 renders PASS | Fresh policy-recheck-2026-09-27-diagrams artifacts. The temporary dependency directory was absent; recreated the same pinned installation outside the repository after registry/license/integrity verification, then rendered successfully. Target visuals are not a deployment claim. |
-| Exact-head CI and repository protection | PASS for source `33fc483`, inspected 2026-09-27T10:15:09Z | [Repository report](repository-enforcement-evidence.json); strict app-bound checks/admin enforcement/current independent approval. Uncommitted candidate CI NOT RUN; no merge authorization inferred. |
+| Exact-head CI and repository protection | PASS for base `0db5412`, inspected 2026-09-27T10:42:21Z | Strict app-bound checks/admin enforcement pass on the base. Uncommitted item-2 candidate CI and independent PR approval are NOT RUN; no merge authorization inferred. |
 | Production qualifications | NOT RUN; RG0 HELD | Operator safety, identity/ingress, managed storage/restore and remote collector/alerts need actual external evidence. |
 | Full P1 and later phases | RG1 HELD; remaining implementation/qualification NOT RUN | See the [remaining queue](IMPLEMENTATION-BLUEPRINT.md#p1-resume-queue); a green fixture slice is not full release acceptance. |
 
 Historical reports are immutable, commit-scoped evidence: [P1a](p1-increment-evidence.json), [outbox](outbox-increment-evidence.json), [goal revisions](goal-revision-evidence.json), and [baseline approval](baseline-approval-evidence.json). Their original source digests/counts must not be overwritten with the newest result. The repository-enforcement report is a rolling latest-inspection record, so older paragraphs identify their original commits independently.
+
+### G0/G1 allocation qualification — 2026-09-27
+
+Migrations 0023–0025, `GoalSpec.local.v3`/`RunContext.local.v3`, caller-owned `CycleCostLedger` transactions and admission integration provide a fixture-only G0 parent allocation and P2 G1 transfer/reconciliation contract over canonical reservations and ledger entries. Deterministically ordered shared budget locks enforce workspace/program/account, currency and period scope. Transfers conserve the G0 bound; cancellation, closure, expiry, rollback and connection loss release only proven-unused amounts and retain dispatched/unknown liability. Exact retries, conflicting retries, concurrent caps, period rollover, duplicate/late settlement, overage, current authority, a genuine non-owner role and V1/V2/V3 worker recovery are exercised.
+
+Qualification is **119 focused / 371 full non-live PASS**, zero failures/errors/skips, with 15 documentation tests, all 75 obligations, 290 source hashes, six Mermaid renders, four documentation shell contracts, dependency consistency and whitespace PASS. [Durable allocation evidence](allocation-evidence.json) preserves the commands and digests. Local self-review found and repaired three defects; a new independent PR review and exact published-candidate CI remain **NOT RUN**. This fixture contract adds no provider, production effect or live spend. RG0/full RG1 remain **HELD**.
 
 ## Historical evidence chronology
 

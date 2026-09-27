@@ -20,13 +20,13 @@
       "exit_code": 0
     },
     "full_non_live": {
-      "passed": 341,
+      "passed": 371,
       "failed": 0,
       "errors": 0,
       "skipped": 0,
       "exit_code": 0,
-      "seconds": 314.315,
-      "junit": "artifacts/v4-p0/policy-recheck-2026-09-27-regression.xml"
+      "seconds": 331.698,
+      "junit": "artifacts/v4-p0/allocation-regression.xml"
     },
     "documentation_tests": {
       "passed": 15,
@@ -40,17 +40,17 @@
       "failed": 0,
       "version": "12.0.0"
     },
-    "locked_evidence_files": 285,
+    "locked_evidence_files": 290,
     "original_inventory_dispositions": 360,
     "warning": "Pre-existing Starlette/AnyIO deprecation warning",
     "focused_p1": {
-      "passed": 86,
+      "passed": 119,
       "failed": 0,
       "errors": 0,
       "skipped": 0,
       "exit_code": 0,
-      "seconds": 74.439,
-      "junit": "artifacts/v4-p0/policy-recheck-2026-09-27-focused.xml"
+      "seconds": 89.853,
+      "junit": "artifacts/v4-p0/allocation-focused.xml"
     }
   },
   "evidence_artifacts": [
@@ -107,6 +107,11 @@
     {
       "path": "docs/v4/cadence-policy-recheck-evidence.json",
       "sha256": "13a39e9d22f58220ccfd5b4d5663cf279014006e23c50f700a7e55dea8011c0a",
+      "local_only": false
+    },
+    {
+      "path": "docs/v4/allocation-evidence.json",
+      "sha256": "d0b076c49a0d0ebb5d27cc2ab0aec86f9b437161c53d2b6040ce7fcf61feac6d",
       "local_only": false
     }
   ],
@@ -180,7 +185,7 @@
     ]
   },
   "p1_increment": {
-    "name": "Local admission/outbox, revisions, approved baseline and V2 goal/context/authority/cadence policies",
+    "name": "Local admission/outbox, revisions, approved baseline, V2 policy and V3 fixture G0/G1 accounting",
     "local_status": "PASS",
     "release_gate": "RG1",
     "release_status": "HELD",
@@ -199,19 +204,20 @@
       "R35",
       "R53"
     ],
-    "evidence": "docs/v4/cadence-policy-recheck-evidence.json",
+    "evidence": "docs/v4/allocation-evidence.json",
     "remaining": [
       "General registry/provider eligibility beyond the approved no-effects fixture baseline; later capability and production qualification gates remain binding",
-      "G0 paid allocation ledger and G1 transfer/release/crash recovery contract",
+      "Production G1 provider charge identity and effect integration beyond the fixture-qualified transfer/reconciliation contract",
       "Automatic dispatcher service, all legacy start/signal cutover, full API-to-provider outbox integration and production typed delivery recovery",
       "Stop/dispatch permits and version-bound cases/review/resume/archive",
       "API/CLI/SDK parity and schedule conversion",
       "Arbitrary supported worker-version compatibility, Continue-As-New, real-time durable review deadlines and independent full RG1 qualification"
     ],
     "completed_queue_items": [
-      1
+      1,
+      2
     ],
-    "next_queue_item": 2
+    "next_queue_item": 3
   },
   "documentation_refresh": {
     "date": "2026-09-24",
