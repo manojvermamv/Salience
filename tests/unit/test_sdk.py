@@ -175,3 +175,28 @@ def test_client_schedules_governed_publication_through_http(monkeypatch) -> None
             },
         )
     ]
+
+
+def test_sdk_preserves_fixture_cutover_keys_and_shared_http_contract(monkeypatch) -> None:
+    requests = []
+
+    def request(method, url, **kwargs):
+        requests.append((method, url, kwargs.get("json")))
+        return Response()
+
+    monkeypatch.setattr("salience.sdk.client.httpx.request", request)
+    client = SalienceClient("https://api.example", "token")
+    command = {"legacy_schedule_id": "legacy-1", "expected_revision": 2,
+               "first_v4_slot": "2030-01-01T00:00:00+00:00", "idempotency_key": "prepare"}
+    client.cycles.prepare_schedule_cutover("goal-1", command)
+    client.cycles.inspect_schedule_cutover("goal-1")
+    client.cycles.activate_schedule_cutover("goal-1", idempotency_key="activate")
+    client.cycles.poll_schedule_cutover("goal-1", expected_revision=2, idempotency_key="poll")
+    client.cycles.rollback_schedule_cutover("goal-1", idempotency_key="rollback")
+    assert requests == [
+        ("POST", "https://api.example/v1/v4/goals/goal-1/schedule-cutover", command),
+        ("GET", "https://api.example/v1/v4/goals/goal-1/schedule-cutover", None),
+        ("POST", "https://api.example/v1/v4/goals/goal-1/schedule-cutover/activate", {"idempotency_key": "activate"}),
+        ("POST", "https://api.example/v1/v4/goals/goal-1/schedule-cutover/poll", {"expected_revision": 2, "idempotency_key": "poll"}),
+        ("POST", "https://api.example/v1/v4/goals/goal-1/schedule-cutover/rollback", {"idempotency_key": "rollback"}),
+    ]

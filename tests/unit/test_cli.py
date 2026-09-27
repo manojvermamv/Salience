@@ -153,3 +153,30 @@ def test_cli_schedules_publication_with_immutable_references(monkeypatch, capsys
         "budget_id": "budget-1",
     }
     assert json.loads(capsys.readouterr().out)["job_id"] == "job-1"
+
+
+def test_cli_uses_signed_fixture_cutover_contract(monkeypatch, capsys) -> None:
+    captured = []
+
+    def request(method, url, **kwargs):
+        captured.append((method, url, kwargs.get("json"), kwargs["headers"]))
+        return Response()
+
+    monkeypatch.setenv("SALIENCE_CONTROL_JWT", "signed-fixture")
+    monkeypatch.setattr(cli.httpx, "request", request)
+    cli.main(["cycles", "cutover-prepare", "--goal-id", "goal-1", "--legacy-schedule-id", "legacy-1",
+              "--expected-revision", "2", "--first-v4-slot", "2030-01-01T00:00:00+00:00", "--idempotency-key", "prepare"])
+    cli.main(["cycles", "cutover-inspect", "--goal-id", "goal-1"])
+    cli.main(["cycles", "cutover-activate", "--goal-id", "goal-1", "--idempotency-key", "activate"])
+    cli.main(["cycles", "cutover-poll", "--goal-id", "goal-1", "--expected-revision", "2", "--idempotency-key", "poll"])
+    cli.main(["cycles", "cutover-rollback", "--goal-id", "goal-1", "--idempotency-key", "rollback"])
+    assert [entry[:3] for entry in captured] == [
+        ("POST", "http://127.0.0.1:8000/v1/v4/goals/goal-1/schedule-cutover",
+         {"legacy_schedule_id": "legacy-1", "expected_revision": 2, "first_v4_slot": "2030-01-01T00:00:00+00:00", "idempotency_key": "prepare"}),
+        ("GET", "http://127.0.0.1:8000/v1/v4/goals/goal-1/schedule-cutover", None),
+        ("POST", "http://127.0.0.1:8000/v1/v4/goals/goal-1/schedule-cutover/activate", {"idempotency_key": "activate"}),
+        ("POST", "http://127.0.0.1:8000/v1/v4/goals/goal-1/schedule-cutover/poll", {"expected_revision": 2, "idempotency_key": "poll"}),
+        ("POST", "http://127.0.0.1:8000/v1/v4/goals/goal-1/schedule-cutover/rollback", {"idempotency_key": "rollback"}),
+    ]
+    assert all(entry[3]["Authorization"] == "Bearer signed-fixture" for entry in captured)
+    capsys.readouterr()

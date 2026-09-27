@@ -388,6 +388,24 @@ class CyclesClient(_ControlClient):
     def request_cycle(self, goal_id: str, command: dict[str, Any]) -> dict[str, Any]:
         return self._request("POST", f"/v1/v4/goals/{goal_id}/requests", command)
 
+    def prepare_schedule_cutover(self, goal_id: str, command: dict[str, Any]) -> dict[str, Any]:
+        return self._request("POST", f"/v1/v4/goals/{goal_id}/schedule-cutover", command)
+
+    def inspect_schedule_cutover(self, goal_id: str) -> dict[str, Any]:
+        return self._request("GET", f"/v1/v4/goals/{goal_id}/schedule-cutover")
+
+    def activate_schedule_cutover(self, goal_id: str, *, idempotency_key: str) -> dict[str, Any]:
+        return self._request("POST", f"/v1/v4/goals/{goal_id}/schedule-cutover/activate",
+                             {"idempotency_key": idempotency_key})
+
+    def poll_schedule_cutover(self, goal_id: str, *, expected_revision: int, idempotency_key: str) -> dict[str, Any]:
+        return self._request("POST", f"/v1/v4/goals/{goal_id}/schedule-cutover/poll",
+                             {"expected_revision": expected_revision, "idempotency_key": idempotency_key})
+
+    def rollback_schedule_cutover(self, goal_id: str, *, idempotency_key: str) -> dict[str, Any]:
+        return self._request("POST", f"/v1/v4/goals/{goal_id}/schedule-cutover/rollback",
+                             {"idempotency_key": idempotency_key})
+
     def admit(self, intent_id: str) -> dict[str, Any]:
         return self._request("POST", f"/v1/v4/intents/{intent_id}/admit", {})
 

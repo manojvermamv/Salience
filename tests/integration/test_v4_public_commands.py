@@ -113,6 +113,8 @@ def test_public_fixture_commands_preserve_identity_and_outbox(public_fixture):
         assert response.status_code == 200, response.text
         intent_ids.append(response.json()["intent_id"])
     assert len(set(intent_ids)) == 1
+
+
     repeated = client.post(f"/v1/v4/goals/{goal_id}/requests", headers=headers, json=requests[0])
     assert repeated.json()["intent_id"] == intent_ids[0]
     conflict = client.post(
@@ -172,6 +174,55 @@ def test_public_fixture_commands_preserve_identity_and_outbox(public_fixture):
             (str(subject),),
         )
     assert client.get(f"/v1/v4/cycles/{cycle_id}", headers=headers).status_code == 403
+
+
+def test_public_schedule_cutover_requires_separate_grant_and_preserves_exact_watermark(public_fixture):
+    client, headers, workspace, subject, spec, database = public_fixture
+    goal = client.post(
+        f"/v1/workspaces/{workspace}/v4/goals", headers=headers | {"Idempotency-Key": "cutover-goal"},
+        json=spec.model_dump(mode="json"),
+    ).json()["goal_id"]
+    interval = timedelta(seconds=spec.cadence.interval_seconds)
+    now = datetime.now(timezone.utc)
+    first_slot = spec.cadence.anchor + ((now - spec.cadence.anchor) // interval + 2) * interval
+    schedule_id = uuid4()
+    with psycopg.connect(database) as connection:
+        connection.execute(
+            "INSERT INTO job_schedules (id,workspace_id,content_program_id,name,schedule_expression,timezone,job_type,payload,next_run_at) "
+            "VALUES (%s,%s,%s,%s,'every:60s','UTC','v4_fixture_legacy',%s,%s)",
+            (schedule_id, workspace, spec.content_program_id, str(schedule_id),
+             json.dumps({"dry_run": True, "last_slot": (first_slot - interval).isoformat()}), first_slot),
+        )
+    command = {"legacy_schedule_id": str(schedule_id), "expected_revision": 1,
+               "first_v4_slot": first_slot.isoformat(), "idempotency_key": "prepare"}
+    path = f"/v1/v4/goals/{goal}/schedule-cutover"
+    assert client.post(path, headers=headers, json=command).status_code == 403
+    with psycopg.connect(database) as connection:
+        connection.execute(
+            "INSERT INTO permission_grants (workspace_id,principal_type,principal_id,scope,effect,constraints,expires_at) "
+            "VALUES (%s,'identity',%s,'cycles:schedule','allow','{}',now()+interval '1 hour')",
+            (workspace, str(subject)),
+        )
+    prepared = client.post(path, headers=headers, json=command)
+    assert prepared.status_code == 200, prepared.text
+    assert prepared.json()["state"] == "pending"
+    assert client.post(path, headers=headers, json=command).json() == prepared.json()
+    assert client.get(path, headers=headers).json() == prepared.json()
+    assert client.post(f"{path}/poll", headers=headers, json={"expected_revision": 1,
+                       "idempotency_key": "pending"}).json()["state"] == "pending"
+    activated = client.post(f"{path}/activate", headers=headers, json={"idempotency_key": "activate"})
+    assert activated.status_code == 200, activated.text
+    assert activated.json()["state"] == "active"
+    polled = client.post(f"{path}/poll", headers=headers,
+                         json={"expected_revision": 1, "idempotency_key": "poll"})
+    assert polled.status_code == 200, polled.text
+    assert polled.json()["state"] == "active" and polled.json()["intent_ids"] == []
+    rolled_back = client.post(f"{path}/rollback", headers=headers, json={"idempotency_key": "rollback"})
+    assert rolled_back.status_code == 200, rolled_back.text
+    assert rolled_back.json()["state"] == "rolled_back"
+    assert client.get(path, headers=headers).json() == rolled_back.json()
+    assert client.post(f"{path}/poll", headers=headers, json={"expected_revision": 1,
+                       "idempotency_key": "after"}).json()["state"] == "rolled_back"
 
 
 def test_public_fixture_authorization_and_opt_in_fail_closed(public_fixture):

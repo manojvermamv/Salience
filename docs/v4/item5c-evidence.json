@@ -1,0 +1,72 @@
+{
+  "recorded_at": "2026-09-27",
+  "base_commit": "5ae20d324f12a8880bfc176a6eec41aa6541ac95",
+  "scope": "Bounded P1 item 5c: one-goal no-effects fixture schedule cutover, signed API/CLI/SDK parity, opt-in bounded poller and preservation-safe rollback",
+  "source_evidence_lock_sha256": "1a0d28c04fe4f0db50123bf381c47704e5f2cd08c91c78ea95ae80131b19dbea",
+  "commands": [
+    {
+      "command": ".venv/bin/python -m pytest -p no:cacheprovider tests/integration/test_v4_schedule_cutover.py tests/integration/test_v4_public_commands.py tests/integration/test_v4_migrations.py tests/unit/test_cli.py tests/unit/test_sdk.py tests/unit/test_v4_deployment_boundary.py -q -rs --junitxml=artifacts/v4-p0/item5c-focused.xml",
+      "exit_code": 0,
+      "tests": 37,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 43.642,
+      "junit": "artifacts/v4-p0/item5c-focused.xml",
+      "junit_sha256": "a92e68d15e083946e57072d93300c35db2cef813b36335fa55dd4bbe05ab93b9",
+      "log_sha256": "8fed1d19b2acf493ba3504d098b288cda67ffe1b0227ee005d938392608e578c"
+    },
+    {
+      "command": ".venv/bin/python -m pytest -p no:cacheprovider tests/contracts tests/unit tests/integration tests/e2e tests/evals -m 'not live' -q -rs --junitxml=artifacts/v4-p0/item5c-regression.xml",
+      "exit_code": 0,
+      "tests": 425,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 394.403,
+      "junit": "artifacts/v4-p0/item5c-regression.xml",
+      "junit_sha256": "b6bba2c83c1fdd1e668e7b2867af143cc1f9d68cc176b5da49fe422a93c27716",
+      "log_sha256": "e99bb2c6a7fd53bb991c11da68d6af6e2509006542379e3986834d7829894b66"
+    }
+  ],
+  "requirement_coverage": {
+    "R06": "Manual/event requests coalesce with a guarded scheduled poll at the same immutable goal UTC slot; concurrent retry and restart retain one intent, cycle, context and outbox start.",
+    "R07": "Cutover polling invokes ordinary G0 admission after the durable schedule batch; a committed unadmitted intent is recovered on later poll without a second cycle.",
+    "R08": "One active V2 goal revision and same-program dry-run legacy fixture schedule bind to a future aligned first-V4 slot. Pause/readback precedes cursor activation; opt-in independent bounded polling skips pending, stopped, stale or rolled-back cutovers.",
+    "R13": "Signed URL-scoped prepare/inspect/activate/poll/rollback requires separate current cycles:schedule and cycles:write grants; a genuine non-owner role succeeds without authority edit privilege.",
+    "R18": "Current goal/workspace stop holds fixture activation, polling and legacy resume. A rollback_pending row fences V4 polling before any external resume.",
+    "R53": "Fixture public API, CLI and SDK share exact cutover idempotency keys and redacted scoped reads; no route directly starts or signals Temporal."
+  },
+  "additional_verification": {
+    "clean_database_upgrade": "PASS: fresh PostgreSQL database upgraded through additive 0030",
+    "empty_downgrade_reupgrade": "PASS: 0030 to 0029 to 0030 on empty schema",
+    "populated_rollback": "HELD safely: destructive 0030 downgrade rejects an existing cutover row; rollback retains cursor, intents, frozen contexts and receipts",
+    "fault_injection": "PASS: lost pause and resume acknowledgments, crashes before prepare/activate/poll/rollback commit and after poll commit, unverified old-schedule unpause, stale revision, revoked grant, direct-SQL activation bypass, stop and unresolved outbox/permit holds",
+    "fixture_polling": "PASS: opt-in bounded independent poller advances only active due scoped goals through canonical batch, G0 and outbox; no live Temporal legacy schedule conversion",
+    "documentation_tests": 15,
+    "mapped_obligations": 75,
+    "locked_source_files": 302,
+    "inventory_dispositions": 360,
+    "mermaid_rendered": 6,
+    "mermaid_report_sha256": "6ab6bcbe4a8d1d0af7521e51fbf8d76836f012e2d67974f37c7d9c202784f0ae",
+    "shell_documentation_contracts": 4,
+    "dependency_consistency": "PASS",
+    "whitespace": "PASS",
+    "production_effects_enabled": false,
+    "independent_pr_review": "NOT RUN"
+  },
+  "repository_verification": {
+    "base_commit": "5ae20d324f12a8880bfc176a6eec41aa6541ac95",
+    "base_ci_status": "PASS",
+    "base_enforcement_status": "PASS",
+    "base_inspected_at": "2026-09-27T19:21:23.150470+00:00",
+    "candidate_ci_status": "NOT RUN until item-5c candidate commit is published",
+    "merge": "NOT AUTHORIZED; independent PR approval remains NOT RUN"
+  },
+  "remaining": {
+    "next_queue_item": "6: supported worker-version replay, Continue-As-New and durable review timers/alert delivery",
+    "RG0": "HELD: four external production qualifications NOT RUN",
+    "RG1": "HELD: production Temporal schedule control/fencing, worker upgrades/timers, general policy/read reconciliation and independent full qualification remain",
+    "production_effects_enabled": false
+  }
+}

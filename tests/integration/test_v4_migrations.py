@@ -20,6 +20,8 @@ def test_clean_upgrade_empty_rollback_and_populated_preservation():
                 return subprocess.run([sys.executable, "-m", "alembic", "-x", f"database_url={database}", direction, target], capture_output=True, text=True)
 
             assert migrate("upgrade", "head").returncode == 0
+            assert migrate("downgrade", "0029_goal_create_receipts").returncode == 0
+            assert migrate("upgrade", "head").returncode == 0
             assert migrate("downgrade", "0012_publication_profile_scope").returncode == 0
             assert migrate("upgrade", "head").returncode == 0
             assert migrate("downgrade", "0028_fixture_adapter_receipts").returncode == 0
@@ -108,6 +110,20 @@ def test_clean_upgrade_empty_rollback_and_populated_preservation():
             assert result.returncode != 0 and "preserve exact V4 goal creation receipts" in result.stderr
             with psycopg.connect(database) as connection:
                 assert connection.execute("SELECT count(*) FROM v4_goal_create_commands WHERE goal_id=%s", (goal,)).fetchone()[0] == 1
+                assert connection.execute("SELECT version_num FROM alembic_version").fetchone()[0] == final_revision
+                legacy_schedule = uuid4()
+                connection.execute("INSERT INTO job_schedules (id,workspace_id,name,schedule_expression,job_type) VALUES (%s,%s,%s,'every:60s','v4_fixture_legacy')", (legacy_schedule,workspace,str(legacy_schedule)))
+                connection.execute("""
+                    INSERT INTO v4_schedule_cutovers
+                    (goal_id,workspace_id,goal_revision,legacy_schedule_id,actor_id,prepare_key,fingerprint,first_v4_slot,traceparent)
+                    VALUES (%s,%s,2,%s,%s,'preserve',%s,now()+interval '1 hour',%s)
+                """, (goal,workspace,legacy_schedule,subject,"a"*64,"00-"+"a"*32+"-"+"b"*16+"-01"))
+                with pytest.raises(psycopg.Error, match="immutable"), connection.transaction():
+                    connection.execute("UPDATE v4_schedule_cutovers SET fingerprint=%s WHERE goal_id=%s", ("b"*64,goal))
+            result = migrate("downgrade", "0029_goal_create_receipts")
+            assert result.returncode != 0 and "preserve V4 schedule cutover history" in result.stderr
+            with psycopg.connect(database) as connection:
+                assert connection.execute("SELECT state FROM v4_schedule_cutovers WHERE goal_id=%s", (goal,)).fetchone()[0] == "pending"
                 assert connection.execute("SELECT version_num FROM alembic_version").fetchone()[0] == final_revision
         finally:
             admin.execute(psycopg.sql.SQL("DROP DATABASE {} WITH (FORCE)").format(psycopg.sql.Identifier(name)))

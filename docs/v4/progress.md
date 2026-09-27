@@ -6,6 +6,10 @@
 
 ## Current state — 2026-09-27
 
+P1 item 5c now rehearses one-goal no-effects fixture schedule conversion behind a signed, separate `cycles:schedule` grant. Additive migration 0030 binds the same-workspace/program dry-run legacy fixture row, goal revision and immutable first-V4 UTC slot. Pause/readback precedes cursor activation; an opt-in independent fixture poller uses ordinary `request_due` → G0 admission/outbox, while pending/stop/stale/rollback states fence new work. The rollback command records `rollback_pending` before any old-schedule resume, holds unresolved intents/outbox/permits, and requires an exact later-slot readback; lost acknowledgments and process crashes retry without duplicate cycles. Public API/CLI/SDK parity, concurrent manual/event/scheduled coalescing, restricted non-owner authority, direct-SQL guards, empty migration downgrade/re-upgrade and populated rollback refusal pass: **37 focused / 425 full non-live PASS**, zero failures/errors/skips. [Item-5c evidence](item5c-evidence.json) records final hashes. This is a fixture `job_schedules` control, **not** a live Temporal schedule conversion or production effect. Item 6 worker upgrades/timers and item 7 independent RG1 remain. Published item-5b `5ae20d3` passes both required checks and strict main protection at 2026-09-27T19:21:23Z; item-5c candidate CI and independent PR approval are NOT RUN until publication/review. RG0/full RG1 remain HELD.
+
+Prior item-5b checkpoint:
+
 P1 item 5b adds signed **no-effects fixture** goal revision/state and baseline revocation, workspace/goal stop, typed intent/cycle case open/inspect, bound review, same-target resume, terminal archive and notification acknowledgment across API/CLI/SDK. All reuse the 0026 canonical stop/case/review transactions and 0029 goal receipts; no migration, provider or live effect is added. Revoked review authority, wrong artifact/context, same-intent and same-operation recovery, exact CLI/SDK replay, restricted non-owner inspection and preserved archive history pass: **63 focused / 411 full non-live PASS**, zero failures/errors/skips. A preliminary focused run found an older test race between durable inbox receipt and later mock adapter acceptance; the test now waits for canonical acceptance before closing the fixture cycle. Another red test found archive replay omitted the original disposition; repaired and reverified. [Item-5b evidence](item5b-evidence.json) records exact commands and source/JUnit hashes. Item 5c one-goal schedule cutover and items 6–7 remain; RG0/full RG1 remain HELD, effects disabled. Published item-5a `c78ce13` passes both required checks and strict main protection at 2026-09-27T18:04:15Z; item-5b candidate-head CI and independent PR approval are NOT RUN until publication/review.
 
 Prior item-5a checkpoint:
@@ -37,8 +41,8 @@ The [blueprint](IMPLEMENTATION-BLUEPRINT.md#current-execution) is the execution 
 | Documentation foundation | COMPLETE | Original inventory, reversible consolidation, source preservation, 75 requirement mappings, acyclic gates, link/Markdown/drift checks and six target diagrams. |
 | P0 local implementation | PASS | Isolated authenticated control, restricted-role authorization, secrets, immutable storage/retention, audit/OTel, migration and effects-disabled qualification. |
 | DG1 development entry | PASS | Five mandatory local prerequisites verified before P1; does not release production RG0. |
-| P1 local increments | PASS for items 1–4 and 5a–5b; phase ONGOING | Prior admission/outbox/revision/policy slices, V3 fixture G0/G1 accounting, stop/permit/cases, automatic fixture handoff/mock trace and signed no-effects API/CLI/SDK core and typed stop/case/review/revision parity. |
-| P1 remaining implementation | PLANNED / NOT RUN | Item 5c rehearses scoped schedule cutover; then worker upgrades and durable review timers. |
+| P1 local increments | PASS for items 1–5; phase ONGOING | Prior admission/outbox/revision/policy slices, V3 fixture G0/G1 accounting, stop/permit/cases, automatic fixture handoff/mock trace, signed commands and scoped independent fixture schedule cutover. |
+| P1 remaining implementation | PLANNED / NOT RUN | Item 6 worker upgrades/Continue-As-New and durable review timers; item 7 independent full RG1 review. Live Temporal schedule conversion remains a release obligation. |
 | P2 production records | PLANNED / NOT RUN | Reliable creative/publication records and enabled-provider qualification after RG1. |
 | P3 observation/experience | PLANNED / NOT RUN | Observation, attribution, internal experience and trial/evaluation isolation before P4. |
 | P4 strategy/release | PLANNED / NOT RUN | Explainable selection, strategy trials and controlled promotion/invalidation. |
@@ -46,7 +50,7 @@ The [blueprint](IMPLEMENTATION-BLUEPRINT.md#current-execution) is the execution 
 | P6 optional adaptation | PLANNED / DISABLED | No training/data-export enablement; conditional RG6 if this capability is enabled. |
 | P7 production rollout | PLANNED / NOT RUN | End-to-end live qualification, restore/upgrade, load/soak, signed deployment and constrained rollout. |
 | RG0 and full RG1 release | HELD | Four external production qualifications remain NOT RUN; full P1 acceptance also remains unfinished. |
-| GitHub controls | PASS on item-5a implementation `c78ce13`; independent approval NOT RUN | Both required checks and strict main protection verified at 2026-09-27T18:04:15Z. Any later head requires exact-head recheck before any merge. |
+| GitHub controls | PASS on item-5b implementation `5ae20d3`; item-5c candidate/independent approval NOT RUN | Both required checks and strict main protection verified at 2026-09-27T19:21:23Z. Any later head requires exact-head recheck before any merge. |
 
 ### Completed checkpoints to reuse
 
@@ -62,18 +66,18 @@ The [blueprint](IMPLEMENTATION-BLUEPRINT.md#current-execution) is the execution 
 | `7071dbf` | Fixture stop/permit/case item 3 with 137 focused / 389 full tests, 293 source hashes and exact implementation-head CI PASS. |
 | `2fbb384` | Automatic fixture outbox/mock trace item 4 with 113 focused / 399 full tests, 296 source hashes and exact implementation-head CI PASS. |
 
-Latest application execution on 2026-09-27: **411 full non-live / 63 focused PASS**, zero failures/errors/skips; one existing Starlette/AnyIO warning. Fifteen documentation tests, the 75-obligation validator (299 locked source files, 360 dispositions, 82 Markdown, five HTML, six negative controls), six Mermaid renders, four shell contracts, dependency consistency and whitespace pass. [Item-5b evidence](item5b-evidence.json) preserves command/JUnit/source digests and partial requirement coverage; [item-3 evidence](governance-evidence.json) and older results remain historical. The prior item-4 late-receipt failure and repair remain recorded in its historical report; item-5a final focused/full suites are green.
+Latest application execution on 2026-09-27: **425 full non-live / 37 focused PASS**, zero failures/errors/skips; one existing Starlette/AnyIO warning. Fifteen documentation tests, the 75-obligation validator (302 locked source files, 360 dispositions, 82 Markdown, five HTML, six negative controls), six Mermaid renders, four shell contracts, dependency consistency and whitespace pass. [Item-5c evidence](item5c-evidence.json) preserves command/JUnit/source digests and partial requirement coverage; [item-5b evidence](item5b-evidence.json) and older results remain historical. The prior item-4 late-receipt failure and repair remain recorded in its historical report.
 
 ### Resume instructions
 
 1. Inspect branch/worktree/HEAD and this summary; do not restart P0 or rebuild completed P1 components. Recheck the [release ledger](p0-release.json) and source evidence for intervening changes.
-2. Resume the [ordered P1 queue](IMPLEMENTATION-BLUEPRINT.md#p1-resume-queue) at item 5c within isolated DG1 development. Reuse items 1–4 and 5a–5b; do not rebuild admission/revisions/baselines/outbox, V2 policies, V3 fixture accounting, stop/permit/cases or the local fixture dispatcher. Exact candidate CI and independent PR approval block a merge, not isolated development. Retain red-green, additive migration/rollback and independent review for each increment.
+2. Resume the [ordered P1 queue](IMPLEMENTATION-BLUEPRINT.md#p1-resume-queue) at item 6 within isolated DG1 development. Reuse items 1–5; do not rebuild admission/revisions/baselines/outbox, V2 policies, V3 fixture accounting, stop/permit/cases, the local dispatcher or fixture cutover. Exact candidate CI and independent PR approval block a merge, not isolated development. Retain red-green, additive migration/rollback and independent review for each increment.
 3. Preserve dry-run, zero-spend and fallback denial. The private fixture worker and internal review wake are not public production controls. Never backfill authority into an old context or create a replacement cycle to bypass recovery.
 4. Preserve the three deferral identities and the phase-bound accounting, capability/R58, trial-isolation and promotion/invalidation decisions. Follow the blueprint dependencies before later-phase code.
 5. Before an implementation merge, verify the exact candidate commit with `verify_repository.py`, not a prior successful head. Keep main unmerged until current independent PR approval and all applicable merge gates pass.
 6. Update blueprint status/mappings, release evidence and this log with actual results. External identity/ingress, storage/restore, collector/alerts and operator safety qualification remain separate NOT RUN production obligations, not an excuse to label local implementation complete.
 
-"Ongoing" describes unfinished full P1, not an already running later increment. Items 5a–5b add only signed opt-in local fixture commands; schedule cutover and full RG1 remain separate. Original ArchV4 sources, archived snapshots, historical visuals and AGENTS.md/SKILL.md instructions are preserved. Superseded core/Superpowers paths remain navigation aliases, not competing plans.
+"Ongoing" describes unfinished full P1, not an already running later increment. Items 5a–5c add only signed opt-in local fixture commands and cutover; production Temporal schedule control and full RG1 remain separate. Original ArchV4 sources, archived snapshots, historical visuals and AGENTS.md/SKILL.md instructions are preserved. Superseded core/Superpowers paths remain navigation aliases, not competing plans.
 
 ## Historical transition and execution log
 

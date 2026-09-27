@@ -147,6 +147,10 @@
       "sha256": "070209967211d8735ea1b3355a967ca8565a86914dbb3f5359a02deb7196e7d4"
     },
     {
+      "path": "migrations/versions/0030_v4_schedule_cutover.py",
+      "sha256": "f7ccbf9bbfdff6bc339e33f73c1c1a8cac93f7e8ae80dd51e24a098b28a355bc"
+    },
+    {
       "path": "migrations/versions/__init__.py",
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
@@ -252,7 +256,7 @@
     },
     {
       "path": "src/salience/api/p0.py",
-      "sha256": "4c8ce817139f40619cc4d49777d14197298af1317c0a42537f3f96679fafaee9"
+      "sha256": "bdf85058feb196f7b843fa0320c32bab296d81109d76d4df6464590e64a15a74"
     },
     {
       "path": "src/salience/api/routes/__init__.py",
@@ -284,7 +288,7 @@
     },
     {
       "path": "src/salience/api/routes/v4_cycles.py",
-      "sha256": "9bf2e64316ef3f35b198337d7f7691722bae6eabc73c50e02e2be05eef42fa82"
+      "sha256": "5cb898a44a77a63108404067c4fc3a2b96eddd585692a744124622e8e1161e5e"
     },
     {
       "path": "src/salience/api/schemas.py",
@@ -324,7 +328,7 @@
     },
     {
       "path": "src/salience/cli.py",
-      "sha256": "b9e3648f818b7ffb2f98eb80e757fae81c997f5388b5d22005af318530e169b1"
+      "sha256": "819ca64e7bd0a0d06887d9a3426c3c776f3c96ac76ad97513f4bc0fcf0710630"
     },
     {
       "path": "src/salience/config.py",
@@ -412,7 +416,7 @@
     },
     {
       "path": "src/salience/cycles/cadence.py",
-      "sha256": "bd46305db7fa1e4d770f981fe3e96b14e37166352321123a9b48c613f8c46a76"
+      "sha256": "3d651c5d1890b118befff55aaa5d7569a9637390be2082a03b83d68f376a2dc2"
     },
     {
       "path": "src/salience/cycles/contracts.py",
@@ -428,7 +432,11 @@
     },
     {
       "path": "src/salience/cycles/runtime.py",
-      "sha256": "f278d6ee74f43cf2f68d8a6f2a03a2286aed5aca080fa84154c929eefdc42011"
+      "sha256": "ba55cfedb089d86af6ca9288ed3c025ff6a12237c1235096a52adb0a875ea42a"
+    },
+    {
+      "path": "src/salience/cycles/schedule_cutover.py",
+      "sha256": "fa7359a8419661a2c3910f1e63fe4dc5ec0dd32b051285b9d1af48c398cfa5d4"
     },
     {
       "path": "src/salience/cycles/workflow.py",
@@ -668,7 +676,7 @@
     },
     {
       "path": "src/salience/sdk/client.py",
-      "sha256": "a03860ca33df42f1e5270c75c41dbe71e7d5734da8947f3326f46a94442a52af"
+      "sha256": "5851792e725ee5dce9c96f77a60da3822073e73585643e66c891f931a0f71463"
     },
     {
       "path": "src/salience/storage/__init__.py",
@@ -1008,7 +1016,7 @@
     },
     {
       "path": "tests/integration/test_v4_migrations.py",
-      "sha256": "5b502056f2a6d2ea5abb40b2aa2acf3dc3738c8fdb0c8821e068ae39049d8c67"
+      "sha256": "f5e1e37d5d17031d470e4f8f59e857cdc455683f688e8b39e8fe1ee68c577661"
     },
     {
       "path": "tests/integration/test_v4_object_retention.py",
@@ -1024,7 +1032,11 @@
     },
     {
       "path": "tests/integration/test_v4_public_commands.py",
-      "sha256": "94f75bf59ba337156d61c59f67fbd4e3d81fb007ee07890929e81e89628a2047"
+      "sha256": "1f459ab95d717633a6ce7f0371090a8bbc076f5516c048925a7c27adbeabe425"
+    },
+    {
+      "path": "tests/integration/test_v4_schedule_cutover.py",
+      "sha256": "c697bcb2306b4bc1447b682f61f05175050a050e6d284503c1fe0e43001d779a"
     },
     {
       "path": "tests/integration/test_v4_s3_service.py",
@@ -1088,7 +1100,7 @@
     },
     {
       "path": "tests/unit/test_cli.py",
-      "sha256": "914c4c5404b341fa25f11c8b1b7d9bfcce00416f711fb2b3614cf4f753e5092b"
+      "sha256": "038c447427280c966102226a0029a88eb49912d9cc1817e324acf925f6e0efc6"
     },
     {
       "path": "tests/unit/test_costs.py",
@@ -1172,7 +1184,7 @@
     },
     {
       "path": "tests/unit/test_sdk.py",
-      "sha256": "4eb73a5f0dd8c4d6b19d781d34c5ea3aa970ef4ef1218c20c81d02df18267db1"
+      "sha256": "05c8de39f6a679fa63857d20aaf2d1a71d501beca3b19800712167ab82219096"
     },
     {
       "path": "tests/unit/test_secrets.py",
@@ -1200,5 +1212,5 @@
     }
   ],
   "reviewed_at": "2026-09-27",
-  "review_scope": "Bounded P1 item 2 self-review: caller-owned canonical G0/G1 accounting, additive migrations and V1/V2/V3 preservation. Independent PR approval remains required; no production release inferred. Historical evidence hashes remain in their immutable reports."
+  "review_scope": "Bounded P1 item 5c self-review: fixture-only schedule cutover, scoped automatic poll, additive migration, replay/rollback and no-effects preservation. Independent PR approval remains required; no production release inferred. Historical evidence hashes remain in their immutable reports."
 }

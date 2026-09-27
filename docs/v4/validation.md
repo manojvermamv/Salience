@@ -4,20 +4,28 @@
 
 ## Current evidence summary — 2026-09-27
 
-Inspected item-5b base: `c78ce130ef699afaf3c2a2706d83f02fcf01f5ac`. The locally qualified candidate is identified by the reviewed 299-file source lock and [item-5b report](item5b-evidence.json). Use [current progress](progress.md#current-state--2026-09-24) and the [blueprint snapshot](IMPLEMENTATION-BLUEPRINT.md#current-execution); dated older reports remain historical, not current-tree qualification.
+Inspected item-5c base: `5ae20d324f12a8880bfc176a6eec41aa6541ac95`. The locally qualified candidate is identified by the reviewed 302-file source lock and [item-5c report](item5c-evidence.json). Use [current progress](progress.md#current-state--2026-09-24) and the [blueprint snapshot](IMPLEMENTATION-BLUEPRINT.md#current-execution); dated older reports remain historical, not current-tree qualification.
 
 | Evidence | Latest recorded outcome | Meaning and limits |
 | --- | --- | --- |
-| Full non-live application suite | 411 PASS, zero failures/errors/skips, 2026-09-27 | Item-5b regression, 377.015 seconds JUnit time; existing Starlette/AnyIO warning only. |
-| Focused completed P1/migration suite | 63 PASS, zero failures/errors/skips, 2026-09-27 | Signed typed stop/case/review/revision parity, exact current authority, restricted-role case inspection, rollback and worker recovery. Full P1 remains incomplete. |
+| Full non-live application suite | 425 PASS, zero failures/errors/skips, 2026-09-27 | Item-5c regression, 394.403 seconds JUnit time; existing Starlette/AnyIO warning only. |
+| Focused completed P1/migration suite | 37 PASS, zero failures/errors/skips, 2026-09-27 | Scoped fixture schedule cutover, public API/CLI/SDK, restricted role, crash/ack-loss/rollback, fresh schema and negative gates. Full P1 remains incomplete. |
 | Local development entry | DG1 PASS | [Prerequisite evidence](development-entry-evidence.json) predates P1 implementation; not a production release. |
-| Documentation contract | 15 tests / 75 obligations PASS | 299 reviewed source files, 360 inventory dispositions, 82 Markdown files, five HTML files, six negative controls; four shell contracts also PASS. |
-| Diagrams | Six Mermaid 12.0.0 renders PASS | Fresh `item5b-diagrams` local artifacts, verified under system Chromium and pinned temporary Mermaid installation; target visuals are not deployment evidence. |
-| Exact-head CI and repository protection | PASS for published item-5a `c78ce13` at 2026-09-27T18:04:15Z; item-5b candidate NOT RUN until publication | Both required app-bound checks and strict admin enforcement PASS; any later head needs fresh inspection. Independent PR approval is NOT RUN; no merge authorization inferred. |
+| Documentation contract | 15 tests / 75 obligations PASS | 302 reviewed source files, 360 inventory dispositions, 82 Markdown files, five HTML files, six negative controls; four shell contracts also PASS. |
+| Diagrams | Six Mermaid 12.0.0 renders PASS | Fresh `item5c-diagrams` local artifacts, verified under system Chromium and pinned temporary Mermaid installation; target visuals are not deployment evidence. |
+| Exact-head CI and repository protection | PASS for published item-5b `5ae20d3` at 2026-09-27T19:21:23Z; item-5c candidate NOT RUN until publication | Both required app-bound checks and strict admin enforcement PASS; any later head needs fresh inspection. Independent PR approval is NOT RUN; no merge authorization inferred. |
 | Production qualifications | NOT RUN; RG0 HELD | Operator safety, identity/ingress, managed storage/restore and remote collector/alerts need actual external evidence. |
 | Full P1 and later phases | RG1 HELD; remaining implementation/qualification NOT RUN | See the [remaining queue](IMPLEMENTATION-BLUEPRINT.md#p1-resume-queue); a green fixture slice is not full release acceptance. |
 
 Historical reports are immutable, commit-scoped evidence: [P1a](p1-increment-evidence.json), [outbox](outbox-increment-evidence.json), [goal revisions](goal-revision-evidence.json), [baseline approval](baseline-approval-evidence.json) and [allocation](allocation-evidence.json). Their original source digests/counts must not be overwritten with the newest result. The repository-enforcement report is a rolling latest-inspection record, so older paragraphs identify their original commits independently.
+
+### P1 item-5c fixture schedule-cutover qualification — 2026-09-27
+
+Additive migration 0030 stores one immutable goal/revision/legacy-schedule/first-V4-slot binding and guarded lifecycle. Only an explicit same-workspace/program UTC `v4_fixture_legacy` dry-run row with a proved prior slot can be prepared. A signed `cycles:schedule` grant and current `cycles:write` authority are both checked. Pause/readback precedes atomic cursor activation; lost pause acknowledgment reconciles by describe. The opt-in `V4_FIXTURE_AUTOSCHEDULE=1` poller uses the recorded subject, current grant/stop and an independent bounded interval; it never starts Temporal directly. The ordinary schedule batch commits before G0 admission/outbox, and a later poll recovers a committed unadmitted intent after a crash. Manual/event/scheduled concurrency still yields one intent/cycle/context/start message.
+
+Rollback commits `rollback_pending` before any legacy resume, holds unresolved admission/outbox/permit liabilities and checks the exact `v4_resume_after` marker plus strictly later old slot. A lost resume acknowledgment or post-resume commit crash leaves V4 fenced and retries exactly; an unrelated old-schedule unpause cannot count as acknowledgment. Direct-SQL activation without paused legacy/cursor is rejected; a genuine restricted non-owner role can run the scoped service without authority-edit privileges. Empty 0030 downgrade/re-upgrade passes and populated downgrade safely refuses history loss. The local control changes a fixture `job_schedules` row only; it does **not** prove live Temporal schedule fencing, production start/signal conversion or production effects.
+
+Final evidence is **37 focused / 425 full non-live PASS**, zero failures/errors/skips; 15 documentation tests, 75 obligations, 302 locked source files, six Mermaid renders, four shell contracts, dependency consistency and whitespace PASS. [Item-5c report](item5c-evidence.json) preserves exact JUnit/log/source hashes. Published item-5b `5ae20d3` passes both required CI checks with strict main protection; item-5c candidate remote CI and independent PR approval are NOT RUN until publication/review. Item 6 worker upgrades/timers, live schedule control and full RG1 remain HELD; production effects stay disabled.
 
 ### P1 item-5b typed signed fixture command qualification — 2026-09-27
 

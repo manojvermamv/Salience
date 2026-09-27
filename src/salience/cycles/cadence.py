@@ -38,7 +38,15 @@ class CadenceCommands:
             goal, spec = self._policy_goal(connection, goal_id)
             return self._request_cycle(connection, goal, spec, command)
 
-    def _request_cycle(self, connection, goal, spec, command):
+    def _request_cycle(self, connection, goal, spec, command, *, cutover_poll=False):
+        cutover = connection.execute(
+            "SELECT state,first_v4_slot FROM v4_schedule_cutovers WHERE goal_id=%s", (goal["id"],)
+        ).fetchone()
+        if cutover and not cutover_poll:
+            if command.origin == "scheduled":
+                raise ValueError("scheduled requests require the cutover poll")
+            if cutover["state"] in {"rollback_pending", "rolled_back"} and command.slot_time >= cutover["first_v4_slot"]:
+                raise ValueError("schedule cutover rollback fences overlapping requests")
         payload = command.model_dump(mode="json") | {"subject_id": str(self.subject_id)}
         digest = fingerprint(payload)
         existing = connection.execute("SELECT * FROM v4_cycle_requests WHERE goal_id=%s AND origin=%s AND idempotency_key=%s", (goal["id"], command.origin, command.idempotency_key)).fetchone()
@@ -83,42 +91,48 @@ class CadenceCommands:
     def request_due(self, goal_id, *, expected_revision, idempotency_key):
         if type(expected_revision) is not int or expected_revision < 1 or not isinstance(idempotency_key, str) or not idempotency_key.strip() or len(idempotency_key) > 256:
             raise ValueError("bounded poll key and positive revision required")
-        digest = fingerprint([str(self.subject_id), expected_revision])
         with self._command("cycles:write") as connection:
             goal, spec = self._policy_goal(connection, goal_id)
-            existing = connection.execute("SELECT fingerprint,payload FROM v4_schedule_batches WHERE goal_id=%s AND idempotency_key=%s", (goal_id, idempotency_key)).fetchone()
-            if existing:
-                if existing["fingerprint"] != digest:
-                    raise ValueError("schedule batch fingerprint conflict")
-                return existing["payload"]
-            now = connection.execute("SELECT clock_timestamp() AS now").fetchone()["now"]
-            if goal["revision"] != expected_revision or goal["state"] != "active" or now >= spec.horizon_end:
-                raise ValueError("current active schedule revision required")
-            cadence = spec.cadence
-            interval = timedelta(seconds=cadence.interval_seconds)
-            last = connection.execute("SELECT last_slot FROM v4_schedule_cursors WHERE goal_id=%s AND goal_revision=%s", (goal_id, expected_revision)).fetchone()
-            first = last["last_slot"]+interval if last else cadence.anchor
-            latest = cadence.anchor+((now-cadence.anchor)//interval)*interval
-            total = max(0, (latest-first)//interval+1)
-            available = cadence.max_pending-self._pending(connection, goal_id)
-            fresh = max(0, (now-timedelta(seconds=cadence.stale_after_seconds)-cadence.anchor)//interval+1)
-            first_fresh = max(first, cadence.anchor+fresh*interval)
-            limit = min(cadence.max_catch_up, cadence.max_pending) if cadence.catch_up == "bounded" else 1
-            start = max(first_fresh, latest-(limit-1)*interval)
-            selected = max(0, (latest-start)//interval+1) if total else 0
-            slots = [start+index*interval for index in range(selected)]
-            keys = ["utc:"+slot.astimezone(timezone.utc).isoformat() for slot in slots]
-            coalesced = connection.execute("SELECT count(*) AS count FROM v4_cycle_intents WHERE goal_id=%s AND slot=ANY(%s)", (goal_id, keys)).fetchone()["count"]
-            held = selected-coalesced > available
-            result = {"goal_revision": expected_revision, "cutoff": now.isoformat(), "mode": cadence.catch_up,
-                      "intent_ids": [], "skipped": 0, "held": held}
-            if not held and total:
-                for slot in slots:
-                    command = CycleRequest(origin="scheduled", expected_revision=expected_revision, slot_time=slot,
-                                           idempotency_key=f"schedule:{expected_revision}:{slot.astimezone(timezone.utc).isoformat()}")
-                    result["intent_ids"].append(str(self._request_cycle(connection, goal, spec, command)))
-                result["skipped"] = total-selected
-                connection.execute("INSERT INTO v4_schedule_cursors (goal_id,goal_revision,last_slot) VALUES (%s,%s,%s) ON CONFLICT (goal_id,goal_revision) DO UPDATE SET last_slot=EXCLUDED.last_slot", (goal_id, expected_revision, latest))
-            connection.execute("INSERT INTO v4_schedule_batches (goal_id,idempotency_key,fingerprint,payload) VALUES (%s,%s,%s,%s)", (goal_id, idempotency_key, digest, Jsonb(result)))
-            self._event(connection, goal_id, "schedule_polled", result)
-            return result
+            return self._request_due(connection, goal, spec, expected_revision=expected_revision, idempotency_key=idempotency_key)
+
+    def _request_due(self, connection, goal, spec, *, expected_revision, idempotency_key, cutover_poll=False):
+        goal_id = goal["id"]
+        if not cutover_poll and connection.execute("SELECT 1 FROM v4_schedule_cutovers WHERE goal_id=%s", (goal_id,)).fetchone():
+            raise ValueError("schedule cutover requires guarded polling")
+        digest = fingerprint([str(self.subject_id), expected_revision])
+        existing = connection.execute("SELECT fingerprint,payload FROM v4_schedule_batches WHERE goal_id=%s AND idempotency_key=%s", (goal_id, idempotency_key)).fetchone()
+        if existing:
+            if existing["fingerprint"] != digest:
+                raise ValueError("schedule batch fingerprint conflict")
+            return existing["payload"]
+        now = connection.execute("SELECT clock_timestamp() AS now").fetchone()["now"]
+        if goal["revision"] != expected_revision or goal["state"] != "active" or now >= spec.horizon_end:
+            raise ValueError("current active schedule revision required")
+        cadence = spec.cadence
+        interval = timedelta(seconds=cadence.interval_seconds)
+        last = connection.execute("SELECT last_slot FROM v4_schedule_cursors WHERE goal_id=%s AND goal_revision=%s", (goal_id, expected_revision)).fetchone()
+        first = last["last_slot"]+interval if last else cadence.anchor
+        latest = cadence.anchor+((now-cadence.anchor)//interval)*interval
+        total = max(0, (latest-first)//interval+1)
+        available = cadence.max_pending-self._pending(connection, goal_id)
+        fresh = max(0, (now-timedelta(seconds=cadence.stale_after_seconds)-cadence.anchor)//interval+1)
+        first_fresh = max(first, cadence.anchor+fresh*interval)
+        limit = min(cadence.max_catch_up, cadence.max_pending) if cadence.catch_up == "bounded" else 1
+        start = max(first_fresh, latest-(limit-1)*interval)
+        selected = max(0, (latest-start)//interval+1) if total else 0
+        slots = [start+index*interval for index in range(selected)]
+        keys = ["utc:"+slot.astimezone(timezone.utc).isoformat() for slot in slots]
+        coalesced = connection.execute("SELECT count(*) AS count FROM v4_cycle_intents WHERE goal_id=%s AND slot=ANY(%s)", (goal_id, keys)).fetchone()["count"]
+        held = selected-coalesced > available
+        result = {"goal_revision": expected_revision, "cutoff": now.isoformat(), "mode": cadence.catch_up,
+                  "intent_ids": [], "skipped": 0, "held": held}
+        if not held and total:
+            for slot in slots:
+                command = CycleRequest(origin="scheduled", expected_revision=expected_revision, slot_time=slot,
+                                       idempotency_key=f"schedule:{expected_revision}:{slot.astimezone(timezone.utc).isoformat()}")
+                result["intent_ids"].append(str(self._request_cycle(connection, goal, spec, command, cutover_poll=cutover_poll)))
+            result["skipped"] = total-selected
+            connection.execute("INSERT INTO v4_schedule_cursors (goal_id,goal_revision,last_slot) VALUES (%s,%s,%s) ON CONFLICT (goal_id,goal_revision) DO UPDATE SET last_slot=EXCLUDED.last_slot", (goal_id, expected_revision, latest))
+        connection.execute("INSERT INTO v4_schedule_batches (goal_id,idempotency_key,fingerprint,payload) VALUES (%s,%s,%s,%s)", (goal_id, idempotency_key, digest, Jsonb(result)))
+        self._event(connection, goal_id, "schedule_polled", result)
+        return result

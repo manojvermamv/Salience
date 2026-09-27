@@ -154,6 +154,22 @@ def main(arguments: Sequence[str] | None = None) -> None:
     cycle_request = cycle_commands.add_parser("request")
     cycle_request.add_argument("--goal-id", required=True)
     cycle_request.add_argument("--request-json", required=True)
+    cutover_prepare = cycle_commands.add_parser("cutover-prepare")
+    cutover_prepare.add_argument("--goal-id", required=True)
+    cutover_prepare.add_argument("--legacy-schedule-id", required=True)
+    cutover_prepare.add_argument("--expected-revision", type=int, required=True)
+    cutover_prepare.add_argument("--first-v4-slot", required=True)
+    cutover_prepare.add_argument("--idempotency-key", required=True)
+    cutover_inspect = cycle_commands.add_parser("cutover-inspect")
+    cutover_inspect.add_argument("--goal-id", required=True)
+    for action in ("activate", "rollback"):
+        transition = cycle_commands.add_parser(f"cutover-{action}")
+        transition.add_argument("--goal-id", required=True)
+        transition.add_argument("--idempotency-key", required=True)
+    cutover_poll = cycle_commands.add_parser("cutover-poll")
+    cutover_poll.add_argument("--goal-id", required=True)
+    cutover_poll.add_argument("--expected-revision", type=int, required=True)
+    cutover_poll.add_argument("--idempotency-key", required=True)
     cycle_admit = cycle_commands.add_parser("admit")
     cycle_admit.add_argument("--intent-id", required=True)
     cycle_inspect = cycle_commands.add_parser("inspect")
@@ -228,6 +244,28 @@ def main(arguments: Sequence[str] | None = None) -> None:
             result = _v4_request(
                 method="POST", path=f"/v1/v4/goals/{parsed.goal_id}/requests",
                 payload=json.loads(parsed.request_json),
+            )
+        elif parsed.cycle_command == "cutover-prepare":
+            result = _v4_request(
+                method="POST", path=f"/v1/v4/goals/{parsed.goal_id}/schedule-cutover",
+                payload={"legacy_schedule_id": parsed.legacy_schedule_id,
+                         "expected_revision": parsed.expected_revision,
+                         "first_v4_slot": parsed.first_v4_slot,
+                         "idempotency_key": parsed.idempotency_key},
+            )
+        elif parsed.cycle_command == "cutover-inspect":
+            result = _v4_request(method="GET", path=f"/v1/v4/goals/{parsed.goal_id}/schedule-cutover")
+        elif parsed.cycle_command in {"cutover-activate", "cutover-rollback"}:
+            action = parsed.cycle_command.split("-", 1)[1]
+            result = _v4_request(
+                method="POST", path=f"/v1/v4/goals/{parsed.goal_id}/schedule-cutover/{action}",
+                payload={"idempotency_key": parsed.idempotency_key},
+            )
+        elif parsed.cycle_command == "cutover-poll":
+            result = _v4_request(
+                method="POST", path=f"/v1/v4/goals/{parsed.goal_id}/schedule-cutover/poll",
+                payload={"expected_revision": parsed.expected_revision,
+                         "idempotency_key": parsed.idempotency_key},
             )
         elif parsed.cycle_command == "admit":
             result = _v4_request(

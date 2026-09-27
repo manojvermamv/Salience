@@ -39,7 +39,7 @@ class IdentityBoundary:
             raise ValueError("an RSA public key of at least 2048 bits is required")
         self.allowed_scopes = {"control:read", "control:write"}
         if enable_v4_fixture_commands:
-            self.allowed_scopes.update({"goals:write", "goals:approve", "cycles:write", "cycles:read", "cycles:stop", "cycles:review"})
+            self.allowed_scopes.update({"goals:write", "goals:approve", "cycles:write", "cycles:read", "cycles:stop", "cycles:review", "cycles:schedule"})
 
     async def authorize(self, token, required_scope, context, resource=None):
         claims = None
@@ -194,6 +194,11 @@ def _request_scope(request):
             return ("workspaces", UUID(parts[2])), "goals:write"
         if len(parts) >= 4 and parts[:3] == ["v1", "v4", "goals"]:
             resource = ("v4_goals", UUID(parts[3]))
+            if len(parts) in {5, 6} and parts[4] == "schedule-cutover":
+                if request.method == "GET" and len(parts) == 5:
+                    return resource, "cycles:read"
+                if request.method == "POST" and (len(parts) == 5 or parts[5] in {"activate", "poll", "rollback"}):
+                    return resource, "cycles:schedule"
             if request.method == "POST" and len(parts) == 5 and parts[4] == "baseline":
                 return resource, "goals:approve"
             if request.method == "POST" and len(parts) == 7 and parts[4] == "baseline" and parts[6] == "revoke":

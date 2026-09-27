@@ -14,6 +14,7 @@ from temporalio.worker import Worker
 
 from salience.cycles.governance import CycleGovernance, PermitRequest
 from salience.cycles.outbox import CycleOutbox
+from salience.cycles.schedule_cutover import FixtureSchedulePoller
 from salience.cycles.workflow import LocalCycleWorkflow
 from salience.observability.tracing import OpenTelemetryTraceEmitter, TraceContext
 
@@ -94,12 +95,20 @@ async def main():
     client = await Client.connect(os.environ["TEST_TEMPORAL_TARGET"])
     outbox = CycleOutbox(os.environ["TEST_DATABASE_URL"],workspace_id=os.environ["V4_FIXTURE_WORKSPACE"])
     worker = build_local_cycle_worker(client,task_queue=os.environ["V4_FIXTURE_QUEUE"],outbox=outbox)
-    if os.environ.get("V4_FIXTURE_AUTODISPATCH") == "1":
+    automatic_dispatch = os.environ.get("V4_FIXTURE_AUTODISPATCH") == "1"
+    automatic_schedule = os.environ.get("V4_FIXTURE_AUTOSCHEDULE") == "1"
+    if automatic_dispatch or automatic_schedule:
         if os.environ.get("SALIENCE_DEPLOYMENT_MODE") != "fixture":
-            raise ValueError("automatic dispatch requires explicit fixture mode")
-        transport = TemporalCycleTransport(client,task_queue=os.environ["V4_FIXTURE_QUEUE"])
+            raise ValueError("automatic local work requires explicit fixture mode")
         async with worker:
-            await outbox.run_until_stopped(transport,stop_event=asyncio.Event())
+            async with asyncio.TaskGroup() as group:
+                stop_event = asyncio.Event()
+                if automatic_dispatch:
+                    transport = TemporalCycleTransport(client,task_queue=os.environ["V4_FIXTURE_QUEUE"])
+                    group.create_task(outbox.run_until_stopped(transport,stop_event=stop_event))
+                if automatic_schedule:
+                    poller = FixtureSchedulePoller(os.environ["TEST_DATABASE_URL"],workspace_id=os.environ["V4_FIXTURE_WORKSPACE"])
+                    group.create_task(poller.run_until_stopped(stop_event=stop_event))
     else:
         await worker.run()
 

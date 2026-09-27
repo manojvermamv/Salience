@@ -11,6 +11,7 @@ from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, ValidationErro
 from salience.cycles.admission import CycleAdmission
 from salience.cycles.contracts import CycleRequest, parse_goal
 from salience.cycles.governance import CycleGovernance, ReviewResponse
+from salience.cycles.schedule_cutover import CycleScheduleCutover
 
 
 router = APIRouter(prefix="/v1", tags=["v4 fixture cycles"])
@@ -81,9 +82,41 @@ class ArchiveCaseCommand(BaseModel):
     retain_until: AwareDatetime
 
 
+class CutoverPrepareCommand(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    legacy_schedule_id: UUID
+    expected_revision: int = Field(ge=1)
+    first_v4_slot: AwareDatetime
+    idempotency_key: str = Field(min_length=1, max_length=256)
+
+
+class CutoverPollCommand(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    expected_revision: int = Field(ge=1)
+    idempotency_key: str = Field(min_length=1, max_length=256)
+
+
+class CutoverTransitionCommand(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    idempotency_key: str = Field(min_length=1, max_length=256)
+
+
 def _service(request: Request) -> CycleGovernance:
     principal = request.state.principal
     return CycleGovernance(
+        request.app.state.identity_boundary.database_url,
+        workspace_id=principal.workspace_id,
+        subject_id=principal.subject_id,
+        trace_context=request.state.trace_context,
+    )
+
+
+def _schedule_service(request: Request) -> CycleScheduleCutover:
+    principal = request.state.principal
+    return CycleScheduleCutover(
         request.app.state.identity_boundary.database_url,
         workspace_id=principal.workspace_id,
         subject_id=principal.subject_id,
@@ -152,6 +185,38 @@ async def revoke_baseline(goal_id: UUID, approval_id: UUID, command: CancelComma
 async def request_cycle(goal_id: UUID, command: CycleRequest, request: Request):
     intent_id = await _invoke(_service(request).request_cycle, goal_id, command)
     return {"intent_id": str(intent_id)}
+
+
+@router.post("/v4/goals/{goal_id}/schedule-cutover")
+async def prepare_schedule_cutover(goal_id: UUID, command: CutoverPrepareCommand, request: Request):
+    return await _invoke(
+        _schedule_service(request).prepare, goal_id,
+        legacy_schedule_id=command.legacy_schedule_id,
+        expected_revision=command.expected_revision,
+        first_v4_slot=command.first_v4_slot,
+        idempotency_key=command.idempotency_key,
+    )
+
+
+@router.get("/v4/goals/{goal_id}/schedule-cutover")
+async def inspect_schedule_cutover(goal_id: UUID, request: Request):
+    return await _invoke(_schedule_service(request).inspect, goal_id)
+
+
+@router.post("/v4/goals/{goal_id}/schedule-cutover/activate")
+async def activate_schedule_cutover(goal_id: UUID, command: CutoverTransitionCommand, request: Request):
+    return await _invoke(_schedule_service(request).activate, goal_id, idempotency_key=command.idempotency_key)
+
+
+@router.post("/v4/goals/{goal_id}/schedule-cutover/poll")
+async def poll_schedule_cutover(goal_id: UUID, command: CutoverPollCommand, request: Request):
+    return await _invoke(_schedule_service(request).poll, goal_id,
+                         expected_revision=command.expected_revision, idempotency_key=command.idempotency_key)
+
+
+@router.post("/v4/goals/{goal_id}/schedule-cutover/rollback")
+async def rollback_schedule_cutover(goal_id: UUID, command: CutoverTransitionCommand, request: Request):
+    return await _invoke(_schedule_service(request).rollback, goal_id, idempotency_key=command.idempotency_key)
 
 
 @router.post("/v4/intents/{intent_id}/admit")
