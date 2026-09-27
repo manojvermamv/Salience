@@ -135,6 +135,14 @@
       "sha256": "df53c60c07757bc34cfdd7c17c395f0aed082f3e5a8d81dca3461b91e59b1221"
     },
     {
+      "path": "migrations/versions/0027_auto_dispatch_escalation.py",
+      "sha256": "16d4c8bfadcddd9c526b5c305e71f37f2c38bc5224363f313cbd8dabfb3702af"
+    },
+    {
+      "path": "migrations/versions/0028_fixture_adapter_receipts.py",
+      "sha256": "6aedb2e4dde7ee9cf4e1350576cf93498a00500497bc2a994aa9fa06ef5b048a"
+    },
+    {
       "path": "migrations/versions/__init__.py",
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
@@ -408,11 +416,11 @@
     },
     {
       "path": "src/salience/cycles/outbox.py",
-      "sha256": "ae3ac78f3b4fbc74b90e484461937248da8fb0b4baff936147f36d6614cfdb74"
+      "sha256": "5beeef0ef2f607df76713fd58912758c1393d4be2300bca8e39ac7a821116d54"
     },
     {
       "path": "src/salience/cycles/runtime.py",
-      "sha256": "ffb335439d6319756b1038e1072f073c6362f341c92f76e899dcfce45cc87f3a"
+      "sha256": "f278d6ee74f43cf2f68d8a6f2a03a2286aed5aca080fa84154c929eefdc42011"
     },
     {
       "path": "src/salience/cycles/workflow.py",
@@ -788,7 +796,7 @@
     },
     {
       "path": "tests/e2e/test_v4_outbox_recovery.py",
-      "sha256": "c8a572ad14f7dee744e06ffe65ec6244ccb8df5f32d60d54b55dfded0fee1503"
+      "sha256": "e95dd34df578c712c446f57025a0244598e833d4d8ab75199f316ff1ddae74a4"
     },
     {
       "path": "tests/e2e/test_worker_restart.py",
@@ -959,6 +967,10 @@
       "sha256": "f0ff0bcd0f94d378663321aa66b8a3e62d5c6ec5e29e7976171acd00ff9a680a"
     },
     {
+      "path": "tests/integration/test_v4_auto_dispatch.py",
+      "sha256": "84541c3c276b536d3f8d65466029edefc0b83bb778320ef386b9436267441cf5"
+    },
+    {
       "path": "tests/integration/test_v4_baseline_approval.py",
       "sha256": "111f34f17b98185e8c59ea168610d06fd2faec43805c21287e4dad539494ee45"
     },
@@ -988,7 +1000,7 @@
     },
     {
       "path": "tests/integration/test_v4_migrations.py",
-      "sha256": "9aca9047261304576fd115d49896d393d86c01db4d1911df6647f26f0349ea2c"
+      "sha256": "2321b50fbf26fb57f6ddbbb5d56f1728a3c7758ff7fbdd37035aac50a8384da1"
     },
     {
       "path": "tests/integration/test_v4_object_retention.py",

@@ -4,20 +4,28 @@
 
 ## Current evidence summary — 2026-09-27
 
-Inspected item-3 base: `eceff9e96e4a894cf40afd6fb3128940c6cca66a`. The locally qualified candidate is identified by the reviewed 293-file source lock and [governance report](governance-evidence.json). Use [current progress](progress.md#current-state--2026-09-24) and the [blueprint snapshot](IMPLEMENTATION-BLUEPRINT.md#current-execution); dated older reports remain historical, not current-tree qualification.
+Inspected item-4 base: `ec3d6fe8c6756e4928418518ad9ff9c91b63eecb`. The locally qualified candidate is identified by the reviewed 296-file source lock and [item-4 report](item4-evidence.json). Use [current progress](progress.md#current-state--2026-09-24) and the [blueprint snapshot](IMPLEMENTATION-BLUEPRINT.md#current-execution); dated older reports remain historical, not current-tree qualification.
 
 | Evidence | Latest recorded outcome | Meaning and limits |
 | --- | --- | --- |
-| Full non-live application suite | 389 PASS, zero failures/errors/skips, 2026-09-27 | Item-3 regression, 297.822 seconds JUnit time; existing Starlette/AnyIO warning only. |
-| Focused completed P1/migration suite | 137 PASS, zero failures/errors/skips, 2026-09-27 | Fixture stop/permit/cases, actor-bound replay, V3 accounting plus prior slices, restricted-role authorization, migrations and V1/V2/V3 actual worker kill/restart/replay. Full P1 remains incomplete. |
+| Full non-live application suite | 399 PASS, zero failures/errors/skips, 2026-09-27 | Item-4 regression, 357.314 seconds JUnit time; existing Starlette/AnyIO warning only. |
+| Focused completed P1/migration suite | 113 PASS, zero failures/errors/skips, 2026-09-27 | Automatic fixture dispatch/dead letter/trace, fixture stop/permit/cases, V3 accounting, migrations, restricted-role authorization and actual worker kill/restart. Full P1 remains incomplete. |
 | Local development entry | DG1 PASS | [Prerequisite evidence](development-entry-evidence.json) predates P1 implementation; not a production release. |
-| Documentation contract | 15 tests / 75 obligations PASS | 293 reviewed source files, 360 inventory dispositions, 82 Markdown files, five HTML files, six negative controls; four shell contracts also PASS. |
-| Diagrams | Six Mermaid 12.0.0 renders PASS | Fresh `governance-diagrams` local artifacts, verified under system Chromium and pinned temporary Mermaid installation; target visuals are not deployment evidence. |
-| Exact-head CI and repository protection | PASS for item-3 implementation `7071dbf`, inspected 2026-09-27T16:29:10Z | Both required app-bound checks and strict admin enforcement PASS; any later head requires fresh checks. Independent PR approval is NOT RUN; no merge authorization inferred. |
+| Documentation contract | 15 tests / 75 obligations PASS | 296 reviewed source files, 360 inventory dispositions, 82 Markdown files, five HTML files, six negative controls; four shell contracts also PASS. |
+| Diagrams | Six Mermaid 12.0.0 renders PASS | Fresh `item4-diagrams` local artifacts, verified under system Chromium and pinned temporary Mermaid installation; target visuals are not deployment evidence. |
+| Exact-head CI and repository protection | PASS for older item-3 implementation `7071dbf`; item-4 candidate NOT RUN until committed | Both required app-bound checks and strict admin enforcement passed for the prior commit; this candidate needs fresh inspection. Independent PR approval is NOT RUN; no merge authorization inferred. |
 | Production qualifications | NOT RUN; RG0 HELD | Operator safety, identity/ingress, managed storage/restore and remote collector/alerts need actual external evidence. |
 | Full P1 and later phases | RG1 HELD; remaining implementation/qualification NOT RUN | See the [remaining queue](IMPLEMENTATION-BLUEPRINT.md#p1-resume-queue); a green fixture slice is not full release acceptance. |
 
 Historical reports are immutable, commit-scoped evidence: [P1a](p1-increment-evidence.json), [outbox](outbox-increment-evidence.json), [goal revisions](goal-revision-evidence.json), [baseline approval](baseline-approval-evidence.json) and [allocation](allocation-evidence.json). Their original source digests/counts must not be overwritten with the newest result. The repository-enforcement report is a rolling latest-inspection record, so older paragraphs identify their original commits independently.
+
+### P1 item-4 fixture handoff qualification — 2026-09-27
+
+Migrations 0027–0028 uniquely key canonical dead-letter and accepted mock-adapter events; populated rollback refuses history loss. The opt-in automatic dispatcher runs only in explicit fixture mode, bounded by polling interval, batch, attempts, leases and the original ordered outbox. A dead letter emits one atomic owner-hint event; it is not a delivered production alert. A late consumer records a held receipt rather than an effect authorization, while the receipt reconciles handoff and unblocks its ordered successor. Lost terminal acknowledgments never resignal a finished workflow.
+
+An authenticated P0 request supplies a parent trace to an internal V4 admission; it is **not** a public V4 command. The committed carrier continues through dispatcher, Temporal envelope, activity and an injected `fixture.noop` adapter. Current frozen-subject authority and the item-3 claimed permit guard the single mock call; duplicate activity reads the canonical acceptance instead of invoking again, and an uncertain mock outcome is held without blind resend. A real subprocess worker is killed and restarted; the original cycle, terminal delivery and trace/secret-canary records survive. No production credential, provider, charge or publication path is enabled.
+
+Final local evidence is **113 focused / 399 full non-live PASS**, zero failures/errors/skips; 15 documentation tests, 75 obligations, 296 source hashes, six Mermaid renders, four documentation shell contracts, dependency consistency and whitespace PASS. [Durable item-4 evidence](item4-evidence.json) contains exact commands, JUnit/log/source digests and partial R03/R13/R17/R18/R53 coverage. A preliminary 112-pass/one-fail focused run exposed an old late-receipt recovery expectation; the repaired tree records a held late receipt yet reconciles handoff, and both final suites pass. The existing Starlette/AnyIO warning is unchanged. Exact item-4-head CI, independent PR approval and the public V4 command/API-to-provider route are **NOT RUN**; no merge or production release is authorized. RG0/full RG1 remain **HELD**.
 
 ### P1 item-3 governance qualification — 2026-09-27
 

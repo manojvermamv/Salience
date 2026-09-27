@@ -2,16 +2,20 @@
 
 import asyncio
 from datetime import timedelta
+from hashlib import sha256
 import os
 
+from opentelemetry import trace
 from temporalio import activity
 from temporalio.client import Client
 from temporalio.common import WorkflowIDReusePolicy
 from temporalio.exceptions import WorkflowAlreadyStartedError
 from temporalio.worker import Worker
 
+from salience.cycles.governance import CycleGovernance, PermitRequest
 from salience.cycles.outbox import CycleOutbox
 from salience.cycles.workflow import LocalCycleWorkflow
+from salience.observability.tracing import OpenTelemetryTraceEmitter, TraceContext
 
 
 class TemporalCycleTransport:
@@ -43,20 +47,46 @@ class TemporalCycleTransport:
 
 
 class LocalCycleActivities:
-    def __init__(self, outbox):
+    def __init__(self, outbox, *, adapter=None, tracer=None):
+        if adapter is not None and (os.environ.get("SALIENCE_DEPLOYMENT_MODE") != "fixture" or getattr(adapter,"effect_id",None) != "fixture.noop"):
+            raise ValueError("only an explicitly isolated no-effects fixture adapter is allowed")
         self.outbox = outbox
+        self.adapter = adapter
+        self.emitter = OpenTelemetryTraceEmitter(tracer or trace.get_tracer("salience.cycles"))
 
     @activity.defn(name="salience.v4.fixture_consume")
     async def consume(self, message: dict) -> dict:
         receipt = await asyncio.to_thread(self.outbox.consume,message["message_id"],traceparent=message["traceparent"],expected_cycle_id=message["cycle_id"],expected_kind=message["kind"])
         if str(receipt["cycle_id"]) != message["cycle_id"]:
             raise ValueError("message belongs to another cycle")
-        return {"state":receipt["state"],"cycle_id":str(receipt["cycle_id"])}
+        state = receipt["state"]
+        if self.adapter is not None and message["kind"] == "start" and state == "recorded":
+            binding = await asyncio.to_thread(self.outbox.fixture_binding,message["message_id"])
+            context = TraceContext.from_carrier({"traceparent":receipt["traceparent"]})
+            governance = CycleGovernance(self.outbox.database_url,workspace_id=self.outbox.workspace_id,subject_id=binding["subject_id"],trace_context=context)
+            permit = PermitRequest(context_id=binding["context_id"],operation_id=binding["operation_id"],expected_goal_revision=binding["goal_revision"],account_ref="fixture-account",purpose="fixture_execution",effect="fixture.noop",artifact_sha256=sha256(str(message["message_id"]).encode()).hexdigest(),ttl_seconds=30)
+            issued = await asyncio.to_thread(governance.issue_permit,binding["cycle_id"],permit,idempotency_key="fixture-adapter:"+str(message["message_id"]))
+            claim = await asyncio.to_thread(governance.claim_permit,issued["permit_id"])
+            if claim["dispatch_allowed"]:
+                try:
+                    with self.emitter.active_span(context,"cycle.fixture.adapter") as emitted:
+                        operation_id = str(binding["operation_id"])
+                        async with asyncio.timeout(3):
+                            result = await self.adapter.invoke(operation_id=operation_id,idempotency_key=operation_id,traceparent=emitted.to_carrier()["traceparent"])
+                        if result != {"accepted":True,"operation_id":operation_id,"idempotency_key":operation_id}:
+                            raise ValueError("fixture adapter acceptance binding mismatch")
+                        await asyncio.to_thread(self.outbox.record_fixture_acceptance,message["message_id"],binding["operation_id"],result,emitted.to_carrier()["traceparent"])
+                except Exception:
+                    await asyncio.to_thread(governance.mark_unknown,issued["permit_id"])
+                    raise
+            elif not await asyncio.to_thread(self.outbox.accepted_fixture,message["message_id"],binding["operation_id"]):
+                state = "held"
+        return {"state":state,"cycle_id":str(receipt["cycle_id"])}
 
 
-def build_local_cycle_worker(client, *, task_queue, outbox):
+def build_local_cycle_worker(client, *, task_queue, outbox, adapter=None, tracer=None):
     TemporalCycleTransport(client,task_queue=task_queue)
-    activities = LocalCycleActivities(outbox)
+    activities = LocalCycleActivities(outbox,adapter=adapter,tracer=tracer)
     return Worker(client,task_queue=task_queue,workflows=[LocalCycleWorkflow],activities=[activities.consume],max_concurrent_activities=2,max_concurrent_workflow_tasks=2)
 
 
@@ -64,7 +94,14 @@ async def main():
     client = await Client.connect(os.environ["TEST_TEMPORAL_TARGET"])
     outbox = CycleOutbox(os.environ["TEST_DATABASE_URL"],workspace_id=os.environ["V4_FIXTURE_WORKSPACE"])
     worker = build_local_cycle_worker(client,task_queue=os.environ["V4_FIXTURE_QUEUE"],outbox=outbox)
-    await worker.run()
+    if os.environ.get("V4_FIXTURE_AUTODISPATCH") == "1":
+        if os.environ.get("SALIENCE_DEPLOYMENT_MODE") != "fixture":
+            raise ValueError("automatic dispatch requires explicit fixture mode")
+        transport = TemporalCycleTransport(client,task_queue=os.environ["V4_FIXTURE_QUEUE"])
+        async with worker:
+            await outbox.run_until_stopped(transport,stop_event=asyncio.Event())
+    else:
+        await worker.run()
 
 
 if __name__ == "__main__":

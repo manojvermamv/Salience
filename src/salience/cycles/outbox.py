@@ -1,6 +1,10 @@
 """Local-only, ordered cycle handoff; delivery is never proof of an effect."""
 
 import asyncio
+from hashlib import sha256
+import json
+import logging
+import os
 from uuid import UUID, uuid4
 
 from opentelemetry import trace
@@ -11,6 +15,9 @@ from psycopg.types.json import Jsonb
 from salience.observability.tracing import OpenTelemetryTraceEmitter, TraceContext
 from salience.cycles.baselines import resolve_baseline
 from salience.cycles.authority import current_authority, context_authorized
+
+
+LOGGER = logging.getLogger(__name__)
 
 
 def enqueue_cycle_message(connection, *, workspace_id, subject_id, goal_id, intent_id, cycle_id, kind, payload, traceparent):
@@ -31,11 +38,32 @@ class CycleOutbox:
     def _connect(self):
         return psycopg.connect(self.database_url, row_factory=dict_row, connect_timeout=3, options="-c statement_timeout=3000")
 
+    @staticmethod
+    def _escalate(connection, message):
+        connection.execute(
+            """INSERT INTO v4_cycle_events
+               (id,workspace_id,subject_id,goal_id,intent_id,cycle_id,kind,traceparent,payload)
+               VALUES (%s,%s,%s,%s,%s,%s,'outbox_dead_letter',%s,%s)
+               ON CONFLICT DO NOTHING""",
+            (
+                uuid4(), message["workspace_id"], message["subject_id"], message["goal_id"],
+                message["intent_id"], message["cycle_id"], message["traceparent"],
+                Jsonb({"message_id": str(message["id"]), "attempts": message["attempts"],
+                       "reason": message["last_error"], "owner_id": str(message["subject_id"])}),
+            ),
+        )
+
     def claim(self):
         with self._connect() as connection:
             connection.execute("SET LOCAL statement_timeout='3s'")
             connection.execute("UPDATE v4_cycle_outbox AS message SET state='delivered',delivered_at=clock_timestamp(),lease_until=NULL WHERE message.workspace_id=%s AND message.state!='delivered' AND (message.state='dead_letter' OR message.attempts >= %s) AND EXISTS (SELECT 1 FROM v4_cycle_inbox WHERE message_id=message.id)", (self.workspace_id,self.max_attempts))
-            connection.execute("UPDATE v4_cycle_outbox SET state='dead_letter',last_error='lease_exhausted' WHERE workspace_id=%s AND state='leased' AND lease_until <= clock_timestamp() AND attempts >= %s", (self.workspace_id,self.max_attempts))
+            exhausted = connection.execute("SELECT * FROM v4_cycle_outbox WHERE workspace_id=%s AND state='leased' AND lease_until <= clock_timestamp() AND attempts >= %s ORDER BY created_at FOR UPDATE SKIP LOCKED LIMIT 32", (self.workspace_id,self.max_attempts)).fetchall()
+            for expired in exhausted:
+                if connection.execute("SELECT 1 FROM v4_cycle_inbox WHERE message_id=%s", (expired["id"],)).fetchone():
+                    connection.execute("UPDATE v4_cycle_outbox SET state='delivered',delivered_at=clock_timestamp(),lease_until=NULL WHERE id=%s", (expired["id"],))
+                else:
+                    message = connection.execute("UPDATE v4_cycle_outbox SET state='dead_letter',last_error='lease_exhausted' WHERE id=%s RETURNING *", (expired["id"],)).fetchone()
+                    self._escalate(connection,message)
             message = connection.execute("""
                 SELECT message.* FROM v4_cycle_outbox AS message
                 WHERE message.workspace_id=%s AND message.attempts < %s
@@ -57,11 +85,19 @@ class CycleOutbox:
     def fail(self, message_id, lease_token, reason):
         if reason not in {"temporary","timeout","invalid_message"}:
             raise ValueError("safe classified failure code required")
-        if self.receipt_exists(message_id):
-            return "delivered" if self.ack(message_id,lease_token) else "stale_claim"
         with self._connect() as connection:
-            row = connection.execute("UPDATE v4_cycle_outbox SET state=CASE WHEN attempts >= %s THEN 'dead_letter' ELSE 'pending' END, next_attempt_at=clock_timestamp()+(LEAST(60, power(2,attempts)) * interval '1 second'),lease_until=NULL,last_error=%s WHERE id=%s AND workspace_id=%s AND state='leased' AND lease_token=%s AND lease_until>clock_timestamp() RETURNING state", (self.max_attempts,reason,message_id,self.workspace_id,lease_token)).fetchone()
-            return row["state"] if row else "stale_claim"
+            message = connection.execute("SELECT * FROM v4_cycle_outbox WHERE id=%s AND workspace_id=%s FOR UPDATE", (message_id,self.workspace_id)).fetchone()
+            if not message or message["state"] != "leased" or message["lease_token"] != lease_token:
+                return "stale_claim"
+            if connection.execute("SELECT 1 FROM v4_cycle_inbox WHERE message_id=%s", (message_id,)).fetchone():
+                connection.execute("UPDATE v4_cycle_outbox SET state='delivered',delivered_at=clock_timestamp(),lease_until=NULL WHERE id=%s", (message_id,))
+                return "delivered"
+            row = connection.execute("UPDATE v4_cycle_outbox SET state=CASE WHEN attempts >= %s THEN 'dead_letter' ELSE 'pending' END, next_attempt_at=clock_timestamp()+(LEAST(60, power(2,attempts)) * interval '1 second'),lease_until=NULL,last_error=%s WHERE id=%s AND lease_until>clock_timestamp() RETURNING *", (self.max_attempts,reason,message_id)).fetchone()
+            if not row:
+                return "stale_claim"
+            if row["state"] == "dead_letter":
+                self._escalate(connection,row)
+            return row["state"]
 
     async def dispatch_one(self, transport):
         message = await asyncio.to_thread(self.claim)
@@ -82,14 +118,86 @@ class CycleOutbox:
             return False
         return await asyncio.to_thread(self.ack,message["id"],message["lease_token"])
 
+    async def run_until_stopped(self, transport, *, stop_event, poll_interval_ms=250, batch_size=16):
+        if os.environ.get("SALIENCE_DEPLOYMENT_MODE") != "fixture":
+            raise PermissionError("automatic V4 dispatcher requires explicit fixture mode")
+        if type(poll_interval_ms) is not int or not 50 <= poll_interval_ms <= 5000 or type(batch_size) is not int or not 1 <= batch_size <= 32:
+            raise ValueError("bounded polling interval and batch size required")
+        while not stop_event.is_set():
+            for _ in range(batch_size):
+                if stop_event.is_set():
+                    break
+                try:
+                    delivered = await self.dispatch_one(transport)
+                except psycopg.Error:
+                    LOGGER.warning("fixture outbox database unavailable")
+                    break
+                if not delivered:
+                    break
+            try:
+                await asyncio.wait_for(stop_event.wait(), timeout=poll_interval_ms / 1000)
+            except TimeoutError:
+                pass
+
     def receipt_exists(self, message_id):
         with self._connect() as connection:
             return bool(connection.execute("SELECT 1 FROM v4_cycle_inbox AS receipt JOIN v4_cycle_outbox AS message ON message.id=receipt.message_id WHERE message.id=%s AND message.workspace_id=%s", (message_id,self.workspace_id)).fetchone())
 
+    def fixture_binding(self, message_id):
+        with self._connect() as connection:
+            binding = connection.execute("""
+                SELECT message.id,message.subject_id,message.cycle_id,message.kind,
+                       cycle.context_id,cycle.operation_id,intent.goal_revision
+                FROM v4_cycle_outbox AS message
+                JOIN v4_cycles AS cycle ON cycle.id=message.cycle_id
+                JOIN v4_cycle_intents AS intent ON intent.id=cycle.intent_id
+                WHERE message.id=%s AND message.workspace_id=%s
+            """, (message_id,self.workspace_id)).fetchone()
+            if not binding or binding["kind"] != "start":
+                raise PermissionError("fixture adapter requires scoped start message")
+            return binding
+
+    def accepted_fixture(self, message_id, operation_id):
+        with self._connect() as connection:
+            return bool(connection.execute("""
+                SELECT 1 FROM v4_cycle_events WHERE workspace_id=%s
+                AND kind='fixture_adapter_accepted' AND payload->>'message_id'=%s
+                AND payload->>'operation_id'=%s
+            """, (self.workspace_id,str(message_id),str(operation_id))).fetchone())
+
+    def record_fixture_acceptance(self, message_id, operation_id, result, traceparent):
+        digest = sha256(json.dumps(result,sort_keys=True,separators=(",", ":")).encode()).hexdigest()
+        with self._connect() as connection:
+            message = connection.execute("""
+                SELECT message.* FROM v4_cycle_outbox AS message
+                JOIN v4_cycle_inbox AS receipt ON receipt.message_id=message.id AND receipt.state='recorded'
+                JOIN v4_cycles AS cycle ON cycle.id=message.cycle_id AND cycle.operation_id=%s
+                JOIN v4_permit_claims AS claim ON claim.cycle_id=cycle.id AND claim.state='claimed'
+                WHERE message.id=%s AND message.workspace_id=%s AND message.kind='start'
+                FOR UPDATE OF message
+            """, (operation_id,message_id,self.workspace_id)).fetchone()
+            if not message or TraceContext.from_carrier({"traceparent":traceparent}).trace_id != TraceContext.from_carrier({"traceparent":message["traceparent"]}).trace_id:
+                raise PermissionError("fixture acceptance requires original claimed trace and operation")
+            prior = connection.execute("""
+                SELECT payload FROM v4_cycle_events WHERE kind='fixture_adapter_accepted'
+                AND payload->>'message_id'=%s
+            """, (str(message_id),)).fetchone()
+            if prior:
+                if prior["payload"]["operation_id"] != str(operation_id) or prior["payload"]["receipt_sha256"] != digest:
+                    raise ValueError("fixture acceptance receipt conflict")
+                return prior["payload"]
+            payload = {"message_id":str(message_id),"operation_id":str(operation_id),"receipt_sha256":digest,"effect":"fixture.noop"}
+            connection.execute("""
+                INSERT INTO v4_cycle_events
+                (id,workspace_id,subject_id,goal_id,intent_id,cycle_id,kind,traceparent,payload)
+                VALUES (%s,%s,%s,%s,%s,%s,'fixture_adapter_accepted',%s,%s)
+            """, (uuid4(),self.workspace_id,message["subject_id"],message["goal_id"],message["intent_id"],message["cycle_id"],traceparent,Jsonb(payload)))
+            return payload
+
     def consume(self, message_id, *, traceparent=None, expected_cycle_id=None, expected_kind=None):
         with self._connect() as connection:
             connection.execute("SET LOCAL statement_timeout='3s'")
-            message = connection.execute("SELECT * FROM v4_cycle_outbox WHERE id=%s AND workspace_id=%s", (message_id,self.workspace_id)).fetchone()
+            message = connection.execute("SELECT * FROM v4_cycle_outbox WHERE id=%s AND workspace_id=%s FOR UPDATE", (message_id,self.workspace_id)).fetchone()
             if not message:
                 raise PermissionError("message outside consumer scope")
             if (expected_cycle_id is not None and str(expected_cycle_id)!=str(message["cycle_id"])) or (expected_kind is not None and expected_kind!=message["kind"]):
@@ -124,6 +232,8 @@ class CycleOutbox:
             if payload.get("production_effects_enabled") is not False or payload.get("dry_run") is not True or payload.get("provider") != "fixture.dummy@1.0.0":
                 raise ValueError("only the frozen no-effects fixture is supported")
             state = "recorded" if authorized and current["goal_state"]=="active" and current["current_revision"]==current["bound_revision"] else "held"
+            if message["state"] == "dead_letter":
+                state = "held"
             if current["cycle_state"]=="closed" and message["kind"]!="close":
                 state="held"
             context = TraceContext.from_carrier({"traceparent":traceparent or message["traceparent"]})

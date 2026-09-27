@@ -20,13 +20,13 @@
       "exit_code": 0
     },
     "full_non_live": {
-      "passed": 389,
+      "passed": 399,
       "failed": 0,
       "errors": 0,
       "skipped": 0,
       "exit_code": 0,
-      "seconds": 297.822,
-      "junit": "artifacts/v4-p0/governance-regression.xml"
+      "seconds": 357.314,
+      "junit": "artifacts/v4-p0/item4-regression.xml"
     },
     "documentation_tests": {
       "passed": 15,
@@ -40,17 +40,17 @@
       "failed": 0,
       "version": "12.0.0"
     },
-    "locked_evidence_files": 293,
+    "locked_evidence_files": 296,
     "original_inventory_dispositions": 360,
     "warning": "Pre-existing Starlette/AnyIO deprecation warning",
     "focused_p1": {
-      "passed": 137,
+      "passed": 113,
       "failed": 0,
       "errors": 0,
       "skipped": 0,
       "exit_code": 0,
-      "seconds": 107.691,
-      "junit": "artifacts/v4-p0/governance-focused.xml"
+      "seconds": 110.375,
+      "junit": "artifacts/v4-p0/item4-focused.xml"
     }
   },
   "evidence_artifacts": [
@@ -118,6 +118,11 @@
       "path": "docs/v4/governance-evidence.json",
       "sha256": "9b90c8a1059c61c8f7f0ad99d9c86d781eb3318c187de20f6f378f7a34c72fee",
       "local_only": false
+    },
+    {
+      "path": "docs/v4/item4-evidence.json",
+      "sha256": "240c6c90dda62318e86b0cd78dea07f8bda1fb4aa3853f602d44c7fafe39cd2e",
+      "local_only": false
     }
   ],
   "release_gate": "RG0",
@@ -151,7 +156,7 @@
     }
   ],
   "later_phase_boundaries": {
-    "P1": "Reuse verified local admission, revisions, approved fixture baseline, outbox, V2 policy/context, V3 fixture G0/G1 accounting and item-3 stop/permit/cases; next automatic dispatch, full trace/command integration and upgrade/cutover acceptance",
+    "P1": "Reuse verified local admission, revisions, approved fixture baseline, outbox, V2 policy/context, V3 fixture G0/G1 accounting, item-3 stop/permit/cases and item-4 automatic fixture dispatch/mock trace; next public command parity, schedule cutover, worker upgrades and durable review timers",
     "P2": "G1 allocation transfer, all ready-package reference/outbox integration and enabled provider qualification",
     "P3": "Trial/evaluation isolation and separate strategy/capability namespaces",
     "P4": "Promotion/invalidation serialization; mandatory typed learning proposals with optional qualified semantic analyst",
@@ -190,7 +195,7 @@
     ]
   },
   "p1_increment": {
-    "name": "Local admission/outbox, revisions, approved baseline, V2 policy, V3 fixture G0/G1 accounting and item-3 stop/permit/case commands",
+    "name": "Local admission/outbox, revisions, approved baseline, V2/V3 fixture policy/accounting, item-3 stop/permit/cases and item-4 automatic handoff/mock trace",
     "local_status": "PASS",
     "release_gate": "RG1",
     "release_status": "HELD",
@@ -214,11 +219,11 @@
       "R35",
       "R53"
     ],
-    "evidence": "docs/v4/governance-evidence.json",
+    "evidence": "docs/v4/item4-evidence.json",
     "remaining": [
       "General registry/provider eligibility beyond the approved no-effects fixture baseline; later capability and production qualification gates remain binding",
       "Production G1 provider charge identity and effect integration beyond the fixture-qualified transfer/reconciliation contract",
-      "Automatic dispatcher service, all legacy start/signal cutover, full API-to-provider outbox integration and production typed delivery recovery",
+      "Production dispatcher/alert service, all legacy start/signal cutover, public V4 API-to-provider outbox integration and production typed delivery recovery beyond the automatic local fixture",
       "General policy/model authorization, automatic stop/schedule integration and separately scoped remote read-only reconciliation beyond item-3 fixture permits/cases",
       "API/CLI/SDK parity and schedule conversion",
       "Arbitrary supported worker-version compatibility, Continue-As-New, real-time durable review deadlines and independent full RG1 qualification"
@@ -226,9 +231,10 @@
     "completed_queue_items": [
       1,
       2,
-      3
+      3,
+      4
     ],
-    "next_queue_item": 4
+    "next_queue_item": 5
   },
   "documentation_refresh": {
     "date": "2026-09-24",

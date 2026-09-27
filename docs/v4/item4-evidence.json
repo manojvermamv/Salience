@@ -1,0 +1,66 @@
+{
+  "recorded_at": "2026-09-27",
+  "base_commit": "ec3d6fe8c6756e4928418518ad9ff9c91b63eecb",
+  "scope": "Bounded local P1 item 4: automatic no-effects fixture handoff, durable dead-letter escalation, terminal receipt recovery and permit-gated mock adapter trace",
+  "source_evidence_lock_sha256": "286134bd402c593e65e2874b256762122451a46f37282e9841d3e1fb9b03bcd1",
+  "commands": [
+    {
+      "command": ".venv/bin/python -m pytest -p no:cacheprovider tests/integration/test_v4_auto_dispatch.py tests/integration/test_v4_outbox.py tests/integration/test_v4_cycle_governance.py tests/integration/test_v4_cycle_accounting.py tests/integration/test_v4_cadence_policy.py tests/integration/test_v4_migrations.py tests/integration/test_v4_identity_isolation.py tests/e2e/test_v4_outbox_recovery.py -q -rs --junitxml=artifacts/v4-p0/item4-focused.xml",
+      "exit_code": 0,
+      "tests": 113,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 110.375,
+      "junit": "artifacts/v4-p0/item4-focused.xml",
+      "junit_sha256": "8059e2e3509d2ebca4f3398f1c297d0cd6444234fff5fb66fe4380616cae2ed0",
+      "log_sha256": "e34de48f6f7fbdefff34b65b98ef1e549827b8af5c0c7a73639b840ea803c72c"
+    },
+    {
+      "command": ".venv/bin/python -m pytest -p no:cacheprovider tests/contracts tests/unit tests/integration tests/e2e tests/evals -m 'not live' -q -rs --junitxml=artifacts/v4-p0/item4-regression.xml",
+      "exit_code": 0,
+      "tests": 399,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 357.314,
+      "junit": "artifacts/v4-p0/item4-regression.xml",
+      "junit_sha256": "420a6e97045f5fe77cb1de3d50233eaefc00ad35f68bd3d556f44eacf8bb7f5f",
+      "log_sha256": "3d0714563d8c908f2495f3e7c4b9b1f10680c964ce1dde56a5b9c9b108dab58b"
+    }
+  ],
+  "requirement_coverage": {
+    "R03": "Private fixture dispatcher drains finite batches, bounds retries and leases, resumes after actual worker SIGKILL, reconciles a completed terminal receipt without resignal, and records one dead-letter event. Legacy start/signal cutover is not done.",
+    "R13": "The mock adapter runs only after the frozen subject obtains a current scoped permit; stop/revocation prevents claim. This is not general provider authority.",
+    "R17": "The mock adapter receives one true claimed dispatch authority and a stable operation key. A duplicate activity sees the committed acceptance without a second call; an uncertain call is held rather than resent.",
+    "R18": "Stopped authority prevents a new mock effect and database outage prevents permits. Durable owner hint is not production alert delivery or remote read reconciliation.",
+    "R53": "Migrations 0027-0028 uniquely key dead-letter and mock acceptance events; empty downgrade/re-upgrade and populated rollback refusal preserve history."
+  },
+  "additional_verification": {
+    "documentation_tests": 15,
+    "mapped_obligations": 75,
+    "locked_source_files": 296,
+    "inventory_dispositions": 360,
+    "mermaid_rendered": 6,
+    "mermaid_report_sha256": "6ab6bcbe4a8d1d0af7521e51fbf8d76836f012e2d67974f37c7d9c202784f0ae",
+    "shell_documentation_contracts": 4,
+    "dependency_consistency": "PASS",
+    "whitespace": "PASS",
+    "review": "Local self-review tightened exhausted-lease row locking and late dead-letter consumption. A focused 112-pass/one-fail preliminary run exposed the existing late-receipt recovery contract; repaired to retain a held receipt and historical escalation while reconciling delivered handoff and unblocking ordered successors. Final focused/full runs are green. Independent PR review is NOT RUN.",
+    "production_effects_enabled": false
+  },
+  "repository_verification": {
+    "base_commit": "ec3d6fe8c6756e4928418518ad9ff9c91b63eecb",
+    "base_ci_status": "PASS",
+    "base_enforcement_status": "PASS",
+    "candidate_ci_status": "NOT RUN until this candidate is committed and pushed",
+    "merge": "NOT AUTHORIZED; exact candidate checks and independent PR approval required"
+  },
+  "remaining": {
+    "next_queue_item": 5,
+    "RG0": "HELD: four external production qualifications NOT RUN",
+    "RG1": "HELD: public V4 command parity and schedule/legacy cutover, worker-version replay and Continue-As-New, durable review timers and production alert delivery, general policy and read reconciliation, independent full qualification remain",
+    "P2": "Real provider effect idempotency, remote readback and authenticated charge reconciliation not implemented",
+    "production_effects_enabled": false
+  }
+}

@@ -77,5 +77,17 @@ def test_clean_upgrade_empty_rollback_and_populated_preservation():
             with psycopg.connect(database) as connection:
                 assert connection.execute("SELECT stopped FROM v4_stop_scopes WHERE workspace_id=%s", (workspace,)).fetchone()[0] is True
                 assert connection.execute("SELECT version_num FROM alembic_version").fetchone()[0] == expected_revision
+                connection.execute("INSERT INTO v4_cycle_events (id,workspace_id,subject_id,goal_id,kind,traceparent,payload) VALUES (%s,%s,%s,%s,'outbox_dead_letter',%s,%s)", (uuid4(),workspace,subject,goal,"00-"+"a"*32+"-"+"b"*16+"-01",'{"message_id":"fixture"}'))
+            result = migrate("downgrade", "0026_cycle_governance")
+            assert result.returncode != 0 and "preserve V4 outbox dead-letter escalation history" in result.stderr
+            with psycopg.connect(database) as connection:
+                assert connection.execute("SELECT count(*) FROM v4_cycle_events WHERE kind='outbox_dead_letter'").fetchone()[0] == 1
+                assert connection.execute("SELECT version_num FROM alembic_version").fetchone()[0] == expected_revision
+                connection.execute("INSERT INTO v4_cycle_events (id,workspace_id,subject_id,goal_id,kind,traceparent,payload) VALUES (%s,%s,%s,%s,'fixture_adapter_accepted',%s,%s)", (uuid4(),workspace,subject,goal,"00-"+"a"*32+"-"+"b"*16+"-01",'{"message_id":"fixture"}'))
+            result = migrate("downgrade", "0027_auto_dispatch_escalation")
+            assert result.returncode != 0 and "preserve V4 fixture adapter acceptance history" in result.stderr
+            with psycopg.connect(database) as connection:
+                assert connection.execute("SELECT count(*) FROM v4_cycle_events WHERE kind='fixture_adapter_accepted'").fetchone()[0] == 1
+                assert connection.execute("SELECT version_num FROM alembic_version").fetchone()[0] == expected_revision
         finally:
             admin.execute(psycopg.sql.SQL("DROP DATABASE {} WITH (FORCE)").format(psycopg.sql.Identifier(name)))
