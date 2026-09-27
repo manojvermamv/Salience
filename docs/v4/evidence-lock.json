@@ -252,7 +252,7 @@
     },
     {
       "path": "src/salience/api/p0.py",
-      "sha256": "1f7416bce4c0b1115df96a89c6b71c1dc55cefddf54437dc9e467505a82d26dc"
+      "sha256": "4c8ce817139f40619cc4d49777d14197298af1317c0a42537f3f96679fafaee9"
     },
     {
       "path": "src/salience/api/routes/__init__.py",
@@ -284,7 +284,7 @@
     },
     {
       "path": "src/salience/api/routes/v4_cycles.py",
-      "sha256": "2dd27cb7a6d27c853a482da49cfcd71bbf50c516e8befb3357f8af3c08e7c96c"
+      "sha256": "9bf2e64316ef3f35b198337d7f7691722bae6eabc73c50e02e2be05eef42fa82"
     },
     {
       "path": "src/salience/api/schemas.py",
@@ -324,7 +324,7 @@
     },
     {
       "path": "src/salience/cli.py",
-      "sha256": "677a979ce8af03b86ca8f8febc2e42c1035408de9eadde6f9add1bcc565c25b3"
+      "sha256": "b9e3648f818b7ffb2f98eb80e757fae81c997f5388b5d22005af318530e169b1"
     },
     {
       "path": "src/salience/config.py",
@@ -420,7 +420,7 @@
     },
     {
       "path": "src/salience/cycles/governance.py",
-      "sha256": "c23f918b1a16c35f3c9a06767557bd3903779e84169a8e128fc9d0867e7eba36"
+      "sha256": "954d7b9093fbbdeedec35e41ceb21b6e84c4ea4467c19d467e01b27a8eb1e501"
     },
     {
       "path": "src/salience/cycles/outbox.py",
@@ -668,7 +668,7 @@
     },
     {
       "path": "src/salience/sdk/client.py",
-      "sha256": "88c9284b0e822fa2beb41fafad3837113fae6d8075774abbdb5094d4ad55e89b"
+      "sha256": "a03860ca33df42f1e5270c75c41dbe71e7d5734da8947f3326f46a94442a52af"
     },
     {
       "path": "src/salience/storage/__init__.py",
@@ -804,7 +804,7 @@
     },
     {
       "path": "tests/e2e/test_v4_outbox_recovery.py",
-      "sha256": "e95dd34df578c712c446f57025a0244598e833d4d8ab75199f316ff1ddae74a4"
+      "sha256": "228abfe3a6204297e2a280b457c396fc1f62ad6aeeef967b1485b6c8bfdcc352"
     },
     {
       "path": "tests/e2e/test_worker_restart.py",
@@ -1024,7 +1024,7 @@
     },
     {
       "path": "tests/integration/test_v4_public_commands.py",
-      "sha256": "e50308c946e7f817a862b6fb3fe8aa3b6da68df190dda166447646cf87e5bcaa"
+      "sha256": "94f75bf59ba337156d61c59f67fbd4e3d81fb007ee07890929e81e89628a2047"
     },
     {
       "path": "tests/integration/test_v4_s3_service.py",

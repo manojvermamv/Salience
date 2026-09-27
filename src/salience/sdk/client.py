@@ -358,12 +358,31 @@ class CyclesClient(_ControlClient):
             idempotency_key=idempotency_key,
         )
 
+    def revise_goal(
+        self, goal_id: str, spec: dict[str, Any], *, expected_revision: int,
+        idempotency_key: str, reason: str,
+    ) -> dict[str, Any]:
+        return self._request(
+            "POST", f"/v1/v4/goals/{goal_id}/revisions",
+            {"spec": spec, "expected_revision": expected_revision,
+             "idempotency_key": idempotency_key, "reason": reason},
+        )
+
+    def set_goal_state(self, goal_id: str, state: str) -> dict[str, Any]:
+        return self._request("POST", f"/v1/v4/goals/{goal_id}/state", {"state": state})
+
     def approve_baseline(
         self, goal_id: str, *, expected_revision: int, expires_at: str, reason: str
     ) -> dict[str, Any]:
         return self._request(
             "POST", f"/v1/v4/goals/{goal_id}/baseline",
             {"expected_revision": expected_revision, "expires_at": expires_at, "reason": reason},
+        )
+
+    def revoke_baseline(self, goal_id: str, approval_id: str, *, reason: str) -> dict[str, Any]:
+        return self._request(
+            "POST", f"/v1/v4/goals/{goal_id}/baseline/{approval_id}/revoke",
+            {"reason": reason},
         )
 
     def request_cycle(self, goal_id: str, command: dict[str, Any]) -> dict[str, Any]:
@@ -383,6 +402,64 @@ class CyclesClient(_ControlClient):
 
     def cancel(self, cycle_id: str, *, reason: str) -> dict[str, Any]:
         return self._request("POST", f"/v1/v4/cycles/{cycle_id}/cancel", {"reason": reason})
+
+    def stop_workspace(
+        self, workspace_id: str, *, stopped: bool, expected_revision: int,
+        idempotency_key: str, reason: str,
+    ) -> dict[str, Any]:
+        return self._request(
+            "POST", f"/v1/workspaces/{workspace_id}/v4/stop",
+            {"stopped": stopped, "expected_revision": expected_revision,
+             "idempotency_key": idempotency_key, "reason": reason},
+        )
+
+    def stop_goal(
+        self, goal_id: str, *, stopped: bool, expected_revision: int,
+        idempotency_key: str, reason: str,
+    ) -> dict[str, Any]:
+        return self._request(
+            "POST", f"/v1/v4/goals/{goal_id}/stop",
+            {"stopped": stopped, "expected_revision": expected_revision,
+             "idempotency_key": idempotency_key, "reason": reason},
+        )
+
+    def open_case(self, target: str, target_id: str, command: dict[str, Any]) -> dict[str, Any]:
+        if target not in {"intents", "cycles"}:
+            raise ValueError("case target must be intents or cycles")
+        return self._request("POST", f"/v1/v4/{target}/{target_id}/cases", command)
+
+    def inspect_case(self, case_id: str) -> dict[str, Any]:
+        return self._request("GET", f"/v1/v4/cases/{case_id}")
+
+    def respond_review(
+        self, case_id: str, command: dict[str, Any], *, idempotency_key: str
+    ) -> dict[str, Any]:
+        return self._request(
+            "POST", f"/v1/v4/cases/{case_id}/review", command,
+            idempotency_key=idempotency_key,
+        )
+
+    def resume_case(
+        self, case_id: str, *, expected_revision: int, idempotency_key: str
+    ) -> dict[str, Any]:
+        return self._request(
+            "POST", f"/v1/v4/cases/{case_id}/resume",
+            {"expected_revision": expected_revision, "idempotency_key": idempotency_key},
+        )
+
+    def terminalize_case(
+        self, case_id: str, *, expected_revision: int, idempotency_key: str
+    ) -> dict[str, Any]:
+        return self._request(
+            "POST", f"/v1/v4/cases/{case_id}/terminalize",
+            {"expected_revision": expected_revision, "idempotency_key": idempotency_key},
+        )
+
+    def archive_case(self, case_id: str, command: dict[str, Any]) -> dict[str, Any]:
+        return self._request("POST", f"/v1/v4/cases/{case_id}/archive", command)
+
+    def ack_notification(self, notification_id: str) -> dict[str, Any]:
+        return self._request("POST", f"/v1/v4/notifications/{notification_id}/ack", {})
 
 
 class SalienceClient:

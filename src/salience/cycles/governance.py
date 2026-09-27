@@ -454,7 +454,8 @@ class CycleGovernance(CycleAdmission):
             if existing:
                 if _fingerprint([existing["reason"],existing["evidence"],existing["retain_until"].isoformat()]) != fingerprint:
                     raise ValueError("archive fingerprint conflict")
-                return {"archive_id":str(existing["id"]),"case_id":str(case_id)}
+                return {"archive_id":str(existing["id"]),"case_id":str(case_id),
+                        "disposition":self._terminal_disposition(connection,case,intent,cycle)}
             disposition = self._terminal_disposition(connection,case,intent,cycle)
             now = connection.execute("SELECT clock_timestamp() AS now").fetchone()["now"]
             if case["state"] != "terminal" or not disposition:

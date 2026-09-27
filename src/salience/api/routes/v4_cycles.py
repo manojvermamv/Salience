@@ -2,6 +2,7 @@
 
 import asyncio
 from datetime import datetime
+from typing import Literal
 from uuid import UUID
 
 from fastapi import APIRouter, Header, HTTPException, Query, Request
@@ -9,6 +10,7 @@ from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, ValidationErro
 
 from salience.cycles.admission import CycleAdmission
 from salience.cycles.contracts import CycleRequest, parse_goal
+from salience.cycles.governance import CycleGovernance, ReviewResponse
 
 
 router = APIRouter(prefix="/v1", tags=["v4 fixture cycles"])
@@ -22,15 +24,66 @@ class BaselineCommand(BaseModel):
     reason: str = Field(min_length=1, max_length=2000)
 
 
+class GoalRevisionCommand(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    expected_revision: int = Field(ge=1)
+    idempotency_key: str = Field(min_length=1, max_length=256)
+    reason: str = Field(min_length=1, max_length=2000)
+    spec: dict
+
+
+class GoalStateCommand(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    state: Literal["draft", "active", "paused", "completed", "cancelled"]
+
+
 class CancelCommand(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     reason: str = Field(min_length=1, max_length=2000)
 
 
-def _service(request: Request) -> CycleAdmission:
+class StopCommand(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    stopped: bool
+    expected_revision: int = Field(ge=1)
+    idempotency_key: str = Field(min_length=1, max_length=256)
+    reason: str = Field(min_length=1, max_length=2000)
+
+
+class OpenCaseCommand(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    kind: Literal["admission_review", "retry", "reconciliation", "rework", "manual_review"]
+    failure_class: Literal["policy_denial", "technical_failure", "quality_failure", "unknown_effect", "admission_review", "deadline", "manual_review"]
+    owner_id: UUID
+    deadline: AwareDatetime
+    reason: str = Field(min_length=1, max_length=2000)
+    artifact_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    account_ref: Literal["fixture-account"]
+
+
+class CaseRevisionCommand(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    expected_revision: int = Field(ge=1)
+    idempotency_key: str = Field(min_length=1, max_length=256)
+
+
+class ArchiveCaseCommand(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    reason: str = Field(min_length=1, max_length=2000)
+    evidence: dict
+    retain_until: AwareDatetime
+
+
+def _service(request: Request) -> CycleGovernance:
     principal = request.state.principal
-    return CycleAdmission(
+    return CycleGovernance(
         request.app.state.identity_boundary.database_url,
         workspace_id=principal.workspace_id,
         subject_id=principal.subject_id,
@@ -57,6 +110,26 @@ async def create_goal(workspace_id: UUID, payload: dict, request: Request, idemp
     return {"goal_id": str(goal_id)}
 
 
+@router.post("/v4/goals/{goal_id}/revisions")
+async def revise_goal(goal_id: UUID, command: GoalRevisionCommand, request: Request):
+    try:
+        spec = parse_goal(command.spec)
+    except ValidationError as error:
+        raise HTTPException(status_code=422, detail="invalid fixture goal specification") from error
+    revision = await _invoke(
+        _service(request).revise_goal, goal_id, spec,
+        expected_revision=command.expected_revision,
+        idempotency_key=command.idempotency_key, reason=command.reason,
+    )
+    return {"goal_id": str(goal_id), "revision": revision}
+
+
+@router.post("/v4/goals/{goal_id}/state")
+async def set_goal_state(goal_id: UUID, command: GoalStateCommand, request: Request):
+    await _invoke(_service(request).set_goal_state, goal_id, command.state)
+    return {"goal_id": str(goal_id), "state": command.state}
+
+
 @router.post("/v4/goals/{goal_id}/baseline")
 async def approve_baseline(goal_id: UUID, command: BaselineCommand, request: Request):
     approval_id = await _invoke(
@@ -66,6 +139,13 @@ async def approve_baseline(goal_id: UUID, command: BaselineCommand, request: Req
         reason=command.reason,
     )
     return {"approval_id": str(approval_id)}
+
+
+@router.post("/v4/goals/{goal_id}/baseline/{approval_id}/revoke")
+async def revoke_baseline(goal_id: UUID, approval_id: UUID, command: CancelCommand, request: Request):
+    await _invoke(_service(request).revoke_baseline, goal_id, approval_id=approval_id,
+                  reason=command.reason)
+    return {"goal_id": str(goal_id), "approval_id": str(approval_id), "revoked": True}
 
 
 @router.post("/v4/goals/{goal_id}/requests")
@@ -165,3 +245,89 @@ async def cancel_cycle(cycle_id: UUID, command: CancelCommand, request: Request)
     )
     return {"cycle_id": str(result["id"]), "state": result["state"],
             "disposition": result["disposition"]}
+
+
+@router.post("/workspaces/{workspace_id}/v4/stop")
+async def set_workspace_stop(workspace_id: UUID, command: StopCommand, request: Request):
+    return await _invoke(_service(request).set_stop, stopped=command.stopped,
+                         expected_revision=command.expected_revision,
+                         idempotency_key=command.idempotency_key, reason=command.reason)
+
+
+@router.post("/v4/goals/{goal_id}/stop")
+async def set_goal_stop(goal_id: UUID, command: StopCommand, request: Request):
+    return await _invoke(_service(request).set_stop, goal_id=goal_id,
+                         stopped=command.stopped,
+                         expected_revision=command.expected_revision,
+                         idempotency_key=command.idempotency_key, reason=command.reason)
+
+
+@router.post("/v4/intents/{intent_id}/cases")
+async def open_intent_case(intent_id: UUID, command: OpenCaseCommand, request: Request):
+    return await _invoke(_service(request).open_case, intent_id, target="intent",
+                         **command.model_dump())
+
+
+@router.post("/v4/cycles/{cycle_id}/cases")
+async def open_cycle_case(cycle_id: UUID, command: OpenCaseCommand, request: Request):
+    return await _invoke(_service(request).open_case, cycle_id, target="cycle",
+                         **command.model_dump())
+
+
+def _inspect_case(service: CycleGovernance, case_id: UUID):
+    with service._command("cycles:read") as connection:
+        row = connection.execute("""
+            SELECT recovery.id,recovery.goal_id,recovery.target_intent_id,
+                   recovery.target_cycle_id,recovery.context_id,recovery.operation_id,
+                   recovery.kind,recovery.failure_class,recovery.state,
+                   recovery.revision,recovery.owner_id,recovery.deadline
+            FROM v4_recovery_cases AS recovery
+            JOIN v4_goals AS goal ON goal.id=recovery.goal_id
+            WHERE recovery.id=%s AND recovery.workspace_id=%s
+              AND goal.workspace_id=%s
+        """, (case_id, service.workspace_id, service.workspace_id)).fetchone()
+        if not row:
+            raise PermissionError("case outside current scope")
+        return {
+            field: value.isoformat() if isinstance(value, datetime) else str(value)
+            if isinstance(value, UUID) else value
+            for field, value in row.items()
+        }
+
+
+@router.get("/v4/cases/{case_id}")
+async def inspect_case(case_id: UUID, request: Request):
+    return await _invoke(_inspect_case, _service(request), case_id)
+
+
+@router.post("/v4/cases/{case_id}/review")
+async def respond_review(case_id: UUID, command: ReviewResponse, request: Request,
+                         idempotency_key: str = Header(..., alias="Idempotency-Key", min_length=1, max_length=256)):
+    return await _invoke(_service(request).respond_review, case_id, command,
+                         idempotency_key=idempotency_key)
+
+
+@router.post("/v4/cases/{case_id}/resume")
+async def resume_case(case_id: UUID, command: CaseRevisionCommand, request: Request):
+    return await _invoke(_service(request).resume_case, case_id,
+                         expected_revision=command.expected_revision,
+                         idempotency_key=command.idempotency_key)
+
+
+@router.post("/v4/cases/{case_id}/terminalize")
+async def terminalize_case(case_id: UUID, command: CaseRevisionCommand, request: Request):
+    return await _invoke(_service(request).terminalize_case, case_id,
+                         expected_revision=command.expected_revision,
+                         idempotency_key=command.idempotency_key)
+
+
+@router.post("/v4/cases/{case_id}/archive")
+async def archive_case(case_id: UUID, command: ArchiveCaseCommand, request: Request):
+    return await _invoke(_service(request).archive_case, case_id,
+                         reason=command.reason, evidence=command.evidence,
+                         retain_until=command.retain_until)
+
+
+@router.post("/v4/notifications/{notification_id}/ack")
+async def ack_notification(notification_id: UUID, request: Request):
+    return await _invoke(_service(request).ack_notification, notification_id)

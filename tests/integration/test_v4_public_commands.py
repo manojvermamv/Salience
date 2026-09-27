@@ -20,6 +20,7 @@ from temporalio.client import Client
 from salience.api.p0 import create_p0_app
 from salience.cycles.admission import CycleAdmission
 from salience.cycles.contracts import CadencePolicy, GoalSpec, GoalSpecV2
+from salience.cycles.governance import CycleGovernance
 from salience.cycles.outbox import CycleOutbox
 from salience.cycles.runtime import TemporalCycleTransport, build_local_cycle_worker
 
@@ -213,6 +214,342 @@ def test_public_goal_creation_requires_exact_idempotency(public_fixture):
         ).fetchone()[0] == 1
 
 
+def test_public_fixture_stop_and_bound_case_review_use_original_intent(public_fixture, monkeypatch, capsys):
+    client, headers, workspace, subject, spec, database = public_fixture
+    with psycopg.connect(database) as connection:
+        for scope in ("cycles:stop", "cycles:review"):
+            connection.execute(
+                "INSERT INTO permission_grants (workspace_id,principal_type,principal_id,scope,effect,constraints,expires_at) VALUES (%s,'identity',%s,%s,'allow','{}',now()+interval '1 hour')",
+                (workspace, str(subject), scope),
+            )
+    spec = spec.model_copy(update={"review_required": True})
+    created = client.post(
+        f"/v1/workspaces/{workspace}/v4/goals",
+        headers=headers | {"Idempotency-Key": "review-goal"},
+        json=spec.model_dump(mode="json"),
+    )
+    assert created.status_code == 201, created.text
+    goal_id = created.json()["goal_id"]
+    assert client.post(
+        f"/v1/v4/goals/{goal_id}/baseline", headers=headers,
+        json={"expected_revision": 1, "expires_at": spec.horizon_end.isoformat(),
+              "reason": "Fixture approval"},
+    ).status_code == 200
+    intent_id = client.post(
+        f"/v1/v4/goals/{goal_id}/requests", headers=headers,
+        json={"origin": "manual", "idempotency_key": "review-request",
+              "expected_revision": 1,
+              "slot_time": (spec.cadence.anchor + timedelta(seconds=600)).isoformat()},
+    ).json()["intent_id"]
+    first = client.post(f"/v1/v4/intents/{intent_id}/admit", headers=headers, json={})
+    assert first.json()["disposition"] == "review_required"
+    opened = client.post(
+        f"/v1/v4/intents/{intent_id}/cases", headers=headers,
+        json={"kind": "admission_review", "failure_class": "admission_review",
+              "owner_id": str(subject),
+              "deadline": (datetime.now(timezone.utc) + timedelta(minutes=10)).isoformat(),
+              "reason": "Bound review", "artifact_sha256": "a" * 64,
+              "account_ref": "fixture-account"},
+    )
+    assert opened.status_code == 200, opened.text
+    case_id = opened.json()["case_id"]
+    assert client.get(f"/v1/v4/cases/{case_id}", headers=headers).json()["target_intent_id"] == intent_id
+    review = {"review_id": opened.json()["review_id"], "expected_revision": 1,
+              "context_id": None, "operation_id": None, "artifact_sha256": "a" * 64,
+              "account_ref": "fixture-account", "purpose": "fixture_execution",
+              "action": "approve_resume", "reason": "Approved fixture"}
+    with psycopg.connect(database) as connection:
+        connection.execute(
+            "UPDATE permission_grants SET expires_at=now()-interval '1 second' WHERE workspace_id=%s AND principal_id=%s AND scope='cycles:review'",
+            (workspace, str(subject)),
+        )
+    assert client.post(
+        f"/v1/v4/cases/{case_id}/review",
+        headers=headers | {"Idempotency-Key": "revoked-review"}, json=review,
+    ).status_code == 403
+    with psycopg.connect(database) as connection:
+        connection.execute(
+            "UPDATE permission_grants SET expires_at=now()+interval '1 hour' WHERE workspace_id=%s AND principal_id=%s AND scope='cycles:review'",
+            (workspace, str(subject)),
+        )
+    reviewed = client.post(
+        f"/v1/v4/cases/{case_id}/review",
+        headers=headers | {"Idempotency-Key": "review-approval"}, json=review,
+    )
+    assert reviewed.status_code == 200, reviewed.text
+    assert client.post(
+        f"/v1/v4/cases/{case_id}/review",
+        headers=headers | {"Idempotency-Key": "review-approval"}, json=review,
+    ).json() == reviewed.json()
+    stopped = client.post(
+        f"/v1/v4/goals/{goal_id}/stop", headers=headers,
+        json={"stopped": True, "expected_revision": 1,
+              "idempotency_key": "stop-before-resume", "reason": "Fixture stop"},
+    )
+    assert stopped.status_code == 200, stopped.text
+    assert stopped.json()["stopped"] is True
+    resume = {"expected_revision": 2, "idempotency_key": "bound-resume"}
+    assert client.post(f"/v1/v4/cases/{case_id}/resume", headers=headers, json=resume).status_code == 403
+    assert client.post(
+        f"/v1/v4/goals/{goal_id}/stop", headers=headers,
+        json={"stopped": False, "expected_revision": 2,
+              "idempotency_key": "resume-stop", "reason": "Fixture clear"},
+    ).status_code == 200
+    resumed = client.post(f"/v1/v4/cases/{case_id}/resume", headers=headers, json=resume)
+    assert resumed.status_code == 200, resumed.text
+    assert resumed.json()["intent_id"] == intent_id
+    assert resumed.json()["cycle_id"] is None
+    admitted = client.post(f"/v1/v4/intents/{intent_id}/admit", headers=headers, json={})
+    assert admitted.json()["disposition"] == "admitted"
+    assert admitted.json()["cycle_id"]
+    from salience.cli import main
+    from salience.sdk.client import SalienceClient
+    def bridge(method, url, **kwargs):
+        split = urlsplit(url)
+        path = split.path + ("?" + split.query if split.query else "")
+        return client.request(method, path, headers=kwargs["headers"], json=kwargs.get("json"))
+
+    monkeypatch.setattr("httpx.request", bridge)
+    monkeypatch.setenv("SALIENCE_CONTROL_URL", "http://fixture.invalid")
+    monkeypatch.setenv("SALIENCE_CONTROL_JWT", headers["Authorization"][7:])
+    sdk = SalienceClient("http://fixture.invalid", headers["Authorization"][7:]).cycles
+    stopped_again = sdk.stop_goal(
+        goal_id, stopped=True, expected_revision=3,
+        idempotency_key="sdk-stop", reason="Parity stop",
+    )
+    assert stopped_again["revision"] == 4
+    main(["cycles", "stop-goal", "--goal-id", goal_id, "--state", "stopped",
+          "--expected-revision", "3", "--idempotency-key", "sdk-stop",
+          "--reason", "Parity stop"])
+    assert json.loads(capsys.readouterr().out) == stopped_again
+    assert sdk.inspect_case(case_id)["target_intent_id"] == intent_id
+    main(["cycles", "case-inspect", "--case-id", case_id])
+    assert json.loads(capsys.readouterr().out)["target_intent_id"] == intent_id
+    ack = sdk.ack_notification(opened.json()["notification_id"])
+    main(["cycles", "notification-ack", "--notification-id",
+          opened.json()["notification_id"]])
+    assert json.loads(capsys.readouterr().out) == ack
+    workspace_stop = sdk.stop_workspace(
+        str(workspace), stopped=True, expected_revision=1,
+        idempotency_key="workspace-stop", reason="Fixture stop",
+    )
+    main(["cycles", "stop-workspace", "--workspace-id", str(workspace),
+          "--state", "stopped", "--expected-revision", "1",
+          "--idempotency-key", "workspace-stop", "--reason", "Fixture stop"])
+    assert json.loads(capsys.readouterr().out) == workspace_stop
+
+
+def test_public_goal_revision_state_and_baseline_revocation_remain_current(public_fixture, monkeypatch, capsys):
+    client, headers, workspace, _, spec, database = public_fixture
+    goal_id = client.post(
+        f"/v1/workspaces/{workspace}/v4/goals",
+        headers=headers | {"Idempotency-Key": "revision-goal"},
+        json=spec.model_dump(mode="json"),
+    ).json()["goal_id"]
+    approval = client.post(
+        f"/v1/v4/goals/{goal_id}/baseline", headers=headers,
+        json={"expected_revision": 1, "expires_at": spec.horizon_end.isoformat(),
+              "reason": "Version-one fixture"},
+    )
+    assert approval.status_code == 200, approval.text
+    paused = client.post(
+        f"/v1/v4/goals/{goal_id}/state", headers=headers, json={"state": "paused"},
+    )
+    assert paused.status_code == 200, paused.text
+    assert client.post(
+        f"/v1/v4/goals/{goal_id}/state", headers=headers, json={"state": "active"},
+    ).status_code == 200
+    changed = spec.model_copy(update={"objective": "Approved revised fixture"})
+    revision = {"expected_revision": 1, "idempotency_key": "revision-one",
+                "reason": "Explicit fixture revision", "spec": changed.model_dump(mode="json")}
+    revised = client.post(f"/v1/v4/goals/{goal_id}/revisions", headers=headers, json=revision)
+    assert revised.status_code == 200, revised.text
+    assert revised.json()["revision"] == 2
+    assert client.post(f"/v1/v4/goals/{goal_id}/revisions", headers=headers, json=revision).json() == revised.json()
+    assert client.post(
+        f"/v1/v4/goals/{goal_id}/revisions", headers=headers,
+        json=revision | {"reason": "Conflicting retry"},
+    ).status_code == 409
+    intent_id = client.post(
+        f"/v1/v4/goals/{goal_id}/requests", headers=headers,
+        json={"origin": "manual", "idempotency_key": "revision-two-intent",
+              "expected_revision": 2,
+              "slot_time": (spec.cadence.anchor + timedelta(seconds=600)).isoformat()},
+    ).json()["intent_id"]
+    assert client.post(f"/v1/v4/intents/{intent_id}/admit", headers=headers, json={}).json()["disposition"] == "review_required"
+    renewed = client.post(
+        f"/v1/v4/goals/{goal_id}/baseline", headers=headers,
+        json={"expected_revision": 2, "expires_at": spec.horizon_end.isoformat(),
+              "reason": "Version-two fixture"},
+    )
+    assert renewed.status_code == 200, renewed.text
+    revoked = client.post(
+        f"/v1/v4/goals/{goal_id}/baseline/{renewed.json()['approval_id']}/revoke",
+        headers=headers, json={"reason": "Fixture revocation"},
+    )
+    assert revoked.status_code == 200, revoked.text
+    assert client.post(
+        f"/v1/v4/goals/{goal_id}/baseline/{renewed.json()['approval_id']}/revoke",
+        headers=headers, json={"reason": "Fixture revocation"},
+    ).status_code == 200
+    assert client.post(f"/v1/v4/intents/{intent_id}/admit", headers=headers, json={}).json()["disposition"] == "review_required"
+    with psycopg.connect(database) as connection:
+        assert connection.execute(
+            "SELECT revision,state FROM v4_goals WHERE id=%s", (goal_id,),
+        ).fetchone() == (2, "active")
+    from salience.cli import main
+    from salience.sdk.client import SalienceClient
+
+    def bridge(method, url, **kwargs):
+        split = urlsplit(url)
+        return client.request(method, split.path, headers=kwargs["headers"],
+                              json=kwargs.get("json"))
+
+    monkeypatch.setattr("httpx.request", bridge)
+    monkeypatch.setenv("SALIENCE_CONTROL_URL", "http://fixture.invalid")
+    monkeypatch.setenv("SALIENCE_CONTROL_JWT", headers["Authorization"][7:])
+    sdk = SalienceClient("http://fixture.invalid", headers["Authorization"][7:]).cycles
+    assert sdk.revise_goal(
+        goal_id, changed.model_dump(mode="json"), expected_revision=1,
+        idempotency_key="revision-one", reason="Explicit fixture revision",
+    )["revision"] == 2
+    main(["cycles", "goal-revise", "--goal-id", goal_id,
+          "--spec-json", json.dumps(changed.model_dump(mode="json")),
+          "--expected-revision", "1", "--idempotency-key", "revision-one",
+          "--reason", "Explicit fixture revision"])
+    assert json.loads(capsys.readouterr().out)["revision"] == 2
+    assert sdk.revoke_baseline(
+        goal_id, renewed.json()["approval_id"], reason="Fixture revocation",
+    )["revoked"] is True
+    main(["cycles", "baseline-revoke", "--goal-id", goal_id, "--approval-id",
+          renewed.json()["approval_id"], "--reason", "Fixture revocation"])
+    assert json.loads(capsys.readouterr().out)["revoked"] is True
+    assert sdk.set_goal_state(goal_id, "paused")["state"] == "paused"
+    main(["cycles", "goal-state", "--goal-id", goal_id, "--state", "active"])
+    assert json.loads(capsys.readouterr().out)["state"] == "active"
+
+
+def test_public_cycle_case_reuses_operation_and_requires_bound_review(public_fixture, monkeypatch, capsys):
+    client, headers, workspace, subject, spec, database = public_fixture
+    with psycopg.connect(database) as connection:
+        connection.execute(
+            "INSERT INTO permission_grants (workspace_id,principal_type,principal_id,scope,effect,constraints,expires_at) VALUES (%s,'identity',%s,'cycles:review','allow','{}',now()+interval '1 hour')",
+            (workspace, str(subject)),
+        )
+    goal_id = client.post(
+        f"/v1/workspaces/{workspace}/v4/goals",
+        headers=headers | {"Idempotency-Key": "cycle-case-goal"},
+        json=spec.model_dump(mode="json"),
+    ).json()["goal_id"]
+    client.post(
+        f"/v1/v4/goals/{goal_id}/baseline", headers=headers,
+        json={"expected_revision": 1, "expires_at": spec.horizon_end.isoformat(),
+              "reason": "Case fixture baseline"},
+    )
+    intent_id = client.post(
+        f"/v1/v4/goals/{goal_id}/requests", headers=headers,
+        json={"origin": "manual", "idempotency_key": "cycle-case-request",
+              "expected_revision": 1,
+              "slot_time": (spec.cadence.anchor + timedelta(seconds=600)).isoformat()},
+    ).json()["intent_id"]
+    cycle_id = client.post(f"/v1/v4/intents/{intent_id}/admit", headers=headers, json={}).json()["cycle_id"]
+    original = client.get(f"/v1/v4/cycles/{cycle_id}", headers=headers).json()
+    payload = {"kind": "manual_review", "failure_class": "manual_review",
+               "owner_id": str(subject),
+               "deadline": (datetime.now(timezone.utc) + timedelta(minutes=10)).isoformat(),
+               "reason": "Inspect fixture case", "artifact_sha256": "a" * 64,
+               "account_ref": "fixture-account"}
+    opened = client.post(f"/v1/v4/cycles/{cycle_id}/cases", headers=headers, json=payload)
+    assert opened.status_code == 200, opened.text
+    case_id = opened.json()["case_id"]
+    from salience.cli import main
+    from salience.sdk.client import SalienceClient
+
+    def bridge(method, url, **kwargs):
+        split = urlsplit(url)
+        path = split.path + ("?" + split.query if split.query else "")
+        return client.request(method, path, headers=kwargs["headers"],
+                              json=kwargs.get("json"))
+
+    monkeypatch.setattr("httpx.request", bridge)
+    monkeypatch.setenv("SALIENCE_CONTROL_URL", "http://fixture.invalid")
+    monkeypatch.setenv("SALIENCE_CONTROL_JWT", headers["Authorization"][7:])
+    sdk = SalienceClient("http://fixture.invalid", headers["Authorization"][7:]).cycles
+    assert sdk.open_case("cycles", cycle_id, payload)["case_id"] == case_id
+    main(["cycles", "case-open", "--target", "cycles", "--target-id", cycle_id,
+          "--case-json", json.dumps(payload)])
+    assert json.loads(capsys.readouterr().out)["case_id"] == case_id
+    inspected = client.get(f"/v1/v4/cases/{case_id}", headers=headers)
+    assert inspected.status_code == 200, inspected.text
+    assert inspected.json()["context_id"] == original["context_id"]
+    assert inspected.json()["operation_id"] == original["operation_id"]
+    assert sdk.inspect_case(case_id) == inspected.json()
+    assert client.get(f"/v1/v4/cases/{uuid4()}", headers=headers).status_code == 403
+    review = {"review_id": opened.json()["review_id"], "expected_revision": 1,
+              "context_id": original["context_id"], "operation_id": original["operation_id"],
+              "artifact_sha256": "a" * 64, "account_ref": "fixture-account",
+              "purpose": "fixture_execution", "action": "approve_resume",
+              "reason": "Bound fixture approval"}
+    assert client.post(
+        f"/v1/v4/cases/{case_id}/review",
+        headers=headers | {"Idempotency-Key": "bad-binding"},
+        json=review | {"artifact_sha256": "b" * 64},
+    ).status_code == 403
+    accepted = client.post(f"/v1/v4/cases/{case_id}/review",
+                           headers=headers | {"Idempotency-Key": "bound-approval"},
+                           json=review)
+    assert accepted.status_code == 200, accepted.text
+    assert sdk.respond_review(case_id, review, idempotency_key="bound-approval") == accepted.json()
+    main(["cycles", "case-review", "--case-id", case_id,
+          "--review-json", json.dumps(review), "--idempotency-key", "bound-approval"])
+    assert json.loads(capsys.readouterr().out) == accepted.json()
+    assert client.post(
+        f"/v1/v4/cases/{case_id}/review",
+        headers=headers | {"Idempotency-Key": "bound-approval"}, json=review,
+    ).json() == accepted.json()
+    resume = {"expected_revision": 2, "idempotency_key": "same-operation-resume"}
+    resumed = client.post(f"/v1/v4/cases/{case_id}/resume", headers=headers, json=resume)
+    assert resumed.status_code == 200, resumed.text
+    assert resumed.json()["cycle_id"] == cycle_id
+    assert resumed.json()["operation_id"] == original["operation_id"]
+    assert sdk.resume_case(case_id, expected_revision=2,
+                           idempotency_key="same-operation-resume") == resumed.json()
+    main(["cycles", "case-resume", "--case-id", case_id,
+          "--expected-revision", "2", "--idempotency-key", "same-operation-resume"])
+    assert json.loads(capsys.readouterr().out) == resumed.json()
+    assert client.post(f"/v1/v4/cases/{case_id}/resume", headers=headers, json=resume).json() == resumed.json()
+    assert client.post(f"/v1/v4/cases/{case_id}/resume", headers=headers,
+                       json=resume | {"expected_revision": 3}).status_code == 409
+    assert client.post(f"/v1/v4/cycles/{cycle_id}/cancel", headers=headers,
+                       json={"reason": "Terminal fixture"}).status_code == 200
+    terminal = client.post(
+        f"/v1/v4/cases/{case_id}/terminalize", headers=headers,
+        json={"expected_revision": 3, "idempotency_key": "case-terminal"},
+    )
+    assert terminal.status_code == 200, terminal.text
+    assert sdk.terminalize_case(case_id, expected_revision=3,
+                                idempotency_key="case-terminal") == terminal.json()
+    main(["cycles", "case-terminalize", "--case-id", case_id,
+          "--expected-revision", "3", "--idempotency-key", "case-terminal"])
+    assert json.loads(capsys.readouterr().out) == terminal.json()
+    archive = {"reason": "Preserved fixture history", "evidence": {"fixture": "verified"},
+               "retain_until": (datetime.now(timezone.utc) + timedelta(days=1)).isoformat()}
+    archived = client.post(f"/v1/v4/cases/{case_id}/archive", headers=headers, json=archive)
+    assert archived.status_code == 200, archived.text
+    assert sdk.archive_case(case_id, archive) == archived.json()
+    main(["cycles", "case-archive", "--case-id", case_id,
+          "--archive-json", json.dumps(archive)])
+    assert json.loads(capsys.readouterr().out) == archived.json()
+    assert client.post(f"/v1/v4/cases/{case_id}/archive", headers=headers,
+                       json=archive).json() == archived.json()
+    with psycopg.connect(database) as connection:
+        assert connection.execute("SELECT count(*) FROM v4_cycles WHERE intent_id=%s", (intent_id,)).fetchone()[0] == 1
+        assert connection.execute(
+            "SELECT count(*) FROM v4_cycle_outbox WHERE cycle_id=%s AND kind='recovery'",
+            (cycle_id,),
+        ).fetchone()[0] == 2
+
+
 def test_goal_create_receipt_rolls_back_with_failed_business_transaction(public_fixture, monkeypatch):
     _, _, workspace, subject, spec, database = public_fixture
     service = CycleAdmission(database, workspace_id=workspace, subject_id=subject)
@@ -352,6 +689,15 @@ def test_public_fixture_commands_use_restricted_nonowner_role(public_fixture):
     cycle_id = client.post(
         f"/v1/v4/intents/{intent_id}/admit", headers=headers, json={},
     ).json()["cycle_id"]
+    case_id = CycleGovernance(
+        database, workspace_id=workspace, subject_id=subject,
+    ).open_case(
+        cycle_id, target="cycle", kind="manual_review",
+        failure_class="manual_review", owner_id=subject,
+        deadline=datetime.now(timezone.utc) + timedelta(minutes=10),
+        reason="Restricted fixture inspection", artifact_sha256="a" * 64,
+        account_ref="fixture-account",
+    )["case_id"]
     role = "v4_public_reader_" + uuid4().hex
     password = uuid4().hex
     with psycopg.connect(database, autocommit=True) as admin:
@@ -361,7 +707,7 @@ def test_public_fixture_commands_use_restricted_nonowner_role(public_fixture):
         try:
             admin.execute(psycopg.sql.SQL("GRANT USAGE ON SCHEMA public TO {}").format(psycopg.sql.Identifier(role)))
             admin.execute(psycopg.sql.SQL(
-                "GRANT SELECT ON workspaces,identity_subjects,permission_grants,v4_goals,v4_cycle_intents,v4_cycles,v4_run_contexts,v4_cycle_events,v4_goal_create_commands TO {}"
+                "GRANT SELECT ON workspaces,identity_subjects,permission_grants,v4_goals,v4_cycle_intents,v4_cycles,v4_run_contexts,v4_cycle_events,v4_goal_create_commands,v4_recovery_cases TO {}"
             ).format(psycopg.sql.Identifier(role)))
             admin.execute(psycopg.sql.SQL("GRANT INSERT ON identity_access_events TO {}").format(psycopg.sql.Identifier(role)))
             admin.execute(psycopg.sql.SQL(
@@ -379,8 +725,8 @@ def test_public_fixture_commands_use_restricted_nonowner_role(public_fixture):
             ))
             with psycopg.connect(restricted) as connection:
                 assert connection.execute(
-                    "SELECT has_table_privilege(current_user,'v4_goals','UPDATE'),has_table_privilege(current_user,'permission_grants','UPDATE')"
-                ).fetchone() == (False, False)
+                    "SELECT has_table_privilege(current_user,'v4_goals','UPDATE'),has_table_privilege(current_user,'permission_grants','UPDATE'),has_table_privilege(current_user,'v4_recovery_cases','UPDATE')"
+                ).fetchone() == (False, False, False)
             key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
             now = datetime.now(timezone.utc)
             token = jwt.encode(
@@ -400,6 +746,12 @@ def test_public_fixture_commands_use_restricted_nonowner_role(public_fixture):
                 )
                 assert response.status_code == 200, response.text
                 assert response.json()["cycle_id"] == cycle_id
+                case_response = restricted_client.get(
+                    f"/v1/v4/cases/{case_id}",
+                    headers={"Authorization": "Bearer " + token},
+                )
+                assert case_response.status_code == 200, case_response.text
+                assert case_response.json()["target_cycle_id"] == cycle_id
                 direct_goal_id = CycleAdmission(
                     restricted, workspace_id=workspace, subject_id=subject,
                 ).create_goal(spec, idempotency_key="restricted-direct")

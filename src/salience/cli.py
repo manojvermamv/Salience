@@ -133,11 +133,24 @@ def main(arguments: Sequence[str] | None = None) -> None:
     goal_create.add_argument("--workspace-id", required=True)
     goal_create.add_argument("--spec-json", required=True)
     goal_create.add_argument("--idempotency-key", required=True)
+    goal_revise = cycle_commands.add_parser("goal-revise")
+    goal_revise.add_argument("--goal-id", required=True)
+    goal_revise.add_argument("--spec-json", required=True)
+    goal_revise.add_argument("--expected-revision", type=int, required=True)
+    goal_revise.add_argument("--idempotency-key", required=True)
+    goal_revise.add_argument("--reason", required=True)
+    goal_state = cycle_commands.add_parser("goal-state")
+    goal_state.add_argument("--goal-id", required=True)
+    goal_state.add_argument("--state", choices=("draft", "active", "paused", "completed", "cancelled"), required=True)
     baseline = cycle_commands.add_parser("baseline-approve")
     baseline.add_argument("--goal-id", required=True)
     baseline.add_argument("--expected-revision", type=int, required=True)
     baseline.add_argument("--expires-at", required=True)
     baseline.add_argument("--reason", required=True)
+    baseline_revoke = cycle_commands.add_parser("baseline-revoke")
+    baseline_revoke.add_argument("--goal-id", required=True)
+    baseline_revoke.add_argument("--approval-id", required=True)
+    baseline_revoke.add_argument("--reason", required=True)
     cycle_request = cycle_commands.add_parser("request")
     cycle_request.add_argument("--goal-id", required=True)
     cycle_request.add_argument("--request-json", required=True)
@@ -152,6 +165,33 @@ def main(arguments: Sequence[str] | None = None) -> None:
     cycle_events.add_argument("--cycle-id", required=True)
     cycle_events.add_argument("--limit", type=int, default=50)
     cycle_events.add_argument("--after")
+    for name in ("stop-workspace", "stop-goal"):
+        stop = cycle_commands.add_parser(name)
+        stop.add_argument("--workspace-id" if name == "stop-workspace" else "--goal-id", required=True)
+        stop.add_argument("--state", choices=("stopped", "running"), required=True)
+        stop.add_argument("--expected-revision", type=int, required=True)
+        stop.add_argument("--idempotency-key", required=True)
+        stop.add_argument("--reason", required=True)
+    case_open = cycle_commands.add_parser("case-open")
+    case_open.add_argument("--target", choices=("intents", "cycles"), required=True)
+    case_open.add_argument("--target-id", required=True)
+    case_open.add_argument("--case-json", required=True)
+    case_inspect = cycle_commands.add_parser("case-inspect")
+    case_inspect.add_argument("--case-id", required=True)
+    case_review = cycle_commands.add_parser("case-review")
+    case_review.add_argument("--case-id", required=True)
+    case_review.add_argument("--review-json", required=True)
+    case_review.add_argument("--idempotency-key", required=True)
+    for name in ("case-resume", "case-terminalize"):
+        case_transition = cycle_commands.add_parser(name)
+        case_transition.add_argument("--case-id", required=True)
+        case_transition.add_argument("--expected-revision", type=int, required=True)
+        case_transition.add_argument("--idempotency-key", required=True)
+    case_archive = cycle_commands.add_parser("case-archive")
+    case_archive.add_argument("--case-id", required=True)
+    case_archive.add_argument("--archive-json", required=True)
+    notification_ack = cycle_commands.add_parser("notification-ack")
+    notification_ack.add_argument("--notification-id", required=True)
 
     parsed = parser.parse_args(arguments)
     if parsed.command == "cycles":
@@ -160,11 +200,29 @@ def main(arguments: Sequence[str] | None = None) -> None:
                 method="POST", path=f"/v1/workspaces/{parsed.workspace_id}/v4/goals",
                 payload=json.loads(parsed.spec_json), idempotency_key=parsed.idempotency_key,
             )
+        elif parsed.cycle_command == "goal-revise":
+            result = _v4_request(
+                method="POST", path=f"/v1/v4/goals/{parsed.goal_id}/revisions",
+                payload={"spec": json.loads(parsed.spec_json),
+                         "expected_revision": parsed.expected_revision,
+                         "idempotency_key": parsed.idempotency_key,
+                         "reason": parsed.reason},
+            )
+        elif parsed.cycle_command == "goal-state":
+            result = _v4_request(
+                method="POST", path=f"/v1/v4/goals/{parsed.goal_id}/state",
+                payload={"state": parsed.state},
+            )
         elif parsed.cycle_command == "baseline-approve":
             result = _v4_request(
                 method="POST", path=f"/v1/v4/goals/{parsed.goal_id}/baseline",
                 payload={"expected_revision": parsed.expected_revision,
                          "expires_at": parsed.expires_at, "reason": parsed.reason},
+            )
+        elif parsed.cycle_command == "baseline-revoke":
+            result = _v4_request(
+                method="POST", path=f"/v1/v4/goals/{parsed.goal_id}/baseline/{parsed.approval_id}/revoke",
+                payload={"reason": parsed.reason},
             )
         elif parsed.cycle_command == "request":
             result = _v4_request(
@@ -182,10 +240,51 @@ def main(arguments: Sequence[str] | None = None) -> None:
                 method="POST", path=f"/v1/v4/cycles/{parsed.cycle_id}/cancel",
                 payload={"reason": parsed.reason},
             )
-        else:
+        elif parsed.cycle_command == "events":
             query = f"limit={parsed.limit}" + (f"&after={parsed.after}" if parsed.after else "")
             result = _v4_request(
                 method="GET", path=f"/v1/v4/cycles/{parsed.cycle_id}/events?{query}",
+            )
+        elif parsed.cycle_command in {"stop-workspace", "stop-goal"}:
+            path = (f"/v1/workspaces/{parsed.workspace_id}/v4/stop"
+                    if parsed.cycle_command == "stop-workspace"
+                    else f"/v1/v4/goals/{parsed.goal_id}/stop")
+            result = _v4_request(
+                method="POST", path=path,
+                payload={"stopped": parsed.state == "stopped",
+                         "expected_revision": parsed.expected_revision,
+                         "idempotency_key": parsed.idempotency_key,
+                         "reason": parsed.reason},
+            )
+        elif parsed.cycle_command == "case-open":
+            result = _v4_request(
+                method="POST", path=f"/v1/v4/{parsed.target}/{parsed.target_id}/cases",
+                payload=json.loads(parsed.case_json),
+            )
+        elif parsed.cycle_command == "case-inspect":
+            result = _v4_request(method="GET", path=f"/v1/v4/cases/{parsed.case_id}")
+        elif parsed.cycle_command == "case-review":
+            result = _v4_request(
+                method="POST", path=f"/v1/v4/cases/{parsed.case_id}/review",
+                payload=json.loads(parsed.review_json),
+                idempotency_key=parsed.idempotency_key,
+            )
+        elif parsed.cycle_command in {"case-resume", "case-terminalize"}:
+            action = "resume" if parsed.cycle_command == "case-resume" else "terminalize"
+            result = _v4_request(
+                method="POST", path=f"/v1/v4/cases/{parsed.case_id}/{action}",
+                payload={"expected_revision": parsed.expected_revision,
+                         "idempotency_key": parsed.idempotency_key},
+            )
+        elif parsed.cycle_command == "case-archive":
+            result = _v4_request(
+                method="POST", path=f"/v1/v4/cases/{parsed.case_id}/archive",
+                payload=json.loads(parsed.archive_json),
+            )
+        else:
+            result = _v4_request(
+                method="POST", path=f"/v1/v4/notifications/{parsed.notification_id}/ack",
+                payload={},
             )
     elif parsed.command == "jobs" and parsed.job_command == "start-dummy":
         result = _request(

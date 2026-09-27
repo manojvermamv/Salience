@@ -57,6 +57,14 @@ def inbox_count(database,cycle_id):
         return connection.execute("SELECT count(*) FROM v4_cycle_inbox WHERE cycle_id=%s",(cycle_id,)).fetchone()[0]
 
 
+def fixture_acceptance_count(database,cycle_id):
+    with psycopg.connect(database) as connection:
+        return connection.execute(
+            "SELECT count(*) FROM v4_cycle_events WHERE cycle_id=%s AND kind='fixture_adapter_accepted'",
+            (cycle_id,),
+        ).fetchone()[0]
+
+
 async def wait_consumed(database,cycle_id,count):
     async with asyncio.timeout(30):
         while await asyncio.to_thread(inbox_count,database,cycle_id)<count:
@@ -264,6 +272,11 @@ async def test_api_to_mock_adapter_trace_and_duplicate_activity_are_bound(monkey
     async with worker:
         assert await outbox.dispatch_one(transport)
         await wait_consumed(service.database_url, admitted["cycle_id"], 1)
+        async with asyncio.timeout(30):
+            while await asyncio.to_thread(
+                fixture_acceptance_count, service.database_url, admitted["cycle_id"],
+            ) < 1:
+                await asyncio.sleep(0.1)
         service.close(admitted["cycle_id"], disposition="completed", reason="fixture")
         assert await outbox.dispatch_one(transport)
         await asyncio.wait_for(client.get_workflow_handle(transport.workflow_id(admitted["cycle_id"])).result(), 20)

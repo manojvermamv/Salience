@@ -1,0 +1,68 @@
+{
+  "recorded_at": "2026-09-27",
+  "base_commit": "c78ce130ef699afaf3c2a2706d83f02fcf01f5ac",
+  "scope": "Bounded local P1 item 5b: signed no-effects fixture goal revision/state/baseline revocation and typed stop/case/review/resume/terminal/archive/notification commands through shared API, CLI and SDK",
+  "source_evidence_lock_sha256": "e79a0747a6cac026e48407b3414e6ff236333522dee17db26289ef9e97c7f332",
+  "commands": [
+    {
+      "command": ".venv/bin/python -m pytest -p no:cacheprovider tests/integration/test_v4_public_commands.py tests/integration/test_v4_cycle_governance.py tests/integration/test_v4_identity_isolation.py tests/integration/test_v4_migrations.py tests/e2e/test_v4_outbox_recovery.py tests/unit/test_cli.py tests/unit/test_sdk.py -q -rs --junitxml=artifacts/v4-p0/item5b-focused.xml",
+      "exit_code": 0,
+      "tests": 63,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 85.708,
+      "junit": "artifacts/v4-p0/item5b-focused.xml",
+      "junit_sha256": "a82d516c2941a2d9016e0f6bd257ededfb637029f9f65c0c9762e1d05e7327fd",
+      "log_sha256": "70a306f6dae0d64ea2eaa525c8f531eedc8b063d84452bbe93ef8135620a90a5"
+    },
+    {
+      "command": ".venv/bin/python -m pytest -p no:cacheprovider tests/contracts tests/unit tests/integration tests/e2e tests/evals -m 'not live' -q -rs --junitxml=artifacts/v4-p0/item5b-regression.xml",
+      "exit_code": 0,
+      "tests": 411,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 377.015,
+      "junit": "artifacts/v4-p0/item5b-regression.xml",
+      "junit_sha256": "5c2aafce327b4ed9f160c68f6af99f77c116aadded991d526e34791dea201359",
+      "log_sha256": "d01963af1f10ec3c3ab3c454d6781f6b7ca7b853eeca2cdcfccc63909a4caa83"
+    }
+  ],
+  "requirement_coverage": {
+    "R05": "Signed goal revision/state and baseline revocation reuse canonical exact receipts and current subject/program/approval checks; no implicit baseline inheritance.",
+    "R13": "Current signed review scope is denied after grant expiry; restored scope permits a bound decision. Restricted non-owner case inspection uses SELECT without authority or case UPDATE.",
+    "R15": "Workspace and goal stop commands share existing serialized stop projections and exact actor/key receipts; stopped scope prevents case resume.",
+    "R18": "Signed stop controls deny new fixture recovery/permit work, not a claim of production emergency-stop delivery or remote read reconciliation.",
+    "R32": "Typed intent and cycle cases are opened and inspected by workspace; no replacement cycle is created for review/retry.",
+    "R33": "Bound review and exact resume target the original intent or context/operation, with one recovery outbox message per transition and no duplicate cycle.",
+    "R34": "Review requires current separate grant, owner, revision, context, account, purpose, artifact and deadline; revoked and wrong-artifact attempts deny. Automatic durable timer/notification delivery remains item 6.",
+    "R35": "Terminalize and archive through signed fixture commands preserve one immutable archive and exact repeated public response; production discovery/retention qualification remains open."
+  },
+  "additional_verification": {
+    "documentation_tests": 15,
+    "mapped_obligations": 75,
+    "locked_source_files": 299,
+    "inventory_dispositions": 360,
+    "mermaid_rendered": 6,
+    "mermaid_report_sha256": "6ab6bcbe4a8d1d0af7521e51fbf8d76836f012e2d67974f37c7d9c202784f0ae",
+    "shell_documentation_contracts": 4,
+    "dependency_consistency": "PASS",
+    "whitespace": "PASS",
+    "review": "An initial focused 62-pass/one-fail run exposed an existing test race: a durable inbox receipt preceded the mock adapter permit claim, and the test closed the cycle too early. The test now waits for canonical fixture acceptance before closure; final focused/full suites pass. A public archive replay discrepancy was repaired to return the original disposition. Independent PR review is NOT RUN.",
+    "production_effects_enabled": false
+  },
+  "repository_verification": {
+    "base_commit": "c78ce130ef699afaf3c2a2706d83f02fcf01f5ac",
+    "base_ci_status": "PASS",
+    "base_enforcement_status": "PASS",
+    "candidate_ci_status": "NOT RUN until candidate commit is published",
+    "merge": "NOT AUTHORIZED; independent PR approval remains NOT RUN"
+  },
+  "remaining": {
+    "next_subincrement": "5c: one-goal durable fixture schedule/legacy start-signal cutover with watermark, crash recovery and rollback verifier",
+    "RG0": "HELD: four external production qualifications NOT RUN",
+    "RG1": "HELD: item 5c, worker-version replay and Continue-As-New, durable review timers/alert delivery, general policy/read reconciliation and independent full qualification remain",
+    "production_effects_enabled": false
+  }
+}

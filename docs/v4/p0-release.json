@@ -20,13 +20,13 @@
       "exit_code": 0
     },
     "full_non_live": {
-      "passed": 408,
+      "passed": 411,
       "failed": 0,
       "errors": 0,
       "skipped": 0,
       "exit_code": 0,
-      "seconds": 366.382,
-      "junit": "artifacts/v4-p0/item5a-regression.xml"
+      "seconds": 377.015,
+      "junit": "artifacts/v4-p0/item5b-regression.xml"
     },
     "documentation_tests": {
       "passed": 15,
@@ -44,13 +44,13 @@
     "original_inventory_dispositions": 360,
     "warning": "Pre-existing Starlette/AnyIO deprecation warning",
     "focused_p1": {
-      "passed": 83,
+      "passed": 63,
       "failed": 0,
       "errors": 0,
       "skipped": 0,
       "exit_code": 0,
-      "seconds": 95.995,
-      "junit": "artifacts/v4-p0/item5a-focused.xml"
+      "seconds": 85.708,
+      "junit": "artifacts/v4-p0/item5b-focused.xml"
     }
   },
   "evidence_artifacts": [
@@ -128,6 +128,11 @@
       "path": "docs/v4/item5a-evidence.json",
       "sha256": "e8bcfaaa88ce7ad09061e57f2bd73f7bfbfda7e2dee186bb8a379e8ccf2ddf22",
       "local_only": false
+    },
+    {
+      "path": "docs/v4/item5b-evidence.json",
+      "sha256": "1c2c53647e773aa8a9c4f83622654eb9c90cdcd88d9f4563ad9a65d29b8980b1",
+      "local_only": false
     }
   ],
   "release_gate": "RG0",
@@ -157,11 +162,11 @@
     {
       "check": "remote repository gate enforcement",
       "status": "PASS",
-      "evidence": "docs/v4/item4-evidence.json: item-4 implementation 2fbb3847b27f4513b6d8083c4356b65ba484b974 verify and p0-regression PASS with strict app-bound main protection read back 2026-09-27T17:14:29.087768+00:00; raw read-only report is local-only at artifacts/v4-p0/item4-current-repository.json. Any later head needs fresh checks; independent PR approval remains NOT RUN and no merge is authorized."
+      "evidence": "Item-5a published implementation c78ce130ef699afaf3c2a2706d83f02fcf01f5ac verify and p0-regression PASS with strict app-bound main protection read back 2026-09-27T18:04:15.073504+00:00; raw read-only report is local-only at artifacts/v4-p0/item5a-current-repository.json. Item-5b candidate needs fresh exact-head checks after publication; independent PR approval remains NOT RUN and no merge is authorized."
     }
   ],
   "later_phase_boundaries": {
-    "P1": "Reuse verified local admission, revisions, approved fixture baseline, outbox, V2 policy/context, V3 fixture G0/G1 accounting, item-3 stop/permit/cases, item-4 fixture dispatch/mock trace and item-5a signed fixture commands; next typed governance parity, schedule cutover, worker upgrades and durable review timers",
+    "P1": "Reuse verified local admission, revisions, approved fixture baseline, outbox, V2 policy/context, V3 fixture G0/G1 accounting, item-3 stop/permit/cases, item-4 fixture dispatch/mock trace and item-5a/5b signed fixture commands; next one-goal schedule cutover, worker upgrades and durable review timers",
     "P2": "G1 allocation transfer, all ready-package reference/outbox integration and enabled provider qualification",
     "P3": "Trial/evaluation isolation and separate strategy/capability namespaces",
     "P4": "Promotion/invalidation serialization; mandatory typed learning proposals with optional qualified semantic analyst",
@@ -200,7 +205,7 @@
     ]
   },
   "p1_increment": {
-    "name": "Local admission/outbox, revisions, approved baseline, V2/V3 fixture policy/accounting, item-3 stop/permit/cases, item-4 handoff/mock trace and item-5a signed fixture commands",
+    "name": "Local admission/outbox, revisions, approved baseline, V2/V3 fixture policy/accounting, item-3 stop/permit/cases, item-4 handoff/mock trace and item-5a/5b signed fixture commands",
     "local_status": "PASS",
     "release_gate": "RG1",
     "release_status": "HELD",
@@ -224,13 +229,13 @@
       "R35",
       "R53"
     ],
-    "evidence": "docs/v4/item5a-evidence.json",
+    "evidence": "docs/v4/item5b-evidence.json",
     "remaining": [
       "General registry/provider eligibility beyond the approved no-effects fixture baseline; later capability and production qualification gates remain binding",
       "Production G1 provider charge identity and effect integration beyond the fixture-qualified transfer/reconciliation contract",
       "Production dispatcher/alert service, all legacy start/signal cutover, public V4 API-to-provider outbox integration and production typed delivery recovery beyond the automatic local fixture",
       "General policy/model authorization, automatic stop/schedule integration and separately scoped remote read-only reconciliation beyond item-3 fixture permits/cases",
-      "Typed case/review/stop and goal revision/state API/CLI/SDK parity plus durable one-goal schedule conversion",
+      "Durable one-goal schedule conversion with watermark and old start/signal cutover",
       "Arbitrary supported worker-version compatibility, Continue-As-New, real-time durable review deadlines and independent full RG1 qualification"
     ],
     "completed_queue_items": [
@@ -239,7 +244,7 @@
       3,
       4
     ],
-    "completed_queue_subincrements": ["5a"],
+    "completed_queue_subincrements": ["5a", "5b"],
     "next_queue_item": 5
   },
   "documentation_refresh": {

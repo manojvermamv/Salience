@@ -39,7 +39,7 @@ class IdentityBoundary:
             raise ValueError("an RSA public key of at least 2048 bits is required")
         self.allowed_scopes = {"control:read", "control:write"}
         if enable_v4_fixture_commands:
-            self.allowed_scopes.update({"goals:write", "goals:approve", "cycles:write", "cycles:read"})
+            self.allowed_scopes.update({"goals:write", "goals:approve", "cycles:write", "cycles:read", "cycles:stop", "cycles:review"})
 
     async def authorize(self, token, required_scope, context, resource=None):
         claims = None
@@ -78,6 +78,14 @@ class IdentityBoundary:
                         permitted = permitted and row is not None and row[0] == self.workspace_id
                     elif table == "v4_cycles":
                         cursor = await connection.execute("SELECT goal.workspace_id FROM v4_cycles AS cycle JOIN v4_cycle_intents AS intent ON intent.id=cycle.intent_id JOIN v4_goals AS goal ON goal.id=intent.goal_id WHERE cycle.id=%s", (resource_id,))
+                        row = await cursor.fetchone()
+                        permitted = permitted and row is not None and row[0] == self.workspace_id
+                    elif table == "v4_recovery_cases":
+                        cursor = await connection.execute("SELECT goal.workspace_id FROM v4_recovery_cases AS recovery JOIN v4_goals AS goal ON goal.id=recovery.goal_id WHERE recovery.id=%s", (resource_id,))
+                        row = await cursor.fetchone()
+                        permitted = permitted and row is not None and row[0] == self.workspace_id
+                    elif table == "v4_case_notifications":
+                        cursor = await connection.execute("SELECT goal.workspace_id FROM v4_case_notifications AS notification JOIN v4_recovery_cases AS recovery ON recovery.id=notification.case_id JOIN v4_goals AS goal ON goal.id=recovery.goal_id WHERE notification.id=%s", (resource_id,))
                         row = await cursor.fetchone()
                         permitted = permitted and row is not None and row[0] == self.workspace_id
                     else:
@@ -180,15 +188,26 @@ def create_p0_app(*, database_url, workspace_id, issuer, audience, public_key, t
 def _request_scope(request):
     parts = request.url.path.strip("/").split("/")
     try:
+        if request.method == "POST" and len(parts) == 5 and parts[:2] == ["v1", "workspaces"] and parts[3:] == ["v4", "stop"]:
+            return ("workspaces", UUID(parts[2])), "cycles:stop"
         if request.method == "POST" and len(parts) == 5 and parts[:2] == ["v1", "workspaces"] and parts[3:] == ["v4", "goals"]:
             return ("workspaces", UUID(parts[2])), "goals:write"
         if len(parts) >= 4 and parts[:3] == ["v1", "v4", "goals"]:
             resource = ("v4_goals", UUID(parts[3]))
             if request.method == "POST" and len(parts) == 5 and parts[4] == "baseline":
                 return resource, "goals:approve"
+            if request.method == "POST" and len(parts) == 7 and parts[4] == "baseline" and parts[6] == "revoke":
+                UUID(parts[5])
+                return resource, "goals:approve"
+            if request.method == "POST" and len(parts) == 5 and parts[4] in {"revisions", "state"}:
+                return resource, "goals:write"
             if request.method == "POST" and len(parts) == 5 and parts[4] == "requests":
                 return resource, "cycles:write"
+            if request.method == "POST" and len(parts) == 5 and parts[4] == "stop":
+                return resource, "cycles:stop"
         if request.method == "POST" and len(parts) == 5 and parts[:3] == ["v1", "v4", "intents"] and parts[4] == "admit":
+            return ("v4_cycle_intents", UUID(parts[3])), "cycles:write"
+        if request.method == "POST" and len(parts) == 5 and parts[:3] == ["v1", "v4", "intents"] and parts[4] == "cases":
             return ("v4_cycle_intents", UUID(parts[3])), "cycles:write"
         if len(parts) in {4, 5} and parts[:3] == ["v1", "v4", "cycles"]:
             resource = ("v4_cycles", UUID(parts[3]))
@@ -196,6 +215,16 @@ def _request_scope(request):
                 return resource, "cycles:read"
             if request.method == "POST" and len(parts) == 5 and parts[4] == "cancel":
                 return resource, "cycles:write"
+            if request.method == "POST" and len(parts) == 5 and parts[4] == "cases":
+                return resource, "cycles:write"
+        if len(parts) in {4, 5} and parts[:3] == ["v1", "v4", "cases"]:
+            resource = ("v4_recovery_cases", UUID(parts[3]))
+            if request.method == "GET" and len(parts) == 4:
+                return resource, "cycles:read"
+            if request.method == "POST" and len(parts) == 5:
+                return resource, "cycles:review" if parts[4] == "review" else "cycles:write" if parts[4] in {"resume", "terminalize", "archive"} else "p0:disabled"
+        if request.method == "POST" and len(parts) == 5 and parts[:3] == ["v1", "v4", "notifications"] and parts[4] == "ack":
+            return ("v4_case_notifications", UUID(parts[3])), "cycles:review"
         if len(parts) == 4 and parts[:2] == ["v1", "workspaces"]:
             resource = ("workspaces", UUID(parts[2]))
             if request.method == "GET" and parts[3] == "identity":
