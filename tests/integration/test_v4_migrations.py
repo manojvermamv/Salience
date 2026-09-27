@@ -5,6 +5,7 @@ from urllib.parse import urlsplit, urlunsplit
 from uuid import uuid4
 
 import psycopg
+import pytest
 
 
 def test_clean_upgrade_empty_rollback_and_populated_preservation():
@@ -21,6 +22,9 @@ def test_clean_upgrade_empty_rollback_and_populated_preservation():
             assert migrate("upgrade", "head").returncode == 0
             assert migrate("downgrade", "0012_publication_profile_scope").returncode == 0
             assert migrate("upgrade", "head").returncode == 0
+            assert migrate("downgrade", "0028_fixture_adapter_receipts").returncode == 0
+            assert migrate("upgrade", "head").returncode == 0
+            assert migrate("downgrade", "0028_fixture_adapter_receipts").returncode == 0
             workspace = uuid4()
             with psycopg.connect(database) as connection:
                 expected_revision = connection.execute("SELECT version_num FROM alembic_version").fetchone()[0]
@@ -89,5 +93,21 @@ def test_clean_upgrade_empty_rollback_and_populated_preservation():
             with psycopg.connect(database) as connection:
                 assert connection.execute("SELECT count(*) FROM v4_cycle_events WHERE kind='fixture_adapter_accepted'").fetchone()[0] == 1
                 assert connection.execute("SELECT version_num FROM alembic_version").fetchone()[0] == expected_revision
+            assert migrate("upgrade", "head").returncode == 0
+            with psycopg.connect(database) as connection:
+                foreign_workspace, foreign_goal = uuid4(), uuid4()
+                connection.execute("INSERT INTO workspaces (id,slug,display_name) VALUES (%s,%s,'foreign receipt fixture')", (foreign_workspace,str(foreign_workspace)))
+                connection.execute("INSERT INTO v4_goals (id,workspace_id,state) VALUES (%s,%s,'active')", (foreign_goal,foreign_workspace))
+                with pytest.raises(psycopg.errors.ForeignKeyViolation), connection.transaction():
+                    connection.execute("INSERT INTO v4_goal_create_commands (workspace_id,subject_id,idempotency_key,fingerprint,goal_id) VALUES (%s,%s,'foreign-goal',%s,%s)", (workspace,subject,"a"*64,foreign_goal))
+                connection.execute("INSERT INTO v4_goal_create_commands (workspace_id,subject_id,idempotency_key,fingerprint,goal_id) VALUES (%s,%s,'fixture-goal',%s,%s)", (workspace,subject,"a"*64,goal))
+                with pytest.raises(psycopg.Error, match="immutable"), connection.transaction():
+                    connection.execute("UPDATE v4_goal_create_commands SET fingerprint=%s WHERE goal_id=%s", ("b"*64,goal))
+                final_revision = connection.execute("SELECT version_num FROM alembic_version").fetchone()[0]
+            result = migrate("downgrade", "0028_fixture_adapter_receipts")
+            assert result.returncode != 0 and "preserve exact V4 goal creation receipts" in result.stderr
+            with psycopg.connect(database) as connection:
+                assert connection.execute("SELECT count(*) FROM v4_goal_create_commands WHERE goal_id=%s", (goal,)).fetchone()[0] == 1
+                assert connection.execute("SELECT version_num FROM alembic_version").fetchone()[0] == final_revision
         finally:
             admin.execute(psycopg.sql.SQL("DROP DATABASE {} WITH (FORCE)").format(psycopg.sql.Identifier(name)))

@@ -28,6 +28,26 @@ def _request(
     return response.json()
 
 
+def _v4_request(
+    *, method: str, path: str, payload: dict[str, object] | None = None,
+    idempotency_key: str | None = None,
+) -> dict[str, object]:
+    base_url = os.environ.get("SALIENCE_CONTROL_URL", "http://127.0.0.1:8000")
+    token = os.environ["SALIENCE_CONTROL_JWT"]
+    headers = {"Authorization": f"Bearer {token}"}
+    if idempotency_key is not None:
+        headers["Idempotency-Key"] = idempotency_key
+    response = httpx.request(
+        method,
+        f"{base_url.rstrip('/')}{path}",
+        headers=headers,
+        json=payload,
+        timeout=10,
+    )
+    response.raise_for_status()
+    return response.json()
+
+
 def main(arguments: Sequence[str] | None = None) -> None:
     parser = argparse.ArgumentParser(prog="content")
     subcommands = parser.add_subparsers(dest="command", required=True)
@@ -107,9 +127,67 @@ def main(arguments: Sequence[str] | None = None) -> None:
     run.add_argument("agent_id")
     run.add_argument("--niche", required=True)
     run.add_argument("--mode", choices=("sync", "async"), default="async")
+    cycles = subcommands.add_parser("cycles")
+    cycle_commands = cycles.add_subparsers(dest="cycle_command", required=True)
+    goal_create = cycle_commands.add_parser("goal-create")
+    goal_create.add_argument("--workspace-id", required=True)
+    goal_create.add_argument("--spec-json", required=True)
+    goal_create.add_argument("--idempotency-key", required=True)
+    baseline = cycle_commands.add_parser("baseline-approve")
+    baseline.add_argument("--goal-id", required=True)
+    baseline.add_argument("--expected-revision", type=int, required=True)
+    baseline.add_argument("--expires-at", required=True)
+    baseline.add_argument("--reason", required=True)
+    cycle_request = cycle_commands.add_parser("request")
+    cycle_request.add_argument("--goal-id", required=True)
+    cycle_request.add_argument("--request-json", required=True)
+    cycle_admit = cycle_commands.add_parser("admit")
+    cycle_admit.add_argument("--intent-id", required=True)
+    cycle_inspect = cycle_commands.add_parser("inspect")
+    cycle_inspect.add_argument("--cycle-id", required=True)
+    cycle_cancel = cycle_commands.add_parser("cancel")
+    cycle_cancel.add_argument("--cycle-id", required=True)
+    cycle_cancel.add_argument("--reason", required=True)
+    cycle_events = cycle_commands.add_parser("events")
+    cycle_events.add_argument("--cycle-id", required=True)
+    cycle_events.add_argument("--limit", type=int, default=50)
+    cycle_events.add_argument("--after")
 
     parsed = parser.parse_args(arguments)
-    if parsed.command == "jobs" and parsed.job_command == "start-dummy":
+    if parsed.command == "cycles":
+        if parsed.cycle_command == "goal-create":
+            result = _v4_request(
+                method="POST", path=f"/v1/workspaces/{parsed.workspace_id}/v4/goals",
+                payload=json.loads(parsed.spec_json), idempotency_key=parsed.idempotency_key,
+            )
+        elif parsed.cycle_command == "baseline-approve":
+            result = _v4_request(
+                method="POST", path=f"/v1/v4/goals/{parsed.goal_id}/baseline",
+                payload={"expected_revision": parsed.expected_revision,
+                         "expires_at": parsed.expires_at, "reason": parsed.reason},
+            )
+        elif parsed.cycle_command == "request":
+            result = _v4_request(
+                method="POST", path=f"/v1/v4/goals/{parsed.goal_id}/requests",
+                payload=json.loads(parsed.request_json),
+            )
+        elif parsed.cycle_command == "admit":
+            result = _v4_request(
+                method="POST", path=f"/v1/v4/intents/{parsed.intent_id}/admit", payload={},
+            )
+        elif parsed.cycle_command == "inspect":
+            result = _v4_request(method="GET", path=f"/v1/v4/cycles/{parsed.cycle_id}")
+        elif parsed.cycle_command == "cancel":
+            result = _v4_request(
+                method="POST", path=f"/v1/v4/cycles/{parsed.cycle_id}/cancel",
+                payload={"reason": parsed.reason},
+            )
+        else:
+            query = f"limit={parsed.limit}" + (f"&after={parsed.after}" if parsed.after else "")
+            result = _v4_request(
+                method="GET", path=f"/v1/v4/cycles/{parsed.cycle_id}/events?{query}",
+            )
+    elif parsed.command == "jobs" and parsed.job_command == "start-dummy":
         result = _request(
             method="POST",
             path="/v1/jobs/dummy",

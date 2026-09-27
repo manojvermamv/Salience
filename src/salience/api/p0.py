@@ -3,6 +3,7 @@
 import asyncio
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
+import os
 from uuid import UUID
 
 from fastapi import Request
@@ -26,7 +27,7 @@ class Principal:
 
 
 class IdentityBoundary:
-    def __init__(self, *, database_url, workspace_id, issuer, audience, public_key):
+    def __init__(self, *, database_url, workspace_id, issuer, audience, public_key, enable_v4_fixture_commands=False):
         if not issuer.startswith("https://") or not audience:
             raise ValueError("explicit HTTPS issuer and audience are required")
         self.database_url = database_url.replace("postgresql+asyncpg://", "postgresql://")
@@ -36,6 +37,9 @@ class IdentityBoundary:
         self.public_key = jwt.get_algorithm_by_name("RS256").prepare_key(public_key)
         if not isinstance(self.public_key, RSAPublicKey) or self.public_key.key_size < 2048:
             raise ValueError("an RSA public key of at least 2048 bits is required")
+        self.allowed_scopes = {"control:read", "control:write"}
+        if enable_v4_fixture_commands:
+            self.allowed_scopes.update({"goals:write", "goals:approve", "cycles:write", "cycles:read"})
 
     async def authorize(self, token, required_scope, context, resource=None):
         claims = None
@@ -55,13 +59,25 @@ class IdentityBoundary:
                 cursor = await connection.execute("SELECT scope, effect FROM permission_grants WHERE workspace_id=%s AND principal_type='identity' AND principal_id=%s AND expires_at > clock_timestamp() AND constraints='{}'::jsonb", (self.workspace_id, str(subject[0])))
                 grants = await cursor.fetchall()
                 scopes = frozenset(scope for scope, effect in grants if effect == "allow") - frozenset(scope for scope, effect in grants if effect == "deny")
-                permitted = required_scope in {"control:read", "control:write"} and required_scope in scopes
+                permitted = required_scope in self.allowed_scopes and required_scope in scopes
                 if resource:
                     table, resource_id = resource
                     if table == "workspaces":
                         permitted = permitted and resource_id == self.workspace_id
                     elif table in {"jobs", "content_brief_versions", "ready_packages"}:
                         cursor = await connection.execute(psycopg.sql.SQL("SELECT workspace_id FROM {} WHERE id=%s").format(psycopg.sql.Identifier(table)), (resource_id,))
+                        row = await cursor.fetchone()
+                        permitted = permitted and row is not None and row[0] == self.workspace_id
+                    elif table == "v4_goals":
+                        cursor = await connection.execute("SELECT workspace_id FROM v4_goals WHERE id=%s", (resource_id,))
+                        row = await cursor.fetchone()
+                        permitted = permitted and row is not None and row[0] == self.workspace_id
+                    elif table == "v4_cycle_intents":
+                        cursor = await connection.execute("SELECT goal.workspace_id FROM v4_cycle_intents AS intent JOIN v4_goals AS goal ON goal.id=intent.goal_id WHERE intent.id=%s", (resource_id,))
+                        row = await cursor.fetchone()
+                        permitted = permitted and row is not None and row[0] == self.workspace_id
+                    elif table == "v4_cycles":
+                        cursor = await connection.execute("SELECT goal.workspace_id FROM v4_cycles AS cycle JOIN v4_cycle_intents AS intent ON intent.id=cycle.intent_id JOIN v4_goals AS goal ON goal.id=intent.goal_id WHERE cycle.id=%s", (resource_id,))
                         row = await cursor.fetchone()
                         permitted = permitted and row is not None and row[0] == self.workspace_id
                     else:
@@ -79,13 +95,19 @@ class IdentityBoundary:
             return all(await cursor.fetchone())
 
 
-def create_p0_app(*, database_url, workspace_id, issuer, audience, public_key, tracer=None):
+def create_p0_app(*, database_url, workspace_id, issuer, audience, public_key, tracer=None, enable_v4_fixture_commands=False):
     from salience.api.app import create_app
     from salience.api.dependencies import TemporalControlPlane
 
-    boundary = IdentityBoundary(database_url=database_url, workspace_id=workspace_id, issuer=issuer, audience=audience, public_key=public_key)
+    if enable_v4_fixture_commands and (os.environ.get("SALIENCE_DEPLOYMENT_MODE") != "fixture" or os.environ.get("SALIENCE_EFFECTS_ENABLED", "false") != "false"):
+        raise ValueError("V4 public commands require explicit no-effects fixture mode")
+    boundary = IdentityBoundary(database_url=database_url, workspace_id=workspace_id, issuer=issuer, audience=audience, public_key=public_key, enable_v4_fixture_commands=enable_v4_fixture_commands)
     app = create_app(control_token="", control_plane=TemporalControlPlane(database_url=database_url.replace("postgresql://", "postgresql+asyncpg://"), temporal_target="disabled.invalid:7233", task_queue="p0-disabled"))
     app.state.identity_boundary = boundary
+    if enable_v4_fixture_commands:
+        from salience.api.routes import v4_cycles
+
+        app.include_router(v4_cycles.router)
     if tracer is None:
         provider = TracerProvider(resource=Resource.create({"service.name": "salience-p0"}))
         provider.add_span_processor(BatchSpanProcessor(ConsoleSpanExporter(), max_queue_size=512, max_export_batch_size=64, export_timeout_millis=5000))
@@ -132,6 +154,7 @@ def create_p0_app(*, database_url, workspace_id, issuer, audience, public_key, t
                             response = JSONResponse({"detail": "access denied"}, status_code=denied_status)
                         else:
                             request.state.principal = principal
+                            request.state.trace_context = context
                             body_size = 0
                             chunks = []
                             async for chunk in request.stream():
@@ -157,6 +180,22 @@ def create_p0_app(*, database_url, workspace_id, issuer, audience, public_key, t
 def _request_scope(request):
     parts = request.url.path.strip("/").split("/")
     try:
+        if request.method == "POST" and len(parts) == 5 and parts[:2] == ["v1", "workspaces"] and parts[3:] == ["v4", "goals"]:
+            return ("workspaces", UUID(parts[2])), "goals:write"
+        if len(parts) >= 4 and parts[:3] == ["v1", "v4", "goals"]:
+            resource = ("v4_goals", UUID(parts[3]))
+            if request.method == "POST" and len(parts) == 5 and parts[4] == "baseline":
+                return resource, "goals:approve"
+            if request.method == "POST" and len(parts) == 5 and parts[4] == "requests":
+                return resource, "cycles:write"
+        if request.method == "POST" and len(parts) == 5 and parts[:3] == ["v1", "v4", "intents"] and parts[4] == "admit":
+            return ("v4_cycle_intents", UUID(parts[3])), "cycles:write"
+        if len(parts) in {4, 5} and parts[:3] == ["v1", "v4", "cycles"]:
+            resource = ("v4_cycles", UUID(parts[3]))
+            if request.method == "GET" and (len(parts) == 4 or parts[4] == "events"):
+                return resource, "cycles:read"
+            if request.method == "POST" and len(parts) == 5 and parts[4] == "cancel":
+                return resource, "cycles:write"
         if len(parts) == 4 and parts[:2] == ["v1", "workspaces"]:
             resource = ("workspaces", UUID(parts[2]))
             if request.method == "GET" and parts[3] == "identity":

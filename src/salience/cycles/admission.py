@@ -69,9 +69,22 @@ class CycleAdmission(CadenceCommands):
     def _event(self, connection, goal_id, kind, payload, intent_id=None, cycle_id=None):
         connection.execute("INSERT INTO v4_cycle_events (id,workspace_id,subject_id,goal_id,intent_id,cycle_id,kind,traceparent,payload) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)", (uuid4(),self.workspace_id,self.subject_id,goal_id,intent_id,cycle_id,kind,self.trace.to_carrier()["traceparent"],Jsonb(json.loads(json.dumps(payload,default=str)))))
 
-    def create_goal(self, spec: GoalSpec):
+    def create_goal(self, spec: GoalSpec, *, idempotency_key=None):
         spec = parse_goal(spec.model_dump())
+        if idempotency_key is not None and (not isinstance(idempotency_key,str) or not idempotency_key.strip() or len(idempotency_key)>256):
+            raise ValueError("bounded goal creation key required")
+        payload = spec.model_dump(mode="json")
+        fingerprint = sha256(json.dumps(payload,sort_keys=True,separators=(",",":")).encode()).hexdigest()
         with self._command("goals:write") as connection:
+            if idempotency_key is not None:
+                lock_material = f"v4-goal-create:{self.workspace_id}:{self.subject_id}:{idempotency_key}".encode()
+                lock_key = int.from_bytes(sha256(lock_material).digest()[:8],"big",signed=True)
+                connection.execute("SELECT pg_advisory_xact_lock(%s)",(lock_key,))
+                existing = connection.execute("SELECT fingerprint,goal_id FROM v4_goal_create_commands WHERE workspace_id=%s AND subject_id=%s AND idempotency_key=%s",(self.workspace_id,self.subject_id,idempotency_key)).fetchone()
+                if existing:
+                    if existing["fingerprint"] != fingerprint:
+                        raise ValueError("goal creation fingerprint conflict")
+                    return existing["goal_id"]
             if isinstance(spec, GoalSpecV2):
                 require_program(connection, self.workspace_id, spec.content_program_id)
             now = connection.execute("SELECT clock_timestamp() AS now").fetchone()["now"]
@@ -79,8 +92,10 @@ class CycleAdmission(CadenceCommands):
                 raise ValueError("goal horizon expired")
             goal_id = uuid4()
             connection.execute("INSERT INTO v4_goals (id,workspace_id,state) VALUES (%s,%s,'active')", (goal_id,self.workspace_id))
-            connection.execute("INSERT INTO v4_goal_revisions (goal_id,revision,schema_version,payload) VALUES (%s,1,%s,%s)", (goal_id,spec.schema_version,Jsonb(spec.model_dump(mode="json"))))
+            connection.execute("INSERT INTO v4_goal_revisions (goal_id,revision,schema_version,payload) VALUES (%s,1,%s,%s)", (goal_id,spec.schema_version,Jsonb(payload)))
             self._event(connection,goal_id,"goal_created",{"revision":1,"dry_run":True})
+            if idempotency_key is not None:
+                connection.execute("INSERT INTO v4_goal_create_commands (workspace_id,subject_id,idempotency_key,fingerprint,goal_id) VALUES (%s,%s,%s,%s,%s)",(self.workspace_id,self.subject_id,idempotency_key,fingerprint,goal_id))
             return goal_id
 
     def set_goal_state(self, goal_id, state):

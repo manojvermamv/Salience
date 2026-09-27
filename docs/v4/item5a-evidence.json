@@ -1,0 +1,66 @@
+{
+  "recorded_at": "2026-09-27",
+  "base_commit": "77a45276459d5abc133a47240f42c89a6b4a7aad",
+  "scope": "Bounded local P1 item 5a: signed opt-in fixture goal/baseline/request/admit/inspect/cancel/events API, CLI and SDK parity; exact goal creation receipts",
+  "source_evidence_lock_sha256": "4d542844bfdfaee47d662e36057d1d99252fcf449bae6e92abd26386673fd6f1",
+  "commands": [
+    {
+      "command": ".venv/bin/python -m pytest -p no:cacheprovider tests/integration/test_v4_public_commands.py tests/integration/test_v4_identity_isolation.py tests/integration/test_v4_cadence_policy.py tests/integration/test_v4_outbox.py tests/integration/test_v4_auto_dispatch.py tests/integration/test_v4_migrations.py tests/e2e/test_v4_outbox_recovery.py tests/unit/test_cli.py tests/unit/test_sdk.py -q -rs --junitxml=artifacts/v4-p0/item5a-focused.xml",
+      "exit_code": 0,
+      "tests": 83,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 95.995,
+      "junit": "artifacts/v4-p0/item5a-focused.xml",
+      "junit_sha256": "77326236ed0e0c9a31c484f97715bb4435ab8cbaf6478500e31a13d7a84648fe",
+      "log_sha256": "3fa72277d5296b54be16b9856e3007451653f13c88ec4043574ba697ae469862"
+    },
+    {
+      "command": ".venv/bin/python -m pytest -p no:cacheprovider tests/contracts tests/unit tests/integration tests/e2e tests/evals -m 'not live' -q -rs --junitxml=artifacts/v4-p0/item5a-regression.xml",
+      "exit_code": 0,
+      "tests": 408,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 366.382,
+      "junit": "artifacts/v4-p0/item5a-regression.xml",
+      "junit_sha256": "6bc69dea649325eefafe00ec9faee40258acffe48ba5f685f89aa63b9b9aed66",
+      "log_sha256": "d483f8e298257e2c8fae04c429b2fbba06f97ef4771fd980bd38efeeae85ed6a"
+    }
+  ],
+  "requirement_coverage": {
+    "R03": "Public fixture admission and cancellation use existing atomic outbox rather than starting or signaling Temporal directly; legacy schedule cutover remains open.",
+    "R05": "Signed goal creation requires exact scoped idempotency; only current approved fixture baselines admit cycles. Goal revision/state public commands and production baseline qualification remain open.",
+    "R06": "Manual, event and scheduled public fixture requests coalesce under concurrency and exact retries recover the same intent; automatic one-goal schedule cutover remains open.",
+    "R07": "Every public admission executes the existing G0 transaction with current authority and immutable context; no route bypasses admission or permits.",
+    "R13": "Middleware and command service each recheck current signed subject/scope; expired grants deny. A genuinely restricted non-owner role creates and reads goals without authority UPDATE permission.",
+    "R53": "Additive 0029 preserves scoped immutable goal creation receipts; empty rollback/re-upgrade and populated preservation pass."
+  },
+  "additional_verification": {
+    "documentation_tests": 15,
+    "mapped_obligations": 75,
+    "locked_source_files": 299,
+    "inventory_dispositions": 360,
+    "mermaid_rendered": 6,
+    "mermaid_report_sha256": "6ab6bcbe4a8d1d0af7521e51fbf8d76836f012e2d67974f37c7d9c202784f0ae",
+    "shell_documentation_contracts": 4,
+    "dependency_consistency": "PASS",
+    "whitespace": "PASS",
+    "review": "Local self-review identified the narrow SELECT privilege needed for exact receipt replay by a non-owner role; the role still cannot edit subjects, grants or goals. The default/production P0 app has no V4 command route; the opt-in requires no-effects fixture mode. Independent PR review is NOT RUN.",
+    "production_effects_enabled": false
+  },
+  "repository_verification": {
+    "base_commit": "77a45276459d5abc133a47240f42c89a6b4a7aad",
+    "base_ci_status": "PASS",
+    "base_enforcement_status": "PASS",
+    "candidate_ci_status": "NOT RUN until candidate commit is published",
+    "merge": "NOT AUTHORIZED; independent PR approval remains NOT RUN"
+  },
+  "remaining": {
+    "next_subincrement": "5b: bound case/review/stop command parity; 5c: durable one-goal fixture schedule conversion",
+    "RG0": "HELD: four external production qualifications NOT RUN",
+    "RG1": "HELD: items 5b/5c, public revision/state commands if required by final parity, worker-version replay and Continue-As-New, durable review timers/alert delivery, general policy/read reconciliation and independent full qualification remain",
+    "production_effects_enabled": false
+  }
+}

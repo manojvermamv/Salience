@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from typing import Any
+from urllib.parse import urlencode
 
 import httpx
 from pydantic import BaseModel, Field
@@ -330,9 +331,64 @@ class PublicationClient(_ControlClient):
         )
 
 
+@dataclass
+class CyclesClient(_ControlClient):
+    def _request(
+        self, method: str, path: str, payload: dict[str, Any] | None = None,
+        *, idempotency_key: str | None = None,
+    ) -> dict[str, Any]:
+        headers = {"Authorization": f"Bearer {self.token}"}
+        if idempotency_key is not None:
+            headers["Idempotency-Key"] = idempotency_key
+        response = httpx.request(
+            method,
+            f"{self.base_url.rstrip('/')}{path}",
+            headers=headers,
+            json=payload,
+            timeout=10,
+        )
+        response.raise_for_status()
+        return response.json()
+
+    def create_goal(
+        self, workspace_id: str, spec: dict[str, Any], *, idempotency_key: str
+    ) -> dict[str, Any]:
+        return self._request(
+            "POST", f"/v1/workspaces/{workspace_id}/v4/goals", spec,
+            idempotency_key=idempotency_key,
+        )
+
+    def approve_baseline(
+        self, goal_id: str, *, expected_revision: int, expires_at: str, reason: str
+    ) -> dict[str, Any]:
+        return self._request(
+            "POST", f"/v1/v4/goals/{goal_id}/baseline",
+            {"expected_revision": expected_revision, "expires_at": expires_at, "reason": reason},
+        )
+
+    def request_cycle(self, goal_id: str, command: dict[str, Any]) -> dict[str, Any]:
+        return self._request("POST", f"/v1/v4/goals/{goal_id}/requests", command)
+
+    def admit(self, intent_id: str) -> dict[str, Any]:
+        return self._request("POST", f"/v1/v4/intents/{intent_id}/admit", {})
+
+    def inspect(self, cycle_id: str) -> dict[str, Any]:
+        return self._request("GET", f"/v1/v4/cycles/{cycle_id}")
+
+    def events(
+        self, cycle_id: str, *, limit: int = 50, after: str | None = None
+    ) -> dict[str, Any]:
+        query = urlencode({"limit": limit} | ({"after": after} if after else {}))
+        return self._request("GET", f"/v1/v4/cycles/{cycle_id}/events?{query}")
+
+    def cancel(self, cycle_id: str, *, reason: str) -> dict[str, Any]:
+        return self._request("POST", f"/v1/v4/cycles/{cycle_id}/cancel", {"reason": reason})
+
+
 class SalienceClient:
     def __init__(self, base_url: str, token: str) -> None:
         self.agents = AgentsClient(base_url, token)
         self.intelligence = IntelligenceClient(base_url, token)
         self.creative = CreativeClient(base_url, token)
         self.publication = PublicationClient(base_url, token)
+        self.cycles = CyclesClient(base_url, token)

@@ -20,13 +20,13 @@
       "exit_code": 0
     },
     "full_non_live": {
-      "passed": 399,
+      "passed": 408,
       "failed": 0,
       "errors": 0,
       "skipped": 0,
       "exit_code": 0,
-      "seconds": 357.314,
-      "junit": "artifacts/v4-p0/item4-regression.xml"
+      "seconds": 366.382,
+      "junit": "artifacts/v4-p0/item5a-regression.xml"
     },
     "documentation_tests": {
       "passed": 15,
@@ -40,17 +40,17 @@
       "failed": 0,
       "version": "12.0.0"
     },
-    "locked_evidence_files": 296,
+    "locked_evidence_files": 299,
     "original_inventory_dispositions": 360,
     "warning": "Pre-existing Starlette/AnyIO deprecation warning",
     "focused_p1": {
-      "passed": 113,
+      "passed": 83,
       "failed": 0,
       "errors": 0,
       "skipped": 0,
       "exit_code": 0,
-      "seconds": 110.375,
-      "junit": "artifacts/v4-p0/item4-focused.xml"
+      "seconds": 95.995,
+      "junit": "artifacts/v4-p0/item5a-focused.xml"
     }
   },
   "evidence_artifacts": [
@@ -123,6 +123,11 @@
       "path": "docs/v4/item4-evidence.json",
       "sha256": "baa59cc476e7f91fd7b724f7511602751e81af40a9c480c130a2581df72d6711",
       "local_only": false
+    },
+    {
+      "path": "docs/v4/item5a-evidence.json",
+      "sha256": "e8bcfaaa88ce7ad09061e57f2bd73f7bfbfda7e2dee186bb8a379e8ccf2ddf22",
+      "local_only": false
     }
   ],
   "release_gate": "RG0",
@@ -156,7 +161,7 @@
     }
   ],
   "later_phase_boundaries": {
-    "P1": "Reuse verified local admission, revisions, approved fixture baseline, outbox, V2 policy/context, V3 fixture G0/G1 accounting, item-3 stop/permit/cases and item-4 automatic fixture dispatch/mock trace; next public command parity, schedule cutover, worker upgrades and durable review timers",
+    "P1": "Reuse verified local admission, revisions, approved fixture baseline, outbox, V2 policy/context, V3 fixture G0/G1 accounting, item-3 stop/permit/cases, item-4 fixture dispatch/mock trace and item-5a signed fixture commands; next typed governance parity, schedule cutover, worker upgrades and durable review timers",
     "P2": "G1 allocation transfer, all ready-package reference/outbox integration and enabled provider qualification",
     "P3": "Trial/evaluation isolation and separate strategy/capability namespaces",
     "P4": "Promotion/invalidation serialization; mandatory typed learning proposals with optional qualified semantic analyst",
@@ -195,7 +200,7 @@
     ]
   },
   "p1_increment": {
-    "name": "Local admission/outbox, revisions, approved baseline, V2/V3 fixture policy/accounting, item-3 stop/permit/cases and item-4 automatic handoff/mock trace",
+    "name": "Local admission/outbox, revisions, approved baseline, V2/V3 fixture policy/accounting, item-3 stop/permit/cases, item-4 handoff/mock trace and item-5a signed fixture commands",
     "local_status": "PASS",
     "release_gate": "RG1",
     "release_status": "HELD",
@@ -219,13 +224,13 @@
       "R35",
       "R53"
     ],
-    "evidence": "docs/v4/item4-evidence.json",
+    "evidence": "docs/v4/item5a-evidence.json",
     "remaining": [
       "General registry/provider eligibility beyond the approved no-effects fixture baseline; later capability and production qualification gates remain binding",
       "Production G1 provider charge identity and effect integration beyond the fixture-qualified transfer/reconciliation contract",
       "Production dispatcher/alert service, all legacy start/signal cutover, public V4 API-to-provider outbox integration and production typed delivery recovery beyond the automatic local fixture",
       "General policy/model authorization, automatic stop/schedule integration and separately scoped remote read-only reconciliation beyond item-3 fixture permits/cases",
-      "API/CLI/SDK parity and schedule conversion",
+      "Typed case/review/stop and goal revision/state API/CLI/SDK parity plus durable one-goal schedule conversion",
       "Arbitrary supported worker-version compatibility, Continue-As-New, real-time durable review deadlines and independent full RG1 qualification"
     ],
     "completed_queue_items": [
@@ -234,6 +239,7 @@
       3,
       4
     ],
+    "completed_queue_subincrements": ["5a"],
     "next_queue_item": 5
   },
   "documentation_refresh": {

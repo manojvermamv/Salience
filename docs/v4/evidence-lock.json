@@ -143,6 +143,10 @@
       "sha256": "6aedb2e4dde7ee9cf4e1350576cf93498a00500497bc2a994aa9fa06ef5b048a"
     },
     {
+      "path": "migrations/versions/0029_goal_create_receipts.py",
+      "sha256": "070209967211d8735ea1b3355a967ca8565a86914dbb3f5359a02deb7196e7d4"
+    },
+    {
       "path": "migrations/versions/__init__.py",
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
@@ -248,7 +252,7 @@
     },
     {
       "path": "src/salience/api/p0.py",
-      "sha256": "4dfabe0bc6fb3f58405e704d6b9ec6b097d92893b16c2222f55d242ad3ecc2a0"
+      "sha256": "1f7416bce4c0b1115df96a89c6b71c1dc55cefddf54437dc9e467505a82d26dc"
     },
     {
       "path": "src/salience/api/routes/__init__.py",
@@ -277,6 +281,10 @@
     {
       "path": "src/salience/api/routes/publication.py",
       "sha256": "726469d460392b859b15f600942171ca624a456e3db0e2ddf9da8a8f35bd51b7"
+    },
+    {
+      "path": "src/salience/api/routes/v4_cycles.py",
+      "sha256": "2dd27cb7a6d27c853a482da49cfcd71bbf50c516e8befb3357f8af3c08e7c96c"
     },
     {
       "path": "src/salience/api/schemas.py",
@@ -316,7 +324,7 @@
     },
     {
       "path": "src/salience/cli.py",
-      "sha256": "cb94cef0d574d028e85aa2783104a5ffdb2c69c1b7798672652739b21589510b"
+      "sha256": "677a979ce8af03b86ca8f8febc2e42c1035408de9eadde6f9add1bcc565c25b3"
     },
     {
       "path": "src/salience/config.py",
@@ -392,7 +400,7 @@
     },
     {
       "path": "src/salience/cycles/admission.py",
-      "sha256": "b72e09b8c990bc2529c8dd710d2076437a8eaf37910e69e28eb777e1a2f7baaa"
+      "sha256": "015ece4cc2013b98738a04d57f4e3dd8c5e3bf97de4a7d4bf3bc3a21c79ec586"
     },
     {
       "path": "src/salience/cycles/authority.py",
@@ -660,7 +668,7 @@
     },
     {
       "path": "src/salience/sdk/client.py",
-      "sha256": "9c0e394a7d8a47be09dcdf61f1a902bbd710ac8d5da8ed8ccb51cf44491e02c7"
+      "sha256": "88c9284b0e822fa2beb41fafad3837113fae6d8075774abbdb5094d4ad55e89b"
     },
     {
       "path": "src/salience/storage/__init__.py",
@@ -1000,7 +1008,7 @@
     },
     {
       "path": "tests/integration/test_v4_migrations.py",
-      "sha256": "2321b50fbf26fb57f6ddbbb5d56f1728a3c7758ff7fbdd37035aac50a8384da1"
+      "sha256": "5b502056f2a6d2ea5abb40b2aa2acf3dc3738c8fdb0c8821e068ae39049d8c67"
     },
     {
       "path": "tests/integration/test_v4_object_retention.py",
@@ -1013,6 +1021,10 @@
     {
       "path": "tests/integration/test_v4_outbox.py",
       "sha256": "1225fca6ec431cecc5f0568a001c60daf0504148723896f34e29b9e7c0571663"
+    },
+    {
+      "path": "tests/integration/test_v4_public_commands.py",
+      "sha256": "e50308c946e7f817a862b6fb3fe8aa3b6da68df190dda166447646cf87e5bcaa"
     },
     {
       "path": "tests/integration/test_v4_s3_service.py",

@@ -4,20 +4,28 @@
 
 ## Current evidence summary — 2026-09-27
 
-Inspected item-4 base: `ec3d6fe8c6756e4928418518ad9ff9c91b63eecb`. The locally qualified candidate is identified by the reviewed 296-file source lock and [item-4 report](item4-evidence.json). Use [current progress](progress.md#current-state--2026-09-24) and the [blueprint snapshot](IMPLEMENTATION-BLUEPRINT.md#current-execution); dated older reports remain historical, not current-tree qualification.
+Inspected item-5a base: `77a45276459d5abc133a47240f42c89a6b4a7aad`. The locally qualified candidate is identified by the reviewed 299-file source lock and [item-5a report](item5a-evidence.json). Use [current progress](progress.md#current-state--2026-09-24) and the [blueprint snapshot](IMPLEMENTATION-BLUEPRINT.md#current-execution); dated older reports remain historical, not current-tree qualification.
 
 | Evidence | Latest recorded outcome | Meaning and limits |
 | --- | --- | --- |
-| Full non-live application suite | 399 PASS, zero failures/errors/skips, 2026-09-27 | Item-4 regression, 357.314 seconds JUnit time; existing Starlette/AnyIO warning only. |
-| Focused completed P1/migration suite | 113 PASS, zero failures/errors/skips, 2026-09-27 | Automatic fixture dispatch/dead letter/trace, fixture stop/permit/cases, V3 accounting, migrations, restricted-role authorization and actual worker kill/restart. Full P1 remains incomplete. |
+| Full non-live application suite | 408 PASS, zero failures/errors/skips, 2026-09-27 | Item-5a regression, 366.382 seconds JUnit time; existing Starlette/AnyIO warning only. |
+| Focused completed P1/migration suite | 83 PASS, zero failures/errors/skips, 2026-09-27 | Signed fixture API/CLI/SDK commands, exact goal-creation receipts, concurrency/authority, migration rollback, outbox/Temporal/mock trace and worker recovery. Full P1 remains incomplete. |
 | Local development entry | DG1 PASS | [Prerequisite evidence](development-entry-evidence.json) predates P1 implementation; not a production release. |
-| Documentation contract | 15 tests / 75 obligations PASS | 296 reviewed source files, 360 inventory dispositions, 82 Markdown files, five HTML files, six negative controls; four shell contracts also PASS. |
-| Diagrams | Six Mermaid 12.0.0 renders PASS | Fresh `item4-diagrams` local artifacts, verified under system Chromium and pinned temporary Mermaid installation; target visuals are not deployment evidence. |
-| Exact-head CI and repository protection | PASS for item-4 implementation `2fbb384`, inspected 2026-09-27T17:14:29Z | Both required app-bound checks and strict admin enforcement PASS; any later head needs fresh inspection. Independent PR approval is NOT RUN; no merge authorization inferred. |
+| Documentation contract | 15 tests / 75 obligations PASS | 299 reviewed source files, 360 inventory dispositions, 82 Markdown files, five HTML files, six negative controls; four shell contracts also PASS. |
+| Diagrams | Six Mermaid 12.0.0 renders PASS | Fresh `item5a-diagrams` local artifacts, verified under system Chromium and pinned temporary Mermaid installation; target visuals are not deployment evidence. |
+| Exact-head CI and repository protection | PASS for prior item-4 implementation `2fbb384`; item-5a candidate NOT RUN until publication | Both required app-bound checks and strict admin enforcement PASS; any later head needs fresh inspection. Independent PR approval is NOT RUN; no merge authorization inferred. |
 | Production qualifications | NOT RUN; RG0 HELD | Operator safety, identity/ingress, managed storage/restore and remote collector/alerts need actual external evidence. |
 | Full P1 and later phases | RG1 HELD; remaining implementation/qualification NOT RUN | See the [remaining queue](IMPLEMENTATION-BLUEPRINT.md#p1-resume-queue); a green fixture slice is not full release acceptance. |
 
 Historical reports are immutable, commit-scoped evidence: [P1a](p1-increment-evidence.json), [outbox](outbox-increment-evidence.json), [goal revisions](goal-revision-evidence.json), [baseline approval](baseline-approval-evidence.json) and [allocation](allocation-evidence.json). Their original source digests/counts must not be overwritten with the newest result. The repository-enforcement report is a rolling latest-inspection record, so older paragraphs identify their original commits independently.
+
+### P1 item-5a signed fixture command qualification — 2026-09-27
+
+Additive migration 0029 stores immutable workspace/subject/key-scoped goal-creation receipts and refuses destructive populated downgrade; empty downgrade/re-upgrade and cross-workspace foreign-key checks pass. A signed subject may explicitly opt into no-effects fixture goal/baseline/request/admit/inspect/cancel/events routes, with CLI/SDK invoking the same contract. The configured P0/production app exposes no V4 command route. URL workspace scoping and current grant checks run in middleware and canonical transactions; a genuine non-owner application role can create and inspect with narrow SELECT/INSERT and lock-function EXECUTE, without identity/grant/goal UPDATE rights.
+
+Concurrent exact goal retries produce one goal and receipt; changed payloads conflict; injected pre-commit failure leaves neither. Manual/event/scheduled requests coalesce, public admission freezes context and writes outbox atomically, closure appends the ordered signal and redacted inspection/events remain scoped. A public API parent trace reaches the committed outbox, Temporal activity and permit-gated mock adapter without secret-canary leakage or production effects.
+
+Final local evidence: **83 focused / 408 full non-live PASS**, zero failures/errors/skips; 15 documentation tests, 75 obligations, 299 source hashes, six Mermaid renders, four shell contracts, dependency consistency and whitespace PASS. [Durable item-5a evidence](item5a-evidence.json) records the commands, JUnit/log/source hashes and partial R03/R05/R06/R07/R13/R53 coverage. The existing Starlette/AnyIO warning remains. Candidate-head remote CI and independent PR review are NOT RUN until publication; prior item-4 CI is not item-5a evidence. Item 5b typed case/review/stop and goal revision/state commands, 5c durable one-goal schedule conversion and subsequent P1 obligations remain; RG0/full RG1 stay **HELD**.
 
 ### P1 item-4 fixture handoff qualification — 2026-09-27
 
