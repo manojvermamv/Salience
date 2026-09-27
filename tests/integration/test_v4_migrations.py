@@ -71,5 +71,11 @@ def test_clean_upgrade_empty_rollback_and_populated_preservation():
             with psycopg.connect(database) as connection:
                 assert connection.execute("SELECT count(*) FROM v4_goal_revisions WHERE revision=4").fetchone()[0] == 1
                 assert connection.execute("SELECT version_num FROM alembic_version").fetchone()[0] == expected_revision
+                connection.execute("INSERT INTO v4_stop_scopes (workspace_id,scope_key,stopped) VALUES (%s,'workspace',true)", (workspace,))
+            result = migrate("downgrade", "0025_accounting_categories")
+            assert result.returncode != 0 and "preserve V4 stop, permit and case history" in result.stderr
+            with psycopg.connect(database) as connection:
+                assert connection.execute("SELECT stopped FROM v4_stop_scopes WHERE workspace_id=%s", (workspace,)).fetchone()[0] is True
+                assert connection.execute("SELECT version_num FROM alembic_version").fetchone()[0] == expected_revision
         finally:
             admin.execute(psycopg.sql.SQL("DROP DATABASE {} WITH (FORCE)").format(psycopg.sql.Identifier(name)))

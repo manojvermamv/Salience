@@ -1,0 +1,78 @@
+{
+  "recorded_at": "2026-09-27",
+  "base_commit": "eceff9e96e4a894cf40afd6fb3128940c6cca66a",
+  "scope": "Bounded local P1 item 3: fixture-only serialized stop/permit claim and typed case/review/resume/archive contract",
+  "source_evidence_lock_sha256": "ab27fb91cc42535d6ad6d3c8eb7de9eb45ab9ba98dac3c49b91ce1931e84ca4f",
+  "commands": [
+    {
+      "command": ".venv/bin/python -m pytest -p no:cacheprovider tests/integration/test_v4_cycle_governance.py tests/integration/test_v4_cycle_accounting.py tests/integration/test_v4_cadence_policy.py tests/integration/test_v4_cycle_admission.py tests/integration/test_v4_goal_revisions.py tests/integration/test_v4_baseline_approval.py tests/integration/test_v4_outbox.py tests/integration/test_v4_migrations.py tests/integration/test_v4_identity_isolation.py tests/integration/test_creative_cost_lifecycle.py tests/e2e/test_v4_outbox_recovery.py -q -rs --junitxml=artifacts/v4-p0/governance-focused.xml",
+      "exit_code": 0,
+      "tests": 137,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 107.691,
+      "junit": "artifacts/v4-p0/governance-focused.xml",
+      "junit_sha256": "1638b292863880e2bbdb87a67fcc986bfc9c6dc0bfe096a9d29cd518c41463b0",
+      "log_sha256": "99bb8eda99cd4d4ea3fdbfe10ad71dfb9286febe9f2380f2c5fd5e0e71f6a5d0"
+    },
+    {
+      "command": ".venv/bin/python -m pytest -p no:cacheprovider tests/contracts tests/unit tests/integration tests/e2e tests/evals -m 'not live' -q -rs --junitxml=artifacts/v4-p0/governance-regression.xml",
+      "exit_code": 0,
+      "tests": 389,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 297.822,
+      "junit": "artifacts/v4-p0/governance-regression.xml",
+      "junit_sha256": "3b21ceaaa1cc6f218b411398679b15bf7f6b00e2bc556c8e93a516ad2f3add1d",
+      "log_sha256": "794e5cecd84aff40951ef96901fdb8b15bb28f80915f4683b64df37bbee302c6"
+    }
+  ],
+  "requirement_coverage": {
+    "R09": "Pre-admission review resumes the same intent without an earlier cycle; cycle retry resumes the original operation/context, while reconciliation and rework remain held.",
+    "R13": "Fixture permit and review commands recheck current subject/program authority, frozen context and current baseline; revoked identity and changed stop revision block a new claim.",
+    "R15": "Typed fixture review response binds immutable case revision, context, operation, artifact, account, purpose and expiry; general policy evaluation remains a later RG1 obligation.",
+    "R17": "PostgreSQL stop/claim races, one true dispatch authority across duplicate workers, bounded expiry and exact historical receipts are tested; no adapter executes.",
+    "R18": "Workspace/goal stop and database outage deny new fixture claims. Automatic schedule cancellation and separately scoped remote read reconciliation are not implemented.",
+    "R30": "A V3 claim moves all child reservations to pending-actual liability in the same transaction; an injected crash rolls back claim and ledger together.",
+    "R31": "Cancellation and unknown reporting retain V3 child liability until a late evidenced settlement; no live charge or provider proof is asserted.",
+    "R32": "Bounded owner/deadline/failure-class cases type retry, reconciliation, rework, review, suspension, terminal and resolved without opening a replacement cycle.",
+    "R33": "Exact resume receipts, case CAS, original context/operation, current stop/authority/baseline and atomic recovery outbox survive an injected pre-commit failure.",
+    "R34": "Fixture owner review rejects stale or mismatched binding; notifications, acknowledgment and deadline escalation deduplicate. Automatic durable timers remain queue item 6.",
+    "R35": "Archive requires committed terminal disposition, reason, nonempty evidence and future retention, and cannot mutate earlier review/permit history.",
+    "R53": "Migration 0026 uses immutable history, scoped insert checks, legal projection transitions, deferred audit checks, empty downgrade/re-upgrade and populated-history rollback refusal."
+  },
+  "additional_verification": {
+    "documentation_tests": 15,
+    "mapped_obligations": 75,
+    "locked_source_files": 293,
+    "inventory_dispositions": 360,
+    "markdown_files": 82,
+    "html_files": 5,
+    "negative_controls": 6,
+    "mermaid_rendered": 6,
+    "mermaid_report_sha256": "6ab6bcbe4a8d1d0af7521e51fbf8d76836f012e2d67974f37c7d9c202784f0ae",
+    "shell_documentation_contracts": 4,
+    "dependency_consistency": "PASS",
+    "whitespace": "PASS",
+    "review": "Local self-review repaired trigger field access, permit deadline parsing, case binding and audit gaps, V3 claim/liability atomicity, historical idempotency, policy-denial retry bypass and cross-subject permit replay. A superseded full run exposed the one-second stale-slot test setup race; the future-slot fixture and final suites pass. Independent PR review is NOT RUN.",
+    "production_effects_enabled": false
+  },
+  "repository_verification": {
+    "base_commit": "eceff9e96e4a894cf40afd6fb3128940c6cca66a",
+    "base_inspected_at": "2026-09-27T11:33:26.229465+00:00",
+    "base_ci_status": "PASS",
+    "base_enforcement_status": "PASS",
+    "candidate_ci_status": "NOT RUN",
+    "candidate_enforcement_status": "NOT RUN",
+    "merge": "NOT AUTHORIZED; exact candidate checks and independent PR approval required"
+  },
+  "remaining": {
+    "next_queue_item": 4,
+    "RG0": "HELD: four external production qualifications NOT RUN",
+    "RG1": "HELD: automatic dispatch/integration, command parity/cutover, worker upgrades, complete policy/read-reconciliation and independent full qualification remain",
+    "P2": "Real provider effect idempotency and authenticated charge reconciliation remain unimplemented; fixture permits authorize no production effect",
+    "production_effects_enabled": false
+  }
+}

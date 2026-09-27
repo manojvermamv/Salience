@@ -258,14 +258,15 @@ def test_stale_revision_pending_intent_does_not_block_current_revision(policy):
 def test_admission_rechecks_policy_freshness_after_wait(policy, boundary):
     import time
     service, _, spec, _ = policy
-    cadence = spec.cadence.model_copy(update={"event_freshness_seconds": 1} if boundary == "event" else {"stale_after_seconds": 1})
+    anchor = datetime.now(timezone.utc).replace(microsecond=0)-timedelta(seconds=595)
+    cadence = spec.cadence.model_copy(update={"anchor": anchor} | ({"event_freshness_seconds": 1} if boundary == "event" else {"stale_after_seconds": 1}))
     spec = GoalSpecV2.model_validate(spec.model_dump() | {"cadence": cadence})
     goal = approved_goal(service, spec)
     command = request(spec)
     if boundary == "event":
         command = command.model_copy(update={"origin": "event", "event_at": datetime.now(timezone.utc), "event_id": "fresh-then-stale"})
     intent = service.request_cycle(goal, command)
-    time.sleep(1.05)
+    time.sleep(6.05)
     assert service.admit(intent)["disposition"] == "denied"
 
 

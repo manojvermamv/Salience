@@ -20,13 +20,13 @@
       "exit_code": 0
     },
     "full_non_live": {
-      "passed": 371,
+      "passed": 389,
       "failed": 0,
       "errors": 0,
       "skipped": 0,
       "exit_code": 0,
-      "seconds": 331.698,
-      "junit": "artifacts/v4-p0/allocation-regression.xml"
+      "seconds": 297.822,
+      "junit": "artifacts/v4-p0/governance-regression.xml"
     },
     "documentation_tests": {
       "passed": 15,
@@ -40,17 +40,17 @@
       "failed": 0,
       "version": "12.0.0"
     },
-    "locked_evidence_files": 290,
+    "locked_evidence_files": 293,
     "original_inventory_dispositions": 360,
     "warning": "Pre-existing Starlette/AnyIO deprecation warning",
     "focused_p1": {
-      "passed": 119,
+      "passed": 137,
       "failed": 0,
       "errors": 0,
       "skipped": 0,
       "exit_code": 0,
-      "seconds": 89.853,
-      "junit": "artifacts/v4-p0/allocation-focused.xml"
+      "seconds": 107.691,
+      "junit": "artifacts/v4-p0/governance-focused.xml"
     }
   },
   "evidence_artifacts": [
@@ -113,6 +113,11 @@
       "path": "docs/v4/allocation-evidence.json",
       "sha256": "65c8334184cae24c8935db80b397b4ef31627da705c88b68ee77430dcd11db3c",
       "local_only": false
+    },
+    {
+      "path": "docs/v4/governance-evidence.json",
+      "sha256": "17ef3b65298f76cb9acd6b899d079f3b821e236f18452d9c41be78c0f5acde16",
+      "local_only": false
     }
   ],
   "release_gate": "RG0",
@@ -142,11 +147,11 @@
     {
       "check": "remote repository gate enforcement",
       "status": "PASS",
-      "evidence": "docs/v4/repository-enforcement-evidence.json: 33fc48319df2f832b412a4504fe9ceb1b6136caa; verify and p0-regression PASS; strict app-bound main protection re-read 2026-09-27T10:15:09.820516+00:00. Uncommitted candidate CI NOT RUN; independent PR approval and fresh candidate checks required before separately authorized merge."
+      "evidence": "docs/v4/governance-evidence.json: base eceff9e96e4a894cf40afd6fb3128940c6cca66a verify and p0-regression PASS with strict app-bound main protection read back 2026-09-27T11:33:26.229465+00:00; historical raw reports remain in artifacts/v4-p0. Item-3 candidate CI NOT RUN at this checkpoint; independent PR approval and fresh candidate checks required before separately authorized merge."
     }
   ],
   "later_phase_boundaries": {
-    "P1": "Reuse verified local admission, revisions, approved fixture baseline, outbox and V2 policy/context; next G0 allocation/G1 transfer, then permits/cases, automatic dispatch, full trace/command integration and upgrade/cutover acceptance",
+    "P1": "Reuse verified local admission, revisions, approved fixture baseline, outbox, V2 policy/context, V3 fixture G0/G1 accounting and item-3 stop/permit/cases; next automatic dispatch, full trace/command integration and upgrade/cutover acceptance",
     "P2": "G1 allocation transfer, all ready-package reference/outbox integration and enabled provider qualification",
     "P3": "Trial/evaluation isolation and separate strategy/capability namespaces",
     "P4": "Promotion/invalidation serialization; mandatory typed learning proposals with optional qualified semantic analyst",
@@ -185,7 +190,7 @@
     ]
   },
   "p1_increment": {
-    "name": "Local admission/outbox, revisions, approved baseline, V2 policy and V3 fixture G0/G1 accounting",
+    "name": "Local admission/outbox, revisions, approved baseline, V2 policy, V3 fixture G0/G1 accounting and item-3 stop/permit/case commands",
     "local_status": "PASS",
     "release_gate": "RG1",
     "release_status": "HELD",
@@ -200,24 +205,30 @@
       "R09",
       "R10",
       "R13",
+      "R15",
+      "R17",
+      "R18",
       "R32",
+      "R33",
+      "R34",
       "R35",
       "R53"
     ],
-    "evidence": "docs/v4/allocation-evidence.json",
+    "evidence": "docs/v4/governance-evidence.json",
     "remaining": [
       "General registry/provider eligibility beyond the approved no-effects fixture baseline; later capability and production qualification gates remain binding",
       "Production G1 provider charge identity and effect integration beyond the fixture-qualified transfer/reconciliation contract",
       "Automatic dispatcher service, all legacy start/signal cutover, full API-to-provider outbox integration and production typed delivery recovery",
-      "Stop/dispatch permits and version-bound cases/review/resume/archive",
+      "General policy/model authorization, automatic stop/schedule integration and separately scoped remote read-only reconciliation beyond item-3 fixture permits/cases",
       "API/CLI/SDK parity and schedule conversion",
       "Arbitrary supported worker-version compatibility, Continue-As-New, real-time durable review deadlines and independent full RG1 qualification"
     ],
     "completed_queue_items": [
       1,
-      2
+      2,
+      3
     ],
-    "next_queue_item": 3
+    "next_queue_item": 4
   },
   "documentation_refresh": {
     "date": "2026-09-24",

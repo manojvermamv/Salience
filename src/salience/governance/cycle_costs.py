@@ -218,7 +218,10 @@ class CycleCostLedger:
             raise ValueError("operation identity required except parent release")
         operation_id = UUID(str(operation_id)) if operation_id is not None else None
         cycle,allocation,budgets = self._load(cycle_id,scope)
-        if scope != "cycles:accounting" and (scope != "cycles:write" or cycle["state"] != "closed" or action != "release_allocation"):
+        if scope == "cycles:permit":
+            if action not in {"dispatch","unknown"} or (action == "dispatch" and cycle["state"] != "runnable"):
+                raise PermissionError("permit liability transition requires a runnable cycle for dispatch")
+        elif scope != "cycles:accounting" and (scope != "cycles:write" or cycle["state"] != "closed" or action != "release_allocation"):
             raise PermissionError("closure release requires a canonically closed cycle")
         digest = _fingerprint([str(self.subject_id),action,str(operation_id),proof_ref,actual_micros])
         receipt = self._receipt(allocation,idempotency_key,digest)
