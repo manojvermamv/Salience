@@ -121,7 +121,7 @@
     },
     {
       "path": "docs/v4/item4-evidence.json",
-      "sha256": "240c6c90dda62318e86b0cd78dea07f8bda1fb4aa3853f602d44c7fafe39cd2e",
+      "sha256": "baa59cc476e7f91fd7b724f7511602751e81af40a9c480c130a2581df72d6711",
       "local_only": false
     }
   ],
@@ -152,7 +152,7 @@
     {
       "check": "remote repository gate enforcement",
       "status": "PASS",
-      "evidence": "docs/v4/governance-evidence.json: item-3 implementation 7071dbf03b624b5f91afda07db6853b8179ca40b verify and p0-regression PASS with strict app-bound main protection read back 2026-09-27T16:29:10.192098+00:00; raw read-only report is local-only at artifacts/v4-p0/governance-current-repository.json. Any later head needs fresh checks; independent PR approval remains NOT RUN and no merge is authorized."
+      "evidence": "docs/v4/item4-evidence.json: item-4 implementation 2fbb3847b27f4513b6d8083c4356b65ba484b974 verify and p0-regression PASS with strict app-bound main protection read back 2026-09-27T17:14:29.087768+00:00; raw read-only report is local-only at artifacts/v4-p0/item4-current-repository.json. Any later head needs fresh checks; independent PR approval remains NOT RUN and no merge is authorized."
     }
   ],
   "later_phase_boundaries": {
