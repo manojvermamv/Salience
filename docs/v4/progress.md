@@ -6,7 +6,7 @@
 
 ## Current state — 2026-09-27
 
-Completed local P1 item-3 checkpoint: base HEAD `eceff9e96e4a894cf40afd6fb3128940c6cca66a` and both required CI checks passed at 2026-09-27T11:33:26Z with strict main protection PASS. Additive migration 0026, internal fixture stop/permit claims, typed cases/review/resume/archive, current authority, subject-bound replay and V3 child-liability claim integration are locally verified: **137 focused / 389 full non-live PASS**, zero failures/errors/skips. The 293-file source lock, 15 documentation tests, six Mermaid renders, four shell contracts, dependency and whitespace checks PASS. [Durable item-3 evidence](governance-evidence.json) records commands and hashes. Item-3 changes are not yet committed at this checkpoint; exact candidate CI and independent PR approval are NOT RUN. No production effect or main merge is authorized. Next queue item is 4.
+Completed local P1 item-3 checkpoint: base HEAD `eceff9e96e4a894cf40afd6fb3128940c6cca66a` and both required CI checks passed at 2026-09-27T11:33:26Z with strict main protection PASS. Additive migration 0026, internal fixture stop/permit claims, typed cases/review/resume/archive, current authority, subject-bound replay and V3 child-liability claim integration are locally verified: **137 focused / 389 full non-live PASS**, zero failures/errors/skips. The 293-file source lock, 15 documentation tests, six Mermaid renders, four shell contracts, dependency and whitespace checks PASS. [Durable item-3 evidence](governance-evidence.json) records commands and hashes. Item-3 implementation was published as `7071dbf03b624b5f91afda07db6853b8179ca40b`; both required checks and strict main protection PASS at 2026-09-27T16:29:10Z. Independent PR approval is NOT RUN, and any later head needs its own check. No production effect or main merge is authorized. Next queue item is 4.
 
 Completed item-2 checkpoint: clean published base `0db5412836c2bf5272325b2503acc07289630552` was inspected before implementation. The bounded fixture G0 allocation/G1 transfer contract passes 119 focused and 371 full non-live tests. Implementation commit `4047cf95cfaab20441a065f1ad3d07916ac656d3` passes both required CI checks with strict protection enforced at 2026-09-27T11:25:04Z. Independent PR approval remains NOT RUN; no merge is authorized.
 
@@ -20,7 +20,7 @@ Completed bounded increment: ordered P1 item 1 (V2 goal/context/authority and ca
 
 Implementation checkpoint: V2 DTOs, frozen context, typed policy commands, bounded schedule cursor/batches, additive migrations 0021–0022, grant-edit serialization and restricted program read locking are implemented. Initial import/wording tests failed as expected. Additional tests reproduced event-identity movement and missing program revocation locking; both repaired. Independent review reproduced three more issues (freshness not rechecked at G0, obsolete revisions consuming pending capacity, coalesced slots being charged new capacity); all repaired with negative regressions and independently re-reviewed. The earlier 84-test run was superseded by **86 focused / 341 full PASS**, including bounded overlap/backfill and V2 subprocess `recorded` receipt assertions. Source HEAD `33fc483` has both required GitHub checks PASS and strict main protection reverified at 2026-09-24T18:36:38Z; this does not qualify the uncommitted increment or approve a merge.
 
-The [blueprint](IMPLEMENTATION-BLUEPRINT.md#current-execution) is the execution authority; this file is its handoff and chronological record. Item 2 and its documentation checkpoint are published on `feat/archv4-p0-foundation` through `eceff9e96e4a894cf40afd6fb3128940c6cca66a`; item 3 is a locally qualified uncommitted candidate at this checkpoint. Main remains `8e50d68efbf2bec2aabfb2fe3226e01635de2adb`; other worktrees are unchanged. No merge or history rewrite is claimed.
+The [blueprint](IMPLEMENTATION-BLUEPRINT.md#current-execution) is the execution authority; this file is its handoff and chronological record. Items 1–2 and their documentation checkpoint are published on `feat/archv4-p0-foundation` through `eceff9e96e4a894cf40afd6fb3128940c6cca66a`; item 3 is published as `7071dbf03b624b5f91afda07db6853b8179ca40b`. Main remains `8e50d68efbf2bec2aabfb2fe3226e01635de2adb`; other worktrees are unchanged. No merge or history rewrite is claimed.
 
 | Area | Current status | Completed work or next obligation |
 | --- | --- | --- |
@@ -36,7 +36,7 @@ The [blueprint](IMPLEMENTATION-BLUEPRINT.md#current-execution) is the execution 
 | P6 optional adaptation | PLANNED / DISABLED | No training/data-export enablement; conditional RG6 if this capability is enabled. |
 | P7 production rollout | PLANNED / NOT RUN | End-to-end live qualification, restore/upgrade, load/soak, signed deployment and constrained rollout. |
 | RG0 and full RG1 release | HELD | Four external production qualifications remain NOT RUN; full P1 acceptance also remains unfinished. |
-| GitHub controls | PASS on base `eceff9e`; item-3 candidate NOT RUN | Both required checks and strict main protection verified on the base 2026-09-27T11:33:26Z. Item-3 candidate CI and independent PR approval remain required before merge. |
+| GitHub controls | PASS on item-3 implementation `7071dbf`; independent approval NOT RUN | Both required checks and strict main protection verified at 2026-09-27T16:29:10Z. Later heads need fresh checks; independent PR approval remains required before merge. |
 
 ### Completed checkpoints to reuse
 
@@ -49,6 +49,7 @@ The [blueprint](IMPLEMENTATION-BLUEPRINT.md#current-execution) is the execution 
 | `e296d49` | Atomic goal revisions, concurrent snapshot repair and stable cross-revision/shortened-horizon retries; [revision evidence](goal-revision-evidence.json). |
 | `e628ccf` | Exact revision-bound fixture approval, expiry/revocation and historical-context recovery denial; [baseline evidence](baseline-approval-evidence.json). |
 | `483b905` | Blueprint/release/CI checkpoint documentation; both GitHub checks subsequently passed on this exact head. |
+| `7071dbf` | Fixture stop/permit/case item 3 with 137 focused / 389 full tests, 293 source hashes and exact implementation-head CI PASS. |
 
 Latest application execution on 2026-09-27: **389 full non-live / 137 focused PASS**, zero failures/errors/skips; one existing Starlette/AnyIO warning. Fifteen documentation tests, the 75-obligation validator (293 locked source files, 360 dispositions, 82 Markdown, five HTML, six negative controls), six Mermaid renders, four shell contracts, dependency consistency and whitespace pass. [Item-3 evidence](governance-evidence.json) preserves command/JUnit/source digests and partial requirement coverage; earlier evidence remains unchanged. One superseded full run failed in a pre-existing one-second cadence test window under load; its future-slot fixture was widened, the focused test passed, and both final suites reran green.
 

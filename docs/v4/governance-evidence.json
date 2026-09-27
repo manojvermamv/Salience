@@ -64,9 +64,11 @@
     "base_inspected_at": "2026-09-27T11:33:26.229465+00:00",
     "base_ci_status": "PASS",
     "base_enforcement_status": "PASS",
-    "candidate_ci_status": "NOT RUN",
-    "candidate_enforcement_status": "NOT RUN",
-    "merge": "NOT AUTHORIZED; exact candidate checks and independent PR approval required"
+    "implementation_commit": "7071dbf03b624b5f91afda07db6853b8179ca40b",
+    "implementation_inspected_at": "2026-09-27T16:29:10.192098+00:00",
+    "implementation_ci_status": "PASS",
+    "implementation_enforcement_status": "PASS",
+    "merge": "NOT AUTHORIZED; any later head needs fresh checks and independent PR approval is NOT RUN"
   },
   "remaining": {
     "next_queue_item": 4,
