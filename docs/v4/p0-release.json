@@ -1,6 +1,6 @@
 {
   "phase": "P0",
-  "updated_at": "2026-09-24",
+  "updated_at": "2026-09-27",
   "baseline_commit": "8e50d68efbf2bec2aabfb2fe3226e01635de2adb",
   "scope": "Isolated local foundation; no production traffic or effects",
   "requirements": [
@@ -20,16 +20,16 @@
       "exit_code": 0
     },
     "full_non_live": {
-      "passed": 317,
+      "passed": 341,
       "failed": 0,
       "errors": 0,
       "skipped": 0,
       "exit_code": 0,
-      "seconds": 284.55,
-      "junit": "artifacts/v4-p0/baseline-qualified-regression.xml"
+      "seconds": 314.315,
+      "junit": "artifacts/v4-p0/policy-recheck-2026-09-27-regression.xml"
     },
     "documentation_tests": {
-      "passed": 14,
+      "passed": 15,
       "failed": 0,
       "errors": 0,
       "skipped": 0,
@@ -40,9 +40,18 @@
       "failed": 0,
       "version": "12.0.0"
     },
-    "locked_evidence_files": 280,
+    "locked_evidence_files": 285,
     "original_inventory_dispositions": 360,
-    "warning": "Pre-existing Starlette/AnyIO deprecation warning"
+    "warning": "Pre-existing Starlette/AnyIO deprecation warning",
+    "focused_p1": {
+      "passed": 86,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "exit_code": 0,
+      "seconds": 74.439,
+      "junit": "artifacts/v4-p0/policy-recheck-2026-09-27-focused.xml"
+    }
   },
   "evidence_artifacts": [
     {
@@ -89,6 +98,16 @@
       "path": "docs/v4/baseline-approval-evidence.json",
       "sha256": "66c3ca048068f29fafe6f8ed06cac5e544328c6493684ad8ef00a4de0b31a02f",
       "local_only": false
+    },
+    {
+      "path": "docs/v4/cadence-policy-evidence.json",
+      "sha256": "d8aeda06cade48ba421942073854966517a1bc0bf9f3ff63acbea52aa4fdb608",
+      "local_only": false
+    },
+    {
+      "path": "docs/v4/cadence-policy-recheck-evidence.json",
+      "sha256": "13a39e9d22f58220ccfd5b4d5663cf279014006e23c50f700a7e55dea8011c0a",
+      "local_only": false
     }
   ],
   "release_gate": "RG0",
@@ -118,11 +137,11 @@
     {
       "check": "remote repository gate enforcement",
       "status": "PASS",
-      "evidence": "docs/v4/repository-enforcement-evidence.json: 483b905f1437c8b3291f993edbca864f7e909ce1; verify and p0-regression PASS; strict app-bound main protection re-read 2026-09-24. Independent PR approval still required, later commits require fresh checks."
+      "evidence": "docs/v4/repository-enforcement-evidence.json: 33fc48319df2f832b412a4504fe9ceb1b6136caa; verify and p0-regression PASS; strict app-bound main protection re-read 2026-09-27T10:15:09.820516+00:00. Uncommitted candidate CI NOT RUN; independent PR approval and fresh candidate checks required before separately authorized merge."
     }
   ],
   "later_phase_boundaries": {
-    "P1": "Reuse verified local admission, revisions, approved fixture baseline and outbox; complete context/cadence, G0 accounting, permits/cases, automatic dispatch, full trace/command integration and upgrade/cutover acceptance",
+    "P1": "Reuse verified local admission, revisions, approved fixture baseline, outbox and V2 policy/context; next G0 allocation/G1 transfer, then permits/cases, automatic dispatch, full trace/command integration and upgrade/cutover acceptance",
     "P2": "G1 allocation transfer, all ready-package reference/outbox integration and enabled provider qualification",
     "P3": "Trial/evaluation isolation and separate strategy/capability namespaces",
     "P4": "Promotion/invalidation serialization; mandatory typed learning proposals with optional qualified semantic analyst",
@@ -161,7 +180,7 @@
     ]
   },
   "p1_increment": {
-    "name": "Local admission/outbox, goal revisions and explicit fixture baseline approval",
+    "name": "Local admission/outbox, revisions, approved baseline and V2 goal/context/authority/cadence policies",
     "local_status": "PASS",
     "release_gate": "RG1",
     "release_status": "HELD",
@@ -180,15 +199,19 @@
       "R35",
       "R53"
     ],
-    "evidence": "docs/v4/baseline-approval-evidence.json",
+    "evidence": "docs/v4/cadence-policy-recheck-evidence.json",
     "remaining": [
-      "Complete goal/context authority envelopes and explicit cadence policies; general registry/provider eligibility beyond the approved no-effects fixture baseline",
+      "General registry/provider eligibility beyond the approved no-effects fixture baseline; later capability and production qualification gates remain binding",
       "G0 paid allocation ledger and G1 transfer/release/crash recovery contract",
       "Automatic dispatcher service, all legacy start/signal cutover, full API-to-provider outbox integration and production typed delivery recovery",
       "Stop/dispatch permits and version-bound cases/review/resume/archive",
       "API/CLI/SDK parity and schedule conversion",
       "Arbitrary supported worker-version compatibility, Continue-As-New, real-time durable review deadlines and independent full RG1 qualification"
-    ]
+    ],
+    "completed_queue_items": [
+      1
+    ],
+    "next_queue_item": 2
   },
   "documentation_refresh": {
     "date": "2026-09-24",
@@ -213,5 +236,11 @@
       "historical_reports_preserved": true,
       "report": "docs/v4/validation.md#documentation-refresh-verification--2026-09-24"
     }
+  },
+  "reinspection": {
+    "date": "2026-09-27",
+    "application_delta": "None relative to the already implemented item-1 working tree; all 285 source hashes preserved",
+    "result": "PASS for bounded local item 1; RG0/full RG1 remain HELD",
+    "evidence": "docs/v4/cadence-policy-recheck-evidence.json"
   }
 }

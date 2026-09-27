@@ -10,6 +10,7 @@ from psycopg.types.json import Jsonb
 
 from salience.observability.tracing import OpenTelemetryTraceEmitter, TraceContext
 from salience.cycles.baselines import resolve_baseline
+from salience.cycles.authority import current_authority, context_authorized
 
 
 def enqueue_cycle_message(connection, *, workspace_id, subject_id, goal_id, intent_id, cycle_id, kind, payload, traceparent):
@@ -95,6 +96,10 @@ class CycleOutbox:
                 raise ValueError("message envelope binding mismatch")
             if traceparent and TraceContext.from_carrier({"traceparent":traceparent}).trace_id != TraceContext.from_carrier({"traceparent":message["traceparent"]}).trace_id:
                 raise ValueError("trace binding mismatch")
+            try:
+                current_authority(connection, self.workspace_id, message["subject_id"])
+            except PermissionError:
+                pass
             connection.execute("SELECT id FROM v4_goals WHERE id=%s FOR UPDATE", (message["goal_id"],))
             existing = connection.execute("SELECT * FROM v4_cycle_inbox WHERE message_id=%s", (message_id,)).fetchone()
             if existing:
@@ -109,6 +114,11 @@ class CycleOutbox:
             effects = {row["effect"] for row in grants}
             authorized = authorized and "allow" in effects and "deny" not in effects
             payload = current["payload"]
+            authorized = authorized and context_authorized(connection, payload, self.workspace_id, message["subject_id"])
+            if payload.get("schema_version") == "RunContext.local.v2":
+                from datetime import datetime
+                now = connection.execute("SELECT clock_timestamp() AS now").fetchone()["now"]
+                authorized = authorized and now < datetime.fromisoformat(payload["horizon_end"])
             baseline_id=payload.get("baseline_approval_id")
             authorized=authorized and baseline_id is not None and resolve_baseline(connection,message["goal_id"],current["bound_revision"],approval_id=baseline_id) is not None
             if payload.get("production_effects_enabled") is not False or payload.get("dry_run") is not True or payload.get("provider") != "fixture.dummy@1.0.0":

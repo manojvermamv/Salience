@@ -12,13 +12,13 @@ from temporalio.client import Client
 from temporalio.worker import Replayer
 
 from salience.cycles.admission import CycleAdmission
-from salience.cycles.contracts import GoalSpec
+from salience.cycles.contracts import CadencePolicy, CycleRequest, GoalSpec, GoalSpecV2
 from salience.cycles.outbox import CycleOutbox
 from salience.cycles.runtime import TemporalCycleTransport, build_local_cycle_worker
 from salience.cycles.workflow import LocalCycleWorkflow
 
 
-def scenario():
+def scenario(policy_version=1):
     database=os.environ["TEST_DATABASE_URL"]
     workspace, subject=uuid4(),uuid4()
     with psycopg.connect(database) as connection:
@@ -28,9 +28,19 @@ def scenario():
             connection.execute("INSERT INTO permission_grants (workspace_id,principal_type,principal_id,scope,effect,constraints,expires_at) VALUES (%s,'identity',%s,%s,'allow','{}',now()+interval '1 hour')",(workspace,str(subject),scope))
     service=CycleAdmission(database,workspace_id=workspace,subject_id=subject)
     now=datetime.now(timezone.utc)
-    goal=service.create_goal(GoalSpec(objective="outbox crash fixture",metric_versions=("fixture@1",),audience="internal",account_refs=("fixture",),brand_scope="fixture",source_policy="fixture-only",horizon_end=now+timedelta(hours=1)))
+    spec=GoalSpec(objective="outbox crash fixture",metric_versions=("fixture@1",),audience="internal",account_refs=("fixture",),brand_scope="fixture",source_policy="fixture-only",horizon_end=now+timedelta(hours=1))
+    if policy_version == 2:
+        program = uuid4()
+        with psycopg.connect(database) as connection:
+            connection.execute("INSERT INTO content_programs (id,workspace_id,slug,name,niche) VALUES (%s,%s,%s,'Fixture','Fixture')", (program, workspace, str(program)))
+        spec = GoalSpecV2.model_validate(spec.model_dump() | {"schema_version":"GoalSpec.local.v2", "cadence_seconds":None,
+            "content_program_id":program, "account_refs":("fixture-account",), "channel_refs":("fixture-channel",),
+            "content_scope":"fixture-only", "policy_refs":("fixture-policy@1",), "retention_policy":"fixture-retention@1",
+            "cadence":CadencePolicy(anchor=now.replace(microsecond=0))})
+    goal=service.create_goal(spec)
     service.approve_baseline(goal,expected_revision=1,expires_at=now+timedelta(hours=1),reason="Explicit process-recovery fixture baseline")
-    requested=service.request_intent(goal,slot="one",due_at=now,expires_at=now+timedelta(minutes=5))
+    requested = (service.request_cycle(goal, CycleRequest(origin="scheduled", idempotency_key="restart", expected_revision=1, slot_time=spec.cadence.anchor))
+                 if policy_version == 2 else service.request_intent(goal,slot="one",due_at=now,expires_at=now+timedelta(minutes=5)))
     admitted=service.admit(requested)
     return service,CycleOutbox(database,workspace_id=workspace),admitted
 
@@ -47,8 +57,9 @@ async def wait_consumed(database,cycle_id,count):
 
 
 @pytest.mark.asyncio
-async def test_process_kill_ack_loss_and_queued_signal_resume_original_cycle(tmp_path):
-    service,outbox,admitted=scenario()
+@pytest.mark.parametrize("policy_version", [1, 2])
+async def test_process_kill_ack_loss_and_queued_signal_resume_original_cycle(tmp_path, policy_version):
+    service,outbox,admitted=scenario(policy_version)
     client=await Client.connect(os.environ["TEST_TEMPORAL_TARGET"])
     queue="salience-v4-local-"+uuid4().hex
     transport=TemporalCycleTransport(client,task_queue=queue)
@@ -63,6 +74,8 @@ async def test_process_kill_ack_loss_and_queued_signal_resume_original_cycle(tmp
         message=outbox.claim()
         await transport.deliver(message)
         await wait_consumed(service.database_url,admitted["cycle_id"],1)
+        with psycopg.connect(service.database_url) as connection:
+            assert connection.execute("SELECT state FROM v4_cycle_inbox WHERE message_id=%s", (message["id"],)).fetchone()[0] == "recorded"
         first.kill()
         await asyncio.to_thread(first.wait,10)
         await transport.deliver(message)
@@ -74,11 +87,13 @@ async def test_process_kill_ack_loss_and_queued_signal_resume_original_cycle(tmp
         second=worker()
         result=await asyncio.wait_for(client.get_workflow_handle(transport.workflow_id(admitted["cycle_id"])).result(),30)
         assert result["cycle_id"]==str(admitted["cycle_id"])
+        assert result["state"] == "recorded"
         history=await client.get_workflow_handle(transport.workflow_id(admitted["cycle_id"])).fetch_history()
         await Replayer(workflows=[LocalCycleWorkflow]).replay_workflow(history)
         assert inbox_count(service.database_url,admitted["cycle_id"])==2
         assert outbox.consume(message["id"])["cycle_id"]==admitted["cycle_id"]
         with psycopg.connect(service.database_url) as connection:
+            assert connection.execute("SELECT DISTINCT state FROM v4_cycle_inbox WHERE cycle_id=%s", (admitted["cycle_id"],)).fetchall() == [("recorded",)]
             assert connection.execute("SELECT count(DISTINCT payload->>'message_id') FROM v4_cycle_events WHERE cycle_id=%s AND kind='fixture_consumed'",(admitted["cycle_id"],)).fetchone()[0]==2
     finally:
         for process in [first,second]:

@@ -1,0 +1,78 @@
+{
+  "recorded_at": "2026-09-27",
+  "base_commit": "33fc48319df2f832b412a4504fe9ceb1b6136caa",
+  "scope": "Reinspection and fresh qualification of existing ordered P1 item 1; no application changes during this recheck",
+  "source_evidence_lock_sha256": "1f3fba2ee315f41c08fd1d685c244ec13032a10cb636199f312b04cc45578955",
+  "prior_evidence": {
+    "path": "docs/v4/cadence-policy-evidence.json",
+    "sha256": "d8aeda06cade48ba421942073854966517a1bc0bf9f3ff63acbea52aa4fdb608",
+    "preserved": true
+  },
+  "commands": [
+    {
+      "command": ".venv/bin/python -m pytest -p no:cacheprovider tests/integration/test_v4_cadence_policy.py tests/integration/test_v4_cycle_admission.py tests/integration/test_v4_goal_revisions.py tests/integration/test_v4_baseline_approval.py tests/integration/test_v4_outbox.py tests/integration/test_v4_migrations.py tests/integration/test_v4_identity_isolation.py tests/e2e/test_v4_outbox_recovery.py -q -rs --junitxml=artifacts/v4-p0/policy-recheck-2026-09-27-focused.xml",
+      "exit_code": 0,
+      "tests": 86,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 74.439,
+      "junit": "artifacts/v4-p0/policy-recheck-2026-09-27-focused.xml",
+      "junit_sha256": "48faa7cc4b4fc90f36a5457cb4a13038c4a51b4f024cdb310a15bc4e489048c6",
+      "log_sha256": "6086e52295443f08bf58f4bb20faf401ff14591e4846bd7a2c2e5b042efe55f0"
+    },
+    {
+      "command": ".venv/bin/python -m pytest -p no:cacheprovider tests/contracts tests/unit tests/integration tests/e2e tests/evals -m 'not live' -q -rs --junitxml=artifacts/v4-p0/policy-recheck-2026-09-27-regression.xml",
+      "exit_code": 0,
+      "tests": 341,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 314.315,
+      "junit": "artifacts/v4-p0/policy-recheck-2026-09-27-regression.xml",
+      "junit_sha256": "76333b1767d198b99841160bafa7f64ac58cc4417fa182d4aedd5c76869bb667",
+      "log_sha256": "21c21f0ed0fa090195e18701faaa37548638daaaca44cb19dc6538e0c28b94c6"
+    }
+  ],
+  "requirement_coverage": {
+    "R03": "Existing outbox atomicity/ordered delivery and V1/V2 actual worker SIGKILL/restart/replay tests rerun; public API-to-provider integration remains outstanding.",
+    "R05": "GoalSpecV2 fields, explicit fixture approval, legacy upgrade, immutable revisions and no production spend/trial tests rerun; paid budgets remain queue item 2.",
+    "R06": "Concurrent origins, exact/conflicting retry, cross-revision business slot and source-event identity tests rerun; schedule cutover remains queue item 5.",
+    "R07": "Freshness at G0, bounded overlap/capacity, current grant/program scope and review/backfill tests rerun; paid allocation remains outstanding.",
+    "R08": "Skip/latest/bounded catch-up, stale/backfill, coalesced capacity, stale revision capacity and durable cursor crash tests rerun; automated scheduling remains gated.",
+    "R10": "Typed immutable context and resource deadline tests rerun; assignment absent, approved fixture versions pinned, no implicit delegation/fallback.",
+    "R13": "Non-owner role grant/program revocation locking, current authority and stale baseline/context recovery/consumer holds rerun; production permit renewal remains queue item 3.",
+    "R53": "Original admission schema/invariant preserved; typed context/immutable receipts, empty downgrade/re-upgrade and populated V2 rollback refusal rerun."
+  },
+  "additional_verification": {
+    "documentation_tests": 15,
+    "mapped_obligations": 75,
+    "locked_source_files": 285,
+    "inventory_dispositions": 360,
+    "markdown_files": 82,
+    "html_files": 5,
+    "negative_controls": 6,
+    "mermaid_rendered": 6,
+    "mermaid_report_sha256": "6ab6bcbe4a8d1d0af7521e51fbf8d76836f012e2d67974f37c7d9c202784f0ae",
+    "shell_documentation_contracts": 4,
+    "dependency_consistency": "PASS",
+    "whitespace": "PASS",
+    "review": "Reconciled existing source/test/configuration against blueprint and preserved prior independent review evidence. No new implementation or new independent-review claim. Repaired contradictory queue introduction only.",
+    "production_effects_enabled": false
+  },
+  "repository_verification": {
+    "commit": "33fc48319df2f832b412a4504fe9ceb1b6136caa",
+    "inspected_at": "2026-09-27T10:15:09.820516+00:00",
+    "ci_status": "PASS",
+    "enforcement_status": "PASS",
+    "candidate_working_tree_CI": "NOT RUN; uncommitted changes are not tested by source-head CI",
+    "merge": "NOT AUTHORIZED; current independent PR approval and exact candidate checks required"
+  },
+  "remaining": {
+    "next_queue_item": 2,
+    "RG0": "HELD: four external production qualifications NOT RUN",
+    "RG1": "HELD: G0/G1 accounting, permits/cases, automated dispatch/integration, command parity/cutover, worker upgrades and independent full qualification",
+    "candidate_tree_CI": "NOT RUN: uncommitted working tree; inspected source HEAD CI/protection PASS is not candidate qualification",
+    "merge": "NOT AUTHORIZED; independent PR approval and exact candidate checks required"
+  }
+}

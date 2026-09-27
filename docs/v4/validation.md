@@ -1,23 +1,41 @@
 # V4 blueprint validation evidence
 
-## Current evidence summary — 2026-09-24
+<a id="current-evidence-summary--2026-09-24"></a>
 
-Current inspected source head is `483b905f1437c8b3291f993edbca864f7e909ce1`; application code is unchanged from `e628ccf478988b4db553983d990f43a3e3ca289a`. The present refresh edits documentation only. Use the [current progress summary](progress.md#current-state--2026-09-24) and [blueprint snapshot](IMPLEMENTATION-BLUEPRINT.md#current-execution), not the superseded milestone results below, to decide what to resume.
+## Current evidence summary — 2026-09-27
+
+Inspected source head: `33fc48319df2f832b412a4504fe9ceb1b6136caa`. The current uncommitted V2 policy increment is identified by the reviewed 285-file source lock and [fresh requalification report](cadence-policy-recheck-evidence.json). Use [current progress](progress.md#current-state--2026-09-24) and the [blueprint snapshot](IMPLEMENTATION-BLUEPRINT.md#current-execution); dated older reports are not current-tree qualification.
 
 | Evidence | Latest recorded outcome | Meaning and limits |
 | --- | --- | --- |
-| Full non-live application suite | 317 PASS, zero failures/errors/skips, 2026-09-23 | [Baseline qualification](baseline-approval-evidence.json); not rerun for this documentation-only task. One existing Starlette/AnyIO deprecation warning. |
-| Focused completed P1/migration suite | 47 PASS, 2026-09-23 | Includes admission, outbox, revision, approval, actual worker kill/restart/replay and destructive-rollback refusal. Full P1 is not complete. |
+| Full non-live application suite | 341 PASS, zero failures/errors/skips, 2026-09-27 | Fresh requalification regression, 312.74 seconds pytest wall time; existing Starlette/AnyIO warning only. |
+| Focused completed P1/migration suite | 86 PASS, zero failures/errors/skips, 2026-09-27 | V2 policy and prior slices, restricted-role authorization, migration rollback, V1/V2 actual worker kill/restart/replay with recorded receipt assertions. Full P1 remains incomplete. |
 | Local development entry | DG1 PASS | [Prerequisite evidence](development-entry-evidence.json) predates P1 implementation; not a production release. |
-| Documentation contract | 14 tests and 75 mapped obligations in the latest recorded qualification | Fresh refresh checks are recorded in the documentation-refresh section below; all 280 application evidence hashes and 360 inventory dispositions must still match. |
-| Diagrams | Six Mermaid diagrams rendered in the latest recorded qualification | Target diagrams, not evidence of a deployed V4 system; fresh render results recorded below. |
-| Exact-head CI and repository protection | PASS for `483b905`, freshly inspected 2026-09-24 | [Repository report](repository-enforcement-evidence.json); strict app-bound checks, administrator enforcement and current independent PR approval required. No merge approval is inferred. |
+| Documentation contract | 15 tests / 75 obligations PASS | 285 reviewed source files, 360 inventory dispositions, 82 Markdown files, five HTML files, six negative controls; four shell contracts also PASS. |
+| Diagrams | Six Mermaid 12.0.0 renders PASS | Fresh policy-recheck-2026-09-27-diagrams artifacts. The temporary dependency directory was absent; recreated the same pinned installation outside the repository after registry/license/integrity verification, then rendered successfully. Target visuals are not a deployment claim. |
+| Exact-head CI and repository protection | PASS for source `33fc483`, inspected 2026-09-27T10:15:09Z | [Repository report](repository-enforcement-evidence.json); strict app-bound checks/admin enforcement/current independent approval. Uncommitted candidate CI NOT RUN; no merge authorization inferred. |
 | Production qualifications | NOT RUN; RG0 HELD | Operator safety, identity/ingress, managed storage/restore and remote collector/alerts need actual external evidence. |
 | Full P1 and later phases | RG1 HELD; remaining implementation/qualification NOT RUN | See the [remaining queue](IMPLEMENTATION-BLUEPRINT.md#p1-resume-queue); a green fixture slice is not full release acceptance. |
 
 Historical reports are immutable, commit-scoped evidence: [P1a](p1-increment-evidence.json), [outbox](outbox-increment-evidence.json), [goal revisions](goal-revision-evidence.json), and [baseline approval](baseline-approval-evidence.json). Their original source digests/counts must not be overwritten with the newest result. The repository-enforcement report is a rolling latest-inspection record, so older paragraphs identify their original commits independently.
 
 ## Historical evidence chronology
+
+### Existing increment requalification — 2026-09-27
+
+Read and reconciled the branch README, repository instructions, blueprint/progress/release evidence, V2 contracts/cadence/admission/authority/outbox, migrations, tests and isolated configuration before edits. The exact §4.5 sentence and bounded item-1 implementation already exist. All 285 source hashes still match the prior qualification; original admission uniqueness/immutability migrations are unchanged. Reused the implementation rather than restarting P0 or entering paid-allocation work. Corrected the queue introduction that said every item was unimplemented despite its first row being PASS.
+
+Fresh execution: **86 focused / 341 full non-live PASS**, no failures/errors/skips; one existing Starlette/AnyIO deprecation warning. Focus includes real non-owner authority locking, simultaneous coalescing/admission, revision/freshness/backfill bounds, immutable context, clean upgrade/empty rollback/populated-history preservation, and V1/V2 subprocess worker-kill/restart/replay with `recorded` receipts. Fifteen documentation tests, 75 obligations, 285 source hashes, 360 inventory dispositions, 82 Markdown/five HTML link checks, six negative controls, six Mermaid renders, four shell documentation contracts, dependency consistency and whitespace PASS. The absent temporary Mermaid install was recreated at the previously reviewed version after checking its registry version/license/integrity; no repository/application dependency changed.
+
+[Fresh durable evidence](cadence-policy-recheck-evidence.json) maps the repeated checks to R03/R05/R06/R07/R08/R10/R13/R53 and preserves exact command/count/JUnit/log/source-lock hashes. The original [2026-09-24 report](cadence-policy-evidence.json), raw evidence and independent-review findings remain unchanged; this reinspection does not claim a new independent review. Current-head `33fc483` CI and main protection PASS at 2026-09-27T10:15:09Z. Uncommitted-tree remote CI and the four external production qualifications remain **NOT RUN**. RG0/full RG1 remain **HELD**, production effects disabled, no commit/push/merge or other-worktree modification. Subsequent implementation resumes at queue item 2, not at repeated item 1.
+
+### V2 policy qualification — 2026-09-24
+
+The missing DTO/context imports and blueprint wording failed red before implementation. Added regressions also failed for source-event movement, missing program locking, stale G0 freshness, obsolete-revision pending capacity and charging capacity for coalesced slots; all were repaired before final qualification. An intermediate migration test placed the V2 history before checking the older baseline guard and consequently tested the wrong refusal; reordered the fixture to prove both independent preservation guards. No production verifier was weakened or skipped. The final focused/full executions use explicit exit status and durable JUnit/log digests in `cadence-policy-evidence.json`.
+
+Independent read-only review found three Important issues, now reproduced and fixed, then no unresolved Important/Critical implementation defect on re-review. Its remaining verifier finding was repaired by asserting actual `recorded` start/closure receipts and final workflow state in both V1 and V2 process-kill scenarios; final runs include those assertions. This engineering review is not operator deployment approval or GitHub PR approval.
+
+The bounded increment implements internal fixture policy only. Production effects remain disabled; RG0 and full RG1 remain HELD. Four external production qualifications remain NOT RUN. Automatic dispatch/schedule cutover, paid G0/G1, permits/cases, public commands and supported worker-upgrade qualification remain unimplemented queue obligations, not external blockers or inferred passes. No new application dependency, production provider, main merge or Git-history rewrite occurred.
 
 The original documentation-only transition and subsequent P0/P1 milestones below are historical. Earlier no-code-change/browser-missing, unprotected-main and unavailable-engineering-review statements are not the current working-tree state. No failed or interrupted run is silently converted into a pass.
 

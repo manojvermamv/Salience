@@ -1,0 +1,55 @@
+{
+  "recorded_at": "2026-09-24",
+  "base_commit": "33fc48319df2f832b412a4504fe9ceb1b6136caa",
+  "scope": "Ordered P1 item 1: internal V2 goal/context/authority/cadence policy; no production effects or full RG1 release",
+  "source_evidence_lock_sha256": "1f3fba2ee315f41c08fd1d685c244ec13032a10cb636199f312b04cc45578955",
+  "commands": [
+    {
+      "command": ".venv/bin/python -m pytest -p no:cacheprovider tests/integration/test_v4_cadence_policy.py tests/integration/test_v4_cycle_admission.py tests/integration/test_v4_goal_revisions.py tests/integration/test_v4_baseline_approval.py tests/integration/test_v4_outbox.py tests/integration/test_v4_migrations.py tests/integration/test_v4_identity_isolation.py tests/e2e/test_v4_outbox_recovery.py -q -rs --junitxml=artifacts/v4-p0/policy-focused.xml",
+      "exit_code": 0,
+      "tests": 86,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 61.996,
+      "junit": "artifacts/v4-p0/policy-focused.xml",
+      "junit_sha256": "3b7b0354c354da791b2fda404bb2cb6fb293922dcba102b6441d70317735f928",
+      "log_sha256": "0d326fe845664af36ad435bc0f4fc77b331cea8781a48ca84e8c14e463523f6c"
+    },
+    {
+      "command": ".venv/bin/python -m pytest -p no:cacheprovider tests/contracts tests/unit tests/integration tests/e2e tests/evals -m 'not live' -q -rs --junitxml=artifacts/v4-p0/policy-qualified-regression.xml",
+      "exit_code": 0,
+      "tests": 341,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 315.845,
+      "junit": "artifacts/v4-p0/policy-qualified-regression.xml",
+      "junit_sha256": "cde1b2afb4b5716c44987eb144f0459c4952b0383d46bef8f46a3c03a021cfb2",
+      "log_sha256": "a70d3875269a11069cecfdb44f3e4b43638832885a7078d563fe995af2cb1afb"
+    }
+  ],
+  "additional_verification": {
+    "documentation_tests": 15,
+    "mapped_obligations": 75,
+    "locked_source_files": 285,
+    "inventory_dispositions": 360,
+    "markdown_files": 82,
+    "html_files": 5,
+    "negative_controls": 6,
+    "mermaid_rendered": 6,
+    "mermaid_report_sha256": "6ab6bcbe4a8d1d0af7521e51fbf8d76836f012e2d67974f37c7d9c202784f0ae",
+    "shell_documentation_contracts": 4,
+    "dependency_consistency": "PASS",
+    "whitespace": "PASS",
+    "independent_review": "Three Important findings reproduced red and repaired: admission freshness, obsolete pending capacity, coalesced-slot capacity. Read-only re-review found no unresolved Important/Critical defect. Strengthened actual V1/V2 worker restart assertions to require recorded receipts and recorded completion; focused/full qualification follows that repair.",
+    "production_effects_enabled": false
+  },
+  "remaining": {
+    "next_queue_item": 2,
+    "RG0": "HELD: four external production qualifications NOT RUN",
+    "RG1": "HELD: G0/G1 accounting, permits/cases, automated dispatch/integration, command parity/cutover, worker upgrades and independent full qualification",
+    "candidate_tree_CI": "NOT RUN: uncommitted working tree; inspected source HEAD CI/protection PASS is not candidate qualification",
+    "merge": "NOT AUTHORIZED; independent PR approval and exact candidate checks required"
+  }
+}

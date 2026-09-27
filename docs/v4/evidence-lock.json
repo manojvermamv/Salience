@@ -111,6 +111,14 @@
       "sha256": "a396146de518f58f5c816dc570585d29140e7a8a8b19ef40acc9edd9670e1386"
     },
     {
+      "path": "migrations/versions/0021_cycle_policy.py",
+      "sha256": "b72f8ae9e973ceb5a766a309e32050affc438214bddc88277e88b05c340ec714"
+    },
+    {
+      "path": "migrations/versions/0022_program_policy_lock.py",
+      "sha256": "0a233e4e2c823dd2da96bda893eb2f7675cb5ef566dd37b3c52319b6ae74b732"
+    },
+    {
       "path": "migrations/versions/__init__.py",
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
@@ -360,19 +368,27 @@
     },
     {
       "path": "src/salience/cycles/admission.py",
-      "sha256": "1846a415eae938b7c368cb6cca70ed3de65f5e2b80298890e491b711a48d1459"
+      "sha256": "d70db502639591d1c52bd4822de31caf1a8df6365a276425615455adaf222d73"
+    },
+    {
+      "path": "src/salience/cycles/authority.py",
+      "sha256": "b1b7cf45b88b0d021905237538f4c2b57c065f3d510f6f6198c1b9fcda4a9f02"
     },
     {
       "path": "src/salience/cycles/baselines.py",
       "sha256": "1e36dd950a55dbc3ed906cdf9a89d7f1d6f6118384721e52c01ddd68a4cd9963"
     },
     {
+      "path": "src/salience/cycles/cadence.py",
+      "sha256": "bd46305db7fa1e4d770f981fe3e96b14e37166352321123a9b48c613f8c46a76"
+    },
+    {
       "path": "src/salience/cycles/contracts.py",
-      "sha256": "3dc2bd826d4f55607db4ab2cd0f45e22f077ef10d08f3231a0605d6fc1f84bba"
+      "sha256": "aa9c1e31e2cb33f2fba914f42c125537e15e57c032f2901ed03e1d5b3b34320d"
     },
     {
       "path": "src/salience/cycles/outbox.py",
-      "sha256": "06e5ff37f7e7b82effcd0040b03b92e803e1be5efa4ed60e093e51dd1af2db30"
+      "sha256": "ae3ac78f3b4fbc74b90e484461937248da8fb0b4baff936147f36d6614cfdb74"
     },
     {
       "path": "src/salience/cycles/runtime.py",
@@ -748,7 +764,7 @@
     },
     {
       "path": "tests/e2e/test_v4_outbox_recovery.py",
-      "sha256": "a4b17cfca59528e2ed4108866671ba4673ba5038b129d26a532efa53ebfccd27"
+      "sha256": "cf6a333b55dd4887a9e651c4f311f80c7bbc9c3863bd36bc3b89cc3795957e8a"
     },
     {
       "path": "tests/e2e/test_worker_restart.py",
@@ -923,6 +939,10 @@
       "sha256": "111f34f17b98185e8c59ea168610d06fd2faec43805c21287e4dad539494ee45"
     },
     {
+      "path": "tests/integration/test_v4_cadence_policy.py",
+      "sha256": "6dbe0eb4b7ef40d76c62549adf18e7ad7f574f933738e48524723dab35ecc4fa"
+    },
+    {
       "path": "tests/integration/test_v4_cycle_admission.py",
       "sha256": "621376d59d4bbd801ba213bffb6e5370fbf2c87a51ca7422a7298e45d7f433aa"
     },
@@ -936,7 +956,7 @@
     },
     {
       "path": "tests/integration/test_v4_migrations.py",
-      "sha256": "1e1b344fe2088c6d7dc48a7e23a55d2d6eb47ca55395b9cf6f9f2a073437a29f"
+      "sha256": "30bf0197562b6b7c71ef0bcbb709f9f8cb40adce92bb2ca831dd6e11f901dae7"
     },
     {
       "path": "tests/integration/test_v4_object_retention.py",

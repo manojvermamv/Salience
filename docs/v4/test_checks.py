@@ -15,6 +15,9 @@ REPO_SPEC.loader.exec_module(REPOSITORY)
 
 
 class GateChecks(unittest.TestCase):
+    def test_admission_uniqueness_is_per_eligibility_revision(self):
+        self.assertIn("One immutable admission disposition per (intent_id, eligibility_revision), with at most one admitted cycle per intent.", BLUEPRINT)
+
     def test_incremental_p1_cannot_claim_release_or_enable_effects(self):
         release = json.loads(Path(__file__).with_name("p0-release.json").read_text())
         for change in [{"release_status":"PASS"},{"production_effects_enabled":True},{"remaining":[]}]:

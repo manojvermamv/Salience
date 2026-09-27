@@ -1,72 +1,305 @@
 {
-  "inspected_at": "2026-09-24T01:32:00.601855+00:00",
-  "commit": "483b905f1437c8b3291f993edbca864f7e909ce1",
+  "inspected_at": "2026-09-27T10:15:09.820516+00:00",
+  "commit": "33fc48319df2f832b412a4504fe9ceb1b6136caa",
   "enforcement_status": "PASS",
   "ci_status": "PASS",
   "merge_status": "CHECKS PASS; independent PR approval still required",
   "errors": [],
-  "protection": {
-    "required_status_checks": {
-      "url": "https://api.github.com/repos/manojvermamv/Salience/branches/main/protection/required_status_checks",
-      "strict": true,
-      "contexts": [
-        "verify",
-        "p0-regression"
-      ],
-      "contexts_url": "https://api.github.com/repos/manojvermamv/Salience/branches/main/protection/required_status_checks/contexts",
-      "checks": [
+  "responses": {
+    "protection": {
+      "url": "https://api.github.com/repos/manojvermamv/Salience/branches/main/protection",
+      "required_status_checks": {
+        "url": "https://api.github.com/repos/manojvermamv/Salience/branches/main/protection/required_status_checks",
+        "strict": true,
+        "contexts": [
+          "verify",
+          "p0-regression"
+        ],
+        "contexts_url": "https://api.github.com/repos/manojvermamv/Salience/branches/main/protection/required_status_checks/contexts",
+        "checks": [
+          {
+            "context": "verify",
+            "app_id": 15368
+          },
+          {
+            "context": "p0-regression",
+            "app_id": 15368
+          }
+        ]
+      },
+      "required_pull_request_reviews": {
+        "url": "https://api.github.com/repos/manojvermamv/Salience/branches/main/protection/required_pull_request_reviews",
+        "dismiss_stale_reviews": true,
+        "require_code_owner_reviews": false,
+        "require_last_push_approval": true,
+        "required_approving_review_count": 1
+      },
+      "required_signatures": {
+        "url": "https://api.github.com/repos/manojvermamv/Salience/branches/main/protection/required_signatures",
+        "enabled": false
+      },
+      "enforce_admins": {
+        "url": "https://api.github.com/repos/manojvermamv/Salience/branches/main/protection/enforce_admins",
+        "enabled": true
+      },
+      "required_linear_history": {
+        "enabled": false
+      },
+      "allow_force_pushes": {
+        "enabled": false
+      },
+      "allow_deletions": {
+        "enabled": false
+      },
+      "block_creations": {
+        "enabled": false
+      },
+      "required_conversation_resolution": {
+        "enabled": true
+      },
+      "lock_branch": {
+        "enabled": false
+      },
+      "allow_fork_syncing": {
+        "enabled": false
+      }
+    },
+    "rulesets": [],
+    "effective_rules": [],
+    "checks": {
+      "total_count": 2,
+      "check_runs": [
         {
-          "context": "verify",
-          "app_id": 15368
+          "id": 107476573423,
+          "name": "verify",
+          "node_id": "CR_kwDOUX1alM8AAAAZBhpc7w",
+          "head_sha": "33fc48319df2f832b412a4504fe9ceb1b6136caa",
+          "external_id": "c3a33da2-33f4-5194-8543-ce692e0d85ee",
+          "url": "https://api.github.com/repos/manojvermamv/Salience/check-runs/107476573423",
+          "html_url": "https://github.com/manojvermamv/Salience/actions/runs/35950098326/job/107476573423",
+          "details_url": "https://github.com/manojvermamv/Salience/actions/runs/35950098326/job/107476573423",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-09-24T03:07:04Z",
+          "completed_at": "2026-09-24T03:07:10Z",
+          "output": {
+            "title": null,
+            "summary": null,
+            "text": null,
+            "annotations_count": 2,
+            "annotations_url": "https://api.github.com/repos/manojvermamv/Salience/check-runs/107476573423/annotations"
+          },
+          "check_suite": {
+            "id": 97347612217
+          },
+          "app": {
+            "id": 15368,
+            "client_id": "Iv1.05c79e9ad1f6bdfa",
+            "slug": "github-actions",
+            "node_id": "MDM6QXBwMTUzNjg=",
+            "owner": {
+              "login": "github",
+              "id": 9919,
+              "node_id": "MDEyOk9yZ2FuaXphdGlvbjk5MTk=",
+              "avatar_url": "https://avatars.githubusercontent.com/u/9919?v=4",
+              "gravatar_id": "",
+              "url": "https://api.github.com/users/github",
+              "html_url": "https://github.com/github",
+              "followers_url": "https://api.github.com/users/github/followers",
+              "following_url": "https://api.github.com/users/github/following{/other_user}",
+              "gists_url": "https://api.github.com/users/github/gists{/gist_id}",
+              "starred_url": "https://api.github.com/users/github/starred{/owner}{/repo}",
+              "subscriptions_url": "https://api.github.com/users/github/subscriptions",
+              "organizations_url": "https://api.github.com/users/github/orgs",
+              "repos_url": "https://api.github.com/users/github/repos",
+              "events_url": "https://api.github.com/users/github/events{/privacy}",
+              "received_events_url": "https://api.github.com/users/github/received_events",
+              "type": "Organization",
+              "user_view_type": "public",
+              "site_admin": false
+            },
+            "name": "GitHub Actions",
+            "description": "Automate your workflow from idea to production",
+            "external_url": "https://help.github.com/en/actions",
+            "html_url": "https://github.com/apps/github-actions",
+            "created_at": "2018-07-30T09:30:17Z",
+            "updated_at": "2026-06-18T16:17:48Z",
+            "permissions": {
+              "actions": "write",
+              "administration": "read",
+              "artifact_metadata": "write",
+              "attestations": "write",
+              "checks": "write",
+              "code_quality": "write",
+              "contents": "write",
+              "copilot_requests": "write",
+              "deployments": "write",
+              "discussions": "write",
+              "drives": "write",
+              "issues": "write",
+              "merge_queues": "write",
+              "metadata": "read",
+              "models": "read",
+              "packages": "write",
+              "pages": "write",
+              "pull_requests": "write",
+              "repository_hooks": "write",
+              "repository_projects": "write",
+              "security_events": "write",
+              "statuses": "write",
+              "vulnerability_alerts": "read"
+            },
+            "events": [
+              "branch_protection_rule",
+              "check_run",
+              "check_suite",
+              "create",
+              "delete",
+              "deployment",
+              "deployment_status",
+              "discussion",
+              "discussion_comment",
+              "fork",
+              "gollum",
+              "issues",
+              "issue_comment",
+              "label",
+              "merge_group",
+              "milestone",
+              "page_build",
+              "public",
+              "pull_request",
+              "pull_request_review",
+              "pull_request_review_comment",
+              "push",
+              "registry_package",
+              "release",
+              "repository",
+              "repository_dispatch",
+              "status",
+              "watch",
+              "workflow_dispatch",
+              "workflow_run"
+            ]
+          },
+          "pull_requests": []
         },
         {
-          "context": "p0-regression",
-          "app_id": 15368
+          "id": 107476573170,
+          "name": "p0-regression",
+          "node_id": "CR_kwDOUX1alM8AAAAZBhpb8g",
+          "head_sha": "33fc48319df2f832b412a4504fe9ceb1b6136caa",
+          "external_id": "19323173-34ba-5a0d-9ae4-555a9e763060",
+          "url": "https://api.github.com/repos/manojvermamv/Salience/check-runs/107476573170",
+          "html_url": "https://github.com/manojvermamv/Salience/actions/runs/35950098326/job/107476573170",
+          "details_url": "https://github.com/manojvermamv/Salience/actions/runs/35950098326/job/107476573170",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-09-24T03:07:04Z",
+          "completed_at": "2026-09-24T03:11:58Z",
+          "output": {
+            "title": null,
+            "summary": null,
+            "text": null,
+            "annotations_count": 2,
+            "annotations_url": "https://api.github.com/repos/manojvermamv/Salience/check-runs/107476573170/annotations"
+          },
+          "check_suite": {
+            "id": 97347612217
+          },
+          "app": {
+            "id": 15368,
+            "client_id": "Iv1.05c79e9ad1f6bdfa",
+            "slug": "github-actions",
+            "node_id": "MDM6QXBwMTUzNjg=",
+            "owner": {
+              "login": "github",
+              "id": 9919,
+              "node_id": "MDEyOk9yZ2FuaXphdGlvbjk5MTk=",
+              "avatar_url": "https://avatars.githubusercontent.com/u/9919?v=4",
+              "gravatar_id": "",
+              "url": "https://api.github.com/users/github",
+              "html_url": "https://github.com/github",
+              "followers_url": "https://api.github.com/users/github/followers",
+              "following_url": "https://api.github.com/users/github/following{/other_user}",
+              "gists_url": "https://api.github.com/users/github/gists{/gist_id}",
+              "starred_url": "https://api.github.com/users/github/starred{/owner}{/repo}",
+              "subscriptions_url": "https://api.github.com/users/github/subscriptions",
+              "organizations_url": "https://api.github.com/users/github/orgs",
+              "repos_url": "https://api.github.com/users/github/repos",
+              "events_url": "https://api.github.com/users/github/events{/privacy}",
+              "received_events_url": "https://api.github.com/users/github/received_events",
+              "type": "Organization",
+              "user_view_type": "public",
+              "site_admin": false
+            },
+            "name": "GitHub Actions",
+            "description": "Automate your workflow from idea to production",
+            "external_url": "https://help.github.com/en/actions",
+            "html_url": "https://github.com/apps/github-actions",
+            "created_at": "2018-07-30T09:30:17Z",
+            "updated_at": "2026-06-18T16:17:48Z",
+            "permissions": {
+              "actions": "write",
+              "administration": "read",
+              "artifact_metadata": "write",
+              "attestations": "write",
+              "checks": "write",
+              "code_quality": "write",
+              "contents": "write",
+              "copilot_requests": "write",
+              "deployments": "write",
+              "discussions": "write",
+              "drives": "write",
+              "issues": "write",
+              "merge_queues": "write",
+              "metadata": "read",
+              "models": "read",
+              "packages": "write",
+              "pages": "write",
+              "pull_requests": "write",
+              "repository_hooks": "write",
+              "repository_projects": "write",
+              "security_events": "write",
+              "statuses": "write",
+              "vulnerability_alerts": "read"
+            },
+            "events": [
+              "branch_protection_rule",
+              "check_run",
+              "check_suite",
+              "create",
+              "delete",
+              "deployment",
+              "deployment_status",
+              "discussion",
+              "discussion_comment",
+              "fork",
+              "gollum",
+              "issues",
+              "issue_comment",
+              "label",
+              "merge_group",
+              "milestone",
+              "page_build",
+              "public",
+              "pull_request",
+              "pull_request_review",
+              "pull_request_review_comment",
+              "push",
+              "registry_package",
+              "release",
+              "repository",
+              "repository_dispatch",
+              "status",
+              "watch",
+              "workflow_dispatch",
+              "workflow_run"
+            ]
+          },
+          "pull_requests": []
         }
       ]
-    },
-    "enforce_admins": {
-      "url": "https://api.github.com/repos/manojvermamv/Salience/branches/main/protection/enforce_admins",
-      "enabled": true
-    },
-    "required_pull_request_reviews": {
-      "url": "https://api.github.com/repos/manojvermamv/Salience/branches/main/protection/required_pull_request_reviews",
-      "dismiss_stale_reviews": true,
-      "require_code_owner_reviews": false,
-      "require_last_push_approval": true,
-      "required_approving_review_count": 1
-    },
-    "allow_force_pushes": {
-      "enabled": false
-    },
-    "allow_deletions": {
-      "enabled": false
-    },
-    "required_conversation_resolution": {
-      "enabled": true
     }
-  },
-  "rulesets": [],
-  "effective_rules": [],
-  "checks": [
-    {
-      "id": 107307691161,
-      "name": "p0-regression",
-      "head_sha": "483b905f1437c8b3291f993edbca864f7e909ce1",
-      "status": "completed",
-      "conclusion": "success",
-      "details_url": "https://github.com/manojvermamv/Salience/actions/runs/35898302021/job/107307691161",
-      "completed_at": "2026-09-23T17:55:35Z"
-    },
-    {
-      "id": 107307690913,
-      "name": "verify",
-      "head_sha": "483b905f1437c8b3291f993edbca864f7e909ce1",
-      "status": "completed",
-      "conclusion": "success",
-      "details_url": "https://github.com/manojvermamv/Salience/actions/runs/35898302021/job/107307690913",
-      "completed_at": "2026-09-23T17:50:04Z"
-    }
-  ],
-  "raw_local_evidence_sha256": "ceaeea54a36b30221cf4981352339ffcebadf7f4731f37a705bffbe29a4603fc"
+  }
 }
