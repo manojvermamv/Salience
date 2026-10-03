@@ -2,9 +2,87 @@
 
 <a id="v4-documentation-transition-checkpoint"></a>
 
+<a id="current-state"></a>
 <a id="current-state--2026-09-24"></a>
+<a id="current-state--2026-09-27"></a>
 
-## Current state — 2026-09-27
+## Current state — 2026-10-03 documentation reinspection
+
+Published application checkpoint: **`7009d51bac527b92c01af8c45d6d232e8a4b4a71`**, inspected 2026-10-03 on local branch `arch`, tracking `origin/feat/archv4-p0-foundation`. The last application change is item 5c; this refresh changes documentation and repository evidence only. Its **37 focused / 425 full non-live PASS** results were recorded on **2026-09-27**, not rerun today. The 302-file application evidence lock still matches the source. Items 1–5 are locally verified in no-effects fixtures; **item 6 is the next implementation**, followed by item 7 independent full RG1 qualification. RG0/full RG1 remain HELD, production effects disabled and main unmerged.
+
+Item 5c controls one same-workspace/program dry-run `job_schedules` fixture row, with pause/readback, immutable first-V4 UTC slot, bounded independent polling and rollback fencing. It does not qualify live Temporal schedule conversion or production legacy start/signal paths. Both required GitHub checks and strict app-bound main protection PASS on `7009d51` at **2026-10-03T13:49:24.852686+00:00**; the [rolling repository report](repository-enforcement-evidence.json) records that exact commit. Independent PR approval is not supplied by this inspection. Every later documentation or implementation commit requires its own exact-head check after publication.
+
+The [blueprint](IMPLEMENTATION-BLUEPRINT.md#current-execution) is the execution authority; this file is its handoff and chronological record. P1 items 1–5 are published through `7009d51`; the completed-checkpoint table below identifies the implementation commits and their dated proof. No main merge or history rewrite is claimed.
+
+| Area | Current status | Completed work or next obligation |
+| --- | --- | --- |
+| Documentation foundation | COMPLETE | Original inventory, reversible consolidation, source preservation, 75 requirement mappings, acyclic gates, link/Markdown/drift checks and six target diagrams. |
+| P0 local implementation | PASS | Isolated authenticated control, restricted-role authorization, secrets, immutable storage/retention, audit/OTel, migration and effects-disabled qualification. |
+| DG1 development entry | PASS | Five mandatory local prerequisites verified before P1; does not release production RG0. |
+| P1 local increments | PASS for items 1–5; phase ONGOING | Prior admission/outbox/revision/policy slices, V3 fixture G0/G1 accounting, stop/permit/cases, automatic fixture handoff/mock trace, signed commands and scoped independent fixture schedule cutover. |
+| P1 remaining implementation | PLANNED / NOT RUN | Item 6 worker upgrades/Continue-As-New and durable review timers; item 7 independent full RG1 review. Live Temporal schedule conversion remains a release obligation. |
+| P2 production records | PLANNED / NOT RUN | Reliable creative/publication records and enabled-provider qualification after RG1. |
+| P3 observation/experience | PLANNED / NOT RUN | Observation, attribution, internal experience and trial/evaluation isolation before P4. |
+| P4 strategy/release | PLANNED / NOT RUN | Explainable selection, strategy trials and controlled promotion/invalidation. |
+| P5 capability evolution | PLANNED / NOT RUN | Governed capability evolution and provider/protocol compatibility. |
+| P6 optional adaptation | PLANNED / DISABLED | No training/data-export enablement; conditional RG6 if this capability is enabled. |
+| P7 production rollout | PLANNED / NOT RUN | End-to-end live qualification, restore/upgrade, load/soak, signed deployment and constrained rollout. |
+| RG0 and full RG1 release | HELD | Four external production qualifications remain NOT RUN; full P1 acceptance also remains unfinished. |
+| GitHub controls | PASS on published item-5c `7009d51`; independent PR approval still required | Both required checks and strict main protection verified at 2026-10-03T13:49:24.852686+00:00; see the commit-bound repository report. Any later head requires exact-head recheck. |
+
+### Completed checkpoints to reuse
+
+| Commit | Scope and durable proof |
+| --- | --- |
+| `ca37f6f` | Consolidated V4 blueprint and isolated P0 foundation; original source/archive history preserved. |
+| `9445348` | Release-validator/authorization/deferral corrections and P1a admission; [development entry](development-entry-evidence.json) and [admission evidence](p1-increment-evidence.json). |
+| `b1969c8` | Repaired real storage CI UID mismatch without broadening credential permissions; stricter explicit qualification result fields. |
+| `2edad82` | Transactional local outbox, receipt reconciliation and process-kill recovery; [outbox evidence](outbox-increment-evidence.json). |
+| `e296d49` | Atomic goal revisions, concurrent snapshot repair and stable cross-revision/shortened-horizon retries; [revision evidence](goal-revision-evidence.json). |
+| `e628ccf` | Exact revision-bound fixture approval, expiry/revocation and historical-context recovery denial; [baseline evidence](baseline-approval-evidence.json). |
+| `483b905` | Blueprint/release/CI checkpoint documentation; both GitHub checks subsequently passed on this exact head. |
+| `0db5412` | V2 goal/context/authority and cadence item 1; [original qualification](cadence-policy-evidence.json) and [recheck](cadence-policy-recheck-evidence.json), 86 focused / 341 full PASS. |
+| `4047cf9` | Fixture G0/G1 accounting item 2; [allocation evidence](allocation-evidence.json), 119 focused / 371 full PASS. |
+| `7071dbf` | Fixture stop/permit/case item 3 with 137 focused / 389 full tests, 293 source hashes and exact implementation-head CI PASS. |
+| `2fbb384` | Automatic fixture outbox/mock trace item 4 with 113 focused / 399 full tests, 296 source hashes and exact implementation-head CI PASS. |
+| `c78ce13` | Signed fixture commands item 5a; [item-5a evidence](item5a-evidence.json), 83 focused / 408 full PASS. |
+| `5ae20d3` | Typed goal/stop/case/review command parity item 5b; [item-5b evidence](item5b-evidence.json), 63 focused / 411 full PASS. |
+| `7009d51` | One-goal fixture schedule cutover/poller item 5c; [item-5c evidence](item5c-evidence.json), 37 focused / 425 full PASS; exact implementation-head CI/enforcement PASS on 2026-10-03. |
+
+Latest application execution remains dated 2026-09-27; no local application rerun in this documentation refresh: **425 full non-live / 37 focused PASS**, zero failures/errors/skips; one existing Starlette/AnyIO warning. That historical qualification includes fifteen documentation tests, the 75-obligation validator (302 locked source files, 360 dispositions, 82 Markdown, five HTML including local artifacts, six negative controls), six Mermaid renders, four shell contracts, dependency consistency and whitespace. Fresh documentation-only checks and preservation results are recorded in [validation](validation.md#documentation-reinspection-verification--2026-10-03); six unchanged diagram blocks were not rerendered. [Item-5c evidence](item5c-evidence.json) preserves command/JUnit/source digests and partial requirement coverage; [item-5b evidence](item5b-evidence.json) and older results remain historical. The prior item-4 late-receipt failure and repair remain recorded in its historical report.
+
+### Resume instructions
+
+1. Inspect branch/worktree/HEAD and this summary. The last application checkpoint is `7009d51bac527b92c01af8c45d6d232e8a4b4a71`; a published documentation checkpoint must descend from it and retain the 302 application hashes. Recheck the actual published HEAD with `verify_repository.py`; do not restart P0 or rebuild completed P1 components. Recheck the [release ledger](p0-release.json) and source evidence for intervening changes.
+2. Follow the [item-6 handoff](#item-6-resume-handoff) and resume the [ordered P1 queue](IMPLEMENTATION-BLUEPRINT.md#p1-resume-queue) at item 6 within isolated DG1 development. Reuse items 1–5; do not rebuild admission/revisions/baselines/outbox, V2 policies, V3 fixture accounting, stop/permit/cases, the local dispatcher or fixture cutover. Exact candidate CI and independent PR approval block a merge, not isolated development. Retain red-green, additive migration/rollback and independent review for each increment.
+3. Preserve dry-run, zero-spend and fallback denial. The private fixture worker and internal review wake are not public production controls. Never backfill authority into an old context or create a replacement cycle to bypass recovery.
+4. Preserve the three deferral identities and the phase-bound accounting, capability/R58, trial-isolation and promotion/invalidation decisions. Follow the blueprint dependencies before later-phase code.
+5. Before an implementation merge, verify the exact candidate commit with `verify_repository.py`, not a prior successful head. Keep main unmerged until current independent PR approval and all applicable merge gates pass.
+6. Update blueprint status/mappings, release evidence and this log with actual results. External identity/ingress, storage/restore, collector/alerts and operator safety qualification remain separate NOT RUN production obligations, not an excuse to label local implementation complete.
+
+"Ongoing" describes unfinished full P1, not an already running later increment. Items 5a–5c add only signed opt-in local fixture commands and cutover; production Temporal schedule control and full RG1 remain separate. Original ArchV4 sources, archived snapshots, historical visuals and AGENTS.md/SKILL.md instructions are preserved. Superseded core/Superpowers paths remain navigation aliases, not competing plans.
+
+<a id="item-6-resume-handoff"></a>
+### Item 6 resume handoff
+
+**Paused objective:** supported worker upgrades, Continue-As-New, durable waits/review deadlines, notification delivery and local restart/restore qualification. Item 6 is planned; this documentation checkpoint implements none of it. The blueprint's [queue](IMPLEMENTATION-BLUEPRINT.md#p1-resume-queue) and P1 matrix, particularly R02, R09 and R32–R34, define acceptance. Item 7 is independent full RG1 review. Live schedule conversion, general policy/read reconciliation and other listed RG1 obligations remain separate; completing item 6 alone cannot release RG1. Full production DB/object/Temporal restore and measured RPO/RTO remain R66/P7 work.
+
+| Inspected boundary at `7009d51` | Existing behavior | Required item-6 qualification |
+| --- | --- | --- |
+| [Cycle workflow](../../src/salience/cycles/workflow.py) | Unchanged since `2edad82`; consumes the initial envelope, waits up to five minutes between signals and returns held timeout/message-limit results after a finite loop. No Continue-As-New or version compatibility path. | Replay captured pre-change histories with the supported compatibility path; replay new histories; Continue-As-New retains original identities and queued work without resetting total limits/deadlines or reissuing an effect. |
+| [Fixture runtime](../../src/salience/cycles/runtime.py) and [recovery tests](../../tests/e2e/test_v4_outbox_recovery.py) | Isolated local worker, start-message memo, ordered recovery/close signals, SIGKILL/restart and replay using the same workflow implementation; the production-stage worker does not register it. | Qualify an actual supported old/new worker transition and restart during a wait/continuation; same-version replay and restart alone are not upgrade proof. Pin/drain compatible workers before rollback. |
+| [Case governance](../../src/salience/cycles/governance.py), [0026 schema](../../migrations/versions/0026_cycle_governance.py) and [case tests](../../tests/integration/test_v4_cycle_governance.py) | Case owner/deadline, bound review, immutable notification/ack facts and scoped idempotent `escalate_due` exist. The deadline test sleeps and explicitly calls escalation; no automatic deadline/notification worker is registered. | Durable bounded deadline scheduling and deduplicated delivery/escalation, concurrent review/expiry/cancellation handling, process-crash redelivery and owner visibility. Never turn expiry into approval or bypass current authority. |
+| [Admission](../../src/salience/cycles/admission.py), [cadence](../../src/salience/cycles/cadence.py) and [outbox](../../src/salience/cycles/outbox.py) | PostgreSQL owns intent/cycle/context/operation identities, eligibility revisions, coalescing, bounded wakes and transactional outgoing messages. | Pre-admission waits retain the intent without inventing a cycle; retry/reconciliation retains the original cycle/context/operation; strategic defer/abstain closes the cycle and later creates an authorized coalesced successor. |
+
+**First executable step after this checkpoint:** inspect the published HEAD and source lock, then write and demonstrate failing acceptance tests for old-history upgrade replay, identity-preserving continuation and automatic durable deadline delivery. Reuse existing PostgreSQL/Temporal fixture tests and canonical governance transactions; inspect the pinned SDK's supported compatibility mechanism before selecting an implementation. Keep workflow coordination deterministic and database/network work in bounded activities. Add schema only when required, with empty rollback/re-upgrade and populated preservation checks. Run focused and full non-live regressions, documentation/evidence checks, independent increment review and exact-head CI before claiming completion. Record actual execution dates and update mappings without replacing historical reports.
+
+## Historical transition and execution log
+
+The entries below record their state at the stated milestone. Earlier statements such as "all phases planned", "no P1 code", missing Chromium, unavailable engineering review or unprotected main are superseded by the current summary, not present-day facts. They remain intact to preserve the evidence trail; no production effects or Git history rewriting are permitted.
+
+### September 27 qualification and publication snapshots
+
+The following paragraphs retain their original checkpoint state. Their candidate-CI and next-item statements are historical; use the current summary and item-6 handoff above for execution.
 
 P1 item 5c now rehearses one-goal no-effects fixture schedule conversion behind a signed, separate `cycles:schedule` grant. Additive migration 0030 binds the same-workspace/program dry-run legacy fixture row, goal revision and immutable first-V4 UTC slot. Pause/readback precedes cursor activation; an opt-in independent fixture poller uses ordinary `request_due` → G0 admission/outbox, while pending/stop/stale/rollback states fence new work. The rollback command records `rollback_pending` before any old-schedule resume, holds unresolved intents/outbox/permits, and requires an exact later-slot readback; lost acknowledgments and process crashes retry without duplicate cycles. Public API/CLI/SDK parity, concurrent manual/event/scheduled coalescing, restricted non-owner authority, direct-SQL guards, empty migration downgrade/re-upgrade and populated rollback refusal pass: **37 focused / 425 full non-live PASS**, zero failures/errors/skips. [Item-5c evidence](item5c-evidence.json) records final hashes. This is a fixture `job_schedules` control, **not** a live Temporal schedule conversion or production effect. Item 6 worker upgrades/timers and item 7 independent RG1 remain. Published item-5b `5ae20d3` passes both required checks and strict main protection at 2026-09-27T19:21:23Z; item-5c candidate CI and independent PR approval are NOT RUN until publication/review. RG0/full RG1 remain HELD.
 
@@ -34,54 +112,6 @@ Completed bounded increment: ordered P1 item 1 (V2 goal/context/authority and ca
 
 Implementation checkpoint: V2 DTOs, frozen context, typed policy commands, bounded schedule cursor/batches, additive migrations 0021–0022, grant-edit serialization and restricted program read locking are implemented. Initial import/wording tests failed as expected. Additional tests reproduced event-identity movement and missing program revocation locking; both repaired. Independent review reproduced three more issues (freshness not rechecked at G0, obsolete revisions consuming pending capacity, coalesced slots being charged new capacity); all repaired with negative regressions and independently re-reviewed. The earlier 84-test run was superseded by **86 focused / 341 full PASS**, including bounded overlap/backfill and V2 subprocess `recorded` receipt assertions. Source HEAD `33fc483` has both required GitHub checks PASS and strict main protection reverified at 2026-09-24T18:36:38Z; this does not qualify the uncommitted increment or approve a merge.
 
-The [blueprint](IMPLEMENTATION-BLUEPRINT.md#current-execution) is the execution authority; this file is its handoff and chronological record. Items 1–2 and their documentation checkpoint are published on `feat/archv4-p0-foundation` through `eceff9e96e4a894cf40afd6fb3128940c6cca66a`; item 3 is published as `7071dbf03b624b5f91afda07db6853b8179ca40b`; item 4 implementation is published as `2fbb3847b27f4513b6d8083c4356b65ba484b974`. No main merge or history rewrite is claimed.
-
-| Area | Current status | Completed work or next obligation |
-| --- | --- | --- |
-| Documentation foundation | COMPLETE | Original inventory, reversible consolidation, source preservation, 75 requirement mappings, acyclic gates, link/Markdown/drift checks and six target diagrams. |
-| P0 local implementation | PASS | Isolated authenticated control, restricted-role authorization, secrets, immutable storage/retention, audit/OTel, migration and effects-disabled qualification. |
-| DG1 development entry | PASS | Five mandatory local prerequisites verified before P1; does not release production RG0. |
-| P1 local increments | PASS for items 1–5; phase ONGOING | Prior admission/outbox/revision/policy slices, V3 fixture G0/G1 accounting, stop/permit/cases, automatic fixture handoff/mock trace, signed commands and scoped independent fixture schedule cutover. |
-| P1 remaining implementation | PLANNED / NOT RUN | Item 6 worker upgrades/Continue-As-New and durable review timers; item 7 independent full RG1 review. Live Temporal schedule conversion remains a release obligation. |
-| P2 production records | PLANNED / NOT RUN | Reliable creative/publication records and enabled-provider qualification after RG1. |
-| P3 observation/experience | PLANNED / NOT RUN | Observation, attribution, internal experience and trial/evaluation isolation before P4. |
-| P4 strategy/release | PLANNED / NOT RUN | Explainable selection, strategy trials and controlled promotion/invalidation. |
-| P5 capability evolution | PLANNED / NOT RUN | Governed capability evolution and provider/protocol compatibility. |
-| P6 optional adaptation | PLANNED / DISABLED | No training/data-export enablement; conditional RG6 if this capability is enabled. |
-| P7 production rollout | PLANNED / NOT RUN | End-to-end live qualification, restore/upgrade, load/soak, signed deployment and constrained rollout. |
-| RG0 and full RG1 release | HELD | Four external production qualifications remain NOT RUN; full P1 acceptance also remains unfinished. |
-| GitHub controls | PASS on item-5b implementation `5ae20d3`; item-5c candidate/independent approval NOT RUN | Both required checks and strict main protection verified at 2026-09-27T19:21:23Z. Any later head requires exact-head recheck before any merge. |
-
-### Completed checkpoints to reuse
-
-| Commit | Scope and durable proof |
-| --- | --- |
-| `ca37f6f` | Consolidated V4 blueprint and isolated P0 foundation; original source/archive history preserved. |
-| `9445348` | Release-validator/authorization/deferral corrections and P1a admission; [development entry](development-entry-evidence.json) and [admission evidence](p1-increment-evidence.json). |
-| `b1969c8` | Repaired real storage CI UID mismatch without broadening credential permissions; stricter explicit qualification result fields. |
-| `2edad82` | Transactional local outbox, receipt reconciliation and process-kill recovery; [outbox evidence](outbox-increment-evidence.json). |
-| `e296d49` | Atomic goal revisions, concurrent snapshot repair and stable cross-revision/shortened-horizon retries; [revision evidence](goal-revision-evidence.json). |
-| `e628ccf` | Exact revision-bound fixture approval, expiry/revocation and historical-context recovery denial; [baseline evidence](baseline-approval-evidence.json). |
-| `483b905` | Blueprint/release/CI checkpoint documentation; both GitHub checks subsequently passed on this exact head. |
-| `7071dbf` | Fixture stop/permit/case item 3 with 137 focused / 389 full tests, 293 source hashes and exact implementation-head CI PASS. |
-| `2fbb384` | Automatic fixture outbox/mock trace item 4 with 113 focused / 399 full tests, 296 source hashes and exact implementation-head CI PASS. |
-
-Latest application execution on 2026-09-27: **425 full non-live / 37 focused PASS**, zero failures/errors/skips; one existing Starlette/AnyIO warning. Fifteen documentation tests, the 75-obligation validator (302 locked source files, 360 dispositions, 82 Markdown, five HTML, six negative controls), six Mermaid renders, four shell contracts, dependency consistency and whitespace pass. [Item-5c evidence](item5c-evidence.json) preserves command/JUnit/source digests and partial requirement coverage; [item-5b evidence](item5b-evidence.json) and older results remain historical. The prior item-4 late-receipt failure and repair remain recorded in its historical report.
-
-### Resume instructions
-
-1. Inspect branch/worktree/HEAD and this summary; do not restart P0 or rebuild completed P1 components. Recheck the [release ledger](p0-release.json) and source evidence for intervening changes.
-2. Resume the [ordered P1 queue](IMPLEMENTATION-BLUEPRINT.md#p1-resume-queue) at item 6 within isolated DG1 development. Reuse items 1–5; do not rebuild admission/revisions/baselines/outbox, V2 policies, V3 fixture accounting, stop/permit/cases, the local dispatcher or fixture cutover. Exact candidate CI and independent PR approval block a merge, not isolated development. Retain red-green, additive migration/rollback and independent review for each increment.
-3. Preserve dry-run, zero-spend and fallback denial. The private fixture worker and internal review wake are not public production controls. Never backfill authority into an old context or create a replacement cycle to bypass recovery.
-4. Preserve the three deferral identities and the phase-bound accounting, capability/R58, trial-isolation and promotion/invalidation decisions. Follow the blueprint dependencies before later-phase code.
-5. Before an implementation merge, verify the exact candidate commit with `verify_repository.py`, not a prior successful head. Keep main unmerged until current independent PR approval and all applicable merge gates pass.
-6. Update blueprint status/mappings, release evidence and this log with actual results. External identity/ingress, storage/restore, collector/alerts and operator safety qualification remain separate NOT RUN production obligations, not an excuse to label local implementation complete.
-
-"Ongoing" describes unfinished full P1, not an already running later increment. Items 5a–5c add only signed opt-in local fixture commands and cutover; production Temporal schedule control and full RG1 remain separate. Original ArchV4 sources, archived snapshots, historical visuals and AGENTS.md/SKILL.md instructions are preserved. Superseded core/Superpowers paths remain navigation aliases, not competing plans.
-
-## Historical transition and execution log
-
-The entries below record their state at the stated milestone. Earlier statements such as "all phases planned", "no P1 code", missing Chromium, unavailable engineering review or unprotected main are superseded by the current summary, not present-day facts. They remain intact to preserve the evidence trail; no production effects or Git history rewriting are permitted.
 
 Baseline: `8e50d68efbf2bec2aabfb2fe3226e01635de2adb`, inspected 2026-09-22.
 

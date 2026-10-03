@@ -1,6 +1,6 @@
 {
   "phase": "P0",
-  "updated_at": "2026-09-27",
+  "updated_at": "2026-10-03",
   "baseline_commit": "8e50d68efbf2bec2aabfb2fe3226e01635de2adb",
   "scope": "Isolated local foundation; no production traffic or effects",
   "requirements": [
@@ -167,12 +167,12 @@
     {
       "check": "remote repository gate enforcement",
       "status": "PASS",
-      "evidence": "Item-5b published implementation 5ae20d324f12a8880bfc176a6eec41aa6541ac95 verify and p0-regression PASS with strict app-bound main protection read back 2026-09-27T19:21:23.150470+00:00; raw read-only report is local-only at artifacts/v4-p0/item5b-current-repository.json. Item-5c candidate needs its own exact-head checks after publication; independent PR approval remains NOT RUN and no merge is authorized."
+      "evidence": "Published item-5c application checkpoint 7009d51bac527b92c01af8c45d6d232e8a4b4a71: verify and p0-regression PASS; strict app-bound main protection PASS at 2026-10-03T13:49:24.852686+00:00. Commit-bound read-only responses are tracked in docs/v4/repository-enforcement-evidence.json. Every later commit needs its own exact-head verification. Independent PR approval remains separately required; main is unmerged and no production release is authorized."
     }
   ],
   "later_phase_boundaries": {
     "P1": "Reuse verified local admission, revisions, approved fixture baseline, outbox, V2 policy/context, V3 fixture G0/G1 accounting, item-3 stop/permit/cases, item-4 fixture dispatch/mock trace and item-5a/5b/5c signed fixture commands/cutover; next worker upgrades, Continue-As-New and durable review timers. Live Temporal legacy schedule conversion remains gated",
-    "P2": "G1 allocation transfer, all ready-package reference/outbox integration and enabled provider qualification",
+    "P2": "Production G1 provider charge/effect integration using the fixture-qualified allocation transfer contract, ready-package reference/outbox integration and enabled provider qualification",
     "P3": "Trial/evaluation isolation and separate strategy/capability namespaces",
     "P4": "Promotion/invalidation serialization; mandatory typed learning proposals with optional qualified semantic analyst",
     "P5": "Advanced capability evolution, approved fallback integration and full compatibility upgrades"
@@ -246,9 +246,14 @@
       1,
       2,
       3,
-      4
+      4,
+      5
     ],
-    "completed_queue_subincrements": ["5a", "5b", "5c"],
+    "completed_queue_subincrements": [
+      "5a",
+      "5b",
+      "5c"
+    ],
     "next_queue_item": 6
   },
   "documentation_refresh": {
@@ -280,5 +285,35 @@
     "application_delta": "None relative to the already implemented item-1 working tree; all 285 source hashes preserved",
     "result": "PASS for bounded local item 1; RG0/full RG1 remain HELD",
     "evidence": "docs/v4/cadence-policy-recheck-evidence.json"
+  },
+  "documentation_reinspection": {
+    "date": "2026-10-03",
+    "inspected_application_commit": "7009d51bac527b92c01af8c45d6d232e8a4b4a71",
+    "scope": "Documentation/navigation/status correction and precise item-6 handoff; no application, migration, dependency or design-source changes",
+    "application_tests_this_refresh": "Local NOT RUN; retain 425 full non-live / 37 focused PASS dated 2026-09-27 in item5c-evidence.json. Required remote CI runs on the new documentation commit after publication and must be checked separately.",
+    "repository_report": "docs/v4/repository-enforcement-evidence.json",
+    "repository_inspected_at": "2026-10-03T13:49:24.852686+00:00",
+    "next_queue_item": 6,
+    "production_effects_enabled": false,
+    "publication": "Authorized commit/push to origin/feat/archv4-p0-foundation; each new published head requires exact-head CI; no main merge",
+    "handoff": "docs/v4/progress.md#item-6-resume-handoff",
+    "verification": {
+      "status": "PASS",
+      "documentation_tests": 15,
+      "mapped_obligations": 75,
+      "source_evidence_files": 302,
+      "inventory_dispositions": 360,
+      "markdown_files": 82,
+      "tracked_html_files": 4,
+      "negative_controls": 6,
+      "documentation_shell_contracts": 4,
+      "whitespace": "PASS",
+      "application_hashes_preserved": true,
+      "historical_reports_preserved": true,
+      "design_sources_preserved": true,
+      "mermaid_source_blocks_preserved": 6,
+      "fresh_mermaid_renders": "NOT RUN; all source blocks unchanged",
+      "report": "docs/v4/validation.md#documentation-reinspection-verification--2026-10-03"
+    }
   }
 }

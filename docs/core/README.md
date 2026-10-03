@@ -4,7 +4,9 @@ Superseded by the [V4 production implementation blueprint](<../v4/IMPLEMENTATION
 
 [Original historical evidence](<../archive/2026-09-22/docs/core/README.md.snapshot>) is retained with its inventory hash. It is superseded source text, not a current execution plan.
 
-For completed, ongoing and planned V4 work, use [current progress](../v4/progress.md#current-state--2026-09-24) and the [ordered remaining queue](../v4/IMPLEMENTATION-BLUEPRINT.md#p1-resume-queue). Older Phase 1–9 labels do not establish completion of V4 P0–P7.
+For completed, ongoing and planned V4 work, use [current progress](../v4/progress.md#current-state) and the [ordered remaining queue](../v4/IMPLEMENTATION-BLUEPRINT.md#p1-resume-queue). Older Phase 1–9 labels do not establish completion of V4 P0–P7.
+
+P1 items 1–5 are locally verified through published item-5c `7009d51`; resume at the [item-6 handoff](../v4/progress.md#item-6-resume-handoff). Production RG0/full RG1 remain HELD.
 
 <!-- Historical heading anchors retained for incoming links. -->
 <a id="ai-content-system-build-pack"></a>

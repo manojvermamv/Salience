@@ -1,23 +1,35 @@
 # V4 blueprint validation evidence
 
+<a id="current-evidence-summary"></a>
 <a id="current-evidence-summary--2026-09-24"></a>
+<a id="current-evidence-summary--2026-09-27"></a>
 
-## Current evidence summary — 2026-09-27
+## Current evidence summary — 2026-10-03 documentation reinspection
 
-Inspected item-5c base: `5ae20d324f12a8880bfc176a6eec41aa6541ac95`. The locally qualified candidate is identified by the reviewed 302-file source lock and [item-5c report](item5c-evidence.json). Use [current progress](progress.md#current-state--2026-09-24) and the [blueprint snapshot](IMPLEMENTATION-BLUEPRINT.md#current-execution); dated older reports remain historical, not current-tree qualification.
+Inspected published item-5c application checkpoint: `7009d51bac527b92c01af8c45d6d232e8a4b4a71`; its original qualification base was `5ae20d3`. The 302-file source lock matches the application; the [item-5c report](item5c-evidence.json) retains its original 2026-09-27 commands, digests and pre-publication repository state. Local application tests were not rerun for this documentation refresh. Use [current progress](progress.md#current-state), the [item-6 handoff](progress.md#item-6-resume-handoff) and the [blueprint snapshot](IMPLEMENTATION-BLUEPRINT.md#current-execution). Dated older reports remain historical; current repository evidence is the separate [rolling exact-commit report](repository-enforcement-evidence.json).
 
 | Evidence | Latest recorded outcome | Meaning and limits |
 | --- | --- | --- |
 | Full non-live application suite | 425 PASS, zero failures/errors/skips, 2026-09-27 | Item-5c regression, 394.403 seconds JUnit time; existing Starlette/AnyIO warning only. |
 | Focused completed P1/migration suite | 37 PASS, zero failures/errors/skips, 2026-09-27 | Scoped fixture schedule cutover, public API/CLI/SDK, restricted role, crash/ack-loss/rollback, fresh schema and negative gates. Full P1 remains incomplete. |
 | Local development entry | DG1 PASS | [Prerequisite evidence](development-entry-evidence.json) predates P1 implementation; not a production release. |
-| Documentation contract | 15 tests / 75 obligations PASS | 302 reviewed source files, 360 inventory dispositions, 82 Markdown files, five HTML files, six negative controls; four shell contracts also PASS. |
-| Diagrams | Six Mermaid 12.0.0 renders PASS | Fresh `item5c-diagrams` local artifacts, verified under system Chromium and pinned temporary Mermaid installation; target visuals are not deployment evidence. |
-| Exact-head CI and repository protection | PASS for published item-5b `5ae20d3` at 2026-09-27T19:21:23Z; item-5c candidate NOT RUN until publication | Both required app-bound checks and strict admin enforcement PASS; any later head needs fresh inspection. Independent PR approval is NOT RUN; no merge authorization inferred. |
+| Documentation contract | Item-5c: 15 tests / 75 obligations PASS, 2026-09-27; refresh verification below | 302 reviewed source files, 360 preserved inventory dispositions and six negative controls. Fresh documentation checks are recorded separately from historical application qualification. |
+| Diagrams | Six Mermaid 12.0.0 renders PASS, 2026-09-27 | Original item-5c diagram evidence is historical. All six source blocks are unchanged in this documentation refresh; no fresh render or deployment certification is claimed. |
+| Exact-head CI and repository protection | PASS for published item-5c `7009d51` at 2026-10-03T13:49:24.852686+00:00 | Both required app-bound checks and strict admin enforcement PASS in the tracked report; any later commit needs fresh inspection. Independent PR approval remains separately required; no merge authorization inferred. |
 | Production qualifications | NOT RUN; RG0 HELD | Operator safety, identity/ingress, managed storage/restore and remote collector/alerts need actual external evidence. |
 | Full P1 and later phases | RG1 HELD; remaining implementation/qualification NOT RUN | See the [remaining queue](IMPLEMENTATION-BLUEPRINT.md#p1-resume-queue); a green fixture slice is not full release acceptance. |
 
 Historical reports are immutable, commit-scoped evidence: [P1a](p1-increment-evidence.json), [outbox](outbox-increment-evidence.json), [goal revisions](goal-revision-evidence.json), [baseline approval](baseline-approval-evidence.json) and [allocation](allocation-evidence.json). Their original source digests/counts must not be overwritten with the newest result. The repository-enforcement report is a rolling latest-inspection record, so older paragraphs identify their original commits independently.
+
+### Documentation reinspection verification — 2026-10-03
+
+Scope: active navigation/current status, published item-5c repository evidence and an exact item-6 resume handoff. Stable `current-state` and `current-evidence-summary` destinations retain the September 24/27 anchors for incoming links. The current blueprint rows now distinguish gaps closed by later fixture increments from remaining production obligations. Prior top-of-page progress snapshots moved into the historical log with their original wording and dates.
+
+The original ArchV4 sources, archived snapshots, historical increment JSON reports, all 302 application evidence hashes and six Mermaid source blocks remain unchanged. The rolling repository report now identifies published `7009d51`, with `verify`, `p0-regression` and strict main protection PASS at 2026-10-03T13:49:24.852686+00:00. Independent PR approval remains separately required. This report does not qualify a later documentation commit; inspect that exact head after publication.
+
+Fresh verification PASS: `python3 docs/v4/test_checks.py` (15 tests), `python3 docs/v4/check.py --self-test` (75 obligations, 302 source hashes, 360 dispositions, 82 Markdown files, four tracked HTML files and six negative controls), all four `tests/scripts` documentation/command contracts and `git diff --check`. A separate preservation audit confirms all six Mermaid source blocks, original sources/archives, historical increment reports and the moved progress paragraphs retain their bytes. Required GitHub CI will run on the new documentation commit after publication; its result must be inspected separately from the application checkpoint report. No local application tests were rerun, and the 425 full / 37 focused results remain dated 2026-09-27. No item-6 implementation, live schedule conversion, main merge or production release is claimed.
+
+The sections below preserve the original qualification-time state. Their candidate-CI and next-item wording is historical; the current summary and repository report supersede it for execution.
 
 ### P1 item-5c fixture schedule-cutover qualification — 2026-09-27
 
