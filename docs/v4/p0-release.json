@@ -20,13 +20,13 @@
       "exit_code": 0
     },
     "full_non_live": {
-      "passed": 425,
+      "passed": 456,
       "failed": 0,
       "errors": 0,
       "skipped": 0,
       "exit_code": 0,
-      "seconds": 394.403,
-      "junit": "artifacts/v4-p0/item5c-regression.xml"
+      "seconds": 440.027,
+      "junit": "artifacts/v4-p0/item6-operator-regression.xml"
     },
     "documentation_tests": {
       "passed": 15,
@@ -40,18 +40,20 @@
       "failed": 0,
       "version": "12.0.0"
     },
-    "locked_evidence_files": 302,
+    "locked_evidence_files": 310,
     "original_inventory_dispositions": 360,
     "warning": "Pre-existing Starlette/AnyIO deprecation warning",
     "focused_p1": {
-      "passed": 37,
+      "passed": 85,
       "failed": 0,
       "errors": 0,
       "skipped": 0,
       "exit_code": 0,
-      "seconds": 43.642,
-      "junit": "artifacts/v4-p0/item5c-focused.xml"
-    }
+      "seconds": 179.571,
+      "junit": "artifacts/v4-p0/item6-operator-focused.xml"
+    },
+    "application_qualified_at": "2026-10-03",
+    "application_commit": "e5d18401255810c74b85b2d8e57daca8cda8d9a3"
   },
   "evidence_artifacts": [
     {
@@ -177,11 +179,11 @@
     {
       "check": "remote repository gate enforcement",
       "status": "PASS",
-      "evidence": "Published item-5c application checkpoint 7009d51bac527b92c01af8c45d6d232e8a4b4a71: verify and p0-regression PASS; strict app-bound main protection PASS at 2026-10-03T13:49:24.852686+00:00. Commit-bound read-only responses are tracked in docs/v4/repository-enforcement-evidence.json. Every later commit needs its own exact-head verification. Independent PR approval remains separately required; main is unmerged and no production release is authorized."
+      "evidence": "Final item-6 application checkpoint e5d18401255810c74b85b2d8e57daca8cda8d9a3: verify and p0-regression PASS; strict app-bound main protection PASS at 2026-10-03T16:15:00.103409+00:00. Read-only responses are tracked in docs/v4/repository-enforcement-evidence.json. Every later published commit needs its own exact-head inspection. Independent PR approval remains separately required; main unmerged, no production release authorized."
     }
   ],
   "later_phase_boundaries": {
-    "P1": "Reuse verified local admission, revisions, approved fixture baseline, outbox, V2 policy/context, V3 fixture G0/G1 accounting, item-3 stop/permit/cases, item-4 fixture dispatch/mock trace and item-5a/5b/5c signed fixture commands/cutover; next worker upgrades, Continue-As-New and durable review timers. Live Temporal legacy schedule conversion remains gated",
+    "P1": "Reuse locally qualified items 1\u20136: admission/revisions/baseline, V2 policy/context, V3 fixture accounting, governance, automatic fixture outbox/mock trace, signed commands/cutover, compatible history replay/continuation and finite canonical waits/database notification receipts. Next item 7 independent full RG1 qualification; live legacy schedules/routing, policy/scoped remote reads, production providers/alerts and deployment routing remain gated.",
     "P2": "Production G1 provider charge/effect integration using the fixture-qualified allocation transfer contract, ready-package reference/outbox integration and enabled provider qualification",
     "P3": "Trial/evaluation isolation and separate strategy/capability namespaces",
     "P4": "Promotion/invalidation serialization; mandatory typed learning proposals with optional qualified semantic analyst",
@@ -325,7 +327,8 @@
       "mermaid_source_blocks_preserved": 6,
       "fresh_mermaid_renders": "NOT RUN; all source blocks unchanged",
       "report": "docs/v4/validation.md#documentation-reinspection-verification--2026-10-03"
-    }
+    },
+    "record_scope": "Historical pre-item-6 documentation checkpoint; current state is documentation_item6_refresh. Its repository inspection was superseded by the rolling report."
   },
   "item6_checkpoint": {
     "recorded_at": "2026-10-03",
@@ -335,11 +338,12 @@
     "full_non_live_tests": 455,
     "local_status": "PASS",
     "independent_review": "NOT RUN",
-    "candidate_ci": "NOT RUN until publication; inspect exact HEAD with verify_repository.py",
+    "candidate_ci": "PASS after publication at 2026-10-03T15:46:54.908428+00:00; original qualification evidence retains its pre-publication capture state",
     "evidence": "docs/v4/item6-evidence.json",
     "next_queue_item": 7,
     "production_effects_enabled": false,
-    "main_merge": "NOT AUTHORIZED"
+    "main_merge": "NOT AUTHORIZED",
+    "published_commit": "03f3cb9cae589c1030cbf5562aab6d4d56b823f4"
   },
   "item6_operator_checkpoint": {
     "recorded_at": "2026-10-03",
@@ -350,7 +354,41 @@
     "evidence": "docs/v4/item6-operator-evidence.json",
     "next_queue_item": 7,
     "independent_review": "NOT RUN",
-    "candidate_ci": "NOT RUN until publication; inspect exact HEAD",
-    "production_effects_enabled": false
+    "candidate_ci": "PASS",
+    "production_effects_enabled": false,
+    "published_commit": "e5d18401255810c74b85b2d8e57daca8cda8d9a3",
+    "repository_inspected_at": "2026-10-03T16:15:00.103409+00:00",
+    "repository_evidence": "docs/v4/repository-enforcement-evidence.json",
+    "ci_run": "https://github.com/manojvermamv/Salience/actions/runs/37135536241",
+    "repository_sha256": "e454a54632462165c873230d8d6afbada36d36808f6c4b6444cfecf33fd036a5"
+  },
+  "documentation_item6_refresh": {
+    "date": "2026-10-03",
+    "application_commit": "e5d18401255810c74b85b2d8e57daca8cda8d9a3",
+    "scope": "Repository-wide active documentation and Markdown reconciliation through completed P1 item 6; unchanged historical sources, snapshots, instruction/plugin docs, visuals and qualification reports retain their scope and hashes",
+    "application_tests_this_refresh": "NOT RERUN; preserve final item-6 85 focused / 456 full non-live PASS dated 2026-10-03",
+    "next_queue_item": 7,
+    "audit": "docs/v4/documentation-status-audit.json",
+    "verification": {
+      "status": "PASS",
+      "documentation_tests": 15,
+      "mapped_obligations": 75,
+      "source_evidence_files": 310,
+      "inventory_dispositions": 360,
+      "tracked_markdown_files_audited": 82,
+      "active_project_markdown_files_updated": 68,
+      "tracked_documentation_artifacts_audited": 224,
+      "tracked_html_files_checked": 4,
+      "negative_controls": 6,
+      "documentation_shell_contracts": 4,
+      "whitespace": "PASS",
+      "historical_reports_and_sources_preserved": true,
+      "mermaid_source_blocks_preserved": 6,
+      "fresh_mermaid_renders": "NOT RERUN; unchanged source blocks retain item-6 six-render PASS",
+      "report": "docs/v4/validation.md#repository-wide-documentation-refresh--2026-10-03"
+    },
+    "production_effects_enabled": false,
+    "independent_review": "NOT RUN",
+    "main_merge": "NOT AUTHORIZED"
   }
 }

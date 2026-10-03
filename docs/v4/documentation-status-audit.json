@@ -1,0 +1,1088 @@
+{
+  "audited_at": "2026-10-03",
+  "application_commit": "e5d18401255810c74b85b2d8e57daca8cda8d9a3",
+  "scope": "Every tracked repository Markdown file and documentation artifact at application checkpoint e5d1840, plus this new audit manifest; installed dependencies, generated runtime output and other worktree checkouts are excluded",
+  "tracked_markdown_files": 82,
+  "documentation_artifacts": 224,
+  "summary": {
+    "preserved plugin instructions, references and examples; independent skill scope": 57,
+    "active project Markdown aligned with completed P1 item 6": 68,
+    "preserved original design source or historical diagram": 7,
+    "preserved immutable historical snapshot": 62,
+    "preserved historical architecture visual": 8,
+    "preserved dated qualification report": 15,
+    "preserved source, archive or coverage manifest": 5,
+    "current release metadata aligned with final qualification and next item 7": 1,
+    "rolling repository readback refreshed to final application e5d1840": 1
+  },
+  "application_source_files_preserved": 310,
+  "mermaid_source_blocks_preserved": 6,
+  "next_queue_item": 7,
+  "production_effects_enabled": false,
+  "RG0": "HELD",
+  "RG1": "HELD",
+  "independent_increment_and_pr_review": "NOT RUN",
+  "files": [
+    {
+      "path": ".agents/skills/archify/SKILL.md",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
+      "sha256": "10094272d6d1b4ad0f2c2e0880cb646fe4991454a2dc3d854aecb27e7407ee1f"
+    },
+    {
+      "path": ".agents/skills/archify/THIRD_PARTY_NOTICES.md",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
+      "sha256": "0b7fb59365dc21c93b0f62526d74ee913aeec9ae532c112bc76afa7edcd56e14"
+    },
+    {
+      "path": ".agents/skills/archify/assets/JetBrainsMono-OFL.txt",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
+      "sha256": "c1ab7c666206842a02b35b30770dac0d7a10156ed401c9defc3f02a754d89e90"
+    },
+    {
+      "path": ".agents/skills/archify/assets/template.html",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
+      "sha256": "003f2ddc4ec00ab37bdb0c9351cde73ccd9a82ef193a15adae6179eb4c51a735"
+    },
+    {
+      "path": ".agents/skills/archify/brand-marks/README.md",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
+      "sha256": "8b771a16322ce9ea47fdc00b9935e33adf0f3af608f2d735235443e15ef622e2"
+    },
+    {
+      "path": ".agents/skills/archify/brand-marks/catalog.json",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
+      "sha256": "e1a6c555cbf8ea36fb8100a4a25824e7ab87bebe9871e450ba05b6dea3b036d6"
+    },
+    {
+      "path": ".agents/skills/archify/examples/agent-run.lifecycle.json",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
+      "sha256": "7c0ad72ee7affbd6c6e4758b7520d61ddd4508c917acf36beabcad3ee7ca3ba7"
+    },
+    {
+      "path": ".agents/skills/archify/examples/agent-tool-call.workflow.json",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
+      "sha256": "4d3f6c23de2ca7d306e05d0041a9506833bb5a164a2bddc2d1984cf4da3ee90c"
+    },
+    {
+      "path": ".agents/skills/archify/examples/async-job-roundtrip.sequence.json",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
+      "sha256": "545f20920c89b69c2bb1f15508d5543fddbeb15cffba61e102206e04bd5a5cd9"
+    },
+    {
+      "path": ".agents/skills/archify/examples/brand-aware-delivery.architecture.json",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
+      "sha256": "d4f0df8114b3524756ffa49529c015e00757b0594a357183490c1edeb341e3c6"
+    },
+    {
+      "path": ".agents/skills/archify/examples/cache-miss-request.sequence.json",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
+      "sha256": "9a799a3661c16cd6ab4f6373ff6a04da95a9ab70d93b0a349b668466f4912fd7"
+    },
+    {
+      "path": ".agents/skills/archify/examples/checkout-platform.base.architecture.json",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
+      "sha256": "c112195e7285e3e4aedaeab3e1f85f5891d30fccc2c260aebe4e1da12c80cf84"
+    },
+    {
+      "path": ".agents/skills/archify/examples/checkout-platform.head.architecture.json",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
+      "sha256": "e3aaf47f77afeadafc81c6ce853dc1df68cc1e6932dec972cf478f4008fdda99"
+    },
+    {
+      "path": ".agents/skills/archify/examples/dataflow-product-analytics.html",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
+      "sha256": "c401af2063084329198bc915c0c3caec1c5156668dfd12c7f599f0573cb74814"
+    },
+    {
+      "path": ".agents/skills/archify/examples/deployment-release.lifecycle.json",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
+      "sha256": "735c2c5819266e6ea2a71775b6eefce98b53030ce90cb721dc8e1d022ce5be71"
+    },
+    {
+      "path": ".agents/skills/archify/examples/event-stream.dataflow.json",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
+      "sha256": "a92d6597ddbe164f395da32a7d4b33cfae08edd7d9600a6fb45a2058e5bbb43e"
+    },
+    {
+      "path": ".agents/skills/archify/examples/incident-response.workflow.json",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
+      "sha256": "5c760c82eee545dfb7da38a4e628059d7891af4cfbfc13c8a7009ea64f69aa1b"
+    },
+    {
+      "path": ".agents/skills/archify/examples/lifecycle-agent-run.html",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
+      "sha256": "e11f2b1db9bb0c9659516f33a139c6c0e4f68c7a8ff264daf941e8bf4347f8bd"
+    },
+    {
+      "path": ".agents/skills/archify/examples/product-analytics.dataflow.json",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
+      "sha256": "91411404fb4828a3b7ea358f3a7b9877781c9e9dc9c04b42b6eb4a757281b59f"
+    },
+    {
+      "path": ".agents/skills/archify/examples/production-deployment.architecture.json",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
+      "sha256": "ec484aa8576664fdb207b543fa49486b23273faccb7a5071e1a0becfb48c22eb"
+    },
+    {
+      "path": ".agents/skills/archify/examples/release-delivery.workflow.json",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
+      "sha256": "e5c880417eac1623923c3dd5461e0c78acd762e1621a28bd53fc14a84cad6a91"
+    },
+    {
+      "path": ".agents/skills/archify/examples/sequence-cache-miss-request.html",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
+      "sha256": "1a38f34911db256a86962512fbd744ed6ec894750b91256a0ca41ca543921d0b"
+    },
+    {
+      "path": ".agents/skills/archify/examples/web-app-rendered.html",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
+      "sha256": "3b6576e29920ce22343b48ab6ee8cb3c98aa1febc583b569e4af30543e37be96"
+    },
+    {
+      "path": ".agents/skills/archify/examples/web-app.architecture.json",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
+      "sha256": "483350f5297df682aba4e4a0fa491307ce3d3abd725ae4df07fab177490752cf"
+    },
+    {
+      "path": ".agents/skills/archify/examples/workflow-agent-tool-call-rendered.html",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
+      "sha256": "3ad7b10452fc1afe61008c2dd6eebf6348c7e694227f0b03f217bd1bac1fe046"
+    },
+    {
+      "path": ".agents/skills/archify/package-lock.json",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
+      "sha256": "f875c29b190f6f5dc14bea7e56879ad2282c0a5212253b24937f77b4f6198054"
+    },
+    {
+      "path": ".agents/skills/archify/package.json",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
+      "sha256": "d065836911f377598cbfd8e1c0166eaadc3397de18a21e3c57742fac8f15bd11"
+    },
+    {
+      "path": ".agents/skills/archify/references/authoring-contract.md",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
+      "sha256": "873494557cf9be91d9eed8ecce37072886c0e98b851ad59ab8938f405c6fbc5e"
+    },
+    {
+      "path": ".agents/skills/archify/references/brand-marks.md",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
+      "sha256": "8010869da70677e686ecb312d9c3eec2d20723a44f817ab2bbf5525361c8a136"
+    },
+    {
+      "path": ".agents/skills/archify/references/delivery-contract.md",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
+      "sha256": "a614c31f41d270995a5aee99036532470a43722f8208fdc8ef922805914d1d01"
+    },
+    {
+      "path": ".agents/skills/archify/references/viewer-runtime.md",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
+      "sha256": "dc0d9ffe6b9987d73d2d48710fce5ab4c120bbf1940ff1eb9355259c5d4f32b6"
+    },
+    {
+      "path": ".agents/skills/archify/renderers/dataflow/README.md",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
+      "sha256": "18c4f86ba62fcee371d9fe38094625b3a68cc76231c36ab8c8124acb4c1ffa42"
+    },
+    {
+      "path": ".agents/skills/archify/renderers/lifecycle/README.md",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
+      "sha256": "f8ef88dc859189bb18bad7bb2e27d997cbc9d30936cf20f8bf401bae7f57deec"
+    },
+    {
+      "path": ".agents/skills/archify/renderers/sequence/README.md",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
+      "sha256": "a442335dcf44b1587d3ad88809e31b001a4fafdf7a134040e8b1927455af4206"
+    },
+    {
+      "path": ".agents/skills/archify/renderers/workflow/README.md",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
+      "sha256": "7e1bd65cc5cc38206304ae2f61f4f0f493da98d71a111a61d0754c9da362c5c9"
+    },
+    {
+      "path": ".agents/skills/archify/schemas/README.md",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
+      "sha256": "f4ca94ec18cf60ad02211f2c5bb64e9c26a87467a22215e06db34dbfc5d6145f"
+    },
+    {
+      "path": ".agents/skills/archify/schemas/architecture.schema.json",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
+      "sha256": "94568c7ca72c07ac0ee02ee76bd39392874b3a13bb796a127962be68d0f5bc90"
+    },
+    {
+      "path": ".agents/skills/archify/schemas/common.schema.json",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
+      "sha256": "2630c958314eeebb92e0f6f6330475f1a2bc48f8c1b53201ba3b58889b319c80"
+    },
+    {
+      "path": ".agents/skills/archify/schemas/dataflow.schema.json",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
+      "sha256": "09d238a6a18f2e074ec69c8f905f58a44d3a0b68fc6a925b8346c484a912af90"
+    },
+    {
+      "path": ".agents/skills/archify/schemas/lifecycle.schema.json",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
+      "sha256": "05b46c0db95ee7ed44305b61496a96bb4f69342b20f9903d6534d952ebc65083"
+    },
+    {
+      "path": ".agents/skills/archify/schemas/sequence.schema.json",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
+      "sha256": "c9fec3fad087f14d55c0bb2d34446246e3405f0238c292c1cb6bef28d1120fcb"
+    },
+    {
+      "path": ".agents/skills/archify/schemas/workflow.schema.json",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
+      "sha256": "2128e82afd2b971fcb7d80ada86fa836bb4a5035b504053b87d3aeefec380e3c"
+    },
+    {
+      "path": ".agents/skills/archify/skill-release.json",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
+      "sha256": "269772492c38663b5d19730a54e5d7ad973ef04e47eb4f75b6dfa2e249614097"
+    },
+    {
+      "path": ".agents/skills/archify/test/fixtures/automatic-routing-node-border-clearance.workflow.json",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
+      "sha256": "7c3ede1070394a94c565b7a80e0d5ca2cba4f041aaac85777c74df48bf71e933"
+    },
+    {
+      "path": ".agents/skills/archify/test/fixtures/issue-126/custom-widths.workflow.json",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
+      "sha256": "7701a2f6271b9d02d9477d5fb02d52e70738ff14be824956cf77ff466c1c1013"
+    },
+    {
+      "path": ".agents/skills/archify/test/fixtures/issue-126/explicit-route.workflow.json",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
+      "sha256": "985ba9146664598785cc3a5008e847259ac66caf4c2c5570e32477f384f31b21"
+    },
+    {
+      "path": ".agents/skills/archify/test/fixtures/issue-126/explicit-viewbox.workflow.json",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
+      "sha256": "520071d14b748aa184589bac22fc548e501c78fb9cf2c8bdceba4bf715620c3f"
+    },
+    {
+      "path": ".agents/skills/archify/test/fixtures/issue-126/labels.workflow.json",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
+      "sha256": "496ea86f39914458688f0c3b4277c03c3dedc8eedf1ba35a11e8c99a4a323d08"
+    },
+    {
+      "path": ".agents/skills/archify/test/fixtures/v1-baseline/agent-run.lifecycle.json",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
+      "sha256": "b2264f4b2eff23e69b3dc79922062e942fc64ed0bec4f939fa53dda3cacd82d6"
+    },
+    {
+      "path": ".agents/skills/archify/test/fixtures/v1-baseline/agent-tool-call.workflow.json",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
+      "sha256": "4903056b3634e02cce9fd7c71b61fb27e6db455480c8d776a7005346b3afc564"
+    },
+    {
+      "path": ".agents/skills/archify/test/fixtures/v1-baseline/cache-miss-request.sequence.json",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
+      "sha256": "047914c4dc4ed753b6b9f100ebaf6e7f15f9b72af0913e3a8e7a223bdef39aaa"
+    },
+    {
+      "path": ".agents/skills/archify/test/fixtures/v1-baseline/event-stream.dataflow.json",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
+      "sha256": "a92d6597ddbe164f395da32a7d4b33cfae08edd7d9600a6fb45a2058e5bbb43e"
+    },
+    {
+      "path": ".agents/skills/archify/test/fixtures/v1-baseline/product-analytics.dataflow.json",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
+      "sha256": "6da9959f729d81c4cdf8895fb6611080ff0368c3cde48b00b0081495a006140d"
+    },
+    {
+      "path": ".agents/skills/archify/test/fixtures/v1-baseline/production-deployment.architecture.json",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
+      "sha256": "738e9c7f22e4e6e88f5aafc087dc58409105927daa9a79aaf240c8393654494f"
+    },
+    {
+      "path": ".agents/skills/archify/test/fixtures/v1-baseline/web-app.architecture.json",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
+      "sha256": "5fb15d0e0f7e5ed3a1a3f2e7ee406fb50aae126818c58db24f77236b07dd63f6"
+    },
+    {
+      "path": ".agents/skills/archify/test/fixtures/v1-workflow-700x400.workflow.json",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
+      "sha256": "74a9bf3424c656b47a757b39cc1bd69c27ae553c264d3186799bdc5d080b5509"
+    },
+    {
+      "path": ".agents/skills/archify/test/fixtures/v1-workflow-explicit-coordinates.workflow.json",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
+      "sha256": "4f1140e720fdfbae7f7efed9fb9fdffb581fef849798697db9df7fa56b2131af"
+    },
+    {
+      "path": "README.md",
+      "disposition": "active project Markdown aligned with completed P1 item 6"
+    },
+    {
+      "path": "docs-new-arch/ArchCurrent.mermaid",
+      "disposition": "preserved original design source or historical diagram",
+      "sha256": "8babef81879d00387499e28324c325fa10ebb0fc8255ca613b61efff0dd207ad"
+    },
+    {
+      "path": "docs-new-arch/ArchV1.mermaid",
+      "disposition": "preserved original design source or historical diagram",
+      "sha256": "a40d2446978d2ca663518049f2ea8076479a936ddc9eb7c3b630e22827f5f0f8"
+    },
+    {
+      "path": "docs-new-arch/ArchV2.mermaid",
+      "disposition": "preserved original design source or historical diagram",
+      "sha256": "f97c4b5519f679346f403ced265df753d9ff29f01ddbb6e40fc1e5b63ae377d8"
+    },
+    {
+      "path": "docs-new-arch/ArchV3-implementation-notes.md",
+      "disposition": "preserved original design source or historical diagram",
+      "sha256": "7afdf8693a234cc21becba522b30bf93e01ebb747fa3105e1f1782d2058e8a1a"
+    },
+    {
+      "path": "docs-new-arch/ArchV3.mermaid",
+      "disposition": "preserved original design source or historical diagram",
+      "sha256": "26af467c25d62f6485c4ee32a32ad9a95a74ba9489edb12f76fce38e8baab37d"
+    },
+    {
+      "path": "docs-new-arch/ArchV4-implementation-notes.md",
+      "disposition": "preserved original design source or historical diagram",
+      "sha256": "6378d46cc347b84a1e8983263ba860faab2c44c81e84c12c32b7d2724fc0f078"
+    },
+    {
+      "path": "docs-new-arch/ArchV4.mermaid",
+      "disposition": "preserved original design source or historical diagram",
+      "sha256": "44a0cf58e7f18129f3c6cdd8e8c5f179f0211f830456b59f0e9b48a3b9185809"
+    },
+    {
+      "path": "docs-new-arch/README.md",
+      "disposition": "active project Markdown aligned with completed P1 item 6"
+    },
+    {
+      "path": "docs/README.md",
+      "disposition": "active project Markdown aligned with completed P1 item 6"
+    },
+    {
+      "path": "docs/adr/0001-durable-runtime.md",
+      "disposition": "active project Markdown aligned with completed P1 item 6"
+    },
+    {
+      "path": "docs/adr/0002-object-storage.md",
+      "disposition": "active project Markdown aligned with completed P1 item 6"
+    },
+    {
+      "path": "docs/adr/0003-api-persistence-and-contracts.md",
+      "disposition": "active project Markdown aligned with completed P1 item 6"
+    },
+    {
+      "path": "docs/adr/0004-governance-secrets-and-protocols.md",
+      "disposition": "active project Markdown aligned with completed P1 item 6"
+    },
+    {
+      "path": "docs/adr/0005-mcp-a2a-and-browser-sdk-adoption.md",
+      "disposition": "active project Markdown aligned with completed P1 item 6"
+    },
+    {
+      "path": "docs/adr/0006-governed-publishing.md",
+      "disposition": "active project Markdown aligned with completed P1 item 6"
+    },
+    {
+      "path": "docs/agents.md",
+      "disposition": "active project Markdown aligned with completed P1 item 6"
+    },
+    {
+      "path": "docs/api.md",
+      "disposition": "active project Markdown aligned with completed P1 item 6"
+    },
+    {
+      "path": "docs/architecture.md",
+      "disposition": "active project Markdown aligned with completed P1 item 6"
+    },
+    {
+      "path": "docs/archive/2026-09-22/README.md",
+      "disposition": "active project Markdown aligned with completed P1 item 6"
+    },
+    {
+      "path": "docs/archive/2026-09-22/README.md.snapshot",
+      "disposition": "preserved immutable historical snapshot",
+      "sha256": "66ec85addfcd598ba745681b543df133f22af2a76e858020bebf0afd956b7310"
+    },
+    {
+      "path": "docs/archive/2026-09-22/docs/adr/0001-durable-runtime.md.snapshot",
+      "disposition": "preserved immutable historical snapshot",
+      "sha256": "b41c23fe0a9d2e180d30e4ac233a22f4bf466b5b62cab5b0e9b1548062c530cd"
+    },
+    {
+      "path": "docs/archive/2026-09-22/docs/adr/0002-object-storage.md.snapshot",
+      "disposition": "preserved immutable historical snapshot",
+      "sha256": "1c0ba49fc0aa928715b4dc3f6ea8dba6c0de16157e9f79cb67cfb644ce4f1feb"
+    },
+    {
+      "path": "docs/archive/2026-09-22/docs/adr/0003-api-persistence-and-contracts.md.snapshot",
+      "disposition": "preserved immutable historical snapshot",
+      "sha256": "c7182cd23c08b65213c6fa58212b402f546c117d7ed652133530553a2f04b3ac"
+    },
+    {
+      "path": "docs/archive/2026-09-22/docs/adr/0004-governance-secrets-and-protocols.md.snapshot",
+      "disposition": "preserved immutable historical snapshot",
+      "sha256": "0f7f8ce508222398e6a743beeac9b060c658f2aadcfaec0b10428ae8ed4d1031"
+    },
+    {
+      "path": "docs/archive/2026-09-22/docs/adr/0005-mcp-a2a-and-browser-sdk-adoption.md.snapshot",
+      "disposition": "preserved immutable historical snapshot",
+      "sha256": "8bc7fbf513356b2804f1931c271614f9bd7813328a48056734b083048d56bc47"
+    },
+    {
+      "path": "docs/archive/2026-09-22/docs/adr/0006-governed-publishing.md.snapshot",
+      "disposition": "preserved immutable historical snapshot",
+      "sha256": "a50e696679d19fba9a755e6dbc62a062e7da22fd4826abb21d19d9d9a22ee8d7"
+    },
+    {
+      "path": "docs/archive/2026-09-22/docs/agents.md.snapshot",
+      "disposition": "preserved immutable historical snapshot",
+      "sha256": "6a3f7c19371f5a7daa87e34ece22a11baf55ef1d17208f46c13c9cb5904b8ae7"
+    },
+    {
+      "path": "docs/archive/2026-09-22/docs/api.md.snapshot",
+      "disposition": "preserved immutable historical snapshot",
+      "sha256": "fcd25d5066336629cd667ebeef7228c696b638fe37684ec9a2e8a4d80940c930"
+    },
+    {
+      "path": "docs/archive/2026-09-22/docs/architecture.md.snapshot",
+      "disposition": "preserved immutable historical snapshot",
+      "sha256": "244d933d845c0c2527765f1525c13c48af7608ef1ea49770cf73a31bc515fa83"
+    },
+    {
+      "path": "docs/archive/2026-09-22/docs/bootstrap.md.snapshot",
+      "disposition": "preserved immutable historical snapshot",
+      "sha256": "143320985d501ab5aab18798534ed792ea3d9c9ca4779bfe7e18725224b9a077"
+    },
+    {
+      "path": "docs/archive/2026-09-22/docs/compatibility.md.snapshot",
+      "disposition": "preserved immutable historical snapshot",
+      "sha256": "de9745608fb57014eff8372af3168030f8071c92b4b5f9c82722f01ca8a69473"
+    },
+    {
+      "path": "docs/archive/2026-09-22/docs/contracts/adapter-contracts.md.snapshot",
+      "disposition": "preserved immutable historical snapshot",
+      "sha256": "7572693b70598a0ba1f7829b33492133a643267410217e67c26e119bd27ff3dd"
+    },
+    {
+      "path": "docs/archive/2026-09-22/docs/core/00_BUILD_AGENT_PROMPT.md.snapshot",
+      "disposition": "preserved immutable historical snapshot",
+      "sha256": "9c24cc3b232cad25f0650f18438a9106a5dbeda6e7f6ddfc764c6ac90413613c"
+    },
+    {
+      "path": "docs/archive/2026-09-22/docs/core/01_PRODUCT_CONTEXT_AND_INTENT.md.snapshot",
+      "disposition": "preserved immutable historical snapshot",
+      "sha256": "2f0ab3a836a37ff9815af4c0f840ace52a577471c0af4bb28b00364000d1adf9"
+    },
+    {
+      "path": "docs/archive/2026-09-22/docs/core/02_REFERENCE_RESEARCH.md.snapshot",
+      "disposition": "preserved immutable historical snapshot",
+      "sha256": "c1bda4694f36b51e157499144310425a1e895ff4fb3a21d968f1d74257c39f48"
+    },
+    {
+      "path": "docs/archive/2026-09-22/docs/core/03_TARGET_ARCHITECTURE.md.snapshot",
+      "disposition": "preserved immutable historical snapshot",
+      "sha256": "de4ff15e13b35d354bc69a1976ea8a1b83e139b4d30c69f5ac9e3a570e991d63"
+    },
+    {
+      "path": "docs/archive/2026-09-22/docs/core/04_BROWSER_APP_AND_RESEARCH_CONTROL.md.snapshot",
+      "disposition": "preserved immutable historical snapshot",
+      "sha256": "8d3f48448e995e0e035c2bf3e01f05fac03c24993a8b8d833b74a46555ce8c35"
+    },
+    {
+      "path": "docs/archive/2026-09-22/docs/core/05_IMPLEMENTATION_PLAN.md.snapshot",
+      "disposition": "preserved immutable historical snapshot",
+      "sha256": "03e12a8610f01cda5f85b393870e1ad021d9655940654f7262b3c6bf8bd608f2"
+    },
+    {
+      "path": "docs/archive/2026-09-22/docs/core/06_ACCEPTANCE_TESTS_AND_GUARDRAILS.md.snapshot",
+      "disposition": "preserved immutable historical snapshot",
+      "sha256": "45140b8ea60f0dcf7b22ee5e1da3d6bcb473d6709345f23bed2df6aab4abc8ec"
+    },
+    {
+      "path": "docs/archive/2026-09-22/docs/core/07_REUSE_EXTENSION_AND_FUTURE_PROOFING.md.snapshot",
+      "disposition": "preserved immutable historical snapshot",
+      "sha256": "2fe977ebe26442c13bb7a30ac8678584f98a02fb7a8c9b7d5c6bd09f58d8b9cf"
+    },
+    {
+      "path": "docs/archive/2026-09-22/docs/core/08_LEAD_AGENT_AND_CREATIVE_TOOL_RUNTIME.md.snapshot",
+      "disposition": "preserved immutable historical snapshot",
+      "sha256": "e09519b29e5bd72b60385cf11c9f7ca15cac57b1316bb0a38eeb91d3eb46b0a2"
+    },
+    {
+      "path": "docs/archive/2026-09-22/docs/core/09_CALLABLE_AGENTS_AND_ENGINEERING_METHOD.md.snapshot",
+      "disposition": "preserved immutable historical snapshot",
+      "sha256": "ae7e580d0a4b43f1a1df19049208f92bf5b3fa39caa7c6033b75862ca9d64369"
+    },
+    {
+      "path": "docs/archive/2026-09-22/docs/core/README.md.snapshot",
+      "disposition": "preserved immutable historical snapshot",
+      "sha256": "7960ef750a38a63b2982a1494c373f8b6b406f74836da550c898b67a7807e58d"
+    },
+    {
+      "path": "docs/archive/2026-09-22/docs/database.md.snapshot",
+      "disposition": "preserved immutable historical snapshot",
+      "sha256": "ba4215b0a69d6182a1bc386e7f947a2a9bd3d307b3363ab99cf732d490842766"
+    },
+    {
+      "path": "docs/archive/2026-09-22/docs/dependencies.md.snapshot",
+      "disposition": "preserved immutable historical snapshot",
+      "sha256": "a12ea9edc5458bf49feec48a6e7886312376670c48db51821f48470a88fddccf"
+    },
+    {
+      "path": "docs/archive/2026-09-22/docs/deployment.md.snapshot",
+      "disposition": "preserved immutable historical snapshot",
+      "sha256": "ac4a945f9bbce9ebde35b185d7c4c3b8091d874ddf94c54eb5389e50dd26d3e1"
+    },
+    {
+      "path": "docs/archive/2026-09-22/docs/governance.md.snapshot",
+      "disposition": "preserved immutable historical snapshot",
+      "sha256": "b3f32490b58c24841dc2cf015c09c866f21fd062e3731f3b2fe43fc7035313f9"
+    },
+    {
+      "path": "docs/archive/2026-09-22/docs/implementation-progress.md.snapshot",
+      "disposition": "preserved immutable historical snapshot",
+      "sha256": "9ee94aac9260552fdeb922d549f9ff0d85c199b31ad46e460b81ee5263522303"
+    },
+    {
+      "path": "docs/archive/2026-09-22/docs/limitations.md.snapshot",
+      "disposition": "preserved immutable historical snapshot",
+      "sha256": "0c2a992b192070f7b170d656a177775b5874147e3e0ce19e16a24c98f4e7c58c"
+    },
+    {
+      "path": "docs/archive/2026-09-22/docs/local-development.md.snapshot",
+      "disposition": "preserved immutable historical snapshot",
+      "sha256": "10dad0fefd10e08b55d37b78fc7841a908a6669fc18893d069e661fd6f33e055"
+    },
+    {
+      "path": "docs/archive/2026-09-22/docs/mcp-a2a.md.snapshot",
+      "disposition": "preserved immutable historical snapshot",
+      "sha256": "c536b468768d1b280365de86670aeaf790284d68dd316f8b6ddedabb9380bc06"
+    },
+    {
+      "path": "docs/archive/2026-09-22/docs/memory.md.snapshot",
+      "disposition": "preserved immutable historical snapshot",
+      "sha256": "aeeabd0d30f2ab2ca41a6f024ccd0406bc20c0c28f49e7ece7cf798713d05e6d"
+    },
+    {
+      "path": "docs/archive/2026-09-22/docs/model-execution.md.snapshot",
+      "disposition": "preserved immutable historical snapshot",
+      "sha256": "3a0095f817ec9fbb4c33ebc1b00c6516340b6fa593f905ceec7a7d57710d8fc9"
+    },
+    {
+      "path": "docs/archive/2026-09-22/docs/model-gateway.md.snapshot",
+      "disposition": "preserved immutable historical snapshot",
+      "sha256": "5e055f63f7fea4e4edc239298eb4a0e47acb39ef079e0fec8a6d9ffcc5c72f5d"
+    },
+    {
+      "path": "docs/archive/2026-09-22/docs/phase-7-handoff.md.snapshot",
+      "disposition": "preserved immutable historical snapshot",
+      "sha256": "107bbe282b895f08937968f407d6b6f9dcfc52a3b7b3b02cc5de5b0b44e7d76a"
+    },
+    {
+      "path": "docs/archive/2026-09-22/docs/phase-9-handoff.md.snapshot",
+      "disposition": "preserved immutable historical snapshot",
+      "sha256": "41758937d0470a7dc07ab8896c62e408f6d7df5e3fdc1778dac0ce4b668627a0"
+    },
+    {
+      "path": "docs/archive/2026-09-22/docs/plugins.md.snapshot",
+      "disposition": "preserved immutable historical snapshot",
+      "sha256": "26f92a545483b717c14989f5d7b469eaa854697fcbc7b7956ee36cfb95e80b8e"
+    },
+    {
+      "path": "docs/archive/2026-09-22/docs/recovery.md.snapshot",
+      "disposition": "preserved immutable historical snapshot",
+      "sha256": "e430889320462cd423fab1ab0b018ca4e110464a1939ac281d9b60b905aab08a"
+    },
+    {
+      "path": "docs/archive/2026-09-22/docs/research.md.snapshot",
+      "disposition": "preserved immutable historical snapshot",
+      "sha256": "9939d512bb71f9bbd8b2effd6355d84cf471d2d539ddd160dd9fcaabbcca0c8e"
+    },
+    {
+      "path": "docs/archive/2026-09-22/docs/superpowers/plans/2026-09-12-browser-evidence.md.snapshot",
+      "disposition": "preserved immutable historical snapshot",
+      "sha256": "dc3580a1905d2a4cf809d1b1dfbe5eccfcb2cd7a094a89c2ec9ee4b36c7ff038"
+    },
+    {
+      "path": "docs/archive/2026-09-22/docs/superpowers/plans/2026-09-12-intelligence-loop-phases-5-6.md.snapshot",
+      "disposition": "preserved immutable historical snapshot",
+      "sha256": "005432e80f72297e3c4c44766b77199931e9bf5f5c5d7290a415565d32ada1e3"
+    },
+    {
+      "path": "docs/archive/2026-09-22/docs/superpowers/plans/2026-09-12-phases-1-4-foundation.md.snapshot",
+      "disposition": "preserved immutable historical snapshot",
+      "sha256": "a54a3ae82e027663782e832b1d615b98896bc96d55b3ea2f90482d5e62e9b6b9"
+    },
+    {
+      "path": "docs/archive/2026-09-22/docs/superpowers/plans/2026-09-13-creative-production-phases-7-8.md.snapshot",
+      "disposition": "preserved immutable historical snapshot",
+      "sha256": "786eea554dc9997868063cf86a66911db98ef9a7d824b919a9a5d1bfc170eddf"
+    },
+    {
+      "path": "docs/archive/2026-09-22/docs/superpowers/plans/2026-09-13-phase-7-8-release-gate-phase-9-publishing.md.snapshot",
+      "disposition": "preserved immutable historical snapshot",
+      "sha256": "c97dcd0ffb9337bb1b30e22ec2d5c32f99cc317a4cc0236a3053711b4801dded"
+    },
+    {
+      "path": "docs/archive/2026-09-22/docs/superpowers/plans/2026-09-13-phase-7-8-review-repairs.md.snapshot",
+      "disposition": "preserved immutable historical snapshot",
+      "sha256": "9bc7e49558f7293907cb390a6b7be0cc5e51ba53bdbecac73420a3441ca766ab"
+    },
+    {
+      "path": "docs/archive/2026-09-22/docs/superpowers/plans/2026-09-13-phase-9-independent-review-repairs.md.snapshot",
+      "disposition": "preserved immutable historical snapshot",
+      "sha256": "f495598ef9b40fe4eb326aa905935503234c826a89905bbdcd75ba76fce11c1a"
+    },
+    {
+      "path": "docs/archive/2026-09-22/docs/superpowers/reviews/2026-09-13-phase-7-8-release-gate.md.snapshot",
+      "disposition": "preserved immutable historical snapshot",
+      "sha256": "ed1d7fec0f8b7ef512286a294e6d073278d8407dd8888ce7ca25d971f54fa305"
+    },
+    {
+      "path": "docs/archive/2026-09-22/docs/superpowers/reviews/2026-09-13-phase-9-independent-review.md.snapshot",
+      "disposition": "preserved immutable historical snapshot",
+      "sha256": "7e2d79b46f1e8113641b78ff72ca1e38b00f089e5449b7cef18997b648c83ee7"
+    },
+    {
+      "path": "docs/archive/2026-09-22/docs/superpowers/specs/2026-09-12-browser-evidence-design.md.snapshot",
+      "disposition": "preserved immutable historical snapshot",
+      "sha256": "000764f384f38f00ef43aaa9ea9bd6e7e71f8b4cd0b0a05903ab89750daf594b"
+    },
+    {
+      "path": "docs/archive/2026-09-22/docs/superpowers/specs/2026-09-12-intelligence-loop-phases-5-6-design.md.snapshot",
+      "disposition": "preserved immutable historical snapshot",
+      "sha256": "560ff30bf09f2fd196f3cfaf5ac226833d6bd9c4e9ff3f6fd5bf83d8c56ebb25"
+    },
+    {
+      "path": "docs/archive/2026-09-22/docs/superpowers/specs/2026-09-13-creative-production-phases-7-8-design.md.snapshot",
+      "disposition": "preserved immutable historical snapshot",
+      "sha256": "40ad68143c171862afe0de7d8e6e3ada38a3df791562dae3639ead67a94b6ba5"
+    },
+    {
+      "path": "docs/archive/2026-09-22/docs/superpowers/specs/2026-09-13-phase-7-8-release-gate-phase-9-publishing-design.md.snapshot",
+      "disposition": "preserved immutable historical snapshot",
+      "sha256": "604ca8184ee1f42c22cfa80db8101640ccf1bc3e773c55a17a2075d2d063e025"
+    },
+    {
+      "path": "docs/archive/2026-09-22/docs/trust-model.md.snapshot",
+      "disposition": "preserved immutable historical snapshot",
+      "sha256": "726b8b2fcba6206aac0d9855e2454ea2b97b166d4ad774b74d4449bc49eb3633"
+    },
+    {
+      "path": "docs/archive/2026-09-22/docs/verification.md.snapshot",
+      "disposition": "preserved immutable historical snapshot",
+      "sha256": "5f1ab914d9eaa810e26cfeccc28a43ba7e0ca2d0222e54fb4ee96adc571f262a"
+    },
+    {
+      "path": "docs/archive/2026-09-22/docs/workflows.md.snapshot",
+      "disposition": "preserved immutable historical snapshot",
+      "sha256": "6301ff82f4816f7300de6b1101b802e5af27475219faa9241a79e9a91b5e12b1"
+    },
+    {
+      "path": "docs/archive/2026-09-22/prompts/Build Creative Production Loop \u2014 Phases 7\u20138 End-to-End.md.snapshot.b64",
+      "disposition": "preserved immutable historical snapshot",
+      "sha256": "968ff9305b92e00907c7a2b7e493959b8f66c64f05bc431c975c1ca97d75b9e0"
+    },
+    {
+      "path": "docs/archive/2026-09-22/prompts/Build Phase 10 \u2014 Multi-Platform Production Publishing, Analytics, Attribution & Experiments.md.snapshot.b64",
+      "disposition": "preserved immutable historical snapshot",
+      "sha256": "bb7ee354bb59b4f599aeef44e0a18b17f1f672826454621ed56b0f1055aa55ed"
+    },
+    {
+      "path": "docs/archive/2026-09-22/prompts/Build Phases 1\u20134 End-to-End.md.snapshot",
+      "disposition": "preserved immutable historical snapshot",
+      "sha256": "4486a0868585423a951e1a874eb55714cd35242963f9a0f47c9d53420d7c101a"
+    },
+    {
+      "path": "docs/archive/2026-09-22/prompts/Build Real Intelligence Loop \u2014 Pre-Phase 5 + Phases 5\u20136 End-to-End.md.snapshot.b64",
+      "disposition": "preserved immutable historical snapshot",
+      "sha256": "d009ce7b7d6b309591554a39a9841afaf8b470ff63a366d134a9535fdf977a93"
+    },
+    {
+      "path": "docs/archive/2026-09-22/prompts/Complete Phase 7\u20138 Release Gate, Then Build Phase 9 Governed Publishing.md.snapshot.b64",
+      "disposition": "preserved immutable historical snapshot",
+      "sha256": "6f3bd7a20b4831fc95da3583d636ea6f4b6cccfa3e270425027cec63a6bcec95"
+    },
+    {
+      "path": "docs/archive/2026-09-22/prompts/Install and Verify Browser Evidence on Linux EC2.md.snapshot.b64",
+      "disposition": "preserved immutable historical snapshot",
+      "sha256": "e71816cf69c082ce224452a69874fca54932d5c7debd2ffc8efa2e660ac7e6ae"
+    },
+    {
+      "path": "docs/bootstrap.md",
+      "disposition": "active project Markdown aligned with completed P1 item 6"
+    },
+    {
+      "path": "docs/compatibility.md",
+      "disposition": "active project Markdown aligned with completed P1 item 6"
+    },
+    {
+      "path": "docs/contracts/adapter-contracts.md",
+      "disposition": "active project Markdown aligned with completed P1 item 6"
+    },
+    {
+      "path": "docs/core/00_BUILD_AGENT_PROMPT.md",
+      "disposition": "active project Markdown aligned with completed P1 item 6"
+    },
+    {
+      "path": "docs/core/01_PRODUCT_CONTEXT_AND_INTENT.md",
+      "disposition": "active project Markdown aligned with completed P1 item 6"
+    },
+    {
+      "path": "docs/core/02_REFERENCE_RESEARCH.md",
+      "disposition": "active project Markdown aligned with completed P1 item 6"
+    },
+    {
+      "path": "docs/core/03_TARGET_ARCHITECTURE.md",
+      "disposition": "active project Markdown aligned with completed P1 item 6"
+    },
+    {
+      "path": "docs/core/04_BROWSER_APP_AND_RESEARCH_CONTROL.md",
+      "disposition": "active project Markdown aligned with completed P1 item 6"
+    },
+    {
+      "path": "docs/core/05_IMPLEMENTATION_PLAN.md",
+      "disposition": "active project Markdown aligned with completed P1 item 6"
+    },
+    {
+      "path": "docs/core/06_ACCEPTANCE_TESTS_AND_GUARDRAILS.md",
+      "disposition": "active project Markdown aligned with completed P1 item 6"
+    },
+    {
+      "path": "docs/core/07_REUSE_EXTENSION_AND_FUTURE_PROOFING.md",
+      "disposition": "active project Markdown aligned with completed P1 item 6"
+    },
+    {
+      "path": "docs/core/08_LEAD_AGENT_AND_CREATIVE_TOOL_RUNTIME.md",
+      "disposition": "active project Markdown aligned with completed P1 item 6"
+    },
+    {
+      "path": "docs/core/09_CALLABLE_AGENTS_AND_ENGINEERING_METHOD.md",
+      "disposition": "active project Markdown aligned with completed P1 item 6"
+    },
+    {
+      "path": "docs/core/README.md",
+      "disposition": "active project Markdown aligned with completed P1 item 6"
+    },
+    {
+      "path": "docs/database.md",
+      "disposition": "active project Markdown aligned with completed P1 item 6"
+    },
+    {
+      "path": "docs/dependencies.md",
+      "disposition": "active project Markdown aligned with completed P1 item 6"
+    },
+    {
+      "path": "docs/deployment.md",
+      "disposition": "active project Markdown aligned with completed P1 item 6"
+    },
+    {
+      "path": "docs/governance.md",
+      "disposition": "active project Markdown aligned with completed P1 item 6"
+    },
+    {
+      "path": "docs/implementation-progress.md",
+      "disposition": "active project Markdown aligned with completed P1 item 6"
+    },
+    {
+      "path": "docs/limitations.md",
+      "disposition": "active project Markdown aligned with completed P1 item 6"
+    },
+    {
+      "path": "docs/local-development.md",
+      "disposition": "active project Markdown aligned with completed P1 item 6"
+    },
+    {
+      "path": "docs/mcp-a2a.md",
+      "disposition": "active project Markdown aligned with completed P1 item 6"
+    },
+    {
+      "path": "docs/memory.md",
+      "disposition": "active project Markdown aligned with completed P1 item 6"
+    },
+    {
+      "path": "docs/model-execution.md",
+      "disposition": "active project Markdown aligned with completed P1 item 6"
+    },
+    {
+      "path": "docs/model-gateway.md",
+      "disposition": "active project Markdown aligned with completed P1 item 6"
+    },
+    {
+      "path": "docs/phase-7-handoff.md",
+      "disposition": "active project Markdown aligned with completed P1 item 6"
+    },
+    {
+      "path": "docs/phase-9-handoff.md",
+      "disposition": "active project Markdown aligned with completed P1 item 6"
+    },
+    {
+      "path": "docs/plugins.md",
+      "disposition": "active project Markdown aligned with completed P1 item 6"
+    },
+    {
+      "path": "docs/recovery.md",
+      "disposition": "active project Markdown aligned with completed P1 item 6"
+    },
+    {
+      "path": "docs/research.md",
+      "disposition": "active project Markdown aligned with completed P1 item 6"
+    },
+    {
+      "path": "docs/salience-phase-1-6.architecture.html",
+      "disposition": "preserved historical architecture visual",
+      "sha256": "d68f14807c03baf56e8e07b4829d4b08a3898f4f07c4460ee3d09d3fb416107d"
+    },
+    {
+      "path": "docs/salience-phase-1-6.architecture.json",
+      "disposition": "preserved historical architecture visual",
+      "sha256": "24bfe7c9e3f60892bc0b98de615dde858dd13f93ec7aa0008d43a0f0f6109edc"
+    },
+    {
+      "path": "docs/salience-phase-1-6.architecture.visual-check.html",
+      "disposition": "preserved historical architecture visual",
+      "sha256": "b6c348b09e4d70e371f5bb3ae2b9c5039168a37f5c603204a09c64310e957fa3"
+    },
+    {
+      "path": "docs/salience-phase-1-6.architecture.visual-check.json",
+      "disposition": "preserved historical architecture visual",
+      "sha256": "e344a60e979a74243390666764fccc56baec2380f0d083a0f07746b7d8d1b430"
+    },
+    {
+      "path": "docs/salience-phase-1-8-final.architecture.html",
+      "disposition": "preserved historical architecture visual",
+      "sha256": "e888dd64671a5c456f166234ec84ae422b223e4944772c69ff6c704512260603"
+    },
+    {
+      "path": "docs/salience-phase-1-8-final.architecture.json",
+      "disposition": "preserved historical architecture visual",
+      "sha256": "f06d8d549297cd8614c2da36e266a133160673220ccfe441acde565540d6fd97"
+    },
+    {
+      "path": "docs/salience-phase-1-9.architecture.html",
+      "disposition": "preserved historical architecture visual",
+      "sha256": "f4861980432083493d2bd1d9b14ccb56487e46bfa6833370acff3ccf187af68e"
+    },
+    {
+      "path": "docs/salience-phase-1-9.architecture.json",
+      "disposition": "preserved historical architecture visual",
+      "sha256": "a2bfdb1ff9dc935b624cba5155ba9e1a26cbe7594f8469c431e709a26269796b"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-09-12-browser-evidence.md",
+      "disposition": "active project Markdown aligned with completed P1 item 6"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-09-12-intelligence-loop-phases-5-6.md",
+      "disposition": "active project Markdown aligned with completed P1 item 6"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-09-12-phases-1-4-foundation.md",
+      "disposition": "active project Markdown aligned with completed P1 item 6"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-09-13-creative-production-phases-7-8.md",
+      "disposition": "active project Markdown aligned with completed P1 item 6"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-09-13-phase-7-8-release-gate-phase-9-publishing.md",
+      "disposition": "active project Markdown aligned with completed P1 item 6"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-09-13-phase-7-8-review-repairs.md",
+      "disposition": "active project Markdown aligned with completed P1 item 6"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-09-13-phase-9-independent-review-repairs.md",
+      "disposition": "active project Markdown aligned with completed P1 item 6"
+    },
+    {
+      "path": "docs/superpowers/reviews/2026-09-13-phase-7-8-release-gate.md",
+      "disposition": "active project Markdown aligned with completed P1 item 6"
+    },
+    {
+      "path": "docs/superpowers/reviews/2026-09-13-phase-9-independent-review.md",
+      "disposition": "active project Markdown aligned with completed P1 item 6"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-09-12-browser-evidence-design.md",
+      "disposition": "active project Markdown aligned with completed P1 item 6"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-09-12-intelligence-loop-phases-5-6-design.md",
+      "disposition": "active project Markdown aligned with completed P1 item 6"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-09-13-creative-production-phases-7-8-design.md",
+      "disposition": "active project Markdown aligned with completed P1 item 6"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-09-13-phase-7-8-release-gate-phase-9-publishing-design.md",
+      "disposition": "active project Markdown aligned with completed P1 item 6"
+    },
+    {
+      "path": "docs/trust-model.md",
+      "disposition": "active project Markdown aligned with completed P1 item 6"
+    },
+    {
+      "path": "docs/v4/IMPLEMENTATION-BLUEPRINT.md",
+      "disposition": "active project Markdown aligned with completed P1 item 6"
+    },
+    {
+      "path": "docs/v4/allocation-evidence.json",
+      "disposition": "preserved dated qualification report",
+      "sha256": "65c8334184cae24c8935db80b397b4ef31627da705c88b68ee77430dcd11db3c"
+    },
+    {
+      "path": "docs/v4/baseline-approval-evidence.json",
+      "disposition": "preserved dated qualification report",
+      "sha256": "66c3ca048068f29fafe6f8ed06cac5e544328c6493684ad8ef00a4de0b31a02f"
+    },
+    {
+      "path": "docs/v4/cadence-policy-evidence.json",
+      "disposition": "preserved dated qualification report",
+      "sha256": "d8aeda06cade48ba421942073854966517a1bc0bf9f3ff63acbea52aa4fdb608"
+    },
+    {
+      "path": "docs/v4/cadence-policy-recheck-evidence.json",
+      "disposition": "preserved dated qualification report",
+      "sha256": "13a39e9d22f58220ccfd5b4d5663cf279014006e23c50f700a7e55dea8011c0a"
+    },
+    {
+      "path": "docs/v4/coverage.json",
+      "disposition": "preserved source, archive or coverage manifest",
+      "sha256": "b7969a6cef9813f9ec5b8e48d4f2798fdb55dee82062f4dff6ee3115415ae038"
+    },
+    {
+      "path": "docs/v4/development-entry-evidence.json",
+      "disposition": "preserved dated qualification report",
+      "sha256": "88de230412755a616f8a4485c06a3917d5b75acdb270f7f9cb843e07b013fe98"
+    },
+    {
+      "path": "docs/v4/dispositions.json",
+      "disposition": "preserved source, archive or coverage manifest",
+      "sha256": "a161263ad529610fc42613b0bfaa8e014da423ccc8cb8ee6dbc3e961916a9945"
+    },
+    {
+      "path": "docs/v4/evidence-baseline.json",
+      "disposition": "preserved source, archive or coverage manifest",
+      "sha256": "ac53e0f4e924dc9c367383c6fc37a3f755b96ff8d887ce501314f25baad932c8"
+    },
+    {
+      "path": "docs/v4/evidence-lock.json",
+      "disposition": "preserved source, archive or coverage manifest",
+      "sha256": "d07eb3911c1f96095d33dd299ba3253f9102a3aeb8e9de5676f148ec5b669817"
+    },
+    {
+      "path": "docs/v4/goal-revision-evidence.json",
+      "disposition": "preserved dated qualification report",
+      "sha256": "97805c1b80c9ad243726c9b5e5242daa3ddb867cebdfde5e391ea0b1a63164a2"
+    },
+    {
+      "path": "docs/v4/governance-evidence.json",
+      "disposition": "preserved dated qualification report",
+      "sha256": "9b90c8a1059c61c8f7f0ad99d9c86d781eb3318c187de20f6f378f7a34c72fee"
+    },
+    {
+      "path": "docs/v4/inventory.json",
+      "disposition": "preserved source, archive or coverage manifest",
+      "sha256": "988fe36c86834277a58eeabd6f68ed79f4d5ece5f57b181b225fef0a6a8dede0"
+    },
+    {
+      "path": "docs/v4/item4-evidence.json",
+      "disposition": "preserved dated qualification report",
+      "sha256": "baa59cc476e7f91fd7b724f7511602751e81af40a9c480c130a2581df72d6711"
+    },
+    {
+      "path": "docs/v4/item5a-evidence.json",
+      "disposition": "preserved dated qualification report",
+      "sha256": "e8bcfaaa88ce7ad09061e57f2bd73f7bfbfda7e2dee186bb8a379e8ccf2ddf22"
+    },
+    {
+      "path": "docs/v4/item5b-evidence.json",
+      "disposition": "preserved dated qualification report",
+      "sha256": "1c2c53647e773aa8a9c4f83622654eb9c90cdcd88d9f4563ad9a65d29b8980b1"
+    },
+    {
+      "path": "docs/v4/item5c-evidence.json",
+      "disposition": "preserved dated qualification report",
+      "sha256": "4b0ef8eccccae966c301cd8a331fee88c4cf7467460077416fb6c7eab2a595c9"
+    },
+    {
+      "path": "docs/v4/item6-evidence.json",
+      "disposition": "preserved dated qualification report",
+      "sha256": "ac589561522bff809a609af0579ab69d0bbdad69c8257f7ee919700434bf5f10"
+    },
+    {
+      "path": "docs/v4/item6-operator-evidence.json",
+      "disposition": "preserved dated qualification report",
+      "sha256": "05f9efdcfa2bd73f1af52ecb9177bf80a4164effd8ed09345a8b766f409ffd88"
+    },
+    {
+      "path": "docs/v4/outbox-increment-evidence.json",
+      "disposition": "preserved dated qualification report",
+      "sha256": "d1200fda0921e7c46844e9a5804c68e522addf1d41f176e68210e4834fc30504"
+    },
+    {
+      "path": "docs/v4/p0-release.json",
+      "disposition": "current release metadata aligned with final qualification and next item 7"
+    },
+    {
+      "path": "docs/v4/p1-increment-evidence.json",
+      "disposition": "preserved dated qualification report",
+      "sha256": "0ff2183c8993d72b05832db167e82433c2bced74e047b3609574877701ac591f"
+    },
+    {
+      "path": "docs/v4/progress.md",
+      "disposition": "active project Markdown aligned with completed P1 item 6"
+    },
+    {
+      "path": "docs/v4/repository-enforcement-evidence.json",
+      "disposition": "rolling repository readback refreshed to final application e5d1840"
+    },
+    {
+      "path": "docs/v4/validation.md",
+      "disposition": "active project Markdown aligned with completed P1 item 6"
+    },
+    {
+      "path": "docs/verification.md",
+      "disposition": "active project Markdown aligned with completed P1 item 6"
+    },
+    {
+      "path": "docs/workflows.md",
+      "disposition": "active project Markdown aligned with completed P1 item 6"
+    },
+    {
+      "path": "prompts/Build Creative Production Loop \u2014 Phases 7\u20138 End-to-End.md",
+      "disposition": "active project Markdown aligned with completed P1 item 6"
+    },
+    {
+      "path": "prompts/Build Phase 10 \u2014 Multi-Platform Production Publishing, Analytics, Attribution & Experiments.md",
+      "disposition": "active project Markdown aligned with completed P1 item 6"
+    },
+    {
+      "path": "prompts/Build Phases 1\u20134 End-to-End.md",
+      "disposition": "active project Markdown aligned with completed P1 item 6"
+    },
+    {
+      "path": "prompts/Build Real Intelligence Loop \u2014 Pre-Phase 5 + Phases 5\u20136 End-to-End.md",
+      "disposition": "active project Markdown aligned with completed P1 item 6"
+    },
+    {
+      "path": "prompts/Complete Phase 7\u20138 Release Gate, Then Build Phase 9 Governed Publishing.md",
+      "disposition": "active project Markdown aligned with completed P1 item 6"
+    },
+    {
+      "path": "prompts/Install and Verify Browser Evidence on Linux EC2.md",
+      "disposition": "active project Markdown aligned with completed P1 item 6"
+    }
+  ],
+  "new_audit_manifest": "docs/v4/documentation-status-audit.json",
+  "verification": {
+    "documentation_tests": 15,
+    "mapped_obligations": 75,
+    "negative_controls": 6,
+    "documentation_shell_contracts": 4,
+    "source_hashes_preserved": 310,
+    "preserved_documentation_artifacts": 154,
+    "mermaid_source_blocks_preserved": 6,
+    "status": "PASS"
+  }
+}

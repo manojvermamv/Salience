@@ -2,7 +2,11 @@
 
 Superseded by the [V4 production implementation blueprint](<v4/IMPLEMENTATION-BLUEPRINT.md>). Use that document for all future work; this page preserves navigation only.
 
+**V4 checkpoint — 2026-10-03:** P0 and P1 items 1–6 are locally qualified in no-effects fixtures at `e5d1840`: **85 focused / 456 full non-live PASS**, with both required CI checks and strict main protection PASS. Use [current progress](v4/progress.md#current-state), [completed work](v4/IMPLEMENTATION-BLUEPRINT.md#current-execution) and [validation](v4/validation.md#current-evidence-summary). Next is **item 7**, independent full RG1 qualification and outstanding production acceptance. RG0/full RG1 remain HELD, effects disabled, main unmerged and P2–P7 planned. Historical Phase 1–9 evidence below retains its original scope.
+
 [Original historical evidence](<archive/2026-09-22/docs/workflows.md.snapshot>) is retained with its inventory hash. It is superseded source text, not a current execution plan.
+
+Item 6 qualifies SDK patch-based old/new history replay and actual worker transition, identity-preserving Continue-As-New, finite canonical timers and owner holds. Continuation preserves queued messages, the original absolute deadline and total message limit. Database/network work stays in bounded activities. Read the [runtime/wait contract](v4/IMPLEMENTATION-BLUEPRINT.md#p1-item-6-local-runtime-and-wait-contract) for compatible-worker rollback and deployment routing obligations.
 
 <!-- Historical heading anchors retained for incoming links. -->
 <a id="durable-workflows"></a>
