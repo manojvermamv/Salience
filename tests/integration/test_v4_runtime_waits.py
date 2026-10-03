@@ -294,3 +294,26 @@ def test_direct_sql_cannot_forge_runtime_identity_or_completed_admission_receipt
         ]:
             with pytest.raises(psycopg.Error,match="runtime"),connection.transaction():
                 connection.execute(sql,params)
+
+
+def test_separate_operator_records_expiry_actor_without_inheriting_revoked_owner_authority(cycles):
+    from uuid import uuid4
+    service,_,spec,database = cycles
+    goal = approved_goal(service,spec.model_copy(update={"review_required":True}))
+    now = datetime.now(timezone.utc)
+    intent = service.request_intent(goal,slot="operator-expiry",due_at=now-timedelta(seconds=1),expires_at=now+timedelta(seconds=.5))
+    assert service.admit(intent)["disposition"] == "review_required"
+    operator = uuid4()
+    with psycopg.connect(database) as connection:
+        connection.execute("INSERT INTO identity_subjects(id,workspace_id,issuer,subject,expires_at) VALUES(%s,%s,'https://fixture.invalid',%s,now()+interval '1 hour')",(operator,service.workspace_id,str(operator)))
+        connection.execute("INSERT INTO permission_grants(workspace_id,principal_type,principal_id,scope,effect,constraints,expires_at) VALUES(%s,'identity',%s,'cycles:case_operator','allow','{}',now()+interval '1 hour')",(service.workspace_id,str(operator)))
+        connection.execute("UPDATE identity_subjects SET enabled=false WHERE id=%s",(service.subject_id,))
+    waits = RuntimeWaits(database,workspace_id=service.workspace_id,subject_id=operator)
+    job = waits.pending()[0]
+    time.sleep(.55)
+    assert waits.fire(job["id"])["state"] == "held_review"
+    with psycopg.connect(database) as connection:
+        actor,owner = connection.execute("SELECT subject_id,payload->>'owner_id' FROM v4_cycle_events WHERE intent_id=%s AND kind='intent_wait_held'",(intent,)).fetchone()
+        assert actor == operator
+        assert owner == str(service.subject_id)
+        assert connection.execute("SELECT count(*) FROM v4_cycles WHERE intent_id=%s",(intent,)).fetchone()[0] == 0

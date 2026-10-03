@@ -444,7 +444,7 @@
     },
     {
       "path": "src/salience/cycles/runtime_waits.py",
-      "sha256": "c030f8d2df80baec62ed36ab833e5dc3c243d83871f53681eebed0857a5a0265"
+      "sha256": "bc4685271a0898b44d21fb1639f08405f21e06291c991b18bf7b97da78c6721f"
     },
     {
       "path": "src/salience/cycles/schedule_cutover.py",
@@ -1064,7 +1064,7 @@
     },
     {
       "path": "tests/integration/test_v4_runtime_waits.py",
-      "sha256": "5aa83ea44154e347b43967718664187b3acae490ce7b566dbd2d8ab233e81d74"
+      "sha256": "37ae769f39e13a5ce6e5395f4a561f1bfcdd883aa6b3bfeada01cb8b55fc1f32"
     },
     {
       "path": "tests/integration/test_v4_s3_service.py",

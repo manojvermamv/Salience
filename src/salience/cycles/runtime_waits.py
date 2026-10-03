@@ -140,7 +140,7 @@ class RuntimeWaits(CycleGovernance):
                 raise ValueError("wait deadline not due")
             if job["kind"] == "review_required" or now < intent["due_at"] or now >= min(intent["expires_at"],spec.horizon_end):
                 result = {"id":str(job_id),"state":"held_review" if job["kind"] == "review_required" else "held_expired_or_wait_limit", "owner_id":str(job["owner_id"])}
-                author._event(connection,goal["id"],"intent_wait_held",result,intent["id"])
+                self._event(connection,goal["id"],"intent_wait_held",result,intent["id"])
                 return self._finish(connection,job,result,held=True)
             try:
                 # A savepoint rolls back a wake if admission denies current

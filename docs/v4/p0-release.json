@@ -143,6 +143,11 @@
       "path": "docs/v4/item6-evidence.json",
       "sha256": "ac589561522bff809a609af0579ab69d0bbdad69c8257f7ee919700434bf5f10",
       "local_only": false
+    },
+    {
+      "path": "docs/v4/item6-operator-evidence.json",
+      "sha256": "05f9efdcfa2bd73f1af52ecb9177bf80a4164effd8ed09345a8b766f409ffd88",
+      "local_only": false
     }
   ],
   "release_gate": "RG0",
@@ -239,7 +244,7 @@
       "R35",
       "R53"
     ],
-    "evidence": "docs/v4/item6-evidence.json",
+    "evidence": "docs/v4/item6-operator-evidence.json",
     "remaining": [
       "General registry/provider eligibility beyond the approved no-effects fixture baseline; later capability and production qualification gates remain binding",
       "Production G1 provider charge identity and effect integration beyond the fixture-qualified transfer/reconciliation contract",
@@ -335,5 +340,17 @@
     "next_queue_item": 7,
     "production_effects_enabled": false,
     "main_merge": "NOT AUTHORIZED"
+  },
+  "item6_operator_checkpoint": {
+    "recorded_at": "2026-10-03",
+    "qualified_from_base": "03f3cb9cae589c1030cbf5562aab6d4d56b823f4",
+    "local_status": "PASS",
+    "focused_tests": 85,
+    "full_non_live_tests": 456,
+    "evidence": "docs/v4/item6-operator-evidence.json",
+    "next_queue_item": 7,
+    "independent_review": "NOT RUN",
+    "candidate_ci": "NOT RUN until publication; inspect exact HEAD",
+    "production_effects_enabled": false
   }
 }

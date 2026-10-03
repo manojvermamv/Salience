@@ -1,0 +1,69 @@
+{
+  "recorded_at": "2026-10-03",
+  "base_commit": "03f3cb9cae589c1030cbf5562aab6d4d56b823f4",
+  "scope": "Item-6 expiry audit correction: a separate current case operator records its own action while retaining a revoked original owner; no owner impersonation, review approval or execution authority. All item-6 qualification repeated on this final application tree.",
+  "source_evidence_lock_sha256": "d07eb3911c1f96095d33dd299ba3253f9102a3aeb8e9de5676f148ec5b669817",
+  "commands": [
+    {
+      "command": ".venv/bin/python -m pytest -p no:cacheprovider tests/integration/test_v4_runtime_waits.py tests/integration/test_v4_cycle_governance.py tests/integration/test_v4_public_commands.py tests/integration/test_v4_schedule_cutover.py tests/integration/test_v4_migrations.py tests/e2e/test_v4_worker_upgrade.py tests/e2e/test_v4_wait_restart.py tests/e2e/test_v4_continuation_restart.py tests/e2e/test_v4_outbox_recovery.py tests/unit/test_v4_deployment_boundary.py -q -rs --junitxml=artifacts/v4-p0/item6-operator-focused.xml",
+      "exit_code": 0,
+      "tests": 85,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 179.571,
+      "junit": "artifacts/v4-p0/item6-operator-focused.xml",
+      "junit_sha256": "1b39b3c667f1156d722cd1bcd556288e96b05376c9232c3009e0d4b7040bc793",
+      "log_sha256": "7d6ba74eee26636653aa83e4acd6d80352ab384b1d4735c1e3de8f66fdf762ce"
+    },
+    {
+      "command": ".venv/bin/python -m pytest -p no:cacheprovider tests/contracts tests/unit tests/integration tests/e2e tests/evals -m 'not live' -q -rs --junitxml=artifacts/v4-p0/item6-operator-regression.xml",
+      "exit_code": 0,
+      "tests": 456,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 440.027,
+      "junit": "artifacts/v4-p0/item6-operator-regression.xml",
+      "junit_sha256": "edd4e8545f4b1342220accfa4e7dd24fc087bbe06bccdcab2cb29988bad5f7b3",
+      "log_sha256": "09c9fd8a825f6ed978b5a755e8cf5363bfb6a3c702569a9f0ad7593a07cc3f2f"
+    }
+  ],
+  "requirement_coverage": {
+    "R13": "Current case-operator authority supplies expiry maintenance; a disabled original author stays the owner and is not recorded as the actor. No cycle/approval is produced. Signed read still requires current cycles:read.",
+    "R34": "Original intent/wait ownership and finite review deadline are preserved; immutable held-expiry audit accurately records the active operator."
+  },
+  "additional_verification": {
+    "operator_audit_red": {
+      "tests": 1,
+      "failures": 1,
+      "junit_sha256": "4f56e6d740c59a4bc6fc11f47c36d4d6ad5fa320334c610d9919e879ed8a00a9"
+    },
+    "local_review": "PASS: one event call uses the current maintenance operator rather than the original author. Valid current-author wake/admission events continue to use their recorded execution author. Independent review NOT RUN.",
+    "interrupted_overlap": "A regression started before the shared-fixture focused run ended was interrupted (240 passed, no final qualification); replaced by a sequential final run. It is not counted as a PASS.",
+    "locked_source_files": 310,
+    "documentation_tests": 15,
+    "mapped_obligations": 75,
+    "dependency_consistency": "PASS",
+    "whitespace": "PASS",
+    "production_effects_enabled": false,
+    "independent_increment_review": "NOT RUN",
+    "independent_pr_review": "NOT RUN",
+    "full_regression": "PASS"
+  },
+  "repository_verification": {
+    "base_commit": "03f3cb9cae589c1030cbf5562aab6d4d56b823f4",
+    "base_ci_status": "PASS",
+    "base_enforcement_status": "PASS",
+    "base_inspected_at": "2026-10-03T15:46:54.908428+00:00",
+    "base_ci_run": "https://github.com/manojvermamv/Salience/actions/runs/37133931403",
+    "candidate_ci_status": "NOT RUN until correction commit is published; inspect exact HEAD",
+    "merge": "NOT AUTHORIZED; current independent PR approval required"
+  },
+  "remaining": {
+    "next_queue_item": "7: independent full RG1 qualification and outstanding production contracts",
+    "RG0": "HELD: external production qualifications NOT RUN",
+    "RG1": "HELD: deployment routing, live legacy schedules, policy/scoped remote reads, external providers/alerts and independent qualification remain",
+    "production_effects_enabled": false
+  }
+}

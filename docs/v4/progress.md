@@ -8,13 +8,13 @@
 
 ## Current state — 2026-10-03 item-6 qualification
 
-Item 6 is locally qualified: **84 focused / 455 full non-live PASS**, zero failures/errors/skips, executed 2026-10-03 from published documentation base **`e30a2f6ee11aa1b6166c6475b0f5ae065375545a`** on local `arch`, tracking `origin/feat/archv4-p0-foundation`. Items 1–5 remain completed local fixtures. The current change adds compatible old/new replay, identity-preserving Continue-As-New, finite waits/case deadlines, owner holds and PostgreSQL fixture notification receipts. The [item-6 report](item6-evidence.json) records exact commands, final source/JUnit/log hashes and local review; [validation](validation.md) preserves preliminary failures and historical reports. Production effects are disabled, dry-run/zero-spend/fallback-deny preserved; RG0/full RG1 remain HELD and main unmerged.
+Item 6 is locally qualified: **85 focused / 456 full non-live PASS**, zero failures/errors/skips, executed 2026-10-03 from initial published item-6 **`03f3cb9cae589c1030cbf5562aab6d4d56b823f4`** on local `arch`, tracking `origin/feat/archv4-p0-foundation`. Items 1–5 remain completed local fixtures. The current change adds compatible old/new replay, identity-preserving Continue-As-New, finite waits/case deadlines, owner holds and PostgreSQL fixture notification receipts. The [initial item-6 report](item6-evidence.json) retains its 84/455 results. The [final operator correction](item6-operator-evidence.json) records exact 85/456 commands and final source/JUnit/log hashes; [validation](validation.md) preserves preliminary failures and historical reports. Production effects are disabled, dry-run/zero-spend/fallback-deny preserved; RG0/full RG1 remain HELD and main unmerged.
 
 | Area | Current state |
 | --- | --- |
 | P0 and DG1 | Local qualification and development entry PASS; external RG0 obligations remain NOT RUN. |
 | P1 items 1–5 | Locally qualified through item-5c application `7009d51`; historical reports preserved. |
-| P1 item 6 | Local PASS: 84 focused / 455 full non-live, 310 source hashes, 15 documentation tests, 75 obligations, six fresh renders and four shell contracts. Candidate publication/CI recorded separately. |
+| P1 item 6 | Local PASS: 85 focused / 456 full non-live, 310 source hashes, separate operator/owner audit proof, 15 documentation tests, 75 obligations, six fresh renders and four shell contracts. Candidate publication/CI recorded separately. |
 | Remaining P1 | Item 7 independent full RG1 qualification plus live schedule routing/fencing, general policy/read reconciliation and external delivery obligations. |
 | P2–P7 | Planned; optional P6 disabled. |
 | Repository/merge | Required checks must pass on the new published HEAD. Independent PR approval NOT RUN; no merge authorized. |
@@ -25,6 +25,8 @@ Item 6 is locally qualified: **84 focused / 455 full non-live PASS**, zero failu
 Read the [runtime/wait contract](IMPLEMENTATION-BLUEPRINT.md#p1-item-6-local-runtime-and-wait-contract). The canonical acceptance boundary is now the compatible worker, additive 0031 runtime sidecars and four new timer/upgrade/restart test modules. Existing admission, context, allocation, governance, outbox and signed fixture commands are reused. Old unpatched histories follow their original command sequence; patched histories remain on compatible workers through rollback. Notification acceptance is a local database no-effects fixture, distinct from human acknowledgment and external alerts.
 
 Resume from the actual published HEAD and its exact source lock and test evidence. Completing this slice moves the queue to **item 7**, independent full RG1 qualification. Do not restart completed P0 or P1 increments and do not infer production release from fixture success. Retained pre-upgrade cases need explicit current-operator timer enrollment; no frozen authority is backfilled. A PostgreSQL snapshot restore plus Temporal process restart is local restart proof, not production R66/P7 restore certification.
+
+An expired review wait records its active case operator as the actor and retains the revoked original owner; it creates no execution authority. Initial item-6 `03f3cb9` passes both required CI checks and strict protection. The correction head needs a separate exact-head inspection.
 
 Rollback disables opt-in automatic processes, preserves runtime waits/holds/delivery receipts and existing canonical identities/liabilities, and keeps the compatible worker for every patched history. Populated 0031 downgrade refuses destruction. Main remains at `8e50d68` until separate merge authorization and current independent approval.
 
