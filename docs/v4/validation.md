@@ -4,6 +4,24 @@
 <a id="current-evidence-summary--2026-09-24"></a>
 <a id="current-evidence-summary--2026-09-27"></a>
 
+## Current evidence summary — 2026-10-03 item-6 qualification
+
+Item 6 resumes from `e30a2f6`. Fresh acceptance proves old-history replay and an actual old-to-new wait transition, bounded identity-preserving continuation, canonical deadline holds, automatic timers/deduplicated database notification delivery and a process-kill/restore drill. Final qualification is **84 focused / 455 full non-live PASS**, zero failures/errors/skips. Fifteen documentation tests, 75 mapped obligations, 310 source hashes, 360 preserved dispositions, six fresh Mermaid renders, four shell contracts, dependency consistency and whitespace PASS. [Item-6 evidence](item6-evidence.json) preserves exact commands and hashes. Older item-5c **425 full / 37 focused PASS** remains dated 2026-09-27; it is not the item-6 result. Use [progress](progress.md#current-state) and the [item-6 contract](IMPLEMENTATION-BLUEPRINT.md#p1-item-6-local-runtime-and-wait-contract).
+
+Production effects remain disabled; RG0/full RG1 remain HELD. Independent increment/PR review, external alerts, deployment worker routing and production coordinated backup restore remain NOT RUN. The new commit needs fresh exact-head CI after publication. Earlier reports and source/archive artifacts retain their original bytes.
+
+### Item-6 qualification and local review — 2026-10-03
+
+Initial workflow acceptance failed on missing continuation/deadline ownership (2 FAIL / 1 PASS); the captured actual legacy history already replayed. Missing runtime-wait module then failed collection. Subsequent real fixture checks found a trigger's cross-table field reference, an unintended extra workflow-result field and missing restricted read/trigger grants. Each was repaired; existing result/error contracts, authority privileges and canonical identity bindings were preserved. An approved-but-unresumed case now gets a revision-bound timer with its original deadline; generic recovery cannot bypass the case-specific resume gate. Timeout holds preserve unresolved liability and reconcile later canonical closure without signaling a completed workflow.
+
+Local review added a failing direct-SQL regression for an unrelated runtime ID and fabricated admission completion. The migration guard now requires fixed runtime identity and canonical disposition evidence. The earlier full run passed **453 tests**; it is preliminary because this guard and a signed intent-read path were added afterward. The new intent-read test initially used an untyped service fixture argument; corrected to the existing CycleRequest DTO before qualification. The resulting tree passes **84 focused / 455 full non-live tests**, zero failures/errors/skips; the preliminary 453-pass run is superseded. Scoped reads show the original owner and wait/delivery hold without execution authority, including after write revocation; SDK/CLI use the same signed API.
+
+The restore drill kills a pending timer worker, retries a lost start acknowledgment against a fixed runtime memo, restores an actual pg_dump snapshot into a disposable PostgreSQL database, restarts Temporal's persisted server process and resumes the same workflow run. One escalation/notification and unchanged cycle/context/operation survive. This is local PostgreSQL restore and Temporal process-restart proof; Temporal backup restore, production cross-store consistency and measured RPO/RTO remain R66/P7 obligations. The notification recipient is the database no-effects fixture sink. No external alert or provider effect is qualified.
+
+Independent increment/PR review remains **NOT RUN**; root local inspection is recorded separately and supplies no independent approval. Main merge, RG0/full RG1, deployment-specific worker routing, external alerts and later-phase implementation remain held separately from this local slice.
+
+### Pre-item-6 documentation evidence summary — historical 2026-10-03
+
 ## Current evidence summary — 2026-10-03 documentation reinspection
 
 Inspected published item-5c application checkpoint: `7009d51bac527b92c01af8c45d6d232e8a4b4a71`; its original qualification base was `5ae20d3`. The 302-file source lock matches the application; the [item-5c report](item5c-evidence.json) retains its original 2026-09-27 commands, digests and pre-publication repository state. Local application tests were not rerun for this documentation refresh. Use [current progress](progress.md#current-state), the [item-6 handoff](progress.md#item-6-resume-handoff) and the [blueprint snapshot](IMPLEMENTATION-BLUEPRINT.md#current-execution). Dated older reports remain historical; current repository evidence is the separate [rolling exact-commit report](repository-enforcement-evidence.json).

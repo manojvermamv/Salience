@@ -6,7 +6,7 @@ Superseded by the [V4 production implementation blueprint](<../v4/IMPLEMENTATION
 
 Resume using [current V4 progress](../v4/progress.md#current-state) and the blueprint's [remaining P1 sequence](../v4/IMPLEMENTATION-BLUEPRINT.md#p1-resume-queue). Completed local substrate and P1 slices must be reused; the archived checkboxes do not release V4 production gates.
 
-P1 items 1–5 are locally verified through published item-5c `7009d51`; resume at the [item-6 handoff](../v4/progress.md#item-6-resume-handoff). Production RG0/full RG1 remain HELD.
+P1 items 1–6 are implemented in local no-effects fixtures; item-6 qualification and the next item-7 independent review are recorded in the [current handoff](../v4/progress.md#item-6-resume-handoff). Production RG0/full RG1 remain HELD.
 
 <!-- Historical heading anchors retained for incoming links. -->
 <a id="implementation-plan"></a>

@@ -406,6 +406,9 @@ class CyclesClient(_ControlClient):
         return self._request("POST", f"/v1/v4/goals/{goal_id}/schedule-cutover/rollback",
                              {"idempotency_key": idempotency_key})
 
+    def inspect_intent(self, intent_id: str) -> dict[str, Any]:
+        return self._request("GET", f"/v1/v4/intents/{intent_id}")
+
     def admit(self, intent_id: str) -> dict[str, Any]:
         return self._request("POST", f"/v1/v4/intents/{intent_id}/admit", {})
 

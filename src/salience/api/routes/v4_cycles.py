@@ -219,6 +219,25 @@ async def rollback_schedule_cutover(goal_id: UUID, command: CutoverTransitionCom
     return await _invoke(_schedule_service(request).rollback, goal_id, idempotency_key=command.idempotency_key)
 
 
+def _inspect_intent(service, intent_id):
+    with service._command("cycles:read") as connection:
+        intent = connection.execute("""SELECT i.id AS intent_id,i.goal_id,i.goal_revision,i.eligibility_revision,
+            i.due_at,i.expires_at,a.disposition,a.reason,a.cycle_id FROM v4_cycle_intents i
+            JOIN v4_goals g ON g.id=i.goal_id LEFT JOIN v4_admissions a ON a.intent_id=i.id AND a.eligibility_revision=i.eligibility_revision
+            WHERE i.id=%s AND g.workspace_id=%s""",(intent_id,service.workspace_id)).fetchone()
+        if not intent:
+            raise PermissionError("intent outside current scope")
+        result = _safe_record(intent)
+        result["runtime_waits"] = [_safe_record(wait) for wait in connection.execute(
+            "SELECT id,revision,kind,due_at,state,runtime_id,result,handoff_attempts,owner_id FROM v4_runtime_waits WHERE intent_id=%s ORDER BY created_at,id",(intent_id,)).fetchall()]
+        return result
+
+
+@router.get("/v4/intents/{intent_id}")
+async def inspect_intent(intent_id: UUID, request: Request):
+    return await _invoke(_inspect_intent,_service(request),intent_id)
+
+
 @router.post("/v4/intents/{intent_id}/admit")
 async def admit(intent_id: UUID, request: Request):
     result = await _invoke(_service(request).admit, intent_id)
@@ -244,13 +263,16 @@ def _inspect(service: CycleAdmission, cycle_id: UUID):
         """, (cycle_id, service.workspace_id)).fetchone()
         if not row:
             raise PermissionError("cycle outside current scope")
-        return {
+        result = {
             "cycle_id": str(row["cycle_id"]), "goal_id": str(row["goal_id"]),
             "context_id": str(row["context_id"]),
             "operation_id": str(row["operation_id"]),
             "state": row["state"], "disposition": row["disposition"],
             "dry_run": row["dry_run"] == "true",
         }
+        hold = connection.execute("SELECT owner_id,reason,created_at FROM v4_runtime_holds WHERE cycle_id=%s",(cycle_id,)).fetchone()
+        result["runtime_hold"] = _safe_record(hold) if hold else None
+        return result
 
 
 @router.get("/v4/cycles/{cycle_id}")
@@ -339,6 +361,11 @@ async def open_cycle_case(cycle_id: UUID, command: OpenCaseCommand, request: Req
                          **command.model_dump())
 
 
+def _safe_record(row):
+    return {field: value.isoformat() if isinstance(value,datetime) else str(value)
+            if isinstance(value,UUID) else value for field,value in row.items()}
+
+
 def _inspect_case(service: CycleGovernance, case_id: UUID):
     with service._command("cycles:read") as connection:
         row = connection.execute("""
@@ -353,11 +380,16 @@ def _inspect_case(service: CycleGovernance, case_id: UUID):
         """, (case_id, service.workspace_id, service.workspace_id)).fetchone()
         if not row:
             raise PermissionError("case outside current scope")
-        return {
-            field: value.isoformat() if isinstance(value, datetime) else str(value)
-            if isinstance(value, UUID) else value
-            for field, value in row.items()
-        }
+        result = _safe_record(row)
+        result["runtime_waits"] = [_safe_record(wait) for wait in connection.execute(
+            "SELECT id,revision,due_at,state,runtime_id,result,handoff_attempts FROM v4_runtime_waits WHERE case_id=%s ORDER BY created_at,id", (case_id,)).fetchall()]
+        result["notifications"] = [_safe_record(notice) for notice in connection.execute("""
+            SELECT n.id,n.kind,n.case_revision,d.state AS delivery_state,d.attempts,d.reason,
+                   EXISTS(SELECT 1 FROM v4_case_acks a WHERE a.notification_id=n.id) AS acknowledged
+            FROM v4_case_notifications n LEFT JOIN v4_notification_deliveries d ON d.notification_id=n.id
+            WHERE n.case_id=%s ORDER BY n.created_at,n.id
+        """, (case_id,)).fetchall()]
+        return result
 
 
 @router.get("/v4/cases/{case_id}")

@@ -18,7 +18,7 @@ from salience.cycles.runtime import TemporalCycleTransport, build_local_cycle_wo
 from salience.cycles.workflow import LocalCycleWorkflow
 
 
-def scenario(policy_version=1, trace_context_factory=None):
+def scenario(policy_version=1, trace_context_factory=None, wall_time_seconds=60):
     database=os.environ["TEST_DATABASE_URL"]
     workspace, subject=uuid4(),uuid4()
     with psycopg.connect(database) as connection:
@@ -37,7 +37,7 @@ def scenario(policy_version=1, trace_context_factory=None):
         spec = GoalSpecV2.model_validate(spec.model_dump() | {"schema_version":"GoalSpec.local.v2", "cadence_seconds":None,
             "content_program_id":program, "account_refs":("fixture-account",), "channel_refs":("fixture-channel",),
             "content_scope":"fixture-only", "policy_refs":("fixture-policy@1",), "retention_policy":"fixture-retention@1",
-            "cadence":CadencePolicy(anchor=now.replace(microsecond=0))})
+            "cadence":CadencePolicy(anchor=now.replace(microsecond=0)), "wall_time_seconds":wall_time_seconds})
         if policy_version == 3:
             budget = uuid4()
             end = now+timedelta(hours=1)

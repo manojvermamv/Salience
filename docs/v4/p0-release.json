@@ -138,6 +138,11 @@
       "path": "docs/v4/item5c-evidence.json",
       "sha256": "4b0ef8eccccae966c301cd8a331fee88c4cf7467460077416fb6c7eab2a595c9",
       "local_only": false
+    },
+    {
+      "path": "docs/v4/item6-evidence.json",
+      "sha256": "ac589561522bff809a609af0579ab69d0bbdad69c8257f7ee919700434bf5f10",
+      "local_only": false
     }
   ],
   "release_gate": "RG0",
@@ -210,7 +215,7 @@
     ]
   },
   "p1_increment": {
-    "name": "Local admission/outbox, revisions, approved baseline, V2/V3 fixture policy/accounting, item-3 stop/permit/cases, item-4 handoff/mock trace and item-5a/5b/5c signed fixture commands/cutover",
+    "name": "Local admission/outbox, revisions, approved baseline, V2/V3 fixture policy/accounting, item-3 stop/permit/cases, item-4 handoff/mock trace and item-5a/5b/5c signed fixture commands/cutover; item-6 compatible fixture runtime/waits/notification receipts",
     "local_status": "PASS",
     "release_gate": "RG1",
     "release_status": "HELD",
@@ -234,27 +239,28 @@
       "R35",
       "R53"
     ],
-    "evidence": "docs/v4/item5c-evidence.json",
+    "evidence": "docs/v4/item6-evidence.json",
     "remaining": [
       "General registry/provider eligibility beyond the approved no-effects fixture baseline; later capability and production qualification gates remain binding",
       "Production G1 provider charge identity and effect integration beyond the fixture-qualified transfer/reconciliation contract",
       "Production dispatcher/alert service, live Temporal legacy start/signal cutover, public V4 API-to-provider outbox integration and production typed delivery recovery beyond the automatic local fixture",
       "General policy/model authorization, live scheduler stop/fencing integration and separately scoped remote read-only reconciliation beyond fixture permits/cases/cutover",
-      "Arbitrary supported worker-version compatibility, Continue-As-New, real-time durable review deadlines and independent full RG1 qualification"
+      "Deployment-specific supported worker routing/rollback, external durable alert delivery and independent full RG1 qualification beyond the local item-6 patch/timer/restore fixture"
     ],
     "completed_queue_items": [
       1,
       2,
       3,
       4,
-      5
+      5,
+      6
     ],
     "completed_queue_subincrements": [
       "5a",
       "5b",
       "5c"
     ],
-    "next_queue_item": 6
+    "next_queue_item": 7
   },
   "documentation_refresh": {
     "date": "2026-09-24",
@@ -315,5 +321,19 @@
       "fresh_mermaid_renders": "NOT RUN; all source blocks unchanged",
       "report": "docs/v4/validation.md#documentation-reinspection-verification--2026-10-03"
     }
+  },
+  "item6_checkpoint": {
+    "recorded_at": "2026-10-03",
+    "qualified_from_base": "e30a2f6ee11aa1b6166c6475b0f5ae065375545a",
+    "scope": "P1 item 6: local compatible workflow patch/replay, bounded identity-preserving Continue-As-New, canonical durable waits/case deadlines and database no-effects notification delivery, worker kill/PostgreSQL snapshot restore/Temporal process restart, preservation-safe rollback",
+    "focused_tests": 84,
+    "full_non_live_tests": 455,
+    "local_status": "PASS",
+    "independent_review": "NOT RUN",
+    "candidate_ci": "NOT RUN until publication; inspect exact HEAD with verify_repository.py",
+    "evidence": "docs/v4/item6-evidence.json",
+    "next_queue_item": 7,
+    "production_effects_enabled": false,
+    "main_merge": "NOT AUTHORIZED"
   }
 }

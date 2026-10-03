@@ -6,6 +6,36 @@
 <a id="current-state--2026-09-24"></a>
 <a id="current-state--2026-09-27"></a>
 
+## Current state — 2026-10-03 item-6 qualification
+
+Item 6 is locally qualified: **84 focused / 455 full non-live PASS**, zero failures/errors/skips, executed 2026-10-03 from published documentation base **`e30a2f6ee11aa1b6166c6475b0f5ae065375545a`** on local `arch`, tracking `origin/feat/archv4-p0-foundation`. Items 1–5 remain completed local fixtures. The current change adds compatible old/new replay, identity-preserving Continue-As-New, finite waits/case deadlines, owner holds and PostgreSQL fixture notification receipts. The [item-6 report](item6-evidence.json) records exact commands, final source/JUnit/log hashes and local review; [validation](validation.md) preserves preliminary failures and historical reports. Production effects are disabled, dry-run/zero-spend/fallback-deny preserved; RG0/full RG1 remain HELD and main unmerged.
+
+| Area | Current state |
+| --- | --- |
+| P0 and DG1 | Local qualification and development entry PASS; external RG0 obligations remain NOT RUN. |
+| P1 items 1–5 | Locally qualified through item-5c application `7009d51`; historical reports preserved. |
+| P1 item 6 | Local PASS: 84 focused / 455 full non-live, 310 source hashes, 15 documentation tests, 75 obligations, six fresh renders and four shell contracts. Candidate publication/CI recorded separately. |
+| Remaining P1 | Item 7 independent full RG1 qualification plus live schedule routing/fencing, general policy/read reconciliation and external delivery obligations. |
+| P2–P7 | Planned; optional P6 disabled. |
+| Repository/merge | Required checks must pass on the new published HEAD. Independent PR approval NOT RUN; no merge authorized. |
+
+<a id="item-6-resume-handoff"></a>
+### Item 6 execution and next handoff
+
+Read the [runtime/wait contract](IMPLEMENTATION-BLUEPRINT.md#p1-item-6-local-runtime-and-wait-contract). The canonical acceptance boundary is now the compatible worker, additive 0031 runtime sidecars and four new timer/upgrade/restart test modules. Existing admission, context, allocation, governance, outbox and signed fixture commands are reused. Old unpatched histories follow their original command sequence; patched histories remain on compatible workers through rollback. Notification acceptance is a local database no-effects fixture, distinct from human acknowledgment and external alerts.
+
+Resume from the actual published HEAD and its exact source lock and test evidence. Completing this slice moves the queue to **item 7**, independent full RG1 qualification. Do not restart completed P0 or P1 increments and do not infer production release from fixture success. Retained pre-upgrade cases need explicit current-operator timer enrollment; no frozen authority is backfilled. A PostgreSQL snapshot restore plus Temporal process restart is local restart proof, not production R66/P7 restore certification.
+
+Rollback disables opt-in automatic processes, preserves runtime waits/holds/delivery receipts and existing canonical identities/liabilities, and keeps the compatible worker for every patched history. Populated 0031 downgrade refuses destruction. Main remains at `8e50d68` until separate merge authorization and current independent approval.
+
+## Historical transition and execution log
+
+The entries below record their state at the stated milestone. Earlier statements such as "all phases planned", "no P1 code", missing Chromium, unavailable engineering review or unprotected main are superseded by the current summary, not present-day facts. They remain intact to preserve the evidence trail; no production effects or Git history rewriting are permitted.
+
+### Documentation checkpoint before item 6 — 2026-10-03
+
+The following checkpoint is retained as historical context; its paused-item and latest-result wording is superseded by the current state above.
+
 ## Current state — 2026-10-03 documentation reinspection
 
 Published application checkpoint: **`7009d51bac527b92c01af8c45d6d232e8a4b4a71`**, inspected 2026-10-03 on local branch `arch`, tracking `origin/feat/archv4-p0-foundation`. The last application change is item 5c; this refresh changes documentation and repository evidence only. Its **37 focused / 425 full non-live PASS** results were recorded on **2026-09-27**, not rerun today. The 302-file application evidence lock still matches the source. Items 1–5 are locally verified in no-effects fixtures; **item 6 is the next implementation**, followed by item 7 independent full RG1 qualification. RG0/full RG1 remain HELD, production effects disabled and main unmerged.
@@ -62,7 +92,7 @@ Latest application execution remains dated 2026-09-27; no local application reru
 
 "Ongoing" describes unfinished full P1, not an already running later increment. Items 5a–5c add only signed opt-in local fixture commands and cutover; production Temporal schedule control and full RG1 remain separate. Original ArchV4 sources, archived snapshots, historical visuals and AGENTS.md/SKILL.md instructions are preserved. Superseded core/Superpowers paths remain navigation aliases, not competing plans.
 
-<a id="item-6-resume-handoff"></a>
+<a id="item-6-original-handoff"></a>
 ### Item 6 resume handoff
 
 **Paused objective:** supported worker upgrades, Continue-As-New, durable waits/review deadlines, notification delivery and local restart/restore qualification. Item 6 is planned; this documentation checkpoint implements none of it. The blueprint's [queue](IMPLEMENTATION-BLUEPRINT.md#p1-resume-queue) and P1 matrix, particularly R02, R09 and R32–R34, define acceptance. Item 7 is independent full RG1 review. Live schedule conversion, general policy/read reconciliation and other listed RG1 obligations remain separate; completing item 6 alone cannot release RG1. Full production DB/object/Temporal restore and measured RPO/RTO remain R66/P7 work.
@@ -75,10 +105,6 @@ Latest application execution remains dated 2026-09-27; no local application reru
 | [Admission](../../src/salience/cycles/admission.py), [cadence](../../src/salience/cycles/cadence.py) and [outbox](../../src/salience/cycles/outbox.py) | PostgreSQL owns intent/cycle/context/operation identities, eligibility revisions, coalescing, bounded wakes and transactional outgoing messages. | Pre-admission waits retain the intent without inventing a cycle; retry/reconciliation retains the original cycle/context/operation; strategic defer/abstain closes the cycle and later creates an authorized coalesced successor. |
 
 **First executable step after this checkpoint:** inspect the published HEAD and source lock, then write and demonstrate failing acceptance tests for old-history upgrade replay, identity-preserving continuation and automatic durable deadline delivery. Reuse existing PostgreSQL/Temporal fixture tests and canonical governance transactions; inspect the pinned SDK's supported compatibility mechanism before selecting an implementation. Keep workflow coordination deterministic and database/network work in bounded activities. Add schema only when required, with empty rollback/re-upgrade and populated preservation checks. Run focused and full non-live regressions, documentation/evidence checks, independent increment review and exact-head CI before claiming completion. Record actual execution dates and update mappings without replacing historical reports.
-
-## Historical transition and execution log
-
-The entries below record their state at the stated milestone. Earlier statements such as "all phases planned", "no P1 code", missing Chromium, unavailable engineering review or unprotected main are superseded by the current summary, not present-day facts. They remain intact to preserve the evidence trail; no production effects or Git history rewriting are permitted.
 
 ### September 27 qualification and publication snapshots
 

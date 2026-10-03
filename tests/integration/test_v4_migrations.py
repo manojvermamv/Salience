@@ -20,6 +20,8 @@ def test_clean_upgrade_empty_rollback_and_populated_preservation():
                 return subprocess.run([sys.executable, "-m", "alembic", "-x", f"database_url={database}", direction, target], capture_output=True, text=True)
 
             assert migrate("upgrade", "head").returncode == 0
+            assert migrate("downgrade", "0030_v4_schedule_cutover").returncode == 0
+            assert migrate("upgrade", "head").returncode == 0
             assert migrate("downgrade", "0029_goal_create_receipts").returncode == 0
             assert migrate("upgrade", "head").returncode == 0
             assert migrate("downgrade", "0012_publication_profile_scope").returncode == 0

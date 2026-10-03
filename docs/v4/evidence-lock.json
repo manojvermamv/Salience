@@ -151,6 +151,10 @@
       "sha256": "f7ccbf9bbfdff6bc339e33f73c1c1a8cac93f7e8ae80dd51e24a098b28a355bc"
     },
     {
+      "path": "migrations/versions/0031_runtime_waits.py",
+      "sha256": "b2a387e90380893a93eeff650d431b311d90a7e2d51c08b9da99e7d48a9d7272"
+    },
+    {
       "path": "migrations/versions/__init__.py",
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
@@ -256,7 +260,7 @@
     },
     {
       "path": "src/salience/api/p0.py",
-      "sha256": "bdf85058feb196f7b843fa0320c32bab296d81109d76d4df6464590e64a15a74"
+      "sha256": "02223b125bbc502b70b07e818cebb77c056bb882ba67622bd3a6f37b1effc353"
     },
     {
       "path": "src/salience/api/routes/__init__.py",
@@ -288,7 +292,7 @@
     },
     {
       "path": "src/salience/api/routes/v4_cycles.py",
-      "sha256": "5cb898a44a77a63108404067c4fc3a2b96eddd585692a744124622e8e1161e5e"
+      "sha256": "470d54784a5647d622b527b22cbd9e86f9e26a3b3eef844e3bf7ce052da6a43a"
     },
     {
       "path": "src/salience/api/schemas.py",
@@ -328,7 +332,7 @@
     },
     {
       "path": "src/salience/cli.py",
-      "sha256": "819ca64e7bd0a0d06887d9a3426c3c776f3c96ac76ad97513f4bc0fcf0710630"
+      "sha256": "2e279e95dffb318b84bf992dbc91387fd6a6707bcc8590a999750a013cfb52cf"
     },
     {
       "path": "src/salience/config.py",
@@ -404,7 +408,7 @@
     },
     {
       "path": "src/salience/cycles/admission.py",
-      "sha256": "015ece4cc2013b98738a04d57f4e3dd8c5e3bf97de4a7d4bf3bc3a21c79ec586"
+      "sha256": "ac8f5ff8dd0424109585837de93ef0639f313d36443c2d25b3abe8fcc9865e94"
     },
     {
       "path": "src/salience/cycles/authority.py",
@@ -424,23 +428,35 @@
     },
     {
       "path": "src/salience/cycles/governance.py",
-      "sha256": "954d7b9093fbbdeedec35e41ceb21b6e84c4ea4467c19d467e01b27a8eb1e501"
+      "sha256": "160646201cad8ba4d4f81c0c758becfa219245e96fc4c3cf2f449d993cafd98e"
+    },
+    {
+      "path": "src/salience/cycles/legacy_workflow.py",
+      "sha256": "b3dd801cb31ccb3b627a6b4f07472ceb34c5505084c7793aaac6b52a6bf180b7"
     },
     {
       "path": "src/salience/cycles/outbox.py",
-      "sha256": "5beeef0ef2f607df76713fd58912758c1393d4be2300bca8e39ac7a821116d54"
+      "sha256": "7ae243a0edbf23b8cc8ae484a6cbce7d46c5cf826f8060eb97486ac0e2bcffa6"
     },
     {
       "path": "src/salience/cycles/runtime.py",
-      "sha256": "ba55cfedb089d86af6ca9288ed3c025ff6a12237c1235096a52adb0a875ea42a"
+      "sha256": "061b43b923331be43347e7a5a5828fb286e8b9d9a4b1f07cceb4994efcd91b63"
+    },
+    {
+      "path": "src/salience/cycles/runtime_waits.py",
+      "sha256": "c030f8d2df80baec62ed36ab833e5dc3c243d83871f53681eebed0857a5a0265"
     },
     {
       "path": "src/salience/cycles/schedule_cutover.py",
       "sha256": "fa7359a8419661a2c3910f1e63fe4dc5ec0dd32b051285b9d1af48c398cfa5d4"
     },
     {
+      "path": "src/salience/cycles/wait_workflow.py",
+      "sha256": "1d9a60ef51b9f09ba6b3162217d4259ea9e7ddac3b2a0cd220752a6336e211c3"
+    },
+    {
       "path": "src/salience/cycles/workflow.py",
-      "sha256": "ec89d03285a9a2340bb7d57ae2a02278d931cb7ce97a21e0e4cc4f002b1bdd80"
+      "sha256": "fa8aff150b8ac11bb2c89517fba6e5ecba9462af3b57d7816cc5c90c797b7afd"
     },
     {
       "path": "src/salience/db/__init__.py",
@@ -676,7 +692,7 @@
     },
     {
       "path": "src/salience/sdk/client.py",
-      "sha256": "5851792e725ee5dce9c96f77a60da3822073e73585643e66c891f931a0f71463"
+      "sha256": "b824ba9376a43f696edd0f1a5c64312641ef9ae69445dc63265e77f8f8f1d1e3"
     },
     {
       "path": "src/salience/storage/__init__.py",
@@ -811,8 +827,20 @@
       "sha256": "7b0b43ff64ef38811201c86d6cf56f3e98d0ab480c28ee61379dacf98e37eeb8"
     },
     {
+      "path": "tests/e2e/test_v4_continuation_restart.py",
+      "sha256": "9ead5dea72c867f9c8c5b70bfb570068b59d0fd8c49846eed1a580dd41ec1b7b"
+    },
+    {
       "path": "tests/e2e/test_v4_outbox_recovery.py",
-      "sha256": "228abfe3a6204297e2a280b457c396fc1f62ad6aeeef967b1485b6c8bfdcc352"
+      "sha256": "c44368084838214a91f1b9632561566a1780e8b39cce57e2a6d79478f0fae914"
+    },
+    {
+      "path": "tests/e2e/test_v4_wait_restart.py",
+      "sha256": "0703b2d92e1fe8cc7f05aca28795c5179170e36b9b4d43c304889a992dedf9d8"
+    },
+    {
+      "path": "tests/e2e/test_v4_worker_upgrade.py",
+      "sha256": "e5a97d80c92cc0e62fba4f0e95c4369021452c123776fb79007a2e986a606c53"
     },
     {
       "path": "tests/e2e/test_worker_restart.py",
@@ -1004,7 +1032,7 @@
     },
     {
       "path": "tests/integration/test_v4_cycle_governance.py",
-      "sha256": "12bf87da2a28282b6c4cd58768b34423e478f0d5993b569fbd1e6306257714ae"
+      "sha256": "b32b38fa7debcdb2a86993115098c5f481a41a25620e7492a803a8b5e09e1e8c"
     },
     {
       "path": "tests/integration/test_v4_goal_revisions.py",
@@ -1016,7 +1044,7 @@
     },
     {
       "path": "tests/integration/test_v4_migrations.py",
-      "sha256": "f5e1e37d5d17031d470e4f8f59e857cdc455683f688e8b39e8fe1ee68c577661"
+      "sha256": "5af190b8d9a662cf6c34a5b76b0b5b4e0cbef6543a47da46d7634ec2b2c25b1d"
     },
     {
       "path": "tests/integration/test_v4_object_retention.py",
@@ -1032,15 +1060,19 @@
     },
     {
       "path": "tests/integration/test_v4_public_commands.py",
-      "sha256": "1f459ab95d717633a6ce7f0371090a8bbc076f5516c048925a7c27adbeabe425"
+      "sha256": "863ffb01fb345fdf3a7b20b3e70d8e7bcf0a4aaf5ce308deab8859b4fe67669f"
     },
     {
-      "path": "tests/integration/test_v4_schedule_cutover.py",
-      "sha256": "c697bcb2306b4bc1447b682f61f05175050a050e6d284503c1fe0e43001d779a"
+      "path": "tests/integration/test_v4_runtime_waits.py",
+      "sha256": "5aa83ea44154e347b43967718664187b3acae490ce7b566dbd2d8ab233e81d74"
     },
     {
       "path": "tests/integration/test_v4_s3_service.py",
       "sha256": "d5aebee88caaddd76d15aca40e70bf249c7478adbf4663d457ee24592954f4f5"
+    },
+    {
+      "path": "tests/integration/test_v4_schedule_cutover.py",
+      "sha256": "2590eb8f098058af1f614e584edaf93a0903e4afeefbfb15032d548fe6b089d3"
     },
     {
       "path": "tests/integration/test_v4_storage_integrity.py",

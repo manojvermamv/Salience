@@ -210,6 +210,8 @@ def _request_scope(request):
                 return resource, "cycles:write"
             if request.method == "POST" and len(parts) == 5 and parts[4] == "stop":
                 return resource, "cycles:stop"
+        if request.method == "GET" and len(parts) == 4 and parts[:3] == ["v1", "v4", "intents"]:
+            return ("v4_cycle_intents", UUID(parts[3])), "cycles:read"
         if request.method == "POST" and len(parts) == 5 and parts[:3] == ["v1", "v4", "intents"] and parts[4] == "admit":
             return ("v4_cycle_intents", UUID(parts[3])), "cycles:write"
         if request.method == "POST" and len(parts) == 5 and parts[:3] == ["v1", "v4", "intents"] and parts[4] == "cases":

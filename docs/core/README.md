@@ -6,7 +6,7 @@ Superseded by the [V4 production implementation blueprint](<../v4/IMPLEMENTATION
 
 For completed, ongoing and planned V4 work, use [current progress](../v4/progress.md#current-state) and the [ordered remaining queue](../v4/IMPLEMENTATION-BLUEPRINT.md#p1-resume-queue). Older Phase 1–9 labels do not establish completion of V4 P0–P7.
 
-P1 items 1–5 are locally verified through published item-5c `7009d51`; resume at the [item-6 handoff](../v4/progress.md#item-6-resume-handoff). Production RG0/full RG1 remain HELD.
+P1 items 1–6 are implemented in local no-effects fixtures; item-6 qualification and the next item-7 independent review are recorded in the [current handoff](../v4/progress.md#item-6-resume-handoff). Production RG0/full RG1 remain HELD.
 
 <!-- Historical heading anchors retained for incoming links. -->
 <a id="ai-content-system-build-pack"></a>

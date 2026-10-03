@@ -107,6 +107,12 @@ class CycleOutbox:
             return await asyncio.to_thread(self.ack,message["id"],message["lease_token"])
         try:
             async with asyncio.timeout(min(5,self.lease_seconds)):
+                # A bounded runtime has finished after committing an owner
+                # hold. Reconcile later canonical messages without attempting
+                # to signal a completed workflow or dispatch another effect.
+                if await asyncio.to_thread(self.runtime_held,message["cycle_id"]):
+                    await asyncio.to_thread(self.consume,message["id"],expected_cycle_id=message["cycle_id"],expected_kind=message["kind"])
+                    return await asyncio.to_thread(self.ack,message["id"],message["lease_token"])
                 context = TraceContext.from_carrier({"traceparent":message["traceparent"]})
                 with self.emitter.active_span(context,"cycle.outbox.delivery") as emitted:
                     await transport.deliver(message | {"delivery_traceparent":emitted.to_carrier()["traceparent"]})
@@ -138,6 +144,10 @@ class CycleOutbox:
                 await asyncio.wait_for(stop_event.wait(), timeout=poll_interval_ms / 1000)
             except TimeoutError:
                 pass
+
+    def runtime_held(self, cycle_id):
+        with self._connect() as connection:
+            return bool(connection.execute("SELECT 1 FROM v4_runtime_holds WHERE cycle_id=%s AND workspace_id=%s",(cycle_id,self.workspace_id)).fetchone())
 
     def receipt_exists(self, message_id):
         with self._connect() as connection:
@@ -234,6 +244,8 @@ class CycleOutbox:
             state = "recorded" if authorized and current["goal_state"]=="active" and current["current_revision"]==current["bound_revision"] else "held"
             if message["state"] == "dead_letter":
                 state = "held"
+            if connection.execute("SELECT 1 FROM v4_runtime_holds WHERE cycle_id=%s",(message["cycle_id"],)).fetchone() and message["kind"]!="close":
+                state="held"
             if current["cycle_state"]=="closed" and message["kind"]!="close":
                 state="held"
             context = TraceContext.from_carrier({"traceparent":traceparent or message["traceparent"]})

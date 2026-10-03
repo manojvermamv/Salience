@@ -170,6 +170,8 @@ def main(arguments: Sequence[str] | None = None) -> None:
     cutover_poll.add_argument("--goal-id", required=True)
     cutover_poll.add_argument("--expected-revision", type=int, required=True)
     cutover_poll.add_argument("--idempotency-key", required=True)
+    intent_inspect = cycle_commands.add_parser("intent-inspect")
+    intent_inspect.add_argument("--intent-id", required=True)
     cycle_admit = cycle_commands.add_parser("admit")
     cycle_admit.add_argument("--intent-id", required=True)
     cycle_inspect = cycle_commands.add_parser("inspect")
@@ -267,6 +269,8 @@ def main(arguments: Sequence[str] | None = None) -> None:
                 payload={"expected_revision": parsed.expected_revision,
                          "idempotency_key": parsed.idempotency_key},
             )
+        elif parsed.cycle_command == "intent-inspect":
+            result = _v4_request(method="GET", path=f"/v1/v4/intents/{parsed.intent_id}")
         elif parsed.cycle_command == "admit":
             result = _v4_request(
                 method="POST", path=f"/v1/v4/intents/{parsed.intent_id}/admit", payload={},

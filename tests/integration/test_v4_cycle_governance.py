@@ -305,7 +305,7 @@ def test_nonowner_governance_role_needs_no_authority_edit_privilege(governed):
         try:
             admin.execute(psycopg.sql.SQL("GRANT USAGE ON SCHEMA public TO {}").format(identifier))
             admin.execute(psycopg.sql.SQL("GRANT SELECT ON ALL TABLES IN SCHEMA public TO {}").format(identifier))
-            admin.execute(psycopg.sql.SQL("GRANT INSERT ON v4_stop_scopes,v4_stop_commands,v4_permit_claims,v4_dispatch_permits,v4_recovery_cases,v4_case_commands,v4_case_reviews,v4_review_decisions,v4_case_notifications,v4_case_acks,v4_case_archives,v4_case_events,v4_cycle_events,v4_cycle_outbox TO {}").format(identifier))
+            admin.execute(psycopg.sql.SQL("GRANT INSERT ON v4_runtime_waits,v4_notification_deliveries,v4_stop_scopes,v4_stop_commands,v4_permit_claims,v4_dispatch_permits,v4_recovery_cases,v4_case_commands,v4_case_reviews,v4_review_decisions,v4_case_notifications,v4_case_acks,v4_case_archives,v4_case_events,v4_cycle_events,v4_cycle_outbox TO {}").format(identifier))
             admin.execute(psycopg.sql.SQL("GRANT UPDATE ON v4_goals,v4_cycle_intents,v4_cycles,v4_stop_scopes,v4_permit_claims,v4_recovery_cases TO {}").format(identifier))
             for function in ("p0_lock_identity(text,text,uuid)", "v4_lock_program(uuid,uuid)"):
                 admin.execute(psycopg.sql.SQL("GRANT EXECUTE ON FUNCTION "+function+" TO {}").format(identifier))

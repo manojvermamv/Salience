@@ -227,7 +227,7 @@ def test_nonowner_cutover_has_no_authority_edit_privilege(cutover):
         try:
             admin.execute(psycopg.sql.SQL("GRANT USAGE ON SCHEMA public TO {}").format(identifier))
             admin.execute(psycopg.sql.SQL("GRANT SELECT ON ALL TABLES IN SCHEMA public TO {}").format(identifier))
-            admin.execute(psycopg.sql.SQL("GRANT INSERT ON v4_schedule_cutovers,v4_schedule_cursors,v4_cycle_events TO {}").format(identifier))
+            admin.execute(psycopg.sql.SQL("GRANT INSERT ON v4_runtime_waits,v4_notification_deliveries,v4_schedule_cutovers,v4_schedule_cursors,v4_cycle_events TO {}").format(identifier))
             admin.execute(psycopg.sql.SQL("GRANT UPDATE ON v4_goals,v4_schedule_cutovers,job_schedules TO {}").format(identifier))
             admin.execute(psycopg.sql.SQL("GRANT EXECUTE ON FUNCTION p0_lock_identity(text,text,uuid),v4_lock_program(uuid,uuid) TO {}").format(identifier))
             parts = urlsplit(database)

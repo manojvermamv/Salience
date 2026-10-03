@@ -19,7 +19,7 @@ from temporalio.client import Client
 
 from salience.api.p0 import create_p0_app
 from salience.cycles.admission import CycleAdmission
-from salience.cycles.contracts import CadencePolicy, GoalSpec, GoalSpecV2
+from salience.cycles.contracts import CadencePolicy, CycleRequest, GoalSpec, GoalSpecV2
 from salience.cycles.governance import CycleGovernance
 from salience.cycles.outbox import CycleOutbox
 from salience.cycles.runtime import TemporalCycleTransport, build_local_cycle_worker
@@ -758,7 +758,7 @@ def test_public_fixture_commands_use_restricted_nonowner_role(public_fixture):
         try:
             admin.execute(psycopg.sql.SQL("GRANT USAGE ON SCHEMA public TO {}").format(psycopg.sql.Identifier(role)))
             admin.execute(psycopg.sql.SQL(
-                "GRANT SELECT ON workspaces,identity_subjects,permission_grants,v4_goals,v4_cycle_intents,v4_cycles,v4_run_contexts,v4_cycle_events,v4_goal_create_commands,v4_recovery_cases TO {}"
+                "GRANT SELECT ON workspaces,identity_subjects,permission_grants,v4_goals,v4_cycle_intents,v4_cycles,v4_run_contexts,v4_cycle_events,v4_goal_create_commands,v4_recovery_cases,v4_runtime_holds,v4_runtime_waits,v4_case_notifications,v4_notification_deliveries,v4_case_acks TO {}"
             ).format(psycopg.sql.Identifier(role)))
             admin.execute(psycopg.sql.SQL("GRANT INSERT ON identity_access_events TO {}").format(psycopg.sql.Identifier(role)))
             admin.execute(psycopg.sql.SQL(
@@ -943,3 +943,31 @@ def test_fixture_commands_do_not_load_in_production_mode(monkeypatch, public_fix
         audience="salience-p0", public_key=key.public_key(),
     )
     assert not any(getattr(route, "path", "").startswith("/v1/v4/") for route in disabled.routes)
+
+
+def test_intent_wait_owner_status_is_readable_without_write_authority_with_sdk_cli_parity(public_fixture,monkeypatch,capsys):
+    from salience.cli import main
+    from salience.sdk.client import SalienceClient
+    client,headers,workspace,subject,spec,database = public_fixture
+    # No baseline: this intent is review-required and never allocates a cycle.
+    service = CycleAdmission(database,workspace_id=workspace,subject_id=subject)
+    goal = service.create_goal(spec)
+    intent = service.request_cycle(goal,CycleRequest(origin="manual",expected_revision=1,idempotency_key="read-wait",slot_time=spec.cadence.anchor+timedelta(seconds=600)))
+    assert service.admit(intent)["disposition"] == "review_required"
+    with psycopg.connect(database) as connection:
+        connection.execute("UPDATE permission_grants SET expires_at=now()-interval '1 second' WHERE principal_id=%s AND scope='cycles:write'",(str(subject),))
+    response = client.get(f"/v1/v4/intents/{intent}",headers=headers)
+    assert response.status_code == 200,response.text
+    assert response.json()["cycle_id"] is None
+    assert response.json()["runtime_waits"][0]["owner_id"] == str(subject)
+    assert "grant_id" not in response.text
+    assert client.get(f"/v1/v4/intents/{uuid4()}",headers=headers).status_code == 403
+    def bridge(method,url,**kwargs):
+        return client.request(method,urlsplit(url).path,headers=kwargs["headers"],json=kwargs.get("json"))
+    monkeypatch.setattr("httpx.request",bridge)
+    monkeypatch.setenv("SALIENCE_CONTROL_URL","http://fixture.invalid")
+    monkeypatch.setenv("SALIENCE_CONTROL_JWT",headers["Authorization"][7:])
+    sdk = SalienceClient("http://fixture.invalid",headers["Authorization"][7:]).cycles
+    assert sdk.inspect_intent(str(intent)) == response.json()
+    main(["cycles","intent-inspect","--intent-id",str(intent)])
+    assert json.loads(capsys.readouterr().out) == response.json()

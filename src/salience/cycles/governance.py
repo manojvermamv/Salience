@@ -102,10 +102,14 @@ class CycleGovernance(CycleAdmission):
 
     def _eligible_cycle(self, connection, cycle_id, request=None):
         goal,spec,intent,cycle = self._cycle(connection,cycle_id)
+        if connection.execute("SELECT 1 FROM v4_runtime_holds WHERE cycle_id=%s",(cycle_id,)).fetchone():
+            raise PermissionError("runtime hold requires owner closure; original context cannot dispatch")
         context = connection.execute("SELECT payload FROM v4_run_contexts WHERE id=%s AND cycle_id=%s",(cycle["context_id"],cycle_id)).fetchone()
         now = connection.execute("SELECT clock_timestamp() AS now").fetchone()["now"]
         if not isinstance(spec,GoalSpecV2) or not context or cycle["state"] != "runnable" or goal["state"] != "active" or goal["revision"] != intent["goal_revision"] or now >= spec.horizon_end:
             raise ValueError("current runnable V2 or V3 cycle required")
+        if connection.execute("SELECT 1 FROM v4_recovery_cases WHERE target_cycle_id=%s AND state NOT IN ('resolved','terminal')",(cycle_id,)).fetchone():
+            raise PermissionError("active recovery case requires its bound resume command")
         if not context_authorized(connection,context["payload"],self.workspace_id,self.subject_id):
             raise PermissionError("current frozen context authority required")
         baseline_id = context["payload"].get("baseline_approval_id")
@@ -397,21 +401,24 @@ class CycleGovernance(CycleAdmission):
 
     def escalate_due(self, case_id):
         with self._command("cycles:case_operator") as connection:
-            case,goal,_,intent,cycle = self._case(connection,case_id)
-            now = connection.execute("SELECT clock_timestamp() AS now").fetchone()["now"]
-            if case["state"] == "suspended":
-                prior = connection.execute("SELECT id FROM v4_case_notifications WHERE case_id=%s AND kind='escalation'",(case_id,)).fetchone()
-                return {"case_id":str(case_id),"state":"suspended","notification_id":str(prior["id"])}
-            if case["state"] != "awaiting_review" or now < case["deadline"]:
-                raise ValueError("review deadline not due")
-            revision = case["revision"]+1
-            notification_id = uuid4()
-            connection.execute("UPDATE v4_recovery_cases SET state='suspended',revision=%s WHERE id=%s",(revision,case_id))
-            connection.execute("INSERT INTO v4_case_notifications (id,case_id,case_revision,kind,due_at) VALUES (%s,%s,%s,'escalation',%s)",(notification_id,case_id,revision,now))
-            result = {"case_id":str(case_id),"state":"suspended","notification_id":str(notification_id)}
-            connection.execute("INSERT INTO v4_case_events (id,case_id,case_revision,action,actor_id,traceparent,payload) VALUES (%s,%s,%s,'escalated',%s,%s,%s)",(uuid4(),case_id,revision,self.subject_id,self.trace.to_carrier()["traceparent"],Jsonb(result)))
-            self._event(connection,goal["id"],"case_escalated",result,intent["id"],cycle["id"] if cycle else None)
-            return result
+            return self._escalate_due(connection,case_id)
+
+    def _escalate_due(self, connection, case_id):
+        case,goal,_,intent,cycle = self._case(connection,case_id)
+        now = connection.execute("SELECT clock_timestamp() AS now").fetchone()["now"]
+        if case["state"] == "suspended":
+            prior = connection.execute("SELECT id FROM v4_case_notifications WHERE case_id=%s AND kind='escalation'",(case_id,)).fetchone()
+            return {"case_id":str(case_id),"state":"suspended","notification_id":str(prior["id"])}
+        if case["state"] not in {"awaiting_review","retry_due","reconciling","rework_due"} or now < case["deadline"]:
+            raise ValueError("review deadline not due")
+        revision = case["revision"]+1
+        notification_id = uuid4()
+        connection.execute("UPDATE v4_recovery_cases SET state='suspended',revision=%s WHERE id=%s",(revision,case_id))
+        connection.execute("INSERT INTO v4_case_notifications (id,case_id,case_revision,kind,due_at) VALUES (%s,%s,%s,'escalation',%s)",(notification_id,case_id,revision,now))
+        result = {"case_id":str(case_id),"state":"suspended","notification_id":str(notification_id)}
+        connection.execute("INSERT INTO v4_case_events (id,case_id,case_revision,action,actor_id,traceparent,payload) VALUES (%s,%s,%s,'escalated',%s,%s,%s)",(uuid4(),case_id,revision,self.subject_id,self.trace.to_carrier()["traceparent"],Jsonb(result)))
+        self._event(connection,goal["id"],"case_escalated",result,intent["id"],cycle["id"] if cycle else None)
+        return result
 
     def _terminal_disposition(self, connection, case, intent, cycle):
         if cycle:

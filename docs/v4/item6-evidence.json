@@ -1,0 +1,112 @@
+{
+  "recorded_at": "2026-10-03",
+  "base_commit": "e30a2f6ee11aa1b6166c6475b0f5ae065375545a",
+  "scope": "P1 item 6: local compatible workflow patch/replay, bounded identity-preserving Continue-As-New, canonical durable waits/case deadlines and database no-effects notification delivery, worker kill/PostgreSQL snapshot restore/Temporal process restart, preservation-safe rollback",
+  "source_evidence_lock_sha256": "a5e147ef19a1c247c8da4a49ce3a537bf10cc40336c8c40f5823cf44d48404ab",
+  "commands": [
+    {
+      "command": ".venv/bin/python -m pytest -p no:cacheprovider tests/integration/test_v4_runtime_waits.py tests/integration/test_v4_cycle_governance.py tests/integration/test_v4_public_commands.py tests/integration/test_v4_schedule_cutover.py tests/integration/test_v4_migrations.py tests/e2e/test_v4_worker_upgrade.py tests/e2e/test_v4_wait_restart.py tests/e2e/test_v4_continuation_restart.py tests/e2e/test_v4_outbox_recovery.py tests/unit/test_v4_deployment_boundary.py -q -rs --junitxml=artifacts/v4-p0/item6-focused.xml",
+      "exit_code": 0,
+      "tests": 84,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 174.702,
+      "junit": "artifacts/v4-p0/item6-focused.xml",
+      "junit_sha256": "41d058cc76639c0b24193d7722dca718a7b25dc3ac1f1949dc7dc320a973b7cc",
+      "log_sha256": "e1b80177d72066e553269f9e4d1d75be6b466482b3145fc1eaa14839f77b47d4"
+    },
+    {
+      "command": ".venv/bin/python -m pytest -p no:cacheprovider tests/contracts tests/unit tests/integration tests/e2e tests/evals -m 'not live' -q -rs --junitxml=artifacts/v4-p0/item6-regression.xml",
+      "exit_code": 0,
+      "tests": 455,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 438.818,
+      "junit": "artifacts/v4-p0/item6-regression.xml",
+      "junit_sha256": "2ca096bb291a6bca7f5e8972b463cf904900aea5c459a689444aab8af6b0471e",
+      "log_sha256": "d2e8332729ed7fec26a94371a21523a0b9c3435450f83cb57d832a412685e859"
+    }
+  ],
+  "requirement_coverage": {
+    "R02": "Real pre-change worker history replays on compatible patched worker; actual in-flight old/new transition, replay of every continued run and process kill after continuation preserve original context/operation, queued work, absolute deadline and 32 total-message cap. Initial start consumed once.",
+    "R09": "Finite same-intent automatic deferred wake/admit commits atomically; review expiry never approves/allocates; recovery retains original cycle/context/operation; strategic closed cycle has a separately authorized coalesced successor. Original wake budget exhausts under capacity.",
+    "R32": "Current case operator suspends existing retry/reconciliation/rework/review at original deadline with immutable audit and owner; generic recovery cannot bypass active case permits; unknown liability retained through expiry and closure releases only unused parent.",
+    "R33": "Timers reuse canonical wake/admission and case transactions under current author/operator scope; stopped/revoked/stale waits hold without a half wake or new cycle; closed or obsolete targets suppress timer work.",
+    "R34": "Revision-bound Temporal timers, bound review-versus-expiry serialization, approval-without-resume retains original deadline, fixed workflow start memo/lost-ack reconciliation, deduplicated database fixture acceptance distinct from human ack, stale suppression, expired-owner hold and finite failed delivery budget."
+  },
+  "additional_verification": {
+    "clean_database_upgrade": "PASS through additive 0031",
+    "empty_downgrade_reupgrade": "PASS 0031 -> 0030 -> head plus full empty chain",
+    "populated_rollback": "PASS: destructive downgrade rejects preserved waits/holds/deliveries",
+    "restart_restore": "PASS: worker SIGKILL during pending timer, actual PostgreSQL pg_dump/pg_restore to disposable database, Temporal persisted server process restart, same workflow run and one escalation/notification; not Temporal backup restore or production R66",
+    "red_green": {
+      "workflow_red": {
+        "tests": 3,
+        "failed": 2,
+        "passed": 1,
+        "junit_sha256": "d7a889a454f7aa45b23aff1e656df53480637a6d77d80ef2655a010cd6cadf8f"
+      },
+      "waits_red": "Missing runtime_waits import failed collection before implementation",
+      "repairs": "Early trigger used a cross-table field in a compound condition; fixed with separate table branches. Preserved existing workflow result shape and runnable-error ordering; added missing restricted read/trigger grants. No failing verifier weakened."
+    },
+    "locked_source_files": 310,
+    "production_effects_enabled": false,
+    "independent_increment_review": "NOT RUN; no independent reviewer executed",
+    "independent_pr_review": "NOT RUN",
+    "full_regression": "PASS",
+    "documentation_tests": 15,
+    "mapped_obligations": 75,
+    "inventory_dispositions": 360,
+    "mermaid_rendered": 6,
+    "mermaid_report_sha256": "6a04203cacd481c7c9e2000bd83834a2ac1ad0cb0ab4d4db433ba6aa557502ba",
+    "shell_documentation_contracts": 4,
+    "dependency_consistency": "PASS",
+    "whitespace": "PASS: final staging removed one extra blank line at EOF in wait_workflow.py; AST unchanged; full application suite not repeated for formatting-only cleanup",
+    "local_review": "PASS: root inspected coordinator determinism, canonical transactions/lock ordering, authority/owner binding, preservation and rollback. Found and fixed fabricated runtime identity/disposition receipts; targeted red/green regression proves the guard. This is not independent approval.",
+    "preservation": "PASS: all original architecture sources and six Mermaid blocks unchanged; retained historical tracked evidence artifacts preserve their hashes; legacy/unpatched workflow command AST matches the pre-change version.",
+    "preliminary_full_run": {
+      "tests": 453,
+      "status": "PASS on earlier tree; superseded after receipt/read changes",
+      "junit_sha256": "585a91457cddf6f8bbda83d98b8b71b25e22ca3e6884ac11d90f4e87e7ea3c1b"
+    },
+    "receipt_guard_red": {
+      "tests": 1,
+      "failures": 1,
+      "junit_sha256": "f4eb2fb3512274847f3497686d746841294da293a7d62cf57b82d7456cb056b9"
+    },
+    "receipt_guard_green": {
+      "tests": 23,
+      "status": "PASS",
+      "junit_sha256": "efa8d0b3f640fc7410356f5f31fcbd0f6d53f573aa217e09be448b7d47c714e4"
+    },
+    "intent_inspection": "PASS: signed cycles:read with revoked cycles:write, same-workspace owner/wait projection, foreign/unknown intent denial, no frozen grant exposure and API/SDK/CLI parity. Initial test fixture passed an untyped dictionary; corrected to the existing CycleRequest DTO before final qualification."
+  },
+  "repository_verification": {
+    "base_commit": "e30a2f6ee11aa1b6166c6475b0f5ae065375545a",
+    "base_ci_status": "PASS",
+    "base_enforcement_status": "PASS",
+    "candidate_ci_status": "NOT RUN until item-6 candidate commit is published",
+    "merge": "NOT AUTHORIZED; current independent PR approval required",
+    "base_inspected_at": "2026-10-03T15:09:45.945083+00:00"
+  },
+  "remaining": {
+    "next_queue_item": "7: independent full RG1 qualification and outstanding production contracts",
+    "RG0": "HELD: external identity/ingress, managed storage/restore, collector/alerts and operator safety qualification remain NOT RUN",
+    "RG1": "HELD: deployment worker routing, live legacy schedule fencing/conversion, general policy/scoped remote read reconciliation, production provider/alert integration and independent full qualification remain",
+    "production_effects_enabled": false
+  },
+  "environment": {
+    "deployment_mode": "fixture",
+    "production_effects_enabled": false,
+    "dry_run": true,
+    "real_provider_spend": 0,
+    "fallback": "deny",
+    "temporal_python_sdk": "1.32.0",
+    "compatibility": "workflow.patched(v4-item6-bounded-runtime); old unpatched command path retained",
+    "migration_head": "0031_runtime_waits",
+    "database_and_temporal_images": "compose.yaml digest-pinned private fixtures",
+    "notification_sink": "transactional PostgreSQL fixture only; no external delivery"
+  }
+}

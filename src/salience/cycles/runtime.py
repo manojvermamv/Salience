@@ -6,6 +6,8 @@ from hashlib import sha256
 import os
 
 from opentelemetry import trace
+from uuid import uuid4
+from psycopg.types.json import Jsonb
 from temporalio import activity
 from temporalio.client import Client
 from temporalio.common import WorkflowIDReusePolicy
@@ -16,6 +18,8 @@ from salience.cycles.governance import CycleGovernance, PermitRequest
 from salience.cycles.outbox import CycleOutbox
 from salience.cycles.schedule_cutover import FixtureSchedulePoller
 from salience.cycles.workflow import LocalCycleWorkflow
+from salience.cycles.runtime_waits import RuntimeWaits, WaitActivities, FixtureWaitDriver
+from salience.cycles.wait_workflow import LocalWaitWorkflow
 from salience.observability.tracing import OpenTelemetryTraceEmitter, TraceContext
 
 
@@ -85,19 +89,61 @@ class LocalCycleActivities:
         return {"state":state,"cycle_id":str(receipt["cycle_id"])}
 
 
-def build_local_cycle_worker(client, *, task_queue, outbox, adapter=None, tracer=None):
+    @activity.defn(name="salience.v4.fixture_runtime_binding")
+    async def runtime_binding(self, message: dict) -> dict:
+        def read():
+            binding = self.outbox.fixture_binding(message["message_id"])
+            if str(binding["cycle_id"]) != message["cycle_id"]:
+                raise PermissionError("runtime start binding mismatch")
+            with self.outbox._connect() as connection:
+                context = connection.execute("SELECT payload,created_at FROM v4_run_contexts WHERE id=%s", (binding["context_id"],)).fetchone()
+            deadline = context["payload"].get("execution_deadline") or (context["created_at"]+timedelta(minutes=5)).isoformat()
+            return {"cycle_id":str(binding["cycle_id"]),"context_id":str(binding["context_id"]),"operation_id":str(binding["operation_id"]),"deadline":deadline}
+        return await asyncio.to_thread(read)
+
+    @activity.defn(name="salience.v4.fixture_runtime_hold")
+    async def runtime_hold(self, message: dict) -> dict:
+        def hold():
+            with self.outbox._connect() as connection:
+                # Serialize with close/permit through the canonical goal lock.
+                row = connection.execute("""SELECT c.*,i.goal_id,g.workspace_id,o.subject_id FROM v4_cycles c
+                    JOIN v4_cycle_intents i ON i.id=c.intent_id JOIN v4_goals g ON g.id=i.goal_id
+                    JOIN v4_cycle_outbox o ON o.cycle_id=c.id AND o.kind='start'
+                    WHERE c.id=%s AND g.workspace_id=%s FOR UPDATE OF g,c""", (message["cycle_id"],self.outbox.workspace_id)).fetchone()
+                if not row or str(row["context_id"]) != message["context_id"] or str(row["operation_id"]) != message["operation_id"]:
+                    raise PermissionError("runtime hold identity mismatch")
+                inserted = connection.execute("""INSERT INTO v4_runtime_holds(cycle_id,context_id,operation_id,workspace_id,owner_id,reason)
+                    VALUES(%s,%s,%s,%s,%s,%s) ON CONFLICT(cycle_id) DO NOTHING RETURNING cycle_id""", (row["id"],row["context_id"],row["operation_id"],self.outbox.workspace_id,row["subject_id"],message["state"])).fetchone()
+                if inserted:
+                    connection.execute("""INSERT INTO v4_cycle_events(id,workspace_id,subject_id,goal_id,intent_id,cycle_id,kind,traceparent,payload)
+                        VALUES(%s,%s,%s,%s,%s,%s,'runtime_held',%s,%s)""", (uuid4(),self.outbox.workspace_id,row["subject_id"],row["goal_id"],row["intent_id"],row["id"],TraceContext.new_root().to_carrier()["traceparent"],Jsonb(message)))
+            return message
+        return await asyncio.to_thread(hold)
+
+
+def build_local_cycle_worker(client, *, task_queue, outbox, adapter=None, tracer=None, waits=None):
     TemporalCycleTransport(client,task_queue=task_queue)
     activities = LocalCycleActivities(outbox,adapter=adapter,tracer=tracer)
-    return Worker(client,task_queue=task_queue,workflows=[LocalCycleWorkflow],activities=[activities.consume],max_concurrent_activities=2,max_concurrent_workflow_tasks=2)
+    registered = [activities.consume,activities.runtime_binding,activities.runtime_hold]
+    workflows = [LocalCycleWorkflow]
+    if waits is not None:
+        if os.environ.get("SALIENCE_DEPLOYMENT_MODE") != "fixture" or waits.workspace_id != outbox.workspace_id:
+            raise ValueError("same-workspace explicit fixture waits required")
+        deadline_activities = WaitActivities(waits)
+        registered += [deadline_activities.binding,deadline_activities.fire]
+        workflows += [LocalWaitWorkflow]
+    return Worker(client,task_queue=task_queue,workflows=workflows,activities=registered,max_concurrent_activities=2,max_concurrent_workflow_tasks=2)
 
 
 async def main():
     client = await Client.connect(os.environ["TEST_TEMPORAL_TARGET"])
     outbox = CycleOutbox(os.environ["TEST_DATABASE_URL"],workspace_id=os.environ["V4_FIXTURE_WORKSPACE"])
-    worker = build_local_cycle_worker(client,task_queue=os.environ["V4_FIXTURE_QUEUE"],outbox=outbox)
+    automatic_waits = os.environ.get("V4_FIXTURE_AUTOWAITS") == "1"
+    waits = RuntimeWaits(os.environ["TEST_DATABASE_URL"],workspace_id=outbox.workspace_id,subject_id=os.environ["V4_FIXTURE_WAIT_OPERATOR"]) if automatic_waits else None
+    worker = build_local_cycle_worker(client,task_queue=os.environ["V4_FIXTURE_QUEUE"],outbox=outbox,waits=waits)
     automatic_dispatch = os.environ.get("V4_FIXTURE_AUTODISPATCH") == "1"
     automatic_schedule = os.environ.get("V4_FIXTURE_AUTOSCHEDULE") == "1"
-    if automatic_dispatch or automatic_schedule:
+    if automatic_dispatch or automatic_schedule or automatic_waits:
         if os.environ.get("SALIENCE_DEPLOYMENT_MODE") != "fixture":
             raise ValueError("automatic local work requires explicit fixture mode")
         async with worker:
@@ -106,6 +152,9 @@ async def main():
                 if automatic_dispatch:
                     transport = TemporalCycleTransport(client,task_queue=os.environ["V4_FIXTURE_QUEUE"])
                     group.create_task(outbox.run_until_stopped(transport,stop_event=stop_event))
+                if automatic_waits:
+                    driver = FixtureWaitDriver(client,waits,task_queue=os.environ["V4_FIXTURE_QUEUE"])
+                    group.create_task(driver.run_until_stopped(stop_event=stop_event))
                 if automatic_schedule:
                     poller = FixtureSchedulePoller(os.environ["TEST_DATABASE_URL"],workspace_id=os.environ["V4_FIXTURE_WORKSPACE"])
                     group.create_task(poller.run_until_stopped(stop_event=stop_event))
