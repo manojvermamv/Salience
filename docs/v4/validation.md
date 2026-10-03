@@ -23,7 +23,7 @@ Historical reports are immutable, commit-scoped evidence: [P1a](p1-increment-evi
 
 ### Documentation reinspection verification — 2026-10-03
 
-Scope: active navigation/current status, published item-5c repository evidence and an exact item-6 resume handoff. Stable `current-state` and `current-evidence-summary` destinations retain the September 24/27 anchors for incoming links. The current blueprint rows now distinguish gaps closed by later fixture increments from remaining production obligations. Prior top-of-page progress snapshots moved into the historical log with their original wording and dates.
+Scope: active navigation/current status, published item-5c repository evidence and an exact item-6 resume handoff. Stable `current-state` and `current-evidence-summary` destinations retain the September 24/27 anchors for incoming links. The current blueprint rows and retained increment contracts now distinguish gaps closed by later fixture increments from remaining production obligations, including the qualified item-4 dispatcher, item-5b signed review API and item-5c fixture cutover/poller; timer/notification work points only to unfinished item 6. Prior top-of-page progress snapshots moved into the historical log with their original wording and dates.
 
 The original ArchV4 sources, archived snapshots, historical increment JSON reports, all 302 application evidence hashes and six Mermaid source blocks remain unchanged. The rolling repository report now identifies published `7009d51`, with `verify`, `p0-regression` and strict main protection PASS at 2026-10-03T13:49:24.852686+00:00. Independent PR approval remains separately required. This report does not qualify a later documentation commit; inspect that exact head after publication.
 
