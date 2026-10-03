@@ -1,27 +1,43 @@
 {
   "audited_at": "2026-10-03",
-  "application_commit": "e5d18401255810c74b85b2d8e57daca8cda8d9a3",
-  "scope": "Every tracked repository Markdown file and documentation artifact at application checkpoint e5d1840, plus this new audit manifest; installed dependencies, generated runtime output and other worktree checkouts are excluded",
+  "base_commit": "91784e75b3a0deeaac6c957150908845abe27f7d",
+  "scope": "Every tracked Markdown file and documentation artifact plus new item-7 preparation evidence and P1 matrix; dependencies/generated runtime output/other worktree checkouts excluded",
   "tracked_markdown_files": 82,
-  "documentation_artifacts": 224,
+  "documentation_artifacts": 227,
   "summary": {
     "preserved plugin instructions, references and examples; independent skill scope": 57,
-    "active project Markdown aligned with completed P1 item 6": 68,
+    "active project Markdown aligned with completed item 6 and in-progress item 7; independent review NOT RUN": 68,
     "preserved original design source or historical diagram": 7,
     "preserved immutable historical snapshot": 62,
     "preserved historical architecture visual": 8,
     "preserved dated qualification report": 15,
-    "preserved source, archive or coverage manifest": 5,
-    "current release metadata aligned with final qualification and next item 7": 1,
-    "rolling repository readback refreshed to final application e5d1840": 1
+    "preserved source, archive or coverage manifest": 4,
+    "current documentation status audit": 1,
+    "current source lock for qualified 311-file owner-binding candidate": 1,
+    "new local qualification and root findings; independent review NOT RUN": 1,
+    "current release ledger; RG0/RG1 HELD, independent review NOT RUN": 1,
+    "new 17-requirement verifier/remaining-acceptance matrix; independent review NOT RUN": 1,
+    "rolling exact-commit readback of passing published preparation base 91784e7": 1
   },
-  "application_source_files_preserved": 310,
+  "application_source_files_verified": 311,
+  "prior_application_files_preserved": 307,
+  "prior_application_files_updated": 3,
+  "application_files_added": 1,
   "mermaid_source_blocks_preserved": 6,
+  "item7_status": "IN PROGRESS",
+  "independent_review": "NOT RUN",
   "next_queue_item": 7,
   "production_effects_enabled": false,
   "RG0": "HELD",
   "RG1": "HELD",
-  "independent_increment_and_pr_review": "NOT RUN",
+  "verification": {
+    "status": "PASS",
+    "documentation_tests": 15,
+    "mapped_obligations": 75,
+    "negative_controls": 6,
+    "documentation_shell_contracts": 4,
+    "preserved_documentation_artifacts": 153
+  },
   "files": [
     {
       "path": ".agents/skills/archify/SKILL.md",
@@ -310,7 +326,7 @@
     },
     {
       "path": "README.md",
-      "disposition": "active project Markdown aligned with completed P1 item 6"
+      "disposition": "active project Markdown aligned with completed item 6 and in-progress item 7; independent review NOT RUN"
     },
     {
       "path": "docs-new-arch/ArchCurrent.mermaid",
@@ -349,51 +365,51 @@
     },
     {
       "path": "docs-new-arch/README.md",
-      "disposition": "active project Markdown aligned with completed P1 item 6"
+      "disposition": "active project Markdown aligned with completed item 6 and in-progress item 7; independent review NOT RUN"
     },
     {
       "path": "docs/README.md",
-      "disposition": "active project Markdown aligned with completed P1 item 6"
+      "disposition": "active project Markdown aligned with completed item 6 and in-progress item 7; independent review NOT RUN"
     },
     {
       "path": "docs/adr/0001-durable-runtime.md",
-      "disposition": "active project Markdown aligned with completed P1 item 6"
+      "disposition": "active project Markdown aligned with completed item 6 and in-progress item 7; independent review NOT RUN"
     },
     {
       "path": "docs/adr/0002-object-storage.md",
-      "disposition": "active project Markdown aligned with completed P1 item 6"
+      "disposition": "active project Markdown aligned with completed item 6 and in-progress item 7; independent review NOT RUN"
     },
     {
       "path": "docs/adr/0003-api-persistence-and-contracts.md",
-      "disposition": "active project Markdown aligned with completed P1 item 6"
+      "disposition": "active project Markdown aligned with completed item 6 and in-progress item 7; independent review NOT RUN"
     },
     {
       "path": "docs/adr/0004-governance-secrets-and-protocols.md",
-      "disposition": "active project Markdown aligned with completed P1 item 6"
+      "disposition": "active project Markdown aligned with completed item 6 and in-progress item 7; independent review NOT RUN"
     },
     {
       "path": "docs/adr/0005-mcp-a2a-and-browser-sdk-adoption.md",
-      "disposition": "active project Markdown aligned with completed P1 item 6"
+      "disposition": "active project Markdown aligned with completed item 6 and in-progress item 7; independent review NOT RUN"
     },
     {
       "path": "docs/adr/0006-governed-publishing.md",
-      "disposition": "active project Markdown aligned with completed P1 item 6"
+      "disposition": "active project Markdown aligned with completed item 6 and in-progress item 7; independent review NOT RUN"
     },
     {
       "path": "docs/agents.md",
-      "disposition": "active project Markdown aligned with completed P1 item 6"
+      "disposition": "active project Markdown aligned with completed item 6 and in-progress item 7; independent review NOT RUN"
     },
     {
       "path": "docs/api.md",
-      "disposition": "active project Markdown aligned with completed P1 item 6"
+      "disposition": "active project Markdown aligned with completed item 6 and in-progress item 7; independent review NOT RUN"
     },
     {
       "path": "docs/architecture.md",
-      "disposition": "active project Markdown aligned with completed P1 item 6"
+      "disposition": "active project Markdown aligned with completed item 6 and in-progress item 7; independent review NOT RUN"
     },
     {
       "path": "docs/archive/2026-09-22/README.md",
-      "disposition": "active project Markdown aligned with completed P1 item 6"
+      "disposition": "active project Markdown aligned with completed item 6 and in-progress item 7; independent review NOT RUN"
     },
     {
       "path": "docs/archive/2026-09-22/README.md.snapshot",
@@ -707,123 +723,123 @@
     },
     {
       "path": "docs/bootstrap.md",
-      "disposition": "active project Markdown aligned with completed P1 item 6"
+      "disposition": "active project Markdown aligned with completed item 6 and in-progress item 7; independent review NOT RUN"
     },
     {
       "path": "docs/compatibility.md",
-      "disposition": "active project Markdown aligned with completed P1 item 6"
+      "disposition": "active project Markdown aligned with completed item 6 and in-progress item 7; independent review NOT RUN"
     },
     {
       "path": "docs/contracts/adapter-contracts.md",
-      "disposition": "active project Markdown aligned with completed P1 item 6"
+      "disposition": "active project Markdown aligned with completed item 6 and in-progress item 7; independent review NOT RUN"
     },
     {
       "path": "docs/core/00_BUILD_AGENT_PROMPT.md",
-      "disposition": "active project Markdown aligned with completed P1 item 6"
+      "disposition": "active project Markdown aligned with completed item 6 and in-progress item 7; independent review NOT RUN"
     },
     {
       "path": "docs/core/01_PRODUCT_CONTEXT_AND_INTENT.md",
-      "disposition": "active project Markdown aligned with completed P1 item 6"
+      "disposition": "active project Markdown aligned with completed item 6 and in-progress item 7; independent review NOT RUN"
     },
     {
       "path": "docs/core/02_REFERENCE_RESEARCH.md",
-      "disposition": "active project Markdown aligned with completed P1 item 6"
+      "disposition": "active project Markdown aligned with completed item 6 and in-progress item 7; independent review NOT RUN"
     },
     {
       "path": "docs/core/03_TARGET_ARCHITECTURE.md",
-      "disposition": "active project Markdown aligned with completed P1 item 6"
+      "disposition": "active project Markdown aligned with completed item 6 and in-progress item 7; independent review NOT RUN"
     },
     {
       "path": "docs/core/04_BROWSER_APP_AND_RESEARCH_CONTROL.md",
-      "disposition": "active project Markdown aligned with completed P1 item 6"
+      "disposition": "active project Markdown aligned with completed item 6 and in-progress item 7; independent review NOT RUN"
     },
     {
       "path": "docs/core/05_IMPLEMENTATION_PLAN.md",
-      "disposition": "active project Markdown aligned with completed P1 item 6"
+      "disposition": "active project Markdown aligned with completed item 6 and in-progress item 7; independent review NOT RUN"
     },
     {
       "path": "docs/core/06_ACCEPTANCE_TESTS_AND_GUARDRAILS.md",
-      "disposition": "active project Markdown aligned with completed P1 item 6"
+      "disposition": "active project Markdown aligned with completed item 6 and in-progress item 7; independent review NOT RUN"
     },
     {
       "path": "docs/core/07_REUSE_EXTENSION_AND_FUTURE_PROOFING.md",
-      "disposition": "active project Markdown aligned with completed P1 item 6"
+      "disposition": "active project Markdown aligned with completed item 6 and in-progress item 7; independent review NOT RUN"
     },
     {
       "path": "docs/core/08_LEAD_AGENT_AND_CREATIVE_TOOL_RUNTIME.md",
-      "disposition": "active project Markdown aligned with completed P1 item 6"
+      "disposition": "active project Markdown aligned with completed item 6 and in-progress item 7; independent review NOT RUN"
     },
     {
       "path": "docs/core/09_CALLABLE_AGENTS_AND_ENGINEERING_METHOD.md",
-      "disposition": "active project Markdown aligned with completed P1 item 6"
+      "disposition": "active project Markdown aligned with completed item 6 and in-progress item 7; independent review NOT RUN"
     },
     {
       "path": "docs/core/README.md",
-      "disposition": "active project Markdown aligned with completed P1 item 6"
+      "disposition": "active project Markdown aligned with completed item 6 and in-progress item 7; independent review NOT RUN"
     },
     {
       "path": "docs/database.md",
-      "disposition": "active project Markdown aligned with completed P1 item 6"
+      "disposition": "active project Markdown aligned with completed item 6 and in-progress item 7; independent review NOT RUN"
     },
     {
       "path": "docs/dependencies.md",
-      "disposition": "active project Markdown aligned with completed P1 item 6"
+      "disposition": "active project Markdown aligned with completed item 6 and in-progress item 7; independent review NOT RUN"
     },
     {
       "path": "docs/deployment.md",
-      "disposition": "active project Markdown aligned with completed P1 item 6"
+      "disposition": "active project Markdown aligned with completed item 6 and in-progress item 7; independent review NOT RUN"
     },
     {
       "path": "docs/governance.md",
-      "disposition": "active project Markdown aligned with completed P1 item 6"
+      "disposition": "active project Markdown aligned with completed item 6 and in-progress item 7; independent review NOT RUN"
     },
     {
       "path": "docs/implementation-progress.md",
-      "disposition": "active project Markdown aligned with completed P1 item 6"
+      "disposition": "active project Markdown aligned with completed item 6 and in-progress item 7; independent review NOT RUN"
     },
     {
       "path": "docs/limitations.md",
-      "disposition": "active project Markdown aligned with completed P1 item 6"
+      "disposition": "active project Markdown aligned with completed item 6 and in-progress item 7; independent review NOT RUN"
     },
     {
       "path": "docs/local-development.md",
-      "disposition": "active project Markdown aligned with completed P1 item 6"
+      "disposition": "active project Markdown aligned with completed item 6 and in-progress item 7; independent review NOT RUN"
     },
     {
       "path": "docs/mcp-a2a.md",
-      "disposition": "active project Markdown aligned with completed P1 item 6"
+      "disposition": "active project Markdown aligned with completed item 6 and in-progress item 7; independent review NOT RUN"
     },
     {
       "path": "docs/memory.md",
-      "disposition": "active project Markdown aligned with completed P1 item 6"
+      "disposition": "active project Markdown aligned with completed item 6 and in-progress item 7; independent review NOT RUN"
     },
     {
       "path": "docs/model-execution.md",
-      "disposition": "active project Markdown aligned with completed P1 item 6"
+      "disposition": "active project Markdown aligned with completed item 6 and in-progress item 7; independent review NOT RUN"
     },
     {
       "path": "docs/model-gateway.md",
-      "disposition": "active project Markdown aligned with completed P1 item 6"
+      "disposition": "active project Markdown aligned with completed item 6 and in-progress item 7; independent review NOT RUN"
     },
     {
       "path": "docs/phase-7-handoff.md",
-      "disposition": "active project Markdown aligned with completed P1 item 6"
+      "disposition": "active project Markdown aligned with completed item 6 and in-progress item 7; independent review NOT RUN"
     },
     {
       "path": "docs/phase-9-handoff.md",
-      "disposition": "active project Markdown aligned with completed P1 item 6"
+      "disposition": "active project Markdown aligned with completed item 6 and in-progress item 7; independent review NOT RUN"
     },
     {
       "path": "docs/plugins.md",
-      "disposition": "active project Markdown aligned with completed P1 item 6"
+      "disposition": "active project Markdown aligned with completed item 6 and in-progress item 7; independent review NOT RUN"
     },
     {
       "path": "docs/recovery.md",
-      "disposition": "active project Markdown aligned with completed P1 item 6"
+      "disposition": "active project Markdown aligned with completed item 6 and in-progress item 7; independent review NOT RUN"
     },
     {
       "path": "docs/research.md",
-      "disposition": "active project Markdown aligned with completed P1 item 6"
+      "disposition": "active project Markdown aligned with completed item 6 and in-progress item 7; independent review NOT RUN"
     },
     {
       "path": "docs/salience-phase-1-6.architecture.html",
@@ -867,63 +883,63 @@
     },
     {
       "path": "docs/superpowers/plans/2026-09-12-browser-evidence.md",
-      "disposition": "active project Markdown aligned with completed P1 item 6"
+      "disposition": "active project Markdown aligned with completed item 6 and in-progress item 7; independent review NOT RUN"
     },
     {
       "path": "docs/superpowers/plans/2026-09-12-intelligence-loop-phases-5-6.md",
-      "disposition": "active project Markdown aligned with completed P1 item 6"
+      "disposition": "active project Markdown aligned with completed item 6 and in-progress item 7; independent review NOT RUN"
     },
     {
       "path": "docs/superpowers/plans/2026-09-12-phases-1-4-foundation.md",
-      "disposition": "active project Markdown aligned with completed P1 item 6"
+      "disposition": "active project Markdown aligned with completed item 6 and in-progress item 7; independent review NOT RUN"
     },
     {
       "path": "docs/superpowers/plans/2026-09-13-creative-production-phases-7-8.md",
-      "disposition": "active project Markdown aligned with completed P1 item 6"
+      "disposition": "active project Markdown aligned with completed item 6 and in-progress item 7; independent review NOT RUN"
     },
     {
       "path": "docs/superpowers/plans/2026-09-13-phase-7-8-release-gate-phase-9-publishing.md",
-      "disposition": "active project Markdown aligned with completed P1 item 6"
+      "disposition": "active project Markdown aligned with completed item 6 and in-progress item 7; independent review NOT RUN"
     },
     {
       "path": "docs/superpowers/plans/2026-09-13-phase-7-8-review-repairs.md",
-      "disposition": "active project Markdown aligned with completed P1 item 6"
+      "disposition": "active project Markdown aligned with completed item 6 and in-progress item 7; independent review NOT RUN"
     },
     {
       "path": "docs/superpowers/plans/2026-09-13-phase-9-independent-review-repairs.md",
-      "disposition": "active project Markdown aligned with completed P1 item 6"
+      "disposition": "active project Markdown aligned with completed item 6 and in-progress item 7; independent review NOT RUN"
     },
     {
       "path": "docs/superpowers/reviews/2026-09-13-phase-7-8-release-gate.md",
-      "disposition": "active project Markdown aligned with completed P1 item 6"
+      "disposition": "active project Markdown aligned with completed item 6 and in-progress item 7; independent review NOT RUN"
     },
     {
       "path": "docs/superpowers/reviews/2026-09-13-phase-9-independent-review.md",
-      "disposition": "active project Markdown aligned with completed P1 item 6"
+      "disposition": "active project Markdown aligned with completed item 6 and in-progress item 7; independent review NOT RUN"
     },
     {
       "path": "docs/superpowers/specs/2026-09-12-browser-evidence-design.md",
-      "disposition": "active project Markdown aligned with completed P1 item 6"
+      "disposition": "active project Markdown aligned with completed item 6 and in-progress item 7; independent review NOT RUN"
     },
     {
       "path": "docs/superpowers/specs/2026-09-12-intelligence-loop-phases-5-6-design.md",
-      "disposition": "active project Markdown aligned with completed P1 item 6"
+      "disposition": "active project Markdown aligned with completed item 6 and in-progress item 7; independent review NOT RUN"
     },
     {
       "path": "docs/superpowers/specs/2026-09-13-creative-production-phases-7-8-design.md",
-      "disposition": "active project Markdown aligned with completed P1 item 6"
+      "disposition": "active project Markdown aligned with completed item 6 and in-progress item 7; independent review NOT RUN"
     },
     {
       "path": "docs/superpowers/specs/2026-09-13-phase-7-8-release-gate-phase-9-publishing-design.md",
-      "disposition": "active project Markdown aligned with completed P1 item 6"
+      "disposition": "active project Markdown aligned with completed item 6 and in-progress item 7; independent review NOT RUN"
     },
     {
       "path": "docs/trust-model.md",
-      "disposition": "active project Markdown aligned with completed P1 item 6"
+      "disposition": "active project Markdown aligned with completed item 6 and in-progress item 7; independent review NOT RUN"
     },
     {
       "path": "docs/v4/IMPLEMENTATION-BLUEPRINT.md",
-      "disposition": "active project Markdown aligned with completed P1 item 6"
+      "disposition": "active project Markdown aligned with completed item 6 and in-progress item 7; independent review NOT RUN"
     },
     {
       "path": "docs/v4/allocation-evidence.json",
@@ -961,14 +977,17 @@
       "sha256": "a161263ad529610fc42613b0bfaa8e014da423ccc8cb8ee6dbc3e961916a9945"
     },
     {
+      "path": "docs/v4/documentation-status-audit.json",
+      "disposition": "current documentation status audit"
+    },
+    {
       "path": "docs/v4/evidence-baseline.json",
       "disposition": "preserved source, archive or coverage manifest",
       "sha256": "ac53e0f4e924dc9c367383c6fc37a3f755b96ff8d887ce501314f25baad932c8"
     },
     {
       "path": "docs/v4/evidence-lock.json",
-      "disposition": "preserved source, archive or coverage manifest",
-      "sha256": "d07eb3911c1f96095d33dd299ba3253f9102a3aeb8e9de5676f148ec5b669817"
+      "disposition": "current source lock for qualified 311-file owner-binding candidate"
     },
     {
       "path": "docs/v4/goal-revision-evidence.json",
@@ -1016,13 +1035,17 @@
       "sha256": "05f9efdcfa2bd73f1af52ecb9177bf80a4164effd8ed09345a8b766f409ffd88"
     },
     {
+      "path": "docs/v4/item7-preparation-evidence.json",
+      "disposition": "new local qualification and root findings; independent review NOT RUN"
+    },
+    {
       "path": "docs/v4/outbox-increment-evidence.json",
       "disposition": "preserved dated qualification report",
       "sha256": "d1200fda0921e7c46844e9a5804c68e522addf1d41f176e68210e4834fc30504"
     },
     {
       "path": "docs/v4/p0-release.json",
-      "disposition": "current release metadata aligned with final qualification and next item 7"
+      "disposition": "current release ledger; RG0/RG1 HELD, independent review NOT RUN"
     },
     {
       "path": "docs/v4/p1-increment-evidence.json",
@@ -1030,59 +1053,52 @@
       "sha256": "0ff2183c8993d72b05832db167e82433c2bced74e047b3609574877701ac591f"
     },
     {
+      "path": "docs/v4/p1-qualification-matrix.json",
+      "disposition": "new 17-requirement verifier/remaining-acceptance matrix; independent review NOT RUN"
+    },
+    {
       "path": "docs/v4/progress.md",
-      "disposition": "active project Markdown aligned with completed P1 item 6"
+      "disposition": "active project Markdown aligned with completed item 6 and in-progress item 7; independent review NOT RUN"
     },
     {
       "path": "docs/v4/repository-enforcement-evidence.json",
-      "disposition": "rolling repository readback refreshed to final application e5d1840"
+      "disposition": "rolling exact-commit readback of passing published preparation base 91784e7"
     },
     {
       "path": "docs/v4/validation.md",
-      "disposition": "active project Markdown aligned with completed P1 item 6"
+      "disposition": "active project Markdown aligned with completed item 6 and in-progress item 7; independent review NOT RUN"
     },
     {
       "path": "docs/verification.md",
-      "disposition": "active project Markdown aligned with completed P1 item 6"
+      "disposition": "active project Markdown aligned with completed item 6 and in-progress item 7; independent review NOT RUN"
     },
     {
       "path": "docs/workflows.md",
-      "disposition": "active project Markdown aligned with completed P1 item 6"
+      "disposition": "active project Markdown aligned with completed item 6 and in-progress item 7; independent review NOT RUN"
     },
     {
       "path": "prompts/Build Creative Production Loop \u2014 Phases 7\u20138 End-to-End.md",
-      "disposition": "active project Markdown aligned with completed P1 item 6"
+      "disposition": "active project Markdown aligned with completed item 6 and in-progress item 7; independent review NOT RUN"
     },
     {
       "path": "prompts/Build Phase 10 \u2014 Multi-Platform Production Publishing, Analytics, Attribution & Experiments.md",
-      "disposition": "active project Markdown aligned with completed P1 item 6"
+      "disposition": "active project Markdown aligned with completed item 6 and in-progress item 7; independent review NOT RUN"
     },
     {
       "path": "prompts/Build Phases 1\u20134 End-to-End.md",
-      "disposition": "active project Markdown aligned with completed P1 item 6"
+      "disposition": "active project Markdown aligned with completed item 6 and in-progress item 7; independent review NOT RUN"
     },
     {
       "path": "prompts/Build Real Intelligence Loop \u2014 Pre-Phase 5 + Phases 5\u20136 End-to-End.md",
-      "disposition": "active project Markdown aligned with completed P1 item 6"
+      "disposition": "active project Markdown aligned with completed item 6 and in-progress item 7; independent review NOT RUN"
     },
     {
       "path": "prompts/Complete Phase 7\u20138 Release Gate, Then Build Phase 9 Governed Publishing.md",
-      "disposition": "active project Markdown aligned with completed P1 item 6"
+      "disposition": "active project Markdown aligned with completed item 6 and in-progress item 7; independent review NOT RUN"
     },
     {
       "path": "prompts/Install and Verify Browser Evidence on Linux EC2.md",
-      "disposition": "active project Markdown aligned with completed P1 item 6"
+      "disposition": "active project Markdown aligned with completed item 6 and in-progress item 7; independent review NOT RUN"
     }
-  ],
-  "new_audit_manifest": "docs/v4/documentation-status-audit.json",
-  "verification": {
-    "documentation_tests": 15,
-    "mapped_obligations": 75,
-    "negative_controls": 6,
-    "documentation_shell_contracts": 4,
-    "source_hashes_preserved": 310,
-    "preserved_documentation_artifacts": 154,
-    "mermaid_source_blocks_preserved": 6,
-    "status": "PASS"
-  }
+  ]
 }

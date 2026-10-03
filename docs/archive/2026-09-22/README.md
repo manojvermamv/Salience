@@ -4,7 +4,7 @@ These snapshots preserve original bytes from the pre-consolidation inventory. Th
 
 The [disposition manifest](../../v4/dispositions.json) maps all 360 inventory paths, including retained instructions, source diagrams and local/worktree evidence. Exactly 62 superseded Markdown documents were archived. Former paths forward to the blueprint and retain historical heading anchors. No AGENTS.md or SKILL.md instruction was changed.
 
-**Current checkpoint — 2026-10-03:** P0 and P1 items 1–6 are locally qualified at `e5d1840`, with **85 focused / 456 full non-live PASS** and exact-head CI/protection PASS. Continue at item 7 independent full RG1 qualification via [current progress](../../v4/progress.md#current-state) and [validation](../../v4/validation.md#current-evidence-summary). RG0/full RG1 remain HELD, effects disabled, main unmerged. The snapshot index below retains historical dates, counts and bytes.
+**Current checkpoint — 2026-10-03:** P0 and P1 items 1–6 are locally qualified at `e5d1840`, with **85 focused / 456 full non-live PASS** and exact-head CI/protection PASS. Item 7 is IN PROGRESS, with 32 focused / 462 full local preparation PASS and independent review still NOT RUN; see [preparation evidence](../../v4/item7-preparation-evidence.json). Continue independent qualification via [current progress](../../v4/progress.md#current-state) and [validation](../../v4/validation.md#current-evidence-summary). RG0/full RG1 remain HELD, effects disabled, main unmerged. The snapshot index below retains historical dates, counts and bytes.
 
 ## Restoration
 

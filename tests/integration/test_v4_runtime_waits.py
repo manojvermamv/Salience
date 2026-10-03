@@ -173,8 +173,13 @@ def test_wait_binding_and_receipts_cannot_be_rewritten_or_destructively_downgrad
         for sql in ("UPDATE v4_runtime_waits SET due_at=due_at+interval '1 day' WHERE id=%s","DELETE FROM v4_runtime_waits WHERE id=%s"):
             with pytest.raises(psycopg.Error,match="preserv"),connection.transaction():
                 connection.execute(sql,(job["id"],))
+    with psycopg.connect(database) as connection:
+        version = connection.execute("SELECT version_num FROM alembic_version").fetchone()[0]
     rollback = subprocess.run([sys.executable,"-m","alembic","-x","database_url="+database,"downgrade","0030_v4_schedule_cutover"],capture_output=True,text=True)
-    assert rollback.returncode != 0 and "preserve durable waits" in rollback.stderr
+    assert rollback.returncode != 0 and any(message in rollback.stderr for message in ("preserve durable waits","preserve runtime hold owner binding"))
+    with psycopg.connect(database) as connection:
+        assert connection.execute("SELECT version_num FROM alembic_version").fetchone()[0] == version
+        assert connection.execute("SELECT state FROM v4_runtime_waits WHERE id=%s",(job["id"],)).fetchone()[0] == "pending"
     time.sleep(.25)
     assert waits.fire(job["id"])["state"] == "suspended"
 
@@ -317,3 +322,46 @@ def test_separate_operator_records_expiry_actor_without_inheriting_revoked_owner
         assert actor == operator
         assert owner == str(service.subject_id)
         assert connection.execute("SELECT count(*) FROM v4_cycles WHERE intent_id=%s",(intent,)).fetchone()[0] == 0
+
+
+@pytest.mark.parametrize("later_start", [False, True])
+def test_runtime_hold_owner_must_match_the_original_start_subject(governed, later_start):
+    """A same-workspace worker cannot reassign an admitted cycle's hold."""
+    from uuid import uuid4
+    service, _, _, database = governed
+    _, cycle = admitted(governed)
+    other_owner = uuid4()
+    with psycopg.connect(database) as connection:
+        connection.execute("INSERT INTO identity_subjects(id,workspace_id,issuer,subject,expires_at) VALUES(%s,%s,'https://fixture.invalid',%s,now()+interval '1 hour')",(other_owner,service.workspace_id,str(other_owner)))
+        if later_start:
+            # A later malformed start must not redefine the original owner.
+            connection.execute("""INSERT INTO v4_cycle_outbox
+                (id,workspace_id,subject_id,goal_id,intent_id,cycle_id,sequence,kind,payload,traceparent)
+                SELECT %s,workspace_id,%s,goal_id,intent_id,cycle_id,2,'start',payload,traceparent
+                FROM v4_cycle_outbox WHERE cycle_id=%s AND sequence=1""",(uuid4(),other_owner,cycle))
+        context, operation = connection.execute("SELECT context_id,operation_id FROM v4_cycles WHERE id=%s",(cycle,)).fetchone()
+        statement = """INSERT INTO v4_runtime_holds(cycle_id,context_id,operation_id,workspace_id,owner_id,reason)
+            VALUES(%s,%s,%s,%s,%s,'held_timeout')"""
+        with pytest.raises(psycopg.Error,match="runtime hold owner binding"),connection.transaction():
+            connection.execute(statement,(cycle,context,operation,service.workspace_id,other_owner))
+        assert connection.execute("SELECT count(*) FROM v4_runtime_holds WHERE cycle_id=%s",(cycle,)).fetchone()[0] == 0
+        connection.execute(statement,(cycle,context,operation,service.workspace_id,service.subject_id))
+        assert connection.execute("SELECT owner_id FROM v4_runtime_holds WHERE cycle_id=%s",(cycle,)).fetchone()[0] == service.subject_id
+
+
+def test_populated_owner_binding_cannot_be_rolled_back(governed):
+    import subprocess
+    import sys
+    service, _, _, database = governed
+    _, cycle = admitted(governed)
+    with psycopg.connect(database) as connection:
+        context, operation = connection.execute("SELECT context_id,operation_id FROM v4_cycles WHERE id=%s",(cycle,)).fetchone()
+        connection.execute("""INSERT INTO v4_runtime_holds(cycle_id,context_id,operation_id,workspace_id,owner_id,reason)
+            VALUES(%s,%s,%s,%s,%s,'held_timeout')""",(cycle,context,operation,service.workspace_id,service.subject_id))
+        version = connection.execute("SELECT version_num FROM alembic_version").fetchone()[0]
+    rollback = subprocess.run([sys.executable,"-m","alembic","-x","database_url="+database,"downgrade","0031_runtime_waits"],capture_output=True,text=True)
+    assert rollback.returncode != 0 and "preserve runtime hold owner binding" in rollback.stderr
+    with psycopg.connect(database) as connection:
+        assert connection.execute("SELECT version_num FROM alembic_version").fetchone()[0] == version
+        assert connection.execute("SELECT owner_id FROM v4_runtime_holds WHERE cycle_id=%s",(cycle,)).fetchone()[0] == service.subject_id
+        assert connection.execute("SELECT count(*) FROM pg_trigger WHERE tgrelid='v4_runtime_holds'::regclass AND tgname='owner_binding'").fetchone()[0] == 1

@@ -129,3 +129,75 @@ def test_clean_upgrade_empty_rollback_and_populated_preservation():
                 assert connection.execute("SELECT version_num FROM alembic_version").fetchone()[0] == final_revision
         finally:
             admin.execute(psycopg.sql.SQL("DROP DATABASE {} WITH (FORCE)").format(psycopg.sql.Identifier(name)))
+
+
+@pytest.mark.parametrize("owner_mode", ["original", "foreign", "concurrent_foreign"])
+def test_owner_binding_upgrade_preserves_or_holds_existing_history(owner_mode):
+    from concurrent.futures import ThreadPoolExecutor
+    import time
+    from datetime import datetime, timedelta, timezone
+    from salience.cycles.admission import CycleAdmission
+    from salience.cycles.contracts import GoalSpec
+    from test_v4_cycle_admission import approved_goal, intent
+
+    forged_owner = owner_mode != "original"
+    source = os.environ["TEST_DATABASE_URL"]
+    name = "item7_owner_" + uuid4().hex
+    database = urlunsplit(urlsplit(source)._replace(path="/" + name))
+    with psycopg.connect(source, autocommit=True) as admin:
+        admin.execute(psycopg.sql.SQL("CREATE DATABASE {}").format(psycopg.sql.Identifier(name)))
+        try:
+            def migrate(target):
+                return subprocess.run([sys.executable,"-m","alembic","-x","database_url="+database,"upgrade",target],capture_output=True,text=True,timeout=30)
+
+            assert migrate("0031_runtime_waits").returncode == 0
+            workspace, subject, other = uuid4(), uuid4(), uuid4()
+            with psycopg.connect(database) as connection:
+                connection.execute("INSERT INTO workspaces(id,slug,display_name) VALUES(%s,%s,'owner upgrade fixture')",(workspace,str(workspace)))
+                for identity in [subject, other]:
+                    connection.execute("INSERT INTO identity_subjects(id,workspace_id,issuer,subject,expires_at) VALUES(%s,%s,'https://fixture.invalid',%s,now()+interval '1 hour')",(identity,workspace,str(identity)))
+                for scope in ["goals:write","goals:approve","cycles:write"]:
+                    connection.execute("INSERT INTO permission_grants(workspace_id,principal_type,principal_id,scope,effect,constraints,expires_at) VALUES(%s,'identity',%s,%s,'allow','{}',now()+interval '1 hour')",(workspace,str(subject),scope))
+            service = CycleAdmission(database,workspace_id=workspace,subject_id=subject)
+            spec = GoalSpec(objective="Preserve hold ownership",metric_versions=("fixture-quality@1",),audience="internal",account_refs=("fixture-account",),brand_scope="fixture-brand",source_policy="fixture-only",horizon_end=datetime.now(timezone.utc)+timedelta(days=1))
+            goal = approved_goal(service,spec)
+            cycle = service.admit(intent(service,goal))["cycle_id"]
+            with psycopg.connect(database) as connection:
+                context, operation = connection.execute("SELECT context_id,operation_id FROM v4_cycles WHERE id=%s",(cycle,)).fetchone()
+                connection.execute("""INSERT INTO v4_runtime_holds(cycle_id,context_id,operation_id,workspace_id,owner_id,reason)
+                    VALUES(%s,%s,%s,%s,%s,'held_timeout')""",(cycle,context,operation,workspace,other if forged_owner else subject))
+                # Revocation cannot rewrite a correctly recorded original owner.
+                connection.execute("UPDATE identity_subjects SET enabled=false WHERE id=%s",(subject,))
+                before = connection.execute("SELECT to_jsonb(h) FROM v4_runtime_holds h WHERE cycle_id=%s",(cycle,)).fetchone()[0]
+                if owner_mode == "concurrent_foreign":
+                    with ThreadPoolExecutor(max_workers=1) as pool:
+                        future = pool.submit(migrate,"head")
+                        try:
+                            with psycopg.connect(database,autocommit=True) as observer:
+                                until = time.monotonic()+10
+                                while time.monotonic() < until:
+                                    blocked = observer.execute("""SELECT 1 FROM pg_stat_activity
+                                        WHERE datname=current_database() AND pid<>pg_backend_pid()
+                                        AND wait_event_type='Lock' AND query LIKE '%%v4_runtime_holds%%'""").fetchone()
+                                    if blocked:
+                                        break
+                                    time.sleep(.02)
+                                assert blocked, "upgrade must wait on the concurrent writer"
+                        finally:
+                            # Commit while the upgrade is waiting for its table
+                            # lock; the preflight must see this exact new row.
+                            connection.commit()
+                        upgraded = future.result(timeout=30)
+                else:
+                    connection.commit()
+                    upgraded = migrate("head")
+            if forged_owner:
+                assert upgraded.returncode != 0 and "preserve and inspect history" in upgraded.stderr
+            else:
+                assert upgraded.returncode == 0, upgraded.stderr
+            with psycopg.connect(database) as connection:
+                assert connection.execute("SELECT to_jsonb(h) FROM v4_runtime_holds h WHERE cycle_id=%s",(cycle,)).fetchone()[0] == before
+                assert connection.execute("SELECT version_num FROM alembic_version").fetchone()[0] == ("0031_runtime_waits" if forged_owner else "0032_runtime_hold_owner")
+        finally:
+            admin.execute("SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname=%s",(name,))
+            admin.execute(psycopg.sql.SQL("DROP DATABASE {}").format(psycopg.sql.Identifier(name)))

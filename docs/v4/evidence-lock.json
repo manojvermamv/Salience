@@ -155,6 +155,10 @@
       "sha256": "b2a387e90380893a93eeff650d431b311d90a7e2d51c08b9da99e7d48a9d7272"
     },
     {
+      "path": "migrations/versions/0032_runtime_hold_owner.py",
+      "sha256": "0b6f3e831d18b651bcc81565aadf5b2b1c663ffa9957c713d1ce4f42fb063e70"
+    },
+    {
       "path": "migrations/versions/__init__.py",
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
@@ -440,7 +444,7 @@
     },
     {
       "path": "src/salience/cycles/runtime.py",
-      "sha256": "061b43b923331be43347e7a5a5828fb286e8b9d9a4b1f07cceb4994efcd91b63"
+      "sha256": "29e12af5686ab96ea6aa7f474ccd0b852bdc232624b1b323cae0f8b11a84cb8e"
     },
     {
       "path": "src/salience/cycles/runtime_waits.py",
@@ -1044,7 +1048,7 @@
     },
     {
       "path": "tests/integration/test_v4_migrations.py",
-      "sha256": "5af190b8d9a662cf6c34a5b76b0b5b4e0cbef6543a47da46d7634ec2b2c25b1d"
+      "sha256": "162c0e398fb35bfd902a9e59a4a7d981ac96d008d82321d6d900dd7782131b75"
     },
     {
       "path": "tests/integration/test_v4_object_retention.py",
@@ -1064,7 +1068,7 @@
     },
     {
       "path": "tests/integration/test_v4_runtime_waits.py",
-      "sha256": "37ae769f39e13a5ce6e5395f4a561f1bfcdd883aa6b3bfeada01cb8b55fc1f32"
+      "sha256": "3c2de64cd40c65d77bea75a8bc26946e2197ebc2d210225545e1fe97ec8b86fa"
     },
     {
       "path": "tests/integration/test_v4_s3_service.py",

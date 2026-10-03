@@ -108,7 +108,7 @@ class LocalCycleActivities:
                 # Serialize with close/permit through the canonical goal lock.
                 row = connection.execute("""SELECT c.*,i.goal_id,g.workspace_id,o.subject_id FROM v4_cycles c
                     JOIN v4_cycle_intents i ON i.id=c.intent_id JOIN v4_goals g ON g.id=i.goal_id
-                    JOIN v4_cycle_outbox o ON o.cycle_id=c.id AND o.kind='start'
+                    JOIN v4_cycle_outbox o ON o.cycle_id=c.id AND o.kind='start' AND o.sequence=1
                     WHERE c.id=%s AND g.workspace_id=%s FOR UPDATE OF g,c""", (message["cycle_id"],self.outbox.workspace_id)).fetchone()
                 if not row or str(row["context_id"]) != message["context_id"] or str(row["operation_id"]) != message["operation_id"]:
                     raise PermissionError("runtime hold identity mismatch")

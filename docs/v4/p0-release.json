@@ -20,13 +20,13 @@
       "exit_code": 0
     },
     "full_non_live": {
-      "passed": 456,
+      "passed": 462,
       "failed": 0,
       "errors": 0,
       "skipped": 0,
       "exit_code": 0,
-      "seconds": 440.027,
-      "junit": "artifacts/v4-p0/item6-operator-regression.xml"
+      "seconds": 449.077,
+      "junit": "artifacts/v4-p0/item7/final-regression.xml"
     },
     "documentation_tests": {
       "passed": 15,
@@ -40,20 +40,22 @@
       "failed": 0,
       "version": "12.0.0"
     },
-    "locked_evidence_files": 310,
+    "locked_evidence_files": 311,
     "original_inventory_dispositions": 360,
     "warning": "Pre-existing Starlette/AnyIO deprecation warning",
     "focused_p1": {
-      "passed": 85,
+      "passed": 32,
       "failed": 0,
       "errors": 0,
       "skipped": 0,
       "exit_code": 0,
-      "seconds": 179.571,
-      "junit": "artifacts/v4-p0/item6-operator-focused.xml"
+      "seconds": 76.155,
+      "junit": "artifacts/v4-p0/item7/final-focused.xml",
+      "scope": "Owner binding, migration/restart/restore preparation; full regression covers every existing P1 verifier"
     },
     "application_qualified_at": "2026-10-03",
-    "application_commit": "e5d18401255810c74b85b2d8e57daca8cda8d9a3"
+    "application_commit": "91784e75b3a0deeaac6c957150908845abe27f7d",
+    "application_scope": "Item-7 preparation/owner-binding candidate qualified from this published base; candidate publication/CI recorded separately"
   },
   "evidence_artifacts": [
     {
@@ -150,6 +152,11 @@
       "path": "docs/v4/item6-operator-evidence.json",
       "sha256": "05f9efdcfa2bd73f1af52ecb9177bf80a4164effd8ed09345a8b766f409ffd88",
       "local_only": false
+    },
+    {
+      "path": "docs/v4/item7-preparation-evidence.json",
+      "sha256": "e4c20e32e4b05b0a3e40fb45ec907a3b87f722b22dea169b2e596e70f16c8054",
+      "local_only": false
     }
   ],
   "release_gate": "RG0",
@@ -179,7 +186,7 @@
     {
       "check": "remote repository gate enforcement",
       "status": "PASS",
-      "evidence": "Final item-6 application checkpoint e5d18401255810c74b85b2d8e57daca8cda8d9a3: verify and p0-regression PASS; strict app-bound main protection PASS at 2026-10-03T16:15:00.103409+00:00. Read-only responses are tracked in docs/v4/repository-enforcement-evidence.json. Every later published commit needs its own exact-head inspection. Independent PR approval remains separately required; main unmerged, no production release authorized."
+      "evidence": "Published preparation base 91784e75b3a0deeaac6c957150908845abe27f7d: verify and p0-regression PASS, strict app-bound main protection PASS at 2026-10-03T17:12:40.580583+00:00. Tracked read-only report binds this base only. The owner-binding candidate requires its own exact published-head inspection. Independent PR approval remains separately required; no main merge or production release."
     }
   ],
   "later_phase_boundaries": {
@@ -246,13 +253,14 @@
       "R35",
       "R53"
     ],
-    "evidence": "docs/v4/item6-operator-evidence.json",
+    "evidence": "docs/v4/item7-preparation-evidence.json",
     "remaining": [
       "General registry/provider eligibility beyond the approved no-effects fixture baseline; later capability and production qualification gates remain binding",
       "Production G1 provider charge identity and effect integration beyond the fixture-qualified transfer/reconciliation contract",
       "Production dispatcher/alert service, live Temporal legacy start/signal cutover, public V4 API-to-provider outbox integration and production typed delivery recovery beyond the automatic local fixture",
       "General policy/model authorization, live scheduler stop/fencing integration and separately scoped remote read-only reconciliation beyond fixture permits/cases/cutover",
-      "Deployment-specific supported worker routing/rollback, external durable alert delivery and independent full RG1 qualification beyond the local item-6 patch/timer/restore fixture"
+      "Deployment-specific supported worker routing/rollback, external durable alert delivery and independent full RG1 qualification beyond the local item-6 patch/timer/restore fixture",
+      "Item 7 independent full P1 review and re-review of all applicable fixes remains NOT RUN; successful local preparation is not independent approval"
     ],
     "completed_queue_items": [
       1,
@@ -389,6 +397,25 @@
     },
     "production_effects_enabled": false,
     "independent_review": "NOT RUN",
+    "main_merge": "NOT AUTHORIZED",
+    "record_scope": "Historical completed item-6 documentation refresh; current application preparation is item7_preparation"
+  },
+  "item7_preparation": {
+    "local_status": "PASS",
+    "independent_review": "NOT RUN",
+    "scope": "All P1 verifiers inventoried and freshly executed; root owner/migration-race fixes qualified; independent review still pending",
+    "base_commit": "91784e75b3a0deeaac6c957150908845abe27f7d",
+    "focused_tests": 32,
+    "full_non_live_tests": 462,
+    "p1_mapped_cases": 205,
+    "source_files": 311,
+    "evidence": "docs/v4/item7-preparation-evidence.json",
+    "matrix": "docs/v4/p1-qualification-matrix.json",
+    "next_queue_item": 7,
+    "candidate_ci": "NOT RUN until publication; inspect exact HEAD",
+    "RG0": "HELD",
+    "RG1": "HELD",
+    "production_effects_enabled": false,
     "main_merge": "NOT AUTHORIZED"
   }
 }

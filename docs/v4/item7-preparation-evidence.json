@@ -1,0 +1,110 @@
+{
+  "recorded_at": "2026-10-03",
+  "base_commit": "91784e75b3a0deeaac6c957150908845abe27f7d",
+  "scope": "P1 item-7 qualification preparation and root local owner-binding hardening only; independent full P1 review remains NOT RUN, production disabled, RG0/RG1 HELD and main unmerged",
+  "source_evidence_lock_sha256": "3941865002a0549bc11f5a778c2a3849bf8dc383c2c5b13402490cd5b75bbe92",
+  "commands": [
+    {
+      "command": ".venv/bin/python -m pytest -p no:cacheprovider tests/integration/test_v4_runtime_waits.py tests/integration/test_v4_migrations.py tests/e2e/test_v4_continuation_restart.py tests/e2e/test_v4_wait_restart.py -q -rs --junitxml=artifacts/v4-p0/item7/final-focused.xml",
+      "exit_code": 0,
+      "tests": 32,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 76.155,
+      "junit": "artifacts/v4-p0/item7/final-focused.xml",
+      "junit_sha256": "21cc52fcaaa52e1ad04badc364155ce5fec964ab3a86e528af12c24977178680",
+      "log_sha256": "aee795d97947879cbe15131b1b3bf05b29e868ec0ca00a61cfc8f399a93ea8a8"
+    },
+    {
+      "command": ".venv/bin/python -m pytest -p no:cacheprovider tests/contracts tests/unit tests/integration tests/e2e tests/evals -m 'not live' -q -rs --junitxml=artifacts/v4-p0/item7/final-regression.xml",
+      "exit_code": 0,
+      "tests": 462,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 449.077,
+      "junit": "artifacts/v4-p0/item7/final-regression.xml",
+      "junit_sha256": "098ff47e14d7d4746751813c9c6904febdd6652be28d2ea840f792431832a7b6",
+      "log_sha256": "336569f4d7e86e909e15a47d700440ccc963b05d1d5f41f72ab13c804fc803f1"
+    }
+  ],
+  "baseline_qualification": {
+    "tests": 456,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 409.968,
+    "junit_sha256": "037342da6f497fab76b071f124b62d3e6d28d682b5cfde80d2642683b15347b9",
+    "log_sha256": "1436b40788a0d1df3b6d37479dc94e6006535c2b1b195ce2d9d5e2cca9491e01",
+    "p1_mapped_cases": 199
+  },
+  "local_findings": [
+    {
+      "id": "LOCAL-H01",
+      "reviewer": "root local inspection; not independent",
+      "severity": "Important",
+      "problem": "SQL runtime hold accepted a different same-workspace owner; a later malformed start row could satisfy an incomplete owner guard",
+      "reproduction": [
+        {
+          "junit": "artifacts/v4-p0/item7/hold-owner-red.xml",
+          "sha256": "f60af73a159e52c5e43d1b7c019de8171c400f40fd04f1f48ec6c04cf174fd93"
+        },
+        {
+          "junit": "artifacts/v4-p0/item7/sequence-owner-red.xml",
+          "sha256": "2ecddcd1bca802b956b40d46869166e02c2c358ce92b9723f5c2bec4b63fa937"
+        }
+      ],
+      "fix": "Additive 0032 SQL owner trigger and runtime activity select the immutable sequence-1 start subject. Existing valid ownership survives revocation; inconsistent history stops upgrade without rewriting rows. Populated downgrade refuses weaker protection."
+    },
+    {
+      "id": "LOCAL-H02",
+      "reviewer": "root local inspection of unpublished migration candidate; not independent",
+      "severity": "Important",
+      "problem": "A concurrent wrong-owner hold could commit between preflight and trigger installation in the new candidate migration",
+      "reproduction": [
+        {
+          "junit": "artifacts/v4-p0/item7/migration-race-red.xml",
+          "sha256": "7f510eadf541de0f6f662760625f97c02231f32263904af4d7e9a75af44073f6"
+        }
+      ],
+      "fix": "Hold SHARE ROW EXCLUSIVE table lock across preflight and DDL in both directions, with a three-second lock timeout. A real blocked-writer/commit regression proves the upgraded guard sees the committed row and stops without changing history."
+    }
+  ],
+  "additional_verification": {
+    "focused_tests": 32,
+    "full_non_live_tests": 462,
+    "locked_source_files": 311,
+    "documentation_tests": 15,
+    "mapped_obligations": 75,
+    "negative_controls": 6,
+    "mermaid_diagrams": 6,
+    "documentation_shell_contracts": 4,
+    "dependency_consistency": "PASS",
+    "independent_increment_review": "NOT RUN",
+    "independent_full_p1_review": "NOT RUN",
+    "independent_pr_review": "NOT RUN",
+    "production_effects_enabled": false
+  },
+  "preliminary_results": {
+    "baseline": "456 full PASS on published base; original 310-file application",
+    "first_owner_candidate": "3 targeted PASS; then 28 PASS/1 FAIL because the older rollback test expected the first guard message. Updated test accepts either preservation guard and verifies unchanged version/wait.",
+    "pre_lock_candidate": "31 focused / 461 full PASS; superseded by real migration-race RED and final 32/462 qualification",
+    "unpublished_fixture_guard": "The tightened owner function was applied only to the private Compose test database during development. Fresh disposable-database migration tests qualify the final migration source."
+  },
+  "repository_verification": {
+    "base_commit": "91784e75b3a0deeaac6c957150908845abe27f7d",
+    "base_ci_status": "PASS",
+    "base_enforcement_status": "PASS",
+    "base_inspected_at": "2026-10-03T17:12:40.580583+00:00",
+    "candidate_ci_status": "NOT RUN until publication; inspect exact HEAD",
+    "merge": "NOT AUTHORIZED; current independent PR approval separately required"
+  },
+  "remaining": {
+    "next_queue_item": 7,
+    "independent_review": "Await explicit reviewer-agent authorization or external reviewer; no independent conclusion is claimed",
+    "RG0": "HELD: external operational qualifications NOT RUN",
+    "RG1": "HELD: independent full P1 review and unfinished production contracts",
+    "production_effects_enabled": false
+  }
+}
