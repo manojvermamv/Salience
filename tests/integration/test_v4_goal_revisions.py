@@ -58,7 +58,7 @@ def test_existing_slot_retry_survives_shorter_revised_horizon(cycles):
     assert intent(service,goal,due_at=due,expires_at=expiry)==requested
     with pytest.raises(ValueError,match="horizon"):
         intent(service,goal,"new",due_at=due,expires_at=expiry)
-    service.set_goal_state(goal,"cancelled")
+    service.set_goal_state(goal,"cancelled",expected_revision=2,expected_state_revision=1,idempotency_key="cancel",reason="fixture stop")
     assert intent(service,goal,due_at=due,expires_at=expiry)==requested
     assert service.admit(requested)["disposition"]=="denied"
 
@@ -119,7 +119,7 @@ def test_revision_requires_current_scope_and_nonterminal_goal(cycles):
         revise(service,goal,spec,expected=True)
     with pytest.raises(PermissionError):
         revise(CycleAdmission(database,workspace_id=uuid4(),subject_id=service.subject_id),goal,spec)
-    service.set_goal_state(goal,"completed")
+    service.set_goal_state(goal,"completed",expected_revision=1,expected_state_revision=1,idempotency_key="complete",reason="fixture completion")
     with pytest.raises(ValueError,match="terminal"):
         revise(service,goal,spec)
     with psycopg.connect(database) as connection:
@@ -143,7 +143,7 @@ def test_database_guards_goal_identity_revision_and_terminal_state(cycles):
     with psycopg.connect(database) as connection:
         with pytest.raises(psycopg.errors.RaiseException,match="next committed payload"):
             connection.execute("UPDATE v4_goals SET revision=4 WHERE id=%s",(goal,))
-    service.set_goal_state(goal,"cancelled")
+    service.set_goal_state(goal,"cancelled",expected_revision=2,expected_state_revision=1,idempotency_key="cancel",reason="fixture stop")
     statements=[
         ("UPDATE v4_goals SET state='active' WHERE id=%s",(goal,)),
         ("UPDATE v4_goals SET revision=1 WHERE id=%s",(goal,)),

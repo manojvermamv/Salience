@@ -100,6 +100,8 @@ class CycleOutbox:
             return row["state"]
 
     async def dispatch_one(self, transport):
+        if hasattr(transport,"reconcile_one"):
+            await transport.reconcile_one(self)
         message = await asyncio.to_thread(self.claim)
         if not message:
             return False
@@ -111,6 +113,7 @@ class CycleOutbox:
                 # hold. Reconcile later canonical messages without attempting
                 # to signal a completed workflow or dispatch another effect.
                 if await asyncio.to_thread(self.runtime_held,message["cycle_id"]):
+                    await asyncio.to_thread(self.reconcile_held_receipts,message["cycle_id"])
                     await asyncio.to_thread(self.consume,message["id"],expected_cycle_id=message["cycle_id"],expected_kind=message["kind"])
                     return await asyncio.to_thread(self.ack,message["id"],message["lease_token"])
                 context = TraceContext.from_carrier({"traceparent":message["traceparent"]})
@@ -148,6 +151,70 @@ class CycleOutbox:
     def runtime_held(self, cycle_id):
         with self._connect() as connection:
             return bool(connection.execute("SELECT 1 FROM v4_runtime_holds WHERE cycle_id=%s AND workspace_id=%s",(cycle_id,self.workspace_id)).fetchone())
+
+    def runtime_candidate(self, after=None):
+        with self._connect() as connection:
+            query = """SELECT message.* FROM v4_cycle_outbox message
+                JOIN v4_cycles cycle ON cycle.id=message.cycle_id
+                WHERE message.workspace_id=%s AND message.kind='start' AND message.sequence=1
+                AND message.state='delivered' AND (cycle.state<>'closed' OR EXISTS (
+                    SELECT 1 FROM v4_cycle_outbox outstanding WHERE outstanding.cycle_id=cycle.id
+                    AND NOT EXISTS (SELECT 1 FROM v4_cycle_inbox receipt WHERE receipt.message_id=outstanding.id)))
+                AND (NOT EXISTS (SELECT 1 FROM v4_runtime_holds hold WHERE hold.cycle_id=cycle.id)
+                    OR EXISTS (SELECT 1 FROM v4_cycle_outbox outstanding WHERE outstanding.cycle_id=cycle.id
+                        AND NOT EXISTS (SELECT 1 FROM v4_cycle_inbox receipt WHERE receipt.message_id=outstanding.id)))"""
+            row = None
+            if after is not None:
+                row = connection.execute(query+" AND message.id>%s ORDER BY message.id LIMIT 1",(self.workspace_id,after)).fetchone()
+            return row or connection.execute(query+" ORDER BY message.id LIMIT 1",(self.workspace_id,)).fetchone()
+
+    def hold_failed_runtime(self, message_id, status):
+        with self._connect() as connection:
+            row = connection.execute("""SELECT message.*,cycle.context_id,cycle.operation_id
+                FROM v4_cycle_outbox message JOIN v4_cycles cycle ON cycle.id=message.cycle_id
+                JOIN v4_cycle_intents intent ON intent.id=cycle.intent_id AND intent.id=message.intent_id
+                JOIN v4_goals goal ON goal.id=intent.goal_id AND goal.id=message.goal_id AND goal.workspace_id=message.workspace_id
+                WHERE message.id=%s AND message.workspace_id=%s AND message.kind='start' AND message.sequence=1
+                AND message.state='delivered' FOR UPDATE OF goal,cycle""",(message_id,self.workspace_id)).fetchone()
+            if not row:
+                return False
+            inserted = connection.execute("""INSERT INTO v4_runtime_holds
+                (cycle_id,context_id,operation_id,workspace_id,owner_id,reason)
+                VALUES(%s,%s,%s,%s,%s,'held_runtime_failure') ON CONFLICT(cycle_id) DO NOTHING RETURNING cycle_id""",(row['cycle_id'],row['context_id'],row['operation_id'],self.workspace_id,row['subject_id'])).fetchone()
+            if inserted:
+                connection.execute("""INSERT INTO v4_cycle_events
+                    (id,workspace_id,subject_id,goal_id,intent_id,cycle_id,kind,traceparent,payload)
+                    VALUES(%s,%s,%s,%s,%s,%s,'runtime_held',%s,%s)""",(uuid4(),self.workspace_id,row['subject_id'],row['goal_id'],row['intent_id'],row['cycle_id'],row['traceparent'],Jsonb({'message_id':str(message_id),'state':'held_runtime_failure','runtime_status':status,'owner_id':str(row['subject_id'])})))
+            return bool(inserted)
+
+    def reconcile_held_receipts(self, cycle_id):
+        # These are held canonical dispositions, never adapter acceptance or
+        # execution authority. Keep sequence ordering and every original ID.
+        with self._connect() as connection:
+            hold = connection.execute("""SELECT hold.* FROM v4_runtime_holds hold
+                JOIN v4_cycles cycle ON cycle.id=hold.cycle_id
+                JOIN v4_cycle_intents intent ON intent.id=cycle.intent_id
+                JOIN v4_goals goal ON goal.id=intent.goal_id AND goal.workspace_id=hold.workspace_id
+                WHERE hold.cycle_id=%s AND hold.workspace_id=%s FOR UPDATE OF goal,cycle""",(cycle_id,self.workspace_id)).fetchone()
+            if not hold:
+                return 0
+            messages = connection.execute("""SELECT message.* FROM v4_cycle_outbox message
+                WHERE message.cycle_id=%s AND message.workspace_id=%s
+                AND NOT EXISTS (SELECT 1 FROM v4_cycle_inbox receipt WHERE receipt.message_id=message.id)
+                ORDER BY message.sequence LIMIT 32""",(cycle_id,self.workspace_id)).fetchall()
+            recorded = 0
+            for message in messages:
+                if not connection.execute("SELECT id FROM v4_cycle_outbox WHERE id=%s FOR UPDATE SKIP LOCKED",(message['id'],)).fetchone():
+                    # Preserve a contiguous prefix if a consumer already owns
+                    # the next message; release the goal so it can finish.
+                    break
+                connection.execute("""INSERT INTO v4_cycle_inbox(id,message_id,cycle_id,state,traceparent)
+                    VALUES(%s,%s,%s,'held',%s)""",(uuid4(),message['id'],cycle_id,message['traceparent']))
+                connection.execute("""INSERT INTO v4_cycle_events
+                    (id,workspace_id,subject_id,goal_id,intent_id,cycle_id,kind,traceparent,payload)
+                    VALUES(%s,%s,%s,%s,%s,%s,'fixture_consumed',%s,%s)""",(uuid4(),self.workspace_id,message['subject_id'],message['goal_id'],message['intent_id'],cycle_id,message['traceparent'],Jsonb({'message_id':str(message['id']),'sequence':message['sequence'],'state':'held','production_effects_enabled':False})))
+                recorded += 1
+            return recorded
 
     def receipt_exists(self, message_id):
         with self._connect() as connection:
@@ -210,6 +277,13 @@ class CycleOutbox:
             message = connection.execute("SELECT * FROM v4_cycle_outbox WHERE id=%s AND workspace_id=%s FOR UPDATE", (message_id,self.workspace_id)).fetchone()
             if not message:
                 raise PermissionError("message outside consumer scope")
+            if not connection.execute("""SELECT 1 FROM v4_cycles cycle
+                JOIN v4_cycle_intents intent ON intent.id=cycle.intent_id
+                JOIN v4_goals goal ON goal.id=intent.goal_id
+                JOIN identity_subjects actor ON actor.id=%s AND actor.workspace_id=goal.workspace_id
+                WHERE cycle.id=%s AND intent.id=%s AND goal.id=%s AND goal.workspace_id=%s""",
+                (message['subject_id'],message['cycle_id'],message['intent_id'],message['goal_id'],self.workspace_id)).fetchone():
+                raise PermissionError("message canonical scope binding mismatch")
             if (expected_cycle_id is not None and str(expected_cycle_id)!=str(message["cycle_id"])) or (expected_kind is not None and expected_kind!=message["kind"]):
                 raise ValueError("message envelope binding mismatch")
             if traceparent and TraceContext.from_carrier({"traceparent":traceparent}).trace_id != TraceContext.from_carrier({"traceparent":message["traceparent"]}).trace_id:

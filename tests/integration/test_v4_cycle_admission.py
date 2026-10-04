@@ -137,10 +137,10 @@ def test_slot_fingerprint_context_immutability_and_no_live_mode(cycles):
 def test_stopped_goal_and_foreign_scope_cannot_admit(cycles):
     service, goal, _, database = cycles
     requested = intent(service,goal)
-    service.set_goal_state(goal,"cancelled")
+    service.set_goal_state(goal,"cancelled",expected_revision=1,expected_state_revision=1,idempotency_key="cancel",reason="fixture stop")
     assert service.admit(requested)["disposition"] == "denied"
     with pytest.raises(ValueError):
-        service.set_goal_state(goal,"active")
+        service.set_goal_state(goal,"active",expected_revision=1,expected_state_revision=2,idempotency_key="resume",reason="fixture resume")
     with pytest.raises(PermissionError):
         CycleAdmission(database,workspace_id=uuid4(),subject_id=service.subject_id).admit(requested)
 

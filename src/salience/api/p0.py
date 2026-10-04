@@ -194,6 +194,8 @@ def _request_scope(request):
             return ("workspaces", UUID(parts[2])), "goals:write"
         if len(parts) >= 4 and parts[:3] == ["v1", "v4", "goals"]:
             resource = ("v4_goals", UUID(parts[3]))
+            if request.method == "GET" and len(parts) == 4:
+                return resource, "cycles:read"
             if len(parts) in {5, 6} and parts[4] == "schedule-cutover":
                 if request.method == "GET" and len(parts) == 5:
                     return resource, "cycles:read"

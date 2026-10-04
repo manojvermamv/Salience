@@ -9,7 +9,7 @@ from opentelemetry import trace
 from uuid import uuid4
 from psycopg.types.json import Jsonb
 from temporalio import activity
-from temporalio.client import Client
+from temporalio.client import Client, WorkflowExecutionStatus
 from temporalio.common import WorkflowIDReusePolicy
 from temporalio.exceptions import WorkflowAlreadyStartedError
 from temporalio.worker import Worker
@@ -29,10 +29,33 @@ class TemporalCycleTransport:
             raise ValueError("only an isolated local fixture queue is supported")
         self.client = client
         self.task_queue = task_queue
+        self._reconcile_after = None
 
     @staticmethod
     def workflow_id(cycle_id):
         return "salience-v4-local:" + str(cycle_id)
+
+    async def reconcile_one(self, outbox):
+        message = await asyncio.to_thread(outbox.runtime_candidate,self._reconcile_after)
+        if message is None:
+            return False
+        self._reconcile_after = message['id']
+        if await asyncio.to_thread(outbox.runtime_held,message['cycle_id']):
+            return bool(await asyncio.to_thread(outbox.reconcile_held_receipts,message['cycle_id']))
+        try:
+            description = await self.client.get_workflow_handle(self.workflow_id(message['cycle_id'])).describe(rpc_timeout=timedelta(seconds=3))
+            memo = await description.memo()
+        except Exception:
+            # Observation failure never proves terminal failure. Retry bounded
+            # scanning on the next poll after database/Temporal recovery.
+            return False
+        if description.workflow_type != 'SalienceLocalCycleWorkflow' or memo.get('cycle_message_id') != str(message['id']):
+            return False
+        if description.status in {WorkflowExecutionStatus.FAILED,WorkflowExecutionStatus.TIMED_OUT,WorkflowExecutionStatus.TERMINATED,WorkflowExecutionStatus.CANCELED}:
+            held = await asyncio.to_thread(outbox.hold_failed_runtime,message['id'],description.status.name)
+            await asyncio.to_thread(outbox.reconcile_held_receipts,message['cycle_id'])
+            return held
+        return False
 
     async def deliver(self, message):
         envelope = {"message_id":str(message["id"]),"cycle_id":str(message["cycle_id"]),"kind":message["kind"],"traceparent":message.get("delivery_traceparent",message["traceparent"])}

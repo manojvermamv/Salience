@@ -368,8 +368,15 @@ class CyclesClient(_ControlClient):
              "idempotency_key": idempotency_key, "reason": reason},
         )
 
-    def set_goal_state(self, goal_id: str, state: str) -> dict[str, Any]:
-        return self._request("POST", f"/v1/v4/goals/{goal_id}/state", {"state": state})
+    def set_goal_state(self, goal_id: str, state: str, *, expected_revision: int,
+                       expected_state_revision: int, idempotency_key: str, reason: str) -> dict[str, Any]:
+        return self._request("POST", f"/v1/v4/goals/{goal_id}/state",
+                             {"state": state, "expected_revision": expected_revision,
+                              "expected_state_revision": expected_state_revision,
+                              "idempotency_key": idempotency_key, "reason": reason})
+
+    def inspect_goal(self, goal_id: str) -> dict[str, Any]:
+        return self._request("GET", f"/v1/v4/goals/{goal_id}")
 
     def approve_baseline(
         self, goal_id: str, *, expected_revision: int, expires_at: str, reason: str

@@ -176,7 +176,7 @@ def test_wait_binding_and_receipts_cannot_be_rewritten_or_destructively_downgrad
     with psycopg.connect(database) as connection:
         version = connection.execute("SELECT version_num FROM alembic_version").fetchone()[0]
     rollback = subprocess.run([sys.executable,"-m","alembic","-x","database_url="+database,"downgrade","0030_v4_schedule_cutover"],capture_output=True,text=True)
-    assert rollback.returncode != 0 and any(message in rollback.stderr for message in ("preserve durable waits","preserve runtime hold owner binding"))
+    assert rollback.returncode != 0 and any(message in rollback.stderr for message in ("preserve durable waits","preserve runtime hold owner binding","preserve canonical delivery scope"))
     with psycopg.connect(database) as connection:
         assert connection.execute("SELECT version_num FROM alembic_version").fetchone()[0] == version
         assert connection.execute("SELECT state FROM v4_runtime_waits WHERE id=%s",(job["id"],)).fetchone()[0] == "pending"
@@ -360,7 +360,7 @@ def test_populated_owner_binding_cannot_be_rolled_back(governed):
             VALUES(%s,%s,%s,%s,%s,'held_timeout')""",(cycle,context,operation,service.workspace_id,service.subject_id))
         version = connection.execute("SELECT version_num FROM alembic_version").fetchone()[0]
     rollback = subprocess.run([sys.executable,"-m","alembic","-x","database_url="+database,"downgrade","0031_runtime_waits"],capture_output=True,text=True)
-    assert rollback.returncode != 0 and "preserve runtime hold owner binding" in rollback.stderr
+    assert rollback.returncode != 0 and any(message in rollback.stderr for message in ("preserve runtime hold owner binding","preserve canonical delivery scope"))
     with psycopg.connect(database) as connection:
         assert connection.execute("SELECT version_num FROM alembic_version").fetchone()[0] == version
         assert connection.execute("SELECT owner_id FROM v4_runtime_holds WHERE cycle_id=%s",(cycle,)).fetchone()[0] == service.subject_id

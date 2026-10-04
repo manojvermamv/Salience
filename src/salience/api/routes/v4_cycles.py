@@ -38,6 +38,10 @@ class GoalStateCommand(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     state: Literal["draft", "active", "paused", "completed", "cancelled"]
+    expected_revision: int = Field(strict=True, ge=1)
+    expected_state_revision: int = Field(strict=True, ge=1)
+    idempotency_key: str = Field(min_length=1, max_length=256)
+    reason: str = Field(min_length=1, max_length=2000)
 
 
 class CancelCommand(BaseModel):
@@ -159,8 +163,15 @@ async def revise_goal(goal_id: UUID, command: GoalRevisionCommand, request: Requ
 
 @router.post("/v4/goals/{goal_id}/state")
 async def set_goal_state(goal_id: UUID, command: GoalStateCommand, request: Request):
-    await _invoke(_service(request).set_goal_state, goal_id, command.state)
-    return {"goal_id": str(goal_id), "state": command.state}
+    return await _invoke(_service(request).set_goal_state, goal_id, command.state,
+                         expected_revision=command.expected_revision,
+                         expected_state_revision=command.expected_state_revision,
+                         idempotency_key=command.idempotency_key, reason=command.reason)
+
+
+@router.get("/v4/goals/{goal_id}")
+async def inspect_goal(goal_id: UUID, request: Request):
+    return await _invoke(_service(request).inspect_goal,goal_id)
 
 
 @router.post("/v4/goals/{goal_id}/baseline")

@@ -404,11 +404,11 @@ def test_public_goal_revision_state_and_baseline_revocation_remain_current(publi
     )
     assert approval.status_code == 200, approval.text
     paused = client.post(
-        f"/v1/v4/goals/{goal_id}/state", headers=headers, json={"state": "paused"},
+        f"/v1/v4/goals/{goal_id}/state", headers=headers, json={"state":"paused","expected_revision":1,"expected_state_revision":1,"idempotency_key":"pause","reason":"fixture pause"},
     )
     assert paused.status_code == 200, paused.text
     assert client.post(
-        f"/v1/v4/goals/{goal_id}/state", headers=headers, json={"state": "active"},
+        f"/v1/v4/goals/{goal_id}/state", headers=headers, json={"state":"active","expected_revision":1,"expected_state_revision":2,"idempotency_key":"resume","reason":"fixture resume"},
     ).status_code == 200
     changed = spec.model_copy(update={"objective": "Approved revised fixture"})
     revision = {"expected_revision": 1, "idempotency_key": "revision-one",
@@ -475,8 +475,8 @@ def test_public_goal_revision_state_and_baseline_revocation_remain_current(publi
     main(["cycles", "baseline-revoke", "--goal-id", goal_id, "--approval-id",
           renewed.json()["approval_id"], "--reason", "Fixture revocation"])
     assert json.loads(capsys.readouterr().out)["revoked"] is True
-    assert sdk.set_goal_state(goal_id, "paused")["state"] == "paused"
-    main(["cycles", "goal-state", "--goal-id", goal_id, "--state", "active"])
+    assert sdk.set_goal_state(goal_id,"paused",expected_revision=2,expected_state_revision=3,idempotency_key="sdk-pause",reason="fixture pause")["state"] == "paused"
+    main(["cycles","goal-state","--goal-id",goal_id,"--state","active","--expected-revision","2","--expected-state-revision","4","--idempotency-key","cli-resume","--reason","fixture resume"])
     assert json.loads(capsys.readouterr().out)["state"] == "active"
 
 

@@ -2,8 +2,9 @@
 
 from hashlib import sha256
 import json
+from pydantic import ValidationError
 
-from salience.cycles.contracts import AuthoritySnapshot, RunContextV2, RunContextV3
+from salience.cycles.contracts import AuthoritySnapshot, GoalSpec, RunContextV2, RunContextV3
 
 
 def current_authority(connection, workspace_id, subject_id, scope="cycles:write"):
@@ -27,8 +28,14 @@ def require_program(connection, workspace_id, program_id):
 
 
 def context_authorized(connection, payload, workspace_id, subject_id):
+    if payload.get("schema_version") == "GoalSpec.local.v1":
+        try:
+            GoalSpec.model_validate({key:value for key,value in payload.items() if key in GoalSpec.model_fields})
+            return payload.get("workspace_id") == str(workspace_id) and payload.get("subject_id") == str(subject_id)
+        except ValidationError:
+            return False
     if payload.get("schema_version") not in {"RunContext.local.v2", "RunContext.local.v3"}:
-        return True
+        return False
     try:
         model = RunContextV3 if payload["schema_version"] == "RunContext.local.v3" else RunContextV2
         context = model.model_validate(payload)
@@ -36,5 +43,5 @@ def context_authorized(connection, payload, workspace_id, subject_id):
         authority = current_authority(connection, workspace_id, subject_id)
         now = connection.execute("SELECT clock_timestamp() AS now").fetchone()["now"]
         return AuthoritySnapshot.model_validate(authority) == context.authority and now < context.execution_deadline
-    except PermissionError:
+    except (PermissionError, ValidationError):
         return False

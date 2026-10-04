@@ -98,16 +98,40 @@ class CycleAdmission(CadenceCommands):
                 connection.execute("INSERT INTO v4_goal_create_commands (workspace_id,subject_id,idempotency_key,fingerprint,goal_id) VALUES (%s,%s,%s,%s,%s)",(self.workspace_id,self.subject_id,idempotency_key,fingerprint,goal_id))
             return goal_id
 
-    def set_goal_state(self, goal_id, state):
+    def inspect_goal(self, goal_id):
+        with self._command("cycles:read") as connection:
+            goal, _ = self._goal(connection,goal_id)
+            return {"goal_id":str(goal["id"]),"state":goal["state"],"state_revision":goal["state_revision"],"goal_revision":goal["revision"]}
+
+    def set_goal_state(self, goal_id, state, *, expected_revision, expected_state_revision, idempotency_key, reason):
+        if type(expected_revision) is not int or expected_revision < 1 or type(expected_state_revision) is not int or expected_state_revision < 1:
+            raise ValueError("explicit goal and state revisions required")
+        if not isinstance(idempotency_key, str) or not idempotency_key.strip() or len(idempotency_key) > 256:
+            raise ValueError("bounded state command key required")
+        if not isinstance(reason, str) or not reason.strip() or len(reason) > 2000:
+            raise ValueError("bounded state command reason required")
+        fingerprint = sha256(json.dumps([str(self.subject_id),state,expected_revision,expected_state_revision,reason],separators=(",",":")).encode()).hexdigest()
         transitions = {"draft":{"active","cancelled"}, "active":{"paused","completed","cancelled"}, "paused":{"active","completed","cancelled"}, "completed":set(), "cancelled":set()}
         with self._command("goals:write") as connection:
             goal, _ = self._goal(connection,goal_id)
-            if state == goal["state"]:
-                return
-            if state not in transitions[goal["state"]]:
+            prior = connection.execute("SELECT * FROM v4_goal_state_commands WHERE goal_id=%s AND idempotency_key=%s", (goal_id,idempotency_key)).fetchone()
+            if prior:
+                if prior["fingerprint"] != fingerprint:
+                    raise ValueError("goal state command fingerprint conflict")
+                return {"goal_id":str(goal_id),"state":prior["state"],"state_revision":prior["resulting_state_revision"],"goal_revision":prior["expected_revision"]}
+            if goal["revision"] != expected_revision or goal["state_revision"] != expected_state_revision:
+                raise ValueError("stale goal or state revision")
+            if state != goal["state"] and state not in transitions[goal["state"]]:
                 raise ValueError("illegal goal state transition")
-            connection.execute("UPDATE v4_goals SET state=%s WHERE id=%s", (state,goal_id))
-            self._event(connection,goal_id,"goal_state",{"from":goal["state"],"to":state})
+            revision = expected_state_revision + (state != goal["state"])
+            connection.execute("""INSERT INTO v4_goal_state_commands
+                (goal_id,workspace_id,actor_id,idempotency_key,fingerprint,expected_revision,expected_state_revision,resulting_state_revision,state,reason,traceparent)
+                VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""", (goal_id,self.workspace_id,self.subject_id,idempotency_key,fingerprint,expected_revision,expected_state_revision,revision,state,reason,self.trace.to_carrier()["traceparent"]))
+            if state != goal["state"]:
+                connection.execute("UPDATE v4_goals SET state=%s,state_revision=%s WHERE id=%s", (state,revision,goal_id))
+            result = {"goal_id":str(goal_id),"state":state,"state_revision":revision,"goal_revision":expected_revision}
+            self._event(connection,goal_id,"goal_state",result | {"from":goal["state"],"reason":reason})
+            return result
 
     def revise_goal(self, goal_id, spec: GoalSpec, *, expected_revision, idempotency_key, reason):
         spec = parse_goal(spec.model_dump())

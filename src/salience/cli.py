@@ -142,6 +142,12 @@ def main(arguments: Sequence[str] | None = None) -> None:
     goal_state = cycle_commands.add_parser("goal-state")
     goal_state.add_argument("--goal-id", required=True)
     goal_state.add_argument("--state", choices=("draft", "active", "paused", "completed", "cancelled"), required=True)
+    goal_state.add_argument("--expected-revision", type=int, required=True)
+    goal_state.add_argument("--expected-state-revision", type=int, required=True)
+    goal_state.add_argument("--idempotency-key", required=True)
+    goal_state.add_argument("--reason", required=True)
+    goal_inspect = cycle_commands.add_parser("goal-inspect")
+    goal_inspect.add_argument("--goal-id", required=True)
     baseline = cycle_commands.add_parser("baseline-approve")
     baseline.add_argument("--goal-id", required=True)
     baseline.add_argument("--expected-revision", type=int, required=True)
@@ -229,8 +235,12 @@ def main(arguments: Sequence[str] | None = None) -> None:
         elif parsed.cycle_command == "goal-state":
             result = _v4_request(
                 method="POST", path=f"/v1/v4/goals/{parsed.goal_id}/state",
-                payload={"state": parsed.state},
+                payload={"state": parsed.state, "expected_revision": parsed.expected_revision,
+                         "expected_state_revision": parsed.expected_state_revision,
+                         "idempotency_key": parsed.idempotency_key, "reason": parsed.reason},
             )
+        elif parsed.cycle_command == "goal-inspect":
+            result = _v4_request(method="GET",path=f"/v1/v4/goals/{parsed.goal_id}")
         elif parsed.cycle_command == "baseline-approve":
             result = _v4_request(
                 method="POST", path=f"/v1/v4/goals/{parsed.goal_id}/baseline",

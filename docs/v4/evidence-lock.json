@@ -159,6 +159,14 @@
       "sha256": "0b6f3e831d18b651bcc81565aadf5b2b1c663ffa9957c713d1ce4f42fb063e70"
     },
     {
+      "path": "migrations/versions/0033_goal_state_commands.py",
+      "sha256": "704fdf239cfb452129ba677ba476cbdd52a897b778b141b9a0272bb71614c248"
+    },
+    {
+      "path": "migrations/versions/0034_runtime_delivery_scope.py",
+      "sha256": "027448e0152eb050cdba1bc999bc2500b1a9fe9e7c46e8f020d8149a8818baa3"
+    },
+    {
       "path": "migrations/versions/__init__.py",
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
@@ -264,7 +272,7 @@
     },
     {
       "path": "src/salience/api/p0.py",
-      "sha256": "02223b125bbc502b70b07e818cebb77c056bb882ba67622bd3a6f37b1effc353"
+      "sha256": "25e2c3d3394841239ac26acab186b29dbcc28fecdbe3f51d4ec6adf8df6ce4ea"
     },
     {
       "path": "src/salience/api/routes/__init__.py",
@@ -296,7 +304,7 @@
     },
     {
       "path": "src/salience/api/routes/v4_cycles.py",
-      "sha256": "470d54784a5647d622b527b22cbd9e86f9e26a3b3eef844e3bf7ce052da6a43a"
+      "sha256": "c9f6cf6369468dab9665c861e94b5f6db7dba7d1678dbee4bf290b54bf6180db"
     },
     {
       "path": "src/salience/api/schemas.py",
@@ -336,7 +344,7 @@
     },
     {
       "path": "src/salience/cli.py",
-      "sha256": "2e279e95dffb318b84bf992dbc91387fd6a6707bcc8590a999750a013cfb52cf"
+      "sha256": "a49db9110c9eaebedb730bfe457d6f60dc512d89c4d02e18b84407e56d0991b7"
     },
     {
       "path": "src/salience/config.py",
@@ -412,11 +420,11 @@
     },
     {
       "path": "src/salience/cycles/admission.py",
-      "sha256": "ac8f5ff8dd0424109585837de93ef0639f313d36443c2d25b3abe8fcc9865e94"
+      "sha256": "49b6b21b888bb30fd025b5d88480dad30927a45d290874bd1e9273d6e2cb823a"
     },
     {
       "path": "src/salience/cycles/authority.py",
-      "sha256": "162efc7014d42b37d7e22523233644c480a744fa4294edabb48baba868f05a48"
+      "sha256": "d8376eb12851e8b5853c5bf4afc61c94f31d433edb59e26aa3ad7002a891c51a"
     },
     {
       "path": "src/salience/cycles/baselines.py",
@@ -432,7 +440,7 @@
     },
     {
       "path": "src/salience/cycles/governance.py",
-      "sha256": "160646201cad8ba4d4f81c0c758becfa219245e96fc4c3cf2f449d993cafd98e"
+      "sha256": "5ad9878f9b6fa12a272b6f819d76aa05a33821d0b849e8020691bcdd76b84821"
     },
     {
       "path": "src/salience/cycles/legacy_workflow.py",
@@ -440,11 +448,11 @@
     },
     {
       "path": "src/salience/cycles/outbox.py",
-      "sha256": "7ae243a0edbf23b8cc8ae484a6cbce7d46c5cf826f8060eb97486ac0e2bcffa6"
+      "sha256": "3180162f766a6e30d3169f27811c3c8ecc650d7e61bfeb0323c352c6620a43f5"
     },
     {
       "path": "src/salience/cycles/runtime.py",
-      "sha256": "29e12af5686ab96ea6aa7f474ccd0b852bdc232624b1b323cae0f8b11a84cb8e"
+      "sha256": "2f830bd4b374402c892d5ed4215f4c8e830650ab4318eb701273854ea805eed9"
     },
     {
       "path": "src/salience/cycles/runtime_waits.py",
@@ -452,7 +460,7 @@
     },
     {
       "path": "src/salience/cycles/schedule_cutover.py",
-      "sha256": "fa7359a8419661a2c3910f1e63fe4dc5ec0dd32b051285b9d1af48c398cfa5d4"
+      "sha256": "2167fea392ae8d1e7c0611bbd4cccf4f808bef7c59e5922fc9878daaceaaa780"
     },
     {
       "path": "src/salience/cycles/wait_workflow.py",
@@ -696,7 +704,7 @@
     },
     {
       "path": "src/salience/sdk/client.py",
-      "sha256": "b824ba9376a43f696edd0f1a5c64312641ef9ae69445dc63265e77f8f8f1d1e3"
+      "sha256": "8e5c4e6d3342c1bbc2187b82360fc364cc4728e8fe9eaca57826867ec1239a69"
     },
     {
       "path": "src/salience/storage/__init__.py",
@@ -833,6 +841,10 @@
     {
       "path": "tests/e2e/test_v4_continuation_restart.py",
       "sha256": "9ead5dea72c867f9c8c5b70bfb570068b59d0fd8c49846eed1a580dd41ec1b7b"
+    },
+    {
+      "path": "tests/e2e/test_v4_item7_delivery_recovery.py",
+      "sha256": "6e50b85ff18ee350cdbd0e06cc30106620fe4ca462a311f58651131e635ab7cf"
     },
     {
       "path": "tests/e2e/test_v4_outbox_recovery.py",
@@ -1032,7 +1044,7 @@
     },
     {
       "path": "tests/integration/test_v4_cycle_admission.py",
-      "sha256": "621376d59d4bbd801ba213bffb6e5370fbf2c87a51ca7422a7298e45d7f433aa"
+      "sha256": "8770c7d7bac0d1f0c1aeefc6cf6cb52f2ef92ead8b8d9390435689be1c963846"
     },
     {
       "path": "tests/integration/test_v4_cycle_governance.py",
@@ -1040,15 +1052,23 @@
     },
     {
       "path": "tests/integration/test_v4_goal_revisions.py",
-      "sha256": "5463a9cd5e4e3caa0cf3c22a7a8521cf0490e6b4d305c89539713153c78496a8"
+      "sha256": "22db990807e3df95ec309e1cae29e2d1fe8b02eeda42cd256b71d882c029f9b6"
     },
     {
       "path": "tests/integration/test_v4_identity_isolation.py",
       "sha256": "5db6d320416570adb03e122b9061161108f06e9945829925b6555b1edd640f32"
     },
     {
+      "path": "tests/integration/test_v4_item7_admission.py",
+      "sha256": "6bd60b404e97aded4ab2fefbc30e4ec2c03d7f2fb45d52df7e456ea0dba15a2e"
+    },
+    {
+      "path": "tests/integration/test_v4_item7_governance.py",
+      "sha256": "e55265e94111cbd00db2e33ede37682c9d3a5eb5806509300984cb2504f85d78"
+    },
+    {
       "path": "tests/integration/test_v4_migrations.py",
-      "sha256": "162c0e398fb35bfd902a9e59a4a7d981ac96d008d82321d6d900dd7782131b75"
+      "sha256": "bc24db92c70413270d809386c607c10a79c390e5ac76341ff184eef71c50334d"
     },
     {
       "path": "tests/integration/test_v4_object_retention.py",
@@ -1064,11 +1084,11 @@
     },
     {
       "path": "tests/integration/test_v4_public_commands.py",
-      "sha256": "863ffb01fb345fdf3a7b20b3e70d8e7bcf0a4aaf5ce308deab8859b4fe67669f"
+      "sha256": "5df09173378a61226a4bf90320c276adf77466012c475f5a4b4ff66599a374b9"
     },
     {
       "path": "tests/integration/test_v4_runtime_waits.py",
-      "sha256": "3c2de64cd40c65d77bea75a8bc26946e2197ebc2d210225545e1fe97ec8b86fa"
+      "sha256": "863ab80a21ec2410da084d2ba372045d57f1e52634b561e4622ad6a45ad2fba2"
     },
     {
       "path": "tests/integration/test_v4_s3_service.py",
@@ -1076,7 +1096,7 @@
     },
     {
       "path": "tests/integration/test_v4_schedule_cutover.py",
-      "sha256": "2590eb8f098058af1f614e584edaf93a0903e4afeefbfb15032d548fe6b089d3"
+      "sha256": "516ecf53490bc29cb9e736fdbc72edcb8794f95bebe348fd894e739c41a0ee4d"
     },
     {
       "path": "tests/integration/test_v4_storage_integrity.py",
@@ -1247,6 +1267,6 @@
       "sha256": "7f76114852b4b9d95b3517c49718ccf2e007d64d442a1b4e05ef696dd37a8bbc"
     }
   ],
-  "reviewed_at": "2026-09-27",
-  "review_scope": "Bounded P1 item 5c self-review: fixture-only schedule cutover, scoped automatic poll, additive migration, replay/rollback and no-effects preservation. Independent PR approval remains required; no production release inferred. Historical evidence hashes remain in their immutable reports."
+  "reviewed_at": "2026-10-04",
+  "review_scope": "Item-7 independent P1 fixture review and repaired canonical state/scheduling/delivery contracts; production RG0/RG1 HELD"
 }

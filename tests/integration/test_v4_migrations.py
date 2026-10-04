@@ -197,7 +197,7 @@ def test_owner_binding_upgrade_preserves_or_holds_existing_history(owner_mode):
                 assert upgraded.returncode == 0, upgraded.stderr
             with psycopg.connect(database) as connection:
                 assert connection.execute("SELECT to_jsonb(h) FROM v4_runtime_holds h WHERE cycle_id=%s",(cycle,)).fetchone()[0] == before
-                assert connection.execute("SELECT version_num FROM alembic_version").fetchone()[0] == ("0031_runtime_waits" if forged_owner else "0032_runtime_hold_owner")
+                assert connection.execute("SELECT version_num FROM alembic_version").fetchone()[0] == ("0031_runtime_waits" if forged_owner else "0034_runtime_delivery_scope")
         finally:
             admin.execute("SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname=%s",(name,))
             admin.execute(psycopg.sql.SQL("DROP DATABASE {}").format(psycopg.sql.Identifier(name)))

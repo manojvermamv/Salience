@@ -293,9 +293,9 @@ def test_settled_fixture_cycle_allows_reconciled_rollback_after_lost_ack(cutover
     original = scheduler.legacy_control.resume_after
     calls = 0
 
-    def lost_ack(schedule_id, after_slot):
+    def lost_ack(schedule_id, after_slot, **kwargs):
         nonlocal calls
-        original(schedule_id, after_slot)
+        original(schedule_id, after_slot, **kwargs)
         calls += 1
         raise TimeoutError("resume acknowledgment lost")
 

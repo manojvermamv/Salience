@@ -13,7 +13,7 @@ from psycopg.rows import dict_row
 from salience.cycles.admission import CycleAdmission
 from salience.cycles.authority import current_authority
 from salience.cycles.cadence import fingerprint
-from salience.cycles.contracts import GoalSpecV2
+from salience.cycles.contracts import GoalSpecV2, parse_goal
 
 
 LOGGER = logging.getLogger(__name__)
@@ -57,12 +57,37 @@ class FixtureLegacyScheduleControl:
             if row["status"] == "active":
                 connection.execute("UPDATE job_schedules SET status='paused',updated_at=clock_timestamp() WHERE id=%s", (schedule_id,))
 
-    def resume_after(self, schedule_id, after_slot):
+    def resume_after(self, schedule_id, after_slot, *, subject_id=None):
         with psycopg.connect(self.database_url, row_factory=dict_row, connect_timeout=3) as connection:
+            connection.execute("SET LOCAL statement_timeout='3s'")
+            # This is the actual fixture resume transaction, after any lost
+            # acknowledgment/callback boundary. Serialize its write with stop.
+            from salience.cycles.governance import CycleGovernance
+            cutover = connection.execute("SELECT * FROM v4_schedule_cutovers WHERE legacy_schedule_id=%s AND workspace_id=%s", (schedule_id,self.workspace_id)).fetchone()
+            if not cutover or cutover["state"] not in {"rollback_pending","rolled_back"}:
+                raise PermissionError("canonical rollback fence required before legacy resume")
+            actor = subject_id or cutover["actor_id"]
+            current_authority(connection,self.workspace_id,actor,"cycles:schedule")
+            governance = CycleGovernance(self.database_url,workspace_id=self.workspace_id,subject_id=actor)
+            scheduler = CycleScheduleCutover(self.database_url,workspace_id=self.workspace_id,subject_id=actor,legacy_control=self)
+            goal, spec = scheduler._policy_goal(connection,cutover["goal_id"])
+            governance._require_running(connection,goal["id"])
+            cutover = scheduler._row(connection,goal["id"],lock=True)
+            if cutover['state'] not in {'rollback_pending','rolled_back'} or cutover['rollback_after_slot'] != after_slot:
+                raise PermissionError("exact current rollback watermark required")
+            if scheduler._unresolved(connection,goal["id"],cutover["first_v4_slot"]):
+                raise ValueError("unresolved canonical work holds legacy resume")
+            original = connection.execute("SELECT payload FROM v4_goal_revisions WHERE goal_id=%s AND revision=%s", (goal["id"],cutover["goal_revision"])).fetchone()
+            if goal["state"] != "active" or spec.cadence.interval_seconds != parse_goal(original["payload"]).cadence.interval_seconds:
+                raise PermissionError("compatible active goal required at legacy resume")
             row = self._schedule(connection, schedule_id, lock=True)
+            if row['content_program_id'] != spec.content_program_id or row['schedule_expression'] != f'every:{spec.cadence.interval_seconds}s':
+                raise PermissionError("same-program compatible legacy resume required")
             if row["status"] == "active":
                 if row["payload"].get("v4_resume_after") != after_slot.isoformat() or row["next_run_at"] is None or row["next_run_at"] <= after_slot:
                     raise ValueError("active legacy schedule lacks exact rollback readback")
+                current_authority(connection,self.workspace_id,actor,"cycles:schedule")
+                current_authority(connection,self.workspace_id,actor)
                 return
             if row["status"] != "paused" or row["next_run_at"] is None:
                 raise ValueError("paused legacy schedule with anchor required")
@@ -76,6 +101,8 @@ class FixtureLegacyScheduleControl:
                 next_slot += interval
             connection.execute("UPDATE job_schedules SET status='active',next_run_at=%s,payload=jsonb_set(payload,'{v4_resume_after}',to_jsonb(%s::text),true),updated_at=clock_timestamp() WHERE id=%s",
                                (next_slot, after_slot.isoformat(), schedule_id))
+            current_authority(connection,self.workspace_id,actor,"cycles:schedule")
+            current_authority(connection,self.workspace_id,actor)
 
 
 class CycleScheduleCutover(CycleAdmission):
@@ -268,7 +295,7 @@ class CycleScheduleCutover(CycleAdmission):
             else:
                 original = connection.execute("SELECT payload FROM v4_goal_revisions WHERE goal_id=%s AND revision=%s",
                                               (goal_id, row["goal_revision"])).fetchone()
-                original_spec = GoalSpecV2.model_validate(original["payload"])
+                original_spec = parse_goal(original["payload"])
                 interval = timedelta(seconds=original_spec.cadence.interval_seconds)
                 cursor = connection.execute("SELECT last_slot FROM v4_schedule_cursors WHERE goal_id=%s AND goal_revision=%s",
                                             (goal_id, row["goal_revision"])).fetchone()
@@ -281,7 +308,7 @@ class CycleScheduleCutover(CycleAdmission):
             row = self._row(connection, goal_id, lock=True)
             original = connection.execute("SELECT payload FROM v4_goal_revisions WHERE goal_id=%s AND revision=%s",
                                           (goal_id, row["goal_revision"])).fetchone()
-            original_spec = GoalSpecV2.model_validate(original["payload"])
+            original_spec = parse_goal(original["payload"])
             if goal["state"] != "active" or current_spec.cadence.interval_seconds != original_spec.cadence.interval_seconds:
                 raise ValueError("compatible active goal required before legacy resume")
             if self._stopped(connection, goal_id):
@@ -289,7 +316,7 @@ class CycleScheduleCutover(CycleAdmission):
             if self._unresolved(connection, goal_id, row["first_v4_slot"]):
                 raise ValueError("unresolved intents, outbox or permits hold legacy resume")
         try:
-            self.legacy_control.resume_after(row["legacy_schedule_id"], row["rollback_after_slot"])
+            self.legacy_control.resume_after(row["legacy_schedule_id"], row["rollback_after_slot"], subject_id=self.subject_id)
         except TimeoutError:
             pass
         snapshot = self.legacy_control.describe(row["legacy_schedule_id"])
@@ -325,6 +352,7 @@ class FixtureSchedulePoller:
         self.database_url = database_url
         self.workspace_id = UUID(str(workspace_id))
         self.batch_size = batch_size
+        self._after = None
 
     @staticmethod
     def _fixture_only():
@@ -336,20 +364,38 @@ class FixtureSchedulePoller:
         with psycopg.connect(self.database_url, row_factory=dict_row, connect_timeout=3) as connection:
             connection.execute("SET LOCAL statement_timeout='3s'")
             now = connection.execute("SELECT clock_timestamp() AS now").fetchone()["now"]
-            active = connection.execute("""
+            selection = """
                 SELECT cutover.goal_id,cutover.goal_revision,cutover.actor_id,cutover.first_v4_slot,
-                       cursor.last_slot,revision.payload
+                       cutover.created_at,cursor.last_slot,revision.payload
                 FROM v4_schedule_cutovers AS cutover
                 JOIN v4_schedule_cursors AS cursor ON cursor.goal_id=cutover.goal_id
                     AND cursor.goal_revision=cutover.goal_revision
                 JOIN v4_goal_revisions AS revision ON revision.goal_id=cutover.goal_id
                     AND revision.revision=cutover.goal_revision
                 WHERE cutover.workspace_id=%s AND cutover.state='active' AND cutover.first_v4_slot<=%s
-                ORDER BY cutover.created_at,cutover.goal_id LIMIT %s
-            """, (self.workspace_id, now, self.batch_size)).fetchall()
+            """
+            order = " ORDER BY cutover.created_at,cutover.goal_id LIMIT %s"
+            if self._after is None:
+                active = connection.execute(selection+order,(self.workspace_id,now,self.batch_size)).fetchall()
+            else:
+                active = connection.execute(selection+" AND (cutover.created_at,cutover.goal_id)>(%s,%s)"+order,
+                                            (self.workspace_id,now,*self._after,self.batch_size)).fetchall()
+                if len(active) < self.batch_size:
+                    active += connection.execute(selection+" AND (cutover.created_at,cutover.goal_id)<=(%s,%s)"+order,
+                                                 (self.workspace_id,now,*self._after,self.batch_size-len(active))).fetchall()
+            if active:
+                self._after = (active[-1]["created_at"],active[-1]["goal_id"])
             due = []
+            invalid = 0
             for row in active:
-                spec = GoalSpecV2.model_validate(row["payload"])
+                try:
+                    spec = parse_goal(row["payload"])
+                    if not isinstance(spec,GoalSpecV2):
+                        raise ValueError("typed cadence policy required")
+                except ValueError:
+                    LOGGER.warning("fixture schedule policy held for goal %s",row["goal_id"])
+                    invalid += 1
+                    continue
                 interval = timedelta(seconds=spec.cadence.interval_seconds)
                 latest = spec.cadence.anchor + ((now - spec.cadence.anchor) // interval) * interval
                 pending = connection.execute("""
@@ -363,7 +409,7 @@ class FixtureSchedulePoller:
                 """, (row["goal_id"], row["goal_revision"], row["first_v4_slot"])).fetchone()
                 if latest > row["last_slot"] or pending:
                     due.append((row, latest))
-        results = {"selected": len(due), "polled": 0, "admitted": 0, "held": 0}
+        results = {"selected": len(due), "polled": 0, "admitted": 0, "held": invalid}
         for row, latest in due:
             service = CycleScheduleCutover(self.database_url, workspace_id=self.workspace_id,
                                            subject_id=row["actor_id"])
