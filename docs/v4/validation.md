@@ -4,7 +4,17 @@
 <a id="current-evidence-summary--2026-09-24"></a>
 <a id="current-evidence-summary--2026-09-27"></a>
 
-## Current evidence summary — 2026-10-03 item-7 preparation
+## Current evidence summary — 2026-10-04 independent item 7 qualification
+
+**132 focused / 507 full non-live PASS**, zero failures/errors/skips, on frozen independently reviewed application `e49a214`;316 source hashes and 250 executed P1 fixture cases across all 17 requirements. Three reviewers independently reproduced/re-reviewed findings; their final dedicated tests are 13 admission / 15 governance / 17 runtime PASS. [Qualification report](item7-evidence.json), [review summary](item7-independent-review.md), [findings](item7-findings.json) and [matrix](p1-qualification-matrix.json) preserve actual commands/JUnit/log/source/reviewer hashes and remaining acceptance.
+
+The first root repair run had 107 PASS / 3 FAIL from stale downgrade-message and expected-head assertions, with preservation behaving correctly. Updated exact assertions are included in final 132 / 507 PASS. The first full run had 506 PASS / 1 FAIL because a historical baseline fixture lacked canonical identity metadata; the independently reviewed fixture correction retains the absent-baseline rejection and passes 10 baseline checks. Final 507 supersedes that run. Reviewer RED and follow-up expiry/closure/migration-race evidence remain recorded; no failed preliminary run is silently presented as final qualification. Fifteen documentation tests, 75 obligations, six negative controls, six fresh Mermaid 12 renders, four shell contracts and dependency consistency pass for this checkpoint.
+
+Item 7 independent implemented-fixture review is complete; production RG0/full RG1 remain HELD, effects disabled and main unmerged. Formal GitHub PR approval remains NOT RUN. The rolling [repository report](repository-enforcement-evidence.json) binds published base e572bc7 at 2026-10-04T01:23:04.307181+00:00; final feature HEAD is inspected after publication into `artifacts/v4-p0/item7/qualified-head-repository.json`. A documentation descendant preserves all 316 application hashes and needs its own required CI check.
+
+## Historical item 7 preparation snapshot — 2026-10-03
+
+The following entries retain their dated wording and earlier matrix/repository state. Current qualification and remaining acceptance are recorded above.
 
 Current item-7 local preparation/owner-binding qualification is **32 focused / 462 full non-live PASS**, zero failures/errors/skips, with 311 source files. [Preparation evidence](item7-preparation-evidence.json) records root local fixes and actual commands/hashes; the [17-requirement matrix](p1-qualification-matrix.json) maps 205 executed fixture cases. Independent full P1 review remains **NOT RUN**, with all outstanding production acceptance explicitly HELD. Completed item-6 85/456 evidence remains unchanged; RG0/RG1 HELD, effects disabled and main unmerged.
 

@@ -1,6 +1,6 @@
 {
   "phase": "P0",
-  "updated_at": "2026-10-03",
+  "updated_at": "2026-10-04",
   "baseline_commit": "8e50d68efbf2bec2aabfb2fe3226e01635de2adb",
   "scope": "Isolated local foundation; no production traffic or effects",
   "requirements": [
@@ -20,13 +20,13 @@
       "exit_code": 0
     },
     "full_non_live": {
-      "passed": 462,
-      "failed": 0,
+      "passed": 507,
       "errors": 0,
       "skipped": 0,
       "exit_code": 0,
-      "seconds": 449.077,
-      "junit": "artifacts/v4-p0/item7/final-regression.xml"
+      "seconds": 459.784,
+      "junit": "artifacts/v4-p0/item7/qualification-regression.xml",
+      "failed": 0
     },
     "documentation_tests": {
       "passed": 15,
@@ -40,22 +40,22 @@
       "failed": 0,
       "version": "12.0.0"
     },
-    "locked_evidence_files": 311,
+    "locked_evidence_files": 316,
     "original_inventory_dispositions": 360,
     "warning": "Pre-existing Starlette/AnyIO deprecation warning",
     "focused_p1": {
-      "passed": 32,
-      "failed": 0,
+      "passed": 132,
       "errors": 0,
       "skipped": 0,
       "exit_code": 0,
-      "seconds": 76.155,
-      "junit": "artifacts/v4-p0/item7/final-focused.xml",
-      "scope": "Owner binding, migration/restart/restore preparation; full regression covers every existing P1 verifier"
+      "seconds": 200.815,
+      "junit": "artifacts/v4-p0/item7/qualification-focused.xml",
+      "failed": 0,
+      "scope": "Impacted existing admission/revision/public/cutover/wait/migration/restart contracts and all 45 new independent review regressions; full 507 covers every existing verifier"
     },
-    "application_qualified_at": "2026-10-03",
-    "application_commit": "91784e75b3a0deeaac6c957150908845abe27f7d",
-    "application_scope": "Item-7 preparation/owner-binding candidate qualified from this published base; candidate publication/CI recorded separately"
+    "application_qualified_at": "2026-10-04",
+    "application_commit": "e49a214cd371d0417f093d3a24fa2a4f4a359e83",
+    "application_scope": "Exact application commit independently reviewed/re-reviewed and qualified; documentation descendants retain same 316 source hashes and need own published-head CI inspection"
   },
   "evidence_artifacts": [
     {
@@ -157,6 +157,11 @@
       "path": "docs/v4/item7-preparation-evidence.json",
       "sha256": "e4c20e32e4b05b0a3e40fb45ec907a3b87f722b22dea169b2e596e70f16c8054",
       "local_only": false
+    },
+    {
+      "path": "docs/v4/item7-evidence.json",
+      "sha256": "1ce1f3a6e6942c3eef5ebaa1198bbc614c28dee18fa8d66d59d01cf56627246d",
+      "local_only": false
     }
   ],
   "release_gate": "RG0",
@@ -186,11 +191,11 @@
     {
       "check": "remote repository gate enforcement",
       "status": "PASS",
-      "evidence": "Published preparation base 91784e75b3a0deeaac6c957150908845abe27f7d: verify and p0-regression PASS, strict app-bound main protection PASS at 2026-10-03T17:12:40.580583+00:00. Tracked read-only report binds this base only. The owner-binding candidate requires its own exact published-head inspection. Independent PR approval remains separately required; no main merge or production release."
+      "evidence": "Published preparation base e572bc7fe1b84db705b8c500aaebcf95f847023c: required verify/p0-regression and strict app-bound main protection PASS at 2026-10-04T01:23:04.307181+00:00. Rolling report binds that exact published base; final feature head requires separate inspection. Formal PR approval NOT RUN, no main merge or production release."
     }
   ],
   "later_phase_boundaries": {
-    "P1": "Reuse locally qualified items 1\u20136: admission/revisions/baseline, V2 policy/context, V3 fixture accounting, governance, automatic fixture outbox/mock trace, signed commands/cutover, compatible history replay/continuation and finite canonical waits/database notification receipts. Next item 7 independent full RG1 qualification; live legacy schedules/routing, policy/scoped remote reads, production providers/alerts and deployment routing remain gated.",
+    "P1": "Items 1\u20136 implemented locally; item 7 independently reviewed/repaired/re-reviewed, 132 focused / 507 full PASS. Complete retained RG0/RG1 production acceptance before later-phase release; live schedules/routing, current general policy/scoped remote reads, real providers/alerts and deployment contracts remain HELD.",
     "P2": "Production G1 provider charge/effect integration using the fixture-qualified allocation transfer contract, ready-package reference/outbox integration and enabled provider qualification",
     "P3": "Trial/evaluation isolation and separate strategy/capability namespaces",
     "P4": "Promotion/invalidation serialization; mandatory typed learning proposals with optional qualified semantic analyst",
@@ -229,7 +234,7 @@
     ]
   },
   "p1_increment": {
-    "name": "Local admission/outbox, revisions, approved baseline, V2/V3 fixture policy/accounting, item-3 stop/permit/cases, item-4 handoff/mock trace and item-5a/5b/5c signed fixture commands/cutover; item-6 compatible fixture runtime/waits/notification receipts",
+    "name": "Local admission/outbox, revisions, approved baseline, V2/V3 fixture policy/accounting, item-3 stop/permit/cases, item-4 handoff/mock trace and item-5a/5b/5c signed fixture commands/cutover; item-6 compatible fixture runtime/waits/notification receipts; item 7 independently reviewed and repaired local fixture contracts",
     "local_status": "PASS",
     "release_gate": "RG1",
     "release_status": "HELD",
@@ -253,14 +258,13 @@
       "R35",
       "R53"
     ],
-    "evidence": "docs/v4/item7-preparation-evidence.json",
+    "evidence": "docs/v4/item7-evidence.json",
     "remaining": [
       "General registry/provider eligibility beyond the approved no-effects fixture baseline; later capability and production qualification gates remain binding",
       "Production G1 provider charge identity and effect integration beyond the fixture-qualified transfer/reconciliation contract",
       "Production dispatcher/alert service, live Temporal legacy start/signal cutover, public V4 API-to-provider outbox integration and production typed delivery recovery beyond the automatic local fixture",
       "General policy/model authorization, live scheduler stop/fencing integration and separately scoped remote read-only reconciliation beyond fixture permits/cases/cutover",
-      "Deployment-specific supported worker routing/rollback, external durable alert delivery and independent full RG1 qualification beyond the local item-6 patch/timer/restore fixture",
-      "Item 7 independent full P1 review and re-review of all applicable fixes remains NOT RUN; successful local preparation is not independent approval"
+      "Deployment-specific supported worker routing/rollback, external durable alert delivery beyond the local item-6 patch/timer/restore fixture"
     ],
     "completed_queue_items": [
       1,
@@ -268,14 +272,17 @@
       3,
       4,
       5,
-      6
+      6,
+      7
     ],
     "completed_queue_subincrements": [
       "5a",
       "5b",
       "5c"
     ],
-    "next_queue_item": 7
+    "next_queue_item": null,
+    "next_action": "Complete outstanding RG0/RG1 production acceptance within separately authorized scope; P2\u2013P7 remain gated, optional P6 disabled",
+    "independent_review": "PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE"
   },
   "documentation_refresh": {
     "date": "2026-09-24",
@@ -305,7 +312,8 @@
     "date": "2026-09-27",
     "application_delta": "None relative to the already implemented item-1 working tree; all 285 source hashes preserved",
     "result": "PASS for bounded local item 1; RG0/full RG1 remain HELD",
-    "evidence": "docs/v4/cadence-policy-recheck-evidence.json"
+    "evidence": "docs/v4/cadence-policy-recheck-evidence.json",
+    "record_scope": "Historical dated inspection; current rolling report binds published preparation base e572bc7"
   },
   "documentation_reinspection": {
     "date": "2026-10-03",
@@ -336,7 +344,7 @@
       "fresh_mermaid_renders": "NOT RUN; all source blocks unchanged",
       "report": "docs/v4/validation.md#documentation-reinspection-verification--2026-10-03"
     },
-    "record_scope": "Historical pre-item-6 documentation checkpoint; current state is documentation_item6_refresh. Its repository inspection was superseded by the rolling report."
+    "record_scope": "Historical dated inspection; current rolling report binds published preparation base e572bc7"
   },
   "item6_checkpoint": {
     "recorded_at": "2026-10-03",
@@ -351,7 +359,8 @@
     "next_queue_item": 7,
     "production_effects_enabled": false,
     "main_merge": "NOT AUTHORIZED",
-    "published_commit": "03f3cb9cae589c1030cbf5562aab6d4d56b823f4"
+    "published_commit": "03f3cb9cae589c1030cbf5562aab6d4d56b823f4",
+    "record_scope": "Historical dated item-6 capture; current application qualification/review is item7_checkpoint. Original reports retain their original bytes and scope."
   },
   "item6_operator_checkpoint": {
     "recorded_at": "2026-10-03",
@@ -368,7 +377,8 @@
     "repository_inspected_at": "2026-10-03T16:15:00.103409+00:00",
     "repository_evidence": "docs/v4/repository-enforcement-evidence.json",
     "ci_run": "https://github.com/manojvermamv/Salience/actions/runs/37135536241",
-    "repository_sha256": "e454a54632462165c873230d8d6afbada36d36808f6c4b6444cfecf33fd036a5"
+    "repository_sha256": "e454a54632462165c873230d8d6afbada36d36808f6c4b6444cfecf33fd036a5",
+    "record_scope": "Historical dated item-6 capture; current application qualification/review is item7_checkpoint. Original reports retain their original bytes and scope."
   },
   "documentation_item6_refresh": {
     "date": "2026-10-03",
@@ -398,7 +408,7 @@
     "production_effects_enabled": false,
     "independent_review": "NOT RUN",
     "main_merge": "NOT AUTHORIZED",
-    "record_scope": "Historical completed item-6 documentation refresh; current application preparation is item7_preparation"
+    "record_scope": "Historical dated item-6 capture; current application qualification/review is item7_checkpoint. Original reports retain their original bytes and scope."
   },
   "item7_preparation": {
     "local_status": "PASS",
@@ -416,6 +426,57 @@
     "RG0": "HELD",
     "RG1": "HELD",
     "production_effects_enabled": false,
-    "main_merge": "NOT AUTHORIZED"
+    "main_merge": "NOT AUTHORIZED",
+    "record_scope": "Historical 2026-10-03 preparation for published e572bc7; current item7_checkpoint supersedes current-state claims"
+  },
+  "item7_checkpoint": {
+    "status": "COMPLETE_IMPLEMENTED_LOCAL_FIXTURE_QUALIFICATION",
+    "independent_review": "PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE",
+    "application_commit": "e49a214cd371d0417f093d3a24fa2a4f4a359e83",
+    "focused_tests": 132,
+    "full_non_live_tests": 507,
+    "p1_mapped_cases": 250,
+    "source_files": 316,
+    "evidence": "docs/v4/item7-evidence.json",
+    "matrix": "docs/v4/p1-qualification-matrix.json",
+    "review_reports": [
+      {
+        "reviewer": "admission",
+        "path": "docs/v4/item7-admission-review.json",
+        "sha256": "bd200cbf73c90393a57591e39ba8463cb5cd0b8c5279924778fe01487469cb67",
+        "reviewed_application_commit": "e49a214cd371d0417f093d3a24fa2a4f4a359e83",
+        "artifact_root": "artifacts/v4-p0/item7",
+        "status": "PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE"
+      },
+      {
+        "reviewer": "governance",
+        "path": "docs/v4/item7-governance-review.json",
+        "sha256": "cccb44d195fcc37ccd0782d5bc5ae18cbf7838cc6280fbfcffa48b65eca0bf37",
+        "reviewed_application_commit": "e49a214cd371d0417f093d3a24fa2a4f4a359e83",
+        "artifact_root": "artifacts/v4-p0/item7",
+        "status": "PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE"
+      },
+      {
+        "reviewer": "runtime",
+        "path": "docs/v4/item7-runtime-review.json",
+        "sha256": "410781b5e8d229a2d515a8ec439592a76fd3e1fc08277ede5fd24c3ae0b05f6c",
+        "reviewed_application_commit": "e49a214cd371d0417f093d3a24fa2a4f4a359e83",
+        "artifact_root": "artifacts/v4-p0/item7",
+        "status": "PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE"
+      }
+    ],
+    "next_queue_item": null,
+    "remaining_release_obligations": [
+      "General registry/provider eligibility beyond the approved no-effects fixture baseline; later capability and production qualification gates remain binding",
+      "Production G1 provider charge identity and effect integration beyond the fixture-qualified transfer/reconciliation contract",
+      "Production dispatcher/alert service, live Temporal legacy start/signal cutover, public V4 API-to-provider outbox integration and production typed delivery recovery beyond the automatic local fixture",
+      "General policy/model authorization, live scheduler stop/fencing integration and separately scoped remote read-only reconciliation beyond fixture permits/cases/cutover",
+      "Deployment-specific supported worker routing/rollback, external durable alert delivery beyond the local item-6 patch/timer/restore fixture"
+    ],
+    "production_effects_enabled": false,
+    "RG0": "HELD",
+    "RG1": "HELD",
+    "main_merge": "NOT AUTHORIZED",
+    "formal_pr_approval": "NOT RUN"
   }
 }

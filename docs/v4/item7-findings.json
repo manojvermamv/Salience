@@ -1,0 +1,306 @@
+{
+  "base_commit": "e572bc7fe1b84db705b8c500aaebcf95f847023c",
+  "qualified_application_commit": "e49a214cd371d0417f093d3a24fa2a4f4a359e83",
+  "scope": "Eight original published-head findings plus independently reproduced repair follow-ups; all resolved in local fixture scope",
+  "original_findings": [
+    {
+      "reviewer": "admission",
+      "initial_finding": {
+        "id": "AD01",
+        "severity": "High",
+        "priority": "P1",
+        "rows": [
+          "R05",
+          "R53"
+        ],
+        "file": "src/salience/cycles/admission.py",
+        "line": 101,
+        "related_locations": [
+          "src/salience/api/routes/v4_cycles.py:38",
+          "migrations/versions/0019_goal_revision_commands.py:27"
+        ],
+        "title": "An old state command retry can reactivate a later paused goal",
+        "trigger": "An active transition commits and its response is lost; a later authorized pause commits; the earlier caller retransmits the same active request.",
+        "invariant_broken": "Blueprint GoalService.transition expected revision and common mutable-pointer compare-and-set/idempotent command ordering. A retry must not supply renewed authority or reverse a newer pause.",
+        "reproduction": "Real PostgreSQL on an exclusively named disposable database migrated to published HEAD: paused -> active (lost response) -> paused -> duplicate active. Final state is active and goal revision remains unchanged. Existing public DTO accepts state alone.",
+        "reproduction_evidence": {
+          "tests": 2,
+          "failures": 2,
+          "xml": "artifacts/v4-p0/item7/admission-state-red.xml",
+          "xml_sha256": "596aaba925481ff375ccddc8356611412a26f3cad87239ca1a2819b47653a420",
+          "log": "artifacts/v4-p0/item7/admission-state-red.log",
+          "log_sha256": "4a6263ba331121c742f76ce55b7664049012fdddbd8fc4028eb9911374c33ccf"
+        },
+        "repair_requirement": "Require exact current goal revision plus a monotonic state revision, actor/input-bound immutable command key/receipt, atomic projection/event/receipt writes, SQL transition guard, and API/SDK/CLI parity. Exact receipt retry returns its historic result; competing stale commands conflict.",
+        "status": "CLOSED_BY_INDEPENDENT_EXACT_COMMIT_REVIEW",
+        "closed_at_commit": "ff3b9ddb0947f83bd5416053aa3f684290798c53",
+        "continued_closure_at_commit": "e49a214cd371d0417f093d3a24fa2a4f4a359e83"
+      },
+      "final_status": "RESOLVED",
+      "independent_final_report": "docs/v4/item7-admission-review.json"
+    },
+    {
+      "reviewer": "admission",
+      "initial_finding": {
+        "id": "AD02",
+        "severity": "Medium",
+        "priority": "P2",
+        "rows": [
+          "R10",
+          "R53"
+        ],
+        "file": "src/salience/cycles/authority.py",
+        "line": 30,
+        "related_locations": [
+          "src/salience/cycles/outbox.py:235",
+          "migrations/versions/0016_cycle_admission.py:59"
+        ],
+        "title": "Unsupported canonical context schemas inherit legacy authorization",
+        "trigger": "A stored context payload uses an unknown or missing schema version while retaining common fixture-only fields and a current baseline reference.",
+        "invariant_broken": "Unknown schema cannot be treated as compatible authoritative immutable context; missing typed authority/identity/deadline data must hold execution.",
+        "reproduction": "Actual PostgreSQL accepts a RunContext.local.v99 canonical context and cycle/outbox. CycleOutbox.consume returns recorded rather than held. A pure probe also returns True for {}, local.v99 and GoalSpec.local.v2 without any current-authority read.",
+        "reproduction_evidence": {
+          "tests": 1,
+          "failures": 1,
+          "xml": "artifacts/v4-p0/item7/admission-schema-red.xml",
+          "xml_sha256": "dfd2f2c8692d7769fd078ba4a1940625959a20bc53258684bb9f9dc25af3d097",
+          "log": "artifacts/v4-p0/item7/admission-schema-red.log",
+          "log_sha256": "021fbeefc04da9d53f22af57b9a6345e0af0c0699e14f4ddd90a9838b5d576e1"
+        },
+        "limits": "No public DTO bypass demonstrated. Normal goal/admission code generates recognized typed contexts. Reproduction requires malformed/unsupported canonical row insertion, a privilege already needed by fixture application roles, or a future unqualified writer. Production is disabled.",
+        "repair_requirement": "Explicitly identify supported legacy payload versions, validate recognized typed V2/V3 contexts fail closed, and reject unknown/missing/malformed schemas. Preserve genuine V1 compatibility: historical context column is RunContext.local.v1 but payload schema_version is GoalSpec.local.v1.",
+        "status": "CLOSED_BY_INDEPENDENT_EXACT_COMMIT_REVIEW",
+        "closed_at_commit": "ff3b9ddb0947f83bd5416053aa3f684290798c53",
+        "continued_closure_at_commit": "e49a214cd371d0417f093d3a24fa2a4f4a359e83"
+      },
+      "final_status": "RESOLVED",
+      "independent_final_report": "docs/v4/item7-admission-review.json"
+    },
+    {
+      "reviewer": "governance",
+      "initial_finding": {
+        "id": "GOV-01",
+        "severity": "P1",
+        "title": "Accepted V3 cutover payload terminates poller and cannot roll back",
+        "path": "src/salience/cycles/schedule_cutover.py",
+        "lines": [
+          271,
+          284,
+          352,
+          389
+        ],
+        "rows": [
+          "R08",
+          "R18"
+        ],
+        "trigger": "A GoalSpec.local.v3 cutover reaches poll_once or rollback. V3 subclasses V2, so cadence._policy_goal accepts it and prepare/activate persist it.",
+        "invariant": "Every accepted goal version must remain operable through automatic cadence and preservation-safe rollback.",
+        "reproduction": "test_accepted_v3_schedule_can_auto_poll_and_rollback[poll|rollback] creates actual V3 goal/budget and accepts prepare/activate. Both fail with schema_version literal_error and allocation extra_forbidden. ValidationError also escapes run_until_stopped and its TaskGroup.",
+        "repair": "Use canonical parse_goal and enforce V2 family, preserving V3 allocation. Contain per-goal invalid rows so one row cannot terminate the worker.",
+        "status": "CONFIRMED RED on reviewed HEAD"
+      },
+      "final_status": "RESOLVED",
+      "independent_final_report": "docs/v4/item7-governance-review.json"
+    },
+    {
+      "reviewer": "governance",
+      "initial_finding": {
+        "id": "GOV-02",
+        "severity": "P2",
+        "title": "LIMIT before due selection indefinitely starves later active goals",
+        "path": "src/salience/cycles/schedule_cutover.py",
+        "lines": [
+          339,
+          348,
+          364
+        ],
+        "rows": [
+          "R08"
+        ],
+        "trigger": "Earliest batch_size active cutovers are idle, stopped or revoked while a later cutover is due.",
+        "invariant": "Bounded independent cadence must eventually consider every eligible active goal.",
+        "reproduction": "test_bounded_poller_eventually_considers_goal_after_idle_or_held_window[idle|stopped|revoked] has two active same-workspace cutovers and batch_size=1. Three polls never admit the second goal.",
+        "repair": "Use bounded fair keyset scanning with advancement even for idle/held entries and wrap-around, or due-aware SQL plus fairness for poison/held goals. Test finite sweep bound.",
+        "status": "CONFIRMED RED on reviewed HEAD"
+      },
+      "final_status": "RESOLVED",
+      "independent_final_report": "docs/v4/item7-governance-review.json"
+    },
+    {
+      "reviewer": "governance",
+      "initial_finding": {
+        "id": "GOV-03",
+        "severity": "P1",
+        "title": "Stop committed after rollback precheck does not block legacy resume",
+        "path": "src/salience/cycles/schedule_cutover.py",
+        "lines": [
+          287,
+          291,
+          292,
+          298,
+          307
+        ],
+        "rows": [
+          "R18",
+          "R08",
+          "R13"
+        ],
+        "trigger": "Workspace or goal stop commits after rollback authorization transaction closes but before FixtureLegacyScheduleControl.resume_after mutates job_schedules.",
+        "invariant": "A committed current stop must deny new local legacy resume authority.",
+        "reproduction": "test_stop_committed_at_legacy_resume_boundary_keeps_schedule_paused[workspace|goal] hooks resume_after, commits set_stop, then invokes the real DB resume. Both return rolled_back without PermissionError and activate the stopped schedule.",
+        "repair": "Perform authority/goal/stop/unsafe-work checks and fixture resume atomically under canonical locks in its own mutation transaction. Preserve separate scoped remote boundary requirements for future Temporal control.",
+        "status": "CONFIRMED RED on reviewed HEAD"
+      },
+      "final_status": "RESOLVED",
+      "independent_final_report": "docs/v4/item7-governance-review.json"
+    },
+    {
+      "reviewer": "governance",
+      "initial_finding": {
+        "id": "GOV-04",
+        "severity": "P2",
+        "title": "Exact archive replay recomputes and changes committed disposition",
+        "path": "src/salience/cycles/governance.py",
+        "lines": [
+          428,
+          430,
+          460,
+          465
+        ],
+        "rows": [
+          "R35",
+          "R53"
+        ],
+        "trigger": "A reviewed/resumed intent expires before admission, its resolved case is terminalized and archived as expired, then late admission writes denied.",
+        "invariant": "An exact archive retry returns the immutable result originally committed.",
+        "reproduction": "test_archive_replay_keeps_original_expired_disposition_after_late_denial passes all real commands through first archive, then replay differs only disposition expired\u2192denied.",
+        "repair": "Replay immutable archived event/receipt disposition, or persist it in an additive archive receipt; never infer retry output from mutable/latest admission.",
+        "status": "CONFIRMED RED on reviewed HEAD"
+      },
+      "final_status": "RESOLVED",
+      "independent_final_report": "docs/v4/item7-governance-review.json"
+    },
+    {
+      "reviewer": "runtime",
+      "initial_finding": {
+        "id": "RT-01",
+        "severity": "P1 / Important",
+        "requirements": [
+          "R03",
+          "R32",
+          "R33"
+        ],
+        "path": "src/salience/cycles/outbox.py",
+        "line": 125,
+        "title": "Transport acknowledgment permanently strands a terminal failed cycle workflow",
+        "trigger": "Temporal accepts start, then fixture_runtime_binding exhausts its three bounded activity attempts (e.g. transient database outage); failed runtime later has healthy worker restart.",
+        "invariant": "Acknowledged handoff without canonical inbox cannot disappear from durable recovery after runtime failure; preserve cycle/context/operation and owned bounded disposition.",
+        "actual": "Actual Temporal WorkflowFailureError after three OperationalError attempts; worker restart and dispatch return leave outbox delivered, cycle runnable, inbox0, holds0, cases0, deadletters0.",
+        "repro": "tests/e2e/test_v4_item7_delivery_recovery.py::test_acknowledged_start_failure_has_canonical_recovery_after_worker_restart",
+        "fix_requirement": "Reconcile terminal cycle runtime failures into durable same-identity owned hold/case/dead-letter, or defer final consumption acknowledgment with safe failure reconciliation. Retain historical deliveries and never start duplicate logical operation. Test failure before binding/consume and after signal; current fixtures and replay remain compatible.",
+        "status": "REPAIRED; independently re-reviewed final worktree source and regression verified",
+        "rereview_requirement": "Bind final commit to recorded source hashes and applicable full regression before checkpoint; no PR or production approval"
+      },
+      "final_status": "RESOLVED",
+      "independent_final_report": "docs/v4/item7-runtime-review.json"
+    },
+    {
+      "reviewer": "runtime",
+      "initial_finding": {
+        "id": "RT-02",
+        "severity": "P1 / Important",
+        "requirements": [
+          "R03",
+          "R53"
+        ],
+        "path": "src/salience/cycles/outbox.py",
+        "line": 228,
+        "title": "Restricted scoped consumer commits an immutable receipt into a foreign cycle stream",
+        "trigger": "Restricted NOSUPERUSER/NOBYPASSRLS writer creates outbox with workspace/subject/goal/intent A and existing cycle B sequence2; foreign sequence1 already consumed; genuine CycleOutbox(workspace A).consume processes it.",
+        "invariant": "Blueprint 4.5 requires database constraints plus service same-parent scope binding; UUID existence does not establish tenant/goal scope. Local P1b states consumer checks canonical scope. Foreign cycle stream/audit must receive no receipt from A.",
+        "actual": "Independent FK checks accept mismatched outbox; consumer joins cycle only by id, returns held and commits one immutable inbox row into B and fixture_consumed event. Effect authority denies but canonical foreign receipt/audit is corrupted. Role explicitly cannot mutate identity_subjects/grants.",
+        "repro": "tests/e2e/test_v4_item7_delivery_recovery.py::test_restricted_outbox_writer_cannot_commit_a_foreign_cycle_receipt",
+        "fix_requirement": "Add same workspace/subject/goal/intent/cycle parent guard for outbox, matching inbox and event parent checks, plus defensive consumer binding before receipt. Apply additive migration with lock/preflight and hold corrupt existing history without rewriting; preserve downgrade guards.",
+        "status": "REPAIRED; independently re-reviewed final worktree source and regression verified",
+        "rereview_requirement": "Bind final commit to recorded source hashes and applicable full regression before checkpoint; no PR or production approval"
+      },
+      "final_status": "RESOLVED",
+      "independent_final_report": "docs/v4/item7-runtime-review.json"
+    }
+  ],
+  "repair_followups": [
+    {
+      "id": "GOV-03-related-revocation",
+      "severity": "P1",
+      "status": "RESOLVED",
+      "trigger": "cycles:write deny or program pause committed at actual resume boundary",
+      "red": "governance-rereview-red.xml:2 failed",
+      "fix": "Actual mutation now checks scheduler._policy_goal/current write/program under locks."
+    },
+    {
+      "id": "GOV-03-related-expiry",
+      "severity": "P1",
+      "status": "RESOLVED",
+      "trigger": "write or schedule grant expires during actual resume transaction lock delay",
+      "red": "governance-expiry-red.xml:2 failed",
+      "fix": "Both grants rechecked after legacy write, aborting transaction on expiry."
+    },
+    {
+      "id": "GOV-M01",
+      "severity": "P1",
+      "status": "RESOLVED",
+      "scope": "New candidate 0033 migration hardening; absent from original published HEAD",
+      "trigger": "No-op state receipt writer commits after history preflight under goals-only lock",
+      "red": "Private-PG manual command committed under old lock; actual migration regression negative control rejects injected original weaker lock without DDL.",
+      "fix": "Downgrade locks v4_goals and v4_goal_state_commands across preflight/DDL. Actual writer blocks until guard refuses downgrade, then commits receipt intact."
+    }
+  ],
+  "runtime_followups": {
+    "status": "PASS / no remaining confirmed correctness defects in assigned local runtime scope",
+    "base_reviewed_head": "e572bc7fe1b84db705b8c500aaebcf95f847023c",
+    "reviewed_source_state": "Exact commit e49a214cd371d0417f093d3a24fa2a4f4a359e83; runtime committed bytes match final independently tested SHA256 manifest; prior ff3b9dd certification retained",
+    "source_freeze": {
+      "path": "artifacts/v4-p0/item7/runtime-final-review-source.json",
+      "sha256": "8297dec0029c27e16408b39198a0201ca259f53373735ae93c4efc2c795f8bee",
+      "files": {
+        "src/salience/cycles/outbox.py": "3180162f766a6e30d3169f27811c3c8ecc650d7e61bfeb0323c352c6620a43f5",
+        "src/salience/cycles/runtime.py": "2f830bd4b374402c892d5ed4215f4c8e830650ab4318eb701273854ea805eed9",
+        "src/salience/cycles/runtime_waits.py": "bc4685271a0898b44d21fb1639f08405f21e06291c991b18bf7b97da78c6721f",
+        "src/salience/cycles/workflow.py": "fa8aff150b8ac11bb2c89517fba6e5ecba9462af3b57d7816cc5c90c797b7afd",
+        "src/salience/cycles/wait_workflow.py": "1d9a60ef51b9f09ba6b3162217d4259ea9e7ddac3b2a0cd220752a6336e211c3",
+        "migrations/versions/0031_runtime_waits.py": "b2a387e90380893a93eeff650d431b311d90a7e2d51c08b9da99e7d48a9d7272",
+        "migrations/versions/0032_runtime_hold_owner.py": "0b6f3e831d18b651bcc81565aadf5b2b1c663ffa9957c713d1ce4f42fb063e70",
+        "migrations/versions/0033_goal_state_commands.py": "704fdf239cfb452129ba677ba476cbdd52a897b778b141b9a0272bb71614c248",
+        "migrations/versions/0034_runtime_delivery_scope.py": "027448e0152eb050cdba1bc999bc2500b1a9fe9e7c46e8f020d8149a8818baa3",
+        "tests/e2e/test_v4_item7_delivery_recovery.py": "6e50b85ff18ee350cdbd0e06cc30106620fe4ca462a311f58651131e635ab7cf"
+      },
+      "unchanged_during_final_run": true
+    },
+    "command": ".venv/bin/python -m pytest -p no:cacheprovider tests/e2e/test_v4_item7_delivery_recovery.py -q --junitxml=artifacts/v4-p0/item7/runtime-rereview-final.xml",
+    "environment": "Uniquely named disposable PostgreSQL migrated head0034; explicit TEST_DATABASE_URL/private TEST_TEMPORAL_TARGET; random isolated Temporal queues; no server/container restart; disposable database/roles cleaned",
+    "final_suite": {
+      "tests": 17,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": "24.245",
+      "xml": "artifacts/v4-p0/item7/runtime-rereview-final.xml",
+      "xml_sha256": "67e5ef805ed25c2bbf66401ae1ba9216cee0b6be30cc187e5352f3f0901b1d96",
+      "log": "artifacts/v4-p0/item7/runtime-rereview-final.log",
+      "log_sha256": "1f95e20957d93b66cd41bbfc9ababf6dd619d45acf4e283f32c25c7c0f94457f"
+    },
+    "fix_verification": [
+      "Real Temporal binding/start consume/recovery signal exhausted failure now produces one original cycle/context/operation/owner hold and one event, held receipt, never a permit/adapter acceptance/second start or new run.",
+      "Authorized close after hold and before scanner observation records every original ordered receipt and delivered closure while preserving closed cycle and failed runtime identity.",
+      "Three-message scanner fairness covers running/error/failed statuses, UUID cursor wrap, restart, no hold from RPC/observation outage or wrong memo/workflow type.",
+      "SKIP LOCKED contiguous-prefix cases for lock at sequence1/2/3 return promptly without lock inversion or out-of-order immutable receipts; suffix finishes exactly once after unlock.",
+      "Ordinary dispatch polling revisits all-delivered held cycle with outstanding receipt after temporary message lock; no new command required.",
+      "Restricted role unable to edit identity can no longer insert/consume cross-workspace outbox; direct mismatched inbox binding rejected.",
+      "0034 serialized preflight preserves malformed retained outbox/inbox and version0033 unchanged on upgrade refusal; empty downgrade/reupgrade passes, valid populated downgrade refuses and preserves history."
+    ],
+    "production_release_status": "HELD",
+    "independent_pr_approval": "NOT GRANTED"
+  },
+  "production_acceptance": "HELD",
+  "formal_pr_approval": "NOT RUN"
+}

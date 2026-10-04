@@ -1,0 +1,817 @@
+{
+  "reviewed_base_commit": "e572bc7fe1b84db705b8c500aaebcf95f847023c",
+  "reviewed_revision": "uncommitted fix worktree, identified by exact SHA-256 source hashes; not a published-head or formal PR approval",
+  "reviewed_at": "2026-10-04T01:46:36.579386+00:00",
+  "source_sha256": {
+    "migrations/versions/0013_identity_boundary.py": "39021d73d4f23e02ff07a74b35f07742e35ac8321c61c96ed981979933fe7b64",
+    "migrations/versions/0014_object_inventory.py": "09956259c02a701ac1dd75e76c4b02e3bd5c564e4bded5819d29bac28678d165",
+    "migrations/versions/0015_identity_lock.py": "050eb9924235dc8733982501e8a8ca2a28afe6473246849919a443f4e23b1ec3",
+    "migrations/versions/0016_cycle_admission.py": "302f0dd59cdaa23ce487f09032e36083d2ebc9636b96afdf8f9cb0429544d7f9",
+    "migrations/versions/0017_cycle_identity_guards.py": "7edb440523a591ddb145859c1cf02390510842c620fcc5e2df653fc533d7ddcb",
+    "migrations/versions/0018_cycle_outbox.py": "e3aa49f53fe47eae4c894937110a6d27ee53705e781dd860011360b9ca99f6f7",
+    "migrations/versions/0019_goal_revision_commands.py": "8864769068cf0a8ed67dc5f73bd9d6d355ef064579ce0a153e84c2987737d0ee",
+    "migrations/versions/0020_goal_baselines.py": "a396146de518f58f5c816dc570585d29140e7a8a8b19ef40acc9edd9670e1386",
+    "migrations/versions/0021_cycle_policy.py": "b72f8ae9e973ceb5a766a309e32050affc438214bddc88277e88b05c340ec714",
+    "migrations/versions/0022_program_policy_lock.py": "0a233e4e2c823dd2da96bda893eb2f7675cb5ef566dd37b3c52319b6ae74b732",
+    "migrations/versions/0023_cycle_allocations.py": "34355929c3ef196a476fe16c8e1bd2d664bbe0770a5e1eaa09186cb0aa095617",
+    "migrations/versions/0024_allocation_guards.py": "626d3942eaeb0313a106e5238c097020db0b5b540a4478ae7ddeea1f15b3963e",
+    "migrations/versions/0025_accounting_categories.py": "2704047e69bff76985eedd798afebcd9a24e64d5ece349220749cd2c82becb9c",
+    "migrations/versions/0026_cycle_governance.py": "df53c60c07757bc34cfdd7c17c395f0aed082f3e5a8d81dca3461b91e59b1221",
+    "migrations/versions/0027_auto_dispatch_escalation.py": "16d4c8bfadcddd9c526b5c305e71f37f2c38bc5224363f313cbd8dabfb3702af",
+    "migrations/versions/0028_fixture_adapter_receipts.py": "6aedb2e4dde7ee9cf4e1350576cf93498a00500497bc2a994aa9fa06ef5b048a",
+    "migrations/versions/0029_goal_create_receipts.py": "070209967211d8735ea1b3355a967ca8565a86914dbb3f5359a02deb7196e7d4",
+    "migrations/versions/0030_v4_schedule_cutover.py": "f7ccbf9bbfdff6bc339e33f73c1c1a8cac93f7e8ae80dd51e24a098b28a355bc",
+    "migrations/versions/0031_runtime_waits.py": "b2a387e90380893a93eeff650d431b311d90a7e2d51c08b9da99e7d48a9d7272",
+    "migrations/versions/0032_runtime_hold_owner.py": "0b6f3e831d18b651bcc81565aadf5b2b1c663ffa9957c713d1ce4f42fb063e70",
+    "migrations/versions/0033_goal_state_commands.py": "704fdf239cfb452129ba677ba476cbdd52a897b778b141b9a0272bb71614c248",
+    "migrations/versions/0034_runtime_delivery_scope.py": "027448e0152eb050cdba1bc999bc2500b1a9fe9e7c46e8f020d8149a8818baa3",
+    "src/salience/api/p0.py": "25e2c3d3394841239ac26acab186b29dbcc28fecdbe3f51d4ec6adf8df6ce4ea",
+    "src/salience/api/routes/v4_cycles.py": "c9f6cf6369468dab9665c861e94b5f6db7dba7d1678dbee4bf290b54bf6180db",
+    "src/salience/cli.py": "a49db9110c9eaebedb730bfe457d6f60dc512d89c4d02e18b84407e56d0991b7",
+    "src/salience/cycles/admission.py": "49b6b21b888bb30fd025b5d88480dad30927a45d290874bd1e9273d6e2cb823a",
+    "src/salience/cycles/authority.py": "d8376eb12851e8b5853c5bf4afc61c94f31d433edb59e26aa3ad7002a891c51a",
+    "src/salience/cycles/baselines.py": "1e36dd950a55dbc3ed906cdf9a89d7f1d6f6118384721e52c01ddd68a4cd9963",
+    "src/salience/cycles/cadence.py": "3d651c5d1890b118befff55aaa5d7569a9637390be2082a03b83d68f376a2dc2",
+    "src/salience/cycles/contracts.py": "921d76487c9c8ebcac5497f2ea99f1f1c6dfc4463fac9fd80fc80918b533511a",
+    "src/salience/cycles/governance.py": "5ad9878f9b6fa12a272b6f819d76aa05a33821d0b849e8020691bcdd76b84821",
+    "src/salience/cycles/outbox.py": "3180162f766a6e30d3169f27811c3c8ecc650d7e61bfeb0323c352c6620a43f5",
+    "src/salience/cycles/runtime.py": "2f830bd4b374402c892d5ed4215f4c8e830650ab4318eb701273854ea805eed9",
+    "src/salience/cycles/runtime_waits.py": "bc4685271a0898b44d21fb1639f08405f21e06291c991b18bf7b97da78c6721f",
+    "src/salience/cycles/schedule_cutover.py": "2167fea392ae8d1e7c0611bbd4cccf4f808bef7c59e5922fc9878daaceaaa780",
+    "src/salience/cycles/wait_workflow.py": "1d9a60ef51b9f09ba6b3162217d4259ea9e7ddac3b2a0cd220752a6336e211c3",
+    "src/salience/cycles/workflow.py": "fa8aff150b8ac11bb2c89517fba6e5ecba9462af3b57d7816cc5c90c797b7afd",
+    "src/salience/governance/cycle_costs.py": "af8f58284ba233defeb14ff1d065b706ebf6756fd8c74afa5eb8c8507d87998e",
+    "src/salience/sdk/client.py": "8e5c4e6d3342c1bbc2187b82360fc364cc4728e8fe9eaca57826867ec1239a69",
+    "tests/integration/test_v4_cycle_governance.py": "b32b38fa7debcdb2a86993115098c5f481a41a25620e7492a803a8b5e09e1e8c",
+    "tests/integration/test_v4_item7_governance.py": "e55265e94111cbd00db2e33ede37682c9d3a5eb5806509300984cb2504f85d78",
+    "tests/integration/test_v4_public_commands.py": "5df09173378a61226a4bf90320c276adf77466012c475f5a4b4ff66599a374b9",
+    "tests/integration/test_v4_runtime_waits.py": "863ab80a21ec2410da084d2ba372045d57f1e52634b561e4622ad6a45ad2fba2",
+    "tests/integration/test_v4_schedule_cutover.py": "516ecf53490bc29cb9e736fdbc72edcb8794f95bebe348fd894e739c41a0ee4d"
+  },
+  "initial_review": "artifacts/v4-p0/item7/review-governance.json",
+  "outcome": "All confirmed original governance findings and follow-up actual-resume/migration preservation defects resolved for reviewed local fixture scope; no unresolved concrete local defect found in assigned rows. Production acceptance remains HELD.",
+  "original_findings": [
+    {
+      "id": "GOV-01",
+      "severity": "P1",
+      "status": "RESOLVED in reviewed source",
+      "repair": "Canonical parse_goal preserves accepted V3 allocation in polling/rollback; invalid per-goal policies are held without terminating poller."
+    },
+    {
+      "id": "GOV-02",
+      "severity": "P2",
+      "status": "RESOLVED in reviewed source",
+      "repair": "Transient keyset cursor advances every bounded scanned window, including idle/stopped/revoked entries, wrapping by immutable created_at/goal_id."
+    },
+    {
+      "id": "GOV-03",
+      "severity": "P1",
+      "status": "RESOLVED in reviewed source",
+      "repair": "Actual fixture resume transaction obtains current schedule/write authority, program/goal lock, canonical stop rows, exact cutover watermark and compatible same-program legacy row; authority expiry rechecked after write before commit."
+    },
+    {
+      "id": "GOV-04",
+      "severity": "P2",
+      "status": "RESOLVED in reviewed source",
+      "repair": "Exact archive replay returns original immutable archived-event payload."
+    }
+  ],
+  "followup_findings": [
+    {
+      "id": "GOV-03-related-revocation",
+      "severity": "P1",
+      "status": "RESOLVED",
+      "trigger": "cycles:write deny or program pause committed at actual resume boundary",
+      "red": "governance-rereview-red.xml:2 failed",
+      "fix": "Actual mutation now checks scheduler._policy_goal/current write/program under locks."
+    },
+    {
+      "id": "GOV-03-related-expiry",
+      "severity": "P1",
+      "status": "RESOLVED",
+      "trigger": "write or schedule grant expires during actual resume transaction lock delay",
+      "red": "governance-expiry-red.xml:2 failed",
+      "fix": "Both grants rechecked after legacy write, aborting transaction on expiry."
+    },
+    {
+      "id": "GOV-M01",
+      "severity": "P1",
+      "status": "RESOLVED",
+      "scope": "New candidate 0033 migration hardening; absent from original published HEAD",
+      "trigger": "No-op state receipt writer commits after history preflight under goals-only lock",
+      "red": "Private-PG manual command committed under old lock; actual migration regression negative control rejects injected original weaker lock without DDL.",
+      "fix": "Downgrade locks v4_goals and v4_goal_state_commands across preflight/DDL. Actual writer blocks until guard refuses downgrade, then commits receipt intact."
+    }
+  ],
+  "verification": {
+    "independent_regressions": {
+      "result": "15 PASS",
+      "seconds": 16.05,
+      "junit": "governance-final-green.xml",
+      "log": "governance-final-green.log",
+      "junit_sha256": "49e5b3f8ffcb33aacce0113d17e6e1eab3a3da85c8a53d79fac745ce0201dd67",
+      "log_sha256": "ff95366394b301e1de222fe2496d10e99188fb061cd1cc76aeca43593879efba"
+    },
+    "existing_assigned_suite": {
+      "result": "79 PASS,2 FAIL due new migration guard message assertions; 1 intentionally deselected actual Temporal trace case on dummy target",
+      "seconds": 65.26,
+      "junit": "governance-scope-regression.xml",
+      "log": "governance-scope-regression.log",
+      "junit_sha256": "4e52d02d28a652d0f161e477cf1f683a84cb024781eac3cec77fed51d06b59d2",
+      "log_sha256": "247b2ef9a2a6e8b7366acd928aa071d37d59d4a0eb9a3eb2ca2a445a7104370e"
+    },
+    "corrected_failed_assertions": {
+      "result": "2 PASS,23 deselected",
+      "seconds": 2.47,
+      "junit": "governance-rollback-green.xml",
+      "log": "governance-rollback-green.log",
+      "junit_sha256": "061502527c65656550655d74e58735410e2c8b4239bd4d62574310f024b5da3d",
+      "log_sha256": "b4bf7f13b48f82fa909c19bdb8dc2e2d8c0588b62af018b4dfec323d205bb08f"
+    },
+    "migration_negative_control": {
+      "result": "EXPECTED RED: weaker goals-only lock admits concurrent no-op writer after preflight; no DDL executed",
+      "script": "governance-migration-negative-control.py",
+      "log": "governance-migration-negative-control.log",
+      "log_sha256": "77789088fcb7944a7cd6e682cf3c892895c80467dea9b1f6514d41a54dc50fe3",
+      "script_sha256": "9203486f95a34989ab88b0dd25f0cc6902d6d44dff4b82698603d8827b52a71d"
+    },
+    "private_database": "v4_item7_governance_review through0034; no shared business-row or Temporal mutations",
+    "whitespace": "git diff --check PASS",
+    "test_file_frozen": true
+  },
+  "row_results": [
+    {
+      "id": "R15",
+      "outcome": "LOCAL FIXTURE SCOPE REVIEWED; confirmed local defects resolved; production acceptance HELD",
+      "remaining_release_obligations": "General versioned policy model, LLM-text denial and production effect gates remain unimplemented/HELD.",
+      "original_evidence": "PermitRequest/ReviewResponse constrain purpose/effect/account; governance.py:311\u2013344 binds owner, case revision, context, operation, artifact, account, purpose and expiry; 0026 preserves decisions. Public review uses separate cycles:review scope and exact key.",
+      "fix_recheck": "Hash-pinned current source plus independent15-case regression and existing assigned-suite evidence above."
+    },
+    {
+      "id": "R17",
+      "outcome": "LOCAL FIXTURE SCOPE REVIEWED; confirmed local defects resolved; production acceptance HELD",
+      "remaining_release_obligations": "Enabled real-provider stage/permit integration and provider reconciliation/idempotency are later release obligations; local one-send authority is not provider success.",
+      "original_evidence": "governance.py:123\u2013201 locks canonical goal/intent/cycle/claim then workspace/goal stop rows; grants serialize on identity; current pinned authority and baseline rechecked; V3 dispatch liability shares claim transaction; runtime.py:68\u201388 only invokes on true first claim.",
+      "fix_recheck": "Hash-pinned current source plus independent15-case regression and existing assigned-suite evidence above."
+    },
+    {
+      "id": "R18",
+      "outcome": "LOCAL FIXTURE SCOPE REVIEWED; confirmed local defects resolved; production acceptance HELD",
+      "remaining_release_obligations": "Live scheduler stop/cancellation/fencing and separately scoped remote read reconciliation remain unimplemented/HELD; these do not excuse the confirmed local fixture race.",
+      "original_evidence": "Current stop/authority DB fail closed for permit/resume; signed stops reuse same service; schedule rollback opens a gap before fixture resume.",
+      "fix_recheck": "Hash-pinned current source plus independent15-case regression and existing assigned-suite evidence above."
+    },
+    {
+      "id": "R32",
+      "outcome": "LOCAL FIXTURE SCOPE REVIEWED; confirmed local defects resolved; production acceptance HELD",
+      "remaining_release_obligations": "Production recovery/failure workers remain required; no remote reconciliation or material rework proof resolver is implemented.",
+      "original_evidence": "governance.py:249\u2013309 validates typed target/kind/failure, bounds owner/deadline/actions; reconciling and rework_due cannot become retry. 0031 adds bounded canonical waits and typed case deadline suspension; runtime_waits.py:fire changes existing case.",
+      "fix_recheck": "Hash-pinned current source plus independent15-case regression and existing assigned-suite evidence above."
+    },
+    {
+      "id": "R33",
+      "outcome": "LOCAL FIXTURE SCOPE REVIEWED; confirmed local defects resolved; production acceptance HELD",
+      "remaining_release_obligations": "Production stage-specific reauthorization/delivery remains unqualified; recovery delivery cannot imply a real effect permit.",
+      "original_evidence": "governance.py:347\u2013384 exact case receipt/CAS preserves existing intent or cycle/context/operation; authority/baseline/stop/deadline rechecked; recovery outbox and resolved state share one transaction. Public API/CLI/SDK reuse same commands.",
+      "fix_recheck": "Hash-pinned current source plus independent15-case regression and existing assigned-suite evidence above."
+    },
+    {
+      "id": "R34",
+      "outcome": "LOCAL FIXTURE SCOPE REVIEWED; confirmed local defects resolved; production acceptance HELD",
+      "remaining_release_obligations": "External alert/on-call delivery, human acknowledgment and deployment worker routing remain required.",
+      "original_evidence": "governance.py:311\u2013344 exact owner/context/artifact/version expiry decisions, :386\u2013421 deduplicated ack/escalation; runtime_waits.py uses PostgreSQL fixture acceptance receipt separate from human ack; 0031 makes bounded timers and immutable delivery guards.",
+      "fix_recheck": "Hash-pinned current source plus independent15-case regression and existing assigned-suite evidence above."
+    },
+    {
+      "id": "R35",
+      "outcome": "LOCAL FIXTURE SCOPE REVIEWED; confirmed local defects resolved; production acceptance HELD",
+      "remaining_release_obligations": "Rights-filtered discovery and later record families remain later qualification; local replay defect requires repair first.",
+      "original_evidence": "governance.py:432\u2013477 requires terminal disposition and records immutable reason/evidence/retention; one archive per case; exact replay response nevertheless derives latest disposition and changes after late denied admission.",
+      "fix_recheck": "Hash-pinned current source plus independent15-case regression and existing assigned-suite evidence above."
+    },
+    {
+      "id": "R08",
+      "outcome": "LOCAL FIXTURE SCOPE REVIEWED; confirmed local defects resolved; production acceptance HELD",
+      "remaining_release_obligations": "Live Temporal schedule fencing/monitoring and observation-independent production runtime remain HELD.",
+      "original_evidence": "Cadence command bounds catch-up/stale/backfill/overlap and canonical cursor/batches; 0030 fixture handoff pause/readback fences pending/rollback. Poller wrong version parser and unfair bounded selection plus unsafe local resume fail.",
+      "fix_recheck": "Hash-pinned current source plus independent15-case regression and existing assigned-suite evidence above."
+    },
+    {
+      "id": "R13",
+      "outcome": "LOCAL FIXTURE SCOPE REVIEWED; confirmed local defects resolved; production acceptance HELD",
+      "remaining_release_obligations": "Full enabled-version revocation integration and live schedule authority boundary remain release obligations. GOV-03 is current local stop authorization gap.",
+      "original_evidence": "Current grant edits lock identity via 0021; _command and context_authorized recheck current subject, program, pinned grant; frozen baseline revocation checked; nonowner fixtures receive narrow locks without authority mutation.",
+      "fix_recheck": "Hash-pinned current source plus independent15-case regression and existing assigned-suite evidence above."
+    },
+    {
+      "id": "R53",
+      "outcome": "LOCAL FIXTURE SCOPE REVIEWED; confirmed local defects resolved; production acceptance HELD",
+      "remaining_release_obligations": "Later record families require envelope tests; additive guard preservation does not imply production migration/restore qualification.",
+      "original_evidence": "0026 preserves stop commands/permits/review/archive/events and constrains transitions; 0030 guards cutover pointers and populated rollback; 0031 notification/wait receipts immutable; 0032 binds sequence-1 original owner with writer-serialized preflight/DDL and populated downgrade refusal. Archive stored event remains immutable while output fails exact replay.",
+      "fix_recheck": "Hash-pinned current source plus independent15-case regression and existing assigned-suite evidence above."
+    }
+  ],
+  "limits": [
+    "Review binds listed source hashes, not a subsequent unpublished or published head.",
+    "Bounded fair scanning uses transient per-poller cursor; process restart resets scanning position but canonical goal cursors/batches remain durable. Repeated crashes before one finite sweep are outside guaranteed continuous-process fairness.",
+    "Actual Temporal fixture trace case intentionally deselected because independently isolated DB checks use dummy target; root retains full-stack qualification responsibility.",
+    "Existing assigned suites verified as79 successful cases plus2 successful corrected-message reruns, not a separately rerun whole81-case green invocation.",
+    "No formal PR approval, merge authorization or production acceptance inferred."
+  ],
+  "release_state": {
+    "production_effects_enabled": false,
+    "RG0": "HELD",
+    "RG1": "HELD",
+    "main": "unmerged"
+  },
+  "final_exact_commit_review": {
+    "commit": "ff3b9ddb0947f83bd5416053aa3f684290798c53",
+    "reviewed_at": "2026-10-04T01:50:52.826381+00:00",
+    "publication_status": "committed locally; not pushed at review request",
+    "outcome": "All44 reviewed source/test files at exact commit match previously tested SHA-256 hashes byte-for-byte. No source changes since manifest; original findings and follow-up governance defects remain resolved. Local fixture assigned scopes reviewed, with production acceptance HELD.",
+    "assigned_rows": [
+      "R15",
+      "R17",
+      "R18",
+      "R32",
+      "R33",
+      "R34",
+      "R35"
+    ],
+    "crosscheck_rows": [
+      "R08",
+      "R13",
+      "R53"
+    ],
+    "hash_comparisons": [
+      {
+        "path": "migrations/versions/0013_identity_boundary.py",
+        "sha256": "39021d73d4f23e02ff07a74b35f07742e35ac8321c61c96ed981979933fe7b64",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "migrations/versions/0014_object_inventory.py",
+        "sha256": "09956259c02a701ac1dd75e76c4b02e3bd5c564e4bded5819d29bac28678d165",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "migrations/versions/0015_identity_lock.py",
+        "sha256": "050eb9924235dc8733982501e8a8ca2a28afe6473246849919a443f4e23b1ec3",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "migrations/versions/0016_cycle_admission.py",
+        "sha256": "302f0dd59cdaa23ce487f09032e36083d2ebc9636b96afdf8f9cb0429544d7f9",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "migrations/versions/0017_cycle_identity_guards.py",
+        "sha256": "7edb440523a591ddb145859c1cf02390510842c620fcc5e2df653fc533d7ddcb",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "migrations/versions/0018_cycle_outbox.py",
+        "sha256": "e3aa49f53fe47eae4c894937110a6d27ee53705e781dd860011360b9ca99f6f7",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "migrations/versions/0019_goal_revision_commands.py",
+        "sha256": "8864769068cf0a8ed67dc5f73bd9d6d355ef064579ce0a153e84c2987737d0ee",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "migrations/versions/0020_goal_baselines.py",
+        "sha256": "a396146de518f58f5c816dc570585d29140e7a8a8b19ef40acc9edd9670e1386",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "migrations/versions/0021_cycle_policy.py",
+        "sha256": "b72f8ae9e973ceb5a766a309e32050affc438214bddc88277e88b05c340ec714",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "migrations/versions/0022_program_policy_lock.py",
+        "sha256": "0a233e4e2c823dd2da96bda893eb2f7675cb5ef566dd37b3c52319b6ae74b732",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "migrations/versions/0023_cycle_allocations.py",
+        "sha256": "34355929c3ef196a476fe16c8e1bd2d664bbe0770a5e1eaa09186cb0aa095617",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "migrations/versions/0024_allocation_guards.py",
+        "sha256": "626d3942eaeb0313a106e5238c097020db0b5b540a4478ae7ddeea1f15b3963e",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "migrations/versions/0025_accounting_categories.py",
+        "sha256": "2704047e69bff76985eedd798afebcd9a24e64d5ece349220749cd2c82becb9c",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "migrations/versions/0026_cycle_governance.py",
+        "sha256": "df53c60c07757bc34cfdd7c17c395f0aed082f3e5a8d81dca3461b91e59b1221",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "migrations/versions/0027_auto_dispatch_escalation.py",
+        "sha256": "16d4c8bfadcddd9c526b5c305e71f37f2c38bc5224363f313cbd8dabfb3702af",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "migrations/versions/0028_fixture_adapter_receipts.py",
+        "sha256": "6aedb2e4dde7ee9cf4e1350576cf93498a00500497bc2a994aa9fa06ef5b048a",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "migrations/versions/0029_goal_create_receipts.py",
+        "sha256": "070209967211d8735ea1b3355a967ca8565a86914dbb3f5359a02deb7196e7d4",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "migrations/versions/0030_v4_schedule_cutover.py",
+        "sha256": "f7ccbf9bbfdff6bc339e33f73c1c1a8cac93f7e8ae80dd51e24a098b28a355bc",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "migrations/versions/0031_runtime_waits.py",
+        "sha256": "b2a387e90380893a93eeff650d431b311d90a7e2d51c08b9da99e7d48a9d7272",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "migrations/versions/0032_runtime_hold_owner.py",
+        "sha256": "0b6f3e831d18b651bcc81565aadf5b2b1c663ffa9957c713d1ce4f42fb063e70",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "migrations/versions/0033_goal_state_commands.py",
+        "sha256": "704fdf239cfb452129ba677ba476cbdd52a897b778b141b9a0272bb71614c248",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "migrations/versions/0034_runtime_delivery_scope.py",
+        "sha256": "027448e0152eb050cdba1bc999bc2500b1a9fe9e7c46e8f020d8149a8818baa3",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "src/salience/api/p0.py",
+        "sha256": "25e2c3d3394841239ac26acab186b29dbcc28fecdbe3f51d4ec6adf8df6ce4ea",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "src/salience/api/routes/v4_cycles.py",
+        "sha256": "c9f6cf6369468dab9665c861e94b5f6db7dba7d1678dbee4bf290b54bf6180db",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "src/salience/cli.py",
+        "sha256": "a49db9110c9eaebedb730bfe457d6f60dc512d89c4d02e18b84407e56d0991b7",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "src/salience/cycles/admission.py",
+        "sha256": "49b6b21b888bb30fd025b5d88480dad30927a45d290874bd1e9273d6e2cb823a",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "src/salience/cycles/authority.py",
+        "sha256": "d8376eb12851e8b5853c5bf4afc61c94f31d433edb59e26aa3ad7002a891c51a",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "src/salience/cycles/baselines.py",
+        "sha256": "1e36dd950a55dbc3ed906cdf9a89d7f1d6f6118384721e52c01ddd68a4cd9963",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "src/salience/cycles/cadence.py",
+        "sha256": "3d651c5d1890b118befff55aaa5d7569a9637390be2082a03b83d68f376a2dc2",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "src/salience/cycles/contracts.py",
+        "sha256": "921d76487c9c8ebcac5497f2ea99f1f1c6dfc4463fac9fd80fc80918b533511a",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "src/salience/cycles/governance.py",
+        "sha256": "5ad9878f9b6fa12a272b6f819d76aa05a33821d0b849e8020691bcdd76b84821",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "src/salience/cycles/outbox.py",
+        "sha256": "3180162f766a6e30d3169f27811c3c8ecc650d7e61bfeb0323c352c6620a43f5",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "src/salience/cycles/runtime.py",
+        "sha256": "2f830bd4b374402c892d5ed4215f4c8e830650ab4318eb701273854ea805eed9",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "src/salience/cycles/runtime_waits.py",
+        "sha256": "bc4685271a0898b44d21fb1639f08405f21e06291c991b18bf7b97da78c6721f",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "src/salience/cycles/schedule_cutover.py",
+        "sha256": "2167fea392ae8d1e7c0611bbd4cccf4f808bef7c59e5922fc9878daaceaaa780",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "src/salience/cycles/wait_workflow.py",
+        "sha256": "1d9a60ef51b9f09ba6b3162217d4259ea9e7ddac3b2a0cd220752a6336e211c3",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "src/salience/cycles/workflow.py",
+        "sha256": "fa8aff150b8ac11bb2c89517fba6e5ecba9462af3b57d7816cc5c90c797b7afd",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "src/salience/governance/cycle_costs.py",
+        "sha256": "af8f58284ba233defeb14ff1d065b706ebf6756fd8c74afa5eb8c8507d87998e",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "src/salience/sdk/client.py",
+        "sha256": "8e5c4e6d3342c1bbc2187b82360fc364cc4728e8fe9eaca57826867ec1239a69",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "tests/integration/test_v4_cycle_governance.py",
+        "sha256": "b32b38fa7debcdb2a86993115098c5f481a41a25620e7492a803a8b5e09e1e8c",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "tests/integration/test_v4_item7_governance.py",
+        "sha256": "e55265e94111cbd00db2e33ede37682c9d3a5eb5806509300984cb2504f85d78",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "tests/integration/test_v4_public_commands.py",
+        "sha256": "5df09173378a61226a4bf90320c276adf77466012c475f5a4b4ff66599a374b9",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "tests/integration/test_v4_runtime_waits.py",
+        "sha256": "863ab80a21ec2410da084d2ba372045d57f1e52634b561e4622ad6a45ad2fba2",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "tests/integration/test_v4_schedule_cutover.py",
+        "sha256": "516ecf53490bc29cb9e736fdbc72edcb8794f95bebe348fd894e739c41a0ee4d",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      }
+    ],
+    "new_test_run": "No redundant rerun needed: source bytes exactly match independent15-case PASS and79+2 existing-scope verification. Root is running focused/full frozen suite separately.",
+    "release_limits": [
+      "Local fixture acceptance only.",
+      "RG0 and production RG1 remain HELD, production effects disabled.",
+      "No remote provider/scheduler/reconciliation acceptance inferred.",
+      "No formal PR approval, repository check conclusion, merge authorization or published-head conclusion inferred."
+    ]
+  },
+  "final_qualification_commit_review": {
+    "commit": "e49a214cd371d0417f093d3a24fa2a4f4a359e83",
+    "reviewed_at": "2026-10-04T02:05:10.401183+00:00",
+    "earlier_exact_commit_retained": "ff3b9ddb0947f83bd5416053aa3f684290798c53",
+    "outcome": "All44 reviewed source/test blobs are byte-identical to the independently tested source. No unresolved concrete local governance finding in assigned scopes; all original/follow-up fixes remain resolved.",
+    "delta_since_earlier_commit": [
+      "docs/v4/evidence-lock.json",
+      "tests/integration/test_v4_baseline_approval.py"
+    ],
+    "delta_inspection": "Historical-context negative fixture adds canonical workspace_id/subject_id only. Its absent baseline approval remains the reason authorization must fail. Evidence lock refresh accounts for this test delta; no application behavior changed. Baseline reviewer/root execution evidence reported separately; no new tests required for unchanged governance scope.",
+    "hash_comparisons": [
+      {
+        "path": "migrations/versions/0013_identity_boundary.py",
+        "sha256": "39021d73d4f23e02ff07a74b35f07742e35ac8321c61c96ed981979933fe7b64",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "migrations/versions/0014_object_inventory.py",
+        "sha256": "09956259c02a701ac1dd75e76c4b02e3bd5c564e4bded5819d29bac28678d165",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "migrations/versions/0015_identity_lock.py",
+        "sha256": "050eb9924235dc8733982501e8a8ca2a28afe6473246849919a443f4e23b1ec3",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "migrations/versions/0016_cycle_admission.py",
+        "sha256": "302f0dd59cdaa23ce487f09032e36083d2ebc9636b96afdf8f9cb0429544d7f9",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "migrations/versions/0017_cycle_identity_guards.py",
+        "sha256": "7edb440523a591ddb145859c1cf02390510842c620fcc5e2df653fc533d7ddcb",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "migrations/versions/0018_cycle_outbox.py",
+        "sha256": "e3aa49f53fe47eae4c894937110a6d27ee53705e781dd860011360b9ca99f6f7",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "migrations/versions/0019_goal_revision_commands.py",
+        "sha256": "8864769068cf0a8ed67dc5f73bd9d6d355ef064579ce0a153e84c2987737d0ee",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "migrations/versions/0020_goal_baselines.py",
+        "sha256": "a396146de518f58f5c816dc570585d29140e7a8a8b19ef40acc9edd9670e1386",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "migrations/versions/0021_cycle_policy.py",
+        "sha256": "b72f8ae9e973ceb5a766a309e32050affc438214bddc88277e88b05c340ec714",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "migrations/versions/0022_program_policy_lock.py",
+        "sha256": "0a233e4e2c823dd2da96bda893eb2f7675cb5ef566dd37b3c52319b6ae74b732",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "migrations/versions/0023_cycle_allocations.py",
+        "sha256": "34355929c3ef196a476fe16c8e1bd2d664bbe0770a5e1eaa09186cb0aa095617",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "migrations/versions/0024_allocation_guards.py",
+        "sha256": "626d3942eaeb0313a106e5238c097020db0b5b540a4478ae7ddeea1f15b3963e",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "migrations/versions/0025_accounting_categories.py",
+        "sha256": "2704047e69bff76985eedd798afebcd9a24e64d5ece349220749cd2c82becb9c",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "migrations/versions/0026_cycle_governance.py",
+        "sha256": "df53c60c07757bc34cfdd7c17c395f0aed082f3e5a8d81dca3461b91e59b1221",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "migrations/versions/0027_auto_dispatch_escalation.py",
+        "sha256": "16d4c8bfadcddd9c526b5c305e71f37f2c38bc5224363f313cbd8dabfb3702af",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "migrations/versions/0028_fixture_adapter_receipts.py",
+        "sha256": "6aedb2e4dde7ee9cf4e1350576cf93498a00500497bc2a994aa9fa06ef5b048a",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "migrations/versions/0029_goal_create_receipts.py",
+        "sha256": "070209967211d8735ea1b3355a967ca8565a86914dbb3f5359a02deb7196e7d4",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "migrations/versions/0030_v4_schedule_cutover.py",
+        "sha256": "f7ccbf9bbfdff6bc339e33f73c1c1a8cac93f7e8ae80dd51e24a098b28a355bc",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "migrations/versions/0031_runtime_waits.py",
+        "sha256": "b2a387e90380893a93eeff650d431b311d90a7e2d51c08b9da99e7d48a9d7272",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "migrations/versions/0032_runtime_hold_owner.py",
+        "sha256": "0b6f3e831d18b651bcc81565aadf5b2b1c663ffa9957c713d1ce4f42fb063e70",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "migrations/versions/0033_goal_state_commands.py",
+        "sha256": "704fdf239cfb452129ba677ba476cbdd52a897b778b141b9a0272bb71614c248",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "migrations/versions/0034_runtime_delivery_scope.py",
+        "sha256": "027448e0152eb050cdba1bc999bc2500b1a9fe9e7c46e8f020d8149a8818baa3",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "src/salience/api/p0.py",
+        "sha256": "25e2c3d3394841239ac26acab186b29dbcc28fecdbe3f51d4ec6adf8df6ce4ea",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "src/salience/api/routes/v4_cycles.py",
+        "sha256": "c9f6cf6369468dab9665c861e94b5f6db7dba7d1678dbee4bf290b54bf6180db",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "src/salience/cli.py",
+        "sha256": "a49db9110c9eaebedb730bfe457d6f60dc512d89c4d02e18b84407e56d0991b7",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "src/salience/cycles/admission.py",
+        "sha256": "49b6b21b888bb30fd025b5d88480dad30927a45d290874bd1e9273d6e2cb823a",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "src/salience/cycles/authority.py",
+        "sha256": "d8376eb12851e8b5853c5bf4afc61c94f31d433edb59e26aa3ad7002a891c51a",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "src/salience/cycles/baselines.py",
+        "sha256": "1e36dd950a55dbc3ed906cdf9a89d7f1d6f6118384721e52c01ddd68a4cd9963",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "src/salience/cycles/cadence.py",
+        "sha256": "3d651c5d1890b118befff55aaa5d7569a9637390be2082a03b83d68f376a2dc2",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "src/salience/cycles/contracts.py",
+        "sha256": "921d76487c9c8ebcac5497f2ea99f1f1c6dfc4463fac9fd80fc80918b533511a",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "src/salience/cycles/governance.py",
+        "sha256": "5ad9878f9b6fa12a272b6f819d76aa05a33821d0b849e8020691bcdd76b84821",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "src/salience/cycles/outbox.py",
+        "sha256": "3180162f766a6e30d3169f27811c3c8ecc650d7e61bfeb0323c352c6620a43f5",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "src/salience/cycles/runtime.py",
+        "sha256": "2f830bd4b374402c892d5ed4215f4c8e830650ab4318eb701273854ea805eed9",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "src/salience/cycles/runtime_waits.py",
+        "sha256": "bc4685271a0898b44d21fb1639f08405f21e06291c991b18bf7b97da78c6721f",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "src/salience/cycles/schedule_cutover.py",
+        "sha256": "2167fea392ae8d1e7c0611bbd4cccf4f808bef7c59e5922fc9878daaceaaa780",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "src/salience/cycles/wait_workflow.py",
+        "sha256": "1d9a60ef51b9f09ba6b3162217d4259ea9e7ddac3b2a0cd220752a6336e211c3",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "src/salience/cycles/workflow.py",
+        "sha256": "fa8aff150b8ac11bb2c89517fba6e5ecba9462af3b57d7816cc5c90c797b7afd",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "src/salience/governance/cycle_costs.py",
+        "sha256": "af8f58284ba233defeb14ff1d065b706ebf6756fd8c74afa5eb8c8507d87998e",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "src/salience/sdk/client.py",
+        "sha256": "8e5c4e6d3342c1bbc2187b82360fc364cc4728e8fe9eaca57826867ec1239a69",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "tests/integration/test_v4_cycle_governance.py",
+        "sha256": "b32b38fa7debcdb2a86993115098c5f481a41a25620e7492a803a8b5e09e1e8c",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "tests/integration/test_v4_item7_governance.py",
+        "sha256": "e55265e94111cbd00db2e33ede37682c9d3a5eb5806509300984cb2504f85d78",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "tests/integration/test_v4_public_commands.py",
+        "sha256": "5df09173378a61226a4bf90320c276adf77466012c475f5a4b4ff66599a374b9",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "tests/integration/test_v4_runtime_waits.py",
+        "sha256": "863ab80a21ec2410da084d2ba372045d57f1e52634b561e4622ad6a45ad2fba2",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      },
+      {
+        "path": "tests/integration/test_v4_schedule_cutover.py",
+        "sha256": "516ecf53490bc29cb9e736fdbc72edcb8794f95bebe348fd894e739c41a0ee4d",
+        "matches_tested_source": true,
+        "matches_worktree": true
+      }
+    ],
+    "assigned_rows": [
+      "R15",
+      "R17",
+      "R18",
+      "R32",
+      "R33",
+      "R34",
+      "R35"
+    ],
+    "crosscheck_rows": [
+      "R08",
+      "R13",
+      "R53"
+    ],
+    "release_limits": [
+      "Local fixture review only.",
+      "Production effects disabled; RG0/production RG1 HELD.",
+      "Root final507-case regression is in progress at closure request; not claimed by this report.",
+      "No formal PR approval, published-head/repository acceptance or merge authorization inferred."
+    ]
+  }
+}

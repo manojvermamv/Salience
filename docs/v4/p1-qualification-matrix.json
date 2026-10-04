@@ -1,5 +1,5 @@
 {
-  "base_commit": "91784e75b3a0deeaac6c957150908845abe27f7d",
+  "base_commit": "e572bc7fe1b84db705b8c500aaebcf95f847023c",
   "requirements": [
     {
       "id": "R02",
@@ -9,11 +9,14 @@
       "acceptance": "Replay captured old histories on compatible worker; external I/O absent from coordinator; Continue-As-New preserves cycle/context/operation and finite history limits.",
       "migration_rollback": "M1: version workers and keep old replay path; drain or pin before rollback.",
       "gate": "RG1",
-      "executed_verifier_cases": 16,
+      "executed_verifier_cases": 33,
       "local_verifier_status": "PASS; covers implemented local fixtures, not unimplemented production acceptance",
-      "independent_review_status": "NOT RUN",
+      "independent_review_status": "PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE; production acceptance remains HELD",
       "production_release_status": "HELD",
-      "remaining_acceptance": "Independent whole-row review and deployment-specific compatible worker routing/drain/rollback qualification; local replay/continuation is already tested."
+      "remaining_acceptance": "deployment-specific compatible worker routing/drain/rollback qualification; local replay/continuation is already tested.",
+      "independent_review_evidence": [
+        "docs/v4/item7-runtime-review.json"
+      ]
     },
     {
       "id": "R03",
@@ -23,11 +26,14 @@
       "acceptance": "Local test_v4_outbox, test_v4_auto_dispatch and test_v4_outbox_recovery prove atomic enqueue, ordered bounded fixture dispatch, final-attempt escalation, consumer-ack loss, killed-worker restart and deduplication; item-5a public fixture admission/closure uses the same outbox, and item-5c cutover poll reuses it without a direct Temporal start. Live legacy start/signal conversion remains required.",
       "migration_rollback": "M1: shadow outbox then cut over dispatch, keep unacked rows/consumer ledger on rollback.",
       "gate": "RG1",
-      "executed_verifier_cases": 41,
+      "executed_verifier_cases": 58,
       "local_verifier_status": "PASS; covers implemented local fixtures, not unimplemented production acceptance",
-      "independent_review_status": "NOT RUN",
+      "independent_review_status": "PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE; production acceptance remains HELD",
       "production_release_status": "HELD",
-      "remaining_acceptance": "Independent whole-row review and conversion of remaining legacy API/scheduler direct start/signal dual writes into outbox transactions; production dispatch remains unqualified."
+      "remaining_acceptance": "conversion of remaining legacy API/scheduler direct start/signal dual writes into outbox transactions; production dispatch remains unqualified.",
+      "independent_review_evidence": [
+        "docs/v4/item7-runtime-review.json"
+      ]
     },
     {
       "id": "R05",
@@ -37,11 +43,14 @@
       "acceptance": "Local revision/baseline and test_v4_cadence_policy prove V2 program/account/channel/policy/resource/stop envelopes, exact retries, explicit fixture approval and no implicit trial; test_v4_cycle_accounting adds immutable V3 allocation policy and fixture G0 caps; items 5a\u20135b verify exact signed goal creation, revision/state and baseline revocation; production baseline qualification remains required.",
       "migration_rollback": "M1: new revisions, no authority inferred from program rows; disable new goals on rollback.",
       "gate": "RG1",
-      "executed_verifier_cases": 84,
+      "executed_verifier_cases": 97,
       "local_verifier_status": "PASS; covers implemented local fixtures, not unimplemented production acceptance",
-      "independent_review_status": "NOT RUN",
+      "independent_review_status": "PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE; production acceptance remains HELD",
       "production_release_status": "HELD",
-      "remaining_acceptance": "Independent whole-row review and production baseline/registry eligibility qualification beyond the explicitly approved no-effects fixture."
+      "remaining_acceptance": "production baseline/registry eligibility qualification beyond the explicitly approved no-effects fixture.",
+      "independent_review_evidence": [
+        "docs/v4/item7-admission-review.json"
+      ]
     },
     {
       "id": "R06",
@@ -53,9 +62,12 @@
       "gate": "RG1",
       "executed_verifier_cases": 56,
       "local_verifier_status": "PASS; covers implemented local fixtures, not unimplemented production acceptance",
-      "independent_review_status": "NOT RUN",
+      "independent_review_status": "PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE; production acceptance remains HELD",
       "production_release_status": "HELD",
-      "remaining_acceptance": "Independent whole-row review and production legacy slot/cycle mapping/cutover qualification beyond local signed fixture coalescing."
+      "remaining_acceptance": "production legacy slot/cycle mapping/cutover qualification beyond local signed fixture coalescing.",
+      "independent_review_evidence": [
+        "docs/v4/item7-admission-review.json"
+      ]
     },
     {
       "id": "R07",
@@ -67,9 +79,12 @@
       "gate": "RG1",
       "executed_verifier_cases": 76,
       "local_verifier_status": "PASS; covers implemented local fixtures, not unimplemented production acceptance",
-      "independent_review_status": "NOT RUN",
+      "independent_review_status": "PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE; production acceptance remains HELD",
       "production_release_status": "HELD",
-      "remaining_acceptance": "Independent whole-row review and production/stage authorization integration. Trial eligibility remains conditional on later trial enablement; current fixtures explicitly have no assignment."
+      "remaining_acceptance": "production/stage authorization integration. Trial eligibility remains conditional on later trial enablement; current fixtures explicitly have no assignment.",
+      "independent_review_evidence": [
+        "docs/v4/item7-admission-review.json"
+      ]
     },
     {
       "id": "R08",
@@ -79,11 +94,15 @@
       "acceptance": "Local cadence tests prove bounded skip/latest/catch-up, stale-slot denial, scoped reviewed backfill, overlap and capacity-aware coalescing. Item-5c opt-in independent fixture poller uses a durable first-V4 watermark, pause/readback and rollback fence; live Temporal conversion and observation-independent production execution remain required.",
       "migration_rollback": "M1: version schedules and convert slots at watermark; avoid dual old/new dispatch on rollback.",
       "gate": "RG1",
-      "executed_verifier_cases": 34,
+      "executed_verifier_cases": 49,
       "local_verifier_status": "PASS; covers implemented local fixtures, not unimplemented production acceptance",
-      "independent_review_status": "NOT RUN",
+      "independent_review_status": "PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE; production acceptance remains HELD",
       "production_release_status": "HELD",
-      "remaining_acceptance": "Independent whole-row review and live Temporal scheduling/fencing/monitoring qualification beyond the isolated job_schedules fixture poller."
+      "remaining_acceptance": "live Temporal scheduling/fencing/monitoring qualification beyond the isolated job_schedules fixture poller.",
+      "independent_review_evidence": [
+        "docs/v4/item7-admission-review.json",
+        "docs/v4/item7-governance-review.json"
+      ]
     },
     {
       "id": "R09",
@@ -95,9 +114,13 @@
       "gate": "RG1",
       "executed_verifier_cases": 39,
       "local_verifier_status": "PASS; covers implemented local fixtures, not unimplemented production acceptance",
-      "independent_review_status": "NOT RUN",
+      "independent_review_status": "PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE; production acceptance remains HELD",
       "production_release_status": "HELD",
-      "remaining_acceptance": "Independent whole-row review and production stage deferral/recovery qualification; local canonical identity and bounded timer tests pass."
+      "remaining_acceptance": "production stage deferral/recovery qualification; local canonical identity and bounded timer tests pass.",
+      "independent_review_evidence": [
+        "docs/v4/item7-admission-review.json",
+        "docs/v4/item7-runtime-review.json"
+      ]
     },
     {
       "id": "R10",
@@ -107,11 +130,14 @@
       "acceptance": "Local V2 tests validate typed immutable RunContext with canonical scope/IDs, current grant snapshot, approved bundle, trace/lineage, evidence cutoff and resource deadline; no assignment or fallback. Full candidate/plan and effect integration remain gated.",
       "migration_rollback": "M1: context sidecars with legacy_unknown; compatible readers keep original bundles.",
       "gate": "RG1",
-      "executed_verifier_cases": 77,
+      "executed_verifier_cases": 90,
       "local_verifier_status": "PASS; covers implemented local fixtures, not unimplemented production acceptance",
-      "independent_review_status": "NOT RUN",
+      "independent_review_status": "PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE; production acceptance remains HELD",
       "production_release_status": "HELD",
-      "remaining_acceptance": "Independent whole-row review and full candidate/plan/stage integration. Enabled effect/provider paths require their later production evidence."
+      "remaining_acceptance": "full candidate/plan/stage integration. Enabled effect/provider paths require their later production evidence.",
+      "independent_review_evidence": [
+        "docs/v4/item7-admission-review.json"
+      ]
     },
     {
       "id": "R13",
@@ -121,11 +147,15 @@
       "acceptance": "Local V2 non-owner/race tests serialize grant and program revocation, pin current authority, reject stale/expired recovery and hold consumption without rewriting context; item-3 fixture permits/reviews recheck current authority, baseline and frozen binding. Items 5a\u20135c signed public fixture commands and restricted non-owner roles recheck separate current schedule/review grants without authority UPDATE privilege; a revoked cutover actor auto-polls nothing. Full version revocation remains required.",
       "migration_rollback": "M1: append linked revisions/invalidations; do not restore revoked approval on rollback.",
       "gate": "RG1",
-      "executed_verifier_cases": 95,
+      "executed_verifier_cases": 123,
       "local_verifier_status": "PASS; covers implemented local fixtures, not unimplemented production acceptance",
-      "independent_review_status": "NOT RUN",
+      "independent_review_status": "PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE; production acceptance remains HELD",
       "production_release_status": "HELD",
-      "remaining_acceptance": "Independent whole-row review and complete enabled-version revocation integration; current grants/baselines/owner holds pass local tests. Later capability release families retain their phase gates."
+      "remaining_acceptance": "complete enabled-version revocation integration; current grants/baselines/owner holds pass local tests. Later capability release families retain their phase gates.",
+      "independent_review_evidence": [
+        "docs/v4/item7-admission-review.json",
+        "docs/v4/item7-governance-review.json"
+      ]
     },
     {
       "id": "R15",
@@ -137,9 +167,12 @@
       "gate": "RG1",
       "executed_verifier_cases": 32,
       "local_verifier_status": "PASS; covers implemented local fixtures, not unimplemented production acceptance",
-      "independent_review_status": "NOT RUN",
+      "independent_review_status": "PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE; production acceptance remains HELD",
       "production_release_status": "HELD",
-      "remaining_acceptance": "Independent whole-row review and general versioned policy/production effect gate qualification beyond typed fixture decisions; LLM text must supply no authority."
+      "remaining_acceptance": "general versioned policy/production effect gate qualification beyond typed fixture decisions; LLM text must supply no authority.",
+      "independent_review_evidence": [
+        "docs/v4/item7-governance-review.json"
+      ]
     },
     {
       "id": "R17",
@@ -151,9 +184,12 @@
       "gate": "RG1",
       "executed_verifier_cases": 53,
       "local_verifier_status": "PASS; covers implemented local fixtures, not unimplemented production acceptance",
-      "independent_review_status": "NOT RUN",
+      "independent_review_status": "PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE; production acceptance remains HELD",
       "production_release_status": "HELD",
-      "remaining_acceptance": "Independent whole-row review and enabled real-provider stage/permit integration beyond the single no-effects mock acceptance; production spend remains disabled."
+      "remaining_acceptance": "enabled real-provider stage/permit integration beyond the single no-effects mock acceptance; production spend remains disabled.",
+      "independent_review_evidence": [
+        "docs/v4/item7-governance-review.json"
+      ]
     },
     {
       "id": "R18",
@@ -163,11 +199,14 @@
       "acceptance": "Item-3 workspace/goal stop and item-5b signed stop commands deny new fixture claims/recovery under revoked authority; unavailable authority DB issues no permit. Item-5c fixture activation, auto poll and legacy resume hold on current stop; live scheduler cancellation and separately scoped remote reconciliation remain unimplemented release obligations.",
       "migration_rollback": "M1: stop revision persists across restart/rollback; renewed authority required to resume.",
       "gate": "RG1",
-      "executed_verifier_cases": 54,
+      "executed_verifier_cases": 69,
       "local_verifier_status": "PASS; covers implemented local fixtures, not unimplemented production acceptance",
-      "independent_review_status": "NOT RUN",
+      "independent_review_status": "PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE; production acceptance remains HELD",
       "production_release_status": "HELD",
-      "remaining_acceptance": "Independent whole-row review, live scheduler stop/cancellation/fencing and separately scoped remote read-only reconciliation beyond local stops/cutover."
+      "remaining_acceptance": "live scheduler stop/cancellation/fencing and separately scoped remote read-only reconciliation beyond local stops/cutover.",
+      "independent_review_evidence": [
+        "docs/v4/item7-governance-review.json"
+      ]
     },
     {
       "id": "R32",
@@ -177,11 +216,15 @@
       "acceptance": "Item-3 fixture cases and item-5b scoped signed case commands persist retry_due/reconciling/rework_due/awaiting_review/suspended/terminal/resolved with owner, deadline and bounded actions; reconciliation/rework cannot masquerade as retry, and pre-admission review targets the same intent. Item-6 fixture timers suspend existing cases at bounded deadlines; production recovery workers remain required.",
       "migration_rollback": "M1: cases reference existing identities; terminal cases stay closed on rollback.",
       "gate": "RG1",
-      "executed_verifier_cases": 57,
+      "executed_verifier_cases": 74,
       "local_verifier_status": "PASS; covers implemented local fixtures, not unimplemented production acceptance",
-      "independent_review_status": "NOT RUN",
+      "independent_review_status": "PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE; production acceptance remains HELD",
       "production_release_status": "HELD",
-      "remaining_acceptance": "Independent whole-row review and production typed recovery worker/failure delivery qualification beyond canonical fixture cases/timers."
+      "remaining_acceptance": "production typed recovery worker/failure delivery qualification beyond canonical fixture cases/timers.",
+      "independent_review_evidence": [
+        "docs/v4/item7-governance-review.json",
+        "docs/v4/item7-runtime-review.json"
+      ]
     },
     {
       "id": "R33",
@@ -191,11 +234,15 @@
       "acceptance": "Item-3 command CAS and item-5b signed resume route reject stale case/context/operation and resumes only the original intent revision or cycle/operation, with case state and recovery outbox atomic under injected crash; delivery and stage-specific production gate remain required.",
       "migration_rollback": "M1: command/inbox unique keys and original target IDs retained.",
       "gate": "RG1",
-      "executed_verifier_cases": 41,
+      "executed_verifier_cases": 58,
       "local_verifier_status": "PASS; covers implemented local fixtures, not unimplemented production acceptance",
-      "independent_review_status": "NOT RUN",
+      "independent_review_status": "PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE; production acceptance remains HELD",
       "production_release_status": "HELD",
-      "remaining_acceptance": "Independent whole-row review and production stage-specific reauthorization/delivery integration; local resume preserves original target/context/operation."
+      "remaining_acceptance": "production stage-specific reauthorization/delivery integration; local resume preserves original target/context/operation.",
+      "independent_review_evidence": [
+        "docs/v4/item7-governance-review.json",
+        "docs/v4/item7-runtime-review.json"
+      ]
     },
     {
       "id": "R34",
@@ -205,11 +252,15 @@
       "acceptance": "Item-3 owner/scope/revision/artifact binding and item-5b signed review/ack parity, immutable decision, deadline escalation and deduplicated acknowledgment pass PostgreSQL tests; item-6 durable fixture timers, deduplicated database notification acceptance and process-crash redelivery are qualified separately; external alert delivery remains required.",
       "migration_rollback": "M1: case-bound review/outbox, closure invalidates pending requests; preserve decision audit.",
       "gate": "RG1",
-      "executed_verifier_cases": 58,
+      "executed_verifier_cases": 75,
       "local_verifier_status": "PASS; covers implemented local fixtures, not unimplemented production acceptance",
-      "independent_review_status": "NOT RUN",
+      "independent_review_status": "PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE; production acceptance remains HELD",
       "production_release_status": "HELD",
-      "remaining_acceptance": "Independent whole-row review and external alert delivery/on-call qualification beyond PostgreSQL fixture acceptance; fixture acceptance is not human acknowledgment."
+      "remaining_acceptance": "external alert delivery/on-call qualification beyond PostgreSQL fixture acceptance; fixture acceptance is not human acknowledgment.",
+      "independent_review_evidence": [
+        "docs/v4/item7-governance-review.json",
+        "docs/v4/item7-runtime-review.json"
+      ]
     },
     {
       "id": "R35",
@@ -219,50 +270,61 @@
       "acceptance": "Item-3 archive and item-5b signed archive route reject pre-disposition calls, deduplicates committed reason/evidence/retention and preserves immutable history; rights-filtered discovery and later record families remain to qualify.",
       "migration_rollback": "M1: append archive records and lineage; reversible projection changes preserve originals.",
       "gate": "RG1",
-      "executed_verifier_cases": 32,
+      "executed_verifier_cases": 47,
       "local_verifier_status": "PASS; covers implemented local fixtures, not unimplemented production acceptance",
-      "independent_review_status": "NOT RUN",
+      "independent_review_status": "PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE; production acceptance remains HELD",
       "production_release_status": "HELD",
-      "remaining_acceptance": "Independent whole-row review. Current terminal archive/retention/idempotency is tested; rights-filtered discovery and later record families require their own later-phase qualification."
+      "remaining_acceptance": "Current terminal archive/retention/idempotency is tested; rights-filtered discovery and later record families require their own later-phase qualification.",
+      "independent_review_evidence": [
+        "docs/v4/item7-governance-review.json"
+      ]
     },
     {
       "id": "R53",
       "requirement": "\u00a710: schema envelope, unique business/events, superseding correction and audited mutable pointers",
       "phase": "P1",
       "dependencies": "P0,R03",
-      "acceptance": "Local V2/V3 DTO/SQL tests enforce immutable context and accounting receipts; migrations 0026\u20130032 add scoped stop/permit/case, cutover-transition and runtime-wait guards, unique dead-letter/fixture-acceptance events, immutable goal-create/runtime-hold/notification receipts and populated rollback refusal. Later record families still require envelope tests.",
+      "acceptance": "Local V2/V3 DTO/SQL tests enforce immutable context and accounting receipts; migrations 0026\u20130034 add scoped stop/permit/case, cutover-transition and runtime-wait guards, unique dead-letter/fixture-acceptance events, immutable goal-create/state/runtime-hold/notification receipts and canonical delivery scope and populated rollback refusal. Later record families still require envelope tests.",
       "migration_rollback": "M1: additive common envelope and exact-match migration; never invent historical scope.",
       "gate": "RG1",
-      "executed_verifier_cases": 101,
+      "executed_verifier_cases": 146,
       "local_verifier_status": "PASS; covers implemented local fixtures, not unimplemented production acceptance",
-      "independent_review_status": "NOT RUN",
+      "independent_review_status": "PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE; production acceptance remains HELD",
       "production_release_status": "HELD",
-      "remaining_acceptance": "Independent whole-row review. Current P1 common envelopes, immutability and additive 0032 ownership/rollback guards are locally tested; later record families require envelope tests in their assigned phases."
+      "remaining_acceptance": "Current P1 envelopes, immutable state/other command receipts, canonical delivery scope and additive 0032\u20130034 ownership/rollback guards are independently reviewed and locally tested; later record families require envelope tests in their assigned phases.",
+      "independent_review_evidence": [
+        "docs/v4/item7-admission-review.json",
+        "docs/v4/item7-governance-review.json",
+        "docs/v4/item7-runtime-review.json"
+      ]
     }
   ],
-  "review_status": "NOT RUN; reviewer-agent authorization or external reviewer required",
+  "review_status": "PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE; all 17 rows independently reviewed, findings repaired/re-reviewed; complete production RG1 acceptance HELD",
   "production_effects_enabled": false,
   "RG0": "HELD",
   "RG1": "HELD",
-  "source_lock_sha256": "3941865002a0549bc11f5a778c2a3849bf8dc383c2c5b13402490cd5b75bbe92",
+  "source_lock_sha256": "4daab8861eb63d21d5aad81dc5f6a45624f4f7dcc8ded7ebe2d5a8633548ff58",
   "verifiers": {
     "R02": [
       "tests/e2e/test_v4_worker_upgrade.py",
       "tests/e2e/test_v4_continuation_restart.py",
-      "tests/e2e/test_v4_outbox_recovery.py"
+      "tests/e2e/test_v4_outbox_recovery.py",
+      "tests/e2e/test_v4_item7_delivery_recovery.py"
     ],
     "R03": [
       "tests/integration/test_v4_outbox.py",
       "tests/integration/test_v4_auto_dispatch.py",
       "tests/integration/test_v4_public_commands.py",
-      "tests/e2e/test_v4_outbox_recovery.py"
+      "tests/e2e/test_v4_outbox_recovery.py",
+      "tests/e2e/test_v4_item7_delivery_recovery.py"
     ],
     "R05": [
       "tests/integration/test_v4_goal_revisions.py",
       "tests/integration/test_v4_baseline_approval.py",
       "tests/integration/test_v4_cadence_policy.py",
       "tests/integration/test_v4_cycle_accounting.py",
-      "tests/integration/test_v4_public_commands.py"
+      "tests/integration/test_v4_public_commands.py",
+      "tests/integration/test_v4_item7_admission.py"
     ],
     "R06": [
       "tests/integration/test_v4_cycle_admission.py",
@@ -278,7 +340,8 @@
     ],
     "R08": [
       "tests/integration/test_v4_cadence_policy.py",
-      "tests/integration/test_v4_schedule_cutover.py"
+      "tests/integration/test_v4_schedule_cutover.py",
+      "tests/integration/test_v4_item7_governance.py"
     ],
     "R09": [
       "tests/integration/test_v4_cycle_admission.py",
@@ -288,14 +351,17 @@
     "R10": [
       "tests/integration/test_v4_cadence_policy.py",
       "tests/integration/test_v4_cycle_accounting.py",
-      "tests/integration/test_v4_runtime_waits.py"
+      "tests/integration/test_v4_runtime_waits.py",
+      "tests/integration/test_v4_item7_admission.py"
     ],
     "R13": [
       "tests/integration/test_v4_identity_isolation.py",
       "tests/integration/test_v4_cadence_policy.py",
       "tests/integration/test_v4_cycle_governance.py",
       "tests/integration/test_v4_public_commands.py",
-      "tests/integration/test_v4_runtime_waits.py"
+      "tests/integration/test_v4_runtime_waits.py",
+      "tests/integration/test_v4_item7_admission.py",
+      "tests/integration/test_v4_item7_governance.py"
     ],
     "R15": [
       "tests/integration/test_v4_cycle_governance.py",
@@ -309,27 +375,32 @@
     "R18": [
       "tests/integration/test_v4_cycle_governance.py",
       "tests/integration/test_v4_schedule_cutover.py",
-      "tests/integration/test_v4_runtime_waits.py"
+      "tests/integration/test_v4_runtime_waits.py",
+      "tests/integration/test_v4_item7_governance.py"
     ],
     "R32": [
       "tests/integration/test_v4_cycle_governance.py",
       "tests/integration/test_v4_runtime_waits.py",
-      "tests/integration/test_v4_public_commands.py"
+      "tests/integration/test_v4_public_commands.py",
+      "tests/e2e/test_v4_item7_delivery_recovery.py"
     ],
     "R33": [
       "tests/integration/test_v4_cycle_governance.py",
       "tests/integration/test_v4_public_commands.py",
-      "tests/e2e/test_v4_outbox_recovery.py"
+      "tests/e2e/test_v4_outbox_recovery.py",
+      "tests/e2e/test_v4_item7_delivery_recovery.py"
     ],
     "R34": [
       "tests/integration/test_v4_cycle_governance.py",
       "tests/integration/test_v4_runtime_waits.py",
       "tests/e2e/test_v4_wait_restart.py",
-      "tests/integration/test_v4_public_commands.py"
+      "tests/integration/test_v4_public_commands.py",
+      "tests/e2e/test_v4_item7_delivery_recovery.py"
     ],
     "R35": [
       "tests/integration/test_v4_cycle_governance.py",
-      "tests/integration/test_v4_public_commands.py"
+      "tests/integration/test_v4_public_commands.py",
+      "tests/integration/test_v4_item7_governance.py"
     ],
     "R53": [
       "tests/integration/test_v4_migrations.py",
@@ -337,7 +408,10 @@
       "tests/integration/test_v4_cycle_accounting.py",
       "tests/integration/test_v4_cycle_governance.py",
       "tests/integration/test_v4_public_commands.py",
-      "tests/integration/test_v4_schedule_cutover.py"
+      "tests/integration/test_v4_schedule_cutover.py",
+      "tests/integration/test_v4_item7_admission.py",
+      "tests/integration/test_v4_item7_governance.py",
+      "tests/e2e/test_v4_item7_delivery_recovery.py"
     ]
   },
   "baseline_suite": {
@@ -351,17 +425,45 @@
     "p1_mapped_cases": 199
   },
   "current_qualification": {
-    "evidence": "docs/v4/item7-preparation-evidence.json",
-    "full_non_live_tests": 462,
-    "p1_mapped_cases": 205,
-    "source_files": 311,
-    "status": "LOCAL PASS; independent full review NOT RUN; RG1 HELD"
+    "evidence": "docs/v4/item7-evidence.json",
+    "full_non_live_tests": 507,
+    "focused_tests": 132,
+    "p1_mapped_cases": 250,
+    "source_files": 316,
+    "status": "PASS independent implemented-fixture qualification; RG0/RG1 HELD"
   },
   "remaining_release_obligations": [
     "General registry/provider eligibility beyond the approved no-effects fixture baseline; later capability and production qualification gates remain binding",
     "Production G1 provider charge identity and effect integration beyond the fixture-qualified transfer/reconciliation contract",
     "Production dispatcher/alert service, live Temporal legacy start/signal cutover, public V4 API-to-provider outbox integration and production typed delivery recovery beyond the automatic local fixture",
     "General policy/model authorization, live scheduler stop/fencing integration and separately scoped remote read-only reconciliation beyond fixture permits/cases/cutover",
-    "Deployment-specific supported worker routing/rollback, external durable alert delivery and independent full RG1 qualification beyond the local item-6 patch/timer/restore fixture"
+    "Deployment-specific supported worker routing/rollback, external durable alert delivery beyond the local item-6 patch/timer/restore fixture"
+  ],
+  "qualified_application_commit": "e49a214cd371d0417f093d3a24fa2a4f4a359e83",
+  "independent_review_reports": [
+    {
+      "reviewer": "admission",
+      "path": "docs/v4/item7-admission-review.json",
+      "sha256": "bd200cbf73c90393a57591e39ba8463cb5cd0b8c5279924778fe01487469cb67",
+      "reviewed_application_commit": "e49a214cd371d0417f093d3a24fa2a4f4a359e83",
+      "artifact_root": "artifacts/v4-p0/item7",
+      "status": "PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE"
+    },
+    {
+      "reviewer": "governance",
+      "path": "docs/v4/item7-governance-review.json",
+      "sha256": "cccb44d195fcc37ccd0782d5bc5ae18cbf7838cc6280fbfcffa48b65eca0bf37",
+      "reviewed_application_commit": "e49a214cd371d0417f093d3a24fa2a4f4a359e83",
+      "artifact_root": "artifacts/v4-p0/item7",
+      "status": "PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE"
+    },
+    {
+      "reviewer": "runtime",
+      "path": "docs/v4/item7-runtime-review.json",
+      "sha256": "410781b5e8d229a2d515a8ec439592a76fd3e1fc08277ede5fd24c3ae0b05f6c",
+      "reviewed_application_commit": "e49a214cd371d0417f093d3a24fa2a4f4a359e83",
+      "artifact_root": "artifacts/v4-p0/item7",
+      "status": "PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE"
+    }
   ]
 }

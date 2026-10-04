@@ -1,6 +1,6 @@
 {
-  "inspected_at": "2026-10-03T17:12:40.580583+00:00",
-  "commit": "91784e75b3a0deeaac6c957150908845abe27f7d",
+  "inspected_at": "2026-10-04T01:23:04.307181+00:00",
+  "commit": "e572bc7fe1b84db705b8c500aaebcf95f847023c",
   "enforcement_status": "PASS",
   "ci_status": "PASS",
   "merge_status": "CHECKS PASS; independent PR approval still required",
@@ -70,27 +70,27 @@
       "total_count": 2,
       "check_runs": [
         {
-          "id": 111248700601,
-          "name": "verify",
-          "node_id": "CR_kwDOUX1alM8AAAAZ5vB0uQ",
-          "head_sha": "91784e75b3a0deeaac6c957150908845abe27f7d",
-          "external_id": "0a4975ab-5356-5962-ba0d-ebaff7c9dd63",
-          "url": "https://api.github.com/repos/manojvermamv/Salience/check-runs/111248700601",
-          "html_url": "https://github.com/manojvermamv/Salience/actions/runs/37138781741/job/111248700601",
-          "details_url": "https://github.com/manojvermamv/Salience/actions/runs/37138781741/job/111248700601",
+          "id": 111263229817,
+          "name": "p0-regression",
+          "node_id": "CR_kwDOUX1alM8AAAAZ584neQ",
+          "head_sha": "e572bc7fe1b84db705b8c500aaebcf95f847023c",
+          "external_id": "bae1994c-c6ef-5db5-a0c8-cefae7b43197",
+          "url": "https://api.github.com/repos/manojvermamv/Salience/check-runs/111263229817",
+          "html_url": "https://github.com/manojvermamv/Salience/actions/runs/37143705539/job/111263229817",
+          "details_url": "https://github.com/manojvermamv/Salience/actions/runs/37143705539/job/111263229817",
           "status": "completed",
           "conclusion": "success",
-          "started_at": "2026-10-03T16:58:04Z",
-          "completed_at": "2026-10-03T16:58:08Z",
+          "started_at": "2026-10-03T18:18:39Z",
+          "completed_at": "2026-10-03T18:25:45Z",
           "output": {
             "title": null,
             "summary": null,
             "text": null,
             "annotations_count": 2,
-            "annotations_url": "https://api.github.com/repos/manojvermamv/Salience/check-runs/111248700601/annotations"
+            "annotations_url": "https://api.github.com/repos/manojvermamv/Salience/check-runs/111263229817/annotations"
           },
           "check_suite": {
-            "id": 100598221980
+            "id": 100611701088
           },
           "app": {
             "id": 15368,
@@ -185,27 +185,27 @@
           "pull_requests": []
         },
         {
-          "id": 111248700371,
-          "name": "p0-regression",
-          "node_id": "CR_kwDOUX1alM8AAAAZ5vBz0w",
-          "head_sha": "91784e75b3a0deeaac6c957150908845abe27f7d",
-          "external_id": "55d4ef47-1373-571d-ac16-c3df39b7589d",
-          "url": "https://api.github.com/repos/manojvermamv/Salience/check-runs/111248700371",
-          "html_url": "https://github.com/manojvermamv/Salience/actions/runs/37138781741/job/111248700371",
-          "details_url": "https://github.com/manojvermamv/Salience/actions/runs/37138781741/job/111248700371",
+          "id": 111263229634,
+          "name": "verify",
+          "node_id": "CR_kwDOUX1alM8AAAAZ584mwg",
+          "head_sha": "e572bc7fe1b84db705b8c500aaebcf95f847023c",
+          "external_id": "d4169a82-f06c-5a23-a2e2-bd540636cffd",
+          "url": "https://api.github.com/repos/manojvermamv/Salience/check-runs/111263229634",
+          "html_url": "https://github.com/manojvermamv/Salience/actions/runs/37143705539/job/111263229634",
+          "details_url": "https://github.com/manojvermamv/Salience/actions/runs/37143705539/job/111263229634",
           "status": "completed",
           "conclusion": "success",
-          "started_at": "2026-10-03T16:58:03Z",
-          "completed_at": "2026-10-03T17:05:57Z",
+          "started_at": "2026-10-03T18:18:39Z",
+          "completed_at": "2026-10-03T18:18:43Z",
           "output": {
             "title": null,
             "summary": null,
             "text": null,
             "annotations_count": 2,
-            "annotations_url": "https://api.github.com/repos/manojvermamv/Salience/check-runs/111248700371/annotations"
+            "annotations_url": "https://api.github.com/repos/manojvermamv/Salience/check-runs/111263229634/annotations"
           },
           "check_suite": {
-            "id": 100598221980
+            "id": 100611701088
           },
           "app": {
             "id": 15368,

@@ -1,0 +1,513 @@
+{
+  "reviewed_head": "e49a214cd371d0417f093d3a24fa2a4f4a359e83",
+  "reviewer": "independent admission/revisions/baselines/cadence/context/authorization/accounting/schema reviewer",
+  "scope": {
+    "rows": [
+      "R05",
+      "R06",
+      "R07",
+      "R08",
+      "R09",
+      "R10",
+      "R13",
+      "R53"
+    ],
+    "implemented_items": "P1 items1\u20136 plus published item7 preparation guard; defects separated from deferred production/later-phase obligations",
+    "permissions": "Original review read-only; root then explicitly authorized new regression file and uniquely named disposable PostgreSQL DB. Shared salience DB and Temporal were not mutated.",
+    "app_or_docs_edits_by_reviewer": false,
+    "reviewer_test_file": "tests/integration/test_v4_item7_admission.py",
+    "additional_agents": false
+  },
+  "findings": [
+    {
+      "id": "AD01",
+      "severity": "High",
+      "priority": "P1",
+      "rows": [
+        "R05",
+        "R53"
+      ],
+      "file": "src/salience/cycles/admission.py",
+      "line": 101,
+      "related_locations": [
+        "src/salience/api/routes/v4_cycles.py:38",
+        "migrations/versions/0019_goal_revision_commands.py:27"
+      ],
+      "title": "An old state command retry can reactivate a later paused goal",
+      "trigger": "An active transition commits and its response is lost; a later authorized pause commits; the earlier caller retransmits the same active request.",
+      "invariant_broken": "Blueprint GoalService.transition expected revision and common mutable-pointer compare-and-set/idempotent command ordering. A retry must not supply renewed authority or reverse a newer pause.",
+      "reproduction": "Real PostgreSQL on an exclusively named disposable database migrated to published HEAD: paused -> active (lost response) -> paused -> duplicate active. Final state is active and goal revision remains unchanged. Existing public DTO accepts state alone.",
+      "reproduction_evidence": {
+        "tests": 2,
+        "failures": 2,
+        "xml": "artifacts/v4-p0/item7/admission-state-red.xml",
+        "xml_sha256": "596aaba925481ff375ccddc8356611412a26f3cad87239ca1a2819b47653a420",
+        "log": "artifacts/v4-p0/item7/admission-state-red.log",
+        "log_sha256": "4a6263ba331121c742f76ce55b7664049012fdddbd8fc4028eb9911374c33ccf"
+      },
+      "repair_requirement": "Require exact current goal revision plus a monotonic state revision, actor/input-bound immutable command key/receipt, atomic projection/event/receipt writes, SQL transition guard, and API/SDK/CLI parity. Exact receipt retry returns its historic result; competing stale commands conflict.",
+      "status": "CLOSED_BY_INDEPENDENT_EXACT_COMMIT_REVIEW",
+      "closed_at_commit": "ff3b9ddb0947f83bd5416053aa3f684290798c53",
+      "continued_closure_at_commit": "e49a214cd371d0417f093d3a24fa2a4f4a359e83"
+    },
+    {
+      "id": "AD02",
+      "severity": "Medium",
+      "priority": "P2",
+      "rows": [
+        "R10",
+        "R53"
+      ],
+      "file": "src/salience/cycles/authority.py",
+      "line": 30,
+      "related_locations": [
+        "src/salience/cycles/outbox.py:235",
+        "migrations/versions/0016_cycle_admission.py:59"
+      ],
+      "title": "Unsupported canonical context schemas inherit legacy authorization",
+      "trigger": "A stored context payload uses an unknown or missing schema version while retaining common fixture-only fields and a current baseline reference.",
+      "invariant_broken": "Unknown schema cannot be treated as compatible authoritative immutable context; missing typed authority/identity/deadline data must hold execution.",
+      "reproduction": "Actual PostgreSQL accepts a RunContext.local.v99 canonical context and cycle/outbox. CycleOutbox.consume returns recorded rather than held. A pure probe also returns True for {}, local.v99 and GoalSpec.local.v2 without any current-authority read.",
+      "reproduction_evidence": {
+        "tests": 1,
+        "failures": 1,
+        "xml": "artifacts/v4-p0/item7/admission-schema-red.xml",
+        "xml_sha256": "dfd2f2c8692d7769fd078ba4a1940625959a20bc53258684bb9f9dc25af3d097",
+        "log": "artifacts/v4-p0/item7/admission-schema-red.log",
+        "log_sha256": "021fbeefc04da9d53f22af57b9a6345e0af0c0699e14f4ddd90a9838b5d576e1"
+      },
+      "limits": "No public DTO bypass demonstrated. Normal goal/admission code generates recognized typed contexts. Reproduction requires malformed/unsupported canonical row insertion, a privilege already needed by fixture application roles, or a future unqualified writer. Production is disabled.",
+      "repair_requirement": "Explicitly identify supported legacy payload versions, validate recognized typed V2/V3 contexts fail closed, and reject unknown/missing/malformed schemas. Preserve genuine V1 compatibility: historical context column is RunContext.local.v1 but payload schema_version is GoalSpec.local.v1.",
+      "status": "CLOSED_BY_INDEPENDENT_EXACT_COMMIT_REVIEW",
+      "closed_at_commit": "ff3b9ddb0947f83bd5416053aa3f684290798c53",
+      "continued_closure_at_commit": "e49a214cd371d0417f093d3a24fa2a4f4a359e83"
+    }
+  ],
+  "row_outcomes": [
+    {
+      "row": "R05",
+      "outcome": "PASS_IMPLEMENTED_FIXTURE_SCOPE",
+      "assessment": "Versioned complete V2/V3 GoalSpec, bounded fixture fields, exact immutable revision/baseline approvals and separate approval grants are supported; state transition command ordering fails AD01.",
+      "evidence": "Admission/contracts/baselines and migrations0016\u20130025; revision/baseline tests read; admission/cadence/revision/accounting suite executed.",
+      "remaining_release_obligations": "Production baseline/registry eligibility beyond fixed approved no-effects fixture; general enabled capabilities remain gated.",
+      "reviewed_head_outcome": "FAIL_IMPLEMENTED_SUBCONTRACT",
+      "repaired_worktree_outcome": "PASS_IMPLEMENTED_FIXTURE_SCOPE; production obligations unchanged",
+      "final_reviewed_commit": "e49a214cd371d0417f093d3a24fa2a4f4a359e83",
+      "unresolved_local_findings": []
+    },
+    {
+      "row": "R06",
+      "outcome": "PASS_IMPLEMENTED_FIXTURE_SCOPE",
+      "assessment": "Canonical UTC business slots coalesce across manual/event/scheduled origins and revisions; payload-bound retries and source-event identities cannot move; stable cycle/context/operation uniqueness persists.",
+      "evidence": "Cadence/admission/SQL constraints; concurrent-origin, cross-revision, fingerprint/crash tests executed; cutover source/tests read.",
+      "remaining_release_obligations": "Production legacy slot/cycle mapping and live conversion/fencing qualification remain open.",
+      "reviewed_head_outcome": "PASS_IMPLEMENTED_FIXTURE_SCOPE",
+      "repaired_worktree_outcome": "PASS_IMPLEMENTED_FIXTURE_SCOPE; production obligations unchanged",
+      "final_reviewed_commit": "e49a214cd371d0417f093d3a24fa2a4f4a359e83",
+      "unresolved_local_findings": []
+    },
+    {
+      "row": "R07",
+      "outcome": "PASS_IMPLEMENTED_FIXTURE_SCOPE",
+      "assessment": "G0 serializes goal/intent, checks active/current revision, event/slot freshness, due time, quota, baseline/review, overlap/current pending and multi-dimensional canonical budget capacity; shortage savepoint leaves no orphan cycle.",
+      "evidence": "Admission/cadence/accounting SQL lock functions; race/capacity/freshness/foreign-scope/budget rollback cases executed.",
+      "remaining_release_obligations": "Production stage authorization integration remains open; trial participation conditional on later enablement and absent in all current fixtures. AD01 is upstream state-command ordering, not a bypass of G0 current-state reads.",
+      "reviewed_head_outcome": "PASS_IMPLEMENTED_FIXTURE_SCOPE",
+      "repaired_worktree_outcome": "PASS_IMPLEMENTED_FIXTURE_SCOPE; production obligations unchanged",
+      "final_reviewed_commit": "e49a214cd371d0417f093d3a24fa2a4f4a359e83",
+      "unresolved_local_findings": []
+    },
+    {
+      "row": "R08",
+      "outcome": "PASS_IMPLEMENTED_FIXTURE_SCOPE",
+      "assessment": "Bounds and slot policy enforce configured overlap, skip/latest/bounded catch-up, explicit reviewed backfill, durable batches/cursors and opt-in fixture watermark/pause/readback/rollback fences.",
+      "evidence": "Cadence tests executed; schedule_cutover source and migration0030 plus cutover tests read.",
+      "remaining_release_obligations": "Live Temporal scheduling, fencing/monitoring and observation-independent production execution require separate qualification.",
+      "reviewed_head_outcome": "PASS_IMPLEMENTED_FIXTURE_SCOPE",
+      "repaired_worktree_outcome": "PASS_IMPLEMENTED_FIXTURE_SCOPE; production obligations unchanged",
+      "final_reviewed_commit": "e49a214cd371d0417f093d3a24fa2a4f4a359e83",
+      "unresolved_local_findings": []
+    },
+    {
+      "row": "R09",
+      "outcome": "PASS_IMPLEMENTED_FIXTURE_SCOPE",
+      "assessment": "Pre-admission wait retains intent without an initial cycle; wake CAS, expiry and limits apply; recovery retains cycle/context/operation; strategic defer/abstain terminally closes and requires authorized coalesced successor.",
+      "evidence": "Admission lifecycle tests executed; runtime_waits, migration0031, runtime owner0032 and wait/restart test contracts read.",
+      "remaining_release_obligations": "Reviewer did not mutate/run shared Temporal. Parent qualification documents local real timers/restart; production stage deferral/recovery still requires qualification.",
+      "reviewed_head_outcome": "PASS_IMPLEMENTED_FIXTURE_SCOPE",
+      "repaired_worktree_outcome": "PASS_IMPLEMENTED_FIXTURE_SCOPE; production obligations unchanged",
+      "final_reviewed_commit": "e49a214cd371d0417f093d3a24fa2a4f4a359e83",
+      "unresolved_local_findings": []
+    },
+    {
+      "row": "R10",
+      "outcome": "PASS_IMPLEMENTED_FIXTURE_SCOPE",
+      "assessment": "Typed V2/V3 known-schema admission correctly freezes canonical scope/IDs, grant snapshot, bundle, cutoff, trace/lineage and finite execution deadline; unknown schema inherits legacy authorization via AD02.",
+      "evidence": "Contracts/admission/authority/outbox; typed context and immutable read/recovery tests executed; direct unknown context consumption reproduced.",
+      "remaining_release_obligations": "Full candidate/plan/stage integration and enabled provider/effect paths remain gated. AD02 is limited to malformed/unsupported persisted input; no ingress bypass claimed.",
+      "reviewed_head_outcome": "FAIL_UNSUPPORTED_CANONICAL_SCHEMA_HANDLING",
+      "repaired_worktree_outcome": "PASS_IMPLEMENTED_FIXTURE_SCOPE; production obligations unchanged",
+      "final_reviewed_commit": "e49a214cd371d0417f093d3a24fa2a4f4a359e83",
+      "unresolved_local_findings": []
+    },
+    {
+      "row": "R13",
+      "outcome": "PASS_IMPLEMENTED_FIXTURE_SCOPE",
+      "assessment": "Current owner grant/identity/program/baseline expiry and revocation constrain the pinned known-schema context without rewrite; revisions reject stale wake/recovery and hold consumption; restricted non-owner grant/program locks serialize revocation.",
+      "evidence": "Authority/baselines/admission/governance; changed-authority and restricted-role admission/accounting/revision tests executed; signed control/cutover tests read.",
+      "remaining_release_obligations": "Complete enabled-version revocation integration remains open; separate later capability release phases remain gated. Unknown-schema behavior is separately AD02.",
+      "reviewed_head_outcome": "PASS_IMPLEMENTED_KNOWN_SCHEMA_FIXTURE_SCOPE",
+      "repaired_worktree_outcome": "PASS_IMPLEMENTED_FIXTURE_SCOPE; production obligations unchanged",
+      "final_reviewed_commit": "e49a214cd371d0417f093d3a24fa2a4f4a359e83",
+      "unresolved_local_findings": []
+    },
+    {
+      "row": "R53",
+      "outcome": "PASS_IMPLEMENTED_FIXTURE_SCOPE",
+      "assessment": "Core identities/context/approval/accounting receipts are immutable; schema/audit/migration guards are additive and preserve populated history. State transitions lack exact command/CAS receipts (AD01), and unsupported context payload versions authorize (AD02).",
+      "evidence": "Migrations0016\u20130032 read, including scope/permit/case/cutover/wait/owner guards; direct immutability/accounting/revision tests executed; private clean upgrade to0032 succeeded.",
+      "remaining_release_obligations": "Later record-family common envelopes and correction/superseding integration remain assigned to later phases. No production approval and no PR approval claimed.",
+      "reviewed_head_outcome": "FAIL_IMPLEMENTED_SUBCONTRACT",
+      "repaired_worktree_outcome": "PASS_IMPLEMENTED_FIXTURE_SCOPE; production obligations unchanged",
+      "final_reviewed_commit": "e49a214cd371d0417f093d3a24fa2a4f4a359e83",
+      "unresolved_local_findings": []
+    }
+  ],
+  "executed_evidence": {
+    "baseline_command": "TEST_DATABASE_URL=<reviewer-private-db> TEST_TEMPORAL_TARGET=dummy .venv/bin/python -m pytest -p no:cacheprovider tests/integration/test_v4_cycle_admission.py tests/integration/test_v4_cadence_policy.py tests/integration/test_v4_cycle_accounting.py tests/integration/test_v4_goal_revisions.py -q --junitxml=artifacts/v4-p0/item7/admission-existing.xml",
+    "baseline_tests": 73,
+    "baseline_passed": 73,
+    "baseline_failures": 0,
+    "baseline_seconds": 36.02,
+    "baseline_xml_sha256": "05a0a3cd12d3067890d5e0288b4634cb9ad2c81a989f736e7700f092a5bae4fa",
+    "baseline_log_sha256": "c7b71f2cbf44f2e2110380fdb19d12baf1f7bf11396f662bd249ed69018b6b4b",
+    "private_clean_migration_head": "0032_runtime_hold_owner",
+    "private_clean_upgrade_exit_code": 0
+  },
+  "published_source_sha256": {
+    "src/salience/cycles/admission.py": "ac8f5ff8dd0424109585837de93ef0639f313d36443c2d25b3abe8fcc9865e94",
+    "src/salience/cycles/contracts.py": "921d76487c9c8ebcac5497f2ea99f1f1c6dfc4463fac9fd80fc80918b533511a",
+    "src/salience/cycles/cadence.py": "3d651c5d1890b118befff55aaa5d7569a9637390be2082a03b83d68f376a2dc2",
+    "src/salience/cycles/authority.py": "162efc7014d42b37d7e22523233644c480a744fa4294edabb48baba868f05a48",
+    "src/salience/cycles/baselines.py": "1e36dd950a55dbc3ed906cdf9a89d7f1d6f6118384721e52c01ddd68a4cd9963",
+    "src/salience/governance/cycle_costs.py": "af8f58284ba233defeb14ff1d065b706ebf6756fd8c74afa5eb8c8507d87998e",
+    "src/salience/governance/cost_repository.py": "2fbb9f5cf692cb93cddca4e7319ebf35bc5cb8b6655e5fce1881e4d792585ed4",
+    "src/salience/cycles/outbox.py": "7ae243a0edbf23b8cc8ae484a6cbce7d46c5cf826f8060eb97486ac0e2bcffa6",
+    "src/salience/cycles/governance.py": "160646201cad8ba4d4f81c0c758becfa219245e96fc4c3cf2f449d993cafd98e",
+    "src/salience/cycles/runtime.py": "29e12af5686ab96ea6aa7f474ccd0b852bdc232624b1b323cae0f8b11a84cb8e",
+    "src/salience/cycles/runtime_waits.py": "bc4685271a0898b44d21fb1639f08405f21e06291c991b18bf7b97da78c6721f",
+    "src/salience/cycles/schedule_cutover.py": "fa7359a8419661a2c3910f1e63fe4dc5ec0dd32b051285b9d1af48c398cfa5d4",
+    "src/salience/api/routes/v4_cycles.py": "470d54784a5647d622b527b22cbd9e86f9e26a3b3eef844e3bf7ce052da6a43a"
+  },
+  "read_documentation": [
+    "docs/v4/IMPLEMENTATION-BLUEPRINT.md",
+    "docs/v4/p1-qualification-matrix.json",
+    "docs/v4/item7-preparation-evidence.json"
+  ],
+  "documentation_evidence_assessment": "32 focused / 462 full preparation PASS is historical owner evidence, not a review conclusion; new RED failures demonstrate gaps absent from those tests. Production and later-phase non-acceptance accurately remains explicit.",
+  "limits": [
+    "No live provider/effect/issuer/TLS/RLS/shared-tenancy deployment validation.",
+    "No independent Temporal restart/replay/production routing validation by this reviewer; corresponding source/test/evidence inspected, other reviewer scope remains separate.",
+    "Current uncommitted root repair must receive targeted re-review and final published-head review; this report currently assesses original published HEAD."
+  ],
+  "release_boundary": {
+    "production_effects_enabled": false,
+    "RG0": "HELD",
+    "RG1": "HELD",
+    "main": "UNMERGED",
+    "production_approval": false,
+    "PR_approval": false
+  },
+  "repair_re_review": {
+    "status": "PASS_IMPLEMENTED_FIXTURE_CONTRACT_IN_WORKTREE; final published-head hash still required",
+    "tests": 13,
+    "passed": 13,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 2.54,
+    "command": "TEST_DATABASE_URL=<reviewer-private-db> TEST_TEMPORAL_TARGET=dummy .venv/bin/python -m pytest -p no:cacheprovider tests/integration/test_v4_item7_admission.py -q --junitxml=artifacts/v4-p0/item7/admission-repaired.xml",
+    "xml": "artifacts/v4-p0/item7/admission-repaired.xml",
+    "xml_sha256": "27c91514971a8d368e2e3c2ea86db30d20be56a0b92df5f5c9c1538a427ed3b0",
+    "log": "artifacts/v4-p0/item7/admission-repaired.log",
+    "log_sha256": "3ecde35ff2460fb5407af39de5e3a5007c5f94c52a6e99b133f6aade8c32602e",
+    "tested_schema_head": "0034_runtime_delivery_scope",
+    "source_sha256": {
+      "src/salience/cycles/admission.py": "49b6b21b888bb30fd025b5d88480dad30927a45d290874bd1e9273d6e2cb823a",
+      "src/salience/cycles/authority.py": "d8376eb12851e8b5853c5bf4afc61c94f31d433edb59e26aa3ad7002a891c51a",
+      "src/salience/api/routes/v4_cycles.py": "c9f6cf6369468dab9665c861e94b5f6db7dba7d1678dbee4bf290b54bf6180db",
+      "src/salience/api/p0.py": "25e2c3d3394841239ac26acab186b29dbcc28fecdbe3f51d4ec6adf8df6ce4ea",
+      "src/salience/sdk/client.py": "8e5c4e6d3342c1bbc2187b82360fc364cc4728e8fe9eaca57826867ec1239a69",
+      "src/salience/cli.py": "a49db9110c9eaebedb730bfe457d6f60dc512d89c4d02e18b84407e56d0991b7",
+      "migrations/versions/0033_goal_state_commands.py": "432b2428986f2bc8a0fa102a72b834c30a32b0528de814e89644493ff58f76d6",
+      "migrations/versions/0034_runtime_delivery_scope.py": "027448e0152eb050cdba1bc999bc2500b1a9fe9e7c46e8f020d8149a8818baa3",
+      "tests/integration/test_v4_item7_admission.py": "6bd60b404e97aded4ab2fefbc30e4ec2c03d7f2fb45d52df7e456ea0dba15a2e"
+    },
+    "read_evidence": "Independently inspected state receipt/CAS implementation, migration0033 scoped immutable command table/guard, API exact DTO/service mapping, signed scope classification, SDK/CLI write/readback, and explicit known historic V1 + strict V2/V3 context recognition.",
+    "additional_checks": {
+      "direct_SQL_receipt_guard": "PASS",
+      "populated0033_downgrade_to0032": "REFUSED expected preservation guard; schema/history preserved",
+      "populated0033_downgrade_log": "artifacts/v4-p0/item7/admission-state-populated-rollback.log"
+    },
+    "intermediate_test_correction": "Initial combined run had 12 PASS / 1 FAIL because reviewer incorrectly asserted CLI main returns0; implementation follows established None-return contract. Reviewer fixed test; all13PASS.",
+    "no_additional_confirmed_defects": true,
+    "production_approval": false,
+    "PR_approval": false
+  },
+  "remaining_review_obligations": [
+    "Parent completes frozen full-phase focused/regression checks and independent row reconciliation.",
+    "Repository publication, exact published-head CI/protection/readback and separate independent PR approval remain outside this code-review closure.",
+    "Production RG0/RG1 qualification and the explicit later-phase obligations in every row remain HELD/unclaimed."
+  ],
+  "initial_reviewed_head": "e572bc7fe1b84db705b8c500aaebcf95f847023c",
+  "final_exact_commit_closure": {
+    "reviewed_commit": "e49a214cd371d0417f093d3a24fa2a4f4a359e83",
+    "prior_reviewed_commit": "ff3b9ddb0947f83bd5416053aa3f684290798c53",
+    "outcome": "PASS_IMPLEMENTED_FIXTURE_SCOPE; no unresolved local findings in all eight assigned rows",
+    "findings_closed": [
+      "AD01",
+      "AD02"
+    ],
+    "production_source_hash_comparison": [
+      {
+        "file": "src/salience/cycles/admission.py",
+        "prior_exact_commit_sha256": "49b6b21b888bb30fd025b5d88480dad30927a45d290874bd1e9273d6e2cb823a",
+        "final_exact_commit_sha256": "49b6b21b888bb30fd025b5d88480dad30927a45d290874bd1e9273d6e2cb823a",
+        "identical": true
+      },
+      {
+        "file": "src/salience/cycles/authority.py",
+        "prior_exact_commit_sha256": "d8376eb12851e8b5853c5bf4afc61c94f31d433edb59e26aa3ad7002a891c51a",
+        "final_exact_commit_sha256": "d8376eb12851e8b5853c5bf4afc61c94f31d433edb59e26aa3ad7002a891c51a",
+        "identical": true
+      },
+      {
+        "file": "src/salience/api/routes/v4_cycles.py",
+        "prior_exact_commit_sha256": "c9f6cf6369468dab9665c861e94b5f6db7dba7d1678dbee4bf290b54bf6180db",
+        "final_exact_commit_sha256": "c9f6cf6369468dab9665c861e94b5f6db7dba7d1678dbee4bf290b54bf6180db",
+        "identical": true
+      },
+      {
+        "file": "src/salience/api/p0.py",
+        "prior_exact_commit_sha256": "25e2c3d3394841239ac26acab186b29dbcc28fecdbe3f51d4ec6adf8df6ce4ea",
+        "final_exact_commit_sha256": "25e2c3d3394841239ac26acab186b29dbcc28fecdbe3f51d4ec6adf8df6ce4ea",
+        "identical": true
+      },
+      {
+        "file": "src/salience/sdk/client.py",
+        "prior_exact_commit_sha256": "8e5c4e6d3342c1bbc2187b82360fc364cc4728e8fe9eaca57826867ec1239a69",
+        "final_exact_commit_sha256": "8e5c4e6d3342c1bbc2187b82360fc364cc4728e8fe9eaca57826867ec1239a69",
+        "identical": true
+      },
+      {
+        "file": "src/salience/cli.py",
+        "prior_exact_commit_sha256": "a49db9110c9eaebedb730bfe457d6f60dc512d89c4d02e18b84407e56d0991b7",
+        "final_exact_commit_sha256": "a49db9110c9eaebedb730bfe457d6f60dc512d89c4d02e18b84407e56d0991b7",
+        "identical": true
+      },
+      {
+        "file": "migrations/versions/0033_goal_state_commands.py",
+        "prior_exact_commit_sha256": "704fdf239cfb452129ba677ba476cbdd52a897b778b141b9a0272bb71614c248",
+        "final_exact_commit_sha256": "704fdf239cfb452129ba677ba476cbdd52a897b778b141b9a0272bb71614c248",
+        "identical": true
+      },
+      {
+        "file": "migrations/versions/0034_runtime_delivery_scope.py",
+        "prior_exact_commit_sha256": "027448e0152eb050cdba1bc999bc2500b1a9fe9e7c46e8f020d8149a8818baa3",
+        "final_exact_commit_sha256": "027448e0152eb050cdba1bc999bc2500b1a9fe9e7c46e8f020d8149a8818baa3",
+        "identical": true
+      },
+      {
+        "file": "src/salience/cycles/outbox.py",
+        "prior_exact_commit_sha256": "3180162f766a6e30d3169f27811c3c8ecc650d7e61bfeb0323c352c6620a43f5",
+        "final_exact_commit_sha256": "3180162f766a6e30d3169f27811c3c8ecc650d7e61bfeb0323c352c6620a43f5",
+        "identical": true
+      },
+      {
+        "file": "src/salience/cycles/runtime.py",
+        "prior_exact_commit_sha256": "2f830bd4b374402c892d5ed4215f4c8e830650ab4318eb701273854ea805eed9",
+        "final_exact_commit_sha256": "2f830bd4b374402c892d5ed4215f4c8e830650ab4318eb701273854ea805eed9",
+        "identical": true
+      },
+      {
+        "file": "src/salience/cycles/governance.py",
+        "prior_exact_commit_sha256": "5ad9878f9b6fa12a272b6f819d76aa05a33821d0b849e8020691bcdd76b84821",
+        "final_exact_commit_sha256": "5ad9878f9b6fa12a272b6f819d76aa05a33821d0b849e8020691bcdd76b84821",
+        "identical": true
+      },
+      {
+        "file": "src/salience/cycles/schedule_cutover.py",
+        "prior_exact_commit_sha256": "2167fea392ae8d1e7c0611bbd4cccf4f808bef7c59e5922fc9878daaceaaa780",
+        "final_exact_commit_sha256": "2167fea392ae8d1e7c0611bbd4cccf4f808bef7c59e5922fc9878daaceaaa780",
+        "identical": true
+      }
+    ],
+    "unchanged_production_files_checked": 12,
+    "baseline_fixture_exact_commit_sha256": "026b77d0a834b2286a4a962eb5583cda21f81ffb602d9699e9c2c87202b1f4f8",
+    "source_lock_fixture_entry": "Matches independently calculated exact-commit fixture hash",
+    "only_commit_changes": [
+      "tests/integration/test_v4_baseline_approval.py: canonical workspace/subject added to fabricated V1 payload; no baseline_approval_id added; negative assertion unchanged",
+      "docs/v4/evidence-lock.json: only that fixture hash updated"
+    ],
+    "baseline_independent_execution_evidence": {
+      "tests": 1,
+      "passed": 1,
+      "failed": 0,
+      "seconds": 0.36,
+      "xml": "artifacts/v4-p0/item7/admission-historical-fixture.xml",
+      "xml_sha256": "27e02275fdd324c52e1efd6416c43c0dd93d9f98e37dd9d2c50c0ce023a287e9",
+      "log": "artifacts/v4-p0/item7/admission-historical-fixture.log",
+      "log_sha256": "b55e3964fe4f7284de74686d27b00bb12462ea7b499eabe3caf7613fc3e5f418"
+    },
+    "baseline_tested_fixture_matches_exact_commit": true,
+    "prior_exact_commit_13_pass_evidence_retained": true,
+    "source_delta_assessment": "All repaired production source and migration files are byte-identical to independently reviewed/tested ff3b9dd. Baseline fixture correction targets the intended missing-frozen-baseline denial without granting authority or weakening unknown-schema validation.",
+    "unresolved_local_findings": [],
+    "production_approval": false,
+    "PR_approval": false,
+    "remaining_obligations": "Parent completing full frozen non-live qualification on this final commit; publication/readback/CI and separate PR approval remain outside this closure; RG0/RG1 production obligations unchanged."
+  },
+  "final_source_sha256": {
+    "migrations/versions/0033_goal_state_commands.py": "704fdf239cfb452129ba677ba476cbdd52a897b778b141b9a0272bb71614c248",
+    "migrations/versions/0034_runtime_delivery_scope.py": "027448e0152eb050cdba1bc999bc2500b1a9fe9e7c46e8f020d8149a8818baa3",
+    "src/salience/api/p0.py": "25e2c3d3394841239ac26acab186b29dbcc28fecdbe3f51d4ec6adf8df6ce4ea",
+    "src/salience/api/routes/v4_cycles.py": "c9f6cf6369468dab9665c861e94b5f6db7dba7d1678dbee4bf290b54bf6180db",
+    "src/salience/cli.py": "a49db9110c9eaebedb730bfe457d6f60dc512d89c4d02e18b84407e56d0991b7",
+    "src/salience/cycles/admission.py": "49b6b21b888bb30fd025b5d88480dad30927a45d290874bd1e9273d6e2cb823a",
+    "src/salience/cycles/authority.py": "d8376eb12851e8b5853c5bf4afc61c94f31d433edb59e26aa3ad7002a891c51a",
+    "src/salience/cycles/baselines.py": "1e36dd950a55dbc3ed906cdf9a89d7f1d6f6118384721e52c01ddd68a4cd9963",
+    "src/salience/cycles/cadence.py": "3d651c5d1890b118befff55aaa5d7569a9637390be2082a03b83d68f376a2dc2",
+    "src/salience/cycles/contracts.py": "921d76487c9c8ebcac5497f2ea99f1f1c6dfc4463fac9fd80fc80918b533511a",
+    "src/salience/cycles/governance.py": "5ad9878f9b6fa12a272b6f819d76aa05a33821d0b849e8020691bcdd76b84821",
+    "src/salience/cycles/outbox.py": "3180162f766a6e30d3169f27811c3c8ecc650d7e61bfeb0323c352c6620a43f5",
+    "src/salience/cycles/runtime.py": "2f830bd4b374402c892d5ed4215f4c8e830650ab4318eb701273854ea805eed9",
+    "src/salience/cycles/runtime_waits.py": "bc4685271a0898b44d21fb1639f08405f21e06291c991b18bf7b97da78c6721f",
+    "src/salience/cycles/schedule_cutover.py": "2167fea392ae8d1e7c0611bbd4cccf4f808bef7c59e5922fc9878daaceaaa780",
+    "src/salience/governance/cost_repository.py": "2fbb9f5cf692cb93cddca4e7319ebf35bc5cb8b6655e5fce1881e4d792585ed4",
+    "src/salience/governance/cycle_costs.py": "af8f58284ba233defeb14ff1d065b706ebf6756fd8c74afa5eb8c8507d87998e",
+    "src/salience/sdk/client.py": "8e5c4e6d3342c1bbc2187b82360fc364cc4728e8fe9eaca57826867ec1239a69",
+    "tests/integration/test_v4_item7_admission.py": "6bd60b404e97aded4ab2fefbc30e4ec2c03d7f2fb45d52df7e456ea0dba15a2e",
+    "tests/integration/test_v4_baseline_approval.py": "026b77d0a834b2286a4a962eb5583cda21f81ffb602d9699e9c2c87202b1f4f8"
+  },
+  "historical_fixture_correction_review": {
+    "status": "PASS; exact fixture hash certified at e49a214cd371d0417f093d3a24fa2a4f4a359e83",
+    "file": "tests/integration/test_v4_baseline_approval.py",
+    "fixture_sha256": "026b77d0a834b2286a4a962eb5583cda21f81ffb602d9699e9c2c87202b1f4f8",
+    "diff_assessment": "Only fabricated historical V1 payload gains canonical workspace_id and subject_id. Actual original V1 admissions already include both. No source or assertion weakening; frozen baseline_approval_id remains absent.",
+    "invariant_assessment": "Current goal baseline approval cannot supply a missing approval reference to an already frozen historical context. Context must pass recognized legacy schema/scope checks, then recovery must still reject the missing exact historical baseline ID and enqueue no recovery outbox record.",
+    "parent_full_run_observation": {
+      "head": "ff3b9ddb0947f83bd5416053aa3f684290798c53",
+      "tests": 507,
+      "passed": 506,
+      "failed": 1,
+      "source": "Parent report, not independently executed by this reviewer",
+      "failure": "Old fabricated V1 fixture omitted workspace/subject so correctly denied at context authority before expected missing-baseline check."
+    },
+    "independent_targeted_test": {
+      "tests": 1,
+      "passed": 1,
+      "failed": 0,
+      "seconds": 0.36,
+      "xml": "artifacts/v4-p0/item7/admission-historical-fixture.xml",
+      "xml_sha256": "27e02275fdd324c52e1efd6416c43c0dd93d9f98e37dd9d2c50c0ce023a287e9",
+      "log": "artifacts/v4-p0/item7/admission-historical-fixture.log",
+      "log_sha256": "b55e3964fe4f7284de74686d27b00bb12462ea7b499eabe3caf7613fc3e5f418"
+    },
+    "no_production_source_change": true,
+    "no_new_confirmed_defect": true
+  },
+  "exact_commit_closure_history": [
+    {
+      "reviewed_commit": "ff3b9ddb0947f83bd5416053aa3f684290798c53",
+      "commit_state_at_review": "Committed locally; not yet pushed. No published CI/protection/PR-approval conclusion implied.",
+      "outcome": "PASS_IMPLEMENTED_FIXTURE_SCOPE; no unresolved local findings in assigned rows",
+      "findings_closed": [
+        "AD01",
+        "AD02"
+      ],
+      "source_hash_comparison": [
+        {
+          "file": "src/salience/cycles/admission.py",
+          "tested_worktree_sha256": "49b6b21b888bb30fd025b5d88480dad30927a45d290874bd1e9273d6e2cb823a",
+          "exact_commit_sha256": "49b6b21b888bb30fd025b5d88480dad30927a45d290874bd1e9273d6e2cb823a",
+          "identical": true
+        },
+        {
+          "file": "src/salience/cycles/authority.py",
+          "tested_worktree_sha256": "d8376eb12851e8b5853c5bf4afc61c94f31d433edb59e26aa3ad7002a891c51a",
+          "exact_commit_sha256": "d8376eb12851e8b5853c5bf4afc61c94f31d433edb59e26aa3ad7002a891c51a",
+          "identical": true
+        },
+        {
+          "file": "src/salience/api/routes/v4_cycles.py",
+          "tested_worktree_sha256": "c9f6cf6369468dab9665c861e94b5f6db7dba7d1678dbee4bf290b54bf6180db",
+          "exact_commit_sha256": "c9f6cf6369468dab9665c861e94b5f6db7dba7d1678dbee4bf290b54bf6180db",
+          "identical": true
+        },
+        {
+          "file": "src/salience/api/p0.py",
+          "tested_worktree_sha256": "25e2c3d3394841239ac26acab186b29dbcc28fecdbe3f51d4ec6adf8df6ce4ea",
+          "exact_commit_sha256": "25e2c3d3394841239ac26acab186b29dbcc28fecdbe3f51d4ec6adf8df6ce4ea",
+          "identical": true
+        },
+        {
+          "file": "src/salience/sdk/client.py",
+          "tested_worktree_sha256": "8e5c4e6d3342c1bbc2187b82360fc364cc4728e8fe9eaca57826867ec1239a69",
+          "exact_commit_sha256": "8e5c4e6d3342c1bbc2187b82360fc364cc4728e8fe9eaca57826867ec1239a69",
+          "identical": true
+        },
+        {
+          "file": "src/salience/cli.py",
+          "tested_worktree_sha256": "a49db9110c9eaebedb730bfe457d6f60dc512d89c4d02e18b84407e56d0991b7",
+          "exact_commit_sha256": "a49db9110c9eaebedb730bfe457d6f60dc512d89c4d02e18b84407e56d0991b7",
+          "identical": true
+        },
+        {
+          "file": "migrations/versions/0033_goal_state_commands.py",
+          "tested_worktree_sha256": "432b2428986f2bc8a0fa102a72b834c30a32b0528de814e89644493ff58f76d6",
+          "exact_commit_sha256": "704fdf239cfb452129ba677ba476cbdd52a897b778b141b9a0272bb71614c248",
+          "identical": false
+        },
+        {
+          "file": "migrations/versions/0034_runtime_delivery_scope.py",
+          "tested_worktree_sha256": "027448e0152eb050cdba1bc999bc2500b1a9fe9e7c46e8f020d8149a8818baa3",
+          "exact_commit_sha256": "027448e0152eb050cdba1bc999bc2500b1a9fe9e7c46e8f020d8149a8818baa3",
+          "identical": true
+        },
+        {
+          "file": "tests/integration/test_v4_item7_admission.py",
+          "tested_worktree_sha256": "6bd60b404e97aded4ab2fefbc30e4ec2c03d7f2fb45d52df7e456ea0dba15a2e",
+          "exact_commit_sha256": "6bd60b404e97aded4ab2fefbc30e4ec2c03d7f2fb45d52df7e456ea0dba15a2e",
+          "identical": true
+        }
+      ],
+      "migration0033_changes_inspected": [
+        "State-change guard now also requires NEW.revision=OLD.revision, preserving immutable GoalSpec revision semantics during state-only transition.",
+        "Downgrade locks both v4_goals and v4_goal_state_commands in SHARE ROW EXCLUSIVE mode under bounded lock timeout before preservation preflight and DDL; a concurrent command cannot commit into discarded history between checks."
+      ],
+      "source_hash_difference_assessment": "Only migration0033 differed from tested worktree; changes strengthen the same contract and were independently inspected. Fresh exact-commit migration and targeted suite rerun validates the final installed guard.",
+      "executed_evidence": {
+        "tests": 13,
+        "passed": 13,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 2.55,
+        "command": "TEST_DATABASE_URL=<new reviewer-private-db> TEST_TEMPORAL_TARGET=dummy .venv/bin/python -m pytest -p no:cacheprovider tests/integration/test_v4_item7_admission.py -q --junitxml=artifacts/v4-p0/item7/admission-final-exact.xml",
+        "xml": "artifacts/v4-p0/item7/admission-final-exact.xml",
+        "xml_sha256": "0f3f7d3904dbfab3e78f15f3a87510d5138bc663e701ae653b16681280361436",
+        "log": "artifacts/v4-p0/item7/admission-final-exact.log",
+        "log_sha256": "98a546316a543e5e8098173d98c2b404d7cd3be842a471170711becec54ed2f6",
+        "fresh_clean_migration": "0034_runtime_delivery_scope",
+        "fresh_clean_upgrade_exit_code": 0,
+        "populated0034_rollback": "REFUSED with expected preservation guard; exact final database history retained before disposal",
+        "populated_rollback_log": "artifacts/v4-p0/item7/admission-final-populated-rollback.log",
+        "test_database": "Exclusively named disposable private database created, migrated from exact commit, tested, and dropped. Shared salience DB and Temporal unchanged."
+      },
+      "additional_review_evidence": "Inspected final cutover, authority, governance, outbox and runtime deltas for implications on assigned admission/context/cadence/schema rows; other reviewers and parent retain direct ownership of their specialized runtime/governance qualification.",
+      "production_approval": false,
+      "PR_approval": false,
+      "remaining_obligations": "Root completes frozen focused/full qualification and repository publication/readback; every row retains its explicit production/later-phase obligations and RG0/RG1 holds."
+    }
+  ]
+}

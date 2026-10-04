@@ -6,31 +6,29 @@
 <a id="current-state--2026-09-24"></a>
 <a id="current-state--2026-09-27"></a>
 
-## Current state — 2026-10-03 item-7 preparation
+## Current state — 2026-10-04 completed item 7 fixture qualification
 
-Item 7 is IN PROGRESS from published base `91784e7`: root local preparation/owner-binding hardening passes **32 focused / 462 full non-live**, zero failures/errors/skips, with 311 source files. [Preparation evidence](item7-preparation-evidence.json) records actual commands, source/JUnit/log hashes and local findings; [all 17 P1 rows](p1-qualification-matrix.json) map 205 executed fixture cases. Independent full P1 review remains **NOT RUN**. Completed items 1–6 retain their historical reports; item-6 `e5d1840` has its original 85/456 qualification. RG0/RG1 HELD, effects disabled and main unmerged.
+P1 items 1–6 are locally implemented; item 7 independent review/evidence reconciliation is **COMPLETE for implemented fixture scope** at application `e49a214`. Three reviewers assessed all 17 rows, reproduced eight original findings, reviewed repair follow-ups and independently closed every actionable local finding. Final qualification: **132 focused / 507 full non-live PASS**, zero failures/errors/skips, 316 source hashes and 250 mapped fixture cases. [Evidence](item7-evidence.json), [review summary](item7-independent-review.md) and [matrix](p1-qualification-matrix.json) retain exact sources and remaining acceptance.
 
 | Area | Current state |
 | --- | --- |
-| P0 and DG1 | Local qualification and development entry PASS; external RG0 obligations remain NOT RUN. |
-| P1 items 1–5 | Locally qualified through item-5c application `7009d51`; historical reports preserved. |
-| P1 item 6 | Local PASS: 85 focused / 456 full non-live, 310 source hashes, separate operator/owner audit proof, 15 documentation tests, 75 obligations, six fresh renders and four shell contracts. Final application `e5d1840` CI/protection PASS recorded separately. |
-| Remaining P1 | Item 7 IN PROGRESS: local preparation/owner correction 32 focused / 462 full PASS, 311 hashes; independent full review NOT RUN plus live schedule routing/fencing, general policy/read reconciliation and external delivery obligations. |
-| P2–P7 | Planned; optional P6 disabled. |
-| Repository/merge | Published preparation base `91784e7` required checks/protection PASS at 2026-10-03T17:12:40.580583+00:00; [repository report](repository-enforcement-evidence.json). New candidate needs its own published-head inspection. Independent PR approval NOT RUN; no merge authorized. |
+| P0/DG1 | Local PASS; external RG0 production obligations HELD. |
+| P1 items 1–6 | Completed local implementation; original dated reports preserved. |
+| P1 item 7 | Independent implemented-fixture qualification complete; 132 / 507 PASS, three reviewers, all 17 rows, no unresolved reproduced local finding. |
+| Full P1/RG1 | HELD: live schedule/fencing, deployment routing, general current policy/scoped remote reads, real providers/stages and external alert/recovery delivery remain required. |
+| P2–P7 | Gated/planned; optional P6 disabled. |
+| Repository/main | Published preparation base e572bc7 CI/protection PASS at 2026-10-04T01:23:04.307181+00:00; final feature-head inspection required after publication. Formal PR approval NOT RUN; main 8e50d68 unmerged. |
 
-### Item 7 qualification preparation — IN PROGRESS
+### Next handoff after item 7
 
-Current local work adds original runtime-hold ownership and migration race hardening in additive 0032. Root inspection and actual PostgreSQL RED/GREEN tests are recorded separately from independent review. Final local qualification: **32 focused / 462 full non-live PASS**, zero failures/errors/skips, 311 source files. [Preparation evidence](item7-preparation-evidence.json) and the [17-requirement matrix](p1-qualification-matrix.json) map 205 executed fixture cases. Independent full P1 review is **NOT RUN**, awaiting explicit reviewer-agent authorization or an external reviewer. The goal remains item 7; no queue advancement or production release is claimed.
-
-Next: independently review every P1 row and implemented items 1–6, reproduce/fix applicable findings, independently re-review changes, reconcile final release evidence and inspect the final published candidate. Do not substitute root inspection, successful tests or agent review for current GitHub PR approval. RG0/RG1 HELD, effects disabled and main unmerged.
+Reuse the independently reviewed application/source lock and all completed local fixtures. Complete the explicit RG0/RG1 acceptance obligations under their required authorization; do not treat item 7 review as production approval or start later-phase release from partial acceptance. Disable opt-in fixture drivers for rollback, preserve canonical history/liabilities, and retain compatible workers for patched histories. Populated 0032–0034 downgrades refuse weakened protection. Local PostgreSQL restore/Temporal restart remains distinct from R66/P7 coordinated production restore.
 
 <a id="item-6-resume-handoff"></a>
-### Item 6 execution and next handoff
+### Completed item 6 execution/handoff snapshot
 
-Read the [runtime/wait contract](IMPLEMENTATION-BLUEPRINT.md#p1-item-6-local-runtime-and-wait-contract). The canonical acceptance boundary is now the compatible worker, additive 0031 runtime sidecars and four new timer/upgrade/restart test modules. Existing admission, context, allocation, governance, outbox and signed fixture commands are reused. Old unpatched histories follow their original command sequence; patched histories remain on compatible workers through rollback. Notification acceptance is a local database no-effects fixture, distinct from human acknowledgment and external alerts.
+This dated item 6 handoff is preserved; the current next action is above. Read the [runtime/wait contract](IMPLEMENTATION-BLUEPRINT.md#p1-item-6-local-runtime-and-wait-contract). The canonical acceptance boundary is now the compatible worker, additive 0031 runtime sidecars and four new timer/upgrade/restart test modules. Existing admission, context, allocation, governance, outbox and signed fixture commands are reused. Old unpatched histories follow their original command sequence; patched histories remain on compatible workers through rollback. Notification acceptance is a local database no-effects fixture, distinct from human acknowledgment and external alerts.
 
-Resume from the actual published HEAD and its exact source lock and test evidence. Completing this slice moves the queue to **item 7**, independent full RG1 qualification. Do not restart completed P0 or P1 increments and do not infer production release from fixture success. Retained pre-upgrade cases need explicit current-operator timer enrollment; no frozen authority is backfilled. A PostgreSQL snapshot restore plus Temporal process restart is local restart proof, not production R66/P7 restore certification.
+Resume from the actual published HEAD and its exact source lock and test evidence. Completing this slice moves the queue to **Item 7**, independent full RG1 qualification. Do not restart completed P0 or P1 increments and do not infer production release from fixture success. Retained pre-upgrade cases need explicit current-operator timer enrollment; no frozen authority is backfilled. A PostgreSQL snapshot restore plus Temporal process restart is local restart proof, not production R66/P7 restore certification.
 
 An expired review wait records its active case operator as the actor and retains the revoked original owner; it creates no execution authority. Final item-6 `e5d18401255810c74b85b2d8e57daca8cda8d9a3` passes both required CI checks and strict protection at 2026-10-03T16:15:00.103409+00:00; the dated readback is retained in `artifacts/v4-p0/item6-final-head-repository.json` and Git history. The [rolling repository report](repository-enforcement-evidence.json) now records base `91784e7`. The earlier initial `03f3cb9` also passed; its base evidence remains unchanged.
 
@@ -56,13 +54,15 @@ Rollback disables opt-in automatic processes, preserves runtime waits/holds/deli
 | `7009d51` | One-goal fixture schedule cutover/poller item 5c; [item-5c evidence](item5c-evidence.json), 37 focused / 425 full PASS; exact implementation-head CI/enforcement PASS on 2026-10-03. |
 | `03f3cb9` | Item-6 compatible workflow replay/continuation, canonical finite waits, fixture notification receipts and local restart/restore; [initial evidence](item6-evidence.json), 84 focused / 455 full PASS. |
 | `e5d1840` | Separate authorized expiry operator with original owner retained; [final qualification](item6-operator-evidence.json), 85 focused / 456 full PASS, 310 source hashes; final application CI/protection PASS. |
+| `e572bc7` | Published preparation/0032 original-owner guard; 32/462 local PASS and CI/protection PASS. |
+| `e49a214` | Item 7 independent review repairs at exact application commit; 132 / 507 PASS, 316 source hashes; final feature publication inspected separately. |
 
 ### Current resume instructions
 
-1. Inspect actual branch/worktree/HEAD, [source lock](evidence-lock.json) and [repository evidence](repository-enforcement-evidence.json). The current owner-binding candidate is qualified from published base `91784e7`, with 311 locked source files and 32/462 local tests. Its application delta includes additive 0032; after publication inspect its exact HEAD. The completed item-6 application `e5d1840` retains its dated 310-file report.
-2. Reuse completed P0 and P1 items 1–6; continue at [item 7](IMPLEMENTATION-BLUEPRINT.md#p1-resume-queue), independent full RG1 qualification and remaining production acceptance. Independent increment/PR review is NOT RUN.
-3. Preserve disabled effects, dry run, zero real spend, fallback denial, canonical identities and unknown liabilities. Keep compatible workers and retained sidecars during rollback.
-4. Keep external RG0, live legacy routing/fencing, scoped remote reconciliation, deployment worker routing and external delivery obligations explicit. Main remains unmerged; P2–P7 remain gated.
+1. Inspect actual branch/HEAD, [source lock](evidence-lock.json) and exact published-head CI readback. Application `e49a214` is independently reviewed with 316 frozen source files; documentation descendants must retain those hashes.
+2. Items 1–7 are complete within local implementation/independent fixture qualification. Complete outstanding RG0/RG1 production acceptance in the [matrix](p1-qualification-matrix.json); phase P1 remains ongoing until those obligations pass.
+3. Preserve disabled effects, dry run/zero spend/fallback denial, canonical IDs, unknown liabilities and compatible-worker rollback. Do not infer production authorization or GitHub PR approval from reviewer-agent conclusions.
+4. Main remains unmerged; P2–P7 are gated and optional P6 disabled.
 
 ### Completed item-6 execution snapshot — 2026-10-03
 

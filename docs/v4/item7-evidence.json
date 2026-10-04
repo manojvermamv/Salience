@@ -1,0 +1,274 @@
+{
+  "recorded_at": "2026-10-04",
+  "status": "COMPLETE_IMPLEMENTED_LOCAL_FIXTURE_QUALIFICATION",
+  "base_commit": "e572bc7fe1b84db705b8c500aaebcf95f847023c",
+  "qualified_application_commit": "e49a214cd371d0417f093d3a24fa2a4f4a359e83",
+  "scope": "P1 item7 independent review of all 17 requirement rows and implemented items 1\u20136, reproduced fixes, independent re-review and final evidence reconciliation; production acceptance remains HELD",
+  "source_evidence_lock_sha256": "4daab8861eb63d21d5aad81dc5f6a45624f4f7dcc8ded7ebe2d5a8633548ff58",
+  "locked_source_files": 316,
+  "independent_review": {
+    "status": "PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE",
+    "reviewers": [
+      {
+        "reviewer": "admission",
+        "path": "docs/v4/item7-admission-review.json",
+        "sha256": "bd200cbf73c90393a57591e39ba8463cb5cd0b8c5279924778fe01487469cb67",
+        "reviewed_application_commit": "e49a214cd371d0417f093d3a24fa2a4f4a359e83",
+        "artifact_root": "artifacts/v4-p0/item7",
+        "status": "PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE"
+      },
+      {
+        "reviewer": "governance",
+        "path": "docs/v4/item7-governance-review.json",
+        "sha256": "cccb44d195fcc37ccd0782d5bc5ae18cbf7838cc6280fbfcffa48b65eca0bf37",
+        "reviewed_application_commit": "e49a214cd371d0417f093d3a24fa2a4f4a359e83",
+        "artifact_root": "artifacts/v4-p0/item7",
+        "status": "PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE"
+      },
+      {
+        "reviewer": "runtime",
+        "path": "docs/v4/item7-runtime-review.json",
+        "sha256": "410781b5e8d229a2d515a8ec439592a76fd3e1fc08277ede5fd24c3ae0b05f6c",
+        "reviewed_application_commit": "e49a214cd371d0417f093d3a24fa2a4f4a359e83",
+        "artifact_root": "artifacts/v4-p0/item7",
+        "status": "PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE"
+      }
+    ],
+    "requirements": [
+      "R02",
+      "R03",
+      "R05",
+      "R06",
+      "R07",
+      "R08",
+      "R09",
+      "R10",
+      "R13",
+      "R15",
+      "R17",
+      "R18",
+      "R32",
+      "R33",
+      "R34",
+      "R35",
+      "R53"
+    ],
+    "original_findings": 8,
+    "remaining_local_findings": 0,
+    "findings_evidence": "docs/v4/item7-findings.json",
+    "findings_sha256": "972edc056896af66416c455bb0e90885a8afaa5ba69a34dd18f43a2a05f38a18",
+    "authorization": "User explicitly authorized three independent reviewer agents on 2026-10-04; root implemented fixes, reviewers independently re-reviewed exact application commit"
+  },
+  "commands": [
+    {
+      "tests": 132,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "command": ".venv/bin/python -m pytest -p no:cacheprovider tests/integration/test_v4_cycle_admission.py tests/integration/test_v4_goal_revisions.py tests/integration/test_v4_public_commands.py tests/integration/test_v4_schedule_cutover.py tests/integration/test_v4_runtime_waits.py tests/integration/test_v4_migrations.py tests/e2e/test_v4_outbox_recovery.py tests/e2e/test_v4_wait_restart.py tests/e2e/test_v4_continuation_restart.py tests/e2e/test_v4_item7_delivery_recovery.py tests/integration/test_v4_item7_admission.py tests/integration/test_v4_item7_governance.py -q -rs --junitxml=artifacts/v4-p0/item7/qualification-focused.xml",
+      "exit_code": 0,
+      "seconds": 200.815,
+      "junit": "artifacts/v4-p0/item7/qualification-focused.xml",
+      "junit_sha256": "a1fa86033871c644ff8651d0348131fadc2383a256cb518523fb558f49750f7b",
+      "log": "artifacts/v4-p0/item7/qualification-focused.log",
+      "log_sha256": "91bd9b71eb8a2175d0c9ccd3d7dba3b004e9519f55f5f7107ba8bdc8d49763ca"
+    },
+    {
+      "tests": 507,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "command": ".venv/bin/python -m pytest -p no:cacheprovider tests/contracts tests/unit tests/integration tests/e2e tests/evals -m 'not live' -q -rs --junitxml=artifacts/v4-p0/item7/qualification-regression.xml",
+      "exit_code": 0,
+      "seconds": 459.784,
+      "junit": "artifacts/v4-p0/item7/qualification-regression.xml",
+      "junit_sha256": "d8bd2d15392e563aa9fefe4fd56d8b8b1fff3aeeaccbbe34b2945c3f1688f1f2",
+      "log": "artifacts/v4-p0/item7/qualification-regression.log",
+      "log_sha256": "b297a251522750f004b0894191ecd19cf6609f0fc37c591b0b59b4904e7fefe3"
+    }
+  ],
+  "focused_execution_commit": "ff3b9ddb0947f83bd5416053aa3f684290798c53",
+  "focused_source_equivalence": "Only unselected historical-baseline test fixture and lock hash changed in e49a214; all production and selected focused sources byte-identical. Full regression executed e49a214.",
+  "baseline_fixture_recheck": {
+    "tests": 10,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "command": ".venv/bin/python -m pytest -p no:cacheprovider tests/integration/test_v4_baseline_approval.py -q -rs --junitxml=artifacts/v4-p0/item7/baseline-fixture-recheck.xml",
+    "exit_code": 0,
+    "seconds": 8.795,
+    "junit": "artifacts/v4-p0/item7/baseline-fixture-recheck.xml",
+    "junit_sha256": "725a2eb6c3f79f1e2f7a6f32f2a75eb5bbc1b613de09ec8b8d9e731427c4acb7",
+    "log": "artifacts/v4-p0/item7/baseline-fixture-recheck.log",
+    "log_sha256": "5ae975d0c402c5c7b37796447b4f186598a32af1d58423a059c55939ccf0819c"
+  },
+  "preliminary_full_run": {
+    "junit": "artifacts/v4-p0/item7/pre-final-regression.xml",
+    "junit_sha256": "dc8c507d3d94cccbf2fc0f2f51b8c877f16c8367dbfc4efb16a9c85127868663",
+    "tests": 507,
+    "passed": 506,
+    "failed": 1,
+    "scope": "Historical baseline fixture omitted canonical workspace/subject; strict context guard rejected earlier than intended missing-baseline assertion. Independently reviewed fixture now preserves canonical identity while baseline remains absent. Final 507 supersedes this run."
+  },
+  "p1_mapped_cases": 250,
+  "additional_verification": {
+    "documentation_tests": 15,
+    "mapped_obligations": 75,
+    "negative_controls": 6,
+    "fresh_mermaid_diagrams": 6,
+    "mermaid_results": "artifacts/v4-p0/item7/qualification-diagrams/results.json",
+    "documentation_shell_contracts": 4,
+    "dependency_consistency": "PASS",
+    "executed_checks": {
+      "artifact": "artifacts/v4-p0/item7/final-documentation-checks.json",
+      "sha256": "255d251985ad360f4666b713273b0d226335facbcc8a22e0854037ad19d91be7",
+      "checks": [
+        {
+          "name": "documentation-tests",
+          "command": [
+            "python3",
+            "docs/v4/test_checks.py"
+          ],
+          "exit_code": 0,
+          "seconds": 0.308,
+          "log": "artifacts/v4-p0/item7/final-documentation-tests.log",
+          "log_sha256": "2cb7c181925e0fb02711fbca0967590026f18d28cad081fbcfd0b6078306fdd0",
+          "status": "PASS"
+        },
+        {
+          "name": "documentation-contract",
+          "command": [
+            "python3",
+            "docs/v4/check.py",
+            "--self-test"
+          ],
+          "exit_code": 0,
+          "seconds": 0.373,
+          "log": "artifacts/v4-p0/item7/final-documentation-contract.log",
+          "log_sha256": "b413b38ad9db8241cf3c9f21caeffa315b31abf5e82d3b723e84b3caa820befe",
+          "status": "PASS"
+        },
+        {
+          "name": "browser-documentation",
+          "command": [
+            "bash",
+            "tests/scripts/test_browser_documentation.sh"
+          ],
+          "exit_code": 0,
+          "seconds": 0.063,
+          "log": "artifacts/v4-p0/item7/final-browser-documentation.log",
+          "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "status": "PASS"
+        },
+        {
+          "name": "browser-command",
+          "command": [
+            "bash",
+            "tests/scripts/test_verify_browser_evidence.sh"
+          ],
+          "exit_code": 0,
+          "seconds": 0.054,
+          "log": "artifacts/v4-p0/item7/final-browser-command.log",
+          "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "status": "PASS"
+        },
+        {
+          "name": "phase9-documentation",
+          "command": [
+            "bash",
+            "tests/scripts/test_phase_9_documentation.sh"
+          ],
+          "exit_code": 0,
+          "seconds": 0.054,
+          "log": "artifacts/v4-p0/item7/final-phase9-documentation.log",
+          "log_sha256": "ce5cda11bdfaa8726cfc69f803cb469b45658592275f8f95dbd0777a4eb9e25b",
+          "status": "PASS"
+        },
+        {
+          "name": "phase78-documentation",
+          "command": [
+            "bash",
+            "tests/scripts/test_phase_7_8_documentation.sh"
+          ],
+          "exit_code": 0,
+          "seconds": 0.058,
+          "log": "artifacts/v4-p0/item7/final-phase78-documentation.log",
+          "log_sha256": "89113f253b9a76eeffe5a080c1a2b1603da5db9b4c0882ab7f86678e926aa0d6",
+          "status": "PASS"
+        },
+        {
+          "name": "dependencies",
+          "command": [
+            ".venv/bin/python",
+            "-m",
+            "pip",
+            "check"
+          ],
+          "exit_code": 0,
+          "seconds": 0.389,
+          "log": "artifacts/v4-p0/item7/final-dependencies.log",
+          "log_sha256": "9261363b733079a641c2e4cc9bc46ffa1d8336945a87f807b6cf68847dbc9b09",
+          "status": "PASS"
+        },
+        {
+          "name": "whitespace",
+          "command": [
+            "git",
+            "diff",
+            "--check"
+          ],
+          "exit_code": 0,
+          "seconds": 0.032,
+          "log": "artifacts/v4-p0/item7/final-whitespace.log",
+          "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "status": "PASS"
+        }
+      ],
+      "status": "PASS"
+    },
+    "mermaid_results_sha256": "6a04203cacd481c7c9e2000bd83834a2ac1ad0cb0ab4d4db433ba6aa557502ba"
+  },
+  "preliminary_root_run": {
+    "junit": "artifacts/v4-p0/item7/review-fixes-focused.xml",
+    "junit_sha256": "1166f98acac715f4cee8008cf47284ab0eec26481cd12260429270fad5191052",
+    "passed": 107,
+    "failures": 3,
+    "scope": "Two stale first-downgrade-message assertions and one superseded expected migration-head assertion; actual history preservation succeeded. All assertions updated and 132/507 final qualification supersedes this run."
+  },
+  "historical_reports": [
+    "docs/v4/item7-preparation-evidence.json",
+    "docs/v4/item6-operator-evidence.json"
+  ],
+  "remaining_release_obligations": [
+    "General registry/provider eligibility beyond the approved no-effects fixture baseline; later capability and production qualification gates remain binding",
+    "Production G1 provider charge identity and effect integration beyond the fixture-qualified transfer/reconciliation contract",
+    "Production dispatcher/alert service, live Temporal legacy start/signal cutover, public V4 API-to-provider outbox integration and production typed delivery recovery beyond the automatic local fixture",
+    "General policy/model authorization, live scheduler stop/fencing integration and separately scoped remote read-only reconciliation beyond fixture permits/cases/cutover",
+    "Deployment-specific supported worker routing/rollback, external durable alert delivery beyond the local item-6 patch/timer/restore fixture"
+  ],
+  "publication": {
+    "branch": "feat/archv4-p0-foundation",
+    "published_base_commit": "e572bc7fe1b84db705b8c500aaebcf95f847023c",
+    "base_ci": "PASS",
+    "base_enforcement": "PASS",
+    "base_inspected_at": "2026-10-04T01:23:04.307181+00:00",
+    "final_head_readback": "artifacts/v4-p0/item7/qualified-head-repository.json",
+    "final_head_inspection": "Required after publication; this prepublication report certifies application source, not a future commit"
+  },
+  "production_effects_enabled": false,
+  "RG0": "HELD",
+  "RG1": "HELD",
+  "formal_pr_approval": "NOT RUN",
+  "main_merge": "NOT AUTHORIZED",
+  "next_queue_item": null,
+  "next_action": "Complete outstanding RG0/RG1 production acceptance within separately authorized scope; P2\u2013P7 remain gated, optional P6 disabled",
+  "independent_final_reconciliation": {
+    "status": "PASS final evidence and documentation reconciliation for implemented P1 fixture scope",
+    "reviewer": "independent runtime reviewer /root/p1_runtime_review",
+    "reviewed_at": "2026-10-04",
+    "original_artifact": "artifacts/v4-p0/item7/final-evidence-reconciliation.json",
+    "sha256": "d1bc317f59a9822b26a56ef57357715ca0130edd486de0f55aa07c6b5ff752d0",
+    "report_text": "{\n  \"reviewer\": \"independent runtime reviewer /root/p1_runtime_review\",\n  \"reviewed_at\": \"2026-10-04\",\n  \"status\": \"PASS final evidence and documentation reconciliation for implemented P1 fixture scope\",\n  \"qualified_application_commit\": \"e49a214cd371d0417f093d3a24fa2a4f4a359e83\",\n  \"findings\": [\n    {\n      \"id\": \"REC-01\",\n      \"severity\": \"Minor documentation inconsistency\",\n      \"path\": \"docs/v4/p1-qualification-matrix.json\",\n      \"row\": \"R18\",\n      \"initial_problem\": \"remaining_acceptance retained Independent whole-row review after that review passed\",\n      \"status\": \"RESOLVED during reconciliation\",\n      \"fix_verified\": \"Fulfilled review phrase removed; live scheduler stop/cancellation/fencing and separately scoped remote read-only reconciliation obligations retained.\"\n    }\n  ],\n  \"remaining_concrete_findings\": 0,\n  \"source_verification\": {\n    \"source_files\": 316,\n    \"all_commit_and_worktree_hashes_match\": true,\n    \"evidence_lock\": {\n      \"path\": \"docs/v4/evidence-lock.json\",\n      \"sha256\": \"4daab8861eb63d21d5aad81dc5f6a45624f4f7dcc8ded7ebe2d5a8633548ff58\"\n    },\n    \"full_suite_source_freeze\": {\n      \"path\": \"artifacts/v4-p0/item7/qualification-source-freeze.json\",\n      \"sha256\": \"fb65701f623e448c7a32a10a2dd13d77380babcbf0c04b158302a8bc456cb8d0\",\n      \"identical_to_lock_files\": true\n    },\n    \"focused_execution_commit\": \"ff3b9ddb0947f83bd5416053aa3f684290798c53\",\n    \"focused_source_equivalence_verified\": \"git diff ff3b9dd..e49a214 contains only unselected baseline fixture and lock JSON; application and selected focused sources byte-identical\"\n  },\n  \"suite_evidence\": [\n    {\n      \"scope\": \"focused\",\n      \"tests\": 132,\n      \"failures\": 0,\n      \"errors\": 0,\n      \"skipped\": 0,\n      \"junit\": \"artifacts/v4-p0/item7/qualification-focused.xml\",\n      \"junit_sha256\": \"a1fa86033871c644ff8651d0348131fadc2383a256cb518523fb558f49750f7b\",\n      \"log\": \"artifacts/v4-p0/item7/qualification-focused.log\",\n      \"log_sha256\": \"91bd9b71eb8a2175d0c9ccd3d7dba3b004e9519f55f5f7107ba8bdc8d49763ca\"\n    },\n    {\n      \"scope\": \"full non-live\",\n      \"tests\": 507,\n      \"failures\": 0,\n      \"errors\": 0,\n      \"skipped\": 0,\n      \"junit\": \"artifacts/v4-p0/item7/qualification-regression.xml\",\n      \"junit_sha256\": \"d8bd2d15392e563aa9fefe4fd56d8b8b1fff3aeeaccbbe34b2945c3f1688f1f2\",\n      \"log\": \"artifacts/v4-p0/item7/qualification-regression.log\",\n      \"log_sha256\": \"b297a251522750f004b0894191ecd19cf6609f0fc37c591b0b59b4904e7fefe3\"\n    },\n    {\n      \"scope\": \"baseline recheck\",\n      \"tests\": 10,\n      \"failures\": 0,\n      \"errors\": 0,\n      \"skipped\": 0,\n      \"junit\": \"artifacts/v4-p0/item7/baseline-fixture-recheck.xml\",\n      \"junit_sha256\": \"725a2eb6c3f79f1e2f7a6f32f2a75eb5bbc1b613de09ec8b8d9e731427c4acb7\",\n      \"log\": \"artifacts/v4-p0/item7/baseline-fixture-recheck.log\",\n      \"log_sha256\": \"5ae975d0c402c5c7b37796447b4f186598a32af1d58423a059c55939ccf0819c\"\n    }\n  ],\n  \"all_17_rows\": [\n    {\n      \"id\": \"R02\",\n      \"actual_executed_mapped_cases\": 33,\n      \"matrix_count_matches\": true,\n      \"review_status\": \"PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE; production acceptance remains HELD\",\n      \"review_reports\": [\n        \"docs/v4/item7-runtime-review.json\"\n      ],\n      \"remaining_acceptance\": \"deployment-specific compatible worker routing/drain/rollback qualification; local replay/continuation is already tested.\",\n      \"production_release_status\": \"HELD\"\n    },\n    {\n      \"id\": \"R03\",\n      \"actual_executed_mapped_cases\": 58,\n      \"matrix_count_matches\": true,\n      \"review_status\": \"PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE; production acceptance remains HELD\",\n      \"review_reports\": [\n        \"docs/v4/item7-runtime-review.json\"\n      ],\n      \"remaining_acceptance\": \"conversion of remaining legacy API/scheduler direct start/signal dual writes into outbox transactions; production dispatch remains unqualified.\",\n      \"production_release_status\": \"HELD\"\n    },\n    {\n      \"id\": \"R05\",\n      \"actual_executed_mapped_cases\": 97,\n      \"matrix_count_matches\": true,\n      \"review_status\": \"PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE; production acceptance remains HELD\",\n      \"review_reports\": [\n        \"docs/v4/item7-admission-review.json\"\n      ],\n      \"remaining_acceptance\": \"production baseline/registry eligibility qualification beyond the explicitly approved no-effects fixture.\",\n      \"production_release_status\": \"HELD\"\n    },\n    {\n      \"id\": \"R06\",\n      \"actual_executed_mapped_cases\": 56,\n      \"matrix_count_matches\": true,\n      \"review_status\": \"PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE; production acceptance remains HELD\",\n      \"review_reports\": [\n        \"docs/v4/item7-admission-review.json\"\n      ],\n      \"remaining_acceptance\": \"production legacy slot/cycle mapping/cutover qualification beyond local signed fixture coalescing.\",\n      \"production_release_status\": \"HELD\"\n    },\n    {\n      \"id\": \"R07\",\n      \"actual_executed_mapped_cases\": 76,\n      \"matrix_count_matches\": true,\n      \"review_status\": \"PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE; production acceptance remains HELD\",\n      \"review_reports\": [\n        \"docs/v4/item7-admission-review.json\"\n      ],\n      \"remaining_acceptance\": \"production/stage authorization integration. Trial eligibility remains conditional on later trial enablement; current fixtures explicitly have no assignment.\",\n      \"production_release_status\": \"HELD\"\n    },\n    {\n      \"id\": \"R08\",\n      \"actual_executed_mapped_cases\": 49,\n      \"matrix_count_matches\": true,\n      \"review_status\": \"PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE; production acceptance remains HELD\",\n      \"review_reports\": [\n        \"docs/v4/item7-admission-review.json\",\n        \"docs/v4/item7-governance-review.json\"\n      ],\n      \"remaining_acceptance\": \"live Temporal scheduling/fencing/monitoring qualification beyond the isolated job_schedules fixture poller.\",\n      \"production_release_status\": \"HELD\"\n    },\n    {\n      \"id\": \"R09\",\n      \"actual_executed_mapped_cases\": 39,\n      \"matrix_count_matches\": true,\n      \"review_status\": \"PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE; production acceptance remains HELD\",\n      \"review_reports\": [\n        \"docs/v4/item7-admission-review.json\",\n        \"docs/v4/item7-runtime-review.json\"\n      ],\n      \"remaining_acceptance\": \"production stage deferral/recovery qualification; local canonical identity and bounded timer tests pass.\",\n      \"production_release_status\": \"HELD\"\n    },\n    {\n      \"id\": \"R10\",\n      \"actual_executed_mapped_cases\": 90,\n      \"matrix_count_matches\": true,\n      \"review_status\": \"PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE; production acceptance remains HELD\",\n      \"review_reports\": [\n        \"docs/v4/item7-admission-review.json\"\n      ],\n      \"remaining_acceptance\": \"full candidate/plan/stage integration. Enabled effect/provider paths require their later production evidence.\",\n      \"production_release_status\": \"HELD\"\n    },\n    {\n      \"id\": \"R13\",\n      \"actual_executed_mapped_cases\": 123,\n      \"matrix_count_matches\": true,\n      \"review_status\": \"PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE; production acceptance remains HELD\",\n      \"review_reports\": [\n        \"docs/v4/item7-admission-review.json\",\n        \"docs/v4/item7-governance-review.json\"\n      ],\n      \"remaining_acceptance\": \"complete enabled-version revocation integration; current grants/baselines/owner holds pass local tests. Later capability release families retain their phase gates.\",\n      \"production_release_status\": \"HELD\"\n    },\n    {\n      \"id\": \"R15\",\n      \"actual_executed_mapped_cases\": 32,\n      \"matrix_count_matches\": true,\n      \"review_status\": \"PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE; production acceptance remains HELD\",\n      \"review_reports\": [\n        \"docs/v4/item7-governance-review.json\"\n      ],\n      \"remaining_acceptance\": \"general versioned policy/production effect gate qualification beyond typed fixture decisions; LLM text must supply no authority.\",\n      \"production_release_status\": \"HELD\"\n    },\n    {\n      \"id\": \"R17\",\n      \"actual_executed_mapped_cases\": 53,\n      \"matrix_count_matches\": true,\n      \"review_status\": \"PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE; production acceptance remains HELD\",\n      \"review_reports\": [\n        \"docs/v4/item7-governance-review.json\"\n      ],\n      \"remaining_acceptance\": \"enabled real-provider stage/permit integration beyond the single no-effects mock acceptance; production spend remains disabled.\",\n      \"production_release_status\": \"HELD\"\n    },\n    {\n      \"id\": \"R18\",\n      \"actual_executed_mapped_cases\": 69,\n      \"matrix_count_matches\": true,\n      \"review_status\": \"PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE; production acceptance remains HELD\",\n      \"review_reports\": [\n        \"docs/v4/item7-governance-review.json\"\n      ],\n      \"remaining_acceptance\": \"live scheduler stop/cancellation/fencing and separately scoped remote read-only reconciliation beyond local stops/cutover.\",\n      \"production_release_status\": \"HELD\"\n    },\n    {\n      \"id\": \"R32\",\n      \"actual_executed_mapped_cases\": 74,\n      \"matrix_count_matches\": true,\n      \"review_status\": \"PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE; production acceptance remains HELD\",\n      \"review_reports\": [\n        \"docs/v4/item7-governance-review.json\",\n        \"docs/v4/item7-runtime-review.json\"\n      ],\n      \"remaining_acceptance\": \"production typed recovery worker/failure delivery qualification beyond canonical fixture cases/timers.\",\n      \"production_release_status\": \"HELD\"\n    },\n    {\n      \"id\": \"R33\",\n      \"actual_executed_mapped_cases\": 58,\n      \"matrix_count_matches\": true,\n      \"review_status\": \"PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE; production acceptance remains HELD\",\n      \"review_reports\": [\n        \"docs/v4/item7-governance-review.json\",\n        \"docs/v4/item7-runtime-review.json\"\n      ],\n      \"remaining_acceptance\": \"production stage-specific reauthorization/delivery integration; local resume preserves original target/context/operation.\",\n      \"production_release_status\": \"HELD\"\n    },\n    {\n      \"id\": \"R34\",\n      \"actual_executed_mapped_cases\": 75,\n      \"matrix_count_matches\": true,\n      \"review_status\": \"PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE; production acceptance remains HELD\",\n      \"review_reports\": [\n        \"docs/v4/item7-governance-review.json\",\n        \"docs/v4/item7-runtime-review.json\"\n      ],\n      \"remaining_acceptance\": \"external alert delivery/on-call qualification beyond PostgreSQL fixture acceptance; fixture acceptance is not human acknowledgment.\",\n      \"production_release_status\": \"HELD\"\n    },\n    {\n      \"id\": \"R35\",\n      \"actual_executed_mapped_cases\": 47,\n      \"matrix_count_matches\": true,\n      \"review_status\": \"PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE; production acceptance remains HELD\",\n      \"review_reports\": [\n        \"docs/v4/item7-governance-review.json\"\n      ],\n      \"remaining_acceptance\": \"Current terminal archive/retention/idempotency is tested; rights-filtered discovery and later record families require their own later-phase qualification.\",\n      \"production_release_status\": \"HELD\"\n    },\n    {\n      \"id\": \"R53\",\n      \"actual_executed_mapped_cases\": 146,\n      \"matrix_count_matches\": true,\n      \"review_status\": \"PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE; production acceptance remains HELD\",\n      \"review_reports\": [\n        \"docs/v4/item7-admission-review.json\",\n        \"docs/v4/item7-governance-review.json\",\n        \"docs/v4/item7-runtime-review.json\"\n      ],\n      \"remaining_acceptance\": \"Current P1 envelopes, immutable state/other command receipts, canonical delivery scope and additive 0032\\u20130034 ownership/rollback guards are independently reviewed and locally tested; later record families require envelope tests in their assigned phases.\",\n      \"production_release_status\": \"HELD\"\n    }\n  ],\n  \"unique_mapped_p1_cases\": 250,\n  \"matrix_mapping_limit\": \"Per-row counts map executed test classes and overlap; they do not count distinct accepted production assertions.250 is unique union, not summed per-row counts.\",\n  \"reviewer_reports\": [\n    {\n      \"reviewer\": \"admission\",\n      \"durable_report\": \"docs/v4/item7-admission-review.json\",\n      \"original_final_report\": \"artifacts/v4-p0/item7/review-admission.json\",\n      \"sha256\": \"bd200cbf73c90393a57591e39ba8463cb5cd0b8c5279924778fe01487469cb67\",\n      \"byte_identical\": true,\n      \"exact_application_certification\": \"e49a214cd371d0417f093d3a24fa2a4f4a359e83\"\n    },\n    {\n      \"reviewer\": \"governance\",\n      \"durable_report\": \"docs/v4/item7-governance-review.json\",\n      \"original_final_report\": \"artifacts/v4-p0/item7/review-governance-rereview.json\",\n      \"sha256\": \"cccb44d195fcc37ccd0782d5bc5ae18cbf7838cc6280fbfcffa48b65eca0bf37\",\n      \"byte_identical\": true,\n      \"exact_application_certification\": \"e49a214cd371d0417f093d3a24fa2a4f4a359e83\"\n    },\n    {\n      \"reviewer\": \"runtime\",\n      \"durable_report\": \"docs/v4/item7-runtime-review.json\",\n      \"original_final_report\": \"artifacts/v4-p0/item7/review-runtime.json\",\n      \"sha256\": \"410781b5e8d229a2d515a8ec439592a76fd3e1fc08277ede5fd24c3ae0b05f6c\",\n      \"byte_identical\": true,\n      \"exact_application_certification\": \"e49a214cd371d0417f093d3a24fa2a4f4a359e83\"\n    }\n  ],\n  \"finding_closure\": {\n    \"eight_original_findings\": [\n      {\n        \"id\": \"AD01\",\n        \"reviewer\": \"admission\",\n        \"status\": \"RESOLVED\"\n      },\n      {\n        \"id\": \"AD02\",\n        \"reviewer\": \"admission\",\n        \"status\": \"RESOLVED\"\n      },\n      {\n        \"id\": \"GOV-01\",\n        \"reviewer\": \"governance\",\n        \"status\": \"RESOLVED\"\n      },\n      {\n        \"id\": \"GOV-02\",\n        \"reviewer\": \"governance\",\n        \"status\": \"RESOLVED\"\n      },\n      {\n        \"id\": \"GOV-03\",\n        \"reviewer\": \"governance\",\n        \"status\": \"RESOLVED\"\n      },\n      {\n        \"id\": \"GOV-04\",\n        \"reviewer\": \"governance\",\n        \"status\": \"RESOLVED\"\n      },\n      {\n        \"id\": \"RT-01\",\n        \"reviewer\": \"runtime\",\n        \"status\": \"RESOLVED\"\n      },\n      {\n        \"id\": \"RT-02\",\n        \"reviewer\": \"runtime\",\n        \"status\": \"RESOLVED\"\n      }\n    ],\n    \"repair_followups\": [\n      {\n        \"id\": \"GOV-03-related-revocation\",\n        \"status\": \"RESOLVED\"\n      },\n      {\n        \"id\": \"GOV-03-related-expiry\",\n        \"status\": \"RESOLVED\"\n      },\n      {\n        \"id\": \"GOV-M01\",\n        \"status\": \"RESOLVED\"\n      }\n    ],\n    \"runtime_followups\": \"Closure order, contiguous-prefix lock handling and ordinary-poll retry independently qualified; exact application certification preserved in byte-identical runtime report\",\n    \"historical_red_and_intermediate_failures\": \"Preserved in original reviewer reports/findings and ignored artifacts; preliminary root 107/3 and 506/1 runs explicitly superseded by final 132/507 rather than relabeled\"\n  },\n  \"documentation_verification\": {\n    \"final_eight_gate_artifact\": {\n      \"path\": \"artifacts/v4-p0/item7/final-documentation-checks.json\",\n      \"sha256\": \"255d251985ad360f4666b713273b0d226335facbcc8a22e0854037ad19d91be7\",\n      \"checks\": 8,\n      \"all_exit_codes_zero\": true,\n      \"every_log_hash_matches\": true\n    },\n    \"fifteen_documentation_tests\": \"PASS artifact confirmed\",\n    \"validator\": \"75 obligations and 6 negative controls PASS artifact confirmed\",\n    \"shell_contracts\": \"4 PASS artifact confirmed\",\n    \"dependencies_and_whitespace\": \"PASS artifact confirmed\",\n    \"fresh_mermaid_results\": {\n      \"path\": \"artifacts/v4-p0/item7/qualification-diagrams/results.json\",\n      \"sha256\": \"6a04203cacd481c7c9e2000bd83834a2ac1ad0cb0ab4d4db433ba6aa557502ba\",\n      \"diagrams\": 6,\n      \"all_six_source_and_svg_hashes_verified\": true\n    },\n    \"audited_documentation_artifacts\": 233,\n    \"audited_hashed_preserved_artifacts\": 163,\n    \"all_audit_preservation_hashes_match\": true,\n    \"current_navigation\": \"README, documentation index, core aliases, progress, validation, blueprint and current qualification point to completed item7 fixture qualification and remaining production holds\",\n    \"dated_snapshots\": \"Explicit historical scope markers isolate prior 311-file/462-test NOT RUN review statements. Item-6 ledger snapshots have explicit record_scope and retain their capture-time review fields. Completed item-6 progress body restored from e49a214. No current status contradiction after REC-01 repair.\",\n    \"restored_legacy_references\": \"Current docs/verification.md retains historical verify-phases-7-8 and browser-evidence commands; docs/database.md retains 0009 publication and approved-decision immutability reference; source unchanged.\",\n    \"final_minor_prose_refresh\": \"Current banner capitalization/spacing and explicit historical scopes inspected after final root prose refresh; final document hashes recorded below.\"\n  },\n  \"document_hashes_at_reconciliation\": {\n    \"docs/v4/item7-evidence.json\": \"fd40f49fc24dc530b4e48577b60d0497a10a199200230363504b028e56628872\",\n    \"docs/v4/item7-findings.json\": \"972edc056896af66416c455bb0e90885a8afaa5ba69a34dd18f43a2a05f38a18\",\n    \"docs/v4/item7-admission-review.json\": \"bd200cbf73c90393a57591e39ba8463cb5cd0b8c5279924778fe01487469cb67\",\n    \"docs/v4/item7-governance-review.json\": \"cccb44d195fcc37ccd0782d5bc5ae18cbf7838cc6280fbfcffa48b65eca0bf37\",\n    \"docs/v4/item7-runtime-review.json\": \"410781b5e8d229a2d515a8ec439592a76fd3e1fc08277ede5fd24c3ae0b05f6c\",\n    \"docs/v4/p1-qualification-matrix.json\": \"a0db88b2e04e87a60e68c0952c417dedaea4db355f7cafc289d29ae95f2634e8\",\n    \"docs/v4/p0-release.json\": \"9f8dced81595c4e3fc1b36a464c93112fd6d03d258e919cf3e58113b47d5947e\",\n    \"docs/v4/documentation-status-audit.json\": \"ed2f50d86c0980dad9f6372e14b0e8701ed520b3dff99c893c4aacb931445bde\",\n    \"docs/v4/progress.md\": \"fa5f2171b4f572f42a83863e39f033c16802a169aba1afa2d9f4d6df137041af\",\n    \"docs/v4/validation.md\": \"8521a29e3ac5f688642cfb13302dc70cf3f0cf090f446200b09719967dbdccee\",\n    \"docs/v4/IMPLEMENTATION-BLUEPRINT.md\": \"a54e025f9bdebe51de95938b9655c49bcdad6021db0aba9ed610b32dd8f9d06d\",\n    \"docs/v4/item7-independent-review.md\": \"a645cdc0867ce62d08040ec461818f3ec90d57926d95b6a84cf911d631d6b57b\",\n    \"docs/v4/evidence-lock.json\": \"4daab8861eb63d21d5aad81dc5f6a45624f4f7dcc8ded7ebe2d5a8633548ff58\",\n    \"README.md\": \"8b57ee53ed11c8a7913b1ac9bd0791a271f6a909d98cfb6b2ae737fea5d98881\",\n    \"docs/README.md\": \"d20e2eaa1363e1eff33b1ee0bf5704b5406a9ecba55faf198f9ce5549de673fb\",\n    \"docs/implementation-progress.md\": \"d2d6526f53ac485cd6ff38b000b2ac90b00fc1b1010a3ee1d1220e17807bdc77\",\n    \"docs/verification.md\": \"869751b22e7e9bf982a7e9668cd0acc428c956b634b9ed5bb0305d2c327b4f9e\",\n    \"docs/database.md\": \"e53fc522f5bd3a736c88da9bb88ba0806cae8dbec448be2861ee477ff063297e\"\n  },\n  \"release_reconciliation\": {\n    \"remaining_release_obligations\": [\n      \"General registry/provider eligibility beyond the approved no-effects fixture baseline; later capability and production qualification gates remain binding\",\n      \"Production G1 provider charge identity and effect integration beyond the fixture-qualified transfer/reconciliation contract\",\n      \"Production dispatcher/alert service, live Temporal legacy start/signal cutover, public V4 API-to-provider outbox integration and production typed delivery recovery beyond the automatic local fixture\",\n      \"General policy/model authorization, live scheduler stop/fencing integration and separately scoped remote read-only reconciliation beyond fixture permits/cases/cutover\",\n      \"Deployment-specific supported worker routing/rollback, external durable alert delivery beyond the local item-6 patch/timer/restore fixture\"\n    ],\n    \"row_specific_remaining_acceptance\": \"Retained verbatim above; later conditional phases and family envelope requirements remain required in assigned gates.\",\n    \"RG0\": \"HELD\",\n    \"RG1\": \"HELD\",\n    \"production_effects_enabled\": false,\n    \"formal_pr_approval\": \"NOT RUN\",\n    \"main_local_and_tracking_ref\": \"8e50d68efbf2bec2aabfb2fe3226e01635de2adb\",\n    \"main_unmerged\": true,\n    \"merge_authorization\": \"NOT AUTHORIZED by this review\",\n    \"final_published_head_ci\": \"Required after publication; existing repository report only binds published preparation base e572bc7. No remote query or approval performed by this reviewer.\",\n    \"later_phases\": \"P2\\u2013P7 remain gated/planned; optional P6 disabled\"\n  },\n  \"limits\": [\n    \"Root executed final 132 focused / 507 full/documentation gates; this reviewer independently checked their actual artifacts/source hashes and separately executed 17 runtime repair tests.\",\n    \"This review is evidence reconciliation and local implementation engineering review, not formal GitHub PR approval, merge authorization or production operational approval.\",\n    \"Subsequent preservation of this report and hash-only ledger/audit updates need not recursively self-hash this report; application hashes and reviewer reports must remain unchanged.\",\n    \"document_hashes_at_reconciliation records the pre-attachment snapshot. Attaching this exact report text to docs/v4/item7-evidence.json and refreshing only its ledger/audit digests is a transparent evidence-preservation update, not a change to the reviewed application, independent report copies, Markdown or qualification behavior.\"\n  ]\n}\n",
+    "attachment_scope": "Exact reviewer report bytes attached after independent review of the documented pre-attachment snapshot. Only qualification attachment and associated ledger/audit digest updates follow; source/reviewer hashes and reviewed behavior remain unchanged."
+  }
+}

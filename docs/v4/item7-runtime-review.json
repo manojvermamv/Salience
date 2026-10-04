@@ -1,0 +1,543 @@
+{
+  "reviewer": "p1_runtime_review independent reviewer agent",
+  "reviewed_head": "e572bc7fe1b84db705b8c500aaebcf95f847023c",
+  "review_date": "2026-10-04",
+  "scope": [
+    "R02",
+    "R03",
+    "R09",
+    "R34",
+    "R53"
+  ],
+  "authorization": "Root reports user explicit authorization for three independent reviewers. Only authorized NEW regression test edited; no production source or docs edited by this reviewer. Actual reproductions used uniquely named disposable PG DB migrated to head and distinct private Temporal queues; no shared salience DB mutation, no server/container restart; DB and role cleaned.",
+  "agents_md": "No applicable AGENTS.md found under /home/admin/Salience or parent paths.",
+  "status": "PASS for assigned local runtime rows after independent fix re-review; production obligations remain HELD",
+  "findings": [
+    {
+      "id": "RT-01",
+      "severity": "P1 / Important",
+      "requirements": [
+        "R03",
+        "R32",
+        "R33"
+      ],
+      "path": "src/salience/cycles/outbox.py",
+      "line": 125,
+      "title": "Transport acknowledgment permanently strands a terminal failed cycle workflow",
+      "trigger": "Temporal accepts start, then fixture_runtime_binding exhausts its three bounded activity attempts (e.g. transient database outage); failed runtime later has healthy worker restart.",
+      "invariant": "Acknowledged handoff without canonical inbox cannot disappear from durable recovery after runtime failure; preserve cycle/context/operation and owned bounded disposition.",
+      "actual": "Actual Temporal WorkflowFailureError after three OperationalError attempts; worker restart and dispatch return leave outbox delivered, cycle runnable, inbox0, holds0, cases0, deadletters0.",
+      "repro": "tests/e2e/test_v4_item7_delivery_recovery.py::test_acknowledged_start_failure_has_canonical_recovery_after_worker_restart",
+      "fix_requirement": "Reconcile terminal cycle runtime failures into durable same-identity owned hold/case/dead-letter, or defer final consumption acknowledgment with safe failure reconciliation. Retain historical deliveries and never start duplicate logical operation. Test failure before binding/consume and after signal; current fixtures and replay remain compatible.",
+      "status": "REPAIRED; independently re-reviewed final worktree source and regression verified",
+      "rereview_requirement": "Bind final commit to recorded source hashes and applicable full regression before checkpoint; no PR or production approval"
+    },
+    {
+      "id": "RT-02",
+      "severity": "P1 / Important",
+      "requirements": [
+        "R03",
+        "R53"
+      ],
+      "path": "src/salience/cycles/outbox.py",
+      "line": 228,
+      "title": "Restricted scoped consumer commits an immutable receipt into a foreign cycle stream",
+      "trigger": "Restricted NOSUPERUSER/NOBYPASSRLS writer creates outbox with workspace/subject/goal/intent A and existing cycle B sequence2; foreign sequence1 already consumed; genuine CycleOutbox(workspace A).consume processes it.",
+      "invariant": "Blueprint 4.5 requires database constraints plus service same-parent scope binding; UUID existence does not establish tenant/goal scope. Local P1b states consumer checks canonical scope. Foreign cycle stream/audit must receive no receipt from A.",
+      "actual": "Independent FK checks accept mismatched outbox; consumer joins cycle only by id, returns held and commits one immutable inbox row into B and fixture_consumed event. Effect authority denies but canonical foreign receipt/audit is corrupted. Role explicitly cannot mutate identity_subjects/grants.",
+      "repro": "tests/e2e/test_v4_item7_delivery_recovery.py::test_restricted_outbox_writer_cannot_commit_a_foreign_cycle_receipt",
+      "fix_requirement": "Add same workspace/subject/goal/intent/cycle parent guard for outbox, matching inbox and event parent checks, plus defensive consumer binding before receipt. Apply additive migration with lock/preflight and hold corrupt existing history without rewriting; preserve downgrade guards.",
+      "status": "REPAIRED; independently re-reviewed final worktree source and regression verified",
+      "rereview_requirement": "Bind final commit to recorded source hashes and applicable full regression before checkpoint; no PR or production approval"
+    }
+  ],
+  "rows": [
+    {
+      "id": "R02",
+      "review_depth": "independent primary runtime/source/migration/test review",
+      "conclusion": "Coordinator uses workflow time and SDK patch marker; I/O only bounded activities. Unpatched path retained, initial consumed once, global 32-message cap/absolute deadline/8-message continuation preserve identity/pending/overflow. Actual legacy transition and all continued run replay are in inspected verifiers. No determinism defect found; RT-01 affects terminal failure recovery.",
+      "mapped_case_count_verified": 16,
+      "verifiers": [
+        "tests/e2e/test_v4_worker_upgrade.py",
+        "tests/e2e/test_v4_continuation_restart.py",
+        "tests/e2e/test_v4_outbox_recovery.py"
+      ],
+      "remaining_acceptance": "Independent whole-row review and deployment-specific compatible worker routing/drain/rollback qualification; local replay/continuation is already tested.",
+      "production_release_status": "HELD"
+    },
+    {
+      "id": "R03",
+      "review_depth": "independent primary runtime/source/migration/test review",
+      "conclusion": "Initial RT-01 and RT-02 reproduced failures are repaired and independently re-reviewed with 17 frozen cases: terminal runtime failure produces a durable owner hold and ordered held receipts; both closure orderings, scanner fairness, observation negatives, locked prefix retry through ordinary polling, scoped SQL/consumer checks and preservation-safe 0034 pass. Remaining production integration is unchanged.",
+      "mapped_case_count_verified": 41,
+      "verifiers": [
+        "tests/integration/test_v4_outbox.py",
+        "tests/integration/test_v4_auto_dispatch.py",
+        "tests/integration/test_v4_public_commands.py",
+        "tests/e2e/test_v4_outbox_recovery.py"
+      ],
+      "remaining_acceptance": "Independent whole-row review and conversion of remaining legacy API/scheduler direct start/signal dual writes into outbox transactions; production dispatch remains unqualified.",
+      "production_release_status": "HELD"
+    },
+    {
+      "id": "R05",
+      "review_depth": "independent matrix/evidence/verifier/release reconciliation; primary implementation review assigned another reviewer",
+      "conclusion": "Mapped goal revision/baseline/cadence/accounting/signed-command verifiers cover exact revisions, approval, no implicit assignment and fixed fixture scope; full production baseline eligibility is openly unqualified. Primary correctness reviewed separately.",
+      "mapped_case_count_verified": 84,
+      "verifiers": [
+        "tests/integration/test_v4_goal_revisions.py",
+        "tests/integration/test_v4_baseline_approval.py",
+        "tests/integration/test_v4_cadence_policy.py",
+        "tests/integration/test_v4_cycle_accounting.py",
+        "tests/integration/test_v4_public_commands.py"
+      ],
+      "remaining_acceptance": "Independent whole-row review and production baseline/registry eligibility qualification beyond the explicitly approved no-effects fixture.",
+      "production_release_status": "HELD"
+    },
+    {
+      "id": "R06",
+      "review_depth": "independent matrix/evidence/verifier/release reconciliation; primary implementation review assigned another reviewer",
+      "conclusion": "Canonical intent/coalesced slot and cross-revision retry assertions map to cadence/admission/cutover/restart tests; live mapping remains unqualified. Primary correctness reviewed separately.",
+      "mapped_case_count_verified": 56,
+      "verifiers": [
+        "tests/integration/test_v4_cycle_admission.py",
+        "tests/integration/test_v4_cadence_policy.py",
+        "tests/integration/test_v4_schedule_cutover.py",
+        "tests/e2e/test_v4_outbox_recovery.py"
+      ],
+      "remaining_acceptance": "Independent whole-row review and production legacy slot/cycle mapping/cutover qualification beyond local signed fixture coalescing.",
+      "production_release_status": "HELD"
+    },
+    {
+      "id": "R07",
+      "review_depth": "independent matrix/evidence/verifier/release reconciliation; primary implementation review assigned another reviewer",
+      "conclusion": "Fixture gate assertions for freshness/due/overlap/quota/caps/allocations are present in mapped tests; production stage authorization remains unqualified and trials require later gate. Primary correctness reviewed separately.",
+      "mapped_case_count_verified": 76,
+      "verifiers": [
+        "tests/integration/test_v4_cycle_admission.py",
+        "tests/integration/test_v4_cadence_policy.py",
+        "tests/integration/test_v4_cycle_accounting.py",
+        "tests/integration/test_v4_schedule_cutover.py"
+      ],
+      "remaining_acceptance": "Independent whole-row review and production/stage authorization integration. Trial eligibility remains conditional on later trial enablement; current fixtures explicitly have no assignment.",
+      "production_release_status": "HELD"
+    },
+    {
+      "id": "R08",
+      "review_depth": "independent matrix/evidence/verifier/release reconciliation; primary implementation review assigned another reviewer",
+      "conclusion": "Cadence/cutover verifier claims remain limited to job_schedules fixture watermark/poller; no live Temporal conversion or production independent scheduler evidence is implied. Primary correctness reviewed separately.",
+      "mapped_case_count_verified": 34,
+      "verifiers": [
+        "tests/integration/test_v4_cadence_policy.py",
+        "tests/integration/test_v4_schedule_cutover.py"
+      ],
+      "remaining_acceptance": "Independent whole-row review and live Temporal scheduling/fencing/monitoring qualification beyond the isolated job_schedules fixture poller.",
+      "production_release_status": "HELD"
+    },
+    {
+      "id": "R09",
+      "review_depth": "independent primary runtime/source/migration/test review",
+      "conclusion": "Pre-admission wait keeps original intent/eligibility revision; timer author current grant + stop + wake/admit is savepoint atomic. Recovery stays original cycle/context/operation; strategic closure successor requires separate authorized coalesced intent. Deadline and max-wake bounds prevent unlimited timer chains. No additional app-path defect found in assigned scope.",
+      "mapped_case_count_verified": 39,
+      "verifiers": [
+        "tests/integration/test_v4_cycle_admission.py",
+        "tests/integration/test_v4_runtime_waits.py",
+        "tests/e2e/test_v4_wait_restart.py"
+      ],
+      "remaining_acceptance": "Independent whole-row review and production stage deferral/recovery qualification; local canonical identity and bounded timer tests pass.",
+      "production_release_status": "HELD"
+    },
+    {
+      "id": "R10",
+      "review_depth": "independent matrix/evidence/verifier/release reconciliation; primary implementation review assigned another reviewer",
+      "conclusion": "Mapped typed immutable context/canonical identity/frozen authority/no assignment/resource deadline verifiers exist; effect and full candidate/plan integration explicitly remain unqualified. Primary correctness reviewed separately.",
+      "mapped_case_count_verified": 77,
+      "verifiers": [
+        "tests/integration/test_v4_cadence_policy.py",
+        "tests/integration/test_v4_cycle_accounting.py",
+        "tests/integration/test_v4_runtime_waits.py"
+      ],
+      "remaining_acceptance": "Independent whole-row review and full candidate/plan/stage integration. Enabled effect/provider paths require their later production evidence.",
+      "production_release_status": "HELD"
+    },
+    {
+      "id": "R13",
+      "review_depth": "independent matrix/evidence/verifier/release reconciliation; primary implementation review assigned another reviewer",
+      "conclusion": "Mapped identity/program/grant/baseline/hold revocation and signed public scopes remain distinct from full version revocation qualification. RT-02 is a canonical SQL scope hole despite downstream effect denial. Primary authority correctness reviewed separately.",
+      "mapped_case_count_verified": 95,
+      "verifiers": [
+        "tests/integration/test_v4_identity_isolation.py",
+        "tests/integration/test_v4_cadence_policy.py",
+        "tests/integration/test_v4_cycle_governance.py",
+        "tests/integration/test_v4_public_commands.py",
+        "tests/integration/test_v4_runtime_waits.py"
+      ],
+      "remaining_acceptance": "Independent whole-row review and complete enabled-version revocation integration; current grants/baselines/owner holds pass local tests. Later capability release families retain their phase gates.",
+      "production_release_status": "HELD"
+    },
+    {
+      "id": "R15",
+      "review_depth": "independent matrix/evidence/verifier/release reconciliation; primary implementation review assigned another reviewer",
+      "conclusion": "Typed fixture review exact binding/expiry and signed parity assertions exist, not general policy/model authorization or LLM authority qualification. Primary correctness reviewed separately.",
+      "mapped_case_count_verified": 32,
+      "verifiers": [
+        "tests/integration/test_v4_cycle_governance.py",
+        "tests/integration/test_v4_public_commands.py"
+      ],
+      "remaining_acceptance": "Independent whole-row review and general versioned policy/production effect gate qualification beyond typed fixture decisions; LLM text must supply no authority.",
+      "production_release_status": "HELD"
+    },
+    {
+      "id": "R17",
+      "review_depth": "independent matrix/evidence/verifier/release reconciliation; primary implementation review assigned another reviewer",
+      "conclusion": "Permit claim transaction serializes stop and exact request; mock adapter sends only true claim. Fixture acceptance/unknown behavior is not a real provider qualification. Primary correctness reviewed separately.",
+      "mapped_case_count_verified": 53,
+      "verifiers": [
+        "tests/integration/test_v4_cycle_governance.py",
+        "tests/integration/test_v4_auto_dispatch.py",
+        "tests/integration/test_v4_cycle_accounting.py"
+      ],
+      "remaining_acceptance": "Independent whole-row review and enabled real-provider stage/permit integration beyond the single no-effects mock acceptance; production spend remains disabled.",
+      "production_release_status": "HELD"
+    },
+    {
+      "id": "R18",
+      "review_depth": "independent matrix/evidence/verifier/release reconciliation; primary implementation review assigned another reviewer",
+      "conclusion": "Fixture stops/grants/cutover hold new work; live schedule cancellation/fencing and scoped remote reads remain open. Primary correctness reviewed separately.",
+      "mapped_case_count_verified": 54,
+      "verifiers": [
+        "tests/integration/test_v4_cycle_governance.py",
+        "tests/integration/test_v4_schedule_cutover.py",
+        "tests/integration/test_v4_runtime_waits.py"
+      ],
+      "remaining_acceptance": "Independent whole-row review, live scheduler stop/cancellation/fencing and separately scoped remote read-only reconciliation beyond local stops/cutover.",
+      "production_release_status": "HELD"
+    },
+    {
+      "id": "R32",
+      "review_depth": "independent matrix/evidence/verifier/release reconciliation; primary implementation review assigned another reviewer",
+      "conclusion": "Typed cases persist original targets/deadlines; timer expiry suspends existing case with operator audit and preserves liabilities. RT-01 repair now records one same-identity owner hold and bounded ordered held dispositions for terminal runtime failures. Primary case/recovery correctness reviewed separately.",
+      "mapped_case_count_verified": 57,
+      "verifiers": [
+        "tests/integration/test_v4_cycle_governance.py",
+        "tests/integration/test_v4_runtime_waits.py",
+        "tests/integration/test_v4_public_commands.py"
+      ],
+      "remaining_acceptance": "Independent whole-row review and production typed recovery worker/failure delivery qualification beyond canonical fixture cases/timers.",
+      "production_release_status": "HELD"
+    },
+    {
+      "id": "R33",
+      "review_depth": "independent matrix/evidence/verifier/release reconciliation; primary implementation review assigned another reviewer",
+      "conclusion": "Bound resume CAS/outbox assertions exist; timers call canonical wake/admit/case functions. RT-01 terminal runtime recovery repair is independently qualified; production stage/delivery obligations remain. Primary command correctness reviewed separately.",
+      "mapped_case_count_verified": 41,
+      "verifiers": [
+        "tests/integration/test_v4_cycle_governance.py",
+        "tests/integration/test_v4_public_commands.py",
+        "tests/e2e/test_v4_outbox_recovery.py"
+      ],
+      "remaining_acceptance": "Independent whole-row review and production stage-specific reauthorization/delivery integration; local resume preserves original target/context/operation.",
+      "production_release_status": "HELD"
+    },
+    {
+      "id": "R34",
+      "review_depth": "independent primary runtime/source/migration/test review",
+      "conclusion": "Review vs expiry serialized by canonical goal/case locks, original deadline preserved after approval; DB notification acceptance uses exact sink, immutable dedup receipt, separate human acknowledgment and finite delivery retries/owner holds. Fixed workflow memo reconciles lost handoff ack; expired/stale notices suppressed. No additional confirmed app-path defect found. External alert/on-call delivery remains absent.",
+      "mapped_case_count_verified": 58,
+      "verifiers": [
+        "tests/integration/test_v4_cycle_governance.py",
+        "tests/integration/test_v4_runtime_waits.py",
+        "tests/e2e/test_v4_wait_restart.py",
+        "tests/integration/test_v4_public_commands.py"
+      ],
+      "remaining_acceptance": "Independent whole-row review and external alert delivery/on-call qualification beyond PostgreSQL fixture acceptance; fixture acceptance is not human acknowledgment.",
+      "production_release_status": "HELD"
+    },
+    {
+      "id": "R35",
+      "review_depth": "independent matrix/evidence/verifier/release reconciliation; primary implementation review assigned another reviewer",
+      "conclusion": "Mapped terminal disposition/archive idempotency/retention/history assertions exist. Rights-filtered discovery and later record families remain assigned later gates. Primary correctness reviewed separately.",
+      "mapped_case_count_verified": 32,
+      "verifiers": [
+        "tests/integration/test_v4_cycle_governance.py",
+        "tests/integration/test_v4_public_commands.py"
+      ],
+      "remaining_acceptance": "Independent whole-row review. Current terminal archive/retention/idempotency is tested; rights-filtered discovery and later record families require their own later-phase qualification.",
+      "production_release_status": "HELD"
+    },
+    {
+      "id": "R53",
+      "review_depth": "independent primary runtime/source/migration/test review",
+      "conclusion": "0032 original owner locking, preflight and rollback remain sound; additive 0034 serialized outbox/inbox scope preflight and guards prevent RT-02, preserve corrupted retained history and block populated downgrade. Direct SQL scope and migration negative cases pass. Later record families retain their own phase gates.",
+      "mapped_case_count_verified": 101,
+      "verifiers": [
+        "tests/integration/test_v4_migrations.py",
+        "tests/integration/test_v4_runtime_waits.py",
+        "tests/integration/test_v4_cycle_accounting.py",
+        "tests/integration/test_v4_cycle_governance.py",
+        "tests/integration/test_v4_public_commands.py",
+        "tests/integration/test_v4_schedule_cutover.py"
+      ],
+      "remaining_acceptance": "Independent whole-row review. Current P1 common envelopes, immutability and additive 0032 ownership/rollback guards are locally tested; later record families require envelope tests in their assigned phases.",
+      "production_release_status": "HELD"
+    }
+  ],
+  "evidence_reconciliation": {
+    "evidence_lock_sha256": "3941865002a0549bc11f5a778c2a3849bf8dc383c2c5b13402490cd5b75bbe92",
+    "311_locked_files_match": true,
+    "all_17_matrix_case_counts_match_final_regression_junit": true,
+    "full_junit_testcases": 462,
+    "mapped_unique_cases": 205,
+    "final_focus_and_regression_xml_log_hashes_match_evidence": true,
+    "new_regressions": [
+      {
+        "status": "FAIL / expected RED",
+        "files": {
+          "xml": {
+            "path": "artifacts/v4-p0/item7/runtime-delivery-red.xml",
+            "sha256": "bdbfc39e2a734262e71644cdc3c34b83dc65b6ae51477ebcbf4cc001070d9b8e"
+          },
+          "log": {
+            "path": "artifacts/v4-p0/item7/runtime-delivery-red.log",
+            "sha256": "b46ebd0bac38bc41c51ee5cd546266ee481db1c7211e71762cde55faada06427"
+          }
+        }
+      },
+      {
+        "status": "FAIL / expected RED",
+        "files": {
+          "xml": {
+            "path": "artifacts/v4-p0/item7/runtime-scope-red.xml",
+            "sha256": "99d214b03e7e0a31cc70797a46ce461cab559439fdcc9c1187cb124a5404beaf"
+          },
+          "log": {
+            "path": "artifacts/v4-p0/item7/runtime-scope-red.log",
+            "sha256": "f9f38455e1acf4676e7f9f8558f531c079fc023cf337fcecff222da226109593"
+          }
+        }
+      }
+    ],
+    "historical_suite_not_independently_rerun": true,
+    "case_count_limit": "Matrix counts whole mapped test classes; counts are execution evidence, not proof of every acceptance clause. Independent source/negative regressions uncover omitted failure paths."
+  },
+  "limits": [
+    "No production credentials/accounts/providers/ingress/alerts or deployment worker routing qualified.",
+    "No independent full historical suite rerun by reviewer; exact archived result hashes and source lock checked.",
+    "Restore drill only PostgreSQL snapshot plus persisted Temporal process restart; not Temporal backup/restore, cross-store consistency markers or production R66/RPO/RTO.",
+    "Primary non-runtime correctness review performed by separate authorized reviewer agents; this reviewer reconciled all 17 row obligations independently."
+  ],
+  "release_reconciliation": {
+    "all_17_rows": "P1 partial fixture qualification only; defects RT-01/RT-02 add local repair requirements, remaining production requirements retained verbatim per row",
+    "remaining_release_obligations": [
+      "General registry/provider eligibility beyond the approved no-effects fixture baseline; later capability and production qualification gates remain binding",
+      "Production G1 provider charge identity and effect integration beyond the fixture-qualified transfer/reconciliation contract",
+      "Production dispatcher/alert service, live Temporal legacy start/signal cutover, public V4 API-to-provider outbox integration and production typed delivery recovery beyond the automatic local fixture",
+      "General policy/model authorization, live scheduler stop/fencing integration and separately scoped remote read-only reconciliation beyond fixture permits/cases/cutover",
+      "Deployment-specific supported worker routing/rollback, external durable alert delivery and independent full RG1 qualification beyond the local item-6 patch/timer/restore fixture"
+    ],
+    "RG0": "HELD",
+    "RG1": "HELD",
+    "production_effects_enabled": false,
+    "main_merge": "NOT AUTHORIZED by this review",
+    "pr_approval": "This agent review is neither PR approval nor production authorization."
+  },
+  "rereview": {
+    "status": "PASS / no remaining confirmed correctness defects in assigned local runtime scope",
+    "base_reviewed_head": "e572bc7fe1b84db705b8c500aaebcf95f847023c",
+    "reviewed_source_state": "Exact commit e49a214cd371d0417f093d3a24fa2a4f4a359e83; runtime committed bytes match final independently tested SHA256 manifest; prior ff3b9dd certification retained",
+    "source_freeze": {
+      "path": "artifacts/v4-p0/item7/runtime-final-review-source.json",
+      "sha256": "8297dec0029c27e16408b39198a0201ca259f53373735ae93c4efc2c795f8bee",
+      "files": {
+        "src/salience/cycles/outbox.py": "3180162f766a6e30d3169f27811c3c8ecc650d7e61bfeb0323c352c6620a43f5",
+        "src/salience/cycles/runtime.py": "2f830bd4b374402c892d5ed4215f4c8e830650ab4318eb701273854ea805eed9",
+        "src/salience/cycles/runtime_waits.py": "bc4685271a0898b44d21fb1639f08405f21e06291c991b18bf7b97da78c6721f",
+        "src/salience/cycles/workflow.py": "fa8aff150b8ac11bb2c89517fba6e5ecba9462af3b57d7816cc5c90c797b7afd",
+        "src/salience/cycles/wait_workflow.py": "1d9a60ef51b9f09ba6b3162217d4259ea9e7ddac3b2a0cd220752a6336e211c3",
+        "migrations/versions/0031_runtime_waits.py": "b2a387e90380893a93eeff650d431b311d90a7e2d51c08b9da99e7d48a9d7272",
+        "migrations/versions/0032_runtime_hold_owner.py": "0b6f3e831d18b651bcc81565aadf5b2b1c663ffa9957c713d1ce4f42fb063e70",
+        "migrations/versions/0033_goal_state_commands.py": "704fdf239cfb452129ba677ba476cbdd52a897b778b141b9a0272bb71614c248",
+        "migrations/versions/0034_runtime_delivery_scope.py": "027448e0152eb050cdba1bc999bc2500b1a9fe9e7c46e8f020d8149a8818baa3",
+        "tests/e2e/test_v4_item7_delivery_recovery.py": "6e50b85ff18ee350cdbd0e06cc30106620fe4ca462a311f58651131e635ab7cf"
+      },
+      "unchanged_during_final_run": true
+    },
+    "command": ".venv/bin/python -m pytest -p no:cacheprovider tests/e2e/test_v4_item7_delivery_recovery.py -q --junitxml=artifacts/v4-p0/item7/runtime-rereview-final.xml",
+    "environment": "Uniquely named disposable PostgreSQL migrated head0034; explicit TEST_DATABASE_URL/private TEST_TEMPORAL_TARGET; random isolated Temporal queues; no server/container restart; disposable database/roles cleaned",
+    "final_suite": {
+      "tests": 17,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": "24.245",
+      "xml": "artifacts/v4-p0/item7/runtime-rereview-final.xml",
+      "xml_sha256": "67e5ef805ed25c2bbf66401ae1ba9216cee0b6be30cc187e5352f3f0901b1d96",
+      "log": "artifacts/v4-p0/item7/runtime-rereview-final.log",
+      "log_sha256": "1f95e20957d93b66cd41bbfc9ababf6dd619d45acf4e283f32c25c7c0f94457f"
+    },
+    "fix_verification": [
+      "Real Temporal binding/start consume/recovery signal exhausted failure now produces one original cycle/context/operation/owner hold and one event, held receipt, never a permit/adapter acceptance/second start or new run.",
+      "Authorized close after hold and before scanner observation records every original ordered receipt and delivered closure while preserving closed cycle and failed runtime identity.",
+      "Three-message scanner fairness covers running/error/failed statuses, UUID cursor wrap, restart, no hold from RPC/observation outage or wrong memo/workflow type.",
+      "SKIP LOCKED contiguous-prefix cases for lock at sequence1/2/3 return promptly without lock inversion or out-of-order immutable receipts; suffix finishes exactly once after unlock.",
+      "Ordinary dispatch polling revisits all-delivered held cycle with outstanding receipt after temporary message lock; no new command required.",
+      "Restricted role unable to edit identity can no longer insert/consume cross-workspace outbox; direct mismatched inbox binding rejected.",
+      "0034 serialized preflight preserves malformed retained outbox/inbox and version0033 unchanged on upgrade refusal; empty downgrade/reupgrade passes, valid populated downgrade refuses and preserves history."
+    ],
+    "production_release_status": "HELD",
+    "independent_pr_approval": "NOT GRANTED"
+  },
+  "exact_commit_certification": {
+    "commit": "e49a214cd371d0417f093d3a24fa2a4f4a359e83",
+    "status": "PASS: exact commit preserves every final independently tested runtime, migration and regression source hash",
+    "source_manifest": "artifacts/v4-p0/item7/runtime-final-review-source.json",
+    "source_manifest_sha256": "8297dec0029c27e16408b39198a0201ca259f53373735ae93c4efc2c795f8bee",
+    "compared_files": [
+      {
+        "path": "src/salience/cycles/outbox.py",
+        "expected_sha256": "3180162f766a6e30d3169f27811c3c8ecc650d7e61bfeb0323c352c6620a43f5",
+        "commit_sha256": "3180162f766a6e30d3169f27811c3c8ecc650d7e61bfeb0323c352c6620a43f5",
+        "match": true
+      },
+      {
+        "path": "src/salience/cycles/runtime.py",
+        "expected_sha256": "2f830bd4b374402c892d5ed4215f4c8e830650ab4318eb701273854ea805eed9",
+        "commit_sha256": "2f830bd4b374402c892d5ed4215f4c8e830650ab4318eb701273854ea805eed9",
+        "match": true
+      },
+      {
+        "path": "src/salience/cycles/runtime_waits.py",
+        "expected_sha256": "bc4685271a0898b44d21fb1639f08405f21e06291c991b18bf7b97da78c6721f",
+        "commit_sha256": "bc4685271a0898b44d21fb1639f08405f21e06291c991b18bf7b97da78c6721f",
+        "match": true
+      },
+      {
+        "path": "src/salience/cycles/workflow.py",
+        "expected_sha256": "fa8aff150b8ac11bb2c89517fba6e5ecba9462af3b57d7816cc5c90c797b7afd",
+        "commit_sha256": "fa8aff150b8ac11bb2c89517fba6e5ecba9462af3b57d7816cc5c90c797b7afd",
+        "match": true
+      },
+      {
+        "path": "src/salience/cycles/wait_workflow.py",
+        "expected_sha256": "1d9a60ef51b9f09ba6b3162217d4259ea9e7ddac3b2a0cd220752a6336e211c3",
+        "commit_sha256": "1d9a60ef51b9f09ba6b3162217d4259ea9e7ddac3b2a0cd220752a6336e211c3",
+        "match": true
+      },
+      {
+        "path": "migrations/versions/0031_runtime_waits.py",
+        "expected_sha256": "b2a387e90380893a93eeff650d431b311d90a7e2d51c08b9da99e7d48a9d7272",
+        "commit_sha256": "b2a387e90380893a93eeff650d431b311d90a7e2d51c08b9da99e7d48a9d7272",
+        "match": true
+      },
+      {
+        "path": "migrations/versions/0032_runtime_hold_owner.py",
+        "expected_sha256": "0b6f3e831d18b651bcc81565aadf5b2b1c663ffa9957c713d1ce4f42fb063e70",
+        "commit_sha256": "0b6f3e831d18b651bcc81565aadf5b2b1c663ffa9957c713d1ce4f42fb063e70",
+        "match": true
+      },
+      {
+        "path": "migrations/versions/0033_goal_state_commands.py",
+        "expected_sha256": "704fdf239cfb452129ba677ba476cbdd52a897b778b141b9a0272bb71614c248",
+        "commit_sha256": "704fdf239cfb452129ba677ba476cbdd52a897b778b141b9a0272bb71614c248",
+        "match": true
+      },
+      {
+        "path": "migrations/versions/0034_runtime_delivery_scope.py",
+        "expected_sha256": "027448e0152eb050cdba1bc999bc2500b1a9fe9e7c46e8f020d8149a8818baa3",
+        "commit_sha256": "027448e0152eb050cdba1bc999bc2500b1a9fe9e7c46e8f020d8149a8818baa3",
+        "match": true
+      },
+      {
+        "path": "tests/e2e/test_v4_item7_delivery_recovery.py",
+        "expected_sha256": "6e50b85ff18ee350cdbd0e06cc30106620fe4ca462a311f58651131e635ab7cf",
+        "commit_sha256": "6e50b85ff18ee350cdbd0e06cc30106620fe4ca462a311f58651131e635ab7cf",
+        "match": true
+      }
+    ],
+    "finding_closure": {
+      "RT-01": "CLOSED at exact commit: terminal failure owner hold, ordered held receipts, both closure orderings, fair scanner and ordinary polling after skipped locked prefix independently pass",
+      "RT-02": "CLOSED at exact commit: scoped outbox/inbox SQL guards, canonical consumer binding and preservation-safe migration independently pass"
+    },
+    "independent_tests": "17 passed; 0 failures/errors/skips; 24.245 seconds; final recorded artifacts preserved",
+    "full_suite_scope": "Root full-suite run on frozen commit is separate evidence; not independently executed by this reviewer",
+    "release": "RG0/RG1 HELD; no production authorization, PR approval, push or merge authorization from this agent",
+    "change_since_previous_certification": "Only baseline historical fixture scope repair and updated source lock; diff inspected. Runtime review files unchanged. Baseline repair independently reviewed by admission reviewer; not rerun by runtime reviewer."
+  },
+  "exact_commit_certification_history": [
+    {
+      "commit": "ff3b9ddb0947f83bd5416053aa3f684290798c53",
+      "status": "PASS: exact commit matches every final independently tested runtime, migration and regression source hash",
+      "source_manifest": "artifacts/v4-p0/item7/runtime-final-review-source.json",
+      "source_manifest_sha256": "8297dec0029c27e16408b39198a0201ca259f53373735ae93c4efc2c795f8bee",
+      "compared_files": [
+        {
+          "path": "src/salience/cycles/outbox.py",
+          "expected_sha256": "3180162f766a6e30d3169f27811c3c8ecc650d7e61bfeb0323c352c6620a43f5",
+          "commit_sha256": "3180162f766a6e30d3169f27811c3c8ecc650d7e61bfeb0323c352c6620a43f5",
+          "match": true
+        },
+        {
+          "path": "src/salience/cycles/runtime.py",
+          "expected_sha256": "2f830bd4b374402c892d5ed4215f4c8e830650ab4318eb701273854ea805eed9",
+          "commit_sha256": "2f830bd4b374402c892d5ed4215f4c8e830650ab4318eb701273854ea805eed9",
+          "match": true
+        },
+        {
+          "path": "src/salience/cycles/runtime_waits.py",
+          "expected_sha256": "bc4685271a0898b44d21fb1639f08405f21e06291c991b18bf7b97da78c6721f",
+          "commit_sha256": "bc4685271a0898b44d21fb1639f08405f21e06291c991b18bf7b97da78c6721f",
+          "match": true
+        },
+        {
+          "path": "src/salience/cycles/workflow.py",
+          "expected_sha256": "fa8aff150b8ac11bb2c89517fba6e5ecba9462af3b57d7816cc5c90c797b7afd",
+          "commit_sha256": "fa8aff150b8ac11bb2c89517fba6e5ecba9462af3b57d7816cc5c90c797b7afd",
+          "match": true
+        },
+        {
+          "path": "src/salience/cycles/wait_workflow.py",
+          "expected_sha256": "1d9a60ef51b9f09ba6b3162217d4259ea9e7ddac3b2a0cd220752a6336e211c3",
+          "commit_sha256": "1d9a60ef51b9f09ba6b3162217d4259ea9e7ddac3b2a0cd220752a6336e211c3",
+          "match": true
+        },
+        {
+          "path": "migrations/versions/0031_runtime_waits.py",
+          "expected_sha256": "b2a387e90380893a93eeff650d431b311d90a7e2d51c08b9da99e7d48a9d7272",
+          "commit_sha256": "b2a387e90380893a93eeff650d431b311d90a7e2d51c08b9da99e7d48a9d7272",
+          "match": true
+        },
+        {
+          "path": "migrations/versions/0032_runtime_hold_owner.py",
+          "expected_sha256": "0b6f3e831d18b651bcc81565aadf5b2b1c663ffa9957c713d1ce4f42fb063e70",
+          "commit_sha256": "0b6f3e831d18b651bcc81565aadf5b2b1c663ffa9957c713d1ce4f42fb063e70",
+          "match": true
+        },
+        {
+          "path": "migrations/versions/0033_goal_state_commands.py",
+          "expected_sha256": "704fdf239cfb452129ba677ba476cbdd52a897b778b141b9a0272bb71614c248",
+          "commit_sha256": "704fdf239cfb452129ba677ba476cbdd52a897b778b141b9a0272bb71614c248",
+          "match": true
+        },
+        {
+          "path": "migrations/versions/0034_runtime_delivery_scope.py",
+          "expected_sha256": "027448e0152eb050cdba1bc999bc2500b1a9fe9e7c46e8f020d8149a8818baa3",
+          "commit_sha256": "027448e0152eb050cdba1bc999bc2500b1a9fe9e7c46e8f020d8149a8818baa3",
+          "match": true
+        },
+        {
+          "path": "tests/e2e/test_v4_item7_delivery_recovery.py",
+          "expected_sha256": "6e50b85ff18ee350cdbd0e06cc30106620fe4ca462a311f58651131e635ab7cf",
+          "commit_sha256": "6e50b85ff18ee350cdbd0e06cc30106620fe4ca462a311f58651131e635ab7cf",
+          "match": true
+        }
+      ],
+      "finding_closure": {
+        "RT-01": "CLOSED at exact commit: terminal failure owner hold, ordered held receipts, both closure orderings, fair scanner and ordinary polling after skipped locked prefix independently pass",
+        "RT-02": "CLOSED at exact commit: scoped outbox/inbox SQL guards, canonical consumer binding and preservation-safe migration independently pass"
+      },
+      "independent_tests": "17 passed; 0 failures/errors/skips; 24.245 seconds; final recorded artifacts preserved",
+      "full_suite_scope": "Root full-suite run on frozen commit is separate evidence; not independently executed by this reviewer",
+      "release": "RG0/RG1 HELD; no production authorization, PR approval, push or merge authorization from this agent"
+    }
+  ]
+}
