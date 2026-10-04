@@ -147,7 +147,8 @@ def test_historical_context_cannot_inherit_new_goal_approval(cycles):
     goal=service.create_goal(spec)
     requested=intent(service,goal)
     cycle_id,context_id=uuid4(),uuid4()
-    payload=spec.model_dump(mode="json") | {"production_effects_enabled":False,"goal_revision":1}
+    payload=spec.model_dump(mode="json") | {"production_effects_enabled":False,"goal_revision":1,
+        "workspace_id":str(service.workspace_id),"subject_id":str(service.subject_id)}
     with psycopg.connect(database) as connection:
         connection.execute("INSERT INTO v4_cycles (id,intent_id,context_id,operation_id,state) VALUES (%s,%s,%s,%s,'runnable')",(cycle_id,requested,context_id,uuid4()))
         connection.execute("INSERT INTO v4_run_contexts (id,cycle_id,payload) VALUES (%s,%s,%s)",(context_id,cycle_id,Jsonb(payload)))

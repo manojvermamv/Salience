@@ -1032,7 +1032,7 @@
     },
     {
       "path": "tests/integration/test_v4_baseline_approval.py",
-      "sha256": "111f34f17b98185e8c59ea168610d06fd2faec43805c21287e4dad539494ee45"
+      "sha256": "026b77d0a834b2286a4a962eb5583cda21f81ffb602d9699e9c2c87202b1f4f8"
     },
     {
       "path": "tests/integration/test_v4_cadence_policy.py",
