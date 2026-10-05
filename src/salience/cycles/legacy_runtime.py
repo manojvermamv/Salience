@@ -26,6 +26,10 @@ from salience.workflows.intelligence import (
 )
 from salience.workflows.jobs import DurableDummyWorkflow, DummyWorkflowRequest, DummyActivities, WorkflowScenarioState
 from salience.workflows.persistence import CanonicalJobStore
+from salience.workflows.creative import CreativeActivities, CreativeWorkflowState, CreativeProductionRequest, CreativeProductionWorkflow, CREATIVE_WORKFLOW_TYPE
+from salience.creative.repository import CreativeRepository
+from salience.creative.providers import FixtureCreativeProvider
+from typing import Any
 
 
 def binding_for_operation(outbox, operation_id):
@@ -41,9 +45,9 @@ def require_current_stage(outbox, binding):
     service = CycleGovernance(outbox.database_url,workspace_id=outbox.workspace_id,subject_id=binding["actor_id"])
     with service._command("cycles:permit") as connection:
         service._eligible_cycle(connection, binding["cycle_id"])
-        if binding.get("stage") == "dummy":
+        if binding.get("stage") in {"dummy", "creative"}:
             from salience.cycles.authority import current_authority
-            current_authority(connection, outbox.workspace_id, binding["actor_id"], "legacy:dummy")
+            current_authority(connection, outbox.workspace_id, binding["actor_id"], "legacy:"+binding["stage"])
         workspace_stop, goal_stop = service._require_running(connection,binding["goal_id"])
         claim = connection.execute("""SELECT claim.*,permit.expires_at,permit.subject_id,
             permit.workspace_stop_revision,permit.goal_stop_revision FROM v4_permit_claims claim
@@ -58,6 +62,12 @@ def legacy_execution(binding):
     if binding.get("stage", "intelligence") == "dummy":
         return DurableDummyWorkflow.run, "DurableDummyWorkflow", DummyWorkflowRequest(
             idempotency_key="v4-legacy:"+str(binding["operation_id"]), mode="success", dry_run=True), DurableDummyWorkflow.request_cancellation
+    if binding.get("stage") == "creative":
+        return CreativeProductionWorkflow.run, CREATIVE_WORKFLOW_TYPE, CreativeProductionRequest(
+            workspace_id=str(binding["workspace_id"]), content_program_id=str(binding["content_program_id"]),
+            brief_id=binding["payload"]["brief_id"], idempotency_key="v4-legacy:"+str(binding["operation_id"]),
+            dry_run=True, target_profile_key=binding["payload"]["target_profile_key"],
+            target_profile_version=binding["payload"]["target_profile_version"], max_variants=binding["payload"]["max_variants"]), CreativeProductionWorkflow.request_cancellation
     if binding.get("stage", "intelligence") != "intelligence":
         raise PermissionError("unsupported original legacy stage")
     return IntelligenceLoopWorkflow.run, INTELLIGENCE_WORKFLOW_TYPE, IntelligenceLoopRequest(
@@ -158,6 +168,7 @@ class LegacyCycleActivities(LocalCycleActivities):
                 return result
             if description.status != WorkflowExecutionStatus.RUNNING:
                 return result
+            handle = self.adapter.client.get_workflow_handle(description.id, run_id=description.run_id)
             try:
                 await handle.signal(cancellation_signal,rpc_timeout=timedelta(seconds=2))
             except Exception:
@@ -176,11 +187,19 @@ class GuardedIntelligenceActivities(IntelligenceActivities):
         run = await super()._run()
         with self.outbox._connect() as connection:
             binding = connection.execute("SELECT * FROM v4_legacy_dispatches WHERE job_id=%s AND workspace_id=%s", (run.job_id,self.outbox.workspace_id)).fetchone()
-        if not binding:
-            raise PermissionError("only canonical legacy jobs are supported")
+        if not binding or binding.get("stage", "intelligence") != "intelligence":
+            raise PermissionError("original canonical intelligence stage required")
         if activity.info().activity_type != "salience.intelligence.cancel":
             await asyncio.to_thread(require_current_stage,self.outbox,binding)
         return run
+
+    @activity.defn(name="salience.intelligence.fetch")
+    async def fetch(self, request: IntelligenceLoopRequest) -> dict[str, Any]:
+        run = await self._run()
+        binding = await asyncio.to_thread(binding_for_job, self.outbox, run.job_id)
+        if request != legacy_execution(binding)[2]:
+            raise PermissionError("original fixed no-send intelligence payload required")
+        return await super().fetch(request)
 
 
 class LegacyNoSendProvider:
@@ -217,6 +236,121 @@ def binding_for_job(outbox, job_id):
         if not row:
             raise PermissionError("original scoped legacy job required")
         return row
+
+
+class LegacyNoSendCreativeProvider(FixtureCreativeProvider):
+    async def submit(self, *args, **kwargs):
+        raise PermissionError("legacy creative never sends a provider effect")
+
+    async def reconcile(self, *args, **kwargs):
+        raise PermissionError("legacy creative never reconciles a provider effect")
+
+    async def get_status(self, *args, **kwargs):
+        raise PermissionError("legacy creative never polls a provider effect")
+
+    async def download(self, *args, **kwargs):
+        raise PermissionError("legacy creative never downloads a provider asset")
+
+    async def cancel(self, *args, **kwargs):
+        raise PermissionError("legacy creative never cancels a provider effect")
+
+
+class GuardedCreativeActivities(CreativeActivities):
+    def __init__(self, state, outbox):
+        super().__init__(state)
+        self.outbox = outbox
+
+    async def _run(self):
+        run = await super()._run()
+        binding = await asyncio.to_thread(binding_for_job, self.outbox, run.job_id)
+        if binding.get("stage") != "creative":
+            raise PermissionError("original canonical creative stage required")
+        # Ordinary close revokes execution, while its physical cancellation
+        # must still project the original dry job's terminal state.
+        if activity.info().activity_type != "salience.creative.cancel":
+            await asyncio.to_thread(require_current_stage, self.outbox, binding)
+        return run
+
+    async def _guard(self, payload):
+        run = await self._run()
+        binding = await asyncio.to_thread(binding_for_job, self.outbox, run.job_id)
+        expected = legacy_execution(binding)[2]
+        if payload["request"] != {key: value for key, value in expected.__dict__.items() if key != "contract_version"}:
+            raise PermissionError("original fixed no-send creative payload required")
+        brief = await self._state.intelligence_repository.exact_content_brief(
+            brief_id=expected.brief_id, workspace_id=expected.workspace_id, program_id=expected.content_program_id)
+        if payload["brief"] != brief or ("provider_state" in payload and payload["provider_state"] != "dry_run"):
+            raise PermissionError("original scoped dry creative input required")
+
+    @activity.defn(name="salience.creative.load_brief")
+    async def load_brief(self, request: CreativeProductionRequest) -> dict[str, Any]:
+        run = await self._run()
+        binding = await asyncio.to_thread(binding_for_job, self.outbox, run.job_id)
+        if request != legacy_execution(binding)[2]:
+            raise PermissionError("original fixed no-send creative payload required")
+        return await super().load_brief(request)
+
+    @activity.defn(name="salience.creative.cancel")
+    async def cancel(self, payload: dict[str, Any] | None = None):
+        await self._run()
+        if payload is not None:
+            await self._guard(payload)
+        return await super().cancel(payload)
+
+    @activity.defn(name="salience.creative.script")
+    async def script(self, payload: dict[str, Any]):
+        await self._guard(payload)
+        return await super().script(payload)
+
+    @activity.defn(name="salience.creative.verify_script")
+    async def verify_script(self, payload: dict[str, Any]):
+        await self._guard(payload)
+        return await super().verify_script(payload)
+
+    @activity.defn(name="salience.creative.direction")
+    async def direction(self, payload: dict[str, Any]):
+        await self._guard(payload)
+        return await super().direction(payload)
+
+    @activity.defn(name="salience.creative.authorize")
+    async def authorize(self, payload: dict[str, Any]):
+        await self._guard(payload)
+        return await super().authorize(payload)
+
+    @activity.defn(name="salience.creative.submit_or_reconcile")
+    async def submit_or_reconcile(self, payload: dict[str, Any]):
+        await self._guard(payload)
+        return await super().submit_or_reconcile(payload)
+
+    @activity.defn(name="salience.creative.await_provider")
+    async def await_provider(self, payload: dict[str, Any]):
+        await self._guard(payload)
+        return await super().await_provider(payload)
+
+    @activity.defn(name="salience.creative.import_validate")
+    async def import_validate(self, payload: dict[str, Any]):
+        await self._guard(payload)
+        return await super().import_validate(payload)
+
+    @activity.defn(name="salience.creative.distribute")
+    async def distribute(self, payload: dict[str, Any]):
+        await self._guard(payload)
+        return await super().distribute(payload)
+
+    @activity.defn(name="salience.creative.final_gate")
+    async def final_gate(self, payload: dict[str, Any]):
+        await self._guard(payload)
+        return await super().final_gate(payload)
+
+    @activity.defn(name="salience.creative.complete")
+    async def complete(self, payload: dict[str, Any]):
+        await self._guard(payload)
+        return await super().complete(payload)
+
+    @activity.defn(name="salience.creative.denied")
+    async def denied(self, payload: dict[str, Any]):
+        await self._guard(payload)
+        return await super().denied(payload)
 
 
 class LegacyScheduleActivities:
@@ -266,12 +400,18 @@ def build_legacy_worker(client, *, task_queue, outbox):
     intelligence = GuardedIntelligenceActivities(state,outbox)
     schedule = LegacyScheduleActivities(client, outbox, task_queue)
     dummy = GuardedDummyActivities(WorkflowScenarioState(store=CanonicalJobStore(outbox.database_url), provider=LegacyNoSendProvider()), outbox)
-    return Worker(client,task_queue=task_queue,workflows=[LocalCycleWorkflow,IntelligenceLoopWorkflow,DurableDummyWorkflow,LegacyScheduledIngressWorkflow],
+    creative = GuardedCreativeActivities(CreativeWorkflowState(store=CanonicalJobStore(outbox.database_url),
+        intelligence_repository=IntelligenceRepository(outbox.database_url), creative_repository=CreativeRepository(outbox.database_url),
+        agents=fixture_agent_service(), provider=LegacyNoSendCreativeProvider()), outbox)
+    return Worker(client,task_queue=task_queue,workflows=[LocalCycleWorkflow,IntelligenceLoopWorkflow,DurableDummyWorkflow,CreativeProductionWorkflow,LegacyScheduledIngressWorkflow],
         activities=[cycles.consume,cycles.runtime_binding,cycles.runtime_hold,
                     schedule.admit, dummy.checkpoint, dummy.external_effect, dummy.terminal, dummy.dead_letter,
                     intelligence.fetch,intelligence.normalize,intelligence.rank,intelligence.strategy,
                     intelligence.queue,intelligence.complete,intelligence.cancel,intelligence.packages,
-                    intelligence.claims,intelligence.brief],
+                    intelligence.claims,intelligence.brief,
+                    creative.load_brief,creative.script,creative.verify_script,creative.direction,creative.authorize,
+                    creative.submit_or_reconcile,creative.await_provider,creative.import_validate,creative.distribute,
+                    creative.final_gate,creative.complete,creative.denied,creative.cancel],
         max_concurrent_activities=2,max_concurrent_workflow_tasks=2)
 
 

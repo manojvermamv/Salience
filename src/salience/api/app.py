@@ -27,6 +27,7 @@ def create_app(
     publication_repository: PublicationRepository | None = None,
     legacy_intelligence_router=None,
     legacy_control_router=None,
+    legacy_creative_router=None,
 ) -> FastAPI:
     app = FastAPI(title="Salience control plane", version="0.1.0")
     app.state.control_token = control_token
@@ -40,7 +41,7 @@ def create_app(
     app.include_router(legacy_control_router or control.router)
     app.include_router(agents.router)
     app.include_router(legacy_intelligence_router or intelligence.router)
-    app.include_router(creative.router)
+    app.include_router(legacy_creative_router or creative.router)
     app.include_router(publication.router)
     return app
 

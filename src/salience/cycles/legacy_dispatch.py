@@ -40,6 +40,18 @@ class LegacyDummyCommand(BaseModel):
     contract_version: Literal["LegacyDummyDispatch.local.v1"] = "LegacyDummyDispatch.local.v1"
 
 
+class LegacyCreativeCommand(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
+    goal_id: UUID
+    request: CycleRequest
+    brief_id: UUID
+    dry_run: Literal[True] = True
+    target_profile_key: Literal["fixture-short-video"] = "fixture-short-video"
+    target_profile_version: Literal[1] = 1
+    max_variants: int = Field(default=1, ge=1, le=3, strict=True)
+    contract_version: Literal["LegacyCreativeDispatch.local.v1"] = "LegacyCreativeDispatch.local.v1"
+
+
 def require_fixture():
     if os.environ.get("SALIENCE_DEPLOYMENT_MODE") != "fixture" or os.environ.get("SALIENCE_EFFECTS_ENABLED", "false") != "false":
         raise PermissionError("legacy dispatch requires explicit no-effects fixture mode")
@@ -67,6 +79,15 @@ class LegacyDispatch(CycleAdmission):
             current_authority(connection, self.workspace_id, self.subject_id, "legacy:dummy")
             return result
 
+    def submit_creative(self, command: LegacyCreativeCommand):
+        require_fixture()
+        command = LegacyCreativeCommand.model_validate(command)
+        with self._command("cycles:write") as connection:
+            current_authority(connection, self.workspace_id, self.subject_id, "legacy:creative")
+            result = self._submit(connection, command)
+            current_authority(connection, self.workspace_id, self.subject_id, "legacy:creative")
+            return result
+
     def submit_brief(self, command: LegacyBriefCommand):
         require_fixture()
         command = LegacyBriefCommand.model_validate(command)
@@ -88,6 +109,9 @@ class LegacyDispatch(CycleAdmission):
                 raise ValueError("legacy command fingerprint conflict")
             return prior["response"]
         goal, spec = self._policy_goal(connection, command.goal_id)
+        if isinstance(command, LegacyCreativeCommand):
+            if not connection.execute("SELECT brief.id FROM content_brief_versions brief JOIN content_programs program ON program.id=brief.content_program_id WHERE brief.id=%s AND brief.workspace_id=%s AND brief.content_program_id=%s AND program.workspace_id=%s", (command.brief_id, self.workspace_id, spec.content_program_id, self.workspace_id)).fetchone():
+                raise PermissionError("creative brief outside original workspace/program")
         if isinstance(command, LegacyBriefCommand):
             opportunity = connection.execute("SELECT opportunity.id FROM topic_opportunities opportunity JOIN content_programs program ON program.id=opportunity.content_program_id WHERE opportunity.id=%s AND opportunity.workspace_id=%s AND opportunity.content_program_id=%s AND program.workspace_id=%s AND program.niche=%s", (command.selected_opportunity_id, self.workspace_id, spec.content_program_id, self.workspace_id, command.niche)).fetchone()
             if not opportunity:
@@ -104,7 +128,14 @@ class LegacyDispatch(CycleAdmission):
         _, _, intent, cycle = self._cycle(connection, cycle_id)
         stage = "dummy" if isinstance(command, LegacyDummyCommand) else "intelligence"
         job_type = "durable_dummy" if stage == "dummy" else "intelligence_research"
-        workload = {"mode": "success", "contract_version": "DummyWorkflowRequest@v1"} if stage == "dummy" else {"niche": command.niche, "contract_version": "IntelligenceRunRequest@v1"}
+        workload = {"mode": "success", "contract_version": "DummyWorkflowRequest@v1"} if stage == "dummy" else {}
+        if isinstance(command, LegacyIntelligenceCommand):
+            workload = {"niche": command.niche, "contract_version": "IntelligenceRunRequest@v1"}
+        if isinstance(command, LegacyCreativeCommand):
+            stage, job_type = "creative", "creative_production"
+            workload = {"brief_id": str(command.brief_id), "target_profile_key": command.target_profile_key,
+                "target_profile_version": command.target_profile_version, "max_variants": command.max_variants,
+                "contract_version": "CreativeProductionRequest@v1"}
         if isinstance(command, LegacyBriefCommand):
             workload["selected_opportunity_id"] = str(command.selected_opportunity_id)
         prior = connection.execute("SELECT * FROM v4_legacy_dispatches WHERE cycle_id=%s", (cycle_id,)).fetchone()
@@ -114,7 +145,7 @@ class LegacyDispatch(CycleAdmission):
             return self._view(prior)
         # A pre-existing fixture cycle can be adopted only before any delivery.
         # The row lock prevents a concurrent dispatcher from choosing its lane.
-        if stage == "dummy" and not connection.execute("SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='v4_legacy_dispatches' AND column_name='stage'").fetchone():
+        if stage != "intelligence" and not connection.execute("SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='v4_legacy_dispatches' AND column_name='stage'").fetchone():
             raise PermissionError("qualified legacy stage migration required")
         message = connection.execute("SELECT * FROM v4_cycle_outbox WHERE cycle_id=%s AND kind='start' AND sequence=1 FOR UPDATE", (cycle_id,)).fetchone()
         if not message or message["subject_id"] != self.subject_id or message["state"] != "pending" or message["attempts"] != 0:

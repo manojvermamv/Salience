@@ -536,6 +536,17 @@ class LegacyJobsClient(CyclesClient):
         return self._request("POST", f"/v1/jobs/{job_id}/cancel", {"reason": reason})
 
 
+class LegacyCreativeClient(CyclesClient):
+    def submit(self, command: dict[str, Any]) -> dict[str, Any]:
+        return self._request("POST", "/v1/creative/runs", command)
+
+    def inspect(self, job_id: str) -> dict[str, Any]:
+        return self._request("GET", f"/v1/creative/runs/{job_id}")
+
+    def cancel(self, job_id: str, *, reason: str) -> dict[str, Any]:
+        return self._request("POST", f"/v1/creative/runs/{job_id}/cancel", {"reason": reason})
+
+
 class SalienceClient:
     def __init__(self, base_url: str, token: str) -> None:
         self.agents = AgentsClient(base_url, token)
@@ -546,3 +557,4 @@ class SalienceClient:
         self.agent_teams = ParallelTeamsClient(base_url, token)
         self.legacy_intelligence = LegacyIntelligenceClient(base_url, token)
         self.legacy_jobs = LegacyJobsClient(base_url, token)
+        self.legacy_creative = LegacyCreativeClient(base_url, token)

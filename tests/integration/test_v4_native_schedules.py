@@ -115,9 +115,9 @@ async def test_native_adoption_atomic_replay_scope_and_identity(policy, monkeypa
                 connection.execute("UPDATE job_schedules SET name='Changed' WHERE id=%s", (n["schedule_id"],))
         result = await asyncio.to_thread(subprocess.run, [sys.executable, "-m", "alembic", "-x", "database_url="+database,
             "downgrade", "0036_legacy_cycle_dispatch"], capture_output=True, text=True)
-        assert result.returncode != 0 and any(reason in result.stderr for reason in ("preserve original native schedule history", "preserve original legacy stage history"))
+        assert result.returncode != 0 and any(reason in result.stderr for reason in ("preserve original native schedule history", "preserve original legacy stage history", "preserve original legacy creative history"))
         with psycopg.connect(database) as connection:
-            assert connection.execute("SELECT version_num FROM alembic_version").fetchone()[0] == "0038_legacy_dummy_stage"
+            assert connection.execute("SELECT version_num FROM alembic_version").fetchone()[0] == "0039_legacy_creative_stage"
             assert connection.execute("SELECT count(*) FROM v4_native_schedule_sources WHERE schedule_id=%s", (n["schedule_id"],)).fetchone()[0] == 1
         with psycopg.connect(database) as connection:
             connection.execute("UPDATE identity_subjects SET enabled=false WHERE id=%s", (service.subject_id,))

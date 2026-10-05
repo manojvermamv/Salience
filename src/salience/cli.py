@@ -244,6 +244,15 @@ def main(arguments: Sequence[str] | None = None) -> None:
     legacy_cancel_job = legacy_job_commands.add_parser('cancel')
     legacy_cancel_job.add_argument('job_id')
     legacy_cancel_job.add_argument('--reason',required=True)
+    creative_legacy = subcommands.add_parser('legacy-creative')
+    creative_commands = creative_legacy.add_subparsers(dest='legacy_creative_command', required=True)
+    creative_submit = creative_commands.add_parser('submit')
+    creative_submit.add_argument('--command-json', required=True)
+    creative_inspect = creative_commands.add_parser('inspect')
+    creative_inspect.add_argument('job_id')
+    creative_cancel = creative_commands.add_parser('cancel')
+    creative_cancel.add_argument('job_id')
+    creative_cancel.add_argument('--reason',required=True)
     teams = subcommands.add_parser('agent-teams')
     team_commands = teams.add_subparsers(dest='team_command', required=True)
     for action in ('submit', 'inspect', 'cancel'):
@@ -256,6 +265,15 @@ def main(arguments: Sequence[str] | None = None) -> None:
             team_command.add_argument('--run-id', required=True)
 
     parsed = parser.parse_args(arguments)
+    if parsed.command == 'legacy-creative':
+        if parsed.legacy_creative_command == 'submit':
+            result = _v4_request(method='POST',path='/v1/creative/runs',payload=json.loads(parsed.command_json))
+        elif parsed.legacy_creative_command == 'inspect':
+            result = _v4_request(method='GET',path=f'/v1/creative/runs/{parsed.job_id}')
+        else:
+            result = _v4_request(method='POST',path=f'/v1/creative/runs/{parsed.job_id}/cancel',payload={'reason':parsed.reason})
+        print(json.dumps(result))
+        return
     if parsed.command == 'legacy-jobs':
         if parsed.legacy_job_command == 'dummy':
             result = _v4_request(method='POST',path='/v1/jobs/dummy',payload=json.loads(parsed.command_json))
