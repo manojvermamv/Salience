@@ -73,7 +73,7 @@ async def test_pending_timer_survives_worker_kill_database_restore_and_server_re
         container = subprocess.run(["docker","compose","ps","-q","postgres"],capture_output=True,text=True,check=True).stdout.strip()
         snapshot = tmp_path/"fixture.dump"
         with snapshot.open("wb") as output:
-            subprocess.run(["docker","exec",container,"pg_dump","-U","salience","-d","salience","-Fc"],stdout=output,check=True)
+            subprocess.run(["docker","exec",container,"pg_dump","-U","salience","-d",urlsplit(database).path.lstrip("/"),"-Fc"],stdout=output,check=True)
         with psycopg.connect(database,autocommit=True) as connection:
             connection.execute(psycopg.sql.SQL("CREATE DATABASE {}").format(psycopg.sql.Identifier(restored_name)))
         with snapshot.open("rb") as source:

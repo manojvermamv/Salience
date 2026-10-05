@@ -125,6 +125,7 @@ def _schedule_service(request: Request) -> CycleScheduleCutover:
         workspace_id=principal.workspace_id,
         subject_id=principal.subject_id,
         trace_context=request.state.trace_context,
+        legacy_control=getattr(request.app.state,"legacy_schedule_control",None),
     )
 
 

@@ -217,6 +217,19 @@ def main(arguments: Sequence[str] | None = None) -> None:
     notification_ack = cycle_commands.add_parser("notification-ack")
     notification_ack.add_argument("--notification-id", required=True)
 
+    legacy = subcommands.add_parser('legacy-intelligence')
+    legacy_commands = legacy.add_subparsers(dest='legacy_command', required=True)
+    legacy_submit = legacy_commands.add_parser('submit')
+    legacy_submit.add_argument('--command-json',required=True)
+    legacy_inspect = legacy_commands.add_parser('inspect')
+    legacy_inspect.add_argument('job_id')
+    legacy_cancel = legacy_commands.add_parser('cancel')
+    legacy_cancel.add_argument('job_id')
+    legacy_cancel.add_argument('--reason',required=True)
+    legacy_bind = legacy_commands.add_parser('bind-schedule')
+    legacy_bind.add_argument('goal_id')
+    legacy_bind.add_argument('--expected-revision',required=True,type=int)
+    legacy_bind.add_argument('--niche',required=True)
     teams = subcommands.add_parser('agent-teams')
     team_commands = teams.add_subparsers(dest='team_command', required=True)
     for action in ('submit', 'inspect', 'cancel'):
@@ -229,7 +242,18 @@ def main(arguments: Sequence[str] | None = None) -> None:
             team_command.add_argument('--run-id', required=True)
 
     parsed = parser.parse_args(arguments)
-    if parsed.command == 'agent-teams':
+    if parsed.command == 'legacy-intelligence':
+        if parsed.legacy_command == 'submit':
+            result = _v4_request(method='POST',path='/v1/intelligence/runs',payload=json.loads(parsed.command_json))
+        elif parsed.legacy_command == 'inspect':
+            result = _v4_request(method='GET',path=f'/v1/intelligence/runs/{parsed.job_id}')
+        elif parsed.legacy_command == 'cancel':
+            result = _v4_request(method='POST',path=f'/v1/intelligence/runs/{parsed.job_id}/cancel',payload={'reason':parsed.reason})
+        else:
+            result = _v4_request(method='POST',path=f'/v1/intelligence/schedules/{parsed.goal_id}/bind',payload={'expected_revision':parsed.expected_revision,'niche':parsed.niche})
+        print(json.dumps(result))
+        return
+    elif parsed.command == 'agent-teams':
         path = f'/v1/workspaces/{parsed.workspace_id}/agent-teams'
         if parsed.team_command == 'submit':
             result = _v4_request(method='POST', path=path, payload=json.loads(parsed.plan_json),

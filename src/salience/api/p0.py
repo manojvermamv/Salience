@@ -107,15 +107,29 @@ class IdentityBoundary:
             return all(await cursor.fetchone())
 
 
-def create_p0_app(*, database_url, workspace_id, issuer, audience, public_key, tracer=None, enable_v4_fixture_commands=False, enable_parallel_agent_teams=False, parallel_agent_service=None):
+def create_p0_app(*, database_url, workspace_id, issuer, audience, public_key, tracer=None, enable_v4_fixture_commands=False, enable_parallel_agent_teams=False, parallel_agent_service=None, enable_legacy_dispatch=False, legacy_fixture_queue=None, legacy_temporal_target=None):
     from salience.api.app import create_app
     from salience.api.dependencies import TemporalControlPlane
 
-    if (enable_v4_fixture_commands or enable_parallel_agent_teams) and (os.environ.get("SALIENCE_DEPLOYMENT_MODE") != "fixture" or os.environ.get("SALIENCE_EFFECTS_ENABLED", "false") != "false"):
+    if (enable_v4_fixture_commands or enable_parallel_agent_teams or enable_legacy_dispatch) and (os.environ.get("SALIENCE_DEPLOYMENT_MODE") != "fixture" or os.environ.get("SALIENCE_EFFECTS_ENABLED", "false") != "false"):
         raise ValueError("V4 public commands require explicit no-effects fixture mode")
+    if enable_legacy_dispatch:
+        from salience.cycles.legacy_dispatch import LegacyDispatch
+        LegacyDispatch(database_url,workspace_id=workspace_id,subject_id=workspace_id,task_queue=legacy_fixture_queue)
+        enable_v4_fixture_commands = True
     boundary = IdentityBoundary(database_url=database_url, workspace_id=workspace_id, issuer=issuer, audience=audience, public_key=public_key, enable_v4_fixture_commands=enable_v4_fixture_commands, enable_parallel_agent_teams=enable_parallel_agent_teams)
-    app = create_app(control_token="", control_plane=TemporalControlPlane(database_url=database_url.replace("postgresql://", "postgresql+asyncpg://"), temporal_target="disabled.invalid:7233", task_queue="p0-disabled"))
+    legacy_router = None
+    if enable_legacy_dispatch:
+        from salience.api.routes.legacy_dispatch import router as legacy_router
+    app = create_app(control_token="", control_plane=TemporalControlPlane(database_url=database_url.replace("postgresql://", "postgresql+asyncpg://"), temporal_target="disabled.invalid:7233", task_queue="p0-disabled"),legacy_intelligence_router=legacy_router)
     app.state.identity_boundary = boundary
+    app.state.enable_legacy_dispatch = enable_legacy_dispatch
+    if enable_legacy_dispatch:
+        app.state.legacy_fixture_queue = legacy_fixture_queue
+        if legacy_temporal_target:
+            from salience.cycles.temporal_schedule_control import TemporalFixtureLegacyScheduleControl
+            app.state.legacy_schedule_control = TemporalFixtureLegacyScheduleControl(boundary.database_url,
+                workspace_id=workspace_id,temporal_target=legacy_temporal_target,task_queue=legacy_fixture_queue)
     if enable_parallel_agent_teams:
         from salience.agents.fixtures import fixture_agent_service
         from salience.api.routes.parallel_teams import router
@@ -197,6 +211,17 @@ def create_p0_app(*, database_url, workspace_id, issuer, audience, public_key, t
 def _request_scope(request):
     parts = request.url.path.strip("/").split("/")
     try:
+        if getattr(request.app.state,"enable_legacy_dispatch",False) and len(parts)==5 and parts[:3]==["v1","intelligence","schedules"] and parts[4]=="bind" and request.method=="POST":
+            return ("v4_goals",UUID(parts[3])),"cycles:schedule"
+        if getattr(request.app.state,"enable_legacy_dispatch",False) and parts[:3] == ["v1","intelligence","runs"]:
+            if len(parts)==3 and request.method=="POST":
+                return None,"cycles:write"
+            if len(parts) in {4,5}:
+                resource = ("jobs",UUID(parts[3]))
+                if len(parts)==4 and request.method=="GET":
+                    return resource,"cycles:read"
+                if len(parts)==5 and parts[4]=="cancel" and request.method=="POST":
+                    return resource,"cycles:write"
         if len(parts) >= 4 and parts[:2] == ['v1', 'workspaces'] and parts[3] == 'agent-teams':
             resource = ('workspaces', UUID(parts[2]))
             if len(parts) == 4 and request.method == 'POST':

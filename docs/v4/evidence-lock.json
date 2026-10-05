@@ -4,7 +4,7 @@
   "files": [
     {
       "path": ".env.example",
-      "sha256": "27d3e3376e3845e9bf0e37d23d44cb018257b04211439b30e453e4ac19545c07"
+      "sha256": "8f0e9ae50d532ba3fd02b195b77ca07954cf41dc3f3399aa789cd0fe00a7ec28"
     },
     {
       "path": "Dockerfile",
@@ -171,6 +171,10 @@
       "sha256": "e701eff56b7a5cd8606df650cc65fb445e0cb2ddcd44394a687269aafdcc38f5"
     },
     {
+      "path": "migrations/versions/0036_legacy_cycle_dispatch.py",
+      "sha256": "9f58b4bd2b67ea3c8a409e0ffba1f772dcbaa8a2e20ced1bbb15141ab0aa336f"
+    },
+    {
       "path": "migrations/versions/__init__.py",
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
@@ -284,7 +288,7 @@
     },
     {
       "path": "src/salience/api/app.py",
-      "sha256": "a275a816f25461d71931a98a9fa527df32f3dbf04082f7282619d241b9a68cd3"
+      "sha256": "c4e211a5862c41489d9531f7cce817fb63af2c7481f4d90392a642eb55c49cbb"
     },
     {
       "path": "src/salience/api/dependencies.py",
@@ -292,7 +296,7 @@
     },
     {
       "path": "src/salience/api/p0.py",
-      "sha256": "4114a36eab9f0ad7798fb05c3317fb8f940fee76fc096fa97725f656eab83129"
+      "sha256": "05b7211fe22c366f0ff562764a603a1adf111ef47f22aaa7f227d98854479b9d"
     },
     {
       "path": "src/salience/api/routes/__init__.py",
@@ -319,6 +323,10 @@
       "sha256": "c28154c3536f549634de14de3112c1c56e1a9429ce045f76964dfce820239fef"
     },
     {
+      "path": "src/salience/api/routes/legacy_dispatch.py",
+      "sha256": "731b25c20f13d55f03b863c6e947c6d175051fe0b8ea12f9146a684598c7ffca"
+    },
+    {
       "path": "src/salience/api/routes/parallel_teams.py",
       "sha256": "1e67ba35e7860a8c379022e596d9471d44a4570388f7772eac4389988585957a"
     },
@@ -328,7 +336,7 @@
     },
     {
       "path": "src/salience/api/routes/v4_cycles.py",
-      "sha256": "c9f6cf6369468dab9665c861e94b5f6db7dba7d1678dbee4bf290b54bf6180db"
+      "sha256": "06cf7213286171a656a5107fd3b9c5de63c7819a7897b0d9fd17e5084ebfe667"
     },
     {
       "path": "src/salience/api/schemas.py",
@@ -368,7 +376,7 @@
     },
     {
       "path": "src/salience/cli.py",
-      "sha256": "821b107ceac8d970d798a8a2b2b780a18d6a889f403c2adc52f063c8cf443ddb"
+      "sha256": "df500064763d534cf046f6ddec81e51e68e84c22380b29b3a27d5aa85e88bc5e"
     },
     {
       "path": "src/salience/config.py",
@@ -467,12 +475,20 @@
       "sha256": "5ad9878f9b6fa12a272b6f819d76aa05a33821d0b849e8020691bcdd76b84821"
     },
     {
+      "path": "src/salience/cycles/legacy_dispatch.py",
+      "sha256": "ed721b06e8b602865099dbed773cad9603e6e6735d61783946632c314dfe1336"
+    },
+    {
+      "path": "src/salience/cycles/legacy_runtime.py",
+      "sha256": "bc6324bd6393e91c69d70de30c319da0692a30dbc9be527a03f45f2db2583188"
+    },
+    {
       "path": "src/salience/cycles/legacy_workflow.py",
       "sha256": "b3dd801cb31ccb3b627a6b4f07472ceb34c5505084c7793aaac6b52a6bf180b7"
     },
     {
       "path": "src/salience/cycles/outbox.py",
-      "sha256": "3180162f766a6e30d3169f27811c3c8ecc650d7e61bfeb0323c352c6620a43f5"
+      "sha256": "d779b508c0985c4767ad2301a50fea1320e646075e7c59ceb6c0849e1bccc0ab"
     },
     {
       "path": "src/salience/cycles/runtime.py",
@@ -484,7 +500,11 @@
     },
     {
       "path": "src/salience/cycles/schedule_cutover.py",
-      "sha256": "2167fea392ae8d1e7c0611bbd4cccf4f808bef7c59e5922fc9878daaceaaa780"
+      "sha256": "fd4446dcfbb876534e520e2afe1fd5b053bf1127af8adec67cb0a0ba580d0522"
+    },
+    {
+      "path": "src/salience/cycles/temporal_schedule_control.py",
+      "sha256": "70fa74cb4b0ff4807111087d8c29a484351732e6cb1ff631c31ee144e7daf5aa"
     },
     {
       "path": "src/salience/cycles/wait_workflow.py",
@@ -728,7 +748,7 @@
     },
     {
       "path": "src/salience/sdk/client.py",
-      "sha256": "d9e6274c984c5c0e1bbcb0744e77e0a705392c00998915d549b9eac3052617d3"
+      "sha256": "265db721678f2a7ef3ef504ecb6ec3a0f130b3e7bf411c5b6409af89ce4b944a"
     },
     {
       "path": "src/salience/storage/__init__.py",
@@ -876,7 +896,7 @@
     },
     {
       "path": "tests/e2e/test_v4_wait_restart.py",
-      "sha256": "0703b2d92e1fe8cc7f05aca28795c5179170e36b9b4d43c304889a992dedf9d8"
+      "sha256": "c6584fe8b4ad7528e569ce15594abe0c4a0785295eb47e07526ce0e12baafd50"
     },
     {
       "path": "tests/e2e/test_v4_worker_upgrade.py",
@@ -909,6 +929,10 @@
     {
       "path": "tests/evals/test_phase8_ready_package_eval.py",
       "sha256": "9bfe92c592a39179e669c29f973956d71ef7ab429349b4d262c7dbc8e76c0dba"
+    },
+    {
+      "path": "tests/fixtures/legacy_dispatch_process.py",
+      "sha256": "4e166840c750b4451b224dbb753d7f6265eceabcf372434bbddc31b18d7e052d"
     },
     {
       "path": "tests/fixtures/parallel_agent_process.py",
@@ -996,7 +1020,7 @@
     },
     {
       "path": "tests/integration/test_durable_parallel_teams.py",
-      "sha256": "f2ddfb2a63cb32889c509db9107a39d40fb29b068bf1457ec6c7bba538e4b07f"
+      "sha256": "2b033584d4c6fb06dbea78f1ad5554c5a6df116082b93f786273c4b27de7344d"
     },
     {
       "path": "tests/integration/test_fixture_publisher.py",
@@ -1099,8 +1123,12 @@
       "sha256": "70582f9f519e2488ee25230ddddf4d8e94c98416a8c33c3dc45efd85317bbc17"
     },
     {
+      "path": "tests/integration/test_v4_legacy_dispatch.py",
+      "sha256": "6637b561e1018530a220e9dbdd13397f400a79bc05ebd11a8f90b082d934c447"
+    },
+    {
       "path": "tests/integration/test_v4_migrations.py",
-      "sha256": "651edabaa5439c6fe42d025ba8ea4746fb0dab69a8abdb77733e39bfc8e5ba9c"
+      "sha256": "daaa54e27a6bd244aa6d6d859afbabf609ed6e66e505bcd2ae2bebeda55eacbf"
     },
     {
       "path": "tests/integration/test_v4_object_retention.py",
@@ -1120,7 +1148,7 @@
     },
     {
       "path": "tests/integration/test_v4_runtime_waits.py",
-      "sha256": "3b7b2112957bf4cd2326df6f81956690c543ea064726b11e20a2d8f1895cb212"
+      "sha256": "5bd93c6df4b026de3d1c3abbb8e52cc6c1708f0b2effcf3849b2fb761eada929"
     },
     {
       "path": "tests/integration/test_v4_s3_service.py",
@@ -1304,5 +1332,5 @@
     }
   ],
   "reviewed_at": "2026-10-05",
-  "review_scope": "Root-reviewed bounded parallel-agent local extension over historically independently qualified item7; signed no-effects fixture and zero-cost mock model transport only; production RG0/RG1 and P5/RG5 remain HELD"
+  "review_scope": "Root-qualified no-effects legacy intelligence integration: 87 focused / 556 full non-live PASS, 332 source hashes, actual fixture intelligence, signed API/SDK/CLI, durable worker hard exit, disposable Temporal cutover and historical schema/restore compatibility. Historical item7 independent review remains bound to e49a214; parallel qualification remains bound to 2653d2e. Production, other legacy stages and general policy remain unqualified."
 }

@@ -25,6 +25,7 @@ def create_app(
     creative_repository: CreativeRepository | None = None,
     publisher_adapters: Mapping[str, PublisherAdapter] | None = None,
     publication_repository: PublicationRepository | None = None,
+    legacy_intelligence_router=None,
 ) -> FastAPI:
     app = FastAPI(title="Salience control plane", version="0.1.0")
     app.state.control_token = control_token
@@ -37,7 +38,7 @@ def create_app(
     app.include_router(health.router)
     app.include_router(control.router)
     app.include_router(agents.router)
-    app.include_router(intelligence.router)
+    app.include_router(legacy_intelligence_router or intelligence.router)
     app.include_router(creative.router)
     app.include_router(publication.router)
     return app
@@ -59,7 +60,7 @@ def create_configured_app() -> FastAPI:
         )
     if mode != "fixture":
         raise ValueError("production deployment is not qualified; use isolated P0 or private fixture mode")
-    if os.environ.get("SALIENCE_PARALLEL_AGENT_TEAMS_ENABLED", "false") == "true":
+    if os.environ.get("SALIENCE_PARALLEL_AGENT_TEAMS_ENABLED", "false") == "true" or os.environ.get("V4_LEGACY_DISPATCH_ENABLED", "false") == "true":
         from salience.api.p0 import create_p0_app
 
         return create_p0_app(
@@ -68,7 +69,10 @@ def create_configured_app() -> FastAPI:
             issuer=os.environ["SALIENCE_IDENTITY_ISSUER"],
             audience=os.environ["SALIENCE_IDENTITY_AUDIENCE"],
             public_key=Path(os.environ["SALIENCE_IDENTITY_PUBLIC_KEY_FILE"]).read_text(),
-            enable_parallel_agent_teams=True,
+            enable_parallel_agent_teams=os.environ.get("SALIENCE_PARALLEL_AGENT_TEAMS_ENABLED", "false") == "true",
+            enable_legacy_dispatch=os.environ.get("V4_LEGACY_DISPATCH_ENABLED", "false") == "true",
+            legacy_fixture_queue=os.environ.get("V4_LEGACY_FIXTURE_QUEUE"),
+            legacy_temporal_target=os.environ["TEST_TEMPORAL_TARGET"] if os.environ.get("V4_LEGACY_TEMPORAL_SCHEDULES","false")=="true" else None,
         )
     settings = Settings.from_environment()
     return create_app(

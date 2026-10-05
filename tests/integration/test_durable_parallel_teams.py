@@ -272,7 +272,7 @@ def test_additive_migration_empty_rollback_and_populated_preservation():
             result=migrate('downgrade','0034_runtime_delivery_scope')
             assert result.returncode!=0 and 'preserve parallel agent execution history' in result.stderr
             with store.connect() as c:assert store._inspect(c,run['run_id'])['tasks']==run['tasks']
-            with store.connect() as c:assert c.execute('SELECT version_num FROM alembic_version').fetchone()['version_num']=='0035_parallel_agent_teams'
+            with store.connect() as c:assert c.execute('SELECT version_num FROM alembic_version').fetchone()['version_num']=='0036_legacy_cycle_dispatch'
         finally:
             admin.execute(psycopg.sql.SQL('DROP DATABASE {} WITH (FORCE)').format(psycopg.sql.Identifier(name)))
 

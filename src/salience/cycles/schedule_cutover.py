@@ -20,6 +20,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 class FixtureLegacyScheduleControl:
+    supports_temporal = False
     def __init__(self, database_url, *, workspace_id):
         self.database_url = database_url
         self.workspace_id = UUID(str(workspace_id))
@@ -32,6 +33,8 @@ class FixtureLegacyScheduleControl:
         ).fetchone()
         if not row or row["job_type"] != "v4_fixture_legacy" or row["payload"].get("dry_run") is not True:
             raise PermissionError("scoped dry-run fixture legacy schedule required")
+        if row["payload"].get("temporal_schedule_id") and not self.supports_temporal:
+            raise PermissionError("pinned Temporal schedule requires remote readback control")
         if row["timezone"] != "UTC" or not re.fullmatch(r"every:[1-9][0-9]*s", row["schedule_expression"]):
             raise ValueError("compatible UTC fixture interval required")
         return row
@@ -109,6 +112,17 @@ class CycleScheduleCutover(CycleAdmission):
     def __init__(self, database_url, *, workspace_id, subject_id, legacy_control=None, trace_context=None):
         super().__init__(database_url, workspace_id=workspace_id, subject_id=subject_id, trace_context=trace_context)
         self.legacy_control = legacy_control or FixtureLegacyScheduleControl(database_url, workspace_id=workspace_id)
+
+    def admit(self, intent_id):
+        with psycopg.connect(self.database_url,row_factory=dict_row,connect_timeout=3) as connection:
+            plan = connection.execute("""SELECT plan.* FROM v4_legacy_schedule_plans plan
+                JOIN v4_cycle_intents intent ON intent.goal_id=plan.goal_id
+                WHERE intent.id=%s AND plan.workspace_id=%s""",(intent_id,self.workspace_id)).fetchone()
+        if plan:
+            from salience.cycles.legacy_dispatch import LegacyDispatch
+            return LegacyDispatch(self.database_url,workspace_id=self.workspace_id,subject_id=self.subject_id,
+                task_queue=plan["task_queue"],trace_context=self.trace).admit_scheduled(intent_id)
+        return super().admit(intent_id)
 
     @staticmethod
     def _key(value):
@@ -269,6 +283,8 @@ class CycleScheduleCutover(CycleAdmission):
                     WHERE admission.intent_id=intent.id AND admission.disposition IN ('admitted','denied'))
                 OR EXISTS (SELECT 1 FROM v4_cycles AS cycle WHERE cycle.intent_id=intent.id AND cycle.state!='closed')
                 OR EXISTS (SELECT 1 FROM v4_cycle_outbox AS message WHERE message.intent_id=intent.id AND message.state!='delivered')
+                OR EXISTS (SELECT 1 FROM v4_legacy_dispatches binding JOIN jobs job ON job.id=binding.job_id
+                    WHERE binding.intent_id=intent.id AND job.state NOT IN ('succeeded','cancelled','dead_lettered','timed_out'))
                 OR EXISTS (SELECT 1 FROM v4_permit_claims AS claim
                     JOIN v4_cycles AS cycle ON cycle.id=claim.cycle_id
                     WHERE cycle.intent_id=intent.id AND (claim.state!='claimed' OR NOT EXISTS (
@@ -346,12 +362,13 @@ class CycleScheduleCutover(CycleAdmission):
 
 
 class FixtureSchedulePoller:
-    def __init__(self, database_url, *, workspace_id, batch_size=8):
+    def __init__(self, database_url, *, workspace_id, batch_size=8, legacy_control=None):
         if type(batch_size) is not int or not 1 <= batch_size <= 32:
             raise ValueError("bounded fixture schedule batch required")
         self.database_url = database_url
         self.workspace_id = UUID(str(workspace_id))
         self.batch_size = batch_size
+        self.legacy_control = legacy_control
         self._after = None
 
     @staticmethod
@@ -412,7 +429,7 @@ class FixtureSchedulePoller:
         results = {"selected": len(due), "polled": 0, "admitted": 0, "held": invalid}
         for row, latest in due:
             service = CycleScheduleCutover(self.database_url, workspace_id=self.workspace_id,
-                                           subject_id=row["actor_id"])
+                                           subject_id=row["actor_id"],legacy_control=self.legacy_control)
             try:
                 result = service.poll(row["goal_id"], expected_revision=row["goal_revision"],
                                       idempotency_key="fixture-auto:" + latest.isoformat())

@@ -26,14 +26,27 @@ def enqueue_cycle_message(connection, *, workspace_id, subject_id, goal_id, inte
 
 
 class CycleOutbox:
-    def __init__(self, database_url, *, workspace_id, max_attempts=5, lease_seconds=10, tracer=None):
+    def __init__(self, database_url, *, workspace_id, max_attempts=5, lease_seconds=10, tracer=None, delivery_lane="fixture"):
         if type(max_attempts) is not int or not 1 <= max_attempts <= 10 or type(lease_seconds) is not int or not 1 <= lease_seconds <= 60:
             raise ValueError("bounded delivery settings required")
         self.database_url = database_url
         self.workspace_id = UUID(str(workspace_id))
         self.max_attempts = max_attempts
         self.lease_seconds = lease_seconds
+        if delivery_lane not in {"fixture", "legacy"}:
+            raise ValueError("explicit supported delivery lane required")
+        self.delivery_lane = delivery_lane
         self.emitter = OpenTelemetryTraceEmitter(tracer or trace.get_tracer("salience.cycles"))
+
+    def _lane_sql(self, connection, alias="message"):
+        if connection.execute("SELECT to_regclass('v4_legacy_dispatches') AS relation").fetchone()["relation"] is None:
+            if self.delivery_lane == "legacy":
+                raise PermissionError("legacy dispatch migration required")
+            # Compatible fixture readers remain valid before the additive lane
+            # exists; this cannot authorize a legacy stage on an old schema.
+            return "TRUE"
+        exists = f"EXISTS (SELECT 1 FROM v4_legacy_dispatches binding WHERE binding.cycle_id={alias}.cycle_id)"
+        return exists if self.delivery_lane == "legacy" else "NOT " + exists
 
     def _connect(self):
         return psycopg.connect(self.database_url, row_factory=dict_row, connect_timeout=3, options="-c statement_timeout=3000")
@@ -56,8 +69,9 @@ class CycleOutbox:
     def claim(self):
         with self._connect() as connection:
             connection.execute("SET LOCAL statement_timeout='3s'")
-            connection.execute("UPDATE v4_cycle_outbox AS message SET state='delivered',delivered_at=clock_timestamp(),lease_until=NULL WHERE message.workspace_id=%s AND message.state!='delivered' AND (message.state='dead_letter' OR message.attempts >= %s) AND EXISTS (SELECT 1 FROM v4_cycle_inbox WHERE message_id=message.id)", (self.workspace_id,self.max_attempts))
-            exhausted = connection.execute("SELECT * FROM v4_cycle_outbox WHERE workspace_id=%s AND state='leased' AND lease_until <= clock_timestamp() AND attempts >= %s ORDER BY created_at FOR UPDATE SKIP LOCKED LIMIT 32", (self.workspace_id,self.max_attempts)).fetchall()
+            lane = self._lane_sql(connection)
+            connection.execute("UPDATE v4_cycle_outbox AS message SET state='delivered',delivered_at=clock_timestamp(),lease_until=NULL WHERE message.workspace_id=%s AND message.state!='delivered' AND (message.state='dead_letter' OR message.attempts >= %s) AND EXISTS (SELECT 1 FROM v4_cycle_inbox WHERE message_id=message.id) AND "+lane, (self.workspace_id,self.max_attempts))
+            exhausted = connection.execute("SELECT message.* FROM v4_cycle_outbox message WHERE workspace_id=%s AND state='leased' AND lease_until <= clock_timestamp() AND attempts >= %s AND "+lane+" ORDER BY created_at FOR UPDATE SKIP LOCKED LIMIT 32", (self.workspace_id,self.max_attempts)).fetchall()
             for expired in exhausted:
                 if connection.execute("SELECT 1 FROM v4_cycle_inbox WHERE message_id=%s", (expired["id"],)).fetchone():
                     connection.execute("UPDATE v4_cycle_outbox SET state='delivered',delivered_at=clock_timestamp(),lease_until=NULL WHERE id=%s", (expired["id"],))
@@ -71,6 +85,7 @@ class CycleOutbox:
                     OR (message.state='leased' AND message.lease_until<=clock_timestamp()))
                   AND NOT EXISTS (SELECT 1 FROM v4_cycle_outbox AS prior
                     WHERE prior.cycle_id=message.cycle_id AND prior.sequence < message.sequence AND prior.state!='delivered')
+                AND """ + lane + """
                 ORDER BY message.created_at,message.sequence
                 FOR UPDATE OF message SKIP LOCKED LIMIT 1
             """, (self.workspace_id,self.max_attempts)).fetchone()
@@ -163,6 +178,7 @@ class CycleOutbox:
                 AND (NOT EXISTS (SELECT 1 FROM v4_runtime_holds hold WHERE hold.cycle_id=cycle.id)
                     OR EXISTS (SELECT 1 FROM v4_cycle_outbox outstanding WHERE outstanding.cycle_id=cycle.id
                         AND NOT EXISTS (SELECT 1 FROM v4_cycle_inbox receipt WHERE receipt.message_id=outstanding.id)))"""
+            query += " AND " + self._lane_sql(connection)
             row = None
             if after is not None:
                 row = connection.execute(query+" AND message.id>%s ORDER BY message.id LIMIT 1",(self.workspace_id,after)).fetchone()
@@ -277,6 +293,10 @@ class CycleOutbox:
             message = connection.execute("SELECT * FROM v4_cycle_outbox WHERE id=%s AND workspace_id=%s FOR UPDATE", (message_id,self.workspace_id)).fetchone()
             if not message:
                 raise PermissionError("message outside consumer scope")
+            available = self._lane_sql(connection) != "TRUE"
+            legacy = bool(available and connection.execute("SELECT 1 FROM v4_legacy_dispatches WHERE cycle_id=%s", (message["cycle_id"],)).fetchone())
+            if legacy != (self.delivery_lane == "legacy"):
+                raise PermissionError("message outside consumer delivery lane")
             if not connection.execute("""SELECT 1 FROM v4_cycles cycle
                 JOIN v4_cycle_intents intent ON intent.id=cycle.intent_id
                 JOIN v4_goals goal ON goal.id=intent.goal_id
