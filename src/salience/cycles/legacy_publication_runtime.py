@@ -12,7 +12,6 @@ from temporalio.exceptions import ApplicationError
 
 from salience.cycles.authority import current_authority
 from salience.cycles.legacy_publication import native_publication_request, publication_decision
-from salience.governance.costs import CostSettlementStatus
 from salience.publication.contracts import CredentialLease, RemotePublicationReceipt, PublicationRequest
 from salience.publication.providers import FixturePublisherAdapter
 from salience.publication.repository import PublicationRepository
@@ -20,9 +19,6 @@ from salience.workflows.persistence import CanonicalJobStore
 from salience.workflows.publication import (
     PublicationActivities,
     PublicationWorkflowRequest,
-    PublicationWorkflowResult,
-    _result_payload,
-    _safe_hash,
     _workflow_request_payload,
 )
 
@@ -324,7 +320,11 @@ class GuardedPublicationActivities(PublicationActivities):
 
         run = await self._run()
         if receipt.state == "published":
-            return await self._complete_published_cancellation(run, payload, receipt)
+            raise ApplicationError(
+                "published publication readback during cancellation requires typed execution recovery",
+                type="LegacyPublicationRecoveryHeld",
+                non_retryable=True,
+            )
         if receipt.state != "cancelled":
             raise RuntimeError("remote publication cancellation is not confirmed")
 
@@ -341,52 +341,6 @@ class GuardedPublicationActivities(PublicationActivities):
         # The receipt is already durably cancelled. Remove the remote id so the
         # native base activity only performs local budget/job terminal work.
         return await super().cancel({key: value for key, value in payload.items() if key != "remote_id"})
-
-    async def _complete_published_cancellation(self, run, payload, receipt):
-        attempt_id = payload.get("publication_attempt_id")
-        request_id = payload.get("publication_request_id")
-        plan_id = payload.get("publication_plan_id")
-        receipt_id = payload.get("remote_receipt_id")
-        reservation_id = payload.get("budget_reservation_id")
-        if not all(isinstance(value, str) for value in (attempt_id, request_id, plan_id, receipt_id, reservation_id)):
-            raise RuntimeError("published cancellation readback lacks canonical publication references")
-        if self._state.cost_repository is None:
-            raise RuntimeError("durable cost repository is required for publication settlement")
-
-        await self._state.repository.record_status_event(
-            publication_attempt_id=attempt_id,
-            state="published",
-            source="cancellation_readback",
-            safe_payload_hash=receipt.safe_metadata_hash,
-            trace_id=run.trace_context.trace_id,
-            span_id=run.trace_context.span_id,
-        )
-        settlement = await self._state.cost_repository.settle(reservation_id, actual_micros=0)
-        if settlement.status != CostSettlementStatus.SETTLED:
-            raise RuntimeError("published cancellation readback cannot pass unsettled publication")
-        publication = await self._state.repository.record_publication(
-            publication_request_id=request_id,
-            remote_receipt_id=receipt_id,
-            state="published",
-            trace_id=run.trace_context.trace_id,
-            span_id=run.trace_context.span_id,
-        )
-        await self._checkpoint("publication.published")
-        result = PublicationWorkflowResult(
-            publication_state="published",
-            job_id=str(run.job_id),
-            trace_id=run.trace_context.trace_id,
-            publication_request_id=request_id,
-            publication_plan_id=plan_id,
-            publication_attempt_id=attempt_id,
-            remote_receipt_id=receipt_id,
-            publication_id=publication.id,
-            fixture_submit_count=self._state.provider.submit_count,
-        )
-        await self._state.store.complete_with_output(
-            run, status="succeeded", output=_result_payload(result)
-        )
-        return result
 
     @activity.defn(name="salience.publication.dead_letter")
     async def dead_letter(self,payload:dict[str,Any]):

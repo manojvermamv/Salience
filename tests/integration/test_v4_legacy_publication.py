@@ -1055,6 +1055,369 @@ async def test_publication_cancel_race_does_not_fabricate_cancel_for_published_r
 
 
 @pytest.mark.asyncio
+async def test_post_close_cancel_reads_published_then_holds_original_liability(
+    legacy_publication, monkeypatch, record_testsuite_property
+):
+    from temporalio import activity
+    from temporalio.client import Client, WorkflowExecutionStatus, WorkflowFailureError
+
+    from salience.cycles.outbox import CycleOutbox
+    from salience.cycles.legacy_publication_runtime import DurableLegacyFixturePublisher
+    from salience.cycles.legacy_runtime import build_legacy_worker
+    from salience.cycles.runtime import TemporalCycleTransport
+
+    f = legacy_publication
+    processing_read, release_processing, cancel_readback = (
+        asyncio.Event(),
+        asyncio.Event(),
+        asyncio.Event(),
+    )
+    original_status = DurableLegacyFixturePublisher.status
+    original_cancel = DurableLegacyFixturePublisher.cancel
+    cancel_observations = []
+
+    async def pause_after_processing_read(self, remote_id):
+        receipt = await original_status(self, remote_id)
+        if receipt is not None and receipt.state == "processing" and not processing_read.is_set():
+            processing_read.set()
+            await release_processing.wait()
+        return receipt
+
+    async def observe_original_cancel_readback(self, remote_id):
+        info = activity.info()
+        with psycopg.connect(f["database"]) as connection:
+            before = connection.execute(
+                """SELECT cycle.state, progress.state, receipt.receipt->>'state'
+                   FROM v4_legacy_dispatches binding
+                   JOIN v4_cycles cycle ON cycle.id=binding.cycle_id
+                   JOIN v4_legacy_publication_fixture_progress progress
+                     ON progress.operation_id=binding.operation_id
+                   JOIN v4_legacy_publication_fixture_receipts receipt
+                     ON receipt.operation_id=binding.operation_id
+                   WHERE binding.operation_id=%s""",
+                (submitted["operation_id"],),
+            ).fetchone()
+        receipt = None
+        try:
+            receipt = await original_cancel(self, remote_id)
+            return receipt
+        finally:
+            cancel_observations.append(
+                {
+                    "activity_type": info.activity_type,
+                    "workflow_id": info.workflow_id,
+                    "workflow_run_id": info.workflow_run_id,
+                    "cycle_state_before_read": before[0],
+                    "progress_state_before_read": before[1],
+                    "immutable_receipt_state": before[2],
+                    "readback_state": receipt.state if receipt is not None else None,
+                    "remote_id": remote_id,
+                }
+            )
+            cancel_readback.set()
+
+    monkeypatch.setattr(DurableLegacyFixturePublisher, "status", pause_after_processing_read)
+    monkeypatch.setattr(DurableLegacyFixturePublisher, "cancel", observe_original_cancel_readback)
+    _allow(
+        f["database"],
+        f["workspace_id"],
+        f["actor_id"],
+        ("legacy:publication:reconcile:account:" + f["account"].id,),
+    )
+    bridge, database = f["bridge"], f["database"]
+    submitted = bridge.submit_publication(f["command"])
+    client = await Client.connect(os.environ["TEST_TEMPORAL_TARGET"])
+    box = CycleOutbox(database, workspace_id=f["workspace_id"], delivery_lane="legacy")
+    transport = TemporalCycleTransport(client, task_queue=f["queue"])
+    workflow_error = None
+    workflow_result = None
+    initial_receipt = None
+    before_cancel = None
+
+    def durable_snapshot(connection):
+        request_key = "v4-legacy:" + submitted["operation_id"]
+        return {
+            "receipt": connection.execute(
+                """SELECT receipt.receipt, progress.state
+                   FROM v4_legacy_publication_fixture_receipts receipt
+                   JOIN v4_legacy_publication_fixture_progress progress USING(operation_id)
+                   WHERE receipt.operation_id=%s""",
+                (submitted["operation_id"],),
+            ).fetchone(),
+            "job": connection.execute(
+                "SELECT state, output_payload, finished_at FROM jobs WHERE id=%s",
+                (submitted["job_id"],),
+            ).fetchone(),
+            "effect": connection.execute(
+                """SELECT status, provider_reference, effect_result
+                   FROM external_effects WHERE job_id=%s AND idempotency_key=%s""",
+                (submitted["job_id"], request_key + ":publish"),
+            ).fetchone(),
+            "reservation": connection.execute(
+                """SELECT reservation.id, reservation.status, reservation.reserved_amount,
+                          plan.state, plan.actual_cost_micros
+                   FROM publication_requests request
+                   JOIN publication_plans plan ON plan.publication_request_id=request.id
+                   LEFT JOIN budget_reservations reservation
+                     ON reservation.id=plan.budget_reservation_id
+                   WHERE request.request_key=%s""",
+                (request_key,),
+            ).fetchone(),
+            "linked_counts": (
+                connection.execute(
+                    """SELECT count(*) FROM v4_legacy_dispatches
+                       WHERE operation_id=%s AND job_id=%s""",
+                    (submitted["operation_id"], submitted["job_id"]),
+                ).fetchone()[0],
+                connection.execute(
+                    "SELECT count(*) FROM v4_legacy_publication_fixture_receipts WHERE operation_id=%s",
+                    (submitted["operation_id"],),
+                ).fetchone()[0],
+                connection.execute(
+                    """SELECT count(*) FROM external_effects
+                       WHERE job_id=%s AND idempotency_key=%s""",
+                    (submitted["job_id"], request_key + ":publish"),
+                ).fetchone()[0],
+            ),
+        }
+
+    async with build_legacy_worker(client, task_queue=f["queue"], outbox=box):
+        try:
+            assert await box.dispatch_one(transport)
+            child = await _wait_started(
+                client, "salience-v4-legacy-operation:" + submitted["operation_id"]
+            )
+            original_run_id = (await child.describe()).run_id
+            await asyncio.wait_for(processing_read.wait(), 15)
+            with psycopg.connect(database) as connection:
+                initial_receipt = connection.execute(
+                    "SELECT receipt FROM v4_legacy_publication_fixture_receipts WHERE operation_id=%s",
+                    (submitted["operation_id"],),
+                ).fetchone()[0]
+                progress = connection.execute(
+                    """UPDATE v4_legacy_publication_fixture_progress
+                       SET state='published', polls=2
+                       WHERE operation_id=%s AND state='processing'
+                       RETURNING state""",
+                    (submitted["operation_id"],),
+                ).fetchone()[0]
+                assert progress == "published"
+
+            bridge.close(
+                submitted["cycle_id"],
+                disposition="cancelled",
+                reason="Preserve liability while post-close publication state is reconciled",
+            )
+            assert await box.dispatch_one(transport)
+
+            async with asyncio.timeout(10):
+                while True:
+                    current_history = await child.fetch_history()
+                    signal_seen = any(
+                        event.HasField("workflow_execution_signaled_event_attributes")
+                        and event.workflow_execution_signaled_event_attributes.signal_name
+                        == "request_cancellation"
+                        for event in current_history.events
+                    )
+                    if signal_seen:
+                        break
+                    description = await child.describe()
+                    assert description.status == WorkflowExecutionStatus.RUNNING, (
+                        "original workflow ended before its post-close cancellation signal was recorded"
+                    )
+                    await asyncio.sleep(0.05)
+
+            with psycopg.connect(database) as connection:
+                before_cancel = durable_snapshot(connection)
+            release_processing.set()
+
+            async with asyncio.timeout(15):
+                while not cancel_readback.is_set():
+                    description = await child.describe()
+                    if description.status != WorkflowExecutionStatus.RUNNING:
+                        break
+                    await asyncio.sleep(0.05)
+            if cancel_readback.is_set():
+                try:
+                    workflow_result = await asyncio.wait_for(child.result(), 10)
+                except WorkflowFailureError as error:
+                    workflow_error = error
+        finally:
+            release_processing.set()
+
+    final_description = await child.describe()
+    final_history = await child.fetch_history()
+    with psycopg.connect(database) as connection:
+        after_close = durable_snapshot(connection)
+        terminal_status_event_count = connection.execute(
+            """SELECT count(*)
+               FROM publication_status_events event
+               JOIN publication_attempts attempt ON attempt.id=event.publication_attempt_id
+               JOIN publication_plans plan ON plan.id=attempt.publication_plan_id
+               JOIN publication_requests request ON request.id=plan.publication_request_id
+               WHERE request.request_key=%s
+                 AND (event.state IN ('published','cancelled')
+                      OR event.source IN ('cancellation','cancellation_readback'))""",
+            ("v4-legacy:" + submitted["operation_id"],),
+        ).fetchone()[0]
+        publication_count = connection.execute(
+            """SELECT count(*) FROM publications publication
+               JOIN publication_requests request ON request.id=publication.publication_request_id
+               WHERE request.request_key=%s""",
+            ("v4-legacy:" + submitted["operation_id"],),
+        ).fetchone()[0]
+        outbox_kinds = connection.execute(
+            "SELECT kind FROM v4_cycle_outbox WHERE cycle_id=%s ORDER BY sequence",
+            (submitted["cycle_id"],),
+        ).fetchall()
+
+    cancel_scheduled_events = [
+        {
+            "event_id": event.event_id,
+            "activity_id": event.activity_task_scheduled_event_attributes.activity_id,
+            "activity_type": event.activity_task_scheduled_event_attributes.activity_type.name,
+        }
+        for event in final_history.events
+        if event.HasField("activity_task_scheduled_event_attributes")
+        and event.activity_task_scheduled_event_attributes.activity_type.name
+        == "salience.publication.cancel"
+    ]
+    cancel_scheduled = [event["event_id"] for event in cancel_scheduled_events]
+    cancel_started_events = [
+        {
+            "event_id": event.event_id,
+            "scheduled_event_id": event.activity_task_started_event_attributes.scheduled_event_id,
+            "worker_identity": event.activity_task_started_event_attributes.identity,
+        }
+        for event in final_history.events
+        if event.HasField("activity_task_started_event_attributes")
+        and event.activity_task_started_event_attributes.scheduled_event_id in cancel_scheduled
+    ]
+    cancel_started = [event["scheduled_event_id"] for event in cancel_started_events]
+    cancel_failures = [
+        (event.event_id, event.activity_task_failed_event_attributes.failure)
+        for event in final_history.events
+        if event.HasField("activity_task_failed_event_attributes")
+        and event.activity_task_failed_event_attributes.scheduled_event_id in cancel_scheduled
+    ]
+    application_failures = []
+    for event_id, failure in cancel_failures:
+        current = failure
+        while current is not None:
+            if current.HasField("application_failure_info"):
+                application = current.application_failure_info
+                application_failures.append(
+                    {
+                        "event_id": event_id,
+                        "type": application.type,
+                        "non_retryable": application.non_retryable,
+                    }
+                )
+            current = current.cause if current.HasField("cause") else None
+
+    signal_event_ids = [
+        event.event_id
+        for event in final_history.events
+        if event.HasField("workflow_execution_signaled_event_attributes")
+        and event.workflow_execution_signaled_event_attributes.signal_name
+        == "request_cancellation"
+    ]
+    activity_history = {
+        "scheduled": cancel_scheduled_events,
+        "started": cancel_started_events,
+        "failed_event_ids": [event_id for event_id, _ in cancel_failures],
+        "application_failures": application_failures,
+    }
+    evidence_prefix = "post_close_cancel_reads_published_then_holds_original_liability."
+    record_testsuite_property(evidence_prefix + "workflow_id", child.id)
+    record_testsuite_property(evidence_prefix + "workflow_run_id", original_run_id)
+    record_testsuite_property(evidence_prefix + "operation_id", submitted["operation_id"])
+    record_testsuite_property(evidence_prefix + "cycle_id", submitted["cycle_id"])
+    record_testsuite_property(evidence_prefix + "job_id", submitted["job_id"])
+    record_testsuite_property(evidence_prefix + "close_signal_event_ids", json.dumps(signal_event_ids))
+    record_testsuite_property(
+        evidence_prefix + "cancel_activity_history",
+        json.dumps(activity_history, sort_keys=True),
+    )
+    record_testsuite_property(
+        evidence_prefix + "cancel_adapter_observation",
+        json.dumps(cancel_observations, sort_keys=True),
+    )
+
+    violations = []
+    if len(cancel_observations) != 1:
+        violations.append(f"cancel adapter observations={cancel_observations!r}")
+    elif cancel_observations[0] != {
+        "activity_type": "salience.publication.cancel",
+        "workflow_id": "salience-v4-legacy-operation:" + submitted["operation_id"],
+        "workflow_run_id": final_description.run_id,
+        "cycle_state_before_read": "closed",
+        "progress_state_before_read": "published",
+        "immutable_receipt_state": "accepted",
+        "readback_state": "published",
+        "remote_id": "fixture-v4-publication:" + submitted["operation_id"],
+    }:
+        violations.append(f"post-close cancel readback={cancel_observations!r}")
+    if len(cancel_scheduled) != 1 or len(cancel_started) != 1:
+        violations.append(
+            f"Temporal cancel activity scheduled={cancel_scheduled!r}, started={cancel_started!r}"
+        )
+    if workflow_error is None or workflow_result is not None:
+        violations.append(f"workflow result={workflow_result!r}, failure={workflow_error!r}")
+    has_typed_hold = workflow_error is not None and any(
+        getattr(error, "type", None) == "LegacyPublicationRecoveryHeld"
+        for error in _exception_chain(workflow_error)
+    )
+    if not has_typed_hold:
+        violations.append("workflow failure is not LegacyPublicationRecoveryHeld")
+    typed_nonretryable_failure = any(
+        failure["type"] == "LegacyPublicationRecoveryHeld" and failure["non_retryable"]
+        for failure in application_failures
+    )
+    if not typed_nonretryable_failure:
+        violations.append(
+            f"Temporal cancel application failures={application_failures!r}"
+        )
+    if final_description.run_id != original_run_id or final_description.status != WorkflowExecutionStatus.FAILED:
+        violations.append(
+            f"pinned workflow terminal readback run={final_description.run_id}, status={final_description.status}"
+        )
+    if after_close["receipt"] != (initial_receipt, "published"):
+        violations.append(f"immutable receipt/progress after close={after_close['receipt']!r}")
+    if before_cancel is None:
+        violations.append("canonical state snapshot before the cancel activity is missing")
+    else:
+        if before_cancel["receipt"] != (initial_receipt, "published"):
+            violations.append(f"pre-cancel immutable receipt/progress={before_cancel['receipt']!r}")
+        if before_cancel["job"] != ("running", None, None):
+            violations.append(f"pre-cancel original job state={before_cancel['job']!r}")
+        if (
+            before_cancel["reservation"] is None
+            or before_cancel["reservation"][1] != "reserved"
+            or before_cancel["reservation"][3] != "reserved"
+        ):
+            violations.append(f"pre-cancel publication liability={before_cancel['reservation']!r}")
+        if before_cancel["linked_counts"] != (1, 1, 1):
+            violations.append(f"pre-cancel original receipt/effect/job links={before_cancel['linked_counts']!r}")
+        if after_close["job"] != before_cancel["job"]:
+            violations.append(f"canonical job liability changed: {before_cancel!r} -> {after_close!r}")
+        if after_close["effect"] != before_cancel["effect"]:
+            violations.append(f"canonical external effect changed: {before_cancel!r} -> {after_close!r}")
+        if after_close["reservation"] != before_cancel["reservation"]:
+            violations.append(f"publication reservation changed: {before_cancel!r} -> {after_close!r}")
+        if after_close["linked_counts"] != before_cancel["linked_counts"]:
+            violations.append(f"original receipt/effect/job links changed: {before_cancel!r} -> {after_close!r}")
+    if terminal_status_event_count != 0 or publication_count != 0:
+        violations.append(
+            f"terminal publication events={terminal_status_event_count}, publication rows={publication_count}"
+        )
+    if outbox_kinds != [("start",), ("close",)]:
+        violations.append(f"cycle outbox contains unexpected work: {outbox_kinds!r}")
+
+    assert not violations, "; ".join(violations)
+
+
+@pytest.mark.asyncio
 async def test_publication_revoked_reconcile_scope_holds_durable_acceptance(
     legacy_publication, monkeypatch
 ):
