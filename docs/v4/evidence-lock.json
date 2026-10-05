@@ -175,6 +175,10 @@
       "sha256": "9f58b4bd2b67ea3c8a409e0ffba1f772dcbaa8a2e20ced1bbb15141ab0aa336f"
     },
     {
+      "path": "migrations/versions/0037_native_schedule_sources.py",
+      "sha256": "449f0d107803bb42b72b693cb820dab565b7f2bea7a89d65fe5ee0216237755d"
+    },
+    {
       "path": "migrations/versions/__init__.py",
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
@@ -296,7 +300,7 @@
     },
     {
       "path": "src/salience/api/p0.py",
-      "sha256": "e907dfa11b61d26ebc81119bab844064e16c4a4b333ca150827bdafd8cba6cbf"
+      "sha256": "881071333279be84cacb88c2b75d396a2e287a53c047d1841aca8d01d43f4fa7"
     },
     {
       "path": "src/salience/api/routes/__init__.py",
@@ -324,7 +328,7 @@
     },
     {
       "path": "src/salience/api/routes/legacy_dispatch.py",
-      "sha256": "087879ca335ab0227bc3564c3ec2a8330e4197c56eb577ab9f3370c9f864ef88"
+      "sha256": "adf4e2ab4a98553630599a7fa23a59927559f2c0afae24afd3a17030aa286da9"
     },
     {
       "path": "src/salience/api/routes/parallel_teams.py",
@@ -376,7 +380,7 @@
     },
     {
       "path": "src/salience/cli.py",
-      "sha256": "4b6f2a381b5d17717cbe60715bccad9738e2afd2a1868b504aa1a43975ef4b3d"
+      "sha256": "065345fa5293b8b6476abde04849e6f9d424a1f0cc93be5bb0b2db9626280ef4"
     },
     {
       "path": "src/salience/config.py",
@@ -476,11 +480,11 @@
     },
     {
       "path": "src/salience/cycles/legacy_dispatch.py",
-      "sha256": "b2fc905e84c3c6b89f47bd95fc3508fa35265e81ac57482c7f090a24aa1ef08a"
+      "sha256": "7635f92b6e314187221d77d7976afe957e70fb8033c183ee39ecb9ad4dc2166c"
     },
     {
       "path": "src/salience/cycles/legacy_runtime.py",
-      "sha256": "e4b27e743b837a3787b25b1c00f6c0fd822790987eb23c5057343e9032050f05"
+      "sha256": "247de5a60779a4e291cd94720be81f3fdf83e65e4a189f629c7a2415a6746951"
     },
     {
       "path": "src/salience/cycles/legacy_schedule_workflow.py",
@@ -489,6 +493,10 @@
     {
       "path": "src/salience/cycles/legacy_workflow.py",
       "sha256": "b3dd801cb31ccb3b627a6b4f07472ceb34c5505084c7793aaac6b52a6bf180b7"
+    },
+    {
+      "path": "src/salience/cycles/native_schedules.py",
+      "sha256": "870fac9fd83a6408fcf176e6c38f3bd9813d6529fc078ae78f33e2e5541736f2"
     },
     {
       "path": "src/salience/cycles/outbox.py",
@@ -504,11 +512,11 @@
     },
     {
       "path": "src/salience/cycles/schedule_cutover.py",
-      "sha256": "fd4446dcfbb876534e520e2afe1fd5b053bf1127af8adec67cb0a0ba580d0522"
+      "sha256": "cd6bc70dd91b668a0657cdb8025b1da4feb60e645f593d75e7868ed4d0d45acb"
     },
     {
       "path": "src/salience/cycles/temporal_schedule_control.py",
-      "sha256": "0dfcc513376c7a4a193b71fef0251d800fac6b81908aa0d0b7ac0996e4737f07"
+      "sha256": "a643903b64cf0895bf0d569d910bd47083494e44f5054b190be2116103addcb8"
     },
     {
       "path": "src/salience/cycles/wait_workflow.py",
@@ -752,7 +760,7 @@
     },
     {
       "path": "src/salience/sdk/client.py",
-      "sha256": "c67af4eb0046a5e6cdb18afad416b22e535c5df66c1be01a8b061345c06088bc"
+      "sha256": "46d5784dbfb7d2edfca25f4971f30024b5adcb6bf35ba37328fa962600b640d2"
     },
     {
       "path": "src/salience/storage/__init__.py",
@@ -1024,7 +1032,7 @@
     },
     {
       "path": "tests/integration/test_durable_parallel_teams.py",
-      "sha256": "2b033584d4c6fb06dbea78f1ad5554c5a6df116082b93f786273c4b27de7344d"
+      "sha256": "6158115884a80f63f84ac47c54cc109ddbda311bfccfb086455eab92e9fb33da"
     },
     {
       "path": "tests/integration/test_fixture_publisher.py",
@@ -1132,7 +1140,7 @@
     },
     {
       "path": "tests/integration/test_v4_legacy_dispatch.py",
-      "sha256": "1f3cce6c51e47082bbca889ceae60a2676f3bde9e135b016b19dbc1f833559d6"
+      "sha256": "767169a6a92b0a450fe3c4069f087ea9ec248a0019cdfd05a3dbf837fd34bc7c"
     },
     {
       "path": "tests/integration/test_v4_legacy_schedule_ingress.py",
@@ -1140,7 +1148,11 @@
     },
     {
       "path": "tests/integration/test_v4_migrations.py",
-      "sha256": "daaa54e27a6bd244aa6d6d859afbabf609ed6e66e505bcd2ae2bebeda55eacbf"
+      "sha256": "c828dfa018458abb88c83e16ef3596fff626be0394a5e4d2593c0c439f9a786c"
+    },
+    {
+      "path": "tests/integration/test_v4_native_schedules.py",
+      "sha256": "1dd12906774160982640b11b9a27586186a9eedcc7b594060800d4f8b9aef60c"
     },
     {
       "path": "tests/integration/test_v4_object_retention.py",
@@ -1160,7 +1172,7 @@
     },
     {
       "path": "tests/integration/test_v4_runtime_waits.py",
-      "sha256": "5bd93c6df4b026de3d1c3abbb8e52cc6c1708f0b2effcf3849b2fb761eada929"
+      "sha256": "e61b7ff3e2d49e8f362bec0990ee1c387bafb83a55f726b49bf3afc6867f149f"
     },
     {
       "path": "tests/integration/test_v4_s3_service.py",
@@ -1344,5 +1356,5 @@
     }
   ],
   "reviewed_at": "2026-10-05",
-  "review_scope": "Root-qualified no-effects intelligence, selected-brief and actual resumed Temporal schedule ingress: 92 focused / 561 full non-live PASS, 335 source hashes; actual physical legacy drain, lost schedule acknowledgment, original-slot admission/job/outbox, finite retries and original operation/permit execution, signed API/SDK/CLI and current workspace reads. Historical item7/parallel/intelligence reports remain source-bound. Remaining legacy stages, production and general policy remain unqualified."
+  "review_scope": "Root-qualified no-effects original native intelligence schedule conversion: 98 focused / 567 full non-live PASS, 338 source hashes; immutable original native row/UUID/source mapping, separate nullable actual progress, authenticated concurrent/atomic adoption, physical drain/fencing/watermark/lost-acknowledgment rollback, real tick and original canonical outbox/operation/permit completion, signed API/SDK/CLI, current grants, drift denial and empty/populated rollback. Earlier item7/parallel/intelligence/selected-brief/schedule reports remain dated and source-bound. Other legacy stages, production and general policy remain unqualified; broader goal ACTIVE."
 }

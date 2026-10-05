@@ -512,6 +512,9 @@ class LegacyIntelligenceClient(CyclesClient):
     def submit_brief(self, command: dict[str, Any]) -> dict[str, Any]:
         return self._request("POST",f"/v1/intelligence/opportunities/{command['selected_opportunity_id']}/briefs",command)
 
+    def adopt_native_schedule(self, goal_id: str, command: dict[str, Any]) -> dict[str, Any]:
+        return self._request("POST",f"/v1/intelligence/schedules/{goal_id}/adopt-native",command)
+
     def inspect(self, job_id: str) -> dict[str, Any]:
         return self._request("GET",f"/v1/intelligence/runs/{job_id}")
 

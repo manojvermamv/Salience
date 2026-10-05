@@ -232,6 +232,9 @@ def main(arguments: Sequence[str] | None = None) -> None:
     legacy_bind.add_argument('goal_id')
     legacy_bind.add_argument('--expected-revision',required=True,type=int)
     legacy_bind.add_argument('--niche',required=True)
+    legacy_adopt = legacy_commands.add_parser('adopt-native-schedule')
+    legacy_adopt.add_argument('goal_id')
+    legacy_adopt.add_argument('--command-json',required=True)
     teams = subcommands.add_parser('agent-teams')
     team_commands = teams.add_subparsers(dest='team_command', required=True)
     for action in ('submit', 'inspect', 'cancel'):
@@ -250,6 +253,8 @@ def main(arguments: Sequence[str] | None = None) -> None:
         elif parsed.legacy_command == 'brief':
             payload = json.loads(parsed.command_json)
             result = _v4_request(method='POST',path=f"/v1/intelligence/opportunities/{payload['selected_opportunity_id']}/briefs",payload=payload)
+        elif parsed.legacy_command == 'adopt-native-schedule':
+            result = _v4_request(method='POST',path=f'/v1/intelligence/schedules/{parsed.goal_id}/adopt-native',payload=json.loads(parsed.command_json))
         elif parsed.legacy_command == 'inspect':
             result = _v4_request(method='GET',path=f'/v1/intelligence/runs/{parsed.job_id}')
         elif parsed.legacy_command == 'cancel':

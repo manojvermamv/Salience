@@ -14,6 +14,7 @@ from salience.cycles.admission import CycleAdmission
 from salience.cycles.authority import current_authority
 from salience.cycles.cadence import fingerprint
 from salience.cycles.contracts import GoalSpecV2, parse_goal
+from salience.cycles.native_schedules import schedule_row, schedule_metadata, require_native_binding
 
 
 LOGGER = logging.getLogger(__name__)
@@ -27,30 +28,15 @@ class FixtureLegacyScheduleControl:
 
     def _schedule(self, connection, schedule_id, *, lock=False):
         connection.execute("SET LOCAL statement_timeout='3s'")
-        row = connection.execute(
-            "SELECT * FROM job_schedules WHERE id=%s AND workspace_id=%s" + (" FOR UPDATE" if lock else ""),
-            (schedule_id, self.workspace_id),
-        ).fetchone()
-        if not row or row["job_type"] != "v4_fixture_legacy" or row["payload"].get("dry_run") is not True:
-            raise PermissionError("scoped dry-run fixture legacy schedule required")
-        if row["payload"].get("temporal_schedule_id") and not self.supports_temporal:
+        row = schedule_row(connection, schedule_id, self.workspace_id, lock=lock, temporal=self.supports_temporal)
+        if schedule_metadata(row)["remote_id"] and not self.supports_temporal:
             raise PermissionError("pinned Temporal schedule requires remote readback control")
-        if row["timezone"] != "UTC" or not re.fullmatch(r"every:[1-9][0-9]*s", row["schedule_expression"]):
-            raise ValueError("compatible UTC fixture interval required")
         return row
 
     def describe(self, schedule_id):
         with psycopg.connect(self.database_url, row_factory=dict_row, connect_timeout=3) as connection:
             row = self._schedule(connection, schedule_id)
-            try:
-                last_slot = datetime.fromisoformat(row["payload"]["last_slot"])
-            except (KeyError, TypeError, ValueError) as error:
-                raise ValueError("verified last legacy slot required") from error
-            if last_slot.tzinfo is None:
-                raise ValueError("aware last legacy slot required")
-            return {"paused": row["status"] == "paused", "last_slot": last_slot,
-                    "next_run_at": row["next_run_at"], "interval_seconds": int(row["schedule_expression"][6:-1]),
-                    "resume_after": row["payload"].get("v4_resume_after")}
+            return {"paused": row["status"] == "paused"} | schedule_metadata(row)
 
     def pause(self, schedule_id):
         with psycopg.connect(self.database_url, row_factory=dict_row, connect_timeout=3) as connection:
@@ -84,26 +70,30 @@ class FixtureLegacyScheduleControl:
             if goal["state"] != "active" or spec.cadence.interval_seconds != parse_goal(original["payload"]).cadence.interval_seconds:
                 raise PermissionError("compatible active goal required at legacy resume")
             row = self._schedule(connection, schedule_id, lock=True)
-            if row['content_program_id'] != spec.content_program_id or row['schedule_expression'] != f'every:{spec.cadence.interval_seconds}s':
+            metadata = schedule_metadata(row)
+            if row['content_program_id'] != spec.content_program_id or metadata['interval_seconds'] != spec.cadence.interval_seconds:
                 raise PermissionError("same-program compatible legacy resume required")
             if row["status"] == "active":
-                if row["payload"].get("v4_resume_after") != after_slot.isoformat() or row["next_run_at"] is None or row["next_run_at"] <= after_slot:
+                if metadata["resume_after"] != after_slot.isoformat() or metadata["next_run_at"] is None or metadata["next_run_at"] <= after_slot:
                     raise ValueError("active legacy schedule lacks exact rollback readback")
                 current_authority(connection,self.workspace_id,actor,"cycles:schedule")
                 current_authority(connection,self.workspace_id,actor)
                 return
-            if row["status"] != "paused" or row["next_run_at"] is None:
+            if row["status"] != "paused" or metadata["next_run_at"] is None:
                 raise ValueError("paused legacy schedule with anchor required")
-            interval = timedelta(seconds=int(row["schedule_expression"][6:-1]))
-            anchor = row["next_run_at"]
+            interval = timedelta(seconds=metadata["interval_seconds"])
+            anchor = metadata["next_run_at"]
             now = connection.execute("SELECT clock_timestamp() AS now").fetchone()["now"]
             boundary = max(after_slot, now)
             steps = max(0, (boundary - anchor) // interval + 1)
             next_slot = anchor + steps * interval
             if next_slot <= boundary:
                 next_slot += interval
-            connection.execute("UPDATE job_schedules SET status='active',next_run_at=%s,payload=jsonb_set(payload,'{v4_resume_after}',to_jsonb(%s::text),true),updated_at=clock_timestamp() WHERE id=%s",
-                               (next_slot, after_slot.isoformat(), schedule_id))
+            if row.get("native_source"):
+                connection.execute("UPDATE v4_native_schedule_progress SET resume_after=%s,next_slot=%s,updated_at=clock_timestamp() WHERE schedule_id=%s", (after_slot, next_slot, schedule_id))
+                connection.execute("UPDATE job_schedules SET status='active',next_run_at=%s,updated_at=clock_timestamp() WHERE id=%s", (next_slot, schedule_id))
+            else:
+                connection.execute("UPDATE job_schedules SET status='active',next_run_at=%s,payload=jsonb_set(payload,'{v4_resume_after}',to_jsonb(%s::text),true),updated_at=clock_timestamp() WHERE id=%s", (next_slot, after_slot.isoformat(), schedule_id))
             current_authority(connection,self.workspace_id,actor,"cycles:schedule")
             current_authority(connection,self.workspace_id,actor)
 
@@ -169,16 +159,14 @@ class CycleScheduleCutover(CycleAdmission):
             elapsed = (first_v4_slot - spec.cadence.anchor).total_seconds()
             if elapsed < 0 or elapsed % spec.cadence.interval_seconds:
                 raise ValueError("aligned first V4 slot required")
-            schedule = connection.execute("SELECT * FROM job_schedules WHERE id=%s AND workspace_id=%s FOR UPDATE",
-                                          (legacy_schedule_id, self.workspace_id)).fetchone()
-            if not schedule or schedule["content_program_id"] != spec.content_program_id or schedule["job_type"] != "v4_fixture_legacy" or schedule["payload"].get("dry_run") is not True:
+            schedule = self.legacy_control._schedule(connection, legacy_schedule_id, lock=True)
+            require_native_binding(schedule, goal_id=goal_id, actor_id=self.subject_id, first_v4_slot=first_v4_slot)
+            metadata = schedule_metadata(schedule)
+            if schedule["content_program_id"] != spec.content_program_id:
                 raise PermissionError("same-program dry-run fixture schedule required")
-            if schedule["status"] != "active" or schedule["timezone"] != "UTC" or schedule["schedule_expression"] != f"every:{spec.cadence.interval_seconds}s" or schedule["next_run_at"] != first_v4_slot:
+            if schedule["status"] != "active" or metadata["interval_seconds"] != spec.cadence.interval_seconds or metadata["next_run_at"] != first_v4_slot:
                 raise ValueError("compatible active legacy schedule and first slot required")
-            try:
-                last_slot = datetime.fromisoformat(schedule["payload"]["last_slot"])
-            except (KeyError, TypeError, ValueError) as error:
-                raise ValueError("verified last legacy slot required") from error
+            last_slot = metadata["last_slot"]
             if last_slot.tzinfo is None or last_slot.astimezone(timezone.utc) >= first_v4_slot:
                 raise ValueError("last legacy slot must precede V4 watermark")
             if connection.execute("SELECT 1 FROM v4_schedule_cursors WHERE goal_id=%s UNION ALL SELECT 1 FROM v4_schedule_batches WHERE goal_id=%s UNION ALL SELECT 1 FROM v4_cycle_requests WHERE goal_id=%s AND origin='scheduled' LIMIT 1", (goal_id, goal_id, goal_id)).fetchone():
@@ -341,9 +329,9 @@ class CycleScheduleCutover(CycleAdmission):
         with self._command("cycles:schedule") as connection:
             self._policy_goal(connection, goal_id)
             current = self._row(connection, goal_id, lock=True)
-            legacy = connection.execute("SELECT status,next_run_at,payload FROM job_schedules WHERE id=%s AND workspace_id=%s FOR UPDATE",
-                                        (current["legacy_schedule_id"], self.workspace_id)).fetchone()
-            if current["state"] != "rollback_pending" or current["rollback_key"] != idempotency_key or not legacy or legacy["status"] != "active" or legacy["payload"].get("v4_resume_after") != current["rollback_after_slot"].isoformat() or legacy["next_run_at"] <= current["rollback_after_slot"]:
+            legacy = self.legacy_control._schedule(connection, current["legacy_schedule_id"], lock=True)
+            metadata = schedule_metadata(legacy)
+            if current["state"] != "rollback_pending" or current["rollback_key"] != idempotency_key or legacy["status"] != "active" or metadata["resume_after"] != current["rollback_after_slot"].isoformat() or metadata["next_run_at"] <= current["rollback_after_slot"]:
                 raise ValueError("verified rollback state and later legacy slot required")
             if self._unresolved(connection, goal_id, current["first_v4_slot"]):
                 raise ValueError("new unresolved work holds legacy resume")

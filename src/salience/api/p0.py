@@ -213,7 +213,7 @@ def _request_scope(request):
     try:
         if getattr(request.app.state,"enable_legacy_dispatch",False) and len(parts)==5 and parts[:3]==["v1","intelligence","opportunities"] and parts[4]=="briefs" and request.method=="POST":
             return ("topic_opportunities",UUID(parts[3])),"cycles:write"
-        if getattr(request.app.state,"enable_legacy_dispatch",False) and len(parts)==5 and parts[:3]==["v1","intelligence","schedules"] and parts[4]=="bind" and request.method=="POST":
+        if getattr(request.app.state,"enable_legacy_dispatch",False) and len(parts)==5 and parts[:3]==["v1","intelligence","schedules"] and parts[4] in {"bind","adopt-native"} and request.method=="POST":
             return ("v4_goals",UUID(parts[3])),"cycles:schedule"
         if getattr(request.app.state,"enable_legacy_dispatch",False) and parts[:3] == ["v1","intelligence","runs"]:
             if len(parts)==3 and request.method=="POST":

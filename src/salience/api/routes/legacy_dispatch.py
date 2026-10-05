@@ -4,7 +4,7 @@ import asyncio
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Request
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
 
 from salience.cycles.admission import CycleAdmission
 from salience.cycles.legacy_dispatch import LegacyDispatch, LegacyIntelligenceCommand, LegacyBriefCommand
@@ -71,3 +71,20 @@ class ScheduleBinding(BaseModel):
 @router.post("/schedules/{goal_id}/bind")
 async def bind_schedule(goal_id: UUID, payload: ScheduleBinding, request: Request):
     return await execute(service(request).bind_schedule,goal_id,expected_revision=payload.expected_revision,niche=payload.niche)
+
+
+class NativeScheduleAdoption(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    legacy_schedule_id: UUID
+    expected_revision: int = Field(strict=True, ge=1)
+    first_v4_slot: AwareDatetime
+
+
+@router.post("/schedules/{goal_id}/adopt-native")
+async def adopt_native(goal_id: UUID, payload: NativeScheduleAdoption, request: Request):
+    control = getattr(request.app.state, "legacy_schedule_control", None)
+    if control is None:
+        raise HTTPException(403, "explicit no-effects Temporal schedule control required")
+    return await execute(control.adopt_native, goal_id, schedule_id=payload.legacy_schedule_id,
+        subject_id=request.state.principal.subject_id, expected_revision=payload.expected_revision,
+        first_v4_slot=payload.first_v4_slot)

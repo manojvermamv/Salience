@@ -14,6 +14,7 @@ from salience.cycles.admission import CycleAdmission
 from salience.cycles.contracts import CycleRequest
 from salience.cycles.authority import current_authority
 from salience.observability.tracing import TraceContext
+from salience.cycles.native_schedules import schedule_row, schedule_metadata, require_native_binding
 
 
 class LegacyIntelligenceCommand(BaseModel):
@@ -140,6 +141,10 @@ class LegacyDispatch(CycleAdmission):
             cutover = connection.execute("SELECT * FROM v4_schedule_cutovers WHERE goal_id=%s AND workspace_id=%s FOR UPDATE",(goal_id,self.workspace_id)).fetchone()
             if not cutover or cutover["actor_id"] != self.subject_id or cutover["goal_revision"] != expected_revision:
                 raise PermissionError("original scoped schedule cutover required")
+            schedule = schedule_row(connection, cutover["legacy_schedule_id"], self.workspace_id, temporal=True)
+            require_native_binding(schedule, goal_id=goal_id, actor_id=self.subject_id, task_queue=self.task_queue, first_v4_slot=cutover["first_v4_slot"])
+            if schedule.get("native_source") and schedule["payload"]["niche"] != niche:
+                raise PermissionError("original native workload required")
             prior = connection.execute("SELECT * FROM v4_legacy_schedule_plans WHERE goal_id=%s",(goal_id,)).fetchone()
             if prior:
                 if (prior["niche"],prior["task_queue"],prior["actor_id"],prior["goal_revision"]) != (niche,self.task_queue,self.subject_id,expected_revision):
@@ -188,16 +193,23 @@ class LegacyDispatch(CycleAdmission):
                 raise RuntimeError("canonical rollback readback still pending")
             if cutover["state"] != "rolled_back" or scheduled_at <= cutover["rollback_after_slot"]:
                 raise PermissionError("completed rollback and later scheduled slot required")
-            schedule = connection.execute("SELECT * FROM job_schedules WHERE id=%s AND workspace_id=%s FOR UPDATE", (schedule_id, self.workspace_id)).fetchone()
-            expected = f"salience-v4-legacy-fixture:{self.workspace_id}:{schedule_id}"
-            if not schedule or schedule["job_type"] != "v4_fixture_legacy" or schedule["status"] != "active" or schedule["content_program_id"] != spec.content_program_id or schedule["schedule_expression"] != f"every:{spec.cadence.interval_seconds}s" or schedule["payload"].get("dry_run") is not True or schedule["payload"].get("temporal_schedule_id") != remote_id or remote_id != expected or schedule["payload"].get("v4_resume_after") != cutover["rollback_after_slot"].isoformat() or schedule["next_run_at"] is None or scheduled_at < schedule["next_run_at"]:
+            schedule = schedule_row(connection, schedule_id, self.workspace_id, lock=True, temporal=True)
+            require_native_binding(schedule, goal_id=goal_id, actor_id=self.subject_id, task_queue=self.task_queue, first_v4_slot=cutover["first_v4_slot"])
+            metadata = schedule_metadata(schedule)
+            expected_remote = str(schedule_id) if schedule.get("native_source") else f"salience-v4-legacy-fixture:{self.workspace_id}:{schedule_id}"
+            if remote_id != expected_remote:
+                raise PermissionError("current exact resumed Temporal schedule required")
+            if schedule["status"] != "active" or schedule["content_program_id"] != spec.content_program_id or metadata["interval_seconds"] != spec.cadence.interval_seconds or metadata["remote_id"] != remote_id or metadata["resume_after"] != cutover["rollback_after_slot"].isoformat() or metadata["next_run_at"] is None or scheduled_at < metadata["next_run_at"]:
                 raise PermissionError("current exact resumed Temporal schedule required")
             command = LegacyIntelligenceCommand(goal_id=goal_id, niche=plan["niche"], request=CycleRequest(
                 origin="scheduled", expected_revision=goal["revision"], slot_time=scheduled_at,
                 idempotency_key=f"legacy-temporal:{schedule_id}:{scheduled_at.isoformat()}"))
             result = self._submit(connection, command, cutover_poll=True)
-            last_slot = datetime.fromisoformat(schedule["payload"]["last_slot"])
-            if scheduled_at > last_slot:
-                connection.execute("UPDATE job_schedules SET payload=jsonb_set(payload,'{last_slot}',to_jsonb(%s::text)),updated_at=clock_timestamp() WHERE id=%s", (scheduled_at.isoformat(), schedule_id))
+            last_slot = schedule.get("native_source", {}).get("last_slot") if schedule.get("native_source") else metadata["last_slot"]
+            if last_slot is None or scheduled_at > last_slot:
+                if schedule.get("native_source"):
+                    connection.execute("UPDATE v4_native_schedule_progress SET last_slot=%s,updated_at=clock_timestamp() WHERE schedule_id=%s", (scheduled_at, schedule_id))
+                else:
+                    connection.execute("UPDATE job_schedules SET payload=jsonb_set(payload,'{last_slot}',to_jsonb(%s::text)),updated_at=clock_timestamp() WHERE id=%s", (scheduled_at.isoformat(), schedule_id))
             current_authority(connection, self.workspace_id, self.subject_id)
             return result

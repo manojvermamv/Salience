@@ -14,6 +14,7 @@ from salience.agents.fixtures import fixture_agent_service
 from salience.cycles.governance import CycleGovernance
 from salience.cycles.legacy_dispatch import require_fixture
 from salience.cycles.legacy_schedule_workflow import LegacyScheduledIngressWorkflow, LEGACY_SCHEDULE_INGRESS
+from salience.cycles.native_schedules import schedule_row, schedule_metadata, require_native_binding
 from salience.cycles.outbox import CycleOutbox
 from salience.cycles.runtime import LocalCycleActivities, TemporalCycleTransport
 from salience.cycles.workflow import LocalCycleWorkflow
@@ -164,8 +165,9 @@ class LegacyScheduleActivities:
                 if not plan or plan["task_queue"] != self.task_queue:
                     raise PermissionError("original scoped worker plan required")
                 current_authority(connection, self.outbox.workspace_id, plan["actor_id"], "cycles:schedule")
-                row = connection.execute("SELECT content_program_id FROM job_schedules WHERE id=%s AND workspace_id=%s", (payload["schedule_id"], self.outbox.workspace_id)).fetchone()
-                if not row or str(row["content_program_id"]) != payload["content_program_id"] or payload["remote_id"] != f"salience-v4-legacy-fixture:{self.outbox.workspace_id}:{payload['schedule_id']}":
+                row = schedule_row(connection, payload["schedule_id"], self.outbox.workspace_id, temporal=True)
+                require_native_binding(row, goal_id=payload["goal_id"], actor_id=plan["actor_id"], task_queue=self.task_queue)
+                if str(row["content_program_id"]) != payload["content_program_id"] or payload["remote_id"] != schedule_metadata(row)["remote_id"]:
                     raise PermissionError("original program and remote schedule required")
             slot = datetime.fromisoformat(payload["scheduled_at"])
             description = await self.client.get_schedule_handle(payload["remote_id"]).describe(rpc_timeout=timedelta(seconds=2))
