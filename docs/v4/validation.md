@@ -1,6 +1,8 @@
 # V4 blueprint validation evidence
 
-**Current checkpoint — 2026-10-05:** Bounded parallel agent delegation is locally qualified (**45 focused / 540 full non-live PASS**, 325 source hashes) at `2653d2e`: one shared parent, scoped children, bounded concurrency/deadlines, durable claims/results and signed API/CLI/SDK commands. See the [parallel-agent contract](parallel-agent-contract.md) for invocation, recovery and qualification. The completed 2026-10-04 item-7 independent review remains a dated qualification of its original source. Production stays disabled, RG0/RG1 HELD, main unmerged and P2–P7 gated.
+The pre-parallel-worker P1 integration direction has resumed from `380416d`. The legacy intelligence increment is locally qualified at `81bdeee` (87 focused / 556 full non-live PASS); the broader P1 integration goal remains active. See the [integration contract](legacy-dispatch-contract.md). Item 7 and the parallel extension retain their completed, dated scopes; production is disabled, RG0/RG1 HELD and main unmerged.
+
+**Current checkpoint — 2026-10-05:** Resumed P1 legacy intelligence integration is locally qualified (**87 focused / 556 full non-live PASS**, 332 source hashes) at `81bdeee`. Signed compatibility commands commit canonical admission/job/outbox; fixture execution retains the original operation/permit; disposable Temporal cutover and worker hard-exit recovery are tested. See the [legacy integration contract](legacy-dispatch-contract.md). Item 7 and the parallel extension retain their completed, dated scopes. The broader P1 integration goal remains active; production is disabled, RG0/RG1 HELD, main unmerged, P2–P7 gated and optional P6 disabled.
 
 <a id="current-evidence-summary"></a>
 <a id="current-evidence-summary--2026-10-04-independent-item-7-qualification"></a>
@@ -265,3 +267,11 @@ Freshly executed checks:
 - `git diff --check`: **PASS**. Historical durable execution reports are byte-identical to HEAD; latest source-lock and raw JUnit digests match. No application-code diff.
 
 Application suites and production/live checks are **NOT RUN in this documentation-only refresh**. The 317/47 application results remain their dated 2026-09-23 evidence, not newly generated test results. Production RG0 and full RG1 remain HELD; remaining implementation and external obligations are explicitly listed, not marked complete by documentation work. No commit, push, merge or production enablement is performed by this refresh.
+
+## Resumed legacy intelligence qualification — 2026-10-05
+
+Application `81bdeee6203d673d04b62780ac2dc8f458ed9cb4` qualifies **87 focused / 556 full non-live tests**, zero failures/errors/skips, on an isolated PostgreSQL database and real disposable Temporal. The exact 332-file source, final commands and JUnit/log hashes are in [legacy evidence](legacy-dispatch-evidence.json). All 15 documentation tests, 75 obligations, six negative controls, four shell contracts, dependency consistency and whitespace checks pass. The six Mermaid source blocks are unchanged; their prior render evidence is retained.
+
+The preliminary full run produced 550 PASS / 6 FAIL and is preserved: two expected rollback-message updates, three pre-0036 fixture outbox reader failures and one restore fixture dumping the wrong database. No assertion was dropped; historical migration preservation and configured-source restore pass after repair. Earlier harness/SDK/router development failures remain local artifacts rather than final evidence.
+
+Item7 and parallel reports retain their original commits and bytes. Broader P1 integration remains active; other legacy stages/general authorization and all RG0/RG1 production obligations remain required. Final published-head CI/protection is read independently, with formal PR approval NOT RUN and main unmerged.

@@ -16,7 +16,13 @@
       "remaining_acceptance": "deployment-specific compatible worker routing/drain/rollback qualification; local replay/continuation is already tested.",
       "independent_review_evidence": [
         "docs/v4/item7-runtime-review.json"
-      ]
+      ],
+      "legacy_intelligence_extension": {
+        "scope": "Root-qualified no-effects intelligence compatibility only",
+        "evidence": "docs/v4/legacy-dispatch-evidence.json",
+        "verifier": "tests/integration/test_v4_legacy_dispatch.py",
+        "application_commit": "81bdeee6203d673d04b62780ac2dc8f458ed9cb4"
+      }
     },
     {
       "id": "R03",
@@ -30,10 +36,16 @@
       "local_verifier_status": "PASS; covers implemented local fixtures, not unimplemented production acceptance",
       "independent_review_status": "PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE; production acceptance remains HELD",
       "production_release_status": "HELD",
-      "remaining_acceptance": "conversion of remaining legacy API/scheduler direct start/signal dual writes into outbox transactions; production dispatch remains unqualified.",
+      "remaining_acceptance": "Other legacy stage/API/scheduler dispatch and signal integration with exact current authorization; production dispatch remains unqualified. The no-effects intelligence compatibility increment is separately root-qualified.",
       "independent_review_evidence": [
         "docs/v4/item7-runtime-review.json"
-      ]
+      ],
+      "legacy_intelligence_extension": {
+        "scope": "Root-qualified no-effects intelligence compatibility only",
+        "evidence": "docs/v4/legacy-dispatch-evidence.json",
+        "verifier": "tests/integration/test_v4_legacy_dispatch.py",
+        "application_commit": "81bdeee6203d673d04b62780ac2dc8f458ed9cb4"
+      }
     },
     {
       "id": "R05",
@@ -67,7 +79,13 @@
       "remaining_acceptance": "production legacy slot/cycle mapping/cutover qualification beyond local signed fixture coalescing.",
       "independent_review_evidence": [
         "docs/v4/item7-admission-review.json"
-      ]
+      ],
+      "legacy_intelligence_extension": {
+        "scope": "Root-qualified no-effects intelligence compatibility only",
+        "evidence": "docs/v4/legacy-dispatch-evidence.json",
+        "verifier": "tests/integration/test_v4_legacy_dispatch.py",
+        "application_commit": "81bdeee6203d673d04b62780ac2dc8f458ed9cb4"
+      }
     },
     {
       "id": "R07",
@@ -102,7 +120,13 @@
       "independent_review_evidence": [
         "docs/v4/item7-admission-review.json",
         "docs/v4/item7-governance-review.json"
-      ]
+      ],
+      "legacy_intelligence_extension": {
+        "scope": "Root-qualified no-effects intelligence compatibility only",
+        "evidence": "docs/v4/legacy-dispatch-evidence.json",
+        "verifier": "tests/integration/test_v4_legacy_dispatch.py",
+        "application_commit": "81bdeee6203d673d04b62780ac2dc8f458ed9cb4"
+      }
     },
     {
       "id": "R09",
@@ -120,7 +144,13 @@
       "independent_review_evidence": [
         "docs/v4/item7-admission-review.json",
         "docs/v4/item7-runtime-review.json"
-      ]
+      ],
+      "legacy_intelligence_extension": {
+        "scope": "Root-qualified no-effects intelligence compatibility only",
+        "evidence": "docs/v4/legacy-dispatch-evidence.json",
+        "verifier": "tests/integration/test_v4_legacy_dispatch.py",
+        "application_commit": "81bdeee6203d673d04b62780ac2dc8f458ed9cb4"
+      }
     },
     {
       "id": "R10",
@@ -155,7 +185,13 @@
       "independent_review_evidence": [
         "docs/v4/item7-admission-review.json",
         "docs/v4/item7-governance-review.json"
-      ]
+      ],
+      "legacy_intelligence_extension": {
+        "scope": "Root-qualified no-effects intelligence compatibility only",
+        "evidence": "docs/v4/legacy-dispatch-evidence.json",
+        "verifier": "tests/integration/test_v4_legacy_dispatch.py",
+        "application_commit": "81bdeee6203d673d04b62780ac2dc8f458ed9cb4"
+      }
     },
     {
       "id": "R15",
@@ -189,7 +225,13 @@
       "remaining_acceptance": "enabled real-provider stage/permit integration beyond the single no-effects mock acceptance; production spend remains disabled.",
       "independent_review_evidence": [
         "docs/v4/item7-governance-review.json"
-      ]
+      ],
+      "legacy_intelligence_extension": {
+        "scope": "Root-qualified no-effects intelligence compatibility only",
+        "evidence": "docs/v4/legacy-dispatch-evidence.json",
+        "verifier": "tests/integration/test_v4_legacy_dispatch.py",
+        "application_commit": "81bdeee6203d673d04b62780ac2dc8f458ed9cb4"
+      }
     },
     {
       "id": "R18",
@@ -206,7 +248,13 @@
       "remaining_acceptance": "live scheduler stop/cancellation/fencing and separately scoped remote read-only reconciliation beyond local stops/cutover.",
       "independent_review_evidence": [
         "docs/v4/item7-governance-review.json"
-      ]
+      ],
+      "legacy_intelligence_extension": {
+        "scope": "Root-qualified no-effects intelligence compatibility only",
+        "evidence": "docs/v4/legacy-dispatch-evidence.json",
+        "verifier": "tests/integration/test_v4_legacy_dispatch.py",
+        "application_commit": "81bdeee6203d673d04b62780ac2dc8f458ed9cb4"
+      }
     },
     {
       "id": "R32",
@@ -425,12 +473,12 @@
     "p1_mapped_cases": 199
   },
   "current_qualification": {
-    "evidence": "docs/v4/parallel-agents-evidence.json",
-    "full_non_live_tests": 540,
-    "focused_tests": 45,
-    "source_files": 325,
-    "status": "PASS root-reviewed bounded parallel-agent local extension; historical item7 independent review retained; RG0/RG1/RG5 HELD",
-    "qualified_application_commit": "2653d2ecb3f0d5bb8ea6560de274137dd6032a96"
+    "evidence": "docs/v4/legacy-dispatch-evidence.json",
+    "full_non_live_tests": 556,
+    "focused_tests": 87,
+    "source_files": 332,
+    "status": "PASS_IMPLEMENTED_LOCAL_LEGACY_INTELLIGENCE_FIXTURE_SCOPE; root qualification only; historical item7 review retained; RG0/RG1 HELD",
+    "qualified_application_commit": "81bdeee6203d673d04b62780ac2dc8f458ed9cb4"
   },
   "remaining_release_obligations": [
     "General registry/provider eligibility beyond the approved no-effects fixture baseline; later capability and production qualification gates remain binding",
@@ -474,5 +522,14 @@
     "source_files": 316,
     "status": "PASS independent implemented-fixture qualification; RG0/RG1 HELD"
   },
-  "qualified_application_commit_scope": "Historical independent item7 review; the current root-qualified extension is separately bound in current_qualification"
+  "qualified_application_commit_scope": "Historical independent item7 review; the current root-qualified extension is separately bound in current_qualification",
+  "historical_parallel_qualification": {
+    "evidence": "docs/v4/parallel-agents-evidence.json",
+    "full_non_live_tests": 540,
+    "focused_tests": 45,
+    "source_files": 325,
+    "status": "PASS root-reviewed bounded parallel-agent local extension; historical item7 independent review retained; RG0/RG1/RG5 HELD",
+    "qualified_application_commit": "2653d2ecb3f0d5bb8ea6560de274137dd6032a96"
+  },
+  "current_independent_review_scope": "Historical item7 application e49a214 only; legacy and parallel extensions have their separate root local qualifications"
 }

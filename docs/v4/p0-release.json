@@ -20,13 +20,13 @@
       "exit_code": 0
     },
     "full_non_live": {
-      "passed": 540,
+      "passed": 556,
       "failed": 0,
       "errors": 0,
       "skipped": 0,
       "exit_code": 0,
-      "seconds": 509.016,
-      "junit": "artifacts/parallel-agents/regression.xml"
+      "seconds": 526.745,
+      "junit": "artifacts/v4-legacy-dispatch/regression.xml"
     },
     "documentation_tests": {
       "passed": 15,
@@ -40,22 +40,22 @@
       "failed": 0,
       "version": "12.0.0"
     },
-    "locked_evidence_files": 325,
+    "locked_evidence_files": 332,
     "original_inventory_dispositions": 360,
     "warning": "Pre-existing Starlette/AnyIO deprecation warning",
     "focused_p1": {
-      "passed": 132,
+      "passed": 87,
+      "failed": 0,
       "errors": 0,
       "skipped": 0,
       "exit_code": 0,
-      "seconds": 200.815,
-      "junit": "artifacts/v4-p0/item7/qualification-focused.xml",
-      "failed": 0,
-      "scope": "Impacted existing admission/revision/public/cutover/wait/migration/restart contracts and all 45 new independent review regressions; full 507 covers every existing verifier"
+      "seconds": 111.761,
+      "junit": "artifacts/v4-legacy-dispatch/focused.xml",
+      "scope": "Impacted legacy/outbox/cutover/public/parallel/migration/wait/restore fixtures; full suite retains all prior contracts"
     },
     "application_qualified_at": "2026-10-05",
-    "application_commit": "2653d2ecb3f0d5bb8ea6560de274137dd6032a96",
-    "application_scope": "Root-reviewed bounded parallel-agent extension over historical independently qualified item7; current source lock and fresh local regression; each published head needs own CI inspection",
+    "application_commit": "81bdeee6203d673d04b62780ac2dc8f458ed9cb4",
+    "application_scope": "Root qualification of no-effects legacy intelligence compatibility, canonical admission/job/outbox, original operation/permit execution, signed API/SDK/CLI, fixture schedule materialization and real disposable Temporal pause/watermark/rollback. Other legacy stages and production integration remain unqualified.",
     "focused_parallel_agents": {
       "passed": 45,
       "failed": 0,
@@ -176,6 +176,11 @@
       "path": "docs/v4/parallel-agents-evidence.json",
       "sha256": "efc4a5cfe9b12784c9c89eba4718271ef1cf8e873df67e7bee53714c7d0a6cb8",
       "local_only": false
+    },
+    {
+      "path": "docs/v4/legacy-dispatch-evidence.json",
+      "sha256": "fe6784dee7b40a34a30a0acffac6b03ca2a8e8abafe1289a4d5cdee0ff96e9fd",
+      "local_only": false
     }
   ],
   "release_gate": "RG0",
@@ -295,7 +300,7 @@
       "5c"
     ],
     "next_queue_item": null,
-    "next_action": "Complete outstanding RG0/RG1 production acceptance within separately authorized scope; P2\u2013P7 remain gated, optional P6 disabled",
+    "next_action": "Continue restored P1 integration: remaining legacy stages, current general authorization/version eligibility, typed recovery and retained production acceptance; P2\u2013P7 remain gated, optional P6 disabled",
     "independent_review": "PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE"
   },
   "documentation_refresh": {
@@ -516,5 +521,30 @@
     "main_merge": "NOT AUTHORIZED",
     "live_models": "NOT RUN; default fixtures and controlled zero-cost mock model transport only",
     "evidence": "docs/v4/parallel-agents-evidence.json"
+  },
+  "resumed_development_goal": {
+    "status": "ACTIVE",
+    "restored_from_own_output_at": "2026-10-04T02:44:31.946Z",
+    "base_commit": "380416d35cffb6e4bf33003cb6e8df0638874436",
+    "direction": "Remaining P1 legacy dispatch-to-outbox integration, followed by retained P1 authorization/runtime/recovery acceptance; reuse completed items 1\u20137 and parallel extension",
+    "current_increment": "No-effects legacy intelligence API/SDK/CLI, atomic admission/job/outbox, original permit/operation execution, fixture schedule integration and real disposable Temporal pause/watermark/rollback",
+    "qualification": "PASS_LOCAL_INTELLIGENCE_INCREMENT_ONLY",
+    "remaining_scope": [
+      "Other legacy stage ingress and dispatch integration with exact current stage/model/provider authorization",
+      "Full live schedule inventory/fencing and supported deployment routing/drain/rollback",
+      "General current policy/version eligibility and separately scoped remote reconciliation",
+      "External durable notification/alert delivery and retained RG0 production prerequisites"
+    ],
+    "contract": "docs/v4/legacy-dispatch-contract.md",
+    "production_effects_enabled": false,
+    "RG0": "HELD",
+    "RG1": "HELD",
+    "main_merge": "NOT AUTHORIZED",
+    "qualified_application_commit": "81bdeee6203d673d04b62780ac2dc8f458ed9cb4",
+    "focused_tests": 87,
+    "full_non_live_tests": 556,
+    "source_files": 332,
+    "evidence": "docs/v4/legacy-dispatch-evidence.json",
+    "publication": "Application published; final documentation head requires fresh exact-head CI. Broader integration goal ACTIVE."
   }
 }

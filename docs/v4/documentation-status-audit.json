@@ -1,30 +1,53 @@
 {
   "audited_at": "2026-10-05",
-  "base_commit": "4bbffb61338d27a9da59ec07154e67794007e8cb",
-  "scope": "All tracked Markdown/documentation artifacts plus parallel contract/evidence; historical/source/archive/plugin reports retain original bytes",
-  "tracked_markdown_files": 84,
-  "documentation_artifacts": 235,
+  "base_commit": "380416d35cffb6e4bf33003cb6e8df0638874436",
+  "scope": "Active Markdown/navigation/ledger reconciliation through the root-qualified no-effects legacy intelligence increment; completed historical independent item7 and parallel reports, original sources, archives and plugin instructions retained",
+  "tracked_markdown_files": 85,
+  "documentation_artifacts": 237,
   "summary": {
     "preserved plugin instructions, references and examples; independent skill scope": 57,
-    "active project Markdown aligned with qualified parallel delegation and retained production holds": 69,
+    "active project Markdown aligned with resumed P1 intelligence integration and retained holds": 69,
     "preserved original design source or historical diagram": 7,
     "preserved immutable historical snapshot": 62,
     "preserved historical architecture visual": 8,
     "preserved dated qualification report": 15,
     "preserved source, archive or coverage manifest": 4,
     "current documentation status audit": 1,
-    "current325file root-qualified parallel-agent source lock": 1,
+    "current 332-file root-qualified legacy intelligence source lock": 1,
     "preserved dated independent item7 qualification report": 6,
     "preserved dated preparation report": 1,
-    "current release ledger; parallel local PASS, RG0/RG1/RG5 HELD": 1,
-    "current17requirement remaining-acceptance matrix; historical item7 independent review and separate parallel extension": 1,
-    "rolling exact-commit readback of published pre-extension base4bbffb6": 1,
-    "current bounded parallel-agent local qualification evidence": 1
+    "active legacy integration contract": 1,
+    "durable local legacy intelligence qualification report": 1,
+    "current release ledger; legacy intelligence local PASS, broader P1 ACTIVE, RG0/RG1/RG5 HELD": 1,
+    "current 17-requirement acceptance matrix; historical item7 review and separate legacy/parallel qualifications": 1,
+    "preserved dated parallel qualification report": 1,
+    "rolling exact-commit readback of published pre-extension base4bbffb6": 1
   },
-  "application_source_files_verified": 325,
-  "prior_application_files_preserved": 305,
-  "prior_application_files_updated": 11,
-  "application_files_added": 9,
+  "application_source_files_verified": 332,
+  "prior_application_files_preserved": 313,
+  "prior_application_files_updated": [
+    ".env.example",
+    "src/salience/api/app.py",
+    "src/salience/api/p0.py",
+    "src/salience/api/routes/v4_cycles.py",
+    "src/salience/cli.py",
+    "src/salience/cycles/outbox.py",
+    "src/salience/cycles/schedule_cutover.py",
+    "src/salience/sdk/client.py",
+    "tests/e2e/test_v4_wait_restart.py",
+    "tests/integration/test_durable_parallel_teams.py",
+    "tests/integration/test_v4_migrations.py",
+    "tests/integration/test_v4_runtime_waits.py"
+  ],
+  "application_files_added": [
+    "migrations/versions/0036_legacy_cycle_dispatch.py",
+    "src/salience/api/routes/legacy_dispatch.py",
+    "src/salience/cycles/legacy_dispatch.py",
+    "src/salience/cycles/legacy_runtime.py",
+    "src/salience/cycles/temporal_schedule_control.py",
+    "tests/fixtures/legacy_dispatch_process.py",
+    "tests/integration/test_v4_legacy_dispatch.py"
+  ],
   "mermaid_source_blocks_preserved": 6,
   "item7_status": "COMPLETE_IMPLEMENTED_LOCAL_FIXTURE_QUALIFICATION",
   "independent_review": "PASS historical implemented item7 fixture scope; new extension formal independent PR review NOT RUN",
@@ -38,9 +61,10 @@
     "mapped_obligations": 75,
     "negative_controls": 6,
     "documentation_shell_contracts": 4,
-    "preserved_documentation_artifacts": 160,
+    "preserved_documentation_artifacts": 161,
     "independent_reviewers": 3,
-    "reviewed_p1_rows": 17
+    "reviewed_p1_rows": 17,
+    "independent_review_scope": "Dated item7 at e49a214 only; legacy/parallel extension root qualification is separate"
   },
   "files": [
     {
@@ -330,8 +354,8 @@
     },
     {
       "path": "README.md",
-      "disposition": "active project Markdown aligned with qualified parallel delegation and retained production holds",
-      "sha256": "a0fdf6c4a6155e0a1aac482fdc7d4435a61fc482127107c1ffe8c454d81d8bb5"
+      "disposition": "active project Markdown aligned with resumed P1 intelligence integration and retained holds",
+      "sha256": "8580fe605b73772adc6b8df3b6abce54bb10326567c05ba23d23a79620782e7d"
     },
     {
       "path": "docs-new-arch/ArchCurrent.mermaid",
@@ -370,63 +394,63 @@
     },
     {
       "path": "docs-new-arch/README.md",
-      "disposition": "active project Markdown aligned with qualified parallel delegation and retained production holds",
-      "sha256": "7094dcf8b5a3399006cef9c23ebbb4e6b8f5c3ef152af226dad34ff50752502a"
+      "disposition": "active project Markdown aligned with resumed P1 intelligence integration and retained holds",
+      "sha256": "e6fc81c1fd05e6571e99e42c2d545e3f8074a8b358433e22fc4e25f9e8c1e275"
     },
     {
       "path": "docs/README.md",
-      "disposition": "active project Markdown aligned with qualified parallel delegation and retained production holds",
-      "sha256": "73c544549e11e9ed22db776df9c0866ac2c3500026bfb81732edbbe62073215b"
+      "disposition": "active project Markdown aligned with resumed P1 intelligence integration and retained holds",
+      "sha256": "1f3aa0d7384c67e7a02c2a263722b0d05e1322c2cac47a3e73dc1608c5a18cb8"
     },
     {
       "path": "docs/adr/0001-durable-runtime.md",
-      "disposition": "active project Markdown aligned with qualified parallel delegation and retained production holds",
-      "sha256": "960b3d051863836817780c43cca12abf650c3c486b37e560a3f69ea3b2cf9424"
+      "disposition": "active project Markdown aligned with resumed P1 intelligence integration and retained holds",
+      "sha256": "17cf31a22f22841bef2007802b6c916474caacde747c199ee8b29f6d0e8d0af2"
     },
     {
       "path": "docs/adr/0002-object-storage.md",
-      "disposition": "active project Markdown aligned with qualified parallel delegation and retained production holds",
-      "sha256": "43f69aa6d1fd57e0b1219fcee2ea4e734a9fd82f7f2f7fbccf25351b33a114f8"
+      "disposition": "active project Markdown aligned with resumed P1 intelligence integration and retained holds",
+      "sha256": "09223a7f9fc5aee07833ef151fdab0c28b4cab899e0bd6dc3d14511316c5e962"
     },
     {
       "path": "docs/adr/0003-api-persistence-and-contracts.md",
-      "disposition": "active project Markdown aligned with qualified parallel delegation and retained production holds",
-      "sha256": "1324db8de6775d35fbd6e92969d78113789423be36c37b0c2eb711fb46dd77d0"
+      "disposition": "active project Markdown aligned with resumed P1 intelligence integration and retained holds",
+      "sha256": "cbe0fb6134f2658fe29baac89c285aa98652fd48f760731e27091b750d27f18a"
     },
     {
       "path": "docs/adr/0004-governance-secrets-and-protocols.md",
-      "disposition": "active project Markdown aligned with qualified parallel delegation and retained production holds",
-      "sha256": "e6c6694cfd35d2c360c2e72f7c6655995c025b2d90c59d0c98f8eee24d2cd765"
+      "disposition": "active project Markdown aligned with resumed P1 intelligence integration and retained holds",
+      "sha256": "ce389009392ca268eb8373cd23d93d64acd48ddd6c33268973f62f9186662ab3"
     },
     {
       "path": "docs/adr/0005-mcp-a2a-and-browser-sdk-adoption.md",
-      "disposition": "active project Markdown aligned with qualified parallel delegation and retained production holds",
-      "sha256": "bd37c97054427892acbd99322ca22da9ab9902e50862164725fbb87be4c86c36"
+      "disposition": "active project Markdown aligned with resumed P1 intelligence integration and retained holds",
+      "sha256": "f66c0094d4948b56a867d26425063f479c758b205bd882dad7102433c8e215bc"
     },
     {
       "path": "docs/adr/0006-governed-publishing.md",
-      "disposition": "active project Markdown aligned with qualified parallel delegation and retained production holds",
-      "sha256": "c2a066301aeabf6a2a2f9cf77808d2647058e06955c174da4591c6607b9b491a"
+      "disposition": "active project Markdown aligned with resumed P1 intelligence integration and retained holds",
+      "sha256": "8cd42367abfce099a136d1e71063620cfb1cc11ba002f9aee87c4dd3df5d0330"
     },
     {
       "path": "docs/agents.md",
-      "disposition": "active project Markdown aligned with qualified parallel delegation and retained production holds",
-      "sha256": "1a6cbdc3f51e439dc52c15091710b435fd4f959aceb9ca0452a5efd0adacd32a"
+      "disposition": "active project Markdown aligned with resumed P1 intelligence integration and retained holds",
+      "sha256": "d7e8cfdaa627ef2eb35680643d0ba8c6272a0975432a6d018afb640328731e3d"
     },
     {
       "path": "docs/api.md",
-      "disposition": "active project Markdown aligned with qualified parallel delegation and retained production holds",
-      "sha256": "372800cb2103f9674d21bd1070d9228e5f834bf4361abf303fe8db98e1b2e75b"
+      "disposition": "active project Markdown aligned with resumed P1 intelligence integration and retained holds",
+      "sha256": "c3588bf933e2a4692024ea59e384c018bd1653d830874e495178e494a34527dc"
     },
     {
       "path": "docs/architecture.md",
-      "disposition": "active project Markdown aligned with qualified parallel delegation and retained production holds",
-      "sha256": "26878ee4714b1a6eb70ab5c106703c54976998eb86c4f282b0d97f480b94a2d8"
+      "disposition": "active project Markdown aligned with resumed P1 intelligence integration and retained holds",
+      "sha256": "831bd2a53a5b8ea72fcc6bed9441574a4280a51c6e17c088644ccd49deb90489"
     },
     {
       "path": "docs/archive/2026-09-22/README.md",
-      "disposition": "active project Markdown aligned with qualified parallel delegation and retained production holds",
-      "sha256": "3e0c23a9d0a646cbed8a610d039a4cb4cd41012e92c2bfe045be7d29c9bc8a13"
+      "disposition": "active project Markdown aligned with resumed P1 intelligence integration and retained holds",
+      "sha256": "e3f2f1a8f00a89b08360f9f590385cb76a63f4121c84fae35839bfb421c69016"
     },
     {
       "path": "docs/archive/2026-09-22/README.md.snapshot",
@@ -740,153 +764,153 @@
     },
     {
       "path": "docs/bootstrap.md",
-      "disposition": "active project Markdown aligned with qualified parallel delegation and retained production holds",
-      "sha256": "9f9bfa31df8f20faa5f23c577d20a2e8ac0e090ae9c48f8118a8ece3037a0e5e"
+      "disposition": "active project Markdown aligned with resumed P1 intelligence integration and retained holds",
+      "sha256": "e2a1d06169542bee530417f2cd80735ad115cbc4ce93783460de9ba42966355e"
     },
     {
       "path": "docs/compatibility.md",
-      "disposition": "active project Markdown aligned with qualified parallel delegation and retained production holds",
-      "sha256": "5693c5acf6edd2e8c9e6050ef6b4c58a2ede60166ebcce36bbc3b942a0f8ee7e"
+      "disposition": "active project Markdown aligned with resumed P1 intelligence integration and retained holds",
+      "sha256": "ec6192d150c1f331a28c52835fe047a86a72d9af2f6601c7d81d9ac0f13067cc"
     },
     {
       "path": "docs/contracts/adapter-contracts.md",
-      "disposition": "active project Markdown aligned with qualified parallel delegation and retained production holds",
-      "sha256": "8e34dce6b546727759aa06fd94e43c70bc93b9c084676a09f307c14dc41ee0bf"
+      "disposition": "active project Markdown aligned with resumed P1 intelligence integration and retained holds",
+      "sha256": "b463d98763ed96fa01c410e4889a550eacbef794865ffbc69ef1df3146da4185"
     },
     {
       "path": "docs/core/00_BUILD_AGENT_PROMPT.md",
-      "disposition": "active project Markdown aligned with qualified parallel delegation and retained production holds",
-      "sha256": "22340b5dc96b3627d99183519b50a357d76477f2706ea554dc1e2662302188ef"
+      "disposition": "active project Markdown aligned with resumed P1 intelligence integration and retained holds",
+      "sha256": "14c2683ee65d6fae10275e51684b0863743efc98825ebd89b5e710993df3cdaa"
     },
     {
       "path": "docs/core/01_PRODUCT_CONTEXT_AND_INTENT.md",
-      "disposition": "active project Markdown aligned with qualified parallel delegation and retained production holds",
-      "sha256": "328524245ddf0a2bd1de0b62dbda46e028811c81d5f4f74ac38e89a2b106917c"
+      "disposition": "active project Markdown aligned with resumed P1 intelligence integration and retained holds",
+      "sha256": "cd607f0222dc2d05ed9d92fd25c397bac2cd36ba06cb18468ed5f90144939f1c"
     },
     {
       "path": "docs/core/02_REFERENCE_RESEARCH.md",
-      "disposition": "active project Markdown aligned with qualified parallel delegation and retained production holds",
-      "sha256": "d26f0093841349c36fccada0272543b3003c2edb74fe3e4eb63fe0f17f9039e1"
+      "disposition": "active project Markdown aligned with resumed P1 intelligence integration and retained holds",
+      "sha256": "78e9116d79282192035325a2d20037b882de7eb48c30f688012ed4aea6cc6a83"
     },
     {
       "path": "docs/core/03_TARGET_ARCHITECTURE.md",
-      "disposition": "active project Markdown aligned with qualified parallel delegation and retained production holds",
-      "sha256": "90bf36e02ebf5003169e16e6b6f372a0b7204990e8b0c4c37ecc85c3b28440d3"
+      "disposition": "active project Markdown aligned with resumed P1 intelligence integration and retained holds",
+      "sha256": "06359effc3b14a410a525956feb2fc63aedad629dfe62843d77a478d1b79c560"
     },
     {
       "path": "docs/core/04_BROWSER_APP_AND_RESEARCH_CONTROL.md",
-      "disposition": "active project Markdown aligned with qualified parallel delegation and retained production holds",
-      "sha256": "a8c0e5ab97784ea415ada6eb7913da55f439e97404965d9ee25c0e9ca612aaa5"
+      "disposition": "active project Markdown aligned with resumed P1 intelligence integration and retained holds",
+      "sha256": "b423c97649cdb73199310bb91efa113e430ed18f8dc40f2f85ff880d727b1996"
     },
     {
       "path": "docs/core/05_IMPLEMENTATION_PLAN.md",
-      "disposition": "active project Markdown aligned with qualified parallel delegation and retained production holds",
-      "sha256": "a71560eeaf9431fd48f8bc034f7b019a23b32ff682c5ee0e5a8d9f9b3875ea74"
+      "disposition": "active project Markdown aligned with resumed P1 intelligence integration and retained holds",
+      "sha256": "472ba9c8fbac3b2e38274a7ba1f56951bc2a9275cd8df397aaf39c19c6537397"
     },
     {
       "path": "docs/core/06_ACCEPTANCE_TESTS_AND_GUARDRAILS.md",
-      "disposition": "active project Markdown aligned with qualified parallel delegation and retained production holds",
-      "sha256": "f1ec60b0a5fcfe714429b8cf4a9606ec467dd5299db274af09f9510f68fad720"
+      "disposition": "active project Markdown aligned with resumed P1 intelligence integration and retained holds",
+      "sha256": "ef994541680fee1d310684c675100ada95df6763f55295ba8e1b045dc3e50684"
     },
     {
       "path": "docs/core/07_REUSE_EXTENSION_AND_FUTURE_PROOFING.md",
-      "disposition": "active project Markdown aligned with qualified parallel delegation and retained production holds",
-      "sha256": "4643cc8b3252ab357d67c94873b20034b831c1748ddf319be7fd0ba3df72c7e4"
+      "disposition": "active project Markdown aligned with resumed P1 intelligence integration and retained holds",
+      "sha256": "252c5cb1330af3550bf57c704dc51d1d3f204233ada511c072dd98118fd8bcce"
     },
     {
       "path": "docs/core/08_LEAD_AGENT_AND_CREATIVE_TOOL_RUNTIME.md",
-      "disposition": "active project Markdown aligned with qualified parallel delegation and retained production holds",
-      "sha256": "8b665af48a50f9a22ce7b9f0a62b0802c1d0b4f05fb672a4bf2ecc3105958ac1"
+      "disposition": "active project Markdown aligned with resumed P1 intelligence integration and retained holds",
+      "sha256": "fbbcaa1a872f281cf57269ebfe3b22293ad5a58bf1e85e8b8fd6847a7604f8e5"
     },
     {
       "path": "docs/core/09_CALLABLE_AGENTS_AND_ENGINEERING_METHOD.md",
-      "disposition": "active project Markdown aligned with qualified parallel delegation and retained production holds",
-      "sha256": "a554e2ba9d8f5d0405881d2b1bfd6843132fe1d5cac2332d1863fdd9eaee59f5"
+      "disposition": "active project Markdown aligned with resumed P1 intelligence integration and retained holds",
+      "sha256": "425bce8d481ebd904e8e0d63099767161763e62b82b9168a31dbfd26b66bc048"
     },
     {
       "path": "docs/core/README.md",
-      "disposition": "active project Markdown aligned with qualified parallel delegation and retained production holds",
-      "sha256": "89e7be463e8cf2d62fbd9039398b5509c4ed0f2f2ec21f83908ab7c4ddd9e6db"
+      "disposition": "active project Markdown aligned with resumed P1 intelligence integration and retained holds",
+      "sha256": "6787be4a975dec8a76cd2de684d0ec4c201f98ea37b7255e98e316cfe6d147c8"
     },
     {
       "path": "docs/database.md",
-      "disposition": "active project Markdown aligned with qualified parallel delegation and retained production holds",
-      "sha256": "4e5b54286de4c0d62da494cb3fe1011eb64078d1867e58e843befd15854be6ae"
+      "disposition": "active project Markdown aligned with resumed P1 intelligence integration and retained holds",
+      "sha256": "b522a5cbed90c3da2ba3bb7cabd0cad7270e15477b80b05e819c44d0611deec4"
     },
     {
       "path": "docs/dependencies.md",
-      "disposition": "active project Markdown aligned with qualified parallel delegation and retained production holds",
-      "sha256": "00ffe0488eb7132cb83bb7179259cab38fa4499f4be4a9ea266d4c3e4c3cc796"
+      "disposition": "active project Markdown aligned with resumed P1 intelligence integration and retained holds",
+      "sha256": "a60c2027aaa8843bcfa4403c718d68a93f790d9d70ea44de8e941899ddc526cc"
     },
     {
       "path": "docs/deployment.md",
-      "disposition": "active project Markdown aligned with qualified parallel delegation and retained production holds",
-      "sha256": "8c3a26b4d21f0ecc25e78d1f749bddd8c03ebacafab4a63d8b9e5375ee914a3b"
+      "disposition": "active project Markdown aligned with resumed P1 intelligence integration and retained holds",
+      "sha256": "4ef922489451e30cd2f9974e153dc16fb09c6aad7bf0c6ca0c5dc2785b4d6aa9"
     },
     {
       "path": "docs/governance.md",
-      "disposition": "active project Markdown aligned with qualified parallel delegation and retained production holds",
-      "sha256": "c55ef37d587bb34e697385bb7aa6a2725a34a76c513a2e1534fd38f4fe69c2bc"
+      "disposition": "active project Markdown aligned with resumed P1 intelligence integration and retained holds",
+      "sha256": "17e07e98d7b0d6c0554fcc34bdb3988a38b18035c949360a636e6549564690b8"
     },
     {
       "path": "docs/implementation-progress.md",
-      "disposition": "active project Markdown aligned with qualified parallel delegation and retained production holds",
-      "sha256": "b33ba278aa4dc071e1e98e39df39f88373943da72059ba045da4f9ec450c3874"
+      "disposition": "active project Markdown aligned with resumed P1 intelligence integration and retained holds",
+      "sha256": "e9eb05b3c65127dc32efe9ee66a7912a1fa394ee22e9e52ddec329a1e46aa66d"
     },
     {
       "path": "docs/limitations.md",
-      "disposition": "active project Markdown aligned with qualified parallel delegation and retained production holds",
-      "sha256": "0ef0bcfedac8a110a036a749f5a7b5b6da4bf164449008ee13a6ce5560ae1ed9"
+      "disposition": "active project Markdown aligned with resumed P1 intelligence integration and retained holds",
+      "sha256": "e25b9ea8a736190a44320ff63da616cc4f6d3bbedc997c972de922b910011187"
     },
     {
       "path": "docs/local-development.md",
-      "disposition": "active project Markdown aligned with qualified parallel delegation and retained production holds",
-      "sha256": "b2b7938eadb464959aff039780d734ec43b5a9a68cf242be99374caa2c41547a"
+      "disposition": "active project Markdown aligned with resumed P1 intelligence integration and retained holds",
+      "sha256": "ba85ba18e711f3bce43acf72c60dc2a271f84293fe23fcc9222c53fb057d7625"
     },
     {
       "path": "docs/mcp-a2a.md",
-      "disposition": "active project Markdown aligned with qualified parallel delegation and retained production holds",
-      "sha256": "7e3e541e032ef2c664c1b6d2801e918f611f08eff90d419f0dac2e77da354264"
+      "disposition": "active project Markdown aligned with resumed P1 intelligence integration and retained holds",
+      "sha256": "282020274a7d15589c0ef7cabfd7c69946c39f17b942b19b2a5daa1930686f0d"
     },
     {
       "path": "docs/memory.md",
-      "disposition": "active project Markdown aligned with qualified parallel delegation and retained production holds",
-      "sha256": "e0ee74aec5282dd57a3677d03b661f2068ed9ff7b4b10c372a7a8433b19ac6aa"
+      "disposition": "active project Markdown aligned with resumed P1 intelligence integration and retained holds",
+      "sha256": "6265f6ffc0e70a6200ee54cd4f73f7c729daa51fbfe92797b9d6e75d3d0c4600"
     },
     {
       "path": "docs/model-execution.md",
-      "disposition": "active project Markdown aligned with qualified parallel delegation and retained production holds",
-      "sha256": "9dfae2ec9dfd3603d246ed5cecbab9238088f842e98c0a0d245bde010b3a31e7"
+      "disposition": "active project Markdown aligned with resumed P1 intelligence integration and retained holds",
+      "sha256": "1e13d0b5e3cc4f07c4b90fef092564219755108848fb96ccbc794479ac993863"
     },
     {
       "path": "docs/model-gateway.md",
-      "disposition": "active project Markdown aligned with qualified parallel delegation and retained production holds",
-      "sha256": "eafbc107e2c46acc7561142e2a51f54e5a9e41f0cfa6845432b068c0dae9aa76"
+      "disposition": "active project Markdown aligned with resumed P1 intelligence integration and retained holds",
+      "sha256": "bf47f27fefbdafd0106156287f01210f9db57f5a812096b5666046d5f3520a05"
     },
     {
       "path": "docs/phase-7-handoff.md",
-      "disposition": "active project Markdown aligned with qualified parallel delegation and retained production holds",
-      "sha256": "13dc2f2f80f1d008f7bdbea6629762cc6de6d25c04dd69716105b13cea7db123"
+      "disposition": "active project Markdown aligned with resumed P1 intelligence integration and retained holds",
+      "sha256": "b170c591f4a29e00f78847bba804b91e020eb4faf3f537922f823ae83a860919"
     },
     {
       "path": "docs/phase-9-handoff.md",
-      "disposition": "active project Markdown aligned with qualified parallel delegation and retained production holds",
-      "sha256": "6d398576f0690da4a0a8549b0dcbc47aeb8bd3dd99d9d7864fe90bb75f843530"
+      "disposition": "active project Markdown aligned with resumed P1 intelligence integration and retained holds",
+      "sha256": "4c07e6d050970c32128c913ad705b4ec65d21de24fa4440129e97e609f8e76d7"
     },
     {
       "path": "docs/plugins.md",
-      "disposition": "active project Markdown aligned with qualified parallel delegation and retained production holds",
-      "sha256": "071b05b287e0f1e01dc8f4cf4d22f7c9efe97f243fe4e60c93abd0df40ea2804"
+      "disposition": "active project Markdown aligned with resumed P1 intelligence integration and retained holds",
+      "sha256": "d92808139e6287785676f50ad81c41909eb47cb39c4bdc6e93782f000a61687e"
     },
     {
       "path": "docs/recovery.md",
-      "disposition": "active project Markdown aligned with qualified parallel delegation and retained production holds",
-      "sha256": "e78de9970947ed7576d7e59e30697e4ba9571d35bddd133a31bdc0947b80e4b5"
+      "disposition": "active project Markdown aligned with resumed P1 intelligence integration and retained holds",
+      "sha256": "6e490597f4579c98dd0c1b07ac71f795a52eeb748eea09773076105ad09346f4"
     },
     {
       "path": "docs/research.md",
-      "disposition": "active project Markdown aligned with qualified parallel delegation and retained production holds",
-      "sha256": "2f831f6db2d71a1b5f1ba5a1ed68f31d9e4e0596c6c022ffbf3ca950e6b6c556"
+      "disposition": "active project Markdown aligned with resumed P1 intelligence integration and retained holds",
+      "sha256": "85a36770e6528a17d8d3bf67fce1e76e4cf8d48b8f4b1d1290c4d30a16c85884"
     },
     {
       "path": "docs/salience-phase-1-6.architecture.html",
@@ -930,78 +954,78 @@
     },
     {
       "path": "docs/superpowers/plans/2026-09-12-browser-evidence.md",
-      "disposition": "active project Markdown aligned with qualified parallel delegation and retained production holds",
-      "sha256": "02f3d6c87961361e78ae396ae653edf50a8e97f2aa727adc51b20961f261197e"
+      "disposition": "active project Markdown aligned with resumed P1 intelligence integration and retained holds",
+      "sha256": "14010c7c3ee33c44a61a8910e258eae3dec66857c69412284b66c1b0347ea8e6"
     },
     {
       "path": "docs/superpowers/plans/2026-09-12-intelligence-loop-phases-5-6.md",
-      "disposition": "active project Markdown aligned with qualified parallel delegation and retained production holds",
-      "sha256": "678424fc6a5ac424bb0c3794c6e5478ec26d4203b12ca03eb344194b6fa572a8"
+      "disposition": "active project Markdown aligned with resumed P1 intelligence integration and retained holds",
+      "sha256": "4a4820749b2065f437063bf0602dc996fed889cae5b13df1a318a306110422ad"
     },
     {
       "path": "docs/superpowers/plans/2026-09-12-phases-1-4-foundation.md",
-      "disposition": "active project Markdown aligned with qualified parallel delegation and retained production holds",
-      "sha256": "5373d715cfee12973dcba471e6bccd0efce55002ef570aac76918255dac27485"
+      "disposition": "active project Markdown aligned with resumed P1 intelligence integration and retained holds",
+      "sha256": "06c9ff975b87cc0e40daf0b3365c6c492d2703f20fffedb0cd42262a4232d620"
     },
     {
       "path": "docs/superpowers/plans/2026-09-13-creative-production-phases-7-8.md",
-      "disposition": "active project Markdown aligned with qualified parallel delegation and retained production holds",
-      "sha256": "f0309de0768b4936dcda12b06885e5a25d42cb538f62a2cc141dc2559802eb87"
+      "disposition": "active project Markdown aligned with resumed P1 intelligence integration and retained holds",
+      "sha256": "8de0f77b794fae7e3b68d39bc143c6db015cc63636a603ca14093dd6e78e647c"
     },
     {
       "path": "docs/superpowers/plans/2026-09-13-phase-7-8-release-gate-phase-9-publishing.md",
-      "disposition": "active project Markdown aligned with qualified parallel delegation and retained production holds",
-      "sha256": "3123cec826a1fe9c2e1079dbe7a4c63bdeddfe48900831f9f9a2114d6f5c604a"
+      "disposition": "active project Markdown aligned with resumed P1 intelligence integration and retained holds",
+      "sha256": "bd6cf885e9a2731d809c94fecf652be242e425254883aed3b51cc2a4c8b273e5"
     },
     {
       "path": "docs/superpowers/plans/2026-09-13-phase-7-8-review-repairs.md",
-      "disposition": "active project Markdown aligned with qualified parallel delegation and retained production holds",
-      "sha256": "c2ee35938419fcd9f598651cd60ab24f35db1274fceecef394b6930402baef4c"
+      "disposition": "active project Markdown aligned with resumed P1 intelligence integration and retained holds",
+      "sha256": "f628aa1f19fa576667f67fa07b399112a933c23b25653335a4e719e65c648885"
     },
     {
       "path": "docs/superpowers/plans/2026-09-13-phase-9-independent-review-repairs.md",
-      "disposition": "active project Markdown aligned with qualified parallel delegation and retained production holds",
-      "sha256": "a55642aef0e1421cbd67459b5e82b6a4f360950a9af0295b6942b4f38b08052c"
+      "disposition": "active project Markdown aligned with resumed P1 intelligence integration and retained holds",
+      "sha256": "0e15c9f5ffc2855ce8a6f216d3df7624ba5de46ca06bfbba4b84d2c71fef399f"
     },
     {
       "path": "docs/superpowers/reviews/2026-09-13-phase-7-8-release-gate.md",
-      "disposition": "active project Markdown aligned with qualified parallel delegation and retained production holds",
-      "sha256": "79ddbebb270ab9a0b7fd8eb61afbfb7a664c8ba4f4ec16fe85374bdc69ad2d47"
+      "disposition": "active project Markdown aligned with resumed P1 intelligence integration and retained holds",
+      "sha256": "5c3cff2d01a34916aca225dd0e268709be3c658b038b5263fb5d2ce306e5823a"
     },
     {
       "path": "docs/superpowers/reviews/2026-09-13-phase-9-independent-review.md",
-      "disposition": "active project Markdown aligned with qualified parallel delegation and retained production holds",
-      "sha256": "0cc063c8a3f1ca06649baa5e7bde423fc2a9874cff4db016757abbee894889ae"
+      "disposition": "active project Markdown aligned with resumed P1 intelligence integration and retained holds",
+      "sha256": "5070684fa064a124c2244dc981aa57cd2a861f0eb9425789cc1f7b7278b065b9"
     },
     {
       "path": "docs/superpowers/specs/2026-09-12-browser-evidence-design.md",
-      "disposition": "active project Markdown aligned with qualified parallel delegation and retained production holds",
-      "sha256": "fbb407ce42a42b56abe3a670f09e7fe2dddf8c76a8e23e7e62653daa3354eb2d"
+      "disposition": "active project Markdown aligned with resumed P1 intelligence integration and retained holds",
+      "sha256": "e5c576790595dd990c555af7cb9cbff22799aacba0f1c9144433990f4dd32c43"
     },
     {
       "path": "docs/superpowers/specs/2026-09-12-intelligence-loop-phases-5-6-design.md",
-      "disposition": "active project Markdown aligned with qualified parallel delegation and retained production holds",
-      "sha256": "8a115c77e57be60fcc53ecbbead471754ef660d64899397c49dd37e43aa3024a"
+      "disposition": "active project Markdown aligned with resumed P1 intelligence integration and retained holds",
+      "sha256": "fd7c08ae08f79ab3694be58d962424d4cef5b839e7b5279752c3cdd6c9d9c322"
     },
     {
       "path": "docs/superpowers/specs/2026-09-13-creative-production-phases-7-8-design.md",
-      "disposition": "active project Markdown aligned with qualified parallel delegation and retained production holds",
-      "sha256": "399c726208b047f9437ba19109c0ee618c0ecada98b877565b5293f8757651cd"
+      "disposition": "active project Markdown aligned with resumed P1 intelligence integration and retained holds",
+      "sha256": "11729c2b8a1eb09bbef450a4e5c30c3e6ffa502c7f0fa62a0f078e13ded175bb"
     },
     {
       "path": "docs/superpowers/specs/2026-09-13-phase-7-8-release-gate-phase-9-publishing-design.md",
-      "disposition": "active project Markdown aligned with qualified parallel delegation and retained production holds",
-      "sha256": "ad9273311144b878e7f0167f965fe37480bd0ba743b51f1107f1f4e54aefc00f"
+      "disposition": "active project Markdown aligned with resumed P1 intelligence integration and retained holds",
+      "sha256": "4e5e05bc4a4ab9175b30c5a59b876484fca4de9484f7e8a16ce6a478685e32fa"
     },
     {
       "path": "docs/trust-model.md",
-      "disposition": "active project Markdown aligned with qualified parallel delegation and retained production holds",
-      "sha256": "f757e0d404794e86c55d984dccc866563f6caf752ba37284736b028df0a07c40"
+      "disposition": "active project Markdown aligned with resumed P1 intelligence integration and retained holds",
+      "sha256": "d7bfe88894e96cda4379fa4740ad1ed1b6f381614020ea39cc6cae29f96454fb"
     },
     {
       "path": "docs/v4/IMPLEMENTATION-BLUEPRINT.md",
-      "disposition": "active project Markdown aligned with qualified parallel delegation and retained production holds",
-      "sha256": "6c8269181fa36f9e9d4ede5dc7af53ac73ad7df1bed66bd37e01049995b1cfb6"
+      "disposition": "active project Markdown aligned with resumed P1 intelligence integration and retained holds",
+      "sha256": "78be0953349a7695184d7d2ba786abbe0b4804b4378383c3dae28caa4f81d4c0"
     },
     {
       "path": "docs/v4/allocation-evidence.json",
@@ -1049,8 +1073,8 @@
     },
     {
       "path": "docs/v4/evidence-lock.json",
-      "disposition": "current325file root-qualified parallel-agent source lock",
-      "sha256": "5d6fe94c0ac877d103f7a05d460e59bf3f568aaede999cb4e0f163a42c3f559d"
+      "disposition": "current 332-file root-qualified legacy intelligence source lock",
+      "sha256": "ae1014e6704e87cbb3828b183f6c53e53590ce04d29fda05207ba378648a8bf2"
     },
     {
       "path": "docs/v4/goal-revision-evidence.json",
@@ -1133,14 +1157,24 @@
       "sha256": "410781b5e8d229a2d515a8ec439592a76fd3e1fc08277ede5fd24c3ae0b05f6c"
     },
     {
+      "path": "docs/v4/legacy-dispatch-contract.md",
+      "disposition": "active legacy integration contract",
+      "sha256": "bb4740ba45a82b6c8aa97ea26d57e11f2c942ee42d5b501d1396acb319fd8dbd"
+    },
+    {
+      "path": "docs/v4/legacy-dispatch-evidence.json",
+      "disposition": "durable local legacy intelligence qualification report",
+      "sha256": "fe6784dee7b40a34a30a0acffac6b03ca2a8e8abafe1289a4d5cdee0ff96e9fd"
+    },
+    {
       "path": "docs/v4/outbox-increment-evidence.json",
       "disposition": "preserved dated qualification report",
       "sha256": "d1200fda0921e7c46844e9a5804c68e522addf1d41f176e68210e4834fc30504"
     },
     {
       "path": "docs/v4/p0-release.json",
-      "disposition": "current release ledger; parallel local PASS, RG0/RG1/RG5 HELD",
-      "sha256": "e7bb6c2fae1a03ccfd74e2d3648b2d3281413dc04aca6897b157f10e669008fa"
+      "disposition": "current release ledger; legacy intelligence local PASS, broader P1 ACTIVE, RG0/RG1/RG5 HELD",
+      "sha256": "1c2ed6c79bb274e8fdc02256f737bf2d5366d9310b9f101bfaa89a35aa955ed3"
     },
     {
       "path": "docs/v4/p1-increment-evidence.json",
@@ -1149,23 +1183,23 @@
     },
     {
       "path": "docs/v4/p1-qualification-matrix.json",
-      "disposition": "current17requirement remaining-acceptance matrix; historical item7 independent review and separate parallel extension",
-      "sha256": "ab0553040132167f5069ca91a98d6c3bf8e4ed4703bb72a78d89b60fa5538316"
+      "disposition": "current 17-requirement acceptance matrix; historical item7 review and separate legacy/parallel qualifications",
+      "sha256": "041e6878a7eba20874f59db77bf1acf4b0243d05bc9f62bfa86c52a9d4248fef"
     },
     {
       "path": "docs/v4/parallel-agent-contract.md",
-      "disposition": "active project Markdown aligned with qualified parallel delegation and retained production holds",
+      "disposition": "active project Markdown aligned with resumed P1 intelligence integration and retained holds",
       "sha256": "a26d2fc2f2596c8c334c57c6d21cf6f246ed34936282b05aa6ff51097fc9bb8b"
     },
     {
       "path": "docs/v4/parallel-agents-evidence.json",
-      "disposition": "current bounded parallel-agent local qualification evidence",
+      "disposition": "preserved dated parallel qualification report",
       "sha256": "efc4a5cfe9b12784c9c89eba4718271ef1cf8e873df67e7bee53714c7d0a6cb8"
     },
     {
       "path": "docs/v4/progress.md",
-      "disposition": "active project Markdown aligned with qualified parallel delegation and retained production holds",
-      "sha256": "6327a0694a5c97e01a1dd4f5ff1f357538a26a5901112fe9aa02ac4b30f6d6ff"
+      "disposition": "active project Markdown aligned with resumed P1 intelligence integration and retained holds",
+      "sha256": "0995bd17583c2560b980cd535564800219b928964b21c16f8334962d8ca4284d"
     },
     {
       "path": "docs/v4/repository-enforcement-evidence.json",
@@ -1174,52 +1208,55 @@
     },
     {
       "path": "docs/v4/validation.md",
-      "disposition": "active project Markdown aligned with qualified parallel delegation and retained production holds",
-      "sha256": "92101f6842a85d0bf489bc8350713c47c7fb4eeb540c3e393be44e4a89845a42"
+      "disposition": "active project Markdown aligned with resumed P1 intelligence integration and retained holds",
+      "sha256": "4a23d234df6ba3153007e184dc624c0986ac373178f5e84ab4c78d893a03a9ec"
     },
     {
       "path": "docs/verification.md",
-      "disposition": "active project Markdown aligned with qualified parallel delegation and retained production holds",
-      "sha256": "df78463c01cb8740152097a2483a170d52e827010bcb4511143aa7dc480db497"
+      "disposition": "active project Markdown aligned with resumed P1 intelligence integration and retained holds",
+      "sha256": "62e391e414e2e44942c9738c6773e98959c84f151503d71b38cc8dde7f95384e"
     },
     {
       "path": "docs/workflows.md",
-      "disposition": "active project Markdown aligned with qualified parallel delegation and retained production holds",
-      "sha256": "8ef4260b035d6e27a336e1fef00cd4df046506d07c20de961fa2f4f16650ab2f"
+      "disposition": "active project Markdown aligned with resumed P1 intelligence integration and retained holds",
+      "sha256": "f95115bd61dee136d3c0dd04899661eb7f5e2f7028bc94d37e86a62dd7c5a3de"
     },
     {
       "path": "prompts/Build Creative Production Loop \u2014 Phases 7\u20138 End-to-End.md",
-      "disposition": "active project Markdown aligned with qualified parallel delegation and retained production holds",
-      "sha256": "8449d52cef4ad46d84565559d7f34ce7a54e017c48a269cecfcffcc0debd7b52"
+      "disposition": "active project Markdown aligned with resumed P1 intelligence integration and retained holds",
+      "sha256": "528fb40836b4a4e89d788540d9ba64b74fe166980640702c785554a0d7ed9aa7"
     },
     {
       "path": "prompts/Build Phase 10 \u2014 Multi-Platform Production Publishing, Analytics, Attribution & Experiments.md",
-      "disposition": "active project Markdown aligned with qualified parallel delegation and retained production holds",
-      "sha256": "10e87f8b7e8e1f5bfffbcfc1dfba1f25c8754862d1d0443691b4a0b68c263604"
+      "disposition": "active project Markdown aligned with resumed P1 intelligence integration and retained holds",
+      "sha256": "0809f8ebdf1092fb068b0a71c2003bd6f6351840e3f39b18c8ce99a6247f765b"
     },
     {
       "path": "prompts/Build Phases 1\u20134 End-to-End.md",
-      "disposition": "active project Markdown aligned with qualified parallel delegation and retained production holds",
-      "sha256": "c45a2538c638261d1f2e51e14d64f43f8518e1a20b1336daafc422c6d6947b2d"
+      "disposition": "active project Markdown aligned with resumed P1 intelligence integration and retained holds",
+      "sha256": "b2debf5728d673a55bd385e39750bed28f4b6fbd8d79f2464471a86dee80a71c"
     },
     {
       "path": "prompts/Build Real Intelligence Loop \u2014 Pre-Phase 5 + Phases 5\u20136 End-to-End.md",
-      "disposition": "active project Markdown aligned with qualified parallel delegation and retained production holds",
-      "sha256": "b1b5e310c0a6fceb528b83f44db402f0929e0fb5b8c8cd52a7da4774c463571a"
+      "disposition": "active project Markdown aligned with resumed P1 intelligence integration and retained holds",
+      "sha256": "45a551bb88b9175d8e5be7cad96ca41301f3a140c691989ea7747340e4f21317"
     },
     {
       "path": "prompts/Complete Phase 7\u20138 Release Gate, Then Build Phase 9 Governed Publishing.md",
-      "disposition": "active project Markdown aligned with qualified parallel delegation and retained production holds",
-      "sha256": "794e47830e012c3bcea6884284b3a8ecf3b40dd3389e3f3f97787c9df0c53db3"
+      "disposition": "active project Markdown aligned with resumed P1 intelligence integration and retained holds",
+      "sha256": "7036b62a9c83a87bf53218f7e7ba016ad6c26c9551253ea364a200e90dc9b0a6"
     },
     {
       "path": "prompts/Install and Verify Browser Evidence on Linux EC2.md",
-      "disposition": "active project Markdown aligned with qualified parallel delegation and retained production holds",
-      "sha256": "795553a9b0b9325e437659e616fc3f3112c73115d9114265941d1fa8b303c638"
+      "disposition": "active project Markdown aligned with resumed P1 intelligence integration and retained holds",
+      "sha256": "8ad37463d5f3caa9a168eca872f9b6411ba8d205c624e464b33d80c5f2e81be0"
     }
   ],
-  "qualified_application_commit": "e49a214cd371d0417f093d3a24fa2a4f4a359e83",
-  "next_action": "Complete outstanding RG0/RG1 production acceptance within separately authorized scope; P2\u2013P7 remain gated, optionalP6disabled",
+  "qualified_application_commit": "81bdeee6203d673d04b62780ac2dc8f458ed9cb4",
+  "next_action": "Continue restored P1 integration: remaining legacy stages, current general authorization/version eligibility, typed recovery and retained production acceptance; P2\u2013P7 remain gated, optional P6 disabled",
   "parallel_agents_status": "PASS_IMPLEMENTED_LOCAL_PARALLEL_AGENT_FIXTURE_SCOPE",
-  "parallel_qualified_application_commit": "2653d2ecb3f0d5bb8ea6560de274137dd6032a96"
+  "parallel_qualified_application_commit": "2653d2ecb3f0d5bb8ea6560de274137dd6032a96",
+  "legacy_intelligence_status": "PASS_IMPLEMENTED_LOCAL_LEGACY_INTELLIGENCE_FIXTURE_SCOPE",
+  "goal_status": "ACTIVE",
+  "independent_review_scope": "Historical item7 e49a214 only; no new independent approval claimed"
 }

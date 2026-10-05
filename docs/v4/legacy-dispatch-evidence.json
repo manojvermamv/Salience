@@ -1,0 +1,63 @@
+{
+  "recorded_at": "2026-10-05T06:21:04.224549+00:00",
+  "status": "PASS_IMPLEMENTED_LOCAL_LEGACY_INTELLIGENCE_FIXTURE_SCOPE",
+  "base_commit": "380416d35cffb6e4bf33003cb6e8df0638874436",
+  "qualified_application_commit": "81bdeee6203d673d04b62780ac2dc8f458ed9cb4",
+  "scope": "Root qualification of no-effects legacy intelligence compatibility, canonical admission/job/outbox, original operation/permit execution, signed API/SDK/CLI, fixture schedule materialization and real disposable Temporal pause/watermark/rollback. Other legacy stages and production integration remain unqualified.",
+  "restored_from_own_output_at": "2026-10-04T02:44:31.946Z",
+  "commands": [
+    {
+      "command": ".venv/bin/python -m pytest -p no:cacheprovider tests/integration/test_v4_legacy_dispatch.py tests/integration/test_v4_outbox.py tests/integration/test_v4_auto_dispatch.py tests/integration/test_v4_schedule_cutover.py tests/integration/test_v4_public_commands.py tests/integration/test_durable_parallel_teams.py tests/integration/test_v4_migrations.py tests/e2e/test_v4_item7_delivery_recovery.py::test_delivery_scope_migration_preserves_or_holds_original_history tests/integration/test_v4_runtime_waits.py::test_wait_binding_and_receipts_cannot_be_rewritten_or_destructively_downgraded tests/integration/test_v4_runtime_waits.py::test_populated_owner_binding_cannot_be_rolled_back tests/e2e/test_v4_wait_restart.py -q --junitxml=artifacts/v4-legacy-dispatch/focused.xml",
+      "tests": 87,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "exit_code": 0,
+      "seconds": 111.761,
+      "junit": "artifacts/v4-legacy-dispatch/focused.xml",
+      "junit_sha256": "4791e17535bf0b595dab68d9af2d061dd24927fcbb1d1526a633aac31343cc7e",
+      "log": "artifacts/v4-legacy-dispatch/focused.log",
+      "log_sha256": "1c1fb5a90ba671c0b0f0c4eeaa27318a863e4fc5f75dea5e0ac797f0a890d8cd"
+    },
+    {
+      "command": ".venv/bin/python -m pytest -p no:cacheprovider tests/contracts tests/unit tests/integration tests/e2e tests/evals -m 'not live' -q -rs --junitxml=artifacts/v4-legacy-dispatch/regression.xml",
+      "tests": 556,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "exit_code": 0,
+      "seconds": 526.745,
+      "junit": "artifacts/v4-legacy-dispatch/regression.xml",
+      "junit_sha256": "bc396219c55d05a1798e82d24f230a6f0805cb9d4d94381d2f8427c4f244633b",
+      "log": "artifacts/v4-legacy-dispatch/regression.log",
+      "log_sha256": "19d1307970596a893b8d809daa01daf1272f84410eed912fd4208ab685041967"
+    }
+  ],
+  "locked_source_files": 332,
+  "source_evidence_lock_sha256": "ae1014e6704e87cbb3828b183f6c53e53590ce04d29fda05207ba378648a8bf2",
+  "source_freeze": "artifacts/v4-legacy-dispatch/source-freeze.json",
+  "source_freeze_sha256": "e5d20f9bd8ed3b70f4d84e2d1b6004f24f9d8a4a654c1d69873ebe542f6cca99",
+  "independent_review": "NOT RUN for extension; completed item7 independent review stays bound to e49a214",
+  "migration": "0036_legacy_cycle_dispatch; additive, empty rollback PASS, populated preservation PASS",
+  "preliminary_runs": [
+    {
+      "junit": "artifacts/v4-legacy-dispatch/preliminary-regression.xml",
+      "junit_sha256": "b23f9fd2752040a2ce6ce05caebc34e7519c99d29ee8937a0c93285e480588c6",
+      "passed": 550,
+      "failures": 6,
+      "errors": 0,
+      "scope": "Superseded pre-repair run: two rollback-message expectations, three pre-0036 fixture reader failures and one incorrectly selected snapshot database. Repairs reproduced and qualified without deleting assertions."
+    }
+  ],
+  "retained_boundaries": {
+    "production_effects_enabled": false,
+    "RG0": "HELD",
+    "RG1": "HELD",
+    "P2-P7": "GATED",
+    "P6": "DISABLED",
+    "main_merge": "NOT AUTHORIZED",
+    "formal_pr_approval": "NOT RUN"
+  },
+  "goal_status": "ACTIVE; continue remaining P1 legacy stage/authorization integration and retained acceptance obligations",
+  "remote_ci": "Final documentation head requires separate exact-head CI/protection inspection after publication; local evidence does not imply GitHub approval"
+}

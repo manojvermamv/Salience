@@ -1,6 +1,8 @@
 # V4 implementation progress and checkpoints
 
-**Current checkpoint — 2026-10-05:** Bounded parallel agent delegation is locally qualified (**45 focused / 540 full non-live PASS**, 325 source hashes) at `2653d2e`: one shared parent, scoped children, bounded concurrency/deadlines, durable claims/results and signed API/CLI/SDK commands. See the [parallel-agent contract](parallel-agent-contract.md) for invocation, recovery and qualification. The completed 2026-10-04 item-7 independent review remains a dated qualification of its original source. Production stays disabled, RG0/RG1 HELD, main unmerged and P2–P7 gated.
+The pre-parallel-worker P1 integration direction has resumed from `380416d`. The legacy intelligence increment is locally qualified at `81bdeee` (87 focused / 556 full non-live PASS); the broader P1 integration goal remains active. See the [integration contract](legacy-dispatch-contract.md). Item 7 and the parallel extension retain their completed, dated scopes; production is disabled, RG0/RG1 HELD and main unmerged.
+
+**Current checkpoint — 2026-10-05:** Resumed P1 legacy intelligence integration is locally qualified (**87 focused / 556 full non-live PASS**, 332 source hashes) at `81bdeee`. Signed compatibility commands commit canonical admission/job/outbox; fixture execution retains the original operation/permit; disposable Temporal cutover and worker hard-exit recovery are tested. See the [legacy integration contract](legacy-dispatch-contract.md). Item 7 and the parallel extension retain their completed, dated scopes. The broader P1 integration goal remains active; production is disabled, RG0/RG1 HELD, main unmerged, P2–P7 gated and optional P6 disabled.
 
 <a id="v4-documentation-transition-checkpoint"></a>
 
@@ -9,9 +11,9 @@
 <a id="current-state--2026-09-24"></a>
 <a id="current-state--2026-09-27"></a>
 
-## Current state — 2026-10-05 parallel delegation extension
+## Completed parallel delegation extension — 2026-10-05
 
-The parallel-agent extension is the latest implementation at `2653d2ecb3f0d5bb8ea6560de274137dd6032a96`: **45 focused / 540 full non-live PASS**, zero failures/errors/skips, 325 source hashes. Its final commands and source lock are recorded in [parallel evidence](parallel-agents-evidence.json). It is a local extension of the callable-agent boundary associated with R59; RG5 and later phases remain gated.
+The completed parallel-agent extension was qualified at `2653d2ecb3f0d5bb8ea6560de274137dd6032a96`: **45 focused / 540 full non-live PASS**, zero failures/errors/skips, 325 source hashes. Its final commands and source lock are recorded in [parallel evidence](parallel-agents-evidence.json). It is a local extension of the callable-agent boundary associated with R59; RG5 and later phases remain gated.
 
 ### Completed item 7 qualification — 2026-10-04
 
