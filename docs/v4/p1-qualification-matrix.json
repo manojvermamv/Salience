@@ -40,7 +40,7 @@
           "tests/integration/test_v4_native_publication_schedules.py",
           "tests/integration/test_v4_migrations.py"
         ],
-        "application_commit": "3986a1de43d1ca8e9ca84e7c69dedbe698b3d312"
+        "application_commit": "a4b2368cdb463939d093020224a5b5667392aee6"
       }
     },
     {
@@ -55,7 +55,7 @@
       "local_verifier_status": "PASS; covers implemented local fixtures, not unimplemented production acceptance",
       "independent_review_status": "PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE; production acceptance remains HELD",
       "production_release_status": "HELD",
-      "remaining_acceptance": "Production dispatcher/provider and approved account authorization; supported production routing, native schedule inventory/fencing, remote reconciliation and complete RG1 acceptance. The isolated fixture publication and paired native schedule extension is separately root-qualified.",
+      "remaining_acceptance": "Production dispatcher/provider and approved account authorization; supported production routing, native schedule inventory/fencing, remote reconciliation and complete RG1 acceptance. Local fixture publication, paired native schedule conversion, and post-close published-cancel typed hold are requalified; corrected exact-head rereview remains pending.",
       "independent_review_evidence": [
         "docs/v4/item7-runtime-review.json"
       ],
@@ -106,7 +106,7 @@
           "tests/integration/test_v4_native_publication_schedules.py",
           "tests/integration/test_v4_migrations.py"
         ],
-        "application_commit": "3986a1de43d1ca8e9ca84e7c69dedbe698b3d312"
+        "application_commit": "a4b2368cdb463939d093020224a5b5667392aee6"
       },
       "legacy_publication_extension": {
         "scope": "Root-qualified effects-disabled original publication API/outbox and paired native publication schedule conversion with canonical resumed ingress, added to the separately qualified original native intelligence schedule conversion; exact account/baseline/current approval/policy/rights, zero-budget internal fixture, receipt-only expired-permit recovery and typed hold",
@@ -116,7 +116,7 @@
           "tests/integration/test_v4_native_publication_schedules.py",
           "tests/integration/test_v4_migrations.py"
         ],
-        "application_commit": "3986a1de43d1ca8e9ca84e7c69dedbe698b3d312"
+        "application_commit": "a4b2368cdb463939d093020224a5b5667392aee6"
       }
     },
     {
@@ -143,7 +143,7 @@
           "tests/integration/test_v4_native_publication_schedules.py",
           "tests/integration/test_v4_migrations.py"
         ],
-        "application_commit": "3986a1de43d1ca8e9ca84e7c69dedbe698b3d312"
+        "application_commit": "a4b2368cdb463939d093020224a5b5667392aee6"
       }
     },
     {
@@ -209,7 +209,7 @@
           "tests/integration/test_v4_native_publication_schedules.py",
           "tests/integration/test_v4_migrations.py"
         ],
-        "application_commit": "3986a1de43d1ca8e9ca84e7c69dedbe698b3d312"
+        "application_commit": "a4b2368cdb463939d093020224a5b5667392aee6"
       },
       "legacy_publication_extension": {
         "scope": "Root-qualified effects-disabled original publication API/outbox and paired native publication schedule conversion with canonical resumed ingress, added to the separately qualified original native intelligence schedule conversion; exact account/baseline/current approval/policy/rights, zero-budget internal fixture, receipt-only expired-permit recovery and typed hold",
@@ -219,7 +219,7 @@
           "tests/integration/test_v4_native_publication_schedules.py",
           "tests/integration/test_v4_migrations.py"
         ],
-        "application_commit": "3986a1de43d1ca8e9ca84e7c69dedbe698b3d312"
+        "application_commit": "a4b2368cdb463939d093020224a5b5667392aee6"
       }
     },
     {
@@ -287,7 +287,7 @@
           "tests/integration/test_v4_native_publication_schedules.py",
           "tests/integration/test_v4_migrations.py"
         ],
-        "application_commit": "3986a1de43d1ca8e9ca84e7c69dedbe698b3d312"
+        "application_commit": "a4b2368cdb463939d093020224a5b5667392aee6"
       }
     },
     {
@@ -429,7 +429,7 @@
           "tests/integration/test_v4_native_publication_schedules.py",
           "tests/integration/test_v4_migrations.py"
         ],
-        "application_commit": "3986a1de43d1ca8e9ca84e7c69dedbe698b3d312"
+        "application_commit": "a4b2368cdb463939d093020224a5b5667392aee6"
       }
     },
     {
@@ -485,7 +485,7 @@
       "requirement": "§4: emergency stop and policy outage fail closed; independent read reconciliation allowed only with scope",
       "phase": "P1",
       "dependencies": "R17",
-      "acceptance": "Item-3 workspace/goal stop and item-5b signed stop commands deny new fixture claims/recovery under revoked authority; unavailable authority DB issues no permit. Item-5c fixture activation, auto poll and legacy resume hold on current stop; production live-scheduler cancellation and production remote read-only reconciliation remain unqualified. The isolated publication fixture permits receipt readback after permit expiry only under a separate exact account reconciliation grant, only for an immutable already-accepted receipt, and then holds for typed recovery; no second submit, blind status progression or fabricated close-race projection is authorized.",
+      "acceptance": "Item-3 workspace/goal stop and item-5b signed stop commands deny new fixture claims/recovery under revoked authority; unavailable authority DB issues no permit. Item-5c fixture activation, auto poll and legacy resume hold on current stop; production live-scheduler cancellation and production remote read-only reconciliation remain unqualified. The isolated publication fixture permits receipt readback after permit expiry only under a separate exact account reconciliation grant, only for an immutable already-accepted receipt, and then holds for typed recovery; no second submit, blind status progression or fabricated close-race projection is authorized. The fresh direct close-race test proves published cancellation readback produces typed recovery hold without canonical success, publication/status event or reservation settlement. The fresh direct close-race test proves published cancellation readback produces typed recovery hold without canonical success, publication/status event or reservation settlement. The fresh direct close-race test proves published cancellation readback produces typed recovery hold without canonical success, publication/status event or reservation settlement. The fresh direct close-race test proves published cancellation readback produces typed recovery hold without canonical success, publication/status event or reservation settlement. The fresh direct close-race test proves published cancellation readback produces typed recovery hold without canonical success, publication/status event or reservation settlement.",
       "migration_rollback": "M1: stop revision persists across restart/rollback; renewed authority required to resume.",
       "gate": "RG1",
       "executed_verifier_cases": 69,
@@ -543,7 +543,7 @@
           "tests/integration/test_v4_native_publication_schedules.py",
           "tests/integration/test_v4_migrations.py"
         ],
-        "application_commit": "3986a1de43d1ca8e9ca84e7c69dedbe698b3d312"
+        "application_commit": "a4b2368cdb463939d093020224a5b5667392aee6"
       },
       "legacy_publication_extension": {
         "scope": "Root-qualified effects-disabled original publication API/outbox and paired native publication schedule conversion with canonical resumed ingress, added to the separately qualified original native intelligence schedule conversion; exact account/baseline/current approval/policy/rights, zero-budget internal fixture, receipt-only expired-permit recovery and typed hold",
@@ -553,7 +553,7 @@
           "tests/integration/test_v4_native_publication_schedules.py",
           "tests/integration/test_v4_migrations.py"
         ],
-        "application_commit": "3986a1de43d1ca8e9ca84e7c69dedbe698b3d312"
+        "application_commit": "a4b2368cdb463939d093020224a5b5667392aee6"
       }
     },
     {
@@ -581,7 +581,7 @@
           "tests/integration/test_v4_native_publication_schedules.py",
           "tests/integration/test_v4_migrations.py"
         ],
-        "application_commit": "3986a1de43d1ca8e9ca84e7c69dedbe698b3d312"
+        "application_commit": "a4b2368cdb463939d093020224a5b5667392aee6"
       }
     },
     {
@@ -663,7 +663,7 @@
           "tests/integration/test_v4_native_publication_schedules.py",
           "tests/integration/test_v4_migrations.py"
         ],
-        "application_commit": "3986a1de43d1ca8e9ca84e7c69dedbe698b3d312"
+        "application_commit": "a4b2368cdb463939d093020224a5b5667392aee6"
       },
       "legacy_publication_extension": {
         "scope": "Root-qualified effects-disabled original publication API/outbox and paired native publication schedule conversion with canonical resumed ingress, added to the separately qualified original native intelligence schedule conversion; exact account/baseline/current approval/policy/rights, zero-budget internal fixture, receipt-only expired-permit recovery and typed hold",
@@ -673,7 +673,7 @@
           "tests/integration/test_v4_native_publication_schedules.py",
           "tests/integration/test_v4_migrations.py"
         ],
-        "application_commit": "3986a1de43d1ca8e9ca84e7c69dedbe698b3d312"
+        "application_commit": "a4b2368cdb463939d093020224a5b5667392aee6"
       }
     }
   ],
@@ -681,7 +681,7 @@
   "production_effects_enabled": false,
   "RG0": "HELD",
   "RG1": "HELD",
-  "source_lock_sha256": "8f926b74c92f54ee6e2e7e639d38563a12a87c4892a81472248d648e0a297967",
+  "source_lock_sha256": "a972dfadd0f72bdf86c52969a55c94c2fa17ff29a07b4cf8c8d21ff9dc55b08c",
   "verifiers": {
     "R02": [
       "tests/e2e/test_v4_worker_upgrade.py",
@@ -804,14 +804,14 @@
   },
   "current_qualification": {
     "evidence": "docs/v4/legacy-publication-evidence.json",
-    "focused_tests": 20,
-    "full_non_live_tests": 603,
+    "focused_tests": 21,
+    "full_non_live_tests": 604,
     "source_files": 352,
-    "status": "PASS_IMPLEMENTED_LOCAL_LEGACY_PUBLICATION_AND_NATIVE_SCHEDULE_FIXTURE_SCOPE; root qualification only; historical item7 review retained; RG0/RG1 HELD",
-    "qualified_application_commit": "3986a1de43d1ca8e9ca84e7c69dedbe698b3d312",
-    "source_lock_sha256": "8f926b74c92f54ee6e2e7e639d38563a12a87c4892a81472248d648e0a297967",
-    "base_commit": "20be7815d5e5c95fea2161c908ce8ac5cae88ce6",
-    "direct_parent": "20be7815d5e5c95fea2161c908ce8ac5cae88ce6"
+    "status": "PASS_IMPLEMENTED_LOCAL_LEGACY_PUBLICATION_AND_NATIVE_SCHEDULE_FIXTURE_SCOPE_AFTER_ACCEPTED_REVIEW_CORRECTIONS; P1/P3 review findings accepted, corrected and requalified; exact corrected-head rereview pending; RG0/RG1 HELD",
+    "qualified_application_commit": "a4b2368cdb463939d093020224a5b5667392aee6",
+    "source_lock_sha256": "a972dfadd0f72bdf86c52969a55c94c2fa17ff29a07b4cf8c8d21ff9dc55b08c",
+    "base_commit": "5683cfab4a3a8f20cb83506de5debb0b5692f010",
+    "direct_parent": "5683cfab4a3a8f20cb83506de5debb0b5692f010"
   },
   "remaining_release_obligations": [
     "General registry/provider eligibility beyond the approved no-effects fixture baseline; later capability and production qualification gates remain binding",
@@ -820,7 +820,7 @@
     "General policy/model authorization, live scheduler stop/fencing integration and separately scoped remote read-only reconciliation beyond fixture permits/cases/cutover",
     "Deployment-specific supported worker routing/rollback, external durable alert delivery beyond the local item-6 patch/timer/restore fixture"
   ],
-  "qualified_application_commit": "3986a1de43d1ca8e9ca84e7c69dedbe698b3d312",
+  "qualified_application_commit": "a4b2368cdb463939d093020224a5b5667392aee6",
   "independent_review_reports": [
     {
       "reviewer": "admission",
@@ -864,7 +864,7 @@
     "status": "PASS root-reviewed bounded parallel-agent local extension; historical item7 independent review retained; RG0/RG1/RG5 HELD",
     "qualified_application_commit": "2653d2ecb3f0d5bb8ea6560de274137dd6032a96"
   },
-  "current_independent_review_scope": "At this evidence capture the publication extension has not received independent review; GPT-6.1-Sol read-only review followed by GPT-5.6-Sol meta-review is pending. Any review-driven edits require user approval. Historical item7 review remains bound to e49a214; production approval is separate and not claimed.",
+  "current_independent_review_scope": "The initial exact 3986 application/docs review returned P1/P3 findings, both accepted by meta-review and authorized for correction by the user. The direct P1 regression was reproduced RED, fixes were included in the fresh source-bound qualification, and corrected exact-head rereview is pending. Its future artifacts are artifacts/v4-legacy-publication/agents/publication_recheck_review/read-only-review-result.json, artifacts/v4-legacy-publication/agents/publication_recheck_review/findings.md, artifacts/v4-legacy-publication/agents/publication_recheck_meta_review/result.json and artifacts/v4-legacy-publication/agents/publication_recheck_meta_review/meta-review.md. These paths are pending, not evidence of review completion. This does not constitute production approval.",
   "historical_legacy_intelligence_qualification": {
     "evidence": "docs/v4/legacy-dispatch-evidence.json",
     "full_non_live_tests": 556,
@@ -900,5 +900,17 @@
     "qualified_application_commit": "6e0b266da4a453e293e4494384ed0457b6ab88b8",
     "source_lock_sha256": "369725d5debea886934ce5d0978405b0c571861b5c870981277261a14e773d37"
   },
-  "historical_legacy_creative_qualification": {}
+  "historical_legacy_creative_qualification": {},
+  "review_correction_provenance": {
+    "initial_review_sha256": "d154e13a1ab393ca83e771891fef48f2345ebe3a0532e7d3fd575ba15d195c68",
+    "meta_review_sha256": "ad848de07de66ce5efa0cde78c1859e1b237ccfdb59f1d2dcb8a33532cdf47cd",
+    "user_authorization_sha256": "c07a6670ab5d83f42d448630045be323b01b02cb1c1b8e06d633bdcb6b3f931b",
+    "direct_p1_red_junit_sha256": "751a2631e8d30bfac84ac92e53eb538dc232aaef9abfea756b2996dcde59a1c4",
+    "corrected_head_rereview": "PENDING at evidence capture",
+    "independent_review_findings_path": "artifacts/v4-legacy-publication/agents/publication_recheck_review/findings.md",
+    "independent_review_result_path": "artifacts/v4-legacy-publication/agents/publication_recheck_review/read-only-review-result.json",
+    "meta_review_report_path": "artifacts/v4-legacy-publication/agents/publication_recheck_meta_review/meta-review.md",
+    "meta_review_result_path": "artifacts/v4-legacy-publication/agents/publication_recheck_meta_review/result.json",
+    "artifact_status": "These exact-head review artifacts are pending and were not hashed because the files do not exist at this capture."
+  }
 }
