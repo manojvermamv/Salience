@@ -221,6 +221,8 @@ def main(arguments: Sequence[str] | None = None) -> None:
     legacy_commands = legacy.add_subparsers(dest='legacy_command', required=True)
     legacy_submit = legacy_commands.add_parser('submit')
     legacy_submit.add_argument('--command-json',required=True)
+    legacy_brief = legacy_commands.add_parser('brief')
+    legacy_brief.add_argument('--command-json',required=True)
     legacy_inspect = legacy_commands.add_parser('inspect')
     legacy_inspect.add_argument('job_id')
     legacy_cancel = legacy_commands.add_parser('cancel')
@@ -245,6 +247,9 @@ def main(arguments: Sequence[str] | None = None) -> None:
     if parsed.command == 'legacy-intelligence':
         if parsed.legacy_command == 'submit':
             result = _v4_request(method='POST',path='/v1/intelligence/runs',payload=json.loads(parsed.command_json))
+        elif parsed.legacy_command == 'brief':
+            payload = json.loads(parsed.command_json)
+            result = _v4_request(method='POST',path=f"/v1/intelligence/opportunities/{payload['selected_opportunity_id']}/briefs",payload=payload)
         elif parsed.legacy_command == 'inspect':
             result = _v4_request(method='GET',path=f'/v1/intelligence/runs/{parsed.job_id}')
         elif parsed.legacy_command == 'cancel':

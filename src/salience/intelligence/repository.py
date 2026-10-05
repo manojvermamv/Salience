@@ -598,6 +598,7 @@ class IntelligenceRepository:
                 FROM topic_opportunities opportunity
                 JOIN content_programs program ON program.id = opportunity.content_program_id
                 WHERE opportunity.id = %s AND opportunity.content_program_id = %s
+                  AND opportunity.workspace_id = program.workspace_id
                 """,
                 (opportunity_id, program_id),
             )
@@ -613,7 +614,11 @@ class IntelligenceRepository:
                 "workspace_id",
                 "niche",
             )
-            return dict(zip(keys, row, strict=True))
+            details = dict(zip(keys, row, strict=True))
+            # NUMERIC is returned as Decimal by psycopg. Opportunity scores
+            # are typed floats; activity payloads must remain JSON encodable.
+            details["score"] = float(details["score"])
+            return details
 
     def _brief_details(self, brief_id: str) -> dict[str, Any] | None:
         with self._connect() as connection, connection.cursor() as cursor:

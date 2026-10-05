@@ -296,7 +296,7 @@
     },
     {
       "path": "src/salience/api/p0.py",
-      "sha256": "05b7211fe22c366f0ff562764a603a1adf111ef47f22aaa7f227d98854479b9d"
+      "sha256": "e907dfa11b61d26ebc81119bab844064e16c4a4b333ca150827bdafd8cba6cbf"
     },
     {
       "path": "src/salience/api/routes/__init__.py",
@@ -324,7 +324,7 @@
     },
     {
       "path": "src/salience/api/routes/legacy_dispatch.py",
-      "sha256": "731b25c20f13d55f03b863c6e947c6d175051fe0b8ea12f9146a684598c7ffca"
+      "sha256": "087879ca335ab0227bc3564c3ec2a8330e4197c56eb577ab9f3370c9f864ef88"
     },
     {
       "path": "src/salience/api/routes/parallel_teams.py",
@@ -376,7 +376,7 @@
     },
     {
       "path": "src/salience/cli.py",
-      "sha256": "df500064763d534cf046f6ddec81e51e68e84c22380b29b3a27d5aa85e88bc5e"
+      "sha256": "4b6f2a381b5d17717cbe60715bccad9738e2afd2a1868b504aa1a43975ef4b3d"
     },
     {
       "path": "src/salience/config.py",
@@ -476,11 +476,15 @@
     },
     {
       "path": "src/salience/cycles/legacy_dispatch.py",
-      "sha256": "ed721b06e8b602865099dbed773cad9603e6e6735d61783946632c314dfe1336"
+      "sha256": "b2fc905e84c3c6b89f47bd95fc3508fa35265e81ac57482c7f090a24aa1ef08a"
     },
     {
       "path": "src/salience/cycles/legacy_runtime.py",
-      "sha256": "bc6324bd6393e91c69d70de30c319da0692a30dbc9be527a03f45f2db2583188"
+      "sha256": "e4b27e743b837a3787b25b1c00f6c0fd822790987eb23c5057343e9032050f05"
+    },
+    {
+      "path": "src/salience/cycles/legacy_schedule_workflow.py",
+      "sha256": "1289416473b2bee7951c3762635fc2b21df6acc4b9c549e4573de60674b3cb3e"
     },
     {
       "path": "src/salience/cycles/legacy_workflow.py",
@@ -504,7 +508,7 @@
     },
     {
       "path": "src/salience/cycles/temporal_schedule_control.py",
-      "sha256": "70fa74cb4b0ff4807111087d8c29a484351732e6cb1ff631c31ee144e7daf5aa"
+      "sha256": "0dfcc513376c7a4a193b71fef0251d800fac6b81908aa0d0b7ac0996e4737f07"
     },
     {
       "path": "src/salience/cycles/wait_workflow.py",
@@ -600,7 +604,7 @@
     },
     {
       "path": "src/salience/intelligence/repository.py",
-      "sha256": "6203191df8af8c818ad52f1cb5e42a5861a5bd4c30793baf91721486ce150eb1"
+      "sha256": "cfab9a1088d2344ea3283eb2a32a3317934db169a121a96844646dc976ef0572"
     },
     {
       "path": "src/salience/intelligence/scoring.py",
@@ -748,7 +752,7 @@
     },
     {
       "path": "src/salience/sdk/client.py",
-      "sha256": "265db721678f2a7ef3ef504ecb6ec3a0f130b3e7bf411c5b6409af89ce4b944a"
+      "sha256": "c67af4eb0046a5e6cdb18afad416b22e535c5df66c1be01a8b061345c06088bc"
     },
     {
       "path": "src/salience/storage/__init__.py",
@@ -1123,8 +1127,16 @@
       "sha256": "70582f9f519e2488ee25230ddddf4d8e94c98416a8c33c3dc45efd85317bbc17"
     },
     {
+      "path": "tests/integration/test_v4_legacy_brief_dispatch.py",
+      "sha256": "9219e22a1be9d734eef21bde5ccfeaca847535f5ffb9e2920b6e9871f4f4dc97"
+    },
+    {
       "path": "tests/integration/test_v4_legacy_dispatch.py",
-      "sha256": "6637b561e1018530a220e9dbdd13397f400a79bc05ebd11a8f90b082d934c447"
+      "sha256": "1f3cce6c51e47082bbca889ceae60a2676f3bde9e135b016b19dbc1f833559d6"
+    },
+    {
+      "path": "tests/integration/test_v4_legacy_schedule_ingress.py",
+      "sha256": "417cc1fbad01e3e276ce83b6a2118a017fdbc39edda329e25e5872c19bf7c385"
     },
     {
       "path": "tests/integration/test_v4_migrations.py",
@@ -1332,5 +1344,5 @@
     }
   ],
   "reviewed_at": "2026-10-05",
-  "review_scope": "Root-qualified no-effects legacy intelligence integration: 87 focused / 556 full non-live PASS, 332 source hashes, actual fixture intelligence, signed API/SDK/CLI, durable worker hard exit, disposable Temporal cutover and historical schema/restore compatibility. Historical item7 independent review remains bound to e49a214; parallel qualification remains bound to 2653d2e. Production, other legacy stages and general policy remain unqualified."
+  "review_scope": "Root-qualified no-effects intelligence, selected-brief and actual resumed Temporal schedule ingress: 92 focused / 561 full non-live PASS, 335 source hashes; actual physical legacy drain, lost schedule acknowledgment, original-slot admission/job/outbox, finite retries and original operation/permit execution, signed API/SDK/CLI and current workspace reads. Historical item7/parallel/intelligence reports remain source-bound. Remaining legacy stages, production and general policy remain unqualified."
 }

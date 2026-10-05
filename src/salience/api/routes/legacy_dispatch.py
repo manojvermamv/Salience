@@ -7,7 +7,7 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field
 
 from salience.cycles.admission import CycleAdmission
-from salience.cycles.legacy_dispatch import LegacyDispatch, LegacyIntelligenceCommand
+from salience.cycles.legacy_dispatch import LegacyDispatch, LegacyIntelligenceCommand, LegacyBriefCommand
 
 router = APIRouter(prefix="/v1/intelligence", tags=["V4 legacy fixture compatibility"])
 
@@ -33,6 +33,13 @@ async def execute(operation, *args, **kwargs):
 @router.post("/runs", status_code=202)
 async def submit(payload: LegacyIntelligenceCommand, request: Request):
     return await execute(service(request).submit,payload)
+
+
+@router.post("/opportunities/{opportunity_id}/briefs", status_code=202)
+async def submit_brief(opportunity_id: UUID, payload: LegacyBriefCommand, request: Request):
+    if opportunity_id != payload.selected_opportunity_id:
+        raise HTTPException(409, "selected opportunity path and command disagree")
+    return await execute(service(request).submit_brief, payload)
 
 
 @router.get("/runs/{job_id}")

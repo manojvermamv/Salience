@@ -68,7 +68,7 @@ class IdentityBoundary:
                     table, resource_id = resource
                     if table == "workspaces":
                         permitted = permitted and resource_id == self.workspace_id
-                    elif table in {"jobs", "content_brief_versions", "ready_packages"}:
+                    elif table in {"jobs", "content_brief_versions", "ready_packages", "topic_opportunities"}:
                         cursor = await connection.execute(psycopg.sql.SQL("SELECT workspace_id FROM {} WHERE id=%s").format(psycopg.sql.Identifier(table)), (resource_id,))
                         row = await cursor.fetchone()
                         permitted = permitted and row is not None and row[0] == self.workspace_id
@@ -211,6 +211,8 @@ def create_p0_app(*, database_url, workspace_id, issuer, audience, public_key, t
 def _request_scope(request):
     parts = request.url.path.strip("/").split("/")
     try:
+        if getattr(request.app.state,"enable_legacy_dispatch",False) and len(parts)==5 and parts[:3]==["v1","intelligence","opportunities"] and parts[4]=="briefs" and request.method=="POST":
+            return ("topic_opportunities",UUID(parts[3])),"cycles:write"
         if getattr(request.app.state,"enable_legacy_dispatch",False) and len(parts)==5 and parts[:3]==["v1","intelligence","schedules"] and parts[4]=="bind" and request.method=="POST":
             return ("v4_goals",UUID(parts[3])),"cycles:schedule"
         if getattr(request.app.state,"enable_legacy_dispatch",False) and parts[:3] == ["v1","intelligence","runs"]:

@@ -344,6 +344,7 @@ async def test_actual_temporal_schedule_pause_and_rollback_watermark(policy, mon
     from salience.cycles.contracts import CadencePolicy
     from salience.cycles.schedule_cutover import CycleScheduleCutover
     from salience.cycles.temporal_schedule_control import TemporalFixtureLegacyScheduleControl
+    from salience.cycles.legacy_dispatch import LegacyDispatch
     from test_v4_cycle_admission import approved_goal
 
     monkeypatch.setenv("SALIENCE_DEPLOYMENT_MODE","fixture")
@@ -364,6 +365,24 @@ async def test_actual_temporal_schedule_pause_and_rollback_watermark(policy, mon
     scheduler=CycleScheduleCutover(database,workspace_id=service.workspace_id,subject_id=service.subject_id,legacy_control=control)
     try:
         await asyncio.to_thread(scheduler.prepare,goal,legacy_schedule_id=legacy_id,expected_revision=1,first_v4_slot=anchor,idempotency_key="prepare")
+        await asyncio.to_thread(LegacyDispatch(database, workspace_id=service.workspace_id,
+            subject_id=service.subject_id, task_queue=queue).bind_schedule, goal, expected_revision=1, niche="Fixture")
+        # A real old schedule execution must drain before V4 activation.
+        handle = client.get_schedule_handle(remote_id)
+        await handle.trigger()
+        async with asyncio.timeout(10):
+            while not (description := await handle.describe()).info.running_actions:
+                await asyncio.sleep(0.05)
+        old_execution = description.info.running_actions[0]
+        with pytest.raises(ValueError, match="in-flight legacy actions"):
+            await asyncio.to_thread(scheduler.activate, goal, idempotency_key="activate")
+        assert (await handle.describe()).schedule.state.paused
+        with psycopg.connect(database) as connection:
+            assert connection.execute("SELECT state FROM v4_schedule_cutovers WHERE goal_id=%s", (goal,)).fetchone()[0] == "pending"
+        await client.get_workflow_handle(old_execution.workflow_id).terminate(reason="Disposable no-effects fixture drain")
+        async with asyncio.timeout(10):
+            while (await handle.describe()).info.running_actions:
+                await asyncio.sleep(0.05)
         active=await asyncio.to_thread(scheduler.activate,goal,idempotency_key="activate")
         assert active["state"]=="active"
         assert (await client.get_schedule_handle(remote_id).describe()).schedule.state.paused

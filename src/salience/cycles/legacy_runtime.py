@@ -1,7 +1,7 @@
 """Isolated legacy intelligence execution behind the original V4 permit."""
 
 import asyncio
-from datetime import timedelta
+from datetime import datetime, timedelta
 import os
 
 from temporalio import activity
@@ -13,6 +13,7 @@ from temporalio.worker import Worker
 from salience.agents.fixtures import fixture_agent_service
 from salience.cycles.governance import CycleGovernance
 from salience.cycles.legacy_dispatch import require_fixture
+from salience.cycles.legacy_schedule_workflow import LegacyScheduledIngressWorkflow, LEGACY_SCHEDULE_INGRESS
 from salience.cycles.outbox import CycleOutbox
 from salience.cycles.runtime import LocalCycleActivities, TemporalCycleTransport
 from salience.cycles.workflow import LocalCycleWorkflow
@@ -70,14 +71,15 @@ class LegacyIntelligenceAdapter:
         workflow_id = "salience-v4-legacy-operation:" + operation_id
         memo = {"cycle_id":str(binding["cycle_id"]),"operation_id":operation_id,"job_id":str(binding["job_id"])}
         payload = IntelligenceLoopRequest(workspace_id=str(binding["workspace_id"]),content_program_id=str(binding["content_program_id"]),
-            niche=binding["payload"]["niche"],idempotency_key="v4-legacy:"+operation_id,dry_run=True)
+            niche=binding["payload"]["niche"],idempotency_key="v4-legacy:"+operation_id,dry_run=True,
+            selected_opportunity_id=binding["payload"].get("selected_opportunity_id"))
         try:
             await self.client.start_workflow(IntelligenceLoopWorkflow.run,payload,id=workflow_id,
                 task_queue=self.task_queue,id_reuse_policy=WorkflowIDReusePolicy.REJECT_DUPLICATE,
                 execution_timeout=timedelta(minutes=5),memo=memo,rpc_timeout=timedelta(seconds=2))
         except WorkflowAlreadyStartedError:
             description = await self.client.get_workflow_handle(workflow_id).describe(rpc_timeout=timedelta(seconds=2))
-            if description.workflow_type != INTELLIGENCE_WORKFLOW_TYPE or await description.memo() != memo:
+            if description.workflow_type != INTELLIGENCE_WORKFLOW_TYPE or description.task_queue != self.task_queue or await description.memo() != memo:
                 raise PermissionError("legacy runtime identity conflict")
         # A start acknowledgment proves handoff, never business completion.
         with self.outbox._connect() as connection:
@@ -113,7 +115,7 @@ class LegacyCycleActivities(LocalCycleActivities):
             handle = self.adapter.client.get_workflow_handle("salience-v4-legacy-operation:" + str(binding["operation_id"]))
             description = await handle.describe(rpc_timeout=timedelta(seconds=2))
             expected = {"cycle_id":str(binding["cycle_id"]),"operation_id":str(binding["operation_id"]),"job_id":str(binding["job_id"])}
-            if description.workflow_type != INTELLIGENCE_WORKFLOW_TYPE or await description.memo() != expected:
+            if description.workflow_type != INTELLIGENCE_WORKFLOW_TYPE or description.task_queue != binding["task_queue"] or await description.memo() != expected:
                 raise PermissionError("original legacy cancellation target required")
             from temporalio.client import WorkflowExecutionStatus
             if description.status != WorkflowExecutionStatus.RUNNING:
@@ -143,6 +145,41 @@ class GuardedIntelligenceActivities(IntelligenceActivities):
         return run
 
 
+class LegacyScheduleActivities:
+    def __init__(self, client, outbox, task_queue):
+        self.client, self.outbox, self.task_queue = client, outbox, task_queue
+
+    @activity.defn(name="salience.v4.legacy_schedule_admit")
+    async def admit(self, payload: dict) -> dict:
+        from salience.cycles.legacy_dispatch import LegacyDispatch
+        from salience.cycles.authority import current_authority
+        from temporalio.exceptions import ApplicationError
+        from temporalio.client import ScheduleActionExecutionStartWorkflow
+        require_fixture()
+        try:
+            if set(payload) != {"workspace_id", "content_program_id", "goal_id", "schedule_id", "dry_run", "scheduled_at", "remote_id"} or payload["workspace_id"] != str(self.outbox.workspace_id) or payload["dry_run"] is not True:
+                raise PermissionError("scoped no-effects schedule payload required")
+            with self.outbox._connect() as connection:
+                plan = connection.execute("SELECT * FROM v4_legacy_schedule_plans WHERE goal_id=%s AND workspace_id=%s", (payload["goal_id"], self.outbox.workspace_id)).fetchone()
+                if not plan or plan["task_queue"] != self.task_queue:
+                    raise PermissionError("original scoped worker plan required")
+                current_authority(connection, self.outbox.workspace_id, plan["actor_id"], "cycles:schedule")
+                row = connection.execute("SELECT content_program_id FROM job_schedules WHERE id=%s AND workspace_id=%s", (payload["schedule_id"], self.outbox.workspace_id)).fetchone()
+                if not row or str(row["content_program_id"]) != payload["content_program_id"] or payload["remote_id"] != f"salience-v4-legacy-fixture:{self.outbox.workspace_id}:{payload['schedule_id']}":
+                    raise PermissionError("original program and remote schedule required")
+            slot = datetime.fromisoformat(payload["scheduled_at"])
+            description = await self.client.get_schedule_handle(payload["remote_id"]).describe(rpc_timeout=timedelta(seconds=2))
+            invocation = activity.info()
+            if not any(isinstance(result.action, ScheduleActionExecutionStartWorkflow) and result.action.workflow_id == invocation.workflow_id and result.action.first_execution_run_id == invocation.workflow_run_id and result.scheduled_at == slot for result in description.info.recent_actions):
+                raise RuntimeError("original scheduled action readback pending")
+            bridge = LegacyDispatch(self.outbox.database_url, workspace_id=self.outbox.workspace_id,
+                subject_id=plan["actor_id"], task_queue=self.task_queue)
+            return await asyncio.to_thread(bridge.admit_legacy_tick, payload["goal_id"],
+                schedule_id=payload["schedule_id"], scheduled_at=slot, remote_id=payload["remote_id"])
+        except (PermissionError, ValueError) as error:
+            raise ApplicationError(str(error), non_retryable=True) from error
+
+
 def build_legacy_worker(client, *, task_queue, outbox):
     require_fixture()
     if outbox.delivery_lane != "legacy":
@@ -152,8 +189,10 @@ def build_legacy_worker(client, *, task_queue, outbox):
     state = IntelligenceWorkflowState(store=CanonicalJobStore(outbox.database_url),
         repository=IntelligenceRepository(outbox.database_url),agents=fixture_agent_service())
     intelligence = GuardedIntelligenceActivities(state,outbox)
-    return Worker(client,task_queue=task_queue,workflows=[LocalCycleWorkflow,IntelligenceLoopWorkflow],
+    schedule = LegacyScheduleActivities(client, outbox, task_queue)
+    return Worker(client,task_queue=task_queue,workflows=[LocalCycleWorkflow,IntelligenceLoopWorkflow,LegacyScheduledIngressWorkflow],
         activities=[cycles.consume,cycles.runtime_binding,cycles.runtime_hold,
+                    schedule.admit,
                     intelligence.fetch,intelligence.normalize,intelligence.rank,intelligence.strategy,
                     intelligence.queue,intelligence.complete,intelligence.cancel,intelligence.packages,
                     intelligence.claims,intelligence.brief],

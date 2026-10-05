@@ -509,6 +509,9 @@ class LegacyIntelligenceClient(CyclesClient):
     def submit(self, command: dict[str, Any]) -> dict[str, Any]:
         return self._request("POST","/v1/intelligence/runs",command)
 
+    def submit_brief(self, command: dict[str, Any]) -> dict[str, Any]:
+        return self._request("POST",f"/v1/intelligence/opportunities/{command['selected_opportunity_id']}/briefs",command)
+
     def inspect(self, job_id: str) -> dict[str, Any]:
         return self._request("GET",f"/v1/intelligence/runs/{job_id}")
 

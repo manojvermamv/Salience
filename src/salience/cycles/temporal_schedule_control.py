@@ -7,6 +7,7 @@ from temporalio.client import Client, ScheduleActionStartWorkflow, ScheduleUpdat
 
 from salience.cycles.legacy_dispatch import require_fixture
 from salience.cycles.schedule_cutover import FixtureLegacyScheduleControl
+from salience.cycles.legacy_schedule_workflow import LEGACY_SCHEDULE_INGRESS
 
 
 class TemporalFixtureLegacyScheduleControl(FixtureLegacyScheduleControl):
@@ -28,10 +29,25 @@ class TemporalFixtureLegacyScheduleControl(FixtureLegacyScheduleControl):
             raise PermissionError("exact scoped Temporal fixture schedule pin required")
         return row,expected
 
-    async def _verified(self,client,handle,row,*,allow_running=False):
-        description = await handle.describe(rpc_timeout=timedelta(seconds=2))
+    def _plan(self, row, *, required=False):
+        import psycopg
+        from psycopg.rows import dict_row
+        with psycopg.connect(self.database_url, row_factory=dict_row, connect_timeout=3) as connection:
+            plan = connection.execute("SELECT plan.* FROM v4_legacy_schedule_plans plan JOIN v4_schedule_cutovers cutover ON cutover.goal_id=plan.goal_id WHERE cutover.legacy_schedule_id=%s AND plan.workspace_id=%s", (row["id"], self.workspace_id)).fetchone()
+        if plan and plan["task_queue"] != self.task_queue:
+            raise PermissionError("original schedule worker route required")
+        if required and not plan:
+            raise PermissionError("bound legacy schedule plan required before remote resume")
+        return plan
+
+    def _ingress_payload(self, row, plan):
+        return {"workspace_id": str(self.workspace_id), "content_program_id": str(row["content_program_id"]),
+            "goal_id": str(plan["goal_id"]), "schedule_id": str(row["id"]), "dry_run": True}
+
+    async def _verified(self,client,handle,row,*,allow_running=False,description=None):
+        description = description or await handle.describe(rpc_timeout=timedelta(seconds=2))
         action = description.schedule.action
-        if not isinstance(action,ScheduleActionStartWorkflow) or action.workflow != "IntelligenceLoopWorkflow" or action.task_queue != self.task_queue or len(action.args)!=1:
+        if not isinstance(action,ScheduleActionStartWorkflow) or action.workflow not in {"IntelligenceLoopWorkflow", LEGACY_SCHEDULE_INGRESS} or action.task_queue != self.task_queue or len(action.args)!=1:
             raise PermissionError("pinned no-effects legacy action required")
         from temporalio.common import RawValue
         from temporalio.api.common.v1 import Payload
@@ -42,13 +58,18 @@ class TemporalFixtureLegacyScheduleControl(FixtureLegacyScheduleControl):
             argument = (await client.data_converter.decode([argument],[dict]))[0]
         if not isinstance(argument,dict) or argument.get("workspace_id") != str(self.workspace_id) or argument.get("content_program_id") != str(row["content_program_id"]) or argument.get("dry_run") is not True:
             raise PermissionError("scoped no-effects legacy payload required")
+        plan = self._plan(row, required=action.workflow == LEGACY_SCHEDULE_INGRESS)
+        if action.workflow == LEGACY_SCHEDULE_INGRESS and argument != self._ingress_payload(row, plan):
+            raise PermissionError("original legacy schedule ingress binding required")
+        if action.workflow == "IntelligenceLoopWorkflow" and plan and argument.get("niche") != plan["niche"]:
+            raise PermissionError("original legacy schedule workload required")
         interval = int(row["schedule_expression"][6:-1])
         spec = description.schedule.spec
         if len(spec.intervals)!=1 or spec.intervals[0].every != timedelta(seconds=interval) or spec.calendars or spec.cron_expressions:
             raise ValueError("compatible interval Temporal fixture required")
         if row["next_run_at"] is None or (row["next_run_at"].timestamp()-(spec.intervals[0].offset or timedelta()).total_seconds()) % interval:
             raise ValueError("aligned Temporal fixture interval required")
-        if description.info.running_actions and not allow_running:
+        if description.info.running_actions and not allow_running and action.workflow != LEGACY_SCHEDULE_INGRESS:
             raise ValueError("in-flight legacy actions hold cutover")
         return description
 
@@ -97,10 +118,16 @@ class TemporalFixtureLegacyScheduleControl(FixtureLegacyScheduleControl):
         async with asyncio.timeout(4):
             client = await Client.connect(self.temporal_target)
             handle = client.get_schedule_handle(remote_id)
-            await self._verified(client,handle,row)
-            def update(argument):
+            plan = self._plan(row, required=True)
+            async def update(argument):
+                await self._verified(client, handle, row, description=argument.description)
                 schedule = argument.description.schedule
-                schedule.spec.start_at = after_slot + timedelta(seconds=1)
+                if not schedule.state.paused and (schedule.action.workflow != LEGACY_SCHEDULE_INGRESS or schedule.state.note != "V4 no-effects rollback watermark:"+after_slot.isoformat()):
+                    raise PermissionError("paused original schedule required before conversion")
+                schedule.action = ScheduleActionStartWorkflow(LEGACY_SCHEDULE_INGRESS, self._ingress_payload(row, plan),
+                    id=remote_id+":admission", task_queue=self.task_queue,
+                    execution_timeout=timedelta(seconds=45))
+                schedule.spec.start_at = max(after_slot + timedelta(seconds=1), row["next_run_at"])
                 schedule.state.paused = False
                 schedule.state.note = "V4 no-effects rollback watermark:"+after_slot.isoformat()
                 return ScheduleUpdate(schedule=schedule)
@@ -111,7 +138,9 @@ class TemporalFixtureLegacyScheduleControl(FixtureLegacyScheduleControl):
 
     def resume_after(self,schedule_id,after_slot,*,subject_id=None):
         row,remote_id = self._pin(schedule_id)
+        self._plan(row, required=True)
         # Canonical rollback_pending fences V4 throughout the remote boundary.
         # If the remote acknowledgment is unknown, keep that fence for retry.
         super().resume_after(schedule_id,after_slot,subject_id=subject_id)
+        row,remote_id = self._pin(schedule_id)
         asyncio.run(self._resume(row,remote_id,after_slot))
