@@ -1,0 +1,150 @@
+{
+  "recorded_at": "2026-10-05T03:42:39.618674+00:00",
+  "status": "PASS_IMPLEMENTED_LOCAL_PARALLEL_AGENT_FIXTURE_SCOPE",
+  "base_commit": "4bbffb61338d27a9da59ec07154e67794007e8cb",
+  "qualified_application_commit": "2653d2ecb3f0d5bb8ea6560de274137dd6032a96",
+  "scope": "Authorized bounded parallel callable-agent extension; root local review and no-effects PostgreSQL/process/signed-command and mock-model qualification. Historical item7 independent review remains bound to e49a214; no P5/RG5 release or production approval.",
+  "source_evidence_lock_sha256": "5d6fe94c0ac877d103f7a05d460e59bf3f568aaede999cb4e0f163a42c3f559d",
+  "locked_source_files": 325,
+  "commands": [
+    {
+      "tests": 45,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "command": ".venv/bin/python -m pytest -p no:cacheprovider tests/unit/test_parallel_agent_teams.py tests/integration/test_durable_parallel_teams.py tests/unit/test_agent_execution.py tests/integration/test_agent_delegation.py tests/integration/test_v4_migrations.py tests/integration/test_v4_runtime_waits.py::test_wait_binding_and_receipts_cannot_be_rewritten_or_destructively_downgraded tests/integration/test_v4_runtime_waits.py::test_populated_owner_binding_cannot_be_rolled_back tests/integration/test_v4_item7_governance.py::test_goal_state_downgrade_serializes_noop_receipt_writer_before_history_check -q --junitxml=artifacts/parallel-agents/focused.xml",
+      "exit_code": 0,
+      "seconds": 42.076,
+      "junit": "artifacts/parallel-agents/focused.xml",
+      "junit_sha256": "ce96b8f57332880b2fd6ef3a52581f6f2d81731e5123ae121526c3ee325ced44",
+      "log": "artifacts/parallel-agents/focused.log",
+      "log_sha256": "dfa70fa41f1a00a4fa8c5a185652db7c01c608ca4427d300954d919b64f87858"
+    },
+    {
+      "tests": 540,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "command": ".venv/bin/python -m pytest -p no:cacheprovider tests/contracts tests/unit tests/integration tests/e2e tests/evals -m 'not live' -q -rs --junitxml=artifacts/parallel-agents/regression.xml",
+      "exit_code": 0,
+      "seconds": 509.016,
+      "junit": "artifacts/parallel-agents/regression.xml",
+      "junit_sha256": "e02e066988627b17a2e743bac69f1ab6948ba206f3da3f951adfe31c0bc3f527",
+      "log": "artifacts/parallel-agents/regression.log",
+      "log_sha256": "9f4f2bcd82d9f32edbe08bd29f7089c2f40f745f5a7bcd29cf6ac4235b63776a"
+    }
+  ],
+  "bounds": {
+    "tasks_per_team": 16,
+    "concurrent_per_team": 8,
+    "concurrent_per_workspace": 16,
+    "deadline_seconds": 300,
+    "input_bytes": 8192,
+    "output_bytes_per_child": 65536,
+    "max_spend_micros": 0,
+    "attempts_per_child": 1
+  },
+  "acceptance": {
+    "overlap": "Barrier-based direct members and OpenAI-compatible mock completions; two separate worker processes enter independent children before either completes",
+    "caps": "Independent team/workspace caps across two worker instances; separate processes share a workspace cap; direct SQL cannot claim above a team cap",
+    "lineage": "One canonical parent; stable unique ordered children, shared trace and intersected tool/memory/delegation scopes; recorded model invocation points to the canonical child",
+    "authority": "Signed JWT/current subject/grants, opt-in effects-disabled mode, cross-workspace denial, preflight and claim/invocation eligibility, registry/canonical/identity/scope revocation controls",
+    "results": "Typed model output is aggregated and persisted; partial success/error types and bounded output retained",
+    "recovery": "Killed worker leaves completed result unchanged, interrupted call unknown and queued sibling resumed once with original IDs; graceful shutdown drains cooperative calls; absolute deadline and cancellation preserve unknown outcomes",
+    "idempotency": "Concurrent exact submission returns one parent/children; conflicting input denied; terminal child cannot be replayed or result rewritten",
+    "migration": "Clean additive 0035 upgrade, empty rollback/re-upgrade, populated preservation refusal, canonical identities/results/events protected; prior wait/owner/schema tests retain their preservation checks",
+    "interfaces": "Actual CLI/SDK requests reach signed ASGI API; submit/inspect/cancel parity and configured fixture factory opt-in tested"
+  },
+  "preliminary_commands": [
+    {
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "command": "red-overlap",
+      "exit_code": 1,
+      "seconds": 2.501,
+      "junit": "artifacts/parallel-agents/red-overlap.xml",
+      "junit_sha256": "7f0b5cda834530553d24f6113fdad8514950979ae7acc518cb5b44767852d0a3",
+      "log": "artifacts/parallel-agents/red-overlap.log",
+      "log_sha256": "713294f39493b1c44d1897bb77b90cb221c7f4499b8a3b1d793f121c34264cc8"
+    },
+    {
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "command": "red-claim-expiry",
+      "exit_code": 1,
+      "seconds": 3.268,
+      "junit": "artifacts/parallel-agents/red-claim-expiry.xml",
+      "junit_sha256": "57626a97a94a961b7e351be8c8328b866ab1427aaed151244e65c2fb815adb39",
+      "log": "artifacts/parallel-agents/red-claim-expiry.log",
+      "log_sha256": "4bfd351db3d482a6e6db6db7ea5dea6093b553d54eaa093ef206e5cf615cbe02"
+    },
+    {
+      "tests": 41,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 0,
+      "command": "focused-pre-fixes",
+      "exit_code": 1,
+      "seconds": 32.354,
+      "junit": "artifacts/parallel-agents/focused-pre-fixes.xml",
+      "junit_sha256": "da9b6df4193f8be82783caf3d9b85f9d4a87d003336835eba8a389a1439d0ada",
+      "log": "artifacts/parallel-agents/focused-pre-fixes.log",
+      "log_sha256": "d4b8bc871de8f42f8bfe343b737fdefc82c06bdca049f8d9ca66f67f7ef62d6b"
+    },
+    {
+      "tests": 539,
+      "failures": 3,
+      "errors": 0,
+      "skipped": 0,
+      "command": "regression-pre-assertion-fixes",
+      "exit_code": 1,
+      "seconds": 511.549,
+      "junit": "artifacts/parallel-agents/regression-pre-assertion-fixes.xml",
+      "junit_sha256": "ffb35ec24f28b1d6cb9f148509d23f056654ea9bb915ba414408be7157c36f22",
+      "log": "artifacts/parallel-agents/regression-pre-assertion-fixes.log",
+      "log_sha256": "f699f6286ba3d0632b5c494b900baf730ae2757c9adb16dfeaaf42416bff123b"
+    }
+  ],
+  "development_corrections": [
+    "Sequential overlap reproduced RED before parallel implementation",
+    "Trigger field lookup and syntax fixed before fresh schema tests",
+    "Reject nonfinite Python values before Pydantic JSON-mode normalization",
+    "Process-death test waits for runtime entry, not only a committed claim",
+    "Fixture manifest timeout change received a new version instead of rewriting an admitted version",
+    "Configured API verified through resolved OpenAPI paths",
+    "Three old preservation/schema-head expectations adjusted for additive 0035; unchanged canonical rows/version and owner guards still asserted",
+    "Expiry between eligibility and SQL claim update reproduced RED; a savepoint now reconciles rejected deadline/cancellation claims without stopping polling"
+  ],
+  "source_freeze": {
+    "path": "artifacts/parallel-agents/qualification-source-freeze.json",
+    "sha256": "796115de70b2c4b60aff1663a78ead237dcf53ef149eaf0e8fe41999ee107725"
+  },
+  "documentation_checks": {
+    "tests": 15,
+    "mapped_obligations": 75,
+    "negative_controls": 6,
+    "shell_contracts": 4,
+    "mermaid_source_blocks_preserved": 6,
+    "fresh_mermaid_renders": 6,
+    "diagram_report": "artifacts/parallel-agents/diagrams/results.json",
+    "diagram_report_sha256": "6a04203cacd481c7c9e2000bd83834a2ac1ad0cb0ab4d4db433ba6aa557502ba"
+  },
+  "repository_base": {
+    "commit": "4bbffb61338d27a9da59ec07154e67794007e8cb",
+    "ci_status": "PASS",
+    "enforcement_status": "PASS"
+  },
+  "final_published_head_readback": "artifacts/parallel-agents/qualified-head-repository.json; inspect after final publication",
+  "production_effects_enabled": false,
+  "RG0": "HELD",
+  "RG1": "HELD",
+  "RG5": "HELD",
+  "main_merge": "NOT AUTHORIZED",
+  "formal_pr_approval": "NOT RUN",
+  "live_models": "NOT RUN; default fixtures and controlled zero-cost mock model transport only",
+  "automatic_infrastructure_scaling": "Not implemented; explicitly started compatible worker processes share durable claims"
+}

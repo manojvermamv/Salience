@@ -1,16 +1,25 @@
 # V4 blueprint validation evidence
 
+**Current checkpoint — 2026-10-05:** Bounded parallel agent delegation is locally qualified (**45 focused / 540 full non-live PASS**, 325 source hashes) at `2653d2e`: one shared parent, scoped children, bounded concurrency/deadlines, durable claims/results and signed API/CLI/SDK commands. See the [parallel-agent contract](parallel-agent-contract.md) for invocation, recovery and qualification. The completed 2026-10-04 item-7 independent review remains a dated qualification of its original source. Production stays disabled, RG0/RG1 HELD, main unmerged and P2–P7 gated.
+
 <a id="current-evidence-summary"></a>
+<a id="current-evidence-summary--2026-10-04-independent-item-7-qualification"></a>
 <a id="current-evidence-summary--2026-09-24"></a>
 <a id="current-evidence-summary--2026-09-27"></a>
 
-## Current evidence summary — 2026-10-04 independent item 7 qualification
+## Current evidence summary — 2026-10-05 parallel delegation
+
+[Parallel-agent evidence](parallel-agents-evidence.json) records the latest focused/full qualification, source hashes and actual process/model/API tests. Earlier item-7 independent reviewer reports preserve their dated sources and results; the new extension has not received formal independent PR approval.
+
+Final parallel extension: **45 focused / 540 full non-live PASS**, zero failures/errors/skips, 325 source hashes, qualified at `2653d2ecb3f0d5bb8ea6560de274137dd6032a96`. The original overlap test reproduced sequential execution RED. Development tests caught trigger, nonfinite input, process-entry observation, fixture manifest version and resolved-route issues. Final manual review reproduced a claim/deadline race RED; savepoint recovery now settles the expired plan without any agent.started event or runtime call. The first full run was 536 PASS / 3 FAIL from older schema-head/rollback-message assumptions. Corrected assertions retain unchanged history/version/owner protection and pass in the final run; preliminary logs/JUnit remain hashed in the new report. Fifteen documentation tests, 75 obligations, six negative controls, four shell contracts, six fresh unchanged Mermaid renders, dependency consistency and whitespace are verified for this checkpoint. The final feature head requires its own exact-head CI/protection readback after publication; formal independent PR approval remains NOT RUN.
+
+### Historical item 7 qualification — 2026-10-04
 
 **132 focused / 507 full non-live PASS**, zero failures/errors/skips, on frozen independently reviewed application `e49a214`;316 source hashes and 250 executed P1 fixture cases across all 17 requirements. Three reviewers independently reproduced/re-reviewed findings; their final dedicated tests are 13 admission / 15 governance / 17 runtime PASS. [Qualification report](item7-evidence.json), [review summary](item7-independent-review.md), [findings](item7-findings.json) and [matrix](p1-qualification-matrix.json) preserve actual commands/JUnit/log/source/reviewer hashes and remaining acceptance.
 
 The first root repair run had 107 PASS / 3 FAIL from stale downgrade-message and expected-head assertions, with preservation behaving correctly. Updated exact assertions are included in final 132 / 507 PASS. The first full run had 506 PASS / 1 FAIL because a historical baseline fixture lacked canonical identity metadata; the independently reviewed fixture correction retains the absent-baseline rejection and passes 10 baseline checks. Final 507 supersedes that run. Reviewer RED and follow-up expiry/closure/migration-race evidence remain recorded; no failed preliminary run is silently presented as final qualification. Fifteen documentation tests, 75 obligations, six negative controls, six fresh Mermaid 12 renders, four shell contracts and dependency consistency pass for this checkpoint.
 
-Item 7 independent implemented-fixture review is complete; production RG0/full RG1 remain HELD, effects disabled and main unmerged. Formal GitHub PR approval remains NOT RUN. The rolling [repository report](repository-enforcement-evidence.json) binds published base e572bc7 at 2026-10-04T01:23:04.307181+00:00; final feature HEAD is inspected after publication into `artifacts/v4-p0/item7/qualified-head-repository.json`. A documentation descendant preserves all 316 application hashes and needs its own required CI check.
+Item 7 independent implemented-fixture review is complete; production RG0/full RG1 remain HELD, effects disabled and main unmerged. Formal GitHub PR approval remains NOT RUN. The rolling [repository report](repository-enforcement-evidence.json) binds published base e572bc7 at 2026-10-04T01:23:04.307181+00:00; final feature HEAD is inspected after publication into `artifacts/v4-p0/item7/qualified-head-repository.json`. The item-7 documentation checkpoint retained its 316 application hashes. Later application extensions require a new source lock and fresh exact-head CI.
 
 ## Historical item 7 preparation snapshot — 2026-10-03
 

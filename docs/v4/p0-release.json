@@ -1,6 +1,6 @@
 {
   "phase": "P0",
-  "updated_at": "2026-10-04",
+  "updated_at": "2026-10-05",
   "baseline_commit": "8e50d68efbf2bec2aabfb2fe3226e01635de2adb",
   "scope": "Isolated local foundation; no production traffic or effects",
   "requirements": [
@@ -20,13 +20,13 @@
       "exit_code": 0
     },
     "full_non_live": {
-      "passed": 507,
+      "passed": 540,
+      "failed": 0,
       "errors": 0,
       "skipped": 0,
       "exit_code": 0,
-      "seconds": 459.784,
-      "junit": "artifacts/v4-p0/item7/qualification-regression.xml",
-      "failed": 0
+      "seconds": 509.016,
+      "junit": "artifacts/parallel-agents/regression.xml"
     },
     "documentation_tests": {
       "passed": 15,
@@ -40,7 +40,7 @@
       "failed": 0,
       "version": "12.0.0"
     },
-    "locked_evidence_files": 316,
+    "locked_evidence_files": 325,
     "original_inventory_dispositions": 360,
     "warning": "Pre-existing Starlette/AnyIO deprecation warning",
     "focused_p1": {
@@ -53,9 +53,18 @@
       "failed": 0,
       "scope": "Impacted existing admission/revision/public/cutover/wait/migration/restart contracts and all 45 new independent review regressions; full 507 covers every existing verifier"
     },
-    "application_qualified_at": "2026-10-04",
-    "application_commit": "e49a214cd371d0417f093d3a24fa2a4f4a359e83",
-    "application_scope": "Exact application commit independently reviewed/re-reviewed and qualified; documentation descendants retain same 316 source hashes and need own published-head CI inspection"
+    "application_qualified_at": "2026-10-05",
+    "application_commit": "2653d2ecb3f0d5bb8ea6560de274137dd6032a96",
+    "application_scope": "Root-reviewed bounded parallel-agent extension over historical independently qualified item7; current source lock and fresh local regression; each published head needs own CI inspection",
+    "focused_parallel_agents": {
+      "passed": 45,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "exit_code": 0,
+      "seconds": 42.076,
+      "junit": "artifacts/parallel-agents/focused.xml"
+    }
   },
   "evidence_artifacts": [
     {
@@ -161,6 +170,11 @@
     {
       "path": "docs/v4/item7-evidence.json",
       "sha256": "1ce1f3a6e6942c3eef5ebaa1198bbc614c28dee18fa8d66d59d01cf56627246d",
+      "local_only": false
+    },
+    {
+      "path": "docs/v4/parallel-agents-evidence.json",
+      "sha256": "efc4a5cfe9b12784c9c89eba4718271ef1cf8e873df67e7bee53714c7d0a6cb8",
       "local_only": false
     }
   ],
@@ -478,5 +492,29 @@
     "RG1": "HELD",
     "main_merge": "NOT AUTHORIZED",
     "formal_pr_approval": "NOT RUN"
+  },
+  "parallel_agent_checkpoint": {
+    "recorded_at": "2026-10-05T03:42:39.618674+00:00",
+    "status": "PASS_IMPLEMENTED_LOCAL_PARALLEL_AGENT_FIXTURE_SCOPE",
+    "qualified_application_commit": "2653d2ecb3f0d5bb8ea6560de274137dd6032a96",
+    "locked_source_files": 325,
+    "bounds": {
+      "tasks_per_team": 16,
+      "concurrent_per_team": 8,
+      "concurrent_per_workspace": 16,
+      "deadline_seconds": 300,
+      "input_bytes": 8192,
+      "output_bytes_per_child": 65536,
+      "max_spend_micros": 0,
+      "attempts_per_child": 1
+    },
+    "production_effects_enabled": false,
+    "RG0": "HELD",
+    "RG1": "HELD",
+    "RG5": "HELD",
+    "formal_pr_approval": "NOT RUN",
+    "main_merge": "NOT AUTHORIZED",
+    "live_models": "NOT RUN; default fixtures and controlled zero-cost mock model transport only",
+    "evidence": "docs/v4/parallel-agents-evidence.json"
   }
 }

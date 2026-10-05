@@ -1,12 +1,19 @@
 # V4 implementation progress and checkpoints
 
+**Current checkpoint — 2026-10-05:** Bounded parallel agent delegation is locally qualified (**45 focused / 540 full non-live PASS**, 325 source hashes) at `2653d2e`: one shared parent, scoped children, bounded concurrency/deadlines, durable claims/results and signed API/CLI/SDK commands. See the [parallel-agent contract](parallel-agent-contract.md) for invocation, recovery and qualification. The completed 2026-10-04 item-7 independent review remains a dated qualification of its original source. Production stays disabled, RG0/RG1 HELD, main unmerged and P2–P7 gated.
+
 <a id="v4-documentation-transition-checkpoint"></a>
 
 <a id="current-state"></a>
+<a id="current-state--2026-10-04-completed-item-7-fixture-qualification"></a>
 <a id="current-state--2026-09-24"></a>
 <a id="current-state--2026-09-27"></a>
 
-## Current state — 2026-10-04 completed item 7 fixture qualification
+## Current state — 2026-10-05 parallel delegation extension
+
+The parallel-agent extension is the latest implementation at `2653d2ecb3f0d5bb8ea6560de274137dd6032a96`: **45 focused / 540 full non-live PASS**, zero failures/errors/skips, 325 source hashes. Its final commands and source lock are recorded in [parallel evidence](parallel-agents-evidence.json). It is a local extension of the callable-agent boundary associated with R59; RG5 and later phases remain gated.
+
+### Completed item 7 qualification — 2026-10-04
 
 P1 items 1–6 are locally implemented; item 7 independent review/evidence reconciliation is **COMPLETE for implemented fixture scope** at application `e49a214`. Three reviewers assessed all 17 rows, reproduced eight original findings, reviewed repair follow-ups and independently closed every actionable local finding. Final qualification: **132 focused / 507 full non-live PASS**, zero failures/errors/skips, 316 source hashes and 250 mapped fixture cases. [Evidence](item7-evidence.json), [review summary](item7-independent-review.md) and [matrix](p1-qualification-matrix.json) retain exact sources and remaining acceptance.
 
@@ -17,11 +24,11 @@ P1 items 1–6 are locally implemented; item 7 independent review/evidence recon
 | P1 item 7 | Independent implemented-fixture qualification complete; 132 / 507 PASS, three reviewers, all 17 rows, no unresolved reproduced local finding. |
 | Full P1/RG1 | HELD: live schedule/fencing, deployment routing, general current policy/scoped remote reads, real providers/stages and external alert/recovery delivery remain required. |
 | P2–P7 | Gated/planned; optional P6 disabled. |
-| Repository/main | Published preparation base e572bc7 CI/protection PASS at 2026-10-04T01:23:04.307181+00:00; final feature-head inspection required after publication. Formal PR approval NOT RUN; main 8e50d68 unmerged. |
+| Repository/main | Published pre-extension base 4bbffb6 CI/protection PASS at 2026-10-05T03:14:43.864463+00:00; final feature-head inspection required after publication. Formal PR approval NOT RUN; main 8e50d68 unmerged. |
 
-### Next handoff after item 7
+### Next handoff after parallel delegation
 
-Reuse the independently reviewed application/source lock and all completed local fixtures. Complete the explicit RG0/RG1 acceptance obligations under their required authorization; do not treat item 7 review as production approval or start later-phase release from partial acceptance. Disable opt-in fixture drivers for rollback, preserve canonical history/liabilities, and retain compatible workers for patched histories. Populated 0032–0034 downgrades refuse weakened protection. Local PostgreSQL restore/Temporal restart remains distinct from R66/P7 coordinated production restore.
+Reuse the historical item-7 independent evidence and the new parallel-agent source lock and completed local fixtures. Complete the explicit RG0/RG1 acceptance obligations under their required authorization; do not treat item 7 review as production approval or start later-phase release from partial acceptance. Disable opt-in fixture drivers for rollback, preserve canonical history/liabilities, and retain compatible workers for patched histories. Populated 0032–0035 downgrades refuse weakened protection or destruction of parallel execution history. Local PostgreSQL restore/Temporal restart remains distinct from R66/P7 coordinated production restore.
 
 <a id="item-6-resume-handoff"></a>
 ### Completed item 6 execution/handoff snapshot
@@ -59,7 +66,7 @@ Rollback disables opt-in automatic processes, preserves runtime waits/holds/deli
 
 ### Current resume instructions
 
-1. Inspect actual branch/HEAD, [source lock](evidence-lock.json) and exact published-head CI readback. Application `e49a214` is independently reviewed with 316 frozen source files; documentation descendants must retain those hashes.
+1. Inspect actual branch/HEAD, [source lock](evidence-lock.json) and exact published-head CI readback. Application `e49a214` retains its historical 316-file independent review; the parallel extension has a new source lock and its own qualification evidence.
 2. Items 1–7 are complete within local implementation/independent fixture qualification. Complete outstanding RG0/RG1 production acceptance in the [matrix](p1-qualification-matrix.json); phase P1 remains ongoing until those obligations pass.
 3. Preserve disabled effects, dry run/zero spend/fallback denial, canonical IDs, unknown liabilities and compatible-worker rollback. Do not infer production authorization or GitHub PR approval from reviewer-agent conclusions.
 4. Main remains unmerged; P2–P7 are gated and optional P6 disabled.

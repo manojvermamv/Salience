@@ -1,5 +1,7 @@
 # Historical documentation archive — 2026-09-22
 
+**Current checkpoint — 2026-10-05:** Bounded parallel agent delegation is locally qualified (**45 focused / 540 full non-live PASS**, 325 source hashes) at `2653d2e`: one shared parent, scoped children, bounded concurrency/deadlines, durable claims/results and signed API/CLI/SDK commands. See the [parallel-agent contract](../../v4/parallel-agent-contract.md) for invocation, recovery and qualification. The completed 2026-10-04 item-7 independent review remains a dated qualification of its original source. Production stays disabled, RG0/RG1 HELD, main unmerged and P2–P7 gated.
+
 Current qualification: item 7 independent implemented-fixture review is complete at application `e49a214`, **132 focused / 507 full non-live PASS**, 316 source hashes and all 17 P1 rows assessed. [Evidence](../../v4/item7-evidence.json) and [current progress](../../v4/progress.md#current-state) retain reviewer conclusions and remaining acceptance. Items 1–6 reports remain dated snapshots. Production effects remain disabled, RG0/full RG1 HELD, main unmerged and later phases gated.
 
 These snapshots preserve original bytes from the pre-consolidation inventory. They are historical text, not current instructions or deployment claims. The [V4 blueprint](../../v4/IMPLEMENTATION-BLUEPRINT.md) contains the actionable intent and operational path; no archived plan is required to execute it.
