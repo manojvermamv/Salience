@@ -253,6 +253,27 @@ def main(arguments: Sequence[str] | None = None) -> None:
     creative_cancel = creative_commands.add_parser('cancel')
     creative_cancel.add_argument('job_id')
     creative_cancel.add_argument('--reason',required=True)
+    publication_legacy = subcommands.add_parser('legacy-publication')
+    publication_legacy_commands = publication_legacy.add_subparsers(
+        dest='legacy_publication_command', required=True
+    )
+    publication_submit = publication_legacy_commands.add_parser('submit')
+    publication_submit.add_argument('--command-json', required=True)
+    publication_inspect = publication_legacy_commands.add_parser('inspect')
+    publication_inspect.add_argument('job_id')
+    publication_cancel = publication_legacy_commands.add_parser('cancel')
+    publication_cancel.add_argument('job_id')
+    publication_cancel.add_argument('--reason', required=True)
+    publication_bind_account = publication_legacy_commands.add_parser('bind-account')
+    publication_bind_account.add_argument('goal_id')
+    publication_bind_account.add_argument('--expected-revision', required=True, type=int)
+    publication_bind_account.add_argument('--publisher-account-id', required=True)
+    publication_bind_schedule = publication_legacy_commands.add_parser('bind-schedule')
+    publication_bind_schedule.add_argument('goal_id')
+    publication_bind_schedule.add_argument('--expected-revision', required=True, type=int)
+    publication_adopt_schedule = publication_legacy_commands.add_parser('adopt-native-schedule')
+    publication_adopt_schedule.add_argument('goal_id')
+    publication_adopt_schedule.add_argument('--command-json', required=True)
     teams = subcommands.add_parser('agent-teams')
     team_commands = teams.add_subparsers(dest='team_command', required=True)
     for action in ('submit', 'inspect', 'cancel'):
@@ -272,6 +293,41 @@ def main(arguments: Sequence[str] | None = None) -> None:
             result = _v4_request(method='GET',path=f'/v1/creative/runs/{parsed.job_id}')
         else:
             result = _v4_request(method='POST',path=f'/v1/creative/runs/{parsed.job_id}/cancel',payload={'reason':parsed.reason})
+        print(json.dumps(result))
+        return
+    if parsed.command == 'legacy-publication':
+        if parsed.legacy_publication_command == 'submit':
+            result = _v4_request(
+                method='POST', path='/v1/publications/requests',
+                payload=json.loads(parsed.command_json),
+            )
+        elif parsed.legacy_publication_command == 'inspect':
+            result = _v4_request(
+                method='GET', path=f'/v1/publications/runs/{parsed.job_id}'
+            )
+        elif parsed.legacy_publication_command == 'cancel':
+            result = _v4_request(
+                method='POST', path=f'/v1/publications/runs/{parsed.job_id}/cancel',
+                payload={'reason': parsed.reason},
+            )
+        elif parsed.legacy_publication_command == 'bind-account':
+            result = _v4_request(
+                method='POST', path=f'/v1/publications/goals/{parsed.goal_id}/account-binding',
+                payload={
+                    'expected_revision': parsed.expected_revision,
+                    'publisher_account_id': parsed.publisher_account_id,
+                },
+            )
+        elif parsed.legacy_publication_command == 'bind-schedule':
+            result = _v4_request(
+                method='POST', path=f'/v1/publications/schedules/{parsed.goal_id}/bind',
+                payload={'expected_revision': parsed.expected_revision},
+            )
+        else:
+            result = _v4_request(
+                method='POST', path=f'/v1/publications/schedules/{parsed.goal_id}/adopt-native',
+                payload=json.loads(parsed.command_json),
+            )
         print(json.dumps(result))
         return
     if parsed.command == 'legacy-jobs':

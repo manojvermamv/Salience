@@ -25,10 +25,11 @@ class TemporalFixtureLegacyScheduleControl(FixtureLegacyScheduleControl):
         from psycopg.rows import dict_row
         with psycopg.connect(self.database_url,row_factory=dict_row,connect_timeout=3) as connection:
             row = self._schedule(connection,schedule_id)
-        expected = str(schedule_id) if row.get("native_source") else f"salience-v4-legacy-fixture:{self.workspace_id}:{schedule_id}"
+        native = row.get("native_source") or row.get("native_publication_source")
+        expected = schedule_metadata(row)["remote_id"] if native else f"salience-v4-legacy-fixture:{self.workspace_id}:{schedule_id}"
         if schedule_metadata(row)["remote_id"] != expected:
             raise PermissionError("exact scoped Temporal fixture schedule pin required")
-        if row.get("native_source") and row["native_source"]["task_queue"] != self.task_queue:
+        if native and native["task_queue"] != self.task_queue:
             raise PermissionError("original native schedule worker route required")
         return row,expected
 
@@ -36,21 +37,47 @@ class TemporalFixtureLegacyScheduleControl(FixtureLegacyScheduleControl):
         import psycopg
         from psycopg.rows import dict_row
         with psycopg.connect(self.database_url, row_factory=dict_row, connect_timeout=3) as connection:
-            plan = connection.execute("SELECT plan.* FROM v4_legacy_schedule_plans plan JOIN v4_schedule_cutovers cutover ON cutover.goal_id=plan.goal_id WHERE cutover.legacy_schedule_id=%s AND plan.workspace_id=%s", (row["id"], self.workspace_id)).fetchone()
+            plan = connection.execute("""SELECT plan.goal_id,plan.workspace_id,plan.actor_id,plan.goal_revision,
+                       plan.task_queue,plan.niche,NULL::uuid AS schedule_id,'intelligence' AS stage,
+                       NULL::uuid AS publication_schedule_id
+                FROM v4_legacy_schedule_plans plan JOIN v4_schedule_cutovers cutover ON cutover.goal_id=plan.goal_id
+                WHERE cutover.legacy_schedule_id=%s AND plan.workspace_id=%s
+                UNION ALL
+                SELECT plan.goal_id,plan.workspace_id,plan.actor_id,plan.goal_revision,plan.task_queue,
+                       NULL::text AS niche,plan.schedule_id,'publication' AS stage,plan.publication_schedule_id
+                FROM v4_legacy_publication_schedule_plans plan
+                JOIN v4_schedule_cutovers cutover ON cutover.goal_id=plan.goal_id
+                WHERE cutover.legacy_schedule_id=%s AND plan.workspace_id=%s""",
+                (row["id"], self.workspace_id, row["id"], self.workspace_id)).fetchone()
         if plan and plan["task_queue"] != self.task_queue:
             raise PermissionError("original schedule worker route required")
+        if row.get("native_publication_source") and plan and (
+            plan["stage"] != "publication"
+            or str(plan["publication_schedule_id"]) != str(row["native_publication_source"]["publication_schedule_id"])
+        ):
+            raise PermissionError("original native publication schedule plan required")
         if required and not plan:
             raise PermissionError("bound legacy schedule plan required before remote resume")
         return plan
 
     def _ingress_payload(self, row, plan):
-        return {"workspace_id": str(self.workspace_id), "content_program_id": str(row["content_program_id"]),
+        payload = {"workspace_id": str(self.workspace_id), "content_program_id": str(row["content_program_id"]),
             "goal_id": str(plan["goal_id"]), "schedule_id": str(row["id"]), "dry_run": True}
+        if row.get("native_publication_source"):
+            source = row["native_publication_source"]
+            if (not plan or plan.get("stage") != "publication"
+                or str(plan.get("schedule_id")) != str(row["id"])
+                or str(plan.get("publication_schedule_id")) != str(source["publication_schedule_id"])
+                or source["remote_id"] != "publication:" + str(source["publication_schedule_id"])):
+                raise PermissionError("original paired native publication ingress plan required")
+            payload["publication_schedule_id"] = str(source["publication_schedule_id"])
+        return payload
 
     async def _verified(self,client,handle,row,*,allow_running=False,description=None):
         description = description or await handle.describe(rpc_timeout=timedelta(seconds=2))
         action = description.schedule.action
-        if not isinstance(action,ScheduleActionStartWorkflow) or action.workflow not in {"IntelligenceLoopWorkflow", LEGACY_SCHEDULE_INGRESS} or action.task_queue != self.task_queue or len(action.args)!=1:
+        original_workflow = "GovernedPublicationWorkflow" if row.get("native_publication_source") else "IntelligenceLoopWorkflow"
+        if not isinstance(action,ScheduleActionStartWorkflow) or action.workflow not in {original_workflow, LEGACY_SCHEDULE_INGRESS} or action.task_queue != self.task_queue or len(action.args)!=1:
             raise PermissionError("pinned no-effects legacy action required")
         from temporalio.common import RawValue
         from temporalio.api.common.v1 import Payload
@@ -59,13 +86,23 @@ class TemporalFixtureLegacyScheduleControl(FixtureLegacyScheduleControl):
             argument = (await client.data_converter.decode([argument.payload],[dict]))[0]
         elif isinstance(argument,Payload):
             argument = (await client.data_converter.decode([argument],[dict]))[0]
-        if not isinstance(argument,dict) or argument.get("workspace_id") != str(self.workspace_id) or argument.get("content_program_id") != str(row["content_program_id"]) or argument.get("dry_run") is not True:
-            raise PermissionError("scoped no-effects legacy payload required")
         plan = self._plan(row, required=action.workflow == LEGACY_SCHEDULE_INGRESS)
+        if row.get("native_publication_source") and plan and plan["stage"] != "publication":
+            raise PermissionError("native publication schedule requires publication-stage binding")
         if action.workflow == LEGACY_SCHEDULE_INGRESS and argument != self._ingress_payload(row, plan):
             raise PermissionError("original legacy schedule ingress binding required")
-        if action.workflow == "IntelligenceLoopWorkflow" and plan and argument.get("niche") != plan["niche"]:
-            raise PermissionError("original legacy schedule workload required")
+        if action.workflow == LEGACY_SCHEDULE_INGRESS:
+            if not isinstance(argument,dict) or argument.get("workspace_id") != str(self.workspace_id) or argument.get("content_program_id") != str(row["content_program_id"]) or argument.get("dry_run") is not True:
+                raise PermissionError("scoped no-effects legacy ingress payload required")
+        elif row.get("native_publication_source") and action.workflow == "GovernedPublicationWorkflow":
+            original = row["native_publication_source"]["remote_snapshot"]
+            if argument != original["payload"] or action.id != original["action_id"]:
+                raise PermissionError("original native publication action identity required")
+        elif action.workflow == "IntelligenceLoopWorkflow":
+            if not isinstance(argument,dict) or argument.get("workspace_id") != str(self.workspace_id) or argument.get("content_program_id") != str(row["content_program_id"]) or argument.get("dry_run") is not True:
+                raise PermissionError("scoped no-effects legacy payload required")
+            if plan and argument.get("niche") != plan["niche"]:
+                raise PermissionError("original legacy schedule workload required")
         if row.get("native_source") and action.workflow == "IntelligenceLoopWorkflow":
             original = row["native_source"]["remote_snapshot"]
             if argument != original["payload"] or action.id != original["action_id"]:
@@ -237,4 +274,141 @@ class TemporalFixtureLegacyScheduleControl(FixtureLegacyScheduleControl):
                 VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING *""", (schedule_id,self.workspace_id,goal_id,subject_id,expected_revision,str(schedule_id),self.task_queue,spec.cadence.interval_seconds,first_v4_slot,last_slot,Jsonb(snapshot),Jsonb(row["original_identity"]))).fetchone()
             connection.execute("INSERT INTO v4_native_schedule_progress(schedule_id,last_slot,next_slot) VALUES(%s,%s,%s)", (schedule_id,last_slot,first_v4_slot))
             service._event(connection,goal_id,"native_schedule_adopted",view(source))
+            return view(source)
+
+    async def _native_publication_snapshot(self, original, first_v4_slot):
+        from salience.cycles.native_publication_schedules import native_publication_workflow_payload
+        from salience.workflows.publication import PUBLICATION_WORKFLOW_TYPE
+        remote_id = "publication:" + str(original["publication_schedule_id"])
+        async with asyncio.timeout(4):
+            client = await Client.connect(self.temporal_target)
+            description = await client.get_schedule_handle(remote_id).describe(rpc_timeout=timedelta(seconds=2))
+            if description.schedule.state.paused:
+                raise ValueError("active native publication Temporal schedule required")
+            action = description.schedule.action
+            if not isinstance(action, ScheduleActionStartWorkflow) or action.workflow != PUBLICATION_WORKFLOW_TYPE or action.id != remote_id+":execution" or action.task_queue != self.task_queue or len(action.args) != 1:
+                raise PermissionError("original governed-publication Temporal action required")
+            from temporalio.common import RawValue
+            from temporalio.api.common.v1 import Payload
+            argument = action.args[0]
+            if isinstance(argument, RawValue): argument = (await client.data_converter.decode([argument.payload], [dict]))[0]
+            elif isinstance(argument, Payload): argument = (await client.data_converter.decode([argument], [dict]))[0]
+            if argument != native_publication_workflow_payload(original):
+                raise PermissionError("original publication schedule identity payload required")
+            spec = description.schedule.spec
+            interval = timedelta(seconds=original["interval_seconds"])
+            if len(spec.intervals) != 1 or spec.intervals[0].every != interval or spec.intervals[0].offset not in {None,timedelta()} or spec.calendars or spec.cron_expressions or spec.jitter:
+                raise ValueError("original native publication interval specification required")
+            if first_v4_slot not in description.info.next_action_times:
+                raise ValueError("actual future native publication schedule slot required")
+            recent = description.info.recent_actions
+            if description.info.num_actions and not recent:
+                raise ValueError("native publication action history readback required")
+            slots = [item.scheduled_at for item in recent]
+            last_slot = max(slots, default=None)
+            if last_slot is not None and last_slot >= first_v4_slot:
+                raise ValueError("native publication action crosses first V4 slot")
+            ordered = sorted(recent, key=lambda item: item.scheduled_at)
+            return {
+                "remote_id": remote_id,
+                "workflow_type": action.workflow,
+                "action_id": action.id,
+                "task_queue": action.task_queue,
+                "payload": argument,
+                "action_count": description.info.num_actions,
+                "history_start_slot": ordered[0].scheduled_at.isoformat() if ordered else None,
+                "recent_actions": [
+                    {"scheduled_at": item.scheduled_at.isoformat(),
+                     "started_at": item.started_at.isoformat(),
+                     "workflow_id": item.action.workflow_id,
+                     "first_execution_run_id": item.action.first_execution_run_id}
+                    for item in ordered
+                ],
+                "next_action_times": [slot.isoformat() for slot in description.info.next_action_times],
+            }, last_slot
+
+    def adopt_native_publication(self, goal_id, *, schedule_id, publication_schedule_id, subject_id, expected_revision, first_v4_slot):
+        """Seal original paired publication rows and the actual SDK action history."""
+        from uuid import UUID
+        from psycopg.types.json import Jsonb
+        from salience.cycles.admission import CycleAdmission
+        from salience.cycles.governance import CycleGovernance
+        from salience.cycles.legacy_dispatch import LegacyDispatch
+        from salience.cycles.legacy_publication import require_publication_proposal
+        from salience.cycles.native_publication_schedules import (
+            load_native_publication_source,
+            original_publication_schedule,
+        )
+        require_fixture()
+        if first_v4_slot.tzinfo is None or first_v4_slot.microsecond or type(expected_revision) is not int or expected_revision < 1:
+            raise ValueError("whole-second future slot and exact revision required")
+        schedule_id = UUID(str(schedule_id))
+        publication_schedule_id = UUID(str(publication_schedule_id))
+        first_v4_slot = first_v4_slot.astimezone(timezone.utc)
+        service = CycleAdmission(self.database_url, workspace_id=self.workspace_id, subject_id=subject_id)
+        bridge = LegacyDispatch(self.database_url, workspace_id=self.workspace_id, subject_id=subject_id, task_queue=self.task_queue)
+
+        def validate(connection):
+            goal, spec = service._policy_goal(connection, goal_id)
+            CycleGovernance(self.database_url, workspace_id=self.workspace_id, subject_id=subject_id)._require_running(connection, goal_id)
+            if goal["state"] != "active" or goal["revision"] != expected_revision:
+                raise ValueError("current active publication goal revision required")
+            existing_row = connection.execute(
+                "SELECT 1 FROM v4_native_publication_schedule_sources WHERE schedule_id=%s", (schedule_id,)
+            ).fetchone()
+            if existing_row:
+                existing = load_native_publication_source(connection, schedule_id, self.workspace_id)
+                original = existing["original_source"]
+                if (existing["goal_id"] != goal["id"] or existing["actor_id"] != service.subject_id
+                    or existing["goal_revision"] != expected_revision or existing["task_queue"] != self.task_queue
+                    or existing["first_v4_slot"] != first_v4_slot
+                    or existing["publication_schedule_id"] != publication_schedule_id):
+                    raise ValueError("native publication source adoption conflict")
+                require_publication_proposal(connection, bridge, goal, spec, original["command_payload"])
+                return goal, spec, original, existing
+            original = original_publication_schedule(
+                connection, schedule_id, self.workspace_id,
+                publication_schedule_id=publication_schedule_id, lock=True,
+            )
+            if original["content_program_id"] != spec.content_program_id:
+                raise PermissionError("same-program native publication schedule required")
+            if original["status"] != "active" or original["interval_seconds"] != spec.cadence.interval_seconds:
+                raise ValueError("active compatible native publication schedule required")
+            now = connection.execute("SELECT clock_timestamp() AS now").fetchone()["now"]
+            elapsed = (first_v4_slot - spec.cadence.anchor).total_seconds()
+            if not now < first_v4_slot < spec.horizon_end or elapsed < 0 or elapsed % spec.cadence.interval_seconds:
+                raise ValueError("current active aligned native publication slot required")
+            require_publication_proposal(connection, bridge, goal, spec, original["command_payload"])
+            if connection.execute("SELECT 1 FROM v4_schedule_cutovers WHERE goal_id=%s OR legacy_schedule_id=%s", (goal_id, schedule_id)).fetchone():
+                raise ValueError("adopt native publication schedule before cutover preparation")
+            return goal, spec, original, None
+
+        def view(source):
+            return {"goal_id": str(source["goal_id"]), "schedule_id": str(source["schedule_id"]),
+                "publication_schedule_id": str(source["publication_schedule_id"]), "remote_id": source["remote_id"],
+                "first_v4_slot": source["first_v4_slot"].isoformat(),
+                "observed_last_slot": source["observed_last_slot"].isoformat() if source["observed_last_slot"] else None,
+                "state": "bound"}
+
+        with service._command("cycles:schedule") as connection:
+            goal, spec, original, existing = validate(connection)
+            if existing:
+                return view(existing)
+        snapshot, last_slot = asyncio.run(self._native_publication_snapshot(original, first_v4_slot))
+        with service._command("cycles:schedule") as connection:
+            goal, spec, current, existing = validate(connection)
+            if existing:
+                return view(existing)
+            if current["original_identity"] != original["original_identity"] or current["publication_identity"] != original["publication_identity"]:
+                raise ValueError("native publication source changed during remote readback")
+            source = connection.execute("""INSERT INTO v4_native_publication_schedule_sources
+                (schedule_id,publication_schedule_id,workspace_id,goal_id,actor_id,goal_revision,remote_id,task_queue,
+                 interval_seconds,first_v4_slot,observed_last_slot,remote_snapshot,original_identity,publication_identity)
+                VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING *""",
+                (schedule_id,publication_schedule_id,self.workspace_id,goal_id,subject_id,expected_revision,
+                 snapshot["remote_id"],self.task_queue,spec.cadence.interval_seconds,first_v4_slot,last_slot,
+                 Jsonb(snapshot),Jsonb(current["original_identity"]),Jsonb(current["publication_identity"]))).fetchone()
+            connection.execute("INSERT INTO v4_native_publication_schedule_progress(schedule_id,last_slot,next_slot) VALUES(%s,%s,%s)",
+                (schedule_id,last_slot,first_v4_slot))
+            service._event(connection,goal_id,"native_publication_schedule_adopted",view(source))
             return view(source)

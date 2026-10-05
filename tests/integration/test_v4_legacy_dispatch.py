@@ -165,6 +165,8 @@ def test_legacy_migration_empty_rollback_and_populated_history_preservation(lega
             assert migrate("upgrade","head").returncode==0
             assert migrate("downgrade","0035_parallel_agent_teams").returncode==0
             assert migrate("upgrade","head").returncode==0
+            with psycopg.connect(database) as c:
+                head_revision=c.execute("SELECT version_num FROM alembic_version").fetchone()[0]
             with psycopg.connect(source) as c:
                 spec=c.execute("SELECT payload FROM v4_goal_revisions WHERE goal_id=%s AND revision=1",(command.goal_id,)).fetchone()[0]
             with psycopg.connect(database) as c:
@@ -180,7 +182,7 @@ def test_legacy_migration_empty_rollback_and_populated_history_preservation(lega
             rolled=migrate("downgrade","0035_parallel_agent_teams")
             assert rolled.returncode!=0 and "preserve legacy dispatch" in rolled.stderr
             with psycopg.connect(database) as c:
-                assert c.execute("SELECT version_num FROM alembic_version").fetchone()[0]=="0039_legacy_creative_stage"
+                assert c.execute("SELECT version_num FROM alembic_version").fetchone()[0]==head_revision
                 assert str(c.execute("SELECT operation_id FROM v4_legacy_dispatches WHERE job_id=%s",(binding["job_id"],)).fetchone()[0])==binding["operation_id"]
         finally:
             admin.execute(psycopg.sql.SQL("DROP DATABASE {} WITH (FORCE)").format(psycopg.sql.Identifier(name)))

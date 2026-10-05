@@ -48,6 +48,9 @@ class PublicationAuthorizer:
     async def reauthorize(
         self, context: PublicationAuthorizationContext
     ) -> PublicationAuthorization:
+        return self.evaluate(context)
+
+    def evaluate(self, context: PublicationAuthorizationContext) -> PublicationAuthorization:
         request = context.request
         reasons: list[str] = []
         if context.ready_package_id != request.ready_package_id:

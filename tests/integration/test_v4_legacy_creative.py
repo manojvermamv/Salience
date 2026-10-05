@@ -305,11 +305,13 @@ def test_creative_migration_empty_exact_restore_and_populated_refusal(creative):
             assert guard()!=original
             assert migrate(fresh,'downgrade','0038_legacy_dummy_stage').returncode == 0
             assert guard()==original
+            with psycopg.connect(database) as connection:
+                head_revision=connection.execute('SELECT version_num FROM alembic_version').fetchone()[0]
             submitted=bridge.submit_creative(command)
             result=migrate(database,'downgrade','0038_legacy_dummy_stage')
             assert result.returncode != 0 and 'preserve original legacy creative history' in result.stderr
             with psycopg.connect(database) as connection:
-                assert connection.execute('SELECT version_num FROM alembic_version').fetchone()[0] == '0039_legacy_creative_stage'
+                assert connection.execute('SELECT version_num FROM alembic_version').fetchone()[0] == head_revision
                 assert connection.execute('SELECT stage FROM v4_legacy_dispatches WHERE job_id=%s',(submitted['job_id'],)).fetchone()[0] == 'creative'
         finally:admin.execute(psycopg.sql.SQL('DROP DATABASE {} WITH (FORCE)').format(psycopg.sql.Identifier(name)))
 

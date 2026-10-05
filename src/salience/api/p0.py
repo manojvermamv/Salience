@@ -121,12 +121,14 @@ def create_p0_app(*, database_url, workspace_id, issuer, audience, public_key, t
     legacy_router = None
     legacy_jobs_router = None
     legacy_creative_router = None
+    legacy_publication_router = None
     if enable_legacy_dispatch:
         from salience.api.routes.legacy_dispatch import router as legacy_router
         from salience.api.routes.legacy_jobs import router as legacy_jobs_router
         from salience.api.routes.legacy_creative import router as legacy_creative_router
-        boundary.allowed_scopes.update({"legacy:dummy", "legacy:creative"})
-    app = create_app(control_token="", control_plane=TemporalControlPlane(database_url=database_url.replace("postgresql://", "postgresql+asyncpg://"), temporal_target="disabled.invalid:7233", task_queue="p0-disabled"),legacy_intelligence_router=legacy_router,legacy_control_router=legacy_jobs_router,legacy_creative_router=legacy_creative_router)
+        from salience.api.routes.legacy_publication import router as legacy_publication_router
+        boundary.allowed_scopes.update({"legacy:dummy", "legacy:creative", "legacy:publication"})
+    app = create_app(control_token="", control_plane=TemporalControlPlane(database_url=database_url.replace("postgresql://", "postgresql+asyncpg://"), temporal_target="disabled.invalid:7233", task_queue="p0-disabled"),legacy_intelligence_router=legacy_router,legacy_control_router=legacy_jobs_router,legacy_creative_router=legacy_creative_router,legacy_publication_router=legacy_publication_router)
     app.state.identity_boundary = boundary
     app.state.enable_legacy_dispatch = enable_legacy_dispatch
     if enable_legacy_dispatch:
@@ -247,6 +249,20 @@ def _request_scope(request):
                     return resource,"cycles:read"
                 if len(parts)==5 and parts[4]=="cancel" and request.method=="POST":
                     return resource,"cycles:write"
+        if getattr(request.app.state,"enable_legacy_dispatch",False) and parts[:3] == ["v1","publications","requests"]:
+            if len(parts)==3 and request.method=="POST":
+                return None,"legacy:publication"
+        if getattr(request.app.state,"enable_legacy_dispatch",False) and parts[:3] == ["v1","publications","runs"]:
+            if len(parts)==4:
+                resource=("jobs",UUID(parts[3]))
+                if request.method=="GET":
+                    return resource,"cycles:read"
+            if len(parts)==5 and parts[4]=="cancel" and request.method=="POST":
+                return ("jobs",UUID(parts[3])),"cycles:write"
+        if getattr(request.app.state,"enable_legacy_dispatch",False) and parts[:3] == ["v1","publications","goals"] and len(parts)==5 and parts[4]=="account-binding" and request.method=="POST":
+            return ("v4_goals",UUID(parts[3])),"goals:approve"
+        if getattr(request.app.state,"enable_legacy_dispatch",False) and parts[:3] == ["v1","publications","schedules"] and len(parts)==5 and parts[4] in {"bind","adopt-native"} and request.method=="POST":
+            return ("v4_goals",UUID(parts[3])),"cycles:schedule"
         if len(parts) >= 4 and parts[:2] == ['v1', 'workspaces'] and parts[3] == 'agent-teams':
             resource = ('workspaces', UUID(parts[2]))
             if len(parts) == 4 and request.method == 'POST':

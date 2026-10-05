@@ -547,6 +547,45 @@ class LegacyCreativeClient(CyclesClient):
         return self._request("POST", f"/v1/creative/runs/{job_id}/cancel", {"reason": reason})
 
 
+class LegacyPublicationClient(CyclesClient):
+    """Signed V4 compatibility for the original governed-publication routes."""
+
+    def bind_account(
+        self, goal_id: str, *, expected_revision: int, publisher_account_id: str
+    ) -> dict[str, Any]:
+        return self._request(
+            "POST",
+            f"/v1/publications/goals/{goal_id}/account-binding",
+            {
+                "expected_revision": expected_revision,
+                "publisher_account_id": publisher_account_id,
+            },
+        )
+
+    def submit(self, command: dict[str, Any]) -> dict[str, Any]:
+        return self._request("POST", "/v1/publications/requests", command)
+
+    def inspect(self, job_id: str) -> dict[str, Any]:
+        return self._request("GET", f"/v1/publications/runs/{job_id}")
+
+    def cancel(self, job_id: str, *, reason: str) -> dict[str, Any]:
+        return self._request(
+            "POST", f"/v1/publications/runs/{job_id}/cancel", {"reason": reason}
+        )
+
+    def bind_schedule(self, goal_id: str, *, expected_revision: int) -> dict[str, Any]:
+        return self._request(
+            "POST",
+            f"/v1/publications/schedules/{goal_id}/bind",
+            {"expected_revision": expected_revision},
+        )
+
+    def adopt_native_schedule(self, goal_id: str, command: dict[str, Any]) -> dict[str, Any]:
+        return self._request(
+            "POST", f"/v1/publications/schedules/{goal_id}/adopt-native", command
+        )
+
+
 class SalienceClient:
     def __init__(self, base_url: str, token: str) -> None:
         self.agents = AgentsClient(base_url, token)
@@ -558,3 +597,4 @@ class SalienceClient:
         self.legacy_intelligence = LegacyIntelligenceClient(base_url, token)
         self.legacy_jobs = LegacyJobsClient(base_url, token)
         self.legacy_creative = LegacyCreativeClient(base_url, token)
+        self.legacy_publication = LegacyPublicationClient(base_url, token)

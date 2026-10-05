@@ -45,9 +45,17 @@ def require_current_stage(outbox, binding):
     service = CycleGovernance(outbox.database_url,workspace_id=outbox.workspace_id,subject_id=binding["actor_id"])
     with service._command("cycles:permit") as connection:
         service._eligible_cycle(connection, binding["cycle_id"])
-        if binding.get("stage") in {"dummy", "creative"}:
+        if binding.get("stage") in {"dummy", "creative", "publication"}:
             from salience.cycles.authority import current_authority
             current_authority(connection, outbox.workspace_id, binding["actor_id"], "legacy:"+binding["stage"])
+        if binding.get("stage") == "publication":
+            from salience.cycles.legacy_publication import require_current_publication
+            # Reuse the original current command transaction for stage facts.
+            from salience.cycles.legacy_dispatch import LegacyDispatch
+            from salience.cycles.legacy_publication import require_publication_proposal
+            bridge=LegacyDispatch(outbox.database_url,workspace_id=outbox.workspace_id,subject_id=binding["actor_id"],task_queue=binding["task_queue"])
+            goal,spec=bridge._policy_goal(connection,binding["goal_id"])
+            require_publication_proposal(connection,bridge,goal,spec,binding["payload"])
         workspace_stop, goal_stop = service._require_running(connection,binding["goal_id"])
         claim = connection.execute("""SELECT claim.*,permit.expires_at,permit.subject_id,
             permit.workspace_stop_revision,permit.goal_stop_revision FROM v4_permit_claims claim
@@ -58,10 +66,72 @@ def require_current_stage(outbox, binding):
             raise PermissionError("current original legacy permit required")
 
 
+def require_expired_publication_permit(outbox, binding):
+    """Validate that only the original publication execution permit expired.
+
+    This is a predicate for a separate, receipt-only reconciliation path. It
+    does not renew the claim and rejects closed cycles, stopped goals, changed
+    stop revisions, unknown claims, and every non-publication stage.
+    """
+    require_fixture()
+    if binding.get("stage") != "publication":
+        raise PermissionError("original publication stage required for receipt recovery")
+    service = CycleGovernance(
+        outbox.database_url,
+        workspace_id=outbox.workspace_id,
+        subject_id=binding["actor_id"],
+    )
+    with service._command("cycles:permit") as connection:
+        service._eligible_cycle(connection, binding["cycle_id"])
+        from salience.cycles.authority import current_authority
+        current_authority(
+            connection,
+            outbox.workspace_id,
+            binding["actor_id"],
+            "legacy:publication",
+        )
+        from salience.cycles.legacy_dispatch import LegacyDispatch
+        from salience.cycles.legacy_publication import require_publication_proposal
+        bridge = LegacyDispatch(
+            outbox.database_url,
+            workspace_id=outbox.workspace_id,
+            subject_id=binding["actor_id"],
+            task_queue=binding["task_queue"],
+        )
+        goal, spec = bridge._policy_goal(connection, binding["goal_id"])
+        require_publication_proposal(connection, bridge, goal, spec, binding["payload"])
+        workspace_stop, goal_stop = service._require_running(connection, binding["goal_id"])
+        claim = connection.execute(
+            """SELECT claim.*,permit.expires_at,permit.subject_id,
+                permit.workspace_stop_revision,permit.goal_stop_revision
+               FROM v4_permit_claims claim
+               JOIN v4_dispatch_permits permit ON permit.id=claim.current_permit_id
+               WHERE claim.cycle_id=%s""",
+            (binding["cycle_id"],),
+        ).fetchone()
+        now = connection.execute("SELECT clock_timestamp() AS now").fetchone()["now"]
+        if (
+            not claim
+            or claim["state"] != "claimed"
+            or claim["operation_id"] != binding["operation_id"]
+            or claim["subject_id"] != binding["actor_id"]
+            or (workspace_stop["revision"], goal_stop["revision"])
+            != (claim["workspace_stop_revision"], claim["goal_stop_revision"])
+        ):
+            raise PermissionError("original claimed publication permit required for receipt recovery")
+        if now < claim["expires_at"]:
+            return False
+        return True
+
+
 def legacy_execution(binding):
     if binding.get("stage", "intelligence") == "dummy":
         return DurableDummyWorkflow.run, "DurableDummyWorkflow", DummyWorkflowRequest(
             idempotency_key="v4-legacy:"+str(binding["operation_id"]), mode="success", dry_run=True), DurableDummyWorkflow.request_cancellation
+    if binding.get("stage") == "publication":
+        from salience.cycles.legacy_publication import native_publication_request
+        from salience.workflows.publication import GovernedPublicationWorkflow,PUBLICATION_WORKFLOW_TYPE
+        return GovernedPublicationWorkflow.run,PUBLICATION_WORKFLOW_TYPE,native_publication_request(binding),GovernedPublicationWorkflow.request_cancellation
     if binding.get("stage") == "creative":
         return CreativeProductionWorkflow.run, CREATIVE_WORKFLOW_TYPE, CreativeProductionRequest(
             workspace_id=str(binding["workspace_id"]), content_program_id=str(binding["content_program_id"]),
@@ -365,17 +435,55 @@ class LegacyScheduleActivities:
         from temporalio.client import ScheduleActionExecutionStartWorkflow
         require_fixture()
         try:
-            if set(payload) != {"workspace_id", "content_program_id", "goal_id", "schedule_id", "dry_run", "scheduled_at", "remote_id"} or payload["workspace_id"] != str(self.outbox.workspace_id) or payload["dry_run"] is not True:
+            publication_stage = "publication_schedule_id" in payload
+            expected_keys = (
+                {"workspace_id", "content_program_id", "goal_id", "schedule_id", "dry_run",
+                 "publication_schedule_id", "scheduled_at", "remote_id"}
+                if publication_stage
+                else {"workspace_id", "content_program_id", "goal_id", "schedule_id", "dry_run",
+                      "scheduled_at", "remote_id"}
+            )
+            if set(payload) != expected_keys or payload["workspace_id"] != str(self.outbox.workspace_id) or payload["dry_run"] is not True:
                 raise PermissionError("scoped no-effects schedule payload required")
             with self.outbox._connect() as connection:
-                plan = connection.execute("SELECT * FROM v4_legacy_schedule_plans WHERE goal_id=%s AND workspace_id=%s", (payload["goal_id"], self.outbox.workspace_id)).fetchone()
+                if publication_stage:
+                    plan = connection.execute(
+                        "SELECT * FROM v4_legacy_publication_schedule_plans WHERE goal_id=%s AND workspace_id=%s",
+                        (payload["goal_id"], self.outbox.workspace_id),
+                    ).fetchone()
+                else:
+                    plan = connection.execute(
+                        "SELECT * FROM v4_legacy_schedule_plans WHERE goal_id=%s AND workspace_id=%s",
+                        (payload["goal_id"], self.outbox.workspace_id),
+                    ).fetchone()
                 if not plan or plan["task_queue"] != self.task_queue:
                     raise PermissionError("original scoped worker plan required")
                 current_authority(connection, self.outbox.workspace_id, plan["actor_id"], "cycles:schedule")
                 row = schedule_row(connection, payload["schedule_id"], self.outbox.workspace_id, temporal=True)
                 require_native_binding(row, goal_id=payload["goal_id"], actor_id=plan["actor_id"], task_queue=self.task_queue)
-                if str(row["content_program_id"]) != payload["content_program_id"] or payload["remote_id"] != schedule_metadata(row)["remote_id"]:
+                metadata = schedule_metadata(row)
+                if str(row["content_program_id"]) != payload["content_program_id"] or payload["remote_id"] != metadata["remote_id"]:
                     raise PermissionError("original program and remote schedule required")
+                if publication_stage:
+                    from salience.cycles.native_publication_schedules import (
+                        require_native_publication_binding,
+                    )
+                    source = row.get("native_publication_source")
+                    if (
+                        not source
+                        or str(plan["schedule_id"]) != str(payload["schedule_id"])
+                        or str(plan["publication_schedule_id"]) != str(payload["publication_schedule_id"])
+                        or str(source["publication_schedule_id"]) != str(payload["publication_schedule_id"])
+                        or source["goal_revision"] != plan["goal_revision"]
+                    ):
+                        raise PermissionError("original paired native publication schedule plan required")
+                    require_native_publication_binding(
+                        row,
+                        goal_id=payload["goal_id"],
+                        actor_id=plan["actor_id"],
+                        task_queue=self.task_queue,
+                        publication_schedule_id=payload["publication_schedule_id"],
+                    )
             slot = datetime.fromisoformat(payload["scheduled_at"])
             description = await self.client.get_schedule_handle(payload["remote_id"]).describe(rpc_timeout=timedelta(seconds=2))
             invocation = activity.info()
@@ -383,8 +491,22 @@ class LegacyScheduleActivities:
                 raise RuntimeError("original scheduled action readback pending")
             bridge = LegacyDispatch(self.outbox.database_url, workspace_id=self.outbox.workspace_id,
                 subject_id=plan["actor_id"], task_queue=self.task_queue)
-            return await asyncio.to_thread(bridge.admit_legacy_tick, payload["goal_id"],
-                schedule_id=payload["schedule_id"], scheduled_at=slot, remote_id=payload["remote_id"])
+            if publication_stage:
+                return await asyncio.to_thread(
+                    bridge.admit_legacy_publication_tick,
+                    payload["goal_id"],
+                    schedule_id=payload["schedule_id"],
+                    publication_schedule_id=payload["publication_schedule_id"],
+                    scheduled_at=slot,
+                    remote_id=payload["remote_id"],
+                )
+            return await asyncio.to_thread(
+                bridge.admit_legacy_tick,
+                payload["goal_id"],
+                schedule_id=payload["schedule_id"],
+                scheduled_at=slot,
+                remote_id=payload["remote_id"],
+            )
         except (PermissionError, ValueError) as error:
             raise ApplicationError(str(error), non_retryable=True) from error
 
@@ -403,7 +525,14 @@ def build_legacy_worker(client, *, task_queue, outbox):
     creative = GuardedCreativeActivities(CreativeWorkflowState(store=CanonicalJobStore(outbox.database_url),
         intelligence_repository=IntelligenceRepository(outbox.database_url), creative_repository=CreativeRepository(outbox.database_url),
         agents=fixture_agent_service(), provider=LegacyNoSendCreativeProvider()), outbox)
-    return Worker(client,task_queue=task_queue,workflows=[LocalCycleWorkflow,IntelligenceLoopWorkflow,DurableDummyWorkflow,CreativeProductionWorkflow,LegacyScheduledIngressWorkflow],
+    from salience.cycles.legacy_publication_runtime import GuardedPublicationActivities,DurableLegacyFixturePublisher
+    from salience.workflows.publication import GovernedPublicationWorkflow,PublicationWorkflowState
+    from salience.publication.repository import PublicationRepository
+    from salience.governance.cost_repository import CostReservationRepository
+    publication=GuardedPublicationActivities(PublicationWorkflowState(store=CanonicalJobStore(outbox.database_url),
+        repository=PublicationRepository(outbox.database_url),provider=DurableLegacyFixturePublisher(outbox),
+        cost_repository=CostReservationRepository(outbox.database_url)),outbox)
+    return Worker(client,task_queue=task_queue,workflows=[LocalCycleWorkflow,IntelligenceLoopWorkflow,DurableDummyWorkflow,CreativeProductionWorkflow,GovernedPublicationWorkflow,LegacyScheduledIngressWorkflow],
         activities=[cycles.consume,cycles.runtime_binding,cycles.runtime_hold,
                     schedule.admit, dummy.checkpoint, dummy.external_effect, dummy.terminal, dummy.dead_letter,
                     intelligence.fetch,intelligence.normalize,intelligence.rank,intelligence.strategy,
@@ -411,7 +540,9 @@ def build_legacy_worker(client, *, task_queue, outbox):
                     intelligence.claims,intelligence.brief,
                     creative.load_brief,creative.script,creative.verify_script,creative.direction,creative.authorize,
                     creative.submit_or_reconcile,creative.await_provider,creative.import_validate,creative.distribute,
-                    creative.final_gate,creative.complete,creative.denied,creative.cancel],
+                    creative.final_gate,creative.complete,creative.denied,creative.cancel,
+                    publication.request,publication.authorize,publication.delivery,publication.submit_or_reconcile,
+                    publication.await_publication,publication.complete,publication.denied,publication.cancel,publication.dead_letter],
         max_concurrent_activities=2,max_concurrent_workflow_tasks=2)
 
 

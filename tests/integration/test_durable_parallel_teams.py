@@ -258,6 +258,8 @@ def test_additive_migration_empty_rollback_and_populated_preservation():
             assert migrate('upgrade','head').returncode==0
             assert migrate('downgrade','0034_runtime_delivery_scope').returncode==0
             assert migrate('upgrade','head').returncode==0
+            with psycopg.connect(database) as c:
+                head_revision=c.execute('SELECT version_num FROM alembic_version').fetchone()[0]
             workspace=uuid4();actor=uuid4()
             with psycopg.connect(database) as c:
                 c.execute("INSERT INTO workspaces(id,slug,display_name) VALUES(%s,%s,'preservation')",(workspace,str(workspace)))
@@ -272,7 +274,7 @@ def test_additive_migration_empty_rollback_and_populated_preservation():
             result=migrate('downgrade','0034_runtime_delivery_scope')
             assert result.returncode!=0 and 'preserve parallel agent execution history' in result.stderr
             with store.connect() as c:assert store._inspect(c,run['run_id'])['tasks']==run['tasks']
-            with store.connect() as c:assert c.execute('SELECT version_num FROM alembic_version').fetchone()['version_num']=='0039_legacy_creative_stage'
+            with store.connect() as c:assert c.execute('SELECT version_num FROM alembic_version').fetchone()['version_num']==head_revision
         finally:
             admin.execute(psycopg.sql.SQL('DROP DATABASE {} WITH (FORCE)').format(psycopg.sql.Identifier(name)))
 

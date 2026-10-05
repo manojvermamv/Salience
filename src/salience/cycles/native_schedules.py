@@ -15,17 +15,27 @@ def schedule_row(connection, schedule_id, workspace_id, *, lock=False, temporal=
         if not source or source["original_identity"] != row["original_identity"]:
             raise PermissionError("original native schedule binding required")
         row["native_source"] = source
+    elif row["job_type"] == "governed_publication":
+        if not temporal:
+            raise PermissionError("native publication schedule requires qualified Temporal source mapping")
+        from salience.cycles.native_publication_schedules import load_native_publication_source
+        row["native_publication_source"] = load_native_publication_source(
+            connection, schedule_id, workspace_id, lock=lock
+        )
     elif row["job_type"] != "v4_fixture_legacy":
-        raise PermissionError("scoped dry-run fixture legacy schedule required")
-    if row["payload"].get("dry_run") is not True or row["timezone"] != "UTC":
+        raise PermissionError("scoped original legacy schedule required")
+    if (not row.get("native_publication_source") and row["payload"].get("dry_run") is not True) or row["timezone"] != "UTC":
         raise PermissionError("scoped UTC no-effects legacy schedule required")
-    expression = r"every [1-9][0-9]*s" if row.get("native_source") else r"every:[1-9][0-9]*s"
+    expression = r"every [1-9][0-9]*s" if row.get("native_source") or row.get("native_publication_source") else r"every:[1-9][0-9]*s"
     if not re.fullmatch(expression, row["schedule_expression"]):
         raise ValueError("compatible legacy interval required")
     return row
 
 
 def schedule_metadata(row):
+    if row.get("native_publication_source"):
+        from salience.cycles.native_publication_schedules import publication_schedule_metadata
+        return publication_schedule_metadata(row)
     source = row.get("native_source")
     if source:
         return {"interval_seconds": source["interval_seconds"], "remote_id": source["remote_id"],
@@ -44,6 +54,13 @@ def schedule_metadata(row):
 
 
 def require_native_binding(row, *, goal_id, actor_id, task_queue=None, first_v4_slot=None):
+    if row.get("native_publication_source"):
+        from salience.cycles.native_publication_schedules import require_native_publication_binding
+        require_native_publication_binding(
+            row, goal_id=goal_id, actor_id=actor_id,
+            task_queue=task_queue, first_v4_slot=first_v4_slot,
+        )
+        return
     source = row.get("native_source")
     if source and (str(source["goal_id"]) != str(goal_id) or str(source["actor_id"]) != str(actor_id)
             or (task_queue is not None and source["task_queue"] != task_queue)

@@ -33,6 +33,13 @@ class FixtureLegacyScheduleControl:
             raise PermissionError("pinned Temporal schedule requires remote readback control")
         return row
 
+    @staticmethod
+    def _last_slot_precedes(metadata, first_v4_slot):
+        last_slot = metadata.get("last_slot")
+        if last_slot is None:
+            return metadata.get("last_slot_is_boundary") is True
+        return last_slot.tzinfo is not None and last_slot.astimezone(timezone.utc) < first_v4_slot
+
     def describe(self, schedule_id):
         with psycopg.connect(self.database_url, row_factory=dict_row, connect_timeout=3) as connection:
             row = self._schedule(connection, schedule_id)
@@ -89,7 +96,10 @@ class FixtureLegacyScheduleControl:
             next_slot = anchor + steps * interval
             if next_slot <= boundary:
                 next_slot += interval
-            if row.get("native_source"):
+            if row.get("native_publication_source"):
+                connection.execute("UPDATE v4_native_publication_schedule_progress SET resume_after=%s,next_slot=%s,updated_at=clock_timestamp() WHERE schedule_id=%s", (after_slot, next_slot, schedule_id))
+                connection.execute("UPDATE job_schedules SET status='active',next_run_at=%s,updated_at=clock_timestamp() WHERE id=%s", (next_slot, schedule_id))
+            elif row.get("native_source"):
                 connection.execute("UPDATE v4_native_schedule_progress SET resume_after=%s,next_slot=%s,updated_at=clock_timestamp() WHERE schedule_id=%s", (after_slot, next_slot, schedule_id))
                 connection.execute("UPDATE job_schedules SET status='active',next_run_at=%s,updated_at=clock_timestamp() WHERE id=%s", (next_slot, schedule_id))
             else:
@@ -108,11 +118,48 @@ class CycleScheduleCutover(CycleAdmission):
             plan = connection.execute("""SELECT plan.* FROM v4_legacy_schedule_plans plan
                 JOIN v4_cycle_intents intent ON intent.goal_id=plan.goal_id
                 WHERE intent.id=%s AND plan.workspace_id=%s""",(intent_id,self.workspace_id)).fetchone()
+            publication_plan = None
+            if connection.execute("SELECT to_regclass('public.v4_legacy_publication_schedule_plans') AS relation").fetchone()["relation"]:
+                publication_plan = connection.execute("""SELECT plan.* FROM v4_legacy_publication_schedule_plans plan
+                    JOIN v4_cycle_intents intent ON intent.goal_id=plan.goal_id
+                    WHERE intent.id=%s AND plan.workspace_id=%s""",(intent_id,self.workspace_id)).fetchone()
+        if plan and publication_plan:
+            raise PermissionError("one original schedule stage per goal required")
         if plan:
             from salience.cycles.legacy_dispatch import LegacyDispatch
             return LegacyDispatch(self.database_url,workspace_id=self.workspace_id,subject_id=self.subject_id,
                 task_queue=plan["task_queue"],trace_context=self.trace).admit_scheduled(intent_id)
+        if publication_plan:
+            from salience.cycles.legacy_dispatch import LegacyDispatch
+            return LegacyDispatch(self.database_url,workspace_id=self.workspace_id,subject_id=self.subject_id,
+                task_queue=publication_plan["task_queue"],trace_context=self.trace).admit_publication_scheduled(intent_id)
         return super().admit(intent_id)
+
+    def _require_publication_plan(self, connection, cutover):
+        schedule = self.legacy_control._schedule(connection, cutover["legacy_schedule_id"])
+        source = schedule.get("native_publication_source")
+        if source is None:
+            return
+        plan = connection.execute(
+            "SELECT * FROM v4_legacy_publication_schedule_plans WHERE goal_id=%s",
+            (cutover["goal_id"],),
+        ).fetchone()
+        if not plan or (
+            plan["workspace_id"],
+            plan["actor_id"],
+            plan["goal_revision"],
+            plan["schedule_id"],
+            plan["publication_schedule_id"],
+            plan["task_queue"],
+        ) != (
+            self.workspace_id,
+            cutover["actor_id"],
+            cutover["goal_revision"],
+            cutover["legacy_schedule_id"],
+            source["publication_schedule_id"],
+            source["task_queue"],
+        ):
+            raise PermissionError("original bound publication schedule plan required")
 
     @staticmethod
     def _key(value):
@@ -163,11 +210,10 @@ class CycleScheduleCutover(CycleAdmission):
             require_native_binding(schedule, goal_id=goal_id, actor_id=self.subject_id, first_v4_slot=first_v4_slot)
             metadata = schedule_metadata(schedule)
             if schedule["content_program_id"] != spec.content_program_id:
-                raise PermissionError("same-program dry-run fixture schedule required")
+                raise PermissionError("same-program original publication schedule required")
             if schedule["status"] != "active" or metadata["interval_seconds"] != spec.cadence.interval_seconds or metadata["next_run_at"] != first_v4_slot:
                 raise ValueError("compatible active legacy schedule and first slot required")
-            last_slot = metadata["last_slot"]
-            if last_slot.tzinfo is None or last_slot.astimezone(timezone.utc) >= first_v4_slot:
+            if not self.legacy_control._last_slot_precedes(metadata, first_v4_slot):
                 raise ValueError("last legacy slot must precede V4 watermark")
             if connection.execute("SELECT 1 FROM v4_schedule_cursors WHERE goal_id=%s UNION ALL SELECT 1 FROM v4_schedule_batches WHERE goal_id=%s UNION ALL SELECT 1 FROM v4_cycle_requests WHERE goal_id=%s AND origin='scheduled' LIMIT 1", (goal_id, goal_id, goal_id)).fetchone():
                 raise ValueError("existing canonical scheduled work cannot be cut over")
@@ -193,13 +239,14 @@ class CycleScheduleCutover(CycleAdmission):
                 raise ValueError("schedule cutover activation conflict")
             if goal["revision"] != row["goal_revision"] or goal["state"] != "active":
                 raise ValueError("current active schedule revision required")
+            self._require_publication_plan(connection, row)
         if row["state"] == "pending":
             try:
                 self.legacy_control.pause(row["legacy_schedule_id"])
             except TimeoutError:
                 pass
         snapshot = self.legacy_control.describe(row["legacy_schedule_id"])
-        if not snapshot["paused"] or snapshot["last_slot"].astimezone(timezone.utc) >= row["first_v4_slot"]:
+        if not snapshot["paused"] or not self.legacy_control._last_slot_precedes(snapshot, row["first_v4_slot"]):
             raise ValueError("legacy schedule pause and predecessor slot must be verified")
         with self._command("cycles:schedule") as connection:
             goal, spec = self._policy_goal(connection, goal_id)
@@ -238,10 +285,11 @@ class CycleScheduleCutover(CycleAdmission):
                 raise ValueError("stale schedule cutover revision")
             if self._stopped(connection, goal_id):
                 return {"state": "held", "reason": "stopped", "intent_ids": [], "admissions": []}
+            self._require_publication_plan(connection, row)
             snapshot = self.legacy_control.describe(row["legacy_schedule_id"])
             legacy = connection.execute("SELECT status FROM job_schedules WHERE id=%s AND workspace_id=%s FOR UPDATE",
                                         (row["legacy_schedule_id"], self.workspace_id)).fetchone()
-            if not snapshot["paused"] or snapshot["last_slot"].astimezone(timezone.utc) >= row["first_v4_slot"] or not legacy or legacy["status"] != "paused":
+            if not snapshot["paused"] or not self.legacy_control._last_slot_precedes(snapshot, row["first_v4_slot"]) or not legacy or legacy["status"] != "paused":
                 raise ValueError("legacy schedule is not fenced")
             batch = self._request_due(connection, goal, spec, expected_revision=expected_revision,
                                       idempotency_key=idempotency_key, cutover_poll=True)
@@ -289,6 +337,7 @@ class CycleScheduleCutover(CycleAdmission):
             row = self._row(connection, goal_id, lock=True)
             if not row:
                 raise ValueError("prepared schedule cutover required")
+            self._require_publication_plan(connection, row)
             if row["state"] == "rolled_back":
                 if row["rollback_key"] != idempotency_key:
                     raise ValueError("schedule cutover rollback conflict")

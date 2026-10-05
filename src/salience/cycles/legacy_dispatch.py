@@ -57,7 +57,10 @@ def require_fixture():
         raise PermissionError("legacy dispatch requires explicit no-effects fixture mode")
 
 
-class LegacyDispatch(CycleAdmission):
+from salience.cycles.legacy_publication import LegacyPublicationCommands, LegacyPublicationCommand
+
+
+class LegacyDispatch(LegacyPublicationCommands, CycleAdmission):
     def __init__(self, database_url, *, workspace_id, subject_id, task_queue, trace_context=None):
         super().__init__(database_url, workspace_id=workspace_id, subject_id=subject_id, trace_context=trace_context)
         if not isinstance(task_queue, str) or not task_queue.startswith("salience-v4-local-legacy-") or len(task_queue) > 128:
@@ -118,7 +121,7 @@ class LegacyDispatch(CycleAdmission):
                 raise PermissionError("selected opportunity outside original program/niche")
         intent_id = self._request_cycle(connection, goal, spec, command.request, cutover_poll=cutover_poll)
         admission = self._admit(connection, intent_id)
-        result = {"goal_id": str(goal["id"]), "intent_id": str(intent_id), "disposition": admission["disposition"], "reason": admission["reason"], "dry_run": True}
+        result = {"goal_id": str(goal["id"]), "intent_id": str(intent_id), "disposition": admission["disposition"], "reason": admission["reason"], "dry_run": not isinstance(command,LegacyPublicationCommand)}
         if admission["cycle_id"]:
             result.update(self._materialize(connection, command, spec, admission["cycle_id"]))
         connection.execute("INSERT INTO v4_legacy_commands(workspace_id,actor_id,idempotency_key,fingerprint,response) VALUES(%s,%s,%s,%s,%s)", (self.workspace_id, self.subject_id, command.request.idempotency_key, digest, Jsonb(result)))
@@ -138,6 +141,8 @@ class LegacyDispatch(CycleAdmission):
                 "contract_version": "CreativeProductionRequest@v1"}
         if isinstance(command, LegacyBriefCommand):
             workload["selected_opportunity_id"] = str(command.selected_opportunity_id)
+        if isinstance(command, LegacyPublicationCommand):
+            stage,job_type,workload="publication","governed_publication",command.native_payload()
         prior = connection.execute("SELECT * FROM v4_legacy_dispatches WHERE cycle_id=%s", (cycle_id,)).fetchone()
         if prior:
             if prior["actor_id"] != self.subject_id or prior["payload"] != workload or prior["task_queue"] != self.task_queue:
@@ -157,9 +162,9 @@ class LegacyDispatch(CycleAdmission):
         workflow_id = "salience-v4-legacy-operation:" + str(cycle["operation_id"])
         connection.execute("""INSERT INTO jobs(id,workspace_id,content_program_id,job_type,state,workflow_run_id,
             task_queue,idempotency_key,input_payload,trace_id,span_id,dry_run,actor_kind,actor_id)
-            VALUES(%s,%s,%s,%s,'queued',%s,%s,%s,%s,%s,%s,true,'identity',%s)""",
+            VALUES(%s,%s,%s,%s,'queued',%s,%s,%s,%s,%s,%s,%s,'identity',%s)""",
             (job_id, self.workspace_id, spec.content_program_id, job_type, workflow_id, self.task_queue,
-             "v4-legacy:" + str(cycle["operation_id"]), Jsonb(workload), context.trace_id, context.span_id, str(self.subject_id)))
+             "v4-legacy:" + str(cycle["operation_id"]), Jsonb(workload), context.trace_id, context.span_id, stage != "publication", str(self.subject_id)))
         insert_stage = stage != "intelligence"
         statement = """INSERT INTO v4_legacy_dispatches(cycle_id,context_id,operation_id,intent_id,
             goal_id,workspace_id,actor_id,content_program_id,job_id,task_queue,payload)
@@ -186,7 +191,7 @@ class LegacyDispatch(CycleAdmission):
             if not row:
                 raise LookupError("legacy job outside current scope")
             claim = connection.execute("SELECT state FROM v4_permit_claims WHERE cycle_id=%s",(row["cycle_id"],)).fetchone()
-            return self._view(row) | {"state":row["job_state"],"cycle_state":row["cycle_state"],"dispatch_state":claim["state"] if claim else "pending","output":row["output_payload"] or {},"dry_run":True}
+            return self._view(row) | {"state":row["job_state"],"cycle_state":row["cycle_state"],"dispatch_state":claim["state"] if claim else "pending","output":row["output_payload"] or {},"dry_run":row.get("stage")!="publication"}
 
     def bind_schedule(self, goal_id, *, expected_revision, niche):
         require_fixture()

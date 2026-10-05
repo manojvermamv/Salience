@@ -136,11 +136,14 @@ def test_owner_binding_upgrade_preserves_or_holds_existing_history(owner_mode):
     from concurrent.futures import ThreadPoolExecutor
     import time
     from datetime import datetime, timedelta, timezone
+    from alembic.config import Config
+    from alembic.script import ScriptDirectory
     from salience.cycles.admission import CycleAdmission
     from salience.cycles.contracts import GoalSpec
     from test_v4_cycle_admission import approved_goal, intent
 
     forged_owner = owner_mode != "original"
+    expected_source_head = ScriptDirectory.from_config(Config("alembic.ini")).get_current_head()
     source = os.environ["TEST_DATABASE_URL"]
     name = "item7_owner_" + uuid4().hex
     database = urlunsplit(urlsplit(source)._replace(path="/" + name))
@@ -197,7 +200,7 @@ def test_owner_binding_upgrade_preserves_or_holds_existing_history(owner_mode):
                 assert upgraded.returncode == 0, upgraded.stderr
             with psycopg.connect(database) as connection:
                 assert connection.execute("SELECT to_jsonb(h) FROM v4_runtime_holds h WHERE cycle_id=%s",(cycle,)).fetchone()[0] == before
-                assert connection.execute("SELECT version_num FROM alembic_version").fetchone()[0] == ("0031_runtime_waits" if forged_owner else "0039_legacy_creative_stage")
+                assert connection.execute("SELECT version_num FROM alembic_version").fetchone()[0] == ("0031_runtime_waits" if forged_owner else expected_source_head)
         finally:
             admin.execute("SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname=%s",(name,))
             admin.execute(psycopg.sql.SQL("DROP DATABASE {}").format(psycopg.sql.Identifier(name)))

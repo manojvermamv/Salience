@@ -250,11 +250,13 @@ def test_dummy_migration_empty_restore_and_populated_stage_preservation(dummy):
             assert migrate(fresh,"downgrade","0037_native_schedule_sources").returncode == 0
             assert guard() == original
             assert migrate(fresh,"upgrade","head").returncode == 0
+            with psycopg.connect(database) as connection:
+                head_revision=connection.execute("SELECT version_num FROM alembic_version").fetchone()[0]
             submitted=bridge.submit_dummy(command)
             result=migrate(database,"downgrade","0037_native_schedule_sources")
             assert result.returncode != 0 and any(reason in result.stderr for reason in ("preserve original legacy stage history", "preserve original legacy creative history"))
             with psycopg.connect(database) as connection:
-                assert connection.execute("SELECT version_num FROM alembic_version").fetchone()[0] == "0039_legacy_creative_stage"
+                assert connection.execute("SELECT version_num FROM alembic_version").fetchone()[0] == head_revision
                 assert connection.execute("SELECT stage FROM v4_legacy_dispatches WHERE job_id=%s",(submitted["job_id"],)).fetchone()[0] == "dummy"
         finally:
             admin.execute(psycopg.sql.SQL("DROP DATABASE {} WITH (FORCE)").format(psycopg.sql.Identifier(name)))

@@ -17,6 +17,173 @@ from salience.publication.contracts import (
 )
 
 
+CURRENT_PUBLICATION_AUTHORIZATION_SQL = """
+                SELECT request.id::text, request.workspace_id::text,
+                       request.content_program_id::text, request.ready_package_id::text,
+                       request.publisher_account_id::text, request.platform,
+                       request.destination, request.locale, request.territory,
+                       request.visibility, request.capability_profile_version,
+                       request.request_key, request.publication_approval_request_id::text,
+                       request.approval_reference, request.publisher_id, ready.approval_state,
+                       CASE
+                           WHEN publication_approval.status = 'approved'
+                            AND publication_approval.workspace_id = request.workspace_id
+                            AND publication_approval.effect_type = 'publication'
+                            AND publication_approval.request_context @> jsonb_build_object(
+                                'ready_package_id', request.ready_package_id::text,
+                                'publisher_account_id', request.publisher_account_id::text,
+                                'platform', request.platform,
+                                'destination', request.destination,
+                                'locale', request.locale,
+                                'territory', request.territory,
+                                'visibility', request.visibility,
+                                'capability_profile_version', request.capability_profile_version
+                            ) THEN 'approved'
+                           WHEN publication_approval.status = 'approved' THEN 'invalid_scope'
+                           ELSE publication_approval.status
+                       END,
+                       disclosure.status, account.workspace_id::text, account.account_type,
+                       account.status, connection.publisher_account_id::text,
+                       CASE
+                           WHEN connection.revoked_at IS NOT NULL THEN 'revoked'
+                           WHEN connection.expires_at IS NOT NULL
+                            AND connection.expires_at <= CURRENT_TIMESTAMP THEN 'expired'
+                           ELSE connection.status
+                       END,
+                       connection.granted_scopes, profile.capability_facts,
+                       jsonb_array_length(request.policy_references) > 0
+                       AND NOT EXISTS (
+                           SELECT 1
+                           FROM jsonb_array_elements_text(request.policy_references) AS reference(id)
+                           LEFT JOIN policy_versions policy ON policy.id::text = reference.id
+                           WHERE policy.id IS NULL
+                              OR policy.workspace_id IS DISTINCT FROM request.workspace_id
+                              OR policy.status <> 'active'
+                              OR NOT (policy.document @> jsonb_build_object(
+                                  'publication_scope', jsonb_build_object(
+                                      'platform', request.platform,
+                                      'destination', request.destination,
+                                      'locale', request.locale,
+                                      'territory', request.territory,
+                                      'visibility', request.visibility
+                                  )
+                              ))
+                       ),
+                       EXISTS (
+                           SELECT 1
+                           FROM distribution_package_assets package_asset
+                           WHERE package_asset.distribution_package_id = ready.distribution_package_id
+                       )
+                       AND NOT EXISTS (
+                           SELECT 1
+                           FROM distribution_package_assets package_asset
+                           WHERE package_asset.distribution_package_id = ready.distribution_package_id
+                             AND NOT EXISTS (
+                                 SELECT 1
+                                 FROM asset_rights_links rights
+                                 WHERE rights.asset_id = package_asset.asset_id
+                             )
+                       )
+                       AND NOT EXISTS (
+                           SELECT 1
+                           FROM distribution_package_assets package_asset
+                           JOIN asset_rights_links rights
+                             ON rights.asset_id = package_asset.asset_id
+                           LEFT JOIN consent_records direct_consent
+                             ON direct_consent.id = rights.consent_record_id
+                           LEFT JOIN likeness_identities likeness
+                             ON likeness.id = rights.likeness_identity_id
+                           LEFT JOIN consent_records likeness_consent
+                             ON likeness_consent.id = likeness.consent_record_id
+                           LEFT JOIN voice_identities voice
+                             ON voice.id = rights.voice_identity_id
+                           LEFT JOIN consent_records voice_consent
+                             ON voice_consent.id = voice.consent_record_id
+                           LEFT JOIN asset_licenses license
+                             ON license.id = rights.asset_license_id
+                           LEFT JOIN usage_restrictions restriction
+                             ON restriction.id = rights.usage_restriction_id
+                           WHERE package_asset.distribution_package_id = ready.distribution_package_id
+                             AND (
+                                 (direct_consent.id IS NOT NULL AND (
+                                     direct_consent.status <> 'active'
+                                     OR direct_consent.revoked_at IS NOT NULL
+                                     OR direct_consent.commercial_use IS NOT TRUE
+                                     OR NOT (direct_consent.permitted_channels @> jsonb_build_array(request.platform))
+                                     OR NOT (direct_consent.territories @> jsonb_build_array(request.territory))
+                                     OR (direct_consent.expires_at IS NOT NULL
+                                         AND direct_consent.expires_at <= CURRENT_TIMESTAMP)
+                                 ))
+                                 OR (likeness.id IS NOT NULL AND (
+                                     likeness.status <> 'active'
+                                     OR likeness_consent.status <> 'active'
+                                     OR likeness_consent.revoked_at IS NOT NULL
+                                     OR likeness_consent.commercial_use IS NOT TRUE
+                                     OR NOT (likeness_consent.permitted_channels @> jsonb_build_array(request.platform))
+                                     OR NOT (likeness_consent.territories @> jsonb_build_array(request.territory))
+                                     OR (likeness_consent.expires_at IS NOT NULL
+                                         AND likeness_consent.expires_at <= CURRENT_TIMESTAMP)
+                                 ))
+                                 OR (voice.id IS NOT NULL AND (
+                                     voice.status <> 'active'
+                                     OR voice_consent.status <> 'active'
+                                     OR voice_consent.revoked_at IS NOT NULL
+                                     OR voice_consent.commercial_use IS NOT TRUE
+                                     OR NOT (voice_consent.permitted_channels @> jsonb_build_array(request.platform))
+                                     OR NOT (voice_consent.territories @> jsonb_build_array(request.territory))
+                                     OR (voice_consent.expires_at IS NOT NULL
+                                         AND voice_consent.expires_at <= CURRENT_TIMESTAMP)
+                                 ))
+                                 OR (license.id IS NOT NULL AND (
+                                     license.status <> 'active'
+                                     OR license.commercial_use IS NOT TRUE
+                                     OR NOT (license.terms @> jsonb_build_object(
+                                         'permitted_channels', jsonb_build_array(request.platform),
+                                         'territories', jsonb_build_array(request.territory)
+                                     ))
+                                     OR (license.expires_at IS NOT NULL
+                                         AND license.expires_at <= CURRENT_TIMESTAMP)
+                                 ))
+                                 OR (restriction.id IS NOT NULL AND restriction.status = 'active')
+                                 OR (
+                                     direct_consent.id IS NULL
+                                     AND likeness.id IS NULL
+                                     AND voice.id IS NULL
+                                     AND license.id IS NULL
+                                     AND restriction.id IS NULL
+                                 )
+                             )
+                       )
+                FROM publication_requests request
+                JOIN ready_to_publish_packages ready ON ready.id = request.ready_package_id
+                JOIN synthetic_media_disclosures disclosure ON disclosure.id = ready.disclosure_id
+                JOIN publisher_accounts account ON account.id = request.publisher_account_id
+                LEFT JOIN approval_requests publication_approval
+                  ON publication_approval.id = request.publication_approval_request_id
+                LEFT JOIN LATERAL (
+                    SELECT publisher_account_id, status, granted_scopes, expires_at, revoked_at
+                    FROM publisher_connections
+                    WHERE publisher_account_id = account.id
+                    ORDER BY version DESC
+                    LIMIT 1
+                ) connection ON TRUE
+                LEFT JOIN LATERAL (
+                    SELECT capability_facts
+                    FROM publisher_capability_profiles
+                    WHERE id = request.publisher_capability_profile_id
+                      AND workspace_id = request.workspace_id
+                      AND publisher_account_id = request.publisher_account_id
+                      AND publisher_id = request.publisher_id
+                      AND platform = request.platform
+                      AND profile_version = request.capability_profile_version
+                      AND audit_state = 'verified'
+                      AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)
+                    ORDER BY observed_at DESC
+                    LIMIT 1
+                ) profile ON TRUE
+                WHERE request.id = %s
+                """
+
 @dataclass(frozen=True)
 class PersistedPublisherAccount:
     id: str
@@ -625,175 +792,51 @@ class PublicationRepository:
     ) -> CurrentPublicationAuthorization:
         with self._connect() as connection, connection.cursor() as cursor:
             cursor.execute(
-                """
-                SELECT request.id::text, request.workspace_id::text,
-                       request.content_program_id::text, request.ready_package_id::text,
-                       request.publisher_account_id::text, request.platform,
-                       request.destination, request.locale, request.territory,
-                       request.visibility, request.capability_profile_version,
-                       request.request_key, request.publication_approval_request_id::text,
-                       request.approval_reference, request.publisher_id, ready.approval_state,
-                       CASE
-                           WHEN publication_approval.status = 'approved'
-                            AND publication_approval.workspace_id = request.workspace_id
-                            AND publication_approval.effect_type = 'publication'
-                            AND publication_approval.request_context @> jsonb_build_object(
-                                'ready_package_id', request.ready_package_id::text,
-                                'publisher_account_id', request.publisher_account_id::text,
-                                'platform', request.platform,
-                                'destination', request.destination,
-                                'locale', request.locale,
-                                'territory', request.territory,
-                                'visibility', request.visibility,
-                                'capability_profile_version', request.capability_profile_version
-                            ) THEN 'approved'
-                           WHEN publication_approval.status = 'approved' THEN 'invalid_scope'
-                           ELSE publication_approval.status
-                       END,
-                       disclosure.status, account.workspace_id::text, account.account_type,
-                       account.status, connection.publisher_account_id::text,
-                       CASE
-                           WHEN connection.revoked_at IS NOT NULL THEN 'revoked'
-                           WHEN connection.expires_at IS NOT NULL
-                            AND connection.expires_at <= CURRENT_TIMESTAMP THEN 'expired'
-                           ELSE connection.status
-                       END,
-                       connection.granted_scopes, profile.capability_facts,
-                       jsonb_array_length(request.policy_references) > 0
-                       AND NOT EXISTS (
-                           SELECT 1
-                           FROM jsonb_array_elements_text(request.policy_references) AS reference(id)
-                           LEFT JOIN policy_versions policy ON policy.id::text = reference.id
-                           WHERE policy.id IS NULL
-                              OR policy.workspace_id IS DISTINCT FROM request.workspace_id
-                              OR policy.status <> 'active'
-                              OR NOT (policy.document @> jsonb_build_object(
-                                  'publication_scope', jsonb_build_object(
-                                      'platform', request.platform,
-                                      'destination', request.destination,
-                                      'locale', request.locale,
-                                      'territory', request.territory,
-                                      'visibility', request.visibility
-                                  )
-                              ))
-                       ),
-                       EXISTS (
-                           SELECT 1
-                           FROM distribution_package_assets package_asset
-                           WHERE package_asset.distribution_package_id = ready.distribution_package_id
-                       )
-                       AND NOT EXISTS (
-                           SELECT 1
-                           FROM distribution_package_assets package_asset
-                           WHERE package_asset.distribution_package_id = ready.distribution_package_id
-                             AND NOT EXISTS (
-                                 SELECT 1
-                                 FROM asset_rights_links rights
-                                 WHERE rights.asset_id = package_asset.asset_id
-                             )
-                       )
-                       AND NOT EXISTS (
-                           SELECT 1
-                           FROM distribution_package_assets package_asset
-                           JOIN asset_rights_links rights
-                             ON rights.asset_id = package_asset.asset_id
-                           LEFT JOIN consent_records direct_consent
-                             ON direct_consent.id = rights.consent_record_id
-                           LEFT JOIN likeness_identities likeness
-                             ON likeness.id = rights.likeness_identity_id
-                           LEFT JOIN consent_records likeness_consent
-                             ON likeness_consent.id = likeness.consent_record_id
-                           LEFT JOIN voice_identities voice
-                             ON voice.id = rights.voice_identity_id
-                           LEFT JOIN consent_records voice_consent
-                             ON voice_consent.id = voice.consent_record_id
-                           LEFT JOIN asset_licenses license
-                             ON license.id = rights.asset_license_id
-                           LEFT JOIN usage_restrictions restriction
-                             ON restriction.id = rights.usage_restriction_id
-                           WHERE package_asset.distribution_package_id = ready.distribution_package_id
-                             AND (
-                                 (direct_consent.id IS NOT NULL AND (
-                                     direct_consent.status <> 'active'
-                                     OR direct_consent.revoked_at IS NOT NULL
-                                     OR direct_consent.commercial_use IS NOT TRUE
-                                     OR NOT (direct_consent.permitted_channels @> jsonb_build_array(request.platform))
-                                     OR NOT (direct_consent.territories @> jsonb_build_array(request.territory))
-                                     OR (direct_consent.expires_at IS NOT NULL
-                                         AND direct_consent.expires_at <= CURRENT_TIMESTAMP)
-                                 ))
-                                 OR (likeness.id IS NOT NULL AND (
-                                     likeness.status <> 'active'
-                                     OR likeness_consent.status <> 'active'
-                                     OR likeness_consent.revoked_at IS NOT NULL
-                                     OR likeness_consent.commercial_use IS NOT TRUE
-                                     OR NOT (likeness_consent.permitted_channels @> jsonb_build_array(request.platform))
-                                     OR NOT (likeness_consent.territories @> jsonb_build_array(request.territory))
-                                     OR (likeness_consent.expires_at IS NOT NULL
-                                         AND likeness_consent.expires_at <= CURRENT_TIMESTAMP)
-                                 ))
-                                 OR (voice.id IS NOT NULL AND (
-                                     voice.status <> 'active'
-                                     OR voice_consent.status <> 'active'
-                                     OR voice_consent.revoked_at IS NOT NULL
-                                     OR voice_consent.commercial_use IS NOT TRUE
-                                     OR NOT (voice_consent.permitted_channels @> jsonb_build_array(request.platform))
-                                     OR NOT (voice_consent.territories @> jsonb_build_array(request.territory))
-                                     OR (voice_consent.expires_at IS NOT NULL
-                                         AND voice_consent.expires_at <= CURRENT_TIMESTAMP)
-                                 ))
-                                 OR (license.id IS NOT NULL AND (
-                                     license.status <> 'active'
-                                     OR license.commercial_use IS NOT TRUE
-                                     OR NOT (license.terms @> jsonb_build_object(
-                                         'permitted_channels', jsonb_build_array(request.platform),
-                                         'territories', jsonb_build_array(request.territory)
-                                     ))
-                                     OR (license.expires_at IS NOT NULL
-                                         AND license.expires_at <= CURRENT_TIMESTAMP)
-                                 ))
-                                 OR (restriction.id IS NOT NULL AND restriction.status = 'active')
-                                 OR (
-                                     direct_consent.id IS NULL
-                                     AND likeness.id IS NULL
-                                     AND voice.id IS NULL
-                                     AND license.id IS NULL
-                                     AND restriction.id IS NULL
-                                 )
-                             )
-                       )
-                FROM publication_requests request
-                JOIN ready_to_publish_packages ready ON ready.id = request.ready_package_id
-                JOIN synthetic_media_disclosures disclosure ON disclosure.id = ready.disclosure_id
-                JOIN publisher_accounts account ON account.id = request.publisher_account_id
-                LEFT JOIN approval_requests publication_approval
-                  ON publication_approval.id = request.publication_approval_request_id
-                LEFT JOIN LATERAL (
-                    SELECT publisher_account_id, status, granted_scopes, expires_at, revoked_at
-                    FROM publisher_connections
-                    WHERE publisher_account_id = account.id
-                    ORDER BY version DESC
-                    LIMIT 1
-                ) connection ON TRUE
-                LEFT JOIN LATERAL (
-                    SELECT capability_facts
-                    FROM publisher_capability_profiles
-                    WHERE id = request.publisher_capability_profile_id
-                      AND workspace_id = request.workspace_id
-                      AND publisher_account_id = request.publisher_account_id
-                      AND publisher_id = request.publisher_id
-                      AND platform = request.platform
-                      AND profile_version = request.capability_profile_version
-                      AND audit_state = 'verified'
-                      AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)
-                    ORDER BY observed_at DESC
-                    LIMIT 1
-                ) profile ON TRUE
-                WHERE request.id = %s
-                """,
+                CURRENT_PUBLICATION_AUTHORIZATION_SQL,
                 (publication_request_id,),
             )
             row = cursor.fetchone()
+        return self._authorization_from_row(row, publication_request_id)
+
+    def proposed_authorization(self, connection, payload: dict[str, Any]) -> CurrentPublicationAuthorization:
+        """Read current native facts for an unpersisted proposal; reserve nothing.
+
+        The existing native query is the sole source for connection/profile,
+        disclosure, current policy and rights validation. The proposed row is
+        scoped to the real native ready package/profile before projection.
+        Its zero UUID is a proposal marker, never a persisted request identity.
+        """
+        from psycopg.rows import tuple_row
+        from psycopg.types.json import Jsonb
+        marker = "00000000-0000-0000-0000-000000000000"
+        proposal = payload | {"id": marker, "request_key": payload["idempotency_key"],
+            "publisher_id": "fixture-publisher", "approval_reference": "publication-approval:"+payload["publication_approval_request_id"]}
+        prefix = """WITH proposal AS (SELECT %s::jsonb AS payload),
+          publication_requests AS (
+            SELECT (jsonb_populate_record(NULL::public.publication_requests,
+                proposal.payload || jsonb_build_object(
+                    'publisher_capability_profile_id', profile.id::text,
+                    'policy_references', ready.policy_versions,
+                    'rights_references', '[]'::jsonb))).*
+            FROM proposal JOIN ready_to_publish_packages ready
+              ON ready.id::text=proposal.payload->>'ready_package_id'
+             AND ready.workspace_id::text=proposal.payload->>'workspace_id'
+             AND ready.content_program_id::text=proposal.payload->>'content_program_id'
+            JOIN publisher_capability_profiles profile
+              ON profile.publisher_account_id::text=proposal.payload->>'publisher_account_id'
+             AND profile.workspace_id=ready.workspace_id
+             AND profile.publisher_id='fixture-publisher' AND profile.publisher_version='1'
+             AND profile.platform='fixture' AND profile.profile_version=1
+             AND profile.audit_state='verified'
+             AND (profile.expires_at IS NULL OR profile.expires_at>clock_timestamp())
+          ) """
+        with connection.cursor(row_factory=tuple_row) as cursor:
+            cursor.execute(prefix + CURRENT_PUBLICATION_AUTHORIZATION_SQL, (Jsonb(proposal), marker))
+            row = cursor.fetchone()
+        return self._authorization_from_row(row, marker)
+
+    @staticmethod
+    def _authorization_from_row(row, publication_request_id):
         if row is None:
             raise KeyError(publication_request_id)
         profile = PublisherCapabilityProfile.model_validate(row[24]) if row[24] is not None else None
