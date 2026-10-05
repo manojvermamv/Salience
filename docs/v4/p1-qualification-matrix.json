@@ -45,7 +45,7 @@
       "local_verifier_status": "PASS; covers implemented local fixtures, not unimplemented production acceptance",
       "independent_review_status": "PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE; production acceptance remains HELD",
       "production_release_status": "HELD",
-      "remaining_acceptance": "Remaining legacy stage/API/scheduler start and signal integration with exact current authorization; production dispatch remains unqualified. Intelligence/selected briefs and original native intelligence schedule conversion are separately root-qualified.",
+      "remaining_acceptance": "Creative/publication API/scheduler start and signal integration with exact current stage/account authorization; production dispatch remains unqualified. Intelligence/selected briefs, original native intelligence schedules and canonical no-send dummy are separately root-qualified.",
       "independent_review_evidence": [
         "docs/v4/item7-runtime-review.json"
       ],
@@ -71,6 +71,14 @@
           "tests/integration/test_v4_native_schedules.py"
         ],
         "application_commit": "10eb77f22180d70e0803777e6305cac189142ecc"
+      },
+      "legacy_dummy_extension": {
+        "scope": "Root-qualified canonical no-send dummy, separate current stage grant and original typed physical cancellation only",
+        "evidence": "docs/v4/legacy-dummy-evidence.json",
+        "verifiers": [
+          "tests/integration/test_v4_legacy_dummy.py"
+        ],
+        "application_commit": "6e0b266da4a453e293e4494384ed0457b6ab88b8"
       }
     },
     {
@@ -128,6 +136,14 @@
           "tests/integration/test_v4_native_schedules.py"
         ],
         "application_commit": "10eb77f22180d70e0803777e6305cac189142ecc"
+      },
+      "legacy_dummy_extension": {
+        "scope": "Root-qualified canonical no-send dummy, separate current stage grant and original typed physical cancellation only",
+        "evidence": "docs/v4/legacy-dummy-evidence.json",
+        "verifiers": [
+          "tests/integration/test_v4_legacy_dummy.py"
+        ],
+        "application_commit": "6e0b266da4a453e293e4494384ed0457b6ab88b8"
       }
     },
     {
@@ -236,7 +252,15 @@
       "remaining_acceptance": "full candidate/plan/stage integration. Enabled effect/provider paths require their later production evidence.",
       "independent_review_evidence": [
         "docs/v4/item7-admission-review.json"
-      ]
+      ],
+      "legacy_dummy_extension": {
+        "scope": "Root-qualified canonical no-send dummy, separate current stage grant and original typed physical cancellation only",
+        "evidence": "docs/v4/legacy-dummy-evidence.json",
+        "verifiers": [
+          "tests/integration/test_v4_legacy_dummy.py"
+        ],
+        "application_commit": "6e0b266da4a453e293e4494384ed0457b6ab88b8"
+      }
     },
     {
       "id": "R13",
@@ -286,7 +310,15 @@
       "remaining_acceptance": "general versioned policy/production effect gate qualification beyond typed fixture decisions; LLM text must supply no authority.",
       "independent_review_evidence": [
         "docs/v4/item7-governance-review.json"
-      ]
+      ],
+      "legacy_dummy_extension": {
+        "scope": "Root-qualified canonical no-send dummy, separate current stage grant and original typed physical cancellation only",
+        "evidence": "docs/v4/legacy-dummy-evidence.json",
+        "verifiers": [
+          "tests/integration/test_v4_legacy_dummy.py"
+        ],
+        "application_commit": "6e0b266da4a453e293e4494384ed0457b6ab88b8"
+      }
     },
     {
       "id": "R17",
@@ -318,6 +350,14 @@
           "tests/integration/test_v4_legacy_brief_dispatch.py"
         ],
         "application_commit": "fcc5dfa11fa6281a1e281ac41867b3b0e4d8c722"
+      },
+      "legacy_dummy_extension": {
+        "scope": "Root-qualified canonical no-send dummy, separate current stage grant and original typed physical cancellation only",
+        "evidence": "docs/v4/legacy-dummy-evidence.json",
+        "verifiers": [
+          "tests/integration/test_v4_legacy_dummy.py"
+        ],
+        "application_commit": "6e0b266da4a453e293e4494384ed0457b6ab88b8"
       }
     },
     {
@@ -358,6 +398,14 @@
           "tests/integration/test_v4_native_schedules.py"
         ],
         "application_commit": "10eb77f22180d70e0803777e6305cac189142ecc"
+      },
+      "legacy_dummy_extension": {
+        "scope": "Root-qualified canonical no-send dummy, separate current stage grant and original typed physical cancellation only",
+        "evidence": "docs/v4/legacy-dummy-evidence.json",
+        "verifiers": [
+          "tests/integration/test_v4_legacy_dummy.py"
+        ],
+        "application_commit": "6e0b266da4a453e293e4494384ed0457b6ab88b8"
       }
     },
     {
@@ -577,13 +625,13 @@
     "p1_mapped_cases": 199
   },
   "current_qualification": {
-    "evidence": "docs/v4/native-schedule-evidence.json",
-    "full_non_live_tests": 567,
-    "focused_tests": 98,
-    "source_files": 338,
-    "status": "PASS_IMPLEMENTED_LOCAL_NATIVE_INTELLIGENCE_SCHEDULE_CONVERSION; root qualification only; historical item7 review retained; RG0/RG1 HELD",
-    "qualified_application_commit": "10eb77f22180d70e0803777e6305cac189142ecc",
-    "source_lock_sha256": "f320dae08c5055a44258335aebb03c05ff0421d6b01359fb70a52868afa03e70"
+    "evidence": "docs/v4/legacy-dummy-evidence.json",
+    "full_non_live_tests": 575,
+    "focused_tests": 106,
+    "source_files": 341,
+    "status": "PASS_IMPLEMENTED_LOCAL_LEGACY_DUMMY_STAGE; root qualification only; historical item7 review retained; RG0/RG1 HELD",
+    "qualified_application_commit": "6e0b266da4a453e293e4494384ed0457b6ab88b8",
+    "source_lock_sha256": "369725d5debea886934ce5d0978405b0c571861b5c870981277261a14e773d37"
   },
   "remaining_release_obligations": [
     "General registry/provider eligibility beyond the approved no-effects fixture baseline; later capability and production qualification gates remain binding",
@@ -653,5 +701,14 @@
     "status": "PASS_IMPLEMENTED_LOCAL_LEGACY_BRIEF_AND_SCHEDULE_INGRESS_SCOPE; root qualification only; historical item7 review retained; RG0/RG1 HELD",
     "qualified_application_commit": "fcc5dfa11fa6281a1e281ac41867b3b0e4d8c722",
     "source_lock_sha256": "0d8b50dcb67eff4be1fb1cdc1b0eb7a4591bd02c970c3ba693e47e3146d4fc37"
+  },
+  "historical_native_schedule_qualification": {
+    "evidence": "docs/v4/native-schedule-evidence.json",
+    "full_non_live_tests": 567,
+    "focused_tests": 98,
+    "source_files": 338,
+    "status": "PASS_IMPLEMENTED_LOCAL_NATIVE_INTELLIGENCE_SCHEDULE_CONVERSION; root qualification only; historical item7 review retained; RG0/RG1 HELD",
+    "qualified_application_commit": "10eb77f22180d70e0803777e6305cac189142ecc",
+    "source_lock_sha256": "f320dae08c5055a44258335aebb03c05ff0421d6b01359fb70a52868afa03e70"
   }
 }

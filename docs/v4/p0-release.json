@@ -20,13 +20,13 @@
       "exit_code": 0
     },
     "full_non_live": {
-      "passed": 567,
+      "passed": 575,
       "failed": 0,
       "errors": 0,
       "skipped": 0,
       "exit_code": 0,
-      "seconds": 573.992,
-      "junit": "artifacts/v4-native-schedules/regression.xml"
+      "seconds": 578.005,
+      "junit": "artifacts/v4-legacy-stages/regression.xml"
     },
     "documentation_tests": {
       "passed": 15,
@@ -40,22 +40,22 @@
       "failed": 0,
       "version": "12.0.0"
     },
-    "locked_evidence_files": 338,
+    "locked_evidence_files": 341,
     "original_inventory_dispositions": 360,
     "warning": "Pre-existing Starlette/AnyIO deprecation warning",
     "focused_p1": {
-      "passed": 98,
+      "passed": 106,
       "failed": 0,
       "errors": 0,
       "skipped": 0,
       "exit_code": 0,
-      "seconds": 155.944,
-      "junit": "artifacts/v4-native-schedules/focused.xml",
-      "scope": "Impacted legacy/outbox/cutover/public/parallel/migration/wait/restart contracts plus original native schedule conversion"
+      "seconds": 172.044,
+      "junit": "artifacts/v4-legacy-stages/focused.xml",
+      "scope": "Impacted legacy/outbox/cutover/public/parallel/migration/wait/restart contracts plus canonical no-send dummy and physical original cancellation"
     },
     "application_qualified_at": "2026-10-05",
-    "application_commit": "10eb77f22180d70e0803777e6305cac189142ecc",
-    "application_scope": "Root-qualified no-effects conversion of native intelligence schedules created by the original TemporalControlPlane: original native row and remote UUID preserved, immutable authenticated source/route/workload binding, separate nullable actual progress, atomic/concurrent adoption, real physical drain, canonical pause/fencing/watermark, lost-acknowledgment rollback, real scheduled ingress and original outbox/operation/permit completion. Signed API/SDK/CLI and current-grant denial; remote/local drift and empty/populated migration rollback. Prior intelligence/selected-brief/fixture schedule and parallel/item7 scopes retained. Other legacy stages and production remain unqualified.",
+    "application_commit": "6e0b266da4a453e293e4494384ed0457b6ab88b8",
+    "application_scope": "Root-qualified no-send legacy DurableDummyWorkflow through original canonical goal/workspace/program/cycle/context/operation/job/outbox/permit, immutable stage discriminator, atomic/concurrent replay and mixed-stage coalescing denial. Current legacy:dummy grant is independently required at intake and activities; internally fixed no-send provider, bounded success dry-run only, forged effect/crash payload denial. Committed ordered close cancels a pinned original Temporal run; terminal readback alone projects physical cancellation, including lost acknowledgment. Signed API/SDK/CLI and empty/populated stage migration rollback. Prior intelligence/brief/native schedule and item7/parallel scopes retained. Creative/publication, their schedules, general policy and production remain unqualified.",
     "focused_parallel_agents": {
       "passed": 45,
       "failed": 0,
@@ -190,6 +190,11 @@
     {
       "path": "docs/v4/native-schedule-evidence.json",
       "sha256": "d22da11eabab1118d0c807a93416cbeb9f1ceb845de61566a01e2e4a243f3d4a",
+      "local_only": false
+    },
+    {
+      "path": "docs/v4/legacy-dummy-evidence.json",
+      "sha256": "3946d47b029a0607cb8a6fecc9830d98bee9c04afd54112c98b6ee0402eff0bc",
       "local_only": false
     }
   ],
@@ -537,10 +542,10 @@
     "restored_from_own_output_at": "2026-10-04T02:44:31.946Z",
     "base_commit": "380416d35cffb6e4bf33003cb6e8df0638874436",
     "direction": "Remaining P1 legacy dispatch-to-outbox integration, followed by retained P1 authorization/runtime/recovery acceptance; reuse completed items 1\u20137 and parallel extension",
-    "current_increment": "Original native intelligence schedule row/remote UUID conversion through authenticated immutable source mapping and separate actual progress; real pause/drain/rollback/ingress/original-operation completion; intelligence and selected-brief compatibility retained",
-    "qualification": "PASS_IMPLEMENTED_LOCAL_NATIVE_INTELLIGENCE_SCHEDULE_CONVERSION",
+    "current_increment": "No-send native dummy workflow under original admitted scope/operation/outbox/permit, current legacy:dummy authority, immutable stage mapping, signed SDK/CLI and pinned original cancellation with terminal readback; earlier intelligence/brief/native schedules retained",
+    "qualification": "PASS_IMPLEMENTED_LOCAL_LEGACY_DUMMY_STAGE",
     "remaining_scope": [
-      "Other legacy stage ingress and dispatch integration with exact current stage/model/provider authorization",
+      "Creative/publication stage ingress and dispatch, native publication schedules and exact current stage/account/model/provider authorization",
       "Full live schedule inventory/fencing and supported deployment routing/drain/rollback",
       "General current policy/version eligibility and separately scoped remote reconciliation",
       "External durable notification/alert delivery and retained RG0 production prerequisites"
@@ -550,11 +555,11 @@
     "RG0": "HELD",
     "RG1": "HELD",
     "main_merge": "NOT AUTHORIZED",
-    "qualified_application_commit": "10eb77f22180d70e0803777e6305cac189142ecc",
-    "focused_tests": 98,
-    "full_non_live_tests": 567,
-    "source_files": 338,
-    "evidence": "docs/v4/native-schedule-evidence.json",
+    "qualified_application_commit": "6e0b266da4a453e293e4494384ed0457b6ab88b8",
+    "focused_tests": 106,
+    "full_non_live_tests": 575,
+    "source_files": 341,
+    "evidence": "docs/v4/legacy-dummy-evidence.json",
     "publication": "Application published; final documentation head requires exact-head CI. Broader integration goal ACTIVE."
   }
 }
