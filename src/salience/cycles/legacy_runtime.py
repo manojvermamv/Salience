@@ -24,6 +24,7 @@ from salience.workflows.intelligence import (
     IntelligenceActivities, IntelligenceLoopRequest, IntelligenceLoopWorkflow,
     IntelligenceWorkflowState, INTELLIGENCE_WORKFLOW_TYPE,
 )
+from salience.workflows.jobs import DurableDummyWorkflow, DummyWorkflowRequest, DummyActivities, WorkflowScenarioState
 from salience.workflows.persistence import CanonicalJobStore
 
 
@@ -40,6 +41,9 @@ def require_current_stage(outbox, binding):
     service = CycleGovernance(outbox.database_url,workspace_id=outbox.workspace_id,subject_id=binding["actor_id"])
     with service._command("cycles:permit") as connection:
         service._eligible_cycle(connection, binding["cycle_id"])
+        if binding.get("stage") == "dummy":
+            from salience.cycles.authority import current_authority
+            current_authority(connection, outbox.workspace_id, binding["actor_id"], "legacy:dummy")
         workspace_stop, goal_stop = service._require_running(connection,binding["goal_id"])
         claim = connection.execute("""SELECT claim.*,permit.expires_at,permit.subject_id,
             permit.workspace_stop_revision,permit.goal_stop_revision FROM v4_permit_claims claim
@@ -48,6 +52,18 @@ def require_current_stage(outbox, binding):
         now = connection.execute("SELECT clock_timestamp() AS now").fetchone()["now"]
         if not claim or claim["state"] != "claimed" or claim["operation_id"] != binding["operation_id"] or claim["subject_id"] != binding["actor_id"] or now >= claim["expires_at"] or (workspace_stop["revision"],goal_stop["revision"]) != (claim["workspace_stop_revision"],claim["goal_stop_revision"]):
             raise PermissionError("current original legacy permit required")
+
+
+def legacy_execution(binding):
+    if binding.get("stage", "intelligence") == "dummy":
+        return DurableDummyWorkflow.run, "DurableDummyWorkflow", DummyWorkflowRequest(
+            idempotency_key="v4-legacy:"+str(binding["operation_id"]), mode="success", dry_run=True), DurableDummyWorkflow.request_cancellation
+    if binding.get("stage", "intelligence") != "intelligence":
+        raise PermissionError("unsupported original legacy stage")
+    return IntelligenceLoopWorkflow.run, INTELLIGENCE_WORKFLOW_TYPE, IntelligenceLoopRequest(
+        workspace_id=str(binding["workspace_id"]), content_program_id=str(binding["content_program_id"]),
+        niche=binding["payload"]["niche"], idempotency_key="v4-legacy:"+str(binding["operation_id"]), dry_run=True,
+        selected_opportunity_id=binding["payload"].get("selected_opportunity_id")), IntelligenceLoopWorkflow.request_cancellation
 
 
 class LegacyIntelligenceAdapter:
@@ -71,16 +87,14 @@ class LegacyIntelligenceAdapter:
         await asyncio.to_thread(require_current_stage,self.outbox,binding)
         workflow_id = "salience-v4-legacy-operation:" + operation_id
         memo = {"cycle_id":str(binding["cycle_id"]),"operation_id":operation_id,"job_id":str(binding["job_id"])}
-        payload = IntelligenceLoopRequest(workspace_id=str(binding["workspace_id"]),content_program_id=str(binding["content_program_id"]),
-            niche=binding["payload"]["niche"],idempotency_key="v4-legacy:"+operation_id,dry_run=True,
-            selected_opportunity_id=binding["payload"].get("selected_opportunity_id"))
+        workflow_run, workflow_type, payload, _ = legacy_execution(binding)
         try:
-            await self.client.start_workflow(IntelligenceLoopWorkflow.run,payload,id=workflow_id,
+            await self.client.start_workflow(workflow_run,payload,id=workflow_id,
                 task_queue=self.task_queue,id_reuse_policy=WorkflowIDReusePolicy.REJECT_DUPLICATE,
                 execution_timeout=timedelta(minutes=5),memo=memo,rpc_timeout=timedelta(seconds=2))
         except WorkflowAlreadyStartedError:
             description = await self.client.get_workflow_handle(workflow_id).describe(rpc_timeout=timedelta(seconds=2))
-            if description.workflow_type != INTELLIGENCE_WORKFLOW_TYPE or description.task_queue != self.task_queue or await description.memo() != memo:
+            if description.workflow_type != workflow_type or description.task_queue != self.task_queue or await description.memo() != memo:
                 raise PermissionError("legacy runtime identity conflict")
         # A start acknowledgment proves handoff, never business completion.
         with self.outbox._connect() as connection:
@@ -116,13 +130,36 @@ class LegacyCycleActivities(LocalCycleActivities):
             handle = self.adapter.client.get_workflow_handle("salience-v4-legacy-operation:" + str(binding["operation_id"]))
             description = await handle.describe(rpc_timeout=timedelta(seconds=2))
             expected = {"cycle_id":str(binding["cycle_id"]),"operation_id":str(binding["operation_id"]),"job_id":str(binding["job_id"])}
-            if description.workflow_type != INTELLIGENCE_WORKFLOW_TYPE or description.task_queue != binding["task_queue"] or await description.memo() != expected:
+            _, workflow_type, _, cancellation_signal = legacy_execution(binding)
+            if description.workflow_type != workflow_type or description.task_queue != binding["task_queue"] or await description.memo() != expected:
                 raise PermissionError("original legacy cancellation target required")
             from temporalio.client import WorkflowExecutionStatus
+            if binding.get("stage") == "dummy":
+                handle = self.adapter.client.get_workflow_handle(description.id, run_id=description.run_id)
+                # Success-mode dummy does not observe its custom signal. Only
+                # terminal readback may project physical cancellation.
+                if description.status == WorkflowExecutionStatus.RUNNING:
+                    try:
+                        await handle.cancel(rpc_timeout=timedelta(seconds=2))
+                    except Exception:
+                        description = await handle.describe(rpc_timeout=timedelta(seconds=2))
+                        if description.status == WorkflowExecutionStatus.RUNNING:
+                            raise
+                    try:
+                        async with asyncio.timeout(2):
+                            while description.status == WorkflowExecutionStatus.RUNNING:
+                                await asyncio.sleep(.05)
+                                description = await handle.describe(rpc_timeout=timedelta(seconds=1))
+                    except TimeoutError:
+                        pass
+                if description.status == WorkflowExecutionStatus.CANCELED:
+                    with self.outbox._connect() as connection:
+                        connection.execute("UPDATE jobs SET state='cancelled',finished_at=clock_timestamp() WHERE id=%s AND state IN ('queued','running')", (binding["job_id"],))
+                return result
             if description.status != WorkflowExecutionStatus.RUNNING:
                 return result
             try:
-                await handle.signal(IntelligenceLoopWorkflow.request_cancellation,rpc_timeout=timedelta(seconds=2))
+                await handle.signal(cancellation_signal,rpc_timeout=timedelta(seconds=2))
             except Exception:
                 description = await handle.describe(rpc_timeout=timedelta(seconds=2))
                 if description.status == WorkflowExecutionStatus.RUNNING:
@@ -144,6 +181,42 @@ class GuardedIntelligenceActivities(IntelligenceActivities):
         if activity.info().activity_type != "salience.intelligence.cancel":
             await asyncio.to_thread(require_current_stage,self.outbox,binding)
         return run
+
+
+class LegacyNoSendProvider:
+    async def execute_or_reconcile(self, idempotency_key):
+        raise PermissionError("legacy dummy never sends a provider effect")
+
+
+class GuardedDummyActivities(DummyActivities):
+    def __init__(self, state, outbox):
+        super().__init__(state)
+        self.outbox = outbox
+
+    async def _run(self):
+        run = await super()._run()
+        with self.outbox._connect() as connection:
+            binding = connection.execute("SELECT * FROM v4_legacy_dispatches WHERE job_id=%s AND workspace_id=%s", (run.job_id, self.outbox.workspace_id)).fetchone()
+        if not binding or binding.get("stage") != "dummy":
+            raise PermissionError("original canonical dummy stage required")
+        await asyncio.to_thread(require_current_stage, self.outbox, binding)
+        return run
+
+    @activity.defn(name="salience.external_effect")
+    async def external_effect(self, request: DummyWorkflowRequest):
+        run = await self._run()
+        expected = DummyWorkflowRequest(idempotency_key="v4-legacy:"+str(binding_for_job(self.outbox, run.job_id)["operation_id"]), mode="success", dry_run=True)
+        if request != expected:
+            raise PermissionError("original fixed no-send dummy payload required")
+        return await super().external_effect(request)
+
+
+def binding_for_job(outbox, job_id):
+    with outbox._connect() as connection:
+        row = connection.execute("SELECT * FROM v4_legacy_dispatches WHERE job_id=%s AND workspace_id=%s", (job_id, outbox.workspace_id)).fetchone()
+        if not row:
+            raise PermissionError("original scoped legacy job required")
+        return row
 
 
 class LegacyScheduleActivities:
@@ -192,9 +265,10 @@ def build_legacy_worker(client, *, task_queue, outbox):
         repository=IntelligenceRepository(outbox.database_url),agents=fixture_agent_service())
     intelligence = GuardedIntelligenceActivities(state,outbox)
     schedule = LegacyScheduleActivities(client, outbox, task_queue)
-    return Worker(client,task_queue=task_queue,workflows=[LocalCycleWorkflow,IntelligenceLoopWorkflow,LegacyScheduledIngressWorkflow],
+    dummy = GuardedDummyActivities(WorkflowScenarioState(store=CanonicalJobStore(outbox.database_url), provider=LegacyNoSendProvider()), outbox)
+    return Worker(client,task_queue=task_queue,workflows=[LocalCycleWorkflow,IntelligenceLoopWorkflow,DurableDummyWorkflow,LegacyScheduledIngressWorkflow],
         activities=[cycles.consume,cycles.runtime_binding,cycles.runtime_hold,
-                    schedule.admit,
+                    schedule.admit, dummy.checkpoint, dummy.external_effect, dummy.terminal, dummy.dead_letter,
                     intelligence.fetch,intelligence.normalize,intelligence.rank,intelligence.strategy,
                     intelligence.queue,intelligence.complete,intelligence.cancel,intelligence.packages,
                     intelligence.claims,intelligence.brief],

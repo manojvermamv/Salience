@@ -235,6 +235,15 @@ def main(arguments: Sequence[str] | None = None) -> None:
     legacy_adopt = legacy_commands.add_parser('adopt-native-schedule')
     legacy_adopt.add_argument('goal_id')
     legacy_adopt.add_argument('--command-json',required=True)
+    legacy_jobs = subcommands.add_parser('legacy-jobs')
+    legacy_job_commands = legacy_jobs.add_subparsers(dest='legacy_job_command', required=True)
+    legacy_dummy = legacy_job_commands.add_parser('dummy')
+    legacy_dummy.add_argument('--command-json', required=True)
+    legacy_inspect = legacy_job_commands.add_parser('inspect')
+    legacy_inspect.add_argument('job_id')
+    legacy_cancel_job = legacy_job_commands.add_parser('cancel')
+    legacy_cancel_job.add_argument('job_id')
+    legacy_cancel_job.add_argument('--reason',required=True)
     teams = subcommands.add_parser('agent-teams')
     team_commands = teams.add_subparsers(dest='team_command', required=True)
     for action in ('submit', 'inspect', 'cancel'):
@@ -247,6 +256,15 @@ def main(arguments: Sequence[str] | None = None) -> None:
             team_command.add_argument('--run-id', required=True)
 
     parsed = parser.parse_args(arguments)
+    if parsed.command == 'legacy-jobs':
+        if parsed.legacy_job_command == 'dummy':
+            result = _v4_request(method='POST',path='/v1/jobs/dummy',payload=json.loads(parsed.command_json))
+        elif parsed.legacy_job_command == 'inspect':
+            result = _v4_request(method='GET',path=f'/v1/jobs/{parsed.job_id}')
+        else:
+            result = _v4_request(method='POST',path=f'/v1/jobs/{parsed.job_id}/cancel',payload={'reason':parsed.reason})
+        print(json.dumps(result))
+        return
     if parsed.command == 'legacy-intelligence':
         if parsed.legacy_command == 'submit':
             result = _v4_request(method='POST',path='/v1/intelligence/runs',payload=json.loads(parsed.command_json))

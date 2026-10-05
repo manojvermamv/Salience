@@ -180,7 +180,7 @@ def test_legacy_migration_empty_rollback_and_populated_history_preservation(lega
             rolled=migrate("downgrade","0035_parallel_agent_teams")
             assert rolled.returncode!=0 and "preserve legacy dispatch" in rolled.stderr
             with psycopg.connect(database) as c:
-                assert c.execute("SELECT version_num FROM alembic_version").fetchone()[0]=="0037_native_schedule_sources"
+                assert c.execute("SELECT version_num FROM alembic_version").fetchone()[0]=="0038_legacy_dummy_stage"
                 assert str(c.execute("SELECT operation_id FROM v4_legacy_dispatches WHERE job_id=%s",(binding["job_id"],)).fetchone()[0])==binding["operation_id"]
         finally:
             admin.execute(psycopg.sql.SQL("DROP DATABASE {} WITH (FORCE)").format(psycopg.sql.Identifier(name)))

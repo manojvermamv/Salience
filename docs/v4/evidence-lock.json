@@ -179,6 +179,10 @@
       "sha256": "449f0d107803bb42b72b693cb820dab565b7f2bea7a89d65fe5ee0216237755d"
     },
     {
+      "path": "migrations/versions/0038_legacy_dummy_stage.py",
+      "sha256": "907d7b9e91aac579e73c21c731ce45ef144777ec50e02e1349476544331f8b93"
+    },
+    {
       "path": "migrations/versions/__init__.py",
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
@@ -292,7 +296,7 @@
     },
     {
       "path": "src/salience/api/app.py",
-      "sha256": "c4e211a5862c41489d9531f7cce817fb63af2c7481f4d90392a642eb55c49cbb"
+      "sha256": "ad384159c9c8ad5b86f40324a282d96d04835f139a5713a9843a75538535e29d"
     },
     {
       "path": "src/salience/api/dependencies.py",
@@ -300,7 +304,7 @@
     },
     {
       "path": "src/salience/api/p0.py",
-      "sha256": "881071333279be84cacb88c2b75d396a2e287a53c047d1841aca8d01d43f4fa7"
+      "sha256": "9bebf8885fed6ce33df550f8879ca0d14b872edd1f282ab622a62df8b8eaeaf1"
     },
     {
       "path": "src/salience/api/routes/__init__.py",
@@ -329,6 +333,10 @@
     {
       "path": "src/salience/api/routes/legacy_dispatch.py",
       "sha256": "adf4e2ab4a98553630599a7fa23a59927559f2c0afae24afd3a17030aa286da9"
+    },
+    {
+      "path": "src/salience/api/routes/legacy_jobs.py",
+      "sha256": "b8180f0cb886dee13018ad9909915eab58c92df116f1317f99b276e0156f2c7e"
     },
     {
       "path": "src/salience/api/routes/parallel_teams.py",
@@ -380,7 +388,7 @@
     },
     {
       "path": "src/salience/cli.py",
-      "sha256": "065345fa5293b8b6476abde04849e6f9d424a1f0cc93be5bb0b2db9626280ef4"
+      "sha256": "598d7eecc68ec99fd0c9259be1ea2387f0b62739251e7bef817da9f4f1db41c0"
     },
     {
       "path": "src/salience/config.py",
@@ -480,11 +488,11 @@
     },
     {
       "path": "src/salience/cycles/legacy_dispatch.py",
-      "sha256": "7635f92b6e314187221d77d7976afe957e70fb8033c183ee39ecb9ad4dc2166c"
+      "sha256": "39e96edae6be76e0f69b7981b96fe40a2028100971b253741b0f59eef22e8866"
     },
     {
       "path": "src/salience/cycles/legacy_runtime.py",
-      "sha256": "247de5a60779a4e291cd94720be81f3fdf83e65e4a189f629c7a2415a6746951"
+      "sha256": "a2d907c0fefb4d0aa92b833e014d3b5104ba498584e27a2122a0fe8cdb2dddb3"
     },
     {
       "path": "src/salience/cycles/legacy_schedule_workflow.py",
@@ -760,7 +768,7 @@
     },
     {
       "path": "src/salience/sdk/client.py",
-      "sha256": "46d5784dbfb7d2edfca25f4971f30024b5adcb6bf35ba37328fa962600b640d2"
+      "sha256": "0dfed4d68621e62bebf5dc59a5012c935404a6a823b188916bee9ef338bf1dfc"
     },
     {
       "path": "src/salience/storage/__init__.py",
@@ -1032,7 +1040,7 @@
     },
     {
       "path": "tests/integration/test_durable_parallel_teams.py",
-      "sha256": "6158115884a80f63f84ac47c54cc109ddbda311bfccfb086455eab92e9fb33da"
+      "sha256": "1a2d29f699084d9ecb2cd62d7a0da464c461d597569527c1bb55a64f6d603364"
     },
     {
       "path": "tests/integration/test_fixture_publisher.py",
@@ -1140,7 +1148,11 @@
     },
     {
       "path": "tests/integration/test_v4_legacy_dispatch.py",
-      "sha256": "767169a6a92b0a450fe3c4069f087ea9ec248a0019cdfd05a3dbf837fd34bc7c"
+      "sha256": "6c9c22caf6409f23a69ace678e764ab0762f53dafed8079c7ad387ae945d6807"
+    },
+    {
+      "path": "tests/integration/test_v4_legacy_dummy.py",
+      "sha256": "552c9948ea413a26eb1cfe6687b338c97bf80b36326d514d9a3ce768cf6c8775"
     },
     {
       "path": "tests/integration/test_v4_legacy_schedule_ingress.py",
@@ -1148,11 +1160,11 @@
     },
     {
       "path": "tests/integration/test_v4_migrations.py",
-      "sha256": "c828dfa018458abb88c83e16ef3596fff626be0394a5e4d2593c0c439f9a786c"
+      "sha256": "25c413a64e38c3f60d30a3c94e2ea9136f01b7c1ba78320c6ec955ec84ba5956"
     },
     {
       "path": "tests/integration/test_v4_native_schedules.py",
-      "sha256": "1dd12906774160982640b11b9a27586186a9eedcc7b594060800d4f8b9aef60c"
+      "sha256": "3438f4f938cc7fff83dd678e34c6274eaed722d3067257fd8702e625d96772d8"
     },
     {
       "path": "tests/integration/test_v4_object_retention.py",
@@ -1172,7 +1184,7 @@
     },
     {
       "path": "tests/integration/test_v4_runtime_waits.py",
-      "sha256": "e61b7ff3e2d49e8f362bec0990ee1c387bafb83a55f726b49bf3afc6867f149f"
+      "sha256": "af35053d00115f110fcc4fbfe52db6307af0a4b10f691ce9dad46e34fbd6f85c"
     },
     {
       "path": "tests/integration/test_v4_s3_service.py",
@@ -1356,5 +1368,5 @@
     }
   ],
   "reviewed_at": "2026-10-05",
-  "review_scope": "Root-qualified no-effects original native intelligence schedule conversion: 98 focused / 567 full non-live PASS, 338 source hashes; immutable original native row/UUID/source mapping, separate nullable actual progress, authenticated concurrent/atomic adoption, physical drain/fencing/watermark/lost-acknowledgment rollback, real tick and original canonical outbox/operation/permit completion, signed API/SDK/CLI, current grants, drift denial and empty/populated rollback. Earlier item7/parallel/intelligence/selected-brief/schedule reports remain dated and source-bound. Other legacy stages, production and general policy remain unqualified; broader goal ACTIVE."
+  "review_scope": "Root-qualified canonical no-send legacy dummy: 106 focused / 575 full non-live PASS, 341 source hashes. Original admitted workspace/program/cycle/context/operation/job/outbox/permit; immutable stage mapping; current legacy:dummy authority at intake/activities; fixed no-send provider and forged effect/crash payload denial; committed ordered close targets pinned original Temporal run with terminal cancellation readback and lost acknowledgment. Empty guard restoration and populated stage downgrade refusal. Current fixture scoped reads separately verified three original unknown operations as RPC NOT_FOUND. Earlier native/intelligence/brief/item7/parallel reports remain dated/source-bound. Creative/publication, general policy and production remain unqualified; broader goal ACTIVE."
 }

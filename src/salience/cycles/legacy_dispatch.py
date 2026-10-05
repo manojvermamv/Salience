@@ -32,6 +32,14 @@ class LegacyBriefCommand(LegacyIntelligenceCommand):
     contract_version: Literal["LegacyBriefDispatch.local.v1"] = "LegacyBriefDispatch.local.v1"
 
 
+class LegacyDummyCommand(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
+    goal_id: UUID
+    request: CycleRequest
+    dry_run: Literal[True] = True
+    contract_version: Literal["LegacyDummyDispatch.local.v1"] = "LegacyDummyDispatch.local.v1"
+
+
 def require_fixture():
     if os.environ.get("SALIENCE_DEPLOYMENT_MODE") != "fixture" or os.environ.get("SALIENCE_EFFECTS_ENABLED", "false") != "false":
         raise PermissionError("legacy dispatch requires explicit no-effects fixture mode")
@@ -49,6 +57,15 @@ class LegacyDispatch(CycleAdmission):
         command = LegacyIntelligenceCommand.model_validate(command)
         with self._command("cycles:write") as connection:
             return self._submit(connection, command)
+
+    def submit_dummy(self, command: LegacyDummyCommand):
+        require_fixture()
+        command = LegacyDummyCommand.model_validate(command)
+        with self._command("cycles:write") as connection:
+            current_authority(connection, self.workspace_id, self.subject_id, "legacy:dummy")
+            result = self._submit(connection, command)
+            current_authority(connection, self.workspace_id, self.subject_id, "legacy:dummy")
+            return result
 
     def submit_brief(self, command: LegacyBriefCommand):
         require_fixture()
@@ -85,7 +102,9 @@ class LegacyDispatch(CycleAdmission):
 
     def _materialize(self, connection, command, spec, cycle_id):
         _, _, intent, cycle = self._cycle(connection, cycle_id)
-        workload = {"niche": command.niche, "contract_version": "IntelligenceRunRequest@v1"}
+        stage = "dummy" if isinstance(command, LegacyDummyCommand) else "intelligence"
+        job_type = "durable_dummy" if stage == "dummy" else "intelligence_research"
+        workload = {"mode": "success", "contract_version": "DummyWorkflowRequest@v1"} if stage == "dummy" else {"niche": command.niche, "contract_version": "IntelligenceRunRequest@v1"}
         if isinstance(command, LegacyBriefCommand):
             workload["selected_opportunity_id"] = str(command.selected_opportunity_id)
         prior = connection.execute("SELECT * FROM v4_legacy_dispatches WHERE cycle_id=%s", (cycle_id,)).fetchone()
@@ -95,6 +114,8 @@ class LegacyDispatch(CycleAdmission):
             return self._view(prior)
         # A pre-existing fixture cycle can be adopted only before any delivery.
         # The row lock prevents a concurrent dispatcher from choosing its lane.
+        if stage == "dummy" and not connection.execute("SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='v4_legacy_dispatches' AND column_name='stage'").fetchone():
+            raise PermissionError("qualified legacy stage migration required")
         message = connection.execute("SELECT * FROM v4_cycle_outbox WHERE cycle_id=%s AND kind='start' AND sequence=1 FOR UPDATE", (cycle_id,)).fetchone()
         if not message or message["subject_id"] != self.subject_id or message["state"] != "pending" or message["attempts"] != 0:
             raise ValueError("legacy adoption requires an untouched original start")
@@ -105,14 +126,19 @@ class LegacyDispatch(CycleAdmission):
         workflow_id = "salience-v4-legacy-operation:" + str(cycle["operation_id"])
         connection.execute("""INSERT INTO jobs(id,workspace_id,content_program_id,job_type,state,workflow_run_id,
             task_queue,idempotency_key,input_payload,trace_id,span_id,dry_run,actor_kind,actor_id)
-            VALUES(%s,%s,%s,'intelligence_research','queued',%s,%s,%s,%s,%s,%s,true,'identity',%s)""",
-            (job_id, self.workspace_id, spec.content_program_id, workflow_id, self.task_queue,
+            VALUES(%s,%s,%s,%s,'queued',%s,%s,%s,%s,%s,%s,true,'identity',%s)""",
+            (job_id, self.workspace_id, spec.content_program_id, job_type, workflow_id, self.task_queue,
              "v4-legacy:" + str(cycle["operation_id"]), Jsonb(workload), context.trace_id, context.span_id, str(self.subject_id)))
-        row = connection.execute("""INSERT INTO v4_legacy_dispatches(cycle_id,context_id,operation_id,intent_id,
+        insert_stage = stage != "intelligence"
+        statement = """INSERT INTO v4_legacy_dispatches(cycle_id,context_id,operation_id,intent_id,
             goal_id,workspace_id,actor_id,content_program_id,job_id,task_queue,payload)
-            VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING *""",
-            (cycle_id,cycle["context_id"],cycle["operation_id"],intent["id"],command.goal_id,self.workspace_id,
-             self.subject_id,spec.content_program_id,job_id,self.task_queue,Jsonb(workload))).fetchone()
+            VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING *"""
+        parameters = (cycle_id,cycle["context_id"],cycle["operation_id"],intent["id"],command.goal_id,self.workspace_id,
+             self.subject_id,spec.content_program_id,job_id,self.task_queue,Jsonb(workload))
+        if insert_stage:
+            statement = statement.replace("task_queue,payload)", "task_queue,payload,stage)").replace("%s) RETURNING *", "%s,%s) RETURNING *")
+            parameters += (stage,)
+        row = connection.execute(statement, parameters).fetchone()
         self._event(connection, command.goal_id, "legacy_dispatch_queued", self._view(row), intent["id"], cycle_id)
         return self._view(row)
 
