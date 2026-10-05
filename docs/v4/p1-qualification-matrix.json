@@ -22,6 +22,15 @@
         "evidence": "docs/v4/legacy-dispatch-evidence.json",
         "verifier": "tests/integration/test_v4_legacy_dispatch.py",
         "application_commit": "81bdeee6203d673d04b62780ac2dc8f458ed9cb4"
+      },
+      "legacy_schedule_and_brief_extension": {
+        "scope": "Root-qualified no-effects intelligence/brief and actual scheduled ingress only",
+        "evidence": "docs/v4/legacy-schedule-evidence.json",
+        "verifiers": [
+          "tests/integration/test_v4_legacy_schedule_ingress.py",
+          "tests/integration/test_v4_legacy_brief_dispatch.py"
+        ],
+        "application_commit": "fcc5dfa11fa6281a1e281ac41867b3b0e4d8c722"
       }
     },
     {
@@ -36,7 +45,7 @@
       "local_verifier_status": "PASS; covers implemented local fixtures, not unimplemented production acceptance",
       "independent_review_status": "PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE; production acceptance remains HELD",
       "production_release_status": "HELD",
-      "remaining_acceptance": "Other legacy stage/API/scheduler dispatch and signal integration with exact current authorization; production dispatch remains unqualified. The no-effects intelligence compatibility increment is separately root-qualified.",
+      "remaining_acceptance": "Remaining legacy stage/API/scheduler start and signal integration with exact current authorization; production dispatch remains unqualified. No-effects intelligence/selected-brief and real resumed Temporal ingress are separately root-qualified.",
       "independent_review_evidence": [
         "docs/v4/item7-runtime-review.json"
       ],
@@ -45,6 +54,15 @@
         "evidence": "docs/v4/legacy-dispatch-evidence.json",
         "verifier": "tests/integration/test_v4_legacy_dispatch.py",
         "application_commit": "81bdeee6203d673d04b62780ac2dc8f458ed9cb4"
+      },
+      "legacy_schedule_and_brief_extension": {
+        "scope": "Root-qualified no-effects intelligence/brief and actual scheduled ingress only",
+        "evidence": "docs/v4/legacy-schedule-evidence.json",
+        "verifiers": [
+          "tests/integration/test_v4_legacy_schedule_ingress.py",
+          "tests/integration/test_v4_legacy_brief_dispatch.py"
+        ],
+        "application_commit": "fcc5dfa11fa6281a1e281ac41867b3b0e4d8c722"
       }
     },
     {
@@ -85,6 +103,15 @@
         "evidence": "docs/v4/legacy-dispatch-evidence.json",
         "verifier": "tests/integration/test_v4_legacy_dispatch.py",
         "application_commit": "81bdeee6203d673d04b62780ac2dc8f458ed9cb4"
+      },
+      "legacy_schedule_and_brief_extension": {
+        "scope": "Root-qualified no-effects intelligence/brief and actual scheduled ingress only",
+        "evidence": "docs/v4/legacy-schedule-evidence.json",
+        "verifiers": [
+          "tests/integration/test_v4_legacy_schedule_ingress.py",
+          "tests/integration/test_v4_legacy_brief_dispatch.py"
+        ],
+        "application_commit": "fcc5dfa11fa6281a1e281ac41867b3b0e4d8c722"
       }
     },
     {
@@ -126,6 +153,15 @@
         "evidence": "docs/v4/legacy-dispatch-evidence.json",
         "verifier": "tests/integration/test_v4_legacy_dispatch.py",
         "application_commit": "81bdeee6203d673d04b62780ac2dc8f458ed9cb4"
+      },
+      "legacy_schedule_and_brief_extension": {
+        "scope": "Root-qualified no-effects intelligence/brief and actual scheduled ingress only",
+        "evidence": "docs/v4/legacy-schedule-evidence.json",
+        "verifiers": [
+          "tests/integration/test_v4_legacy_schedule_ingress.py",
+          "tests/integration/test_v4_legacy_brief_dispatch.py"
+        ],
+        "application_commit": "fcc5dfa11fa6281a1e281ac41867b3b0e4d8c722"
       }
     },
     {
@@ -150,6 +186,15 @@
         "evidence": "docs/v4/legacy-dispatch-evidence.json",
         "verifier": "tests/integration/test_v4_legacy_dispatch.py",
         "application_commit": "81bdeee6203d673d04b62780ac2dc8f458ed9cb4"
+      },
+      "legacy_schedule_and_brief_extension": {
+        "scope": "Root-qualified no-effects intelligence/brief and actual scheduled ingress only",
+        "evidence": "docs/v4/legacy-schedule-evidence.json",
+        "verifiers": [
+          "tests/integration/test_v4_legacy_schedule_ingress.py",
+          "tests/integration/test_v4_legacy_brief_dispatch.py"
+        ],
+        "application_commit": "fcc5dfa11fa6281a1e281ac41867b3b0e4d8c722"
       }
     },
     {
@@ -191,6 +236,15 @@
         "evidence": "docs/v4/legacy-dispatch-evidence.json",
         "verifier": "tests/integration/test_v4_legacy_dispatch.py",
         "application_commit": "81bdeee6203d673d04b62780ac2dc8f458ed9cb4"
+      },
+      "legacy_schedule_and_brief_extension": {
+        "scope": "Root-qualified no-effects intelligence/brief and actual scheduled ingress only",
+        "evidence": "docs/v4/legacy-schedule-evidence.json",
+        "verifiers": [
+          "tests/integration/test_v4_legacy_schedule_ingress.py",
+          "tests/integration/test_v4_legacy_brief_dispatch.py"
+        ],
+        "application_commit": "fcc5dfa11fa6281a1e281ac41867b3b0e4d8c722"
       }
     },
     {
@@ -231,6 +285,15 @@
         "evidence": "docs/v4/legacy-dispatch-evidence.json",
         "verifier": "tests/integration/test_v4_legacy_dispatch.py",
         "application_commit": "81bdeee6203d673d04b62780ac2dc8f458ed9cb4"
+      },
+      "legacy_schedule_and_brief_extension": {
+        "scope": "Root-qualified no-effects intelligence/brief and actual scheduled ingress only",
+        "evidence": "docs/v4/legacy-schedule-evidence.json",
+        "verifiers": [
+          "tests/integration/test_v4_legacy_schedule_ingress.py",
+          "tests/integration/test_v4_legacy_brief_dispatch.py"
+        ],
+        "application_commit": "fcc5dfa11fa6281a1e281ac41867b3b0e4d8c722"
       }
     },
     {
@@ -254,6 +317,15 @@
         "evidence": "docs/v4/legacy-dispatch-evidence.json",
         "verifier": "tests/integration/test_v4_legacy_dispatch.py",
         "application_commit": "81bdeee6203d673d04b62780ac2dc8f458ed9cb4"
+      },
+      "legacy_schedule_and_brief_extension": {
+        "scope": "Root-qualified no-effects intelligence/brief and actual scheduled ingress only",
+        "evidence": "docs/v4/legacy-schedule-evidence.json",
+        "verifiers": [
+          "tests/integration/test_v4_legacy_schedule_ingress.py",
+          "tests/integration/test_v4_legacy_brief_dispatch.py"
+        ],
+        "application_commit": "fcc5dfa11fa6281a1e281ac41867b3b0e4d8c722"
       }
     },
     {
@@ -473,12 +545,13 @@
     "p1_mapped_cases": 199
   },
   "current_qualification": {
-    "evidence": "docs/v4/legacy-dispatch-evidence.json",
-    "full_non_live_tests": 556,
-    "focused_tests": 87,
-    "source_files": 332,
-    "status": "PASS_IMPLEMENTED_LOCAL_LEGACY_INTELLIGENCE_FIXTURE_SCOPE; root qualification only; historical item7 review retained; RG0/RG1 HELD",
-    "qualified_application_commit": "81bdeee6203d673d04b62780ac2dc8f458ed9cb4"
+    "evidence": "docs/v4/legacy-schedule-evidence.json",
+    "full_non_live_tests": 561,
+    "focused_tests": 92,
+    "source_files": 335,
+    "status": "PASS_IMPLEMENTED_LOCAL_LEGACY_BRIEF_AND_SCHEDULE_INGRESS_SCOPE; root qualification only; historical item7 review retained; RG0/RG1 HELD",
+    "qualified_application_commit": "fcc5dfa11fa6281a1e281ac41867b3b0e4d8c722",
+    "source_lock_sha256": "0d8b50dcb67eff4be1fb1cdc1b0eb7a4591bd02c970c3ba693e47e3146d4fc37"
   },
   "remaining_release_obligations": [
     "General registry/provider eligibility beyond the approved no-effects fixture baseline; later capability and production qualification gates remain binding",
@@ -531,5 +604,13 @@
     "status": "PASS root-reviewed bounded parallel-agent local extension; historical item7 independent review retained; RG0/RG1/RG5 HELD",
     "qualified_application_commit": "2653d2ecb3f0d5bb8ea6560de274137dd6032a96"
   },
-  "current_independent_review_scope": "Historical item7 application e49a214 only; legacy and parallel extensions have their separate root local qualifications"
+  "current_independent_review_scope": "Historical item7 application e49a214 only; legacy and parallel extensions have their separate root local qualifications",
+  "historical_legacy_intelligence_qualification": {
+    "evidence": "docs/v4/legacy-dispatch-evidence.json",
+    "full_non_live_tests": 556,
+    "focused_tests": 87,
+    "source_files": 332,
+    "status": "PASS_IMPLEMENTED_LOCAL_LEGACY_INTELLIGENCE_FIXTURE_SCOPE; root qualification only; historical item7 review retained; RG0/RG1 HELD",
+    "qualified_application_commit": "81bdeee6203d673d04b62780ac2dc8f458ed9cb4"
+  }
 }

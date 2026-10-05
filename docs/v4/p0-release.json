@@ -20,13 +20,13 @@
       "exit_code": 0
     },
     "full_non_live": {
-      "passed": 556,
+      "passed": 561,
       "failed": 0,
       "errors": 0,
       "skipped": 0,
       "exit_code": 0,
-      "seconds": 526.745,
-      "junit": "artifacts/v4-legacy-dispatch/regression.xml"
+      "seconds": 550.74,
+      "junit": "artifacts/v4-legacy-schedule/regression.xml"
     },
     "documentation_tests": {
       "passed": 15,
@@ -40,22 +40,22 @@
       "failed": 0,
       "version": "12.0.0"
     },
-    "locked_evidence_files": 332,
+    "locked_evidence_files": 335,
     "original_inventory_dispositions": 360,
     "warning": "Pre-existing Starlette/AnyIO deprecation warning",
     "focused_p1": {
-      "passed": 87,
+      "passed": 92,
       "failed": 0,
       "errors": 0,
       "skipped": 0,
       "exit_code": 0,
-      "seconds": 111.761,
-      "junit": "artifacts/v4-legacy-dispatch/focused.xml",
-      "scope": "Impacted legacy/outbox/cutover/public/parallel/migration/wait/restore fixtures; full suite retains all prior contracts"
+      "seconds": 135.087,
+      "junit": "artifacts/v4-legacy-schedule/focused.xml",
+      "scope": "Impacted canonical legacy/outbox/cutover/public/parallel/migration/wait/restart contracts plus selected-brief and actual resumed-schedule qualification"
     },
     "application_qualified_at": "2026-10-05",
-    "application_commit": "81bdeee6203d673d04b62780ac2dc8f458ed9cb4",
-    "application_scope": "Root qualification of no-effects legacy intelligence compatibility, canonical admission/job/outbox, original operation/permit execution, signed API/SDK/CLI, fixture schedule materialization and real disposable Temporal pause/watermark/rollback. Other legacy stages and production integration remain unqualified.",
+    "application_commit": "fcc5dfa11fa6281a1e281ac41867b3b0e4d8c722",
+    "application_scope": "Root-qualified no-effects intelligence/selected-brief API, SDK and CLI starts; real resumed Temporal tick through canonical admission/job/outbox and original operation/permit execution; physical legacy execution drain, lost schedule acknowledgment, concurrent/atomic tick replay, forged scheduled invocation denial and current selected-opportunity workspace reads. Remaining legacy stages and production integration remain unqualified.",
     "focused_parallel_agents": {
       "passed": 45,
       "failed": 0,
@@ -180,6 +180,11 @@
     {
       "path": "docs/v4/legacy-dispatch-evidence.json",
       "sha256": "fe6784dee7b40a34a30a0acffac6b03ca2a8e8abafe1289a4d5cdee0ff96e9fd",
+      "local_only": false
+    },
+    {
+      "path": "docs/v4/legacy-schedule-evidence.json",
+      "sha256": "ce1cf24817c356ce5e7b3e38f208290c151c1f6ab2580f8429916cfe7b6cfa51",
       "local_only": false
     }
   ],
@@ -527,8 +532,8 @@
     "restored_from_own_output_at": "2026-10-04T02:44:31.946Z",
     "base_commit": "380416d35cffb6e4bf33003cb6e8df0638874436",
     "direction": "Remaining P1 legacy dispatch-to-outbox integration, followed by retained P1 authorization/runtime/recovery acceptance; reuse completed items 1\u20137 and parallel extension",
-    "current_increment": "No-effects legacy intelligence API/SDK/CLI, atomic admission/job/outbox, original permit/operation execution, fixture schedule integration and real disposable Temporal pause/watermark/rollback",
-    "qualification": "PASS_LOCAL_INTELLIGENCE_INCREMENT_ONLY",
+    "current_increment": "No-effects intelligence and selected-brief signed API/SDK/CLI; real Temporal rollback action conversion and original-slot canonical ingress; atomic/concurrent/crash replay and physical drain/lost acknowledgment",
+    "qualification": "PASS_LOCAL_INTELLIGENCE_BRIEF_AND_SCHEDULE_INGRESS_ONLY",
     "remaining_scope": [
       "Other legacy stage ingress and dispatch integration with exact current stage/model/provider authorization",
       "Full live schedule inventory/fencing and supported deployment routing/drain/rollback",
@@ -540,11 +545,11 @@
     "RG0": "HELD",
     "RG1": "HELD",
     "main_merge": "NOT AUTHORIZED",
-    "qualified_application_commit": "81bdeee6203d673d04b62780ac2dc8f458ed9cb4",
-    "focused_tests": 87,
-    "full_non_live_tests": 556,
-    "source_files": 332,
-    "evidence": "docs/v4/legacy-dispatch-evidence.json",
-    "publication": "Application published; final documentation head requires fresh exact-head CI. Broader integration goal ACTIVE."
+    "qualified_application_commit": "fcc5dfa11fa6281a1e281ac41867b3b0e4d8c722",
+    "focused_tests": 92,
+    "full_non_live_tests": 561,
+    "source_files": 335,
+    "evidence": "docs/v4/legacy-schedule-evidence.json",
+    "publication": "Application published; final documentation head requires exact-head CI. Broader integration goal ACTIVE."
   }
 }

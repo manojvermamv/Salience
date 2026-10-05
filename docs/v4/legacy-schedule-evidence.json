@@ -1,0 +1,59 @@
+{
+  "recorded_at": "2026-10-05T07:13:46.346947+00:00",
+  "status": "PASS_IMPLEMENTED_LOCAL_LEGACY_BRIEF_AND_SCHEDULE_INGRESS_SCOPE",
+  "base_commit": "8bd3c0a092e3464e82c5030d0bd9b7d2d54a835c",
+  "qualified_application_commit": "fcc5dfa11fa6281a1e281ac41867b3b0e4d8c722",
+  "scope": "Root-qualified no-effects intelligence/selected-brief API, SDK and CLI starts; real resumed Temporal tick through canonical admission/job/outbox and original operation/permit execution; physical legacy execution drain, lost schedule acknowledgment, concurrent/atomic tick replay, forged scheduled invocation denial and current selected-opportunity workspace reads. Remaining legacy stages and production integration remain unqualified.",
+  "commands": [
+    {
+      "command": ".venv/bin/python -m pytest -p no:cacheprovider tests/integration/test_v4_legacy_dispatch.py tests/integration/test_v4_outbox.py tests/integration/test_v4_auto_dispatch.py tests/integration/test_v4_schedule_cutover.py tests/integration/test_v4_public_commands.py tests/integration/test_durable_parallel_teams.py tests/integration/test_v4_migrations.py tests/e2e/test_v4_item7_delivery_recovery.py::test_delivery_scope_migration_preserves_or_holds_original_history tests/integration/test_v4_runtime_waits.py::test_wait_binding_and_receipts_cannot_be_rewritten_or_destructively_downgraded tests/integration/test_v4_runtime_waits.py::test_populated_owner_binding_cannot_be_rolled_back tests/e2e/test_v4_wait_restart.py tests/integration/test_v4_legacy_schedule_ingress.py tests/integration/test_v4_legacy_brief_dispatch.py -q --junitxml=artifacts/v4-legacy-schedule/focused.xml",
+      "tests": 92,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "exit_code": 0,
+      "seconds": 135.087,
+      "junit": "artifacts/v4-legacy-schedule/focused.xml",
+      "junit_sha256": "74f46ebb245ba1efa60d823ed5d5e6329c0ff516d3fd85444dbc491393d363d1",
+      "log": "artifacts/v4-legacy-schedule/focused.log",
+      "log_sha256": "6a569ac2f10d910b6d47e5c4d7961e5437337d16cedbad71c4967723ea61d718"
+    },
+    {
+      "command": ".venv/bin/python -m pytest -p no:cacheprovider tests/contracts tests/unit tests/integration tests/e2e tests/evals -m 'not live' -q -rs --junitxml=artifacts/v4-legacy-schedule/regression.xml",
+      "tests": 561,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "exit_code": 0,
+      "seconds": 550.74,
+      "junit": "artifacts/v4-legacy-schedule/regression.xml",
+      "junit_sha256": "767990af3ed6768d1b55bf757c18dc3ad5f1686f754ca9861b5638eafcc61b35",
+      "log": "artifacts/v4-legacy-schedule/regression.log",
+      "log_sha256": "d5866ce35597fc9a0d10b2c53126e33834d1049f789dbd9f6f29c55b5e0468be"
+    }
+  ],
+  "locked_source_files": 335,
+  "source_evidence_lock_sha256": "0d8b50dcb67eff4be1fb1cdc1b0eb7a4591bd02c970c3ba693e47e3146d4fc37",
+  "source_freeze": "artifacts/v4-legacy-schedule/source-freeze.json",
+  "source_freeze_sha256": "2f455e0b893dec2e1e59472a563a2e76e73a87295e3a9581f508ac5248c01a70",
+  "preliminary": {
+    "junit": "artifacts/v4-legacy-schedule/candidate.xml",
+    "junit_sha256": "1a8d5c8b3330f62e941b97412517b6b8884f6a27f6e2a5ca2398c0de9fb94893",
+    "passed": 18,
+    "failures": 3,
+    "errors": 0,
+    "scope": "Superseded: two test harness errors (stop revision and typed search-attribute construction), plus actual selected-opportunity Decimal serialization failure. Repaired and re-qualified; not claimed as a pure intentional RED run."
+  },
+  "independent_review": "NOT RUN for extension; historical item7 review remains bound to e49a214",
+  "goal_status": "ACTIVE; remaining legacy stage conversion and retained acceptance obligations",
+  "retained_boundaries": {
+    "production_effects_enabled": false,
+    "RG0": "HELD",
+    "RG1": "HELD",
+    "P2-P7": "GATED",
+    "P6": "DISABLED",
+    "main_merge": "NOT AUTHORIZED",
+    "formal_pr_approval": "NOT RUN"
+  },
+  "remote_ci": "Final published documentation head requires separate exact-head inspection; local results do not establish PR approval"
+}
