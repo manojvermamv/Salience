@@ -45,7 +45,7 @@
       "local_verifier_status": "PASS; covers implemented local fixtures, not unimplemented production acceptance",
       "independent_review_status": "PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE; production acceptance remains HELD",
       "production_release_status": "HELD",
-      "remaining_acceptance": "Remaining legacy stage/API/scheduler start and signal integration with exact current authorization; production dispatch remains unqualified. No-effects intelligence/selected-brief and real resumed Temporal ingress are separately root-qualified.",
+      "remaining_acceptance": "Remaining legacy stage/API/scheduler start and signal integration with exact current authorization; production dispatch remains unqualified. Intelligence/selected briefs and original native intelligence schedule conversion are separately root-qualified.",
       "independent_review_evidence": [
         "docs/v4/item7-runtime-review.json"
       ],
@@ -63,6 +63,14 @@
           "tests/integration/test_v4_legacy_brief_dispatch.py"
         ],
         "application_commit": "fcc5dfa11fa6281a1e281ac41867b3b0e4d8c722"
+      },
+      "native_schedule_extension": {
+        "scope": "Root-qualified original native intelligence schedule conversion in no-effects fixture only",
+        "evidence": "docs/v4/native-schedule-evidence.json",
+        "verifiers": [
+          "tests/integration/test_v4_native_schedules.py"
+        ],
+        "application_commit": "10eb77f22180d70e0803777e6305cac189142ecc"
       }
     },
     {
@@ -112,6 +120,14 @@
           "tests/integration/test_v4_legacy_brief_dispatch.py"
         ],
         "application_commit": "fcc5dfa11fa6281a1e281ac41867b3b0e4d8c722"
+      },
+      "native_schedule_extension": {
+        "scope": "Root-qualified original native intelligence schedule conversion in no-effects fixture only",
+        "evidence": "docs/v4/native-schedule-evidence.json",
+        "verifiers": [
+          "tests/integration/test_v4_native_schedules.py"
+        ],
+        "application_commit": "10eb77f22180d70e0803777e6305cac189142ecc"
       }
     },
     {
@@ -162,6 +178,14 @@
           "tests/integration/test_v4_legacy_brief_dispatch.py"
         ],
         "application_commit": "fcc5dfa11fa6281a1e281ac41867b3b0e4d8c722"
+      },
+      "native_schedule_extension": {
+        "scope": "Root-qualified original native intelligence schedule conversion in no-effects fixture only",
+        "evidence": "docs/v4/native-schedule-evidence.json",
+        "verifiers": [
+          "tests/integration/test_v4_native_schedules.py"
+        ],
+        "application_commit": "10eb77f22180d70e0803777e6305cac189142ecc"
       }
     },
     {
@@ -326,6 +350,14 @@
           "tests/integration/test_v4_legacy_brief_dispatch.py"
         ],
         "application_commit": "fcc5dfa11fa6281a1e281ac41867b3b0e4d8c722"
+      },
+      "native_schedule_extension": {
+        "scope": "Root-qualified original native intelligence schedule conversion in no-effects fixture only",
+        "evidence": "docs/v4/native-schedule-evidence.json",
+        "verifiers": [
+          "tests/integration/test_v4_native_schedules.py"
+        ],
+        "application_commit": "10eb77f22180d70e0803777e6305cac189142ecc"
       }
     },
     {
@@ -545,13 +577,13 @@
     "p1_mapped_cases": 199
   },
   "current_qualification": {
-    "evidence": "docs/v4/legacy-schedule-evidence.json",
-    "full_non_live_tests": 561,
-    "focused_tests": 92,
-    "source_files": 335,
-    "status": "PASS_IMPLEMENTED_LOCAL_LEGACY_BRIEF_AND_SCHEDULE_INGRESS_SCOPE; root qualification only; historical item7 review retained; RG0/RG1 HELD",
-    "qualified_application_commit": "fcc5dfa11fa6281a1e281ac41867b3b0e4d8c722",
-    "source_lock_sha256": "0d8b50dcb67eff4be1fb1cdc1b0eb7a4591bd02c970c3ba693e47e3146d4fc37"
+    "evidence": "docs/v4/native-schedule-evidence.json",
+    "full_non_live_tests": 567,
+    "focused_tests": 98,
+    "source_files": 338,
+    "status": "PASS_IMPLEMENTED_LOCAL_NATIVE_INTELLIGENCE_SCHEDULE_CONVERSION; root qualification only; historical item7 review retained; RG0/RG1 HELD",
+    "qualified_application_commit": "10eb77f22180d70e0803777e6305cac189142ecc",
+    "source_lock_sha256": "f320dae08c5055a44258335aebb03c05ff0421d6b01359fb70a52868afa03e70"
   },
   "remaining_release_obligations": [
     "General registry/provider eligibility beyond the approved no-effects fixture baseline; later capability and production qualification gates remain binding",
@@ -612,5 +644,14 @@
     "source_files": 332,
     "status": "PASS_IMPLEMENTED_LOCAL_LEGACY_INTELLIGENCE_FIXTURE_SCOPE; root qualification only; historical item7 review retained; RG0/RG1 HELD",
     "qualified_application_commit": "81bdeee6203d673d04b62780ac2dc8f458ed9cb4"
+  },
+  "historical_legacy_schedule_and_brief_qualification": {
+    "evidence": "docs/v4/legacy-schedule-evidence.json",
+    "full_non_live_tests": 561,
+    "focused_tests": 92,
+    "source_files": 335,
+    "status": "PASS_IMPLEMENTED_LOCAL_LEGACY_BRIEF_AND_SCHEDULE_INGRESS_SCOPE; root qualification only; historical item7 review retained; RG0/RG1 HELD",
+    "qualified_application_commit": "fcc5dfa11fa6281a1e281ac41867b3b0e4d8c722",
+    "source_lock_sha256": "0d8b50dcb67eff4be1fb1cdc1b0eb7a4591bd02c970c3ba693e47e3146d4fc37"
   }
 }
