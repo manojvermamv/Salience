@@ -1,6 +1,6 @@
 {
   "phase": "P0",
-  "updated_at": "2026-10-05",
+  "updated_at": "2026-10-05T10:00:02.148621+00:00",
   "baseline_commit": "8e50d68efbf2bec2aabfb2fe3226e01635de2adb",
   "scope": "Isolated local foundation; no production traffic or effects",
   "requirements": [
@@ -20,13 +20,13 @@
       "exit_code": 0
     },
     "full_non_live": {
-      "passed": 575,
+      "passed": 585,
       "failed": 0,
       "errors": 0,
       "skipped": 0,
       "exit_code": 0,
-      "seconds": 578.005,
-      "junit": "artifacts/v4-legacy-stages/regression.xml"
+      "seconds": 634.889,
+      "junit": "artifacts/v4-legacy-creative/regression.xml"
     },
     "documentation_tests": {
       "passed": 15,
@@ -40,22 +40,22 @@
       "failed": 0,
       "version": "12.0.0"
     },
-    "locked_evidence_files": 341,
+    "locked_evidence_files": 344,
     "original_inventory_dispositions": 360,
     "warning": "Pre-existing Starlette/AnyIO deprecation warning",
     "focused_p1": {
-      "passed": 106,
+      "passed": 116,
       "failed": 0,
       "errors": 0,
       "skipped": 0,
       "exit_code": 0,
-      "seconds": 172.044,
-      "junit": "artifacts/v4-legacy-stages/focused.xml",
-      "scope": "Impacted legacy/outbox/cutover/public/parallel/migration/wait/restart contracts plus canonical no-send dummy and physical original cancellation"
+      "seconds": 222.462,
+      "junit": "artifacts/v4-legacy-creative/focused.xml",
+      "scope": "Impacted legacy/outbox/cutover/public/parallel/migration/wait/restart contracts plus dry creative with current per-activity authority and original cancellation"
     },
     "application_qualified_at": "2026-10-05",
-    "application_commit": "6e0b266da4a453e293e4494384ed0457b6ab88b8",
-    "application_scope": "Root-qualified no-send legacy DurableDummyWorkflow through original canonical goal/workspace/program/cycle/context/operation/job/outbox/permit, immutable stage discriminator, atomic/concurrent replay and mixed-stage coalescing denial. Current legacy:dummy grant is independently required at intake and activities; internally fixed no-send provider, bounded success dry-run only, forged effect/crash payload denial. Committed ordered close cancels a pinned original Temporal run; terminal readback alone projects physical cancellation, including lost acknowledgment. Signed API/SDK/CLI and empty/populated stage migration rollback. Prior intelligence/brief/native schedule and item7/parallel scopes retained. Creative/publication, their schedules, general policy and production remain unqualified.",
+    "application_commit": "57eb84f62d978ca235f1119939d9f6adda781735",
+    "application_scope": "Root-qualified dry CreativeProductionWorkflow through canonical original goal/workspace/program/cycle/context/operation/job/outbox/permit. Independent current legacy:creative grant, fixed profile and bounded variants; every activity checks original request, scoped brief and current execution authority before business data access. Internal provider refuses all sends/polls/reconciliation/download/cancellation. Atomic concurrent replay, mixed-stage conflict, signed API/SDK/CLI, forged native payload denial before business read, grant revocation before start and between activities, original run-pinned cancellation with lost acknowledgment, exact empty/populated migration rollback. Separate explicitly reviewed synthetic fixture brief supports the success case; native unverified intelligence brief remains unchanged. No asset/ready-package/media/provider/P2 qualification. Shared-worker intelligence fetch also pins the original intelligence stage and exact request before any business read/write; actual wrong-stage and forged workspace requests reject without business fetch. Prior scopes retained; publication and its native schedules plus general production obligations remain open.",
     "focused_parallel_agents": {
       "passed": 45,
       "failed": 0,
@@ -195,6 +195,11 @@
     {
       "path": "docs/v4/legacy-dummy-evidence.json",
       "sha256": "3946d47b029a0607cb8a6fecc9830d98bee9c04afd54112c98b6ee0402eff0bc",
+      "local_only": false
+    },
+    {
+      "path": "docs/v4/legacy-creative-evidence.json",
+      "sha256": "8e1c69f1a666a9e1f8b7eebb4e4d7a3c823e98bdfc714d4cf0834a2e5e8de008",
       "local_only": false
     }
   ],
@@ -542,10 +547,10 @@
     "restored_from_own_output_at": "2026-10-04T02:44:31.946Z",
     "base_commit": "380416d35cffb6e4bf33003cb6e8df0638874436",
     "direction": "Remaining P1 legacy dispatch-to-outbox integration, followed by retained P1 authorization/runtime/recovery acceptance; reuse completed items 1\u20137 and parallel extension",
-    "current_increment": "No-send native dummy workflow under original admitted scope/operation/outbox/permit, current legacy:dummy authority, immutable stage mapping, signed SDK/CLI and pinned original cancellation with terminal readback; earlier intelligence/brief/native schedules retained",
-    "qualification": "PASS_IMPLEMENTED_LOCAL_LEGACY_DUMMY_STAGE",
+    "current_increment": "Dry actual creative workflow under original scope/operation/outbox/permit, current legacy:creative authority at intake and every activity, fixed no-send provider, signed SDK/CLI and original run-pinned cancellation with lost-ack readback; earlier stages retained",
+    "qualification": "PASS_IMPLEMENTED_LOCAL_LEGACY_CREATIVE_STAGE",
     "remaining_scope": [
-      "Creative/publication stage ingress and dispatch, native publication schedules and exact current stage/account/model/provider authorization",
+      "Publication stage ingress/dispatch, native publication schedules and exact current account/native approval/budget authorization",
       "Full live schedule inventory/fencing and supported deployment routing/drain/rollback",
       "General current policy/version eligibility and separately scoped remote reconciliation",
       "External durable notification/alert delivery and retained RG0 production prerequisites"
@@ -555,11 +560,11 @@
     "RG0": "HELD",
     "RG1": "HELD",
     "main_merge": "NOT AUTHORIZED",
-    "qualified_application_commit": "6e0b266da4a453e293e4494384ed0457b6ab88b8",
-    "focused_tests": 106,
-    "full_non_live_tests": 575,
-    "source_files": 341,
-    "evidence": "docs/v4/legacy-dummy-evidence.json",
+    "qualified_application_commit": "57eb84f62d978ca235f1119939d9f6adda781735",
+    "focused_tests": 116,
+    "full_non_live_tests": 585,
+    "source_files": 344,
+    "evidence": "docs/v4/legacy-creative-evidence.json",
     "publication": "Application published; final documentation head requires exact-head CI. Broader integration goal ACTIVE."
   }
 }

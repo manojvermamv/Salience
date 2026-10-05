@@ -45,7 +45,7 @@
       "local_verifier_status": "PASS; covers implemented local fixtures, not unimplemented production acceptance",
       "independent_review_status": "PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE; production acceptance remains HELD",
       "production_release_status": "HELD",
-      "remaining_acceptance": "Creative/publication API/scheduler start and signal integration with exact current stage/account authorization; production dispatch remains unqualified. Intelligence/selected briefs, original native intelligence schedules and canonical no-send dummy are separately root-qualified.",
+      "remaining_acceptance": "Publication API/scheduler start and signal integration with exact current account/native approval/budget authorization; production dispatch remains unqualified. Intelligence/briefs/native intelligence schedules/dummy/dry creative are separately root-qualified.",
       "independent_review_evidence": [
         "docs/v4/item7-runtime-review.json"
       ],
@@ -79,6 +79,14 @@
           "tests/integration/test_v4_legacy_dummy.py"
         ],
         "application_commit": "6e0b266da4a453e293e4494384ed0457b6ab88b8"
+      },
+      "legacy_creative_extension": {
+        "scope": "Root-qualified dry creative, original authority checked before every activity, separate current stage grant and original typed physical cancellation only",
+        "evidence": "docs/v4/legacy-creative-evidence.json",
+        "verifiers": [
+          "tests/integration/test_v4_legacy_creative.py"
+        ],
+        "application_commit": "57eb84f62d978ca235f1119939d9f6adda781735"
       }
     },
     {
@@ -144,6 +152,14 @@
           "tests/integration/test_v4_legacy_dummy.py"
         ],
         "application_commit": "6e0b266da4a453e293e4494384ed0457b6ab88b8"
+      },
+      "legacy_creative_extension": {
+        "scope": "Root-qualified dry creative, original authority checked before every activity, separate current stage grant and original typed physical cancellation only",
+        "evidence": "docs/v4/legacy-creative-evidence.json",
+        "verifiers": [
+          "tests/integration/test_v4_legacy_creative.py"
+        ],
+        "application_commit": "57eb84f62d978ca235f1119939d9f6adda781735"
       }
     },
     {
@@ -260,6 +276,14 @@
           "tests/integration/test_v4_legacy_dummy.py"
         ],
         "application_commit": "6e0b266da4a453e293e4494384ed0457b6ab88b8"
+      },
+      "legacy_creative_extension": {
+        "scope": "Root-qualified dry creative, original authority checked before every activity, separate current stage grant and original typed physical cancellation only",
+        "evidence": "docs/v4/legacy-creative-evidence.json",
+        "verifiers": [
+          "tests/integration/test_v4_legacy_creative.py"
+        ],
+        "application_commit": "57eb84f62d978ca235f1119939d9f6adda781735"
       }
     },
     {
@@ -318,6 +342,14 @@
           "tests/integration/test_v4_legacy_dummy.py"
         ],
         "application_commit": "6e0b266da4a453e293e4494384ed0457b6ab88b8"
+      },
+      "legacy_creative_extension": {
+        "scope": "Root-qualified dry creative, original authority checked before every activity, separate current stage grant and original typed physical cancellation only",
+        "evidence": "docs/v4/legacy-creative-evidence.json",
+        "verifiers": [
+          "tests/integration/test_v4_legacy_creative.py"
+        ],
+        "application_commit": "57eb84f62d978ca235f1119939d9f6adda781735"
       }
     },
     {
@@ -358,6 +390,14 @@
           "tests/integration/test_v4_legacy_dummy.py"
         ],
         "application_commit": "6e0b266da4a453e293e4494384ed0457b6ab88b8"
+      },
+      "legacy_creative_extension": {
+        "scope": "Root-qualified dry creative, original authority checked before every activity, separate current stage grant and original typed physical cancellation only",
+        "evidence": "docs/v4/legacy-creative-evidence.json",
+        "verifiers": [
+          "tests/integration/test_v4_legacy_creative.py"
+        ],
+        "application_commit": "57eb84f62d978ca235f1119939d9f6adda781735"
       }
     },
     {
@@ -406,6 +446,14 @@
           "tests/integration/test_v4_legacy_dummy.py"
         ],
         "application_commit": "6e0b266da4a453e293e4494384ed0457b6ab88b8"
+      },
+      "legacy_creative_extension": {
+        "scope": "Root-qualified dry creative, original authority checked before every activity, separate current stage grant and original typed physical cancellation only",
+        "evidence": "docs/v4/legacy-creative-evidence.json",
+        "verifiers": [
+          "tests/integration/test_v4_legacy_creative.py"
+        ],
+        "application_commit": "57eb84f62d978ca235f1119939d9f6adda781735"
       }
     },
     {
@@ -625,13 +673,13 @@
     "p1_mapped_cases": 199
   },
   "current_qualification": {
-    "evidence": "docs/v4/legacy-dummy-evidence.json",
-    "full_non_live_tests": 575,
-    "focused_tests": 106,
-    "source_files": 341,
-    "status": "PASS_IMPLEMENTED_LOCAL_LEGACY_DUMMY_STAGE; root qualification only; historical item7 review retained; RG0/RG1 HELD",
-    "qualified_application_commit": "6e0b266da4a453e293e4494384ed0457b6ab88b8",
-    "source_lock_sha256": "369725d5debea886934ce5d0978405b0c571861b5c870981277261a14e773d37"
+    "evidence": "docs/v4/legacy-creative-evidence.json",
+    "full_non_live_tests": 585,
+    "focused_tests": 116,
+    "source_files": 344,
+    "status": "PASS_IMPLEMENTED_LOCAL_LEGACY_CREATIVE_STAGE; root qualification only; historical item7 review retained; RG0/RG1 HELD",
+    "qualified_application_commit": "57eb84f62d978ca235f1119939d9f6adda781735",
+    "source_lock_sha256": "b09a36becde6fcd7725e88f2d91c4e91f727d523df3a4271a5a9c5355927f067"
   },
   "remaining_release_obligations": [
     "General registry/provider eligibility beyond the approved no-effects fixture baseline; later capability and production qualification gates remain binding",
@@ -710,5 +758,14 @@
     "status": "PASS_IMPLEMENTED_LOCAL_NATIVE_INTELLIGENCE_SCHEDULE_CONVERSION; root qualification only; historical item7 review retained; RG0/RG1 HELD",
     "qualified_application_commit": "10eb77f22180d70e0803777e6305cac189142ecc",
     "source_lock_sha256": "f320dae08c5055a44258335aebb03c05ff0421d6b01359fb70a52868afa03e70"
+  },
+  "historical_legacy_dummy_qualification": {
+    "evidence": "docs/v4/legacy-dummy-evidence.json",
+    "full_non_live_tests": 575,
+    "focused_tests": 106,
+    "source_files": 341,
+    "status": "PASS_IMPLEMENTED_LOCAL_LEGACY_DUMMY_STAGE; root qualification only; historical item7 review retained; RG0/RG1 HELD",
+    "qualified_application_commit": "6e0b266da4a453e293e4494384ed0457b6ab88b8",
+    "source_lock_sha256": "369725d5debea886934ce5d0978405b0c571861b5c870981277261a14e773d37"
   }
 }

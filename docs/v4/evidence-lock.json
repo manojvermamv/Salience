@@ -1,5 +1,5 @@
 {
-  "baseline_commit": "8e50d68efbf2bec2aabfb2fe3226e01635de2adb",
+  "baseline_commit": "57eb84f62d978ca235f1119939d9f6adda781735",
   "scope": "All tracked application source, migrations, tests, scripts and named deployment/dependency configuration. Hash changes require fresh claim review, not automatic acceptance.",
   "files": [
     {
@@ -183,6 +183,10 @@
       "sha256": "907d7b9e91aac579e73c21c731ce45ef144777ec50e02e1349476544331f8b93"
     },
     {
+      "path": "migrations/versions/0039_legacy_creative_stage.py",
+      "sha256": "12fa9df7bab30692bddb58eea37c698216c84ee50d1ad58b4e1067cbef2555e6"
+    },
+    {
       "path": "migrations/versions/__init__.py",
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
@@ -296,7 +300,7 @@
     },
     {
       "path": "src/salience/api/app.py",
-      "sha256": "ad384159c9c8ad5b86f40324a282d96d04835f139a5713a9843a75538535e29d"
+      "sha256": "be6bd1a203d0ccb9202ad9dabecaab66f913e7e706438c7f2ecc9f08c4f5ef79"
     },
     {
       "path": "src/salience/api/dependencies.py",
@@ -304,7 +308,7 @@
     },
     {
       "path": "src/salience/api/p0.py",
-      "sha256": "9bebf8885fed6ce33df550f8879ca0d14b872edd1f282ab622a62df8b8eaeaf1"
+      "sha256": "3b8b3a0fa8a0c52d2bb978497550c38e498f81975d1264fac9239a9dbfff1b58"
     },
     {
       "path": "src/salience/api/routes/__init__.py",
@@ -329,6 +333,10 @@
     {
       "path": "src/salience/api/routes/intelligence.py",
       "sha256": "c28154c3536f549634de14de3112c1c56e1a9429ce045f76964dfce820239fef"
+    },
+    {
+      "path": "src/salience/api/routes/legacy_creative.py",
+      "sha256": "a4e098ad1d7d08b811c8387287325d09b8b224b9aa213a5f3965c8ca53902fb1"
     },
     {
       "path": "src/salience/api/routes/legacy_dispatch.py",
@@ -388,7 +396,7 @@
     },
     {
       "path": "src/salience/cli.py",
-      "sha256": "598d7eecc68ec99fd0c9259be1ea2387f0b62739251e7bef817da9f4f1db41c0"
+      "sha256": "e33f19fb4306efdd39572faaeaa44d15b8f3e8c606c645d68fa04402aa630b6a"
     },
     {
       "path": "src/salience/config.py",
@@ -488,11 +496,11 @@
     },
     {
       "path": "src/salience/cycles/legacy_dispatch.py",
-      "sha256": "39e96edae6be76e0f69b7981b96fe40a2028100971b253741b0f59eef22e8866"
+      "sha256": "ecf1b287d6b3a6452735f85bcea432dbc070a0a1eaccbad7f62ffb335a965bc3"
     },
     {
       "path": "src/salience/cycles/legacy_runtime.py",
-      "sha256": "a2d907c0fefb4d0aa92b833e014d3b5104ba498584e27a2122a0fe8cdb2dddb3"
+      "sha256": "8b7aea81f444aec8f7ba7b45d3f1b4a967f7d00ff669f33ef89d4daeeed9a63f"
     },
     {
       "path": "src/salience/cycles/legacy_schedule_workflow.py",
@@ -768,7 +776,7 @@
     },
     {
       "path": "src/salience/sdk/client.py",
-      "sha256": "0dfed4d68621e62bebf5dc59a5012c935404a6a823b188916bee9ef338bf1dfc"
+      "sha256": "5b0ffdb5013cc64826b5b778f21526a97f4ba2b98c68fe546e5bf13e2b3d4afc"
     },
     {
       "path": "src/salience/storage/__init__.py",
@@ -1040,7 +1048,7 @@
     },
     {
       "path": "tests/integration/test_durable_parallel_teams.py",
-      "sha256": "1a2d29f699084d9ecb2cd62d7a0da464c461d597569527c1bb55a64f6d603364"
+      "sha256": "393e69b503d14eabb70c2239ae01f90fe55360965760ef69e4568dad2ea81a91"
     },
     {
       "path": "tests/integration/test_fixture_publisher.py",
@@ -1147,12 +1155,16 @@
       "sha256": "9219e22a1be9d734eef21bde5ccfeaca847535f5ffb9e2920b6e9871f4f4dc97"
     },
     {
+      "path": "tests/integration/test_v4_legacy_creative.py",
+      "sha256": "70d8bb12968847d6ff8d8310fa05594e49e9ab3964d4b6467054dcd097a80ca6"
+    },
+    {
       "path": "tests/integration/test_v4_legacy_dispatch.py",
-      "sha256": "6c9c22caf6409f23a69ace678e764ab0762f53dafed8079c7ad387ae945d6807"
+      "sha256": "f8f30a0f6fcc27a6421954d1f53c4b00ada8c9f6c6b621a433fe01e74a25a20b"
     },
     {
       "path": "tests/integration/test_v4_legacy_dummy.py",
-      "sha256": "552c9948ea413a26eb1cfe6687b338c97bf80b36326d514d9a3ce768cf6c8775"
+      "sha256": "806ccf33c8561f4c8e595d2e10f0632cbab76e4d99bee1d1cf0dbd67bc4f88db"
     },
     {
       "path": "tests/integration/test_v4_legacy_schedule_ingress.py",
@@ -1160,11 +1172,11 @@
     },
     {
       "path": "tests/integration/test_v4_migrations.py",
-      "sha256": "25c413a64e38c3f60d30a3c94e2ea9136f01b7c1ba78320c6ec955ec84ba5956"
+      "sha256": "abb93bb1899c7dca928835d9a3e0e2780ada58cc417b35ab0781f8c9f3d41010"
     },
     {
       "path": "tests/integration/test_v4_native_schedules.py",
-      "sha256": "3438f4f938cc7fff83dd678e34c6274eaed722d3067257fd8702e625d96772d8"
+      "sha256": "402fb4a9900e88ef83d39d9f9842e89b7830c04430348b70c1e7568fc8d08bbd"
     },
     {
       "path": "tests/integration/test_v4_object_retention.py",
@@ -1184,7 +1196,7 @@
     },
     {
       "path": "tests/integration/test_v4_runtime_waits.py",
-      "sha256": "af35053d00115f110fcc4fbfe52db6307af0a4b10f691ce9dad46e34fbd6f85c"
+      "sha256": "2e05058006444e20575f5884cbdda2487d4098283705c6796dcf27155cc3fa66"
     },
     {
       "path": "tests/integration/test_v4_s3_service.py",
@@ -1367,6 +1379,6 @@
       "sha256": "7f76114852b4b9d95b3517c49718ccf2e007d64d442a1b4e05ef696dd37a8bbc"
     }
   ],
-  "reviewed_at": "2026-10-05",
-  "review_scope": "Root-qualified canonical no-send legacy dummy: 106 focused / 575 full non-live PASS, 341 source hashes. Original admitted workspace/program/cycle/context/operation/job/outbox/permit; immutable stage mapping; current legacy:dummy authority at intake/activities; fixed no-send provider and forged effect/crash payload denial; committed ordered close targets pinned original Temporal run with terminal cancellation readback and lost acknowledgment. Empty guard restoration and populated stage downgrade refusal. Current fixture scoped reads separately verified three original unknown operations as RPC NOT_FOUND. Earlier native/intelligence/brief/item7/parallel reports remain dated/source-bound. Creative/publication, general policy and production remain unqualified; broader goal ACTIVE."
+  "reviewed_at": "2026-10-05T10:00:02.138405+00:00",
+  "review_scope": "Root-qualified dry legacy creative extension; retained original intelligence/dummy/native schedule and independent item7/parallel scopes"
 }

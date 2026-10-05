@@ -1,33 +1,34 @@
 {
-  "audited_at": "2026-10-05",
-  "base_commit": "31b3d63eb84d8251dcf39b25b9fe6393a24a17b5",
-  "scope": "Active Markdown/ledgers through root-qualified canonical no-send dummy; earlier native/intelligence/parallel/item7 and dated design/source/archive evidence preserved",
+  "audited_at": "2026-10-05T10:00:02.151004+00:00",
+  "base_commit": "e42635b3f06d3bfbb8171c091eda44756bc5c784",
+  "scope": "Active Markdown/ledgers through root-qualified canonical dry creative; earlier dummy/native/intelligence/parallel/item7 and dated design/source/archive evidence preserved",
   "tracked_markdown_files": 85,
-  "documentation_artifacts": 240,
+  "documentation_artifacts": 241,
   "summary": {
     "preserved plugin instructions, references and examples; independent skill scope": 57,
-    "active project Markdown aligned with resumed P1 no-send dummy and retained holds": 69,
+    "active project Markdown aligned with resumed P1 dry creative and retained holds": 69,
     "preserved original design source or historical diagram": 7,
     "preserved immutable historical snapshot": 62,
     "preserved historical architecture visual": 8,
     "preserved dated qualification report": 15,
     "preserved source, archive or coverage manifest": 4,
     "current documentation status audit": 1,
-    "current 341-file root-qualified legacy source lock": 1,
+    "current 344-file root-qualified legacy source lock": 1,
     "preserved dated independent item7 qualification report": 6,
     "preserved dated preparation report": 1,
     "active legacy integration contract": 1,
     "preserved dated legacy intelligence qualification report": 1,
-    "current release ledger; no-send dummy local PASS, broader P1 ACTIVE, RG0/RG1 HELD": 1,
+    "current release ledger; dry creative local PASS, broader P1 ACTIVE, RG0/RG1 HELD": 1,
     "current 17-requirement acceptance matrix; historical item7 review and separate legacy/parallel qualifications": 1,
     "preserved dated parallel qualification report": 1,
     "rolling exact-commit readback of published pre-extension base4bbffb6": 1,
     "preserved dated legacy brief and scheduled ingress qualification report": 1,
     "preserved dated original native schedule qualification report": 1,
-    "durable local canonical no-send dummy qualification report": 1
+    "preserved dated canonical no-send dummy qualification report": 1,
+    "durable local canonical dry creative qualification report": 1
   },
-  "application_source_files_verified": 341,
-  "prior_application_files_preserved": 327,
+  "application_source_files_verified": 344,
+  "prior_application_files_preserved": 329,
   "prior_application_files_updated": [
     "src/salience/api/app.py",
     "src/salience/api/p0.py",
@@ -37,14 +38,15 @@
     "src/salience/sdk/client.py",
     "tests/integration/test_durable_parallel_teams.py",
     "tests/integration/test_v4_legacy_dispatch.py",
+    "tests/integration/test_v4_legacy_dummy.py",
     "tests/integration/test_v4_migrations.py",
     "tests/integration/test_v4_native_schedules.py",
     "tests/integration/test_v4_runtime_waits.py"
   ],
   "application_files_added": [
-    "migrations/versions/0038_legacy_dummy_stage.py",
-    "src/salience/api/routes/legacy_jobs.py",
-    "tests/integration/test_v4_legacy_dummy.py"
+    "migrations/versions/0039_legacy_creative_stage.py",
+    "src/salience/api/routes/legacy_creative.py",
+    "tests/integration/test_v4_legacy_creative.py"
   ],
   "mermaid_source_blocks_preserved": 6,
   "item7_status": "COMPLETE_IMPLEMENTED_LOCAL_FIXTURE_QUALIFICATION",
@@ -59,7 +61,7 @@
     "mapped_obligations": 75,
     "negative_controls": 6,
     "documentation_shell_contracts": 4,
-    "preserved_documentation_artifacts": 164,
+    "preserved_documentation_artifacts": 165,
     "independent_reviewers": 3,
     "reviewed_p1_rows": 17,
     "independent_review_scope": "Dated item7 at e49a214 only; legacy/parallel extension root qualification is separate"
@@ -352,8 +354,8 @@
     },
     {
       "path": "README.md",
-      "disposition": "active project Markdown aligned with resumed P1 no-send dummy and retained holds",
-      "sha256": "07f263a4d9c8676fde658f7bb9e40a78a46387f459954c3304ae782d8e0ec71c"
+      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
+      "sha256": "9f5b60c14ea9958949e087f919a939184b621bc8658ab17494b547bf8f356377"
     },
     {
       "path": "docs-new-arch/ArchCurrent.mermaid",
@@ -392,63 +394,63 @@
     },
     {
       "path": "docs-new-arch/README.md",
-      "disposition": "active project Markdown aligned with resumed P1 no-send dummy and retained holds",
-      "sha256": "8ae35949a05cba59ea48125fb1e338287d11f67d5a7d0ce40596d16d33ad8617"
+      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
+      "sha256": "74b429a8588fbc061ab311a576a951a803a772c255ca52ec19fccb5eaaa2f042"
     },
     {
       "path": "docs/README.md",
-      "disposition": "active project Markdown aligned with resumed P1 no-send dummy and retained holds",
-      "sha256": "2acb5ddf4544c36143d922508fe251cdd458a41dc302905b361acdc978a8088a"
+      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
+      "sha256": "77291b7ae948b59b0860bfaa920597e0415b38d35dbe17ecab7270e9c18ff1bf"
     },
     {
       "path": "docs/adr/0001-durable-runtime.md",
-      "disposition": "active project Markdown aligned with resumed P1 no-send dummy and retained holds",
-      "sha256": "780b38f7a3564814a0f7538697eabc492eb28dcf1f7f28006a2860e256840a00"
+      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
+      "sha256": "f85310cb45a5b8c272e9593e7547871375aad4188d17b2ec48be1da07f91e74e"
     },
     {
       "path": "docs/adr/0002-object-storage.md",
-      "disposition": "active project Markdown aligned with resumed P1 no-send dummy and retained holds",
-      "sha256": "c903c1c733d60e67c3ecaaef6c3b62e1d07c8d908597c2305c97979dd738bb7a"
+      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
+      "sha256": "03b2ec998566af5caa30929b544cfe495e059b0f4d49b271cdfecb0516d6ca82"
     },
     {
       "path": "docs/adr/0003-api-persistence-and-contracts.md",
-      "disposition": "active project Markdown aligned with resumed P1 no-send dummy and retained holds",
-      "sha256": "592c897734da23dedd55628a290d2c6c5cc1023ad7ef67bc0d461d0280b65a09"
+      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
+      "sha256": "747110b742cb174c8efbb8adcd7dda38f86bf4341d9aab43a4a0c30d5810e9e9"
     },
     {
       "path": "docs/adr/0004-governance-secrets-and-protocols.md",
-      "disposition": "active project Markdown aligned with resumed P1 no-send dummy and retained holds",
-      "sha256": "fae16907e797a227aae079307393d544d0eb53ac91d776a663edad2a0f4b4cfa"
+      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
+      "sha256": "e1f0d8e31634792f21962141460b96b60759060ba68f8923a894d3f2870b617d"
     },
     {
       "path": "docs/adr/0005-mcp-a2a-and-browser-sdk-adoption.md",
-      "disposition": "active project Markdown aligned with resumed P1 no-send dummy and retained holds",
-      "sha256": "e65b917bba16d5924b28fe8747c65ba99536ff7f8ed9a94171b12da990ebdbda"
+      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
+      "sha256": "e16445b76f97983f5187b20c122f3081b9ff5a603f27439de9487d4a87a7510e"
     },
     {
       "path": "docs/adr/0006-governed-publishing.md",
-      "disposition": "active project Markdown aligned with resumed P1 no-send dummy and retained holds",
-      "sha256": "bfbeb31577becc1f19cdc828ca38289d0a1a2256e079d781f1a1e564826b4a69"
+      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
+      "sha256": "45b863810e989c1d2164c7b34a8f7f2590600d4df8835b7df76a2eb2c87d4ba8"
     },
     {
       "path": "docs/agents.md",
-      "disposition": "active project Markdown aligned with resumed P1 no-send dummy and retained holds",
-      "sha256": "b911b47b0e9307281b28aef385ad57cb03b3066fddff5ad07c9d2ba1f2c8254a"
+      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
+      "sha256": "4bae48489d3cbe57ce4e4e446af0658b8eaac3adbde2da99a8aa657de7123df3"
     },
     {
       "path": "docs/api.md",
-      "disposition": "active project Markdown aligned with resumed P1 no-send dummy and retained holds",
-      "sha256": "60971c43663fd1fe5a97da6bd2155f48499f857e6288a08de3199f6af525f732"
+      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
+      "sha256": "1a57fa256564a0ff5b6a5e0e9dec6129e97412d61b1c29b89d2c653427835fb6"
     },
     {
       "path": "docs/architecture.md",
-      "disposition": "active project Markdown aligned with resumed P1 no-send dummy and retained holds",
-      "sha256": "da18233e6e624f31e420fccfbb0db02af4cdc1e4e604bf783814d6d19912cd70"
+      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
+      "sha256": "453fd20cc0a94786baa45b8f66b2a96765e711c06c25bda0e7ffafdf97b12ade"
     },
     {
       "path": "docs/archive/2026-09-22/README.md",
-      "disposition": "active project Markdown aligned with resumed P1 no-send dummy and retained holds",
-      "sha256": "9af1ffc8decda0b1972334d3317cc471e5827a2d456c18ff5f7b6828e99ac97c"
+      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
+      "sha256": "37ac91bb71fdde2e4a31c16f88bf891d675140ba08320f0f045860728ec778bb"
     },
     {
       "path": "docs/archive/2026-09-22/README.md.snapshot",
@@ -762,153 +764,153 @@
     },
     {
       "path": "docs/bootstrap.md",
-      "disposition": "active project Markdown aligned with resumed P1 no-send dummy and retained holds",
-      "sha256": "172ccba40810a8b9b293ace23f06d6ee31230af9b1de2d3175d76836972ed8cc"
+      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
+      "sha256": "207f8fd22920996c7c80ae39cdb77b55c883402b19fad075e2e98d8187d6af52"
     },
     {
       "path": "docs/compatibility.md",
-      "disposition": "active project Markdown aligned with resumed P1 no-send dummy and retained holds",
-      "sha256": "d64b2e1e4a9615e483e9b62d5fbf68ec962eba206d64933725d9ff426ae6b19d"
+      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
+      "sha256": "35baf22dec7b5180e7f702e0129ee9c0e2a4c767fc773ed40038584f4eb42fa4"
     },
     {
       "path": "docs/contracts/adapter-contracts.md",
-      "disposition": "active project Markdown aligned with resumed P1 no-send dummy and retained holds",
-      "sha256": "554422038c9d307579dcb7ff1f8b197509b3bdc79e3582e2bb55db3447bb7125"
+      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
+      "sha256": "f904884640a4b86bd084ff0536e3416f11867af760e1abd05f7409d1933fa52b"
     },
     {
       "path": "docs/core/00_BUILD_AGENT_PROMPT.md",
-      "disposition": "active project Markdown aligned with resumed P1 no-send dummy and retained holds",
-      "sha256": "858dd1d411680cfa2701c7242b67d885b7bd7f9c8a7db42dfe015fee7d68d590"
+      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
+      "sha256": "4a5518a158adeabd0e650b42c4ee139fa0b191368ea413a70d2b7b0c2a1c976a"
     },
     {
       "path": "docs/core/01_PRODUCT_CONTEXT_AND_INTENT.md",
-      "disposition": "active project Markdown aligned with resumed P1 no-send dummy and retained holds",
-      "sha256": "f4d7123a120c69ea17fb8453cb9a71f57cf73f8826b31b0c742e76074c79bdbe"
+      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
+      "sha256": "b5e109810e26b6ff6bb70cadfe569a8fe9fc2ac396b3f97178bc1b2a9c8697ad"
     },
     {
       "path": "docs/core/02_REFERENCE_RESEARCH.md",
-      "disposition": "active project Markdown aligned with resumed P1 no-send dummy and retained holds",
-      "sha256": "6d9188a02a27cdfb16a01c37bc703ef8d9911468db681122d45de41284fd1274"
+      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
+      "sha256": "e51b40b65b664de21beef5713b0c58208c01bf3ba8c352c3d12e9ba4c41c9261"
     },
     {
       "path": "docs/core/03_TARGET_ARCHITECTURE.md",
-      "disposition": "active project Markdown aligned with resumed P1 no-send dummy and retained holds",
-      "sha256": "834d7f5f211ce352e8abd3785dff53214e6713b1eac3d93f8f5d28653e56d825"
+      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
+      "sha256": "656be5ea64202c64404f28763c720a81d57d3e939ec13fd47736f60dc5b6e47f"
     },
     {
       "path": "docs/core/04_BROWSER_APP_AND_RESEARCH_CONTROL.md",
-      "disposition": "active project Markdown aligned with resumed P1 no-send dummy and retained holds",
-      "sha256": "f744facaa170668d7ccd3b09483812b027ef63d55b821f4b0a15bbbda2325b01"
+      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
+      "sha256": "733f8ab9ad232f53c2b873462be12e291a164891c5467bb8fd767dd058a0218f"
     },
     {
       "path": "docs/core/05_IMPLEMENTATION_PLAN.md",
-      "disposition": "active project Markdown aligned with resumed P1 no-send dummy and retained holds",
-      "sha256": "2969833418023dc8f7890adff3a49bda81a92a8ffe573e1c327958fc6827973f"
+      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
+      "sha256": "f5f732f5272ff9e5df6049101760703f856192e6c8f202a853b57f374b6de76e"
     },
     {
       "path": "docs/core/06_ACCEPTANCE_TESTS_AND_GUARDRAILS.md",
-      "disposition": "active project Markdown aligned with resumed P1 no-send dummy and retained holds",
-      "sha256": "faa1a5e3b226e1b0f0755640c17919269b6bf835ef3bec7ff62d8f2d5a333df9"
+      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
+      "sha256": "09bc5c72e6962760331e00ab6776668b75bfc3458a4759f40aa309b3bb46be72"
     },
     {
       "path": "docs/core/07_REUSE_EXTENSION_AND_FUTURE_PROOFING.md",
-      "disposition": "active project Markdown aligned with resumed P1 no-send dummy and retained holds",
-      "sha256": "9d3cf63430f5cdda6119870fba553de4f42206e0c1c7d3759abe15cb4fe23385"
+      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
+      "sha256": "a2f34620273182839b7f40d0eab061123405f13f32e244045e34a8dd5a48b9c6"
     },
     {
       "path": "docs/core/08_LEAD_AGENT_AND_CREATIVE_TOOL_RUNTIME.md",
-      "disposition": "active project Markdown aligned with resumed P1 no-send dummy and retained holds",
-      "sha256": "be56dc6565dba6444e9e0be73f0be6ab0929b085f3f21b6bc644731b8067f0a7"
+      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
+      "sha256": "b4028036506ee8df00846a028f1c1adf9dd937958167e74cdd129451dfa9e25d"
     },
     {
       "path": "docs/core/09_CALLABLE_AGENTS_AND_ENGINEERING_METHOD.md",
-      "disposition": "active project Markdown aligned with resumed P1 no-send dummy and retained holds",
-      "sha256": "22d9b44fd86abe485ac03a29f56f3daf4146a88a1f2fa585eafe0800269c9c6b"
+      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
+      "sha256": "cc8f4c5650d4df174c42e118b19ac20e08cd29b3ad7be6a6cdc65ebf68374956"
     },
     {
       "path": "docs/core/README.md",
-      "disposition": "active project Markdown aligned with resumed P1 no-send dummy and retained holds",
-      "sha256": "15d67a7f610a8254b6af4b178968d20b93b500c5a6254988a6023f2cae9caa34"
+      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
+      "sha256": "f34c3de81dc6662283e0a8eb20ddef1fc0fa57170a48aad91cbf7e1af79c409b"
     },
     {
       "path": "docs/database.md",
-      "disposition": "active project Markdown aligned with resumed P1 no-send dummy and retained holds",
-      "sha256": "9054f08b40fe4edc6be69471585e41ab7debe259cadcade8b9871d55f03eb424"
+      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
+      "sha256": "d05b650d5bde170cf111a04a066b094bba15da4066697cec95d217b20b0bf2a0"
     },
     {
       "path": "docs/dependencies.md",
-      "disposition": "active project Markdown aligned with resumed P1 no-send dummy and retained holds",
-      "sha256": "5c42d2cca14aabfed954f5123a13fb5480ce149ae9e4398751d4216bf30b8a18"
+      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
+      "sha256": "92a247274fd2dd20849f3a4880515c4e4924c0d45a8f2101316835539d6ea90e"
     },
     {
       "path": "docs/deployment.md",
-      "disposition": "active project Markdown aligned with resumed P1 no-send dummy and retained holds",
-      "sha256": "1f814e65e4afa26906bce30d62d35293b694761db364f761383c777d3b60f66d"
+      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
+      "sha256": "b1f120253f723c5376f7e92259781c7cf91b64f521e1ee619a14ede03dd5bfb3"
     },
     {
       "path": "docs/governance.md",
-      "disposition": "active project Markdown aligned with resumed P1 no-send dummy and retained holds",
-      "sha256": "b9c81456fe0767ab5ead5843c5f4b168163750c73f43d391ec82681e2d9a6614"
+      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
+      "sha256": "4ec1d16559d72f8769c21fc4255fbfca2dd95af270977d49a57478696044cfbe"
     },
     {
       "path": "docs/implementation-progress.md",
-      "disposition": "active project Markdown aligned with resumed P1 no-send dummy and retained holds",
-      "sha256": "f0ee419ca6b0f7d90dae76fe7de469cf910ba3f33a73591be6e24c594bb9e3b1"
+      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
+      "sha256": "cb70470e27d493ee7971ddc5c79434eec39ae5623caeaa6f36ccea43b84aaeba"
     },
     {
       "path": "docs/limitations.md",
-      "disposition": "active project Markdown aligned with resumed P1 no-send dummy and retained holds",
-      "sha256": "39738989e071ac3b2a734b92549b8bfe60c64b8462eca0088d30f841914d0a08"
+      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
+      "sha256": "a80f317bcfd11095fb322ae595127a3a87da2f45f4b5797c2d1012deef9ca1be"
     },
     {
       "path": "docs/local-development.md",
-      "disposition": "active project Markdown aligned with resumed P1 no-send dummy and retained holds",
-      "sha256": "3c920901b9f26fcaa0dd73c3c7f27910ae7518508968c400b0507b69aa5be99a"
+      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
+      "sha256": "d33259bef3e7dd95e0dadadeb1c590b701fb716d52c023360c3f890b16951bbf"
     },
     {
       "path": "docs/mcp-a2a.md",
-      "disposition": "active project Markdown aligned with resumed P1 no-send dummy and retained holds",
-      "sha256": "cf31e3d48a6988a3dd33cc823c7d450269cf748fcae60833c8394581123d36e4"
+      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
+      "sha256": "09a003655a49d8b259ae531a46b93996d79d18faec663bd530c3fe05ebfc93b7"
     },
     {
       "path": "docs/memory.md",
-      "disposition": "active project Markdown aligned with resumed P1 no-send dummy and retained holds",
-      "sha256": "20796f6767500f5fbaab8a44cf6307449ee08fe5e92b817c6de247d15f52e67d"
+      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
+      "sha256": "acbaa19e9d4447840aef8fd2be688d747861f180c993fe2b599facabcf1bf8e1"
     },
     {
       "path": "docs/model-execution.md",
-      "disposition": "active project Markdown aligned with resumed P1 no-send dummy and retained holds",
-      "sha256": "30e4ddbac182deadd743386ff07e2eefd191d280a037a35b46325d63dab593f0"
+      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
+      "sha256": "e0a5047b3433db74cd9e9e81320e2e93b6bd079bdf86bb4131f28299fe810da8"
     },
     {
       "path": "docs/model-gateway.md",
-      "disposition": "active project Markdown aligned with resumed P1 no-send dummy and retained holds",
-      "sha256": "991c1b030ab0a3768fb87f674b25510b3980d115df413be40d94c042ba48411d"
+      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
+      "sha256": "c0c648d55cbd567c369a1eebc333becad77d0dc3e75a1d9a0bed9467c3031d62"
     },
     {
       "path": "docs/phase-7-handoff.md",
-      "disposition": "active project Markdown aligned with resumed P1 no-send dummy and retained holds",
-      "sha256": "7f38bfa78d33a0334a49ce5a5a9bd3a9332f30be9a9bc52c24d86dff490b4509"
+      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
+      "sha256": "0372db3c0877fe5c65df5e7b8d9856a6f25cc0945e99b8594fbf024ac2e1e918"
     },
     {
       "path": "docs/phase-9-handoff.md",
-      "disposition": "active project Markdown aligned with resumed P1 no-send dummy and retained holds",
-      "sha256": "5c60e4da95d66dd0339eb4419b7194fbe1cab4b2b8e84e64d152e05f63b30bb2"
+      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
+      "sha256": "bb8b9050e68e48e17f019882e0a731aa2ed092d9098d94f5702d1f77dfa69a9e"
     },
     {
       "path": "docs/plugins.md",
-      "disposition": "active project Markdown aligned with resumed P1 no-send dummy and retained holds",
-      "sha256": "586f00cef93fac9266d93374be74314aec7cc97b3bde1aafbbfd686ed582d4e7"
+      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
+      "sha256": "37e6964e667623587d15066745ce4c8319e63e524c81a42b7bf04fc7ff017108"
     },
     {
       "path": "docs/recovery.md",
-      "disposition": "active project Markdown aligned with resumed P1 no-send dummy and retained holds",
-      "sha256": "c2dbebcfb4f11bd09e2e8295fe84e0dee83d9a5af759e1d91cc5a3f30e00f79d"
+      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
+      "sha256": "b6f9f3d5b76d53e0cdd335c71278cd4de56e7d695a5dd4032bd31e73d631fd83"
     },
     {
       "path": "docs/research.md",
-      "disposition": "active project Markdown aligned with resumed P1 no-send dummy and retained holds",
-      "sha256": "8ac56d4ce8651a63523d36bf655966c151c80a7f9416eef6674273898d53fec9"
+      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
+      "sha256": "009d018ba97772a64168e1d85fdb9d31eb6fb92f2d603eb9ac82a6d6bfb39b06"
     },
     {
       "path": "docs/salience-phase-1-6.architecture.html",
@@ -952,78 +954,78 @@
     },
     {
       "path": "docs/superpowers/plans/2026-09-12-browser-evidence.md",
-      "disposition": "active project Markdown aligned with resumed P1 no-send dummy and retained holds",
-      "sha256": "d86bd8e2861a1dc62e382bd433be7b77e90b0c3f20cdcb08e1db5c2f0b610990"
+      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
+      "sha256": "c43bd7fc57996b8b0bbb4d3d976992f3a83b9a4fcb0fe1dc5528f4ebb7e6e0e1"
     },
     {
       "path": "docs/superpowers/plans/2026-09-12-intelligence-loop-phases-5-6.md",
-      "disposition": "active project Markdown aligned with resumed P1 no-send dummy and retained holds",
-      "sha256": "17986081340044809c4e5c20d14cdf50d27d63f40fd863693ce45a9379714a7a"
+      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
+      "sha256": "d6ff16bcfe959c935a47bdc71f062cea535d9271defd0c9bd82b82cf6a0a2876"
     },
     {
       "path": "docs/superpowers/plans/2026-09-12-phases-1-4-foundation.md",
-      "disposition": "active project Markdown aligned with resumed P1 no-send dummy and retained holds",
-      "sha256": "df7ffc1f64b7d5ace0aad3d3267db7e47e5f47beec79478db9a21f6b849cea5e"
+      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
+      "sha256": "ab79e13a728da53d17b474ecc0169122435d13fc71682dee3ca3dd58c162746f"
     },
     {
       "path": "docs/superpowers/plans/2026-09-13-creative-production-phases-7-8.md",
-      "disposition": "active project Markdown aligned with resumed P1 no-send dummy and retained holds",
-      "sha256": "df3fded462e77a83adf508f0193f0cadb29e2fcfb242419b511434ab7a5e32ba"
+      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
+      "sha256": "5a765a74a5969f24aed6ceebebed17bd3b13eb3b57411c77dd5c7e99ef20771a"
     },
     {
       "path": "docs/superpowers/plans/2026-09-13-phase-7-8-release-gate-phase-9-publishing.md",
-      "disposition": "active project Markdown aligned with resumed P1 no-send dummy and retained holds",
-      "sha256": "7b07529e2ef50058d4db81e58826e77425a3c41abca8d5fc8ef10b3fca39ddb0"
+      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
+      "sha256": "1f30230f8dd7a56e10a6677b1d637f6f176041a082e5760dbf43522c16277f0a"
     },
     {
       "path": "docs/superpowers/plans/2026-09-13-phase-7-8-review-repairs.md",
-      "disposition": "active project Markdown aligned with resumed P1 no-send dummy and retained holds",
-      "sha256": "18959ff5fbe35c7b0794ed93c90a95fadfb200a200f057ad21cdc6793b350897"
+      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
+      "sha256": "dd41c0cf6600201c99ef244e6d8b68707cf0e121be355506b14dd2e493f6dfbb"
     },
     {
       "path": "docs/superpowers/plans/2026-09-13-phase-9-independent-review-repairs.md",
-      "disposition": "active project Markdown aligned with resumed P1 no-send dummy and retained holds",
-      "sha256": "cc6735a0ab4db2693bce0e4a012f8ee9e295f0ebdc82f862e739e2894782b0ac"
+      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
+      "sha256": "444ed1bcd9203ad6ebb250293a5c6c0077fa90bd9e18063c586ffe483c83f3e7"
     },
     {
       "path": "docs/superpowers/reviews/2026-09-13-phase-7-8-release-gate.md",
-      "disposition": "active project Markdown aligned with resumed P1 no-send dummy and retained holds",
-      "sha256": "a06d3b7a858da693a67d688fc7d4737cb0db270587a1294d2fba2d2f395179ae"
+      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
+      "sha256": "ae3c3eb12d80ce85600301bfafd0ee0f2356bd6484f0ab0bc423966c99330e28"
     },
     {
       "path": "docs/superpowers/reviews/2026-09-13-phase-9-independent-review.md",
-      "disposition": "active project Markdown aligned with resumed P1 no-send dummy and retained holds",
-      "sha256": "ce08e4cb0a66cc62329e995fb4c3fa444537bfa4f0654b74e9dc34de3949ca1b"
+      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
+      "sha256": "30d52250f7f1eef6305ec0602602097a9f4598509a419d0705fda721205b101c"
     },
     {
       "path": "docs/superpowers/specs/2026-09-12-browser-evidence-design.md",
-      "disposition": "active project Markdown aligned with resumed P1 no-send dummy and retained holds",
-      "sha256": "bb7407a746b949a6fda4d6046f61921c2ee04ffa6ce84e0318bca8d3fac1c570"
+      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
+      "sha256": "05fc666ba3ae77193c8e6a7d66875d9b491fe087e4a52b9832b9a89a0538cdac"
     },
     {
       "path": "docs/superpowers/specs/2026-09-12-intelligence-loop-phases-5-6-design.md",
-      "disposition": "active project Markdown aligned with resumed P1 no-send dummy and retained holds",
-      "sha256": "4f097365e07a1542842e398af9d562d926f8aa3fa36883e2fd78fa612f646a81"
+      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
+      "sha256": "f8c51d40b0ecd7e7065af6cd6f64c644cb0a16ba1e233243621aefd36eaf8c6c"
     },
     {
       "path": "docs/superpowers/specs/2026-09-13-creative-production-phases-7-8-design.md",
-      "disposition": "active project Markdown aligned with resumed P1 no-send dummy and retained holds",
-      "sha256": "c03b66178ad370547106b2404ca4904d165caeef21a03d6038e6e4daef7312ff"
+      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
+      "sha256": "975531af77efda8c7604a5b06cde4953d147162132aa2746cd960606203bbf52"
     },
     {
       "path": "docs/superpowers/specs/2026-09-13-phase-7-8-release-gate-phase-9-publishing-design.md",
-      "disposition": "active project Markdown aligned with resumed P1 no-send dummy and retained holds",
-      "sha256": "d37f6298315cef7b12adca877c5e86f3655931edd46197846c0fc460fda188ad"
+      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
+      "sha256": "318c1cad0d6f283d3539a6652fb2278859482cac6996a4048da5c0785ce8690b"
     },
     {
       "path": "docs/trust-model.md",
-      "disposition": "active project Markdown aligned with resumed P1 no-send dummy and retained holds",
-      "sha256": "35be89baefc1df6c5cb36b791da773e62b1b6ed0c5ddf6f2dfd5a5cccd11adc9"
+      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
+      "sha256": "1bb2c09e79a74814a52052b503e46d2859dc7de57aa7399ec34a98172c38044f"
     },
     {
       "path": "docs/v4/IMPLEMENTATION-BLUEPRINT.md",
-      "disposition": "active project Markdown aligned with resumed P1 no-send dummy and retained holds",
-      "sha256": "51992c42be977112d90d685fff9d49dfae99e0c74d7bd6b2c212869b130b4936"
+      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
+      "sha256": "a3142a22ec4ad31785ecd5b1abe17102946e98d71e152f75f2c31014cdf55075"
     },
     {
       "path": "docs/v4/allocation-evidence.json",
@@ -1071,8 +1073,8 @@
     },
     {
       "path": "docs/v4/evidence-lock.json",
-      "disposition": "current 341-file root-qualified legacy source lock",
-      "sha256": "369725d5debea886934ce5d0978405b0c571861b5c870981277261a14e773d37"
+      "disposition": "current 344-file root-qualified legacy source lock",
+      "sha256": "b09a36becde6fcd7725e88f2d91c4e91f727d523df3a4271a5a9c5355927f067"
     },
     {
       "path": "docs/v4/goal-revision-evidence.json",
@@ -1157,7 +1159,7 @@
     {
       "path": "docs/v4/legacy-dispatch-contract.md",
       "disposition": "active legacy integration contract",
-      "sha256": "5bfc87d1bd0d392f7beffb26d3a5e005de5dcc74cdb5b7ced09036a73563a221"
+      "sha256": "58c8874e23e8395e329eb5fe81deaad4479bdb2093dab9295362bc93f12aac24"
     },
     {
       "path": "docs/v4/legacy-dispatch-evidence.json",
@@ -1171,8 +1173,8 @@
     },
     {
       "path": "docs/v4/p0-release.json",
-      "disposition": "current release ledger; no-send dummy local PASS, broader P1 ACTIVE, RG0/RG1 HELD",
-      "sha256": "48cc01e675f5f5c58dca7bee4f47aa02b0e654452ed2262625de455afa4d79cf"
+      "disposition": "current release ledger; dry creative local PASS, broader P1 ACTIVE, RG0/RG1 HELD",
+      "sha256": "ddc73a6c8cb5473c54fe2cc8af5708531d8386b159425b74345898805046f60a"
     },
     {
       "path": "docs/v4/p1-increment-evidence.json",
@@ -1182,11 +1184,11 @@
     {
       "path": "docs/v4/p1-qualification-matrix.json",
       "disposition": "current 17-requirement acceptance matrix; historical item7 review and separate legacy/parallel qualifications",
-      "sha256": "26925d308f1e214c8e76df20db7345b3bd7f91b61c7e648aee43933a16ae110d"
+      "sha256": "09bb944037c22292cd7aaa77cdced10faff200750de3030d5355cdd2503f18bc"
     },
     {
       "path": "docs/v4/parallel-agent-contract.md",
-      "disposition": "active project Markdown aligned with resumed P1 no-send dummy and retained holds",
+      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
       "sha256": "a26d2fc2f2596c8c334c57c6d21cf6f246ed34936282b05aa6ff51097fc9bb8b"
     },
     {
@@ -1196,8 +1198,8 @@
     },
     {
       "path": "docs/v4/progress.md",
-      "disposition": "active project Markdown aligned with resumed P1 no-send dummy and retained holds",
-      "sha256": "6525515c6d7297e92eb50ff9f879ae8074cca259a3594e3ca6e65988c0d94c97"
+      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
+      "sha256": "c19ec71812ce0da6a8d02aaf17afb8a75b24326eddf01e17b5b8911eb32ec95a"
     },
     {
       "path": "docs/v4/repository-enforcement-evidence.json",
@@ -1206,48 +1208,48 @@
     },
     {
       "path": "docs/v4/validation.md",
-      "disposition": "active project Markdown aligned with resumed P1 no-send dummy and retained holds",
-      "sha256": "24049fedb17b7b3bd608ce27f93705a37a7e504f8acc3bb05693e17bd0d6033d"
+      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
+      "sha256": "33c04b0da788031e61315c37b766959a4e0fa752da77197f032dc1b8124244df"
     },
     {
       "path": "docs/verification.md",
-      "disposition": "active project Markdown aligned with resumed P1 no-send dummy and retained holds",
-      "sha256": "b4900cc4e932082fbba76e688fcaca84a6e309721b525603533edd66b8f213e8"
+      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
+      "sha256": "2cd44949b16d9a6e3ffa905e5c7090152670430149df9ede80ee6cecbce33f32"
     },
     {
       "path": "docs/workflows.md",
-      "disposition": "active project Markdown aligned with resumed P1 no-send dummy and retained holds",
-      "sha256": "eead8f0dd8dfdfc17b717ad2239b5bd79d002585e29d136ac4241ccefb14783e"
+      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
+      "sha256": "4551191d8b0e747991f5927dd8047c0039cfa4e52cfaa020df9ca60e096ab61a"
     },
     {
       "path": "prompts/Build Creative Production Loop \u2014 Phases 7\u20138 End-to-End.md",
-      "disposition": "active project Markdown aligned with resumed P1 no-send dummy and retained holds",
-      "sha256": "641c96c3299e53db9d57acd197fe4f06d4af32d6253c3b12105131f9b332d9da"
+      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
+      "sha256": "e5e5390ce36fc44d40958a56b63c3bb27b4020c9bd8789f884685fb031e586fe"
     },
     {
       "path": "prompts/Build Phase 10 \u2014 Multi-Platform Production Publishing, Analytics, Attribution & Experiments.md",
-      "disposition": "active project Markdown aligned with resumed P1 no-send dummy and retained holds",
-      "sha256": "1dc88b84fb2abe63b60f78efd4c7a5c62d4681308e1d89ade1d539f955b1a5ad"
+      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
+      "sha256": "d701d2392e72a324eed28fe491c846684dc19d0e101b5f47f558a75e1de62742"
     },
     {
       "path": "prompts/Build Phases 1\u20134 End-to-End.md",
-      "disposition": "active project Markdown aligned with resumed P1 no-send dummy and retained holds",
-      "sha256": "88088198b8a78cd0a9d3050caecd4170a354d7b35d8cc3c17cacfbdceb1fd3ae"
+      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
+      "sha256": "8d38b915189a1869f293295f2bf41bb7270c33b53d03bc31db0329a50de1fddd"
     },
     {
       "path": "prompts/Build Real Intelligence Loop \u2014 Pre-Phase 5 + Phases 5\u20136 End-to-End.md",
-      "disposition": "active project Markdown aligned with resumed P1 no-send dummy and retained holds",
-      "sha256": "0a8b77875c9fd3af297eb777bca31d888e60cfc34ea009b558c70276fa4d19b5"
+      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
+      "sha256": "ce4d075aa91492041a265a24617c6de9d1cf13a6896dcfcb9f7830d106be9fbe"
     },
     {
       "path": "prompts/Complete Phase 7\u20138 Release Gate, Then Build Phase 9 Governed Publishing.md",
-      "disposition": "active project Markdown aligned with resumed P1 no-send dummy and retained holds",
-      "sha256": "e62435c1c5c56cbd1cdec60eb81ff4070591f2b10a4df5babce5cfc3a650cd03"
+      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
+      "sha256": "6cc8f87f06a801459cfb7e0ced3ea1d07639937eb8123d0edf5890f10eef8255"
     },
     {
       "path": "prompts/Install and Verify Browser Evidence on Linux EC2.md",
-      "disposition": "active project Markdown aligned with resumed P1 no-send dummy and retained holds",
-      "sha256": "30307da878bd503c746bec93338162e3faa7bea0c7da57fd064bb4932f31ea89"
+      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
+      "sha256": "5ce8c160e51135561ee6d9a18349f68531bed4f769b0ecbbb859eca58fc5365e"
     },
     {
       "path": "docs/v4/legacy-schedule-evidence.json",
@@ -1261,15 +1263,20 @@
     },
     {
       "path": "docs/v4/legacy-dummy-evidence.json",
-      "disposition": "durable local canonical no-send dummy qualification report",
+      "disposition": "preserved dated canonical no-send dummy qualification report",
       "sha256": "3946d47b029a0607cb8a6fecc9830d98bee9c04afd54112c98b6ee0402eff0bc"
+    },
+    {
+      "path": "docs/v4/legacy-creative-evidence.json",
+      "disposition": "durable local canonical dry creative qualification report",
+      "sha256": "8e1c69f1a666a9e1f8b7eebb4e4d7a3c823e98bdfc714d4cf0834a2e5e8de008"
     }
   ],
-  "qualified_application_commit": "6e0b266da4a453e293e4494384ed0457b6ab88b8",
-  "next_action": "Continue restored P1 integration: remaining legacy stages, current general authorization/version eligibility, typed recovery and retained production acceptance; P2\u2013P7 remain gated, optional P6 disabled",
+  "qualified_application_commit": "57eb84f62d978ca235f1119939d9f6adda781735",
+  "next_action": "Continue restored P1 publication and native publication schedule integration with exact current account/native approval/budget authority, then retained general authorization/runtime/recovery and production obligations; P2\u2013P7 gated, optional P6 disabled",
   "parallel_agents_status": "PASS_IMPLEMENTED_LOCAL_PARALLEL_AGENT_FIXTURE_SCOPE",
   "parallel_qualified_application_commit": "2653d2ecb3f0d5bb8ea6560de274137dd6032a96",
-  "legacy_intelligence_status": "PASS_IMPLEMENTED_LOCAL_LEGACY_DUMMY_STAGE",
+  "legacy_intelligence_status": "PASS_IMPLEMENTED_LOCAL_LEGACY_CREATIVE_STAGE",
   "goal_status": "ACTIVE",
   "independent_review_scope": "Historical item7 e49a214 only; no new independent approval claimed"
 }
