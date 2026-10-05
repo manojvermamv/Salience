@@ -50,7 +50,7 @@
     },
     "locked_evidence_files": 352,
     "original_inventory_dispositions": 360,
-    "warning": "The final full non-live run emitted three Alembic DeprecationWarnings about missing path_separator configuration for prepend_sys_path; all 603 tests passed.",
+    "warning": "The final full non-live run emitted three Alembic DeprecationWarnings about missing path_separator configuration for prepend_sys_path; all 604 tests passed.",
     "focused_p1": {
       "passed": 21,
       "failed": 0,
@@ -59,7 +59,7 @@
       "exit_code": 0,
       "seconds": 193.462,
       "junit": "artifacts/v4-legacy-publication/agents/publication_qualification/candidate-attempts/20261005T145455Z-final-focused-direct-cancel-regression/junit.xml",
-      "scope": "Impacted legacy/outbox/cutover/public/parallel/migration/wait/restart contracts plus dry creative with current per-activity authority and original cancellation",
+      "scope": "All cases in tests/integration/test_v4_legacy_publication.py and tests/integration/test_v4_native_publication_schedules.py, plus test_wait_binding_and_receipts_cannot_be_rewritten_or_destructively_downgraded and test_populated_owner_binding_cannot_be_rolled_back from tests/integration/test_v4_runtime_waits.py",
       "failures": 0,
       "pytest_exit_code": 0,
       "runner_exit_code": 0,

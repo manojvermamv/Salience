@@ -1264,7 +1264,7 @@
     {
       "path": "docs/v4/p0-release.json",
       "disposition": "current release ledger; local legacy publication fixture PASS, broader P1 ACTIVE, RG0/RG1 HELD",
-      "sha256": "e9ec164db0a506b8d618f100fa0d8e51c35cf72cbab10e5e3c31b28063512498"
+      "sha256": "1ec6bdb52fc5f1580c60ced1c4ce788d2cfca059ccbb5ad2a269b38a854e5a63"
     },
     {
       "path": "docs/v4/p1-increment-evidence.json",
