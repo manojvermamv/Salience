@@ -59,6 +59,17 @@ def create_configured_app() -> FastAPI:
         )
     if mode != "fixture":
         raise ValueError("production deployment is not qualified; use isolated P0 or private fixture mode")
+    if os.environ.get("SALIENCE_PARALLEL_AGENT_TEAMS_ENABLED", "false") == "true":
+        from salience.api.p0 import create_p0_app
+
+        return create_p0_app(
+            database_url=os.environ["DATABASE_URL"],
+            workspace_id=UUID(os.environ["SALIENCE_WORKSPACE_ID"]),
+            issuer=os.environ["SALIENCE_IDENTITY_ISSUER"],
+            audience=os.environ["SALIENCE_IDENTITY_AUDIENCE"],
+            public_key=Path(os.environ["SALIENCE_IDENTITY_PUBLIC_KEY_FILE"]).read_text(),
+            enable_parallel_agent_teams=True,
+        )
     settings = Settings.from_environment()
     return create_app(
         control_token=os.environ["CONTROL_PLANE_TOKEN"],

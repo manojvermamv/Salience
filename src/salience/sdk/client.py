@@ -490,6 +490,19 @@ class CyclesClient(_ControlClient):
         return self._request("POST", f"/v1/v4/notifications/{notification_id}/ack", {})
 
 
+@dataclass
+class ParallelTeamsClient(CyclesClient):
+    def submit(self, workspace_id: str, plan: dict[str, Any], *, idempotency_key: str):
+        return self._request('POST', f'/v1/workspaces/{workspace_id}/agent-teams', plan,
+                             idempotency_key=idempotency_key)
+
+    def inspect(self, workspace_id: str, run_id: str):
+        return self._request('GET', f'/v1/workspaces/{workspace_id}/agent-teams/{run_id}')
+
+    def cancel(self, workspace_id: str, run_id: str):
+        return self._request('POST', f'/v1/workspaces/{workspace_id}/agent-teams/{run_id}/cancel')
+
+
 class SalienceClient:
     def __init__(self, base_url: str, token: str) -> None:
         self.agents = AgentsClient(base_url, token)
@@ -497,3 +510,4 @@ class SalienceClient:
         self.creative = CreativeClient(base_url, token)
         self.publication = PublicationClient(base_url, token)
         self.cycles = CyclesClient(base_url, token)
+        self.agent_teams = ParallelTeamsClient(base_url, token)

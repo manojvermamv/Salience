@@ -27,7 +27,7 @@ class Principal:
 
 
 class IdentityBoundary:
-    def __init__(self, *, database_url, workspace_id, issuer, audience, public_key, enable_v4_fixture_commands=False):
+    def __init__(self, *, database_url, workspace_id, issuer, audience, public_key, enable_v4_fixture_commands=False, enable_parallel_agent_teams=False):
         if not issuer.startswith("https://") or not audience:
             raise ValueError("explicit HTTPS issuer and audience are required")
         self.database_url = database_url.replace("postgresql+asyncpg://", "postgresql://")
@@ -37,7 +37,11 @@ class IdentityBoundary:
         self.public_key = jwt.get_algorithm_by_name("RS256").prepare_key(public_key)
         if not isinstance(self.public_key, RSAPublicKey) or self.public_key.key_size < 2048:
             raise ValueError("an RSA public key of at least 2048 bits is required")
-        self.allowed_scopes = {"control:read", "control:write"}
+        if enable_parallel_agent_teams:
+            self.allowed_scopes = {'agents:delegate', 'agents:read'}
+        else:
+            self.allowed_scopes = set()
+        self.allowed_scopes |= {"control:read", "control:write"}
         if enable_v4_fixture_commands:
             self.allowed_scopes.update({"goals:write", "goals:approve", "cycles:write", "cycles:read", "cycles:stop", "cycles:review", "cycles:schedule"})
 
@@ -103,15 +107,20 @@ class IdentityBoundary:
             return all(await cursor.fetchone())
 
 
-def create_p0_app(*, database_url, workspace_id, issuer, audience, public_key, tracer=None, enable_v4_fixture_commands=False):
+def create_p0_app(*, database_url, workspace_id, issuer, audience, public_key, tracer=None, enable_v4_fixture_commands=False, enable_parallel_agent_teams=False, parallel_agent_service=None):
     from salience.api.app import create_app
     from salience.api.dependencies import TemporalControlPlane
 
-    if enable_v4_fixture_commands and (os.environ.get("SALIENCE_DEPLOYMENT_MODE") != "fixture" or os.environ.get("SALIENCE_EFFECTS_ENABLED", "false") != "false"):
+    if (enable_v4_fixture_commands or enable_parallel_agent_teams) and (os.environ.get("SALIENCE_DEPLOYMENT_MODE") != "fixture" or os.environ.get("SALIENCE_EFFECTS_ENABLED", "false") != "false"):
         raise ValueError("V4 public commands require explicit no-effects fixture mode")
-    boundary = IdentityBoundary(database_url=database_url, workspace_id=workspace_id, issuer=issuer, audience=audience, public_key=public_key, enable_v4_fixture_commands=enable_v4_fixture_commands)
+    boundary = IdentityBoundary(database_url=database_url, workspace_id=workspace_id, issuer=issuer, audience=audience, public_key=public_key, enable_v4_fixture_commands=enable_v4_fixture_commands, enable_parallel_agent_teams=enable_parallel_agent_teams)
     app = create_app(control_token="", control_plane=TemporalControlPlane(database_url=database_url.replace("postgresql://", "postgresql+asyncpg://"), temporal_target="disabled.invalid:7233", task_queue="p0-disabled"))
     app.state.identity_boundary = boundary
+    if enable_parallel_agent_teams:
+        from salience.agents.fixtures import fixture_agent_service
+        from salience.api.routes.parallel_teams import router
+        app.state.parallel_agent_service = parallel_agent_service or fixture_agent_service()
+        app.include_router(router)
     if enable_v4_fixture_commands:
         from salience.api.routes import v4_cycles
 
@@ -188,6 +197,16 @@ def create_p0_app(*, database_url, workspace_id, issuer, audience, public_key, t
 def _request_scope(request):
     parts = request.url.path.strip("/").split("/")
     try:
+        if len(parts) >= 4 and parts[:2] == ['v1', 'workspaces'] and parts[3] == 'agent-teams':
+            resource = ('workspaces', UUID(parts[2]))
+            if len(parts) == 4 and request.method == 'POST':
+                return resource, 'agents:delegate'
+            if len(parts) >= 5:
+                UUID(parts[4])
+                if len(parts) == 5 and request.method == 'GET':
+                    return resource, 'agents:read'
+                if len(parts) == 6 and parts[5] == 'cancel' and request.method == 'POST':
+                    return resource, 'agents:delegate'
         if request.method == "POST" and len(parts) == 5 and parts[:2] == ["v1", "workspaces"] and parts[3:] == ["v4", "stop"]:
             return ("workspaces", UUID(parts[2])), "cycles:stop"
         if request.method == "POST" and len(parts) == 5 and parts[:2] == ["v1", "workspaces"] and parts[3:] == ["v4", "goals"]:

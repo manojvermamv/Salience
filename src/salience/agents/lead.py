@@ -1,4 +1,5 @@
 from salience.agents.execution import AgentInvocation, AgentRun, AgentService
+from salience.agents.teams import TeamManifest, TeamRunner
 
 
 class IntelligenceLeadResult:
@@ -17,12 +18,9 @@ class LeadContentAgent:
         )
 
     async def run_intelligence(self, niche: str) -> IntelligenceLeadResult:
-        research = await self._service.invoke_from_parent(
-            "lead_content_agent",
-            AgentInvocation(agent_id="research_agent", input={"niche": niche}),
-        )
-        strategy = await self._service.invoke_from_parent(
-            "lead_content_agent",
-            AgentInvocation(agent_id="strategy_agent", input={"niche": niche}),
+        research, strategy = await TeamRunner(self._service).invoke(
+            TeamManifest("intelligence", ("research_agent", "strategy_agent"),
+                         lead_agent_id="lead_content_agent", max_concurrency=2),
+            {"niche": niche},
         )
         return IntelligenceLeadResult(research=research, strategy=strategy)

@@ -217,7 +217,29 @@ def main(arguments: Sequence[str] | None = None) -> None:
     notification_ack = cycle_commands.add_parser("notification-ack")
     notification_ack.add_argument("--notification-id", required=True)
 
+    teams = subcommands.add_parser('agent-teams')
+    team_commands = teams.add_subparsers(dest='team_command', required=True)
+    for action in ('submit', 'inspect', 'cancel'):
+        team_command = team_commands.add_parser(action)
+        team_command.add_argument('--workspace-id', required=True)
+        if action == 'submit':
+            team_command.add_argument('--plan-json', required=True)
+            team_command.add_argument('--idempotency-key', required=True)
+        else:
+            team_command.add_argument('--run-id', required=True)
+
     parsed = parser.parse_args(arguments)
+    if parsed.command == 'agent-teams':
+        path = f'/v1/workspaces/{parsed.workspace_id}/agent-teams'
+        if parsed.team_command == 'submit':
+            result = _v4_request(method='POST', path=path, payload=json.loads(parsed.plan_json),
+                                 idempotency_key=parsed.idempotency_key)
+        else:
+            path += f'/{parsed.run_id}'
+            result = _v4_request(method='GET' if parsed.team_command == 'inspect' else 'POST',
+                                 path=path if parsed.team_command == 'inspect' else path+'/cancel')
+        print(json.dumps(result))
+        return
     if parsed.command == "cycles":
         if parsed.cycle_command == "goal-create":
             result = _v4_request(

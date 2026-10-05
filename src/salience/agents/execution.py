@@ -1,4 +1,5 @@
-from dataclasses import dataclass, field
+import asyncio
+from dataclasses import dataclass, replace
 from typing import Any, Protocol
 from uuid import UUID, uuid4
 
@@ -26,6 +27,7 @@ class AgentExecutionContext:
     tool_scopes: frozenset[str] = frozenset()
     memory_scopes: frozenset[str] = frozenset()
     trust_context: TrustContext | None = None
+    workspace_id: UUID | None = None
 
 
 @dataclass(frozen=True)
@@ -133,6 +135,38 @@ class AgentService:
             parent_execution_context=self._runs[parent_run_id].execution_context,
         )
 
+    def create_parent(self, agent_id, input, *, run_id=None, trace_context=None, workspace_id=None):
+        manifest = self._registry.resolve(agent_id)
+        run_id = run_id or uuid4()
+        trace_context = trace_context or TraceContext.new_root()
+        context = AgentExecutionContext(
+            trace_context=trace_context, run_id=run_id, workspace_id=workspace_id,
+            tool_scopes=frozenset(manifest.tool_scopes),
+            memory_scopes=frozenset(manifest.memory_scopes),
+            delegated_authority=frozenset(manifest.delegated_authority_scopes),
+        )
+        self._runs[run_id] = AgentRun(
+            id=run_id, agent_id=agent_id, request=AgentInvocation(agent_id,input),
+            output={}, result_schema=manifest.output_schema, parent_run_id=None,
+            status="delegating", trace_context=trace_context, execution_context=context,
+            events=("agent.delegated",),
+        )
+        return context
+
+    async def invoke_child(self, invocation, parent, *, run_id=None, trace_context=None):
+        return await self._invoke(
+            invocation, parent_run_id=parent.run_id,
+            trace_context=trace_context or parent.trace_context.new_child(),
+            runtime_id=None, parent_execution_context=parent, run_id=run_id,
+        )
+
+    def finish_parent(self, parent, *, status, output):
+        run = self._runs[parent.run_id]
+        self._runs[parent.run_id] = replace(
+            run, status=status, output=output, result_schema={"type": "object"},
+            events=run.events + ("team." + status,),
+        )
+
     async def _invoke(
         self,
         invocation: AgentInvocation,
@@ -141,6 +175,7 @@ class AgentService:
         trace_context: TraceContext | None,
         runtime_id: str | None,
         parent_execution_context: AgentExecutionContext | None,
+        run_id: UUID | None = None,
     ) -> AgentRun:
         manifest = self._registry.resolve(invocation.agent_id)
         if invocation.mode == "sync" and not manifest.supports_sync:
@@ -151,7 +186,7 @@ class AgentService:
         runtime = self._runtimes.get(manifest.agent_id)
         if runtime is None:
             raise LookupError(f"runtime unavailable for {manifest.agent_id}")
-        run_id = uuid4()
+        run_id = run_id or uuid4()
         manifest_tool_scopes = frozenset(manifest.tool_scopes)
         manifest_memory_scopes = frozenset(manifest.memory_scopes)
         manifest_delegated_authority = frozenset(manifest.delegated_authority_scopes)
@@ -163,6 +198,7 @@ class AgentService:
             trace_context=trace_context or TraceContext.new_root(),
             run_id=run_id,
             parent_run_id=parent_run_id,
+            workspace_id=parent_execution_context.workspace_id if parent_execution_context else None,
             delegated_authority=manifest_delegated_authority,
             tool_scopes=manifest_tool_scopes,
             memory_scopes=manifest_memory_scopes,
@@ -170,7 +206,8 @@ class AgentService:
                 f"agent://{manifest.agent_id}", scopes=manifest_memory_scopes
             ),
         )
-        output = await runtime.invoke(invocation, context)
+        async with asyncio.timeout(manifest.timeout_seconds):
+            output = await runtime.invoke(invocation, context)
         self._validate(manifest.output_schema, output, "output")
         run = AgentRun(
             id=run_id,

@@ -188,6 +188,7 @@ def test_goal_state_downgrade_serializes_noop_receipt_writer_before_history_chec
     service.set_goal_state(goal,'active',idempotency_key='before-downgrade',**command)
     migration=importlib.import_module('migrations.versions.0033_goal_state_commands')
     with ThreadPoolExecutor(max_workers=1) as pool, psycopg.connect(database) as connection:
+        version=connection.execute('SELECT version_num FROM alembic_version').fetchone()[0]
         future=None
         def execute(sql):
             nonlocal future
@@ -212,4 +213,4 @@ def test_goal_state_downgrade_serializes_noop_receipt_writer_before_history_chec
         assert future.result(timeout=2)['state']=='active'
         with psycopg.connect(database) as read:
             assert read.execute("SELECT count(*) FROM v4_goal_state_commands WHERE goal_id=%s",(goal,)).fetchone()[0]==2
-            assert read.execute("SELECT version_num FROM alembic_version").fetchone()[0]=='0034_runtime_delivery_scope'
+            assert read.execute("SELECT version_num FROM alembic_version").fetchone()[0]==version
