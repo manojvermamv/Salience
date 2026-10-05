@@ -1,42 +1,49 @@
 {
-  "audited_at": "2026-10-05T10:00:02.151004+00:00",
-  "base_commit": "e42635b3f06d3bfbb8171c091eda44756bc5c784",
-  "scope": "Active Markdown/ledgers through root-qualified canonical dry creative; earlier dummy/native/intelligence/parallel/item7 and dated design/source/archive evidence preserved",
+  "audited_at": "2026-10-05T13:54:58.483781+00:00",
+  "base_commit": "3986a1de43d1ca8e9ca84e7c69dedbe698b3d312",
+  "scope": "Active project Markdown and V4 ledgers through root-qualified isolated no-effects legacy publication and actual native intelligence/publication schedule conversions; all prior reports, historical snapshots, design sources, plugin files and archive evidence remain byte-identical.",
   "tracked_markdown_files": 85,
-  "documentation_artifacts": 241,
+  "documentation_artifacts": 242,
   "summary": {
     "preserved plugin instructions, references and examples; independent skill scope": 57,
-    "active project Markdown aligned with resumed P1 dry creative and retained holds": 69,
+    "active project Markdown aligned with root-qualified legacy publication and retained production holds": 69,
     "preserved original design source or historical diagram": 7,
     "preserved immutable historical snapshot": 62,
     "preserved historical architecture visual": 8,
     "preserved dated qualification report": 15,
     "preserved source, archive or coverage manifest": 4,
-    "current documentation status audit": 1,
-    "current 344-file root-qualified legacy source lock": 1,
+    "current documentation audit; self hash omitted to avoid a recursive digest": 1,
+    "current 352-file root-qualified legacy publication source lock": 1,
     "preserved dated independent item7 qualification report": 6,
     "preserved dated preparation report": 1,
-    "active legacy integration contract": 1,
+    "active legacy integration contract for locally qualified no-effects stages and retained production obligations": 1,
     "preserved dated legacy intelligence qualification report": 1,
-    "current release ledger; dry creative local PASS, broader P1 ACTIVE, RG0/RG1 HELD": 1,
-    "current 17-requirement acceptance matrix; historical item7 review and separate legacy/parallel qualifications": 1,
+    "current release ledger; local legacy publication fixture PASS, broader P1 ACTIVE, RG0/RG1 HELD": 1,
+    "current P1 matrix with local legacy publication evidence and retained release holds": 1,
     "preserved dated parallel qualification report": 1,
-    "rolling exact-commit readback of published pre-extension base4bbffb6": 1,
+    "preserved historical exact-commit readback for published base 4bbffb6; current 20be781 readback is separately recorded": 1,
     "preserved dated legacy brief and scheduled ingress qualification report": 1,
     "preserved dated original native schedule qualification report": 1,
     "preserved dated canonical no-send dummy qualification report": 1,
-    "durable local canonical dry creative qualification report": 1
+    "durable local canonical dry creative qualification report": 1,
+    "durable local no-effects legacy publication/native schedule evidence": 1
   },
-  "application_source_files_verified": 344,
-  "prior_application_files_preserved": 329,
+  "application_source_files_verified": 352,
+  "prior_application_files_preserved": 326,
   "prior_application_files_updated": [
     "src/salience/api/app.py",
     "src/salience/api/p0.py",
     "src/salience/cli.py",
     "src/salience/cycles/legacy_dispatch.py",
     "src/salience/cycles/legacy_runtime.py",
+    "src/salience/cycles/native_schedules.py",
+    "src/salience/cycles/schedule_cutover.py",
+    "src/salience/cycles/temporal_schedule_control.py",
+    "src/salience/publication/governance.py",
+    "src/salience/publication/repository.py",
     "src/salience/sdk/client.py",
     "tests/integration/test_durable_parallel_teams.py",
+    "tests/integration/test_v4_legacy_creative.py",
     "tests/integration/test_v4_legacy_dispatch.py",
     "tests/integration/test_v4_legacy_dummy.py",
     "tests/integration/test_v4_migrations.py",
@@ -44,19 +51,24 @@
     "tests/integration/test_v4_runtime_waits.py"
   ],
   "application_files_added": [
-    "migrations/versions/0039_legacy_creative_stage.py",
-    "src/salience/api/routes/legacy_creative.py",
-    "tests/integration/test_v4_legacy_creative.py"
+    "migrations/versions/0040_legacy_publication_stage.py",
+    "migrations/versions/0041_native_publication_schedule_sources.py",
+    "src/salience/api/routes/legacy_publication.py",
+    "src/salience/cycles/legacy_publication.py",
+    "src/salience/cycles/legacy_publication_runtime.py",
+    "src/salience/cycles/native_publication_schedules.py",
+    "tests/integration/test_v4_legacy_publication.py",
+    "tests/integration/test_v4_native_publication_schedules.py"
   ],
-  "mermaid_source_blocks_preserved": 6,
+  "mermaid_source_blocks_preserved": 13,
   "item7_status": "COMPLETE_IMPLEMENTED_LOCAL_FIXTURE_QUALIFICATION",
-  "independent_review": "PASS historical implemented item7 fixture scope; new extension formal independent PR review NOT RUN",
+  "independent_review": "Historical item7 review remains separate and bound to e49a214. At this publication evidence capture, GPT-6.1-Sol read-only review followed by GPT-5.6-Sol meta-review is pending; review-driven edits require user approval. Production approval is separate and not claimed.",
   "next_queue_item": null,
   "production_effects_enabled": false,
   "RG0": "HELD",
   "RG1": "HELD",
   "verification": {
-    "status": "PASS",
+    "status": "PASS_ROOT_QUALIFIED_LOCAL_PUBLICATION_FIXTURE_SCOPE",
     "documentation_tests": 15,
     "mapped_obligations": 75,
     "negative_controls": 6,
@@ -64,7 +76,105 @@
     "preserved_documentation_artifacts": 165,
     "independent_reviewers": 3,
     "reviewed_p1_rows": 17,
-    "independent_review_scope": "Dated item7 at e49a214 only; legacy/parallel extension root qualification is separate"
+    "independent_review_scope": "Dated item7 at e49a214 only; legacy/parallel extension root qualification is separate",
+    "tracked_markdown_files": 85,
+    "active_project_markdown_files": 69,
+    "active_integration_contracts": 1,
+    "tracked_markdown_paths": [
+      ".agents/skills/archify/SKILL.md",
+      ".agents/skills/archify/THIRD_PARTY_NOTICES.md",
+      ".agents/skills/archify/brand-marks/README.md",
+      ".agents/skills/archify/references/authoring-contract.md",
+      ".agents/skills/archify/references/brand-marks.md",
+      ".agents/skills/archify/references/delivery-contract.md",
+      ".agents/skills/archify/references/viewer-runtime.md",
+      ".agents/skills/archify/renderers/dataflow/README.md",
+      ".agents/skills/archify/renderers/lifecycle/README.md",
+      ".agents/skills/archify/renderers/sequence/README.md",
+      ".agents/skills/archify/renderers/workflow/README.md",
+      ".agents/skills/archify/schemas/README.md",
+      "README.md",
+      "docs-new-arch/ArchV3-implementation-notes.md",
+      "docs-new-arch/ArchV4-implementation-notes.md",
+      "docs-new-arch/README.md",
+      "docs/README.md",
+      "docs/adr/0001-durable-runtime.md",
+      "docs/adr/0002-object-storage.md",
+      "docs/adr/0003-api-persistence-and-contracts.md",
+      "docs/adr/0004-governance-secrets-and-protocols.md",
+      "docs/adr/0005-mcp-a2a-and-browser-sdk-adoption.md",
+      "docs/adr/0006-governed-publishing.md",
+      "docs/agents.md",
+      "docs/api.md",
+      "docs/architecture.md",
+      "docs/archive/2026-09-22/README.md",
+      "docs/bootstrap.md",
+      "docs/compatibility.md",
+      "docs/contracts/adapter-contracts.md",
+      "docs/core/00_BUILD_AGENT_PROMPT.md",
+      "docs/core/01_PRODUCT_CONTEXT_AND_INTENT.md",
+      "docs/core/02_REFERENCE_RESEARCH.md",
+      "docs/core/03_TARGET_ARCHITECTURE.md",
+      "docs/core/04_BROWSER_APP_AND_RESEARCH_CONTROL.md",
+      "docs/core/05_IMPLEMENTATION_PLAN.md",
+      "docs/core/06_ACCEPTANCE_TESTS_AND_GUARDRAILS.md",
+      "docs/core/07_REUSE_EXTENSION_AND_FUTURE_PROOFING.md",
+      "docs/core/08_LEAD_AGENT_AND_CREATIVE_TOOL_RUNTIME.md",
+      "docs/core/09_CALLABLE_AGENTS_AND_ENGINEERING_METHOD.md",
+      "docs/core/README.md",
+      "docs/database.md",
+      "docs/dependencies.md",
+      "docs/deployment.md",
+      "docs/governance.md",
+      "docs/implementation-progress.md",
+      "docs/limitations.md",
+      "docs/local-development.md",
+      "docs/mcp-a2a.md",
+      "docs/memory.md",
+      "docs/model-execution.md",
+      "docs/model-gateway.md",
+      "docs/phase-7-handoff.md",
+      "docs/phase-9-handoff.md",
+      "docs/plugins.md",
+      "docs/recovery.md",
+      "docs/research.md",
+      "docs/superpowers/plans/2026-09-12-browser-evidence.md",
+      "docs/superpowers/plans/2026-09-12-intelligence-loop-phases-5-6.md",
+      "docs/superpowers/plans/2026-09-12-phases-1-4-foundation.md",
+      "docs/superpowers/plans/2026-09-13-creative-production-phases-7-8.md",
+      "docs/superpowers/plans/2026-09-13-phase-7-8-release-gate-phase-9-publishing.md",
+      "docs/superpowers/plans/2026-09-13-phase-7-8-review-repairs.md",
+      "docs/superpowers/plans/2026-09-13-phase-9-independent-review-repairs.md",
+      "docs/superpowers/reviews/2026-09-13-phase-7-8-release-gate.md",
+      "docs/superpowers/reviews/2026-09-13-phase-9-independent-review.md",
+      "docs/superpowers/specs/2026-09-12-browser-evidence-design.md",
+      "docs/superpowers/specs/2026-09-12-intelligence-loop-phases-5-6-design.md",
+      "docs/superpowers/specs/2026-09-13-creative-production-phases-7-8-design.md",
+      "docs/superpowers/specs/2026-09-13-phase-7-8-release-gate-phase-9-publishing-design.md",
+      "docs/trust-model.md",
+      "docs/v4/IMPLEMENTATION-BLUEPRINT.md",
+      "docs/v4/item7-independent-review.md",
+      "docs/v4/legacy-dispatch-contract.md",
+      "docs/v4/parallel-agent-contract.md",
+      "docs/v4/progress.md",
+      "docs/v4/validation.md",
+      "docs/verification.md",
+      "docs/workflows.md",
+      "prompts/Build Creative Production Loop — Phases 7–8 End-to-End.md",
+      "prompts/Build Phase 10 — Multi-Platform Production Publishing, Analytics, Attribution & Experiments.md",
+      "prompts/Build Phases 1–4 End-to-End.md",
+      "prompts/Build Real Intelligence Loop — Pre-Phase 5 + Phases 5–6 End-to-End.md",
+      "prompts/Complete Phase 7–8 Release Gate, Then Build Phase 9 Governed Publishing.md",
+      "prompts/Install and Verify Browser Evidence on Linux EC2.md"
+    ],
+    "mermaid_source_blocks_preserved": 13,
+    "legacy_publication_root_qualification": "PASS_IMPLEMENTED_LOCAL_LEGACY_PUBLICATION_AND_NATIVE_SCHEDULE_FIXTURE_SCOPE",
+    "root_qualification_scope": "isolated no-effects fixture only; production RG0/RG1 remain HELD",
+    "current_local_application_commit": "3986a1de43d1ca8e9ca84e7c69dedbe698b3d312",
+    "current_focused_tests": 20,
+    "current_full_non_live_tests": 603,
+    "published_base_ci_protection_status": "PASS; no current feature-head CI/protection claim",
+    "published_base_commit": "20be7815d5e5c95fea2161c908ce8ac5cae88ce6"
   },
   "files": [
     {
@@ -354,8 +464,8 @@
     },
     {
       "path": "README.md",
-      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
-      "sha256": "9f5b60c14ea9958949e087f919a939184b621bc8658ab17494b547bf8f356377"
+      "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
+      "sha256": "694643fc9db59187b4ccbf65b89cee8b0171a3ed675c2e07fabbdc5a073024ac"
     },
     {
       "path": "docs-new-arch/ArchCurrent.mermaid",
@@ -394,63 +504,63 @@
     },
     {
       "path": "docs-new-arch/README.md",
-      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
-      "sha256": "74b429a8588fbc061ab311a576a951a803a772c255ca52ec19fccb5eaaa2f042"
+      "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
+      "sha256": "702ed67aa635b01b2bdaa976e84906a054fba80b97c410ff3286f2ad1d8326bd"
     },
     {
       "path": "docs/README.md",
-      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
-      "sha256": "77291b7ae948b59b0860bfaa920597e0415b38d35dbe17ecab7270e9c18ff1bf"
+      "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
+      "sha256": "441f1cff06c261e255dde91f8d77c2305d85ff481e6c17ea1428ad85acbc62f4"
     },
     {
       "path": "docs/adr/0001-durable-runtime.md",
-      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
-      "sha256": "f85310cb45a5b8c272e9593e7547871375aad4188d17b2ec48be1da07f91e74e"
+      "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
+      "sha256": "bbcdb457a1c0a634c2110c711602c6eda0ad9b71f4ce118fca5cfc8702e37c2a"
     },
     {
       "path": "docs/adr/0002-object-storage.md",
-      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
-      "sha256": "03b2ec998566af5caa30929b544cfe495e059b0f4d49b271cdfecb0516d6ca82"
+      "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
+      "sha256": "9217a172f37ea349784849dd255371b9787145bd7d628c24824f2a948679ac18"
     },
     {
       "path": "docs/adr/0003-api-persistence-and-contracts.md",
-      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
-      "sha256": "747110b742cb174c8efbb8adcd7dda38f86bf4341d9aab43a4a0c30d5810e9e9"
+      "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
+      "sha256": "5141886c1223a48efc9b8cf079d0df69993b736561c7ea3a9cdbb3da0c55b76f"
     },
     {
       "path": "docs/adr/0004-governance-secrets-and-protocols.md",
-      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
-      "sha256": "e1f0d8e31634792f21962141460b96b60759060ba68f8923a894d3f2870b617d"
+      "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
+      "sha256": "c3a5c075afa19db2e21e669c1ec78cc5d42da82fb321a64828ee0c82970753cd"
     },
     {
       "path": "docs/adr/0005-mcp-a2a-and-browser-sdk-adoption.md",
-      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
-      "sha256": "e16445b76f97983f5187b20c122f3081b9ff5a603f27439de9487d4a87a7510e"
+      "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
+      "sha256": "44f4d492b4dcd644cd46415cd7c23af9f9a8a0fbac396974f5fdc5bbf155d485"
     },
     {
       "path": "docs/adr/0006-governed-publishing.md",
-      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
-      "sha256": "45b863810e989c1d2164c7b34a8f7f2590600d4df8835b7df76a2eb2c87d4ba8"
+      "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
+      "sha256": "7abff8331a39b6af5ae8c58edb97085ff8f087f287e260cc1ac1b8ab58274fbd"
     },
     {
       "path": "docs/agents.md",
-      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
-      "sha256": "4bae48489d3cbe57ce4e4e446af0658b8eaac3adbde2da99a8aa657de7123df3"
+      "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
+      "sha256": "f336d01641dca5bafd027612c034f77d318104044dc19be1a0b92493f93df33b"
     },
     {
       "path": "docs/api.md",
-      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
-      "sha256": "1a57fa256564a0ff5b6a5e0e9dec6129e97412d61b1c29b89d2c653427835fb6"
+      "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
+      "sha256": "6e61f0a1b3769912638263ceb09b78a8453c3cbf471fbda7e562cec0de8ff6b1"
     },
     {
       "path": "docs/architecture.md",
-      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
-      "sha256": "453fd20cc0a94786baa45b8f66b2a96765e711c06c25bda0e7ffafdf97b12ade"
+      "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
+      "sha256": "54159263bf36a366bfc721476ba76d180e3fe4165f86903700af207d95d79e2e"
     },
     {
       "path": "docs/archive/2026-09-22/README.md",
-      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
-      "sha256": "37ac91bb71fdde2e4a31c16f88bf891d675140ba08320f0f045860728ec778bb"
+      "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
+      "sha256": "a7163fb0ad2524a7dc35587a1fa8e888fbbf65686062289b2b5435a8b51d3b29"
     },
     {
       "path": "docs/archive/2026-09-22/README.md.snapshot",
@@ -733,27 +843,27 @@
       "sha256": "6301ff82f4816f7300de6b1101b802e5af27475219faa9241a79e9a91b5e12b1"
     },
     {
-      "path": "docs/archive/2026-09-22/prompts/Build Creative Production Loop \u2014 Phases 7\u20138 End-to-End.md.snapshot.b64",
+      "path": "docs/archive/2026-09-22/prompts/Build Creative Production Loop — Phases 7–8 End-to-End.md.snapshot.b64",
       "disposition": "preserved immutable historical snapshot",
       "sha256": "968ff9305b92e00907c7a2b7e493959b8f66c64f05bc431c975c1ca97d75b9e0"
     },
     {
-      "path": "docs/archive/2026-09-22/prompts/Build Phase 10 \u2014 Multi-Platform Production Publishing, Analytics, Attribution & Experiments.md.snapshot.b64",
+      "path": "docs/archive/2026-09-22/prompts/Build Phase 10 — Multi-Platform Production Publishing, Analytics, Attribution & Experiments.md.snapshot.b64",
       "disposition": "preserved immutable historical snapshot",
       "sha256": "bb7ee354bb59b4f599aeef44e0a18b17f1f672826454621ed56b0f1055aa55ed"
     },
     {
-      "path": "docs/archive/2026-09-22/prompts/Build Phases 1\u20134 End-to-End.md.snapshot",
+      "path": "docs/archive/2026-09-22/prompts/Build Phases 1–4 End-to-End.md.snapshot",
       "disposition": "preserved immutable historical snapshot",
       "sha256": "4486a0868585423a951e1a874eb55714cd35242963f9a0f47c9d53420d7c101a"
     },
     {
-      "path": "docs/archive/2026-09-22/prompts/Build Real Intelligence Loop \u2014 Pre-Phase 5 + Phases 5\u20136 End-to-End.md.snapshot.b64",
+      "path": "docs/archive/2026-09-22/prompts/Build Real Intelligence Loop — Pre-Phase 5 + Phases 5–6 End-to-End.md.snapshot.b64",
       "disposition": "preserved immutable historical snapshot",
       "sha256": "d009ce7b7d6b309591554a39a9841afaf8b470ff63a366d134a9535fdf977a93"
     },
     {
-      "path": "docs/archive/2026-09-22/prompts/Complete Phase 7\u20138 Release Gate, Then Build Phase 9 Governed Publishing.md.snapshot.b64",
+      "path": "docs/archive/2026-09-22/prompts/Complete Phase 7–8 Release Gate, Then Build Phase 9 Governed Publishing.md.snapshot.b64",
       "disposition": "preserved immutable historical snapshot",
       "sha256": "6f3bd7a20b4831fc95da3583d636ea6f4b6cccfa3e270425027cec63a6bcec95"
     },
@@ -764,153 +874,153 @@
     },
     {
       "path": "docs/bootstrap.md",
-      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
-      "sha256": "207f8fd22920996c7c80ae39cdb77b55c883402b19fad075e2e98d8187d6af52"
+      "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
+      "sha256": "b4fd5f4761f17be998751973bcf69d1babba11cf1dfb3adedccf5603c5af2095"
     },
     {
       "path": "docs/compatibility.md",
-      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
-      "sha256": "35baf22dec7b5180e7f702e0129ee9c0e2a4c767fc773ed40038584f4eb42fa4"
+      "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
+      "sha256": "f21103d0bf9e605dbdfc10568ad22313a22230d7fb113bac9545edd750885f04"
     },
     {
       "path": "docs/contracts/adapter-contracts.md",
-      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
-      "sha256": "f904884640a4b86bd084ff0536e3416f11867af760e1abd05f7409d1933fa52b"
+      "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
+      "sha256": "832151a6d31e58d11f86e17def2cee478b4d6ef287071acab7c4f55bcaad92d7"
     },
     {
       "path": "docs/core/00_BUILD_AGENT_PROMPT.md",
-      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
-      "sha256": "4a5518a158adeabd0e650b42c4ee139fa0b191368ea413a70d2b7b0c2a1c976a"
+      "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
+      "sha256": "4706ca14b3b408b4e5a96209ffc3c9237c4c99c35753498cc2496bc9800631a3"
     },
     {
       "path": "docs/core/01_PRODUCT_CONTEXT_AND_INTENT.md",
-      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
-      "sha256": "b5e109810e26b6ff6bb70cadfe569a8fe9fc2ac396b3f97178bc1b2a9c8697ad"
+      "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
+      "sha256": "ed0c4fce3beb96809b3b7334ccb5ebbe6a6d33676f394eb9f818c19979289b1f"
     },
     {
       "path": "docs/core/02_REFERENCE_RESEARCH.md",
-      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
-      "sha256": "e51b40b65b664de21beef5713b0c58208c01bf3ba8c352c3d12e9ba4c41c9261"
+      "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
+      "sha256": "59c4de713a3cb54ba1f55f31402b3cd98f90cf114e28f114dd7eaac42ece17e8"
     },
     {
       "path": "docs/core/03_TARGET_ARCHITECTURE.md",
-      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
-      "sha256": "656be5ea64202c64404f28763c720a81d57d3e939ec13fd47736f60dc5b6e47f"
+      "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
+      "sha256": "9c4c1d2d7fe5aa1f04a46eeaf7b8c8273179606df245380b1ad067d7dcb5f6a2"
     },
     {
       "path": "docs/core/04_BROWSER_APP_AND_RESEARCH_CONTROL.md",
-      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
-      "sha256": "733f8ab9ad232f53c2b873462be12e291a164891c5467bb8fd767dd058a0218f"
+      "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
+      "sha256": "b9e336795c261d150da7454911d82352d2e9c36d3a67246637a332743a6025d3"
     },
     {
       "path": "docs/core/05_IMPLEMENTATION_PLAN.md",
-      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
-      "sha256": "f5f732f5272ff9e5df6049101760703f856192e6c8f202a853b57f374b6de76e"
+      "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
+      "sha256": "4d38c3eebc361755972cbe1a4fa0166fbc69ae5d1223f46879a8fef3179847f5"
     },
     {
       "path": "docs/core/06_ACCEPTANCE_TESTS_AND_GUARDRAILS.md",
-      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
-      "sha256": "09bc5c72e6962760331e00ab6776668b75bfc3458a4759f40aa309b3bb46be72"
+      "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
+      "sha256": "c7a231a9708c752bd9f05b487741224255372cbcb3ffe95ccb32946a9860546d"
     },
     {
       "path": "docs/core/07_REUSE_EXTENSION_AND_FUTURE_PROOFING.md",
-      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
-      "sha256": "a2f34620273182839b7f40d0eab061123405f13f32e244045e34a8dd5a48b9c6"
+      "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
+      "sha256": "7f5b37808887ff04b1f345dfc943741311e5d29d65bd997a49b2a41cc610cd5d"
     },
     {
       "path": "docs/core/08_LEAD_AGENT_AND_CREATIVE_TOOL_RUNTIME.md",
-      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
-      "sha256": "b4028036506ee8df00846a028f1c1adf9dd937958167e74cdd129451dfa9e25d"
+      "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
+      "sha256": "b45c027d62937ef546972e786c720c40833650b622e93b8c0333eda34e8eff8d"
     },
     {
       "path": "docs/core/09_CALLABLE_AGENTS_AND_ENGINEERING_METHOD.md",
-      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
-      "sha256": "cc8f4c5650d4df174c42e118b19ac20e08cd29b3ad7be6a6cdc65ebf68374956"
+      "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
+      "sha256": "baa22739fd7c906b377b3cb9463a2d32d057552411f98436ea0ccd3a4e8fbae5"
     },
     {
       "path": "docs/core/README.md",
-      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
-      "sha256": "f34c3de81dc6662283e0a8eb20ddef1fc0fa57170a48aad91cbf7e1af79c409b"
+      "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
+      "sha256": "09bae055542dc45763822c5a3090849d6383988086ba3e6deb2387dba890d94a"
     },
     {
       "path": "docs/database.md",
-      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
-      "sha256": "d05b650d5bde170cf111a04a066b094bba15da4066697cec95d217b20b0bf2a0"
+      "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
+      "sha256": "ae07dfe998ed67251c6adc515cfa9c1993bdc61217cd2ddbdb4c3a6f4cfa8fd5"
     },
     {
       "path": "docs/dependencies.md",
-      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
-      "sha256": "92a247274fd2dd20849f3a4880515c4e4924c0d45a8f2101316835539d6ea90e"
+      "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
+      "sha256": "4ee2bdd17fb2590d7a507903824ff473edf7fbf3acf8d9f163efe67b5391db42"
     },
     {
       "path": "docs/deployment.md",
-      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
-      "sha256": "b1f120253f723c5376f7e92259781c7cf91b64f521e1ee619a14ede03dd5bfb3"
+      "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
+      "sha256": "73b715731cd5767c795c4481976048c1f70a26350161e67812f785c7a4bb09c3"
     },
     {
       "path": "docs/governance.md",
-      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
-      "sha256": "4ec1d16559d72f8769c21fc4255fbfca2dd95af270977d49a57478696044cfbe"
+      "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
+      "sha256": "2edecd4cea30008be2a110a65ab290da91aa6de1134a6c74f4b5d1f1178a517e"
     },
     {
       "path": "docs/implementation-progress.md",
-      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
-      "sha256": "cb70470e27d493ee7971ddc5c79434eec39ae5623caeaa6f36ccea43b84aaeba"
+      "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
+      "sha256": "dad8eda7e0c62766cda150eab635d94e1849ac595aacf123541c4cd7599f11b4"
     },
     {
       "path": "docs/limitations.md",
-      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
-      "sha256": "a80f317bcfd11095fb322ae595127a3a87da2f45f4b5797c2d1012deef9ca1be"
+      "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
+      "sha256": "6d6abf943d67112a8d4609559a4abe7399d295192ea2d7f32ea338fe43d6b830"
     },
     {
       "path": "docs/local-development.md",
-      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
-      "sha256": "d33259bef3e7dd95e0dadadeb1c590b701fb716d52c023360c3f890b16951bbf"
+      "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
+      "sha256": "ea48d44e825ec57f03ecb26dfdaba2ebd8a996dd928df5c1c56b6f833b8229a4"
     },
     {
       "path": "docs/mcp-a2a.md",
-      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
-      "sha256": "09a003655a49d8b259ae531a46b93996d79d18faec663bd530c3fe05ebfc93b7"
+      "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
+      "sha256": "be8bd58aa8784902860b4ea01bb2eee35caa4ffba43e0c70ca395308a2a23407"
     },
     {
       "path": "docs/memory.md",
-      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
-      "sha256": "acbaa19e9d4447840aef8fd2be688d747861f180c993fe2b599facabcf1bf8e1"
+      "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
+      "sha256": "6abdb862a1f9fc8bc49aba467e1eb3fd768554c97c7e535939940f9bc0cb4590"
     },
     {
       "path": "docs/model-execution.md",
-      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
-      "sha256": "e0a5047b3433db74cd9e9e81320e2e93b6bd079bdf86bb4131f28299fe810da8"
+      "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
+      "sha256": "80aeb805c4209697481f559fc2bcce24806806bc087e7e87b3f5d11c44742ff4"
     },
     {
       "path": "docs/model-gateway.md",
-      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
-      "sha256": "c0c648d55cbd567c369a1eebc333becad77d0dc3e75a1d9a0bed9467c3031d62"
+      "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
+      "sha256": "0bdecae0a9c2aa1bde6a1d97545cbae1379c40ba17412fa4b5633417128b942f"
     },
     {
       "path": "docs/phase-7-handoff.md",
-      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
-      "sha256": "0372db3c0877fe5c65df5e7b8d9856a6f25cc0945e99b8594fbf024ac2e1e918"
+      "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
+      "sha256": "343d62b2a9da2a5e4cdf62e3b34c5a342387bb09f413b71c027801bbfd37ec83"
     },
     {
       "path": "docs/phase-9-handoff.md",
-      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
-      "sha256": "bb8b9050e68e48e17f019882e0a731aa2ed092d9098d94f5702d1f77dfa69a9e"
+      "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
+      "sha256": "bd41064e28ea725879cba1381c333d3af272c435ebf2ab83be79de405a7dd545"
     },
     {
       "path": "docs/plugins.md",
-      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
-      "sha256": "37e6964e667623587d15066745ce4c8319e63e524c81a42b7bf04fc7ff017108"
+      "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
+      "sha256": "d554e309483d34ca3e4d1c6798f501c59c7524607f6ba57ba5b2c36436d0ad1f"
     },
     {
       "path": "docs/recovery.md",
-      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
-      "sha256": "b6f9f3d5b76d53e0cdd335c71278cd4de56e7d695a5dd4032bd31e73d631fd83"
+      "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
+      "sha256": "ea0f7728ba2a4d46534beac16199459c2deb48f6d66738ba56ceba1e12ad9a36"
     },
     {
       "path": "docs/research.md",
-      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
-      "sha256": "009d018ba97772a64168e1d85fdb9d31eb6fb92f2d603eb9ac82a6d6bfb39b06"
+      "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
+      "sha256": "86a7fedcb137d8291e58ae6ea4719b45ee2f0e833cb3abeda4bc9474db5d6efd"
     },
     {
       "path": "docs/salience-phase-1-6.architecture.html",
@@ -954,78 +1064,78 @@
     },
     {
       "path": "docs/superpowers/plans/2026-09-12-browser-evidence.md",
-      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
-      "sha256": "c43bd7fc57996b8b0bbb4d3d976992f3a83b9a4fcb0fe1dc5528f4ebb7e6e0e1"
+      "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
+      "sha256": "3c2cfa02d6e598a8f057c9a53cff5872effb999b5092aa07c6cbd4ca15e250b5"
     },
     {
       "path": "docs/superpowers/plans/2026-09-12-intelligence-loop-phases-5-6.md",
-      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
-      "sha256": "d6ff16bcfe959c935a47bdc71f062cea535d9271defd0c9bd82b82cf6a0a2876"
+      "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
+      "sha256": "4b97c6931438ad9b6cdad34b106462d99fb93e3767807fbeb4197061a47d3220"
     },
     {
       "path": "docs/superpowers/plans/2026-09-12-phases-1-4-foundation.md",
-      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
-      "sha256": "ab79e13a728da53d17b474ecc0169122435d13fc71682dee3ca3dd58c162746f"
+      "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
+      "sha256": "b19213c159c64fa20fbbd602a46c14edc0fae413421583c345f628610f412738"
     },
     {
       "path": "docs/superpowers/plans/2026-09-13-creative-production-phases-7-8.md",
-      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
-      "sha256": "5a765a74a5969f24aed6ceebebed17bd3b13eb3b57411c77dd5c7e99ef20771a"
+      "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
+      "sha256": "b304e1e7aa98ec408a7dc45936399441c00cd2589ac5c2f326293efae70e4c02"
     },
     {
       "path": "docs/superpowers/plans/2026-09-13-phase-7-8-release-gate-phase-9-publishing.md",
-      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
-      "sha256": "1f30230f8dd7a56e10a6677b1d637f6f176041a082e5760dbf43522c16277f0a"
+      "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
+      "sha256": "939c30dc07faca5203e631a259c4b0d2a4e4ddb635f0136ba2708a356b1e5c04"
     },
     {
       "path": "docs/superpowers/plans/2026-09-13-phase-7-8-review-repairs.md",
-      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
-      "sha256": "dd41c0cf6600201c99ef244e6d8b68707cf0e121be355506b14dd2e493f6dfbb"
+      "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
+      "sha256": "4c2d555a9e852db53aac2850b86fcd726a1aca9b036bc3c596dd635f91c6ef18"
     },
     {
       "path": "docs/superpowers/plans/2026-09-13-phase-9-independent-review-repairs.md",
-      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
-      "sha256": "444ed1bcd9203ad6ebb250293a5c6c0077fa90bd9e18063c586ffe483c83f3e7"
+      "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
+      "sha256": "a46fb4d3dd669ada81c25041e4e0cc2eeeed84b6350b0d37e0396d549594498f"
     },
     {
       "path": "docs/superpowers/reviews/2026-09-13-phase-7-8-release-gate.md",
-      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
-      "sha256": "ae3c3eb12d80ce85600301bfafd0ee0f2356bd6484f0ab0bc423966c99330e28"
+      "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
+      "sha256": "9ef8f35776b983f44ed7a30f7b906e0134abb184f63d369e30f3081e62b6f378"
     },
     {
       "path": "docs/superpowers/reviews/2026-09-13-phase-9-independent-review.md",
-      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
-      "sha256": "30d52250f7f1eef6305ec0602602097a9f4598509a419d0705fda721205b101c"
+      "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
+      "sha256": "6b35f1891d3e229145fdc8e26024709367ca535b0e2bd91b73ab8064b68745e9"
     },
     {
       "path": "docs/superpowers/specs/2026-09-12-browser-evidence-design.md",
-      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
-      "sha256": "05fc666ba3ae77193c8e6a7d66875d9b491fe087e4a52b9832b9a89a0538cdac"
+      "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
+      "sha256": "2c7618fc84fc830855011faa6a81e304e02b2e12a0b50cff3dda3639266c584a"
     },
     {
       "path": "docs/superpowers/specs/2026-09-12-intelligence-loop-phases-5-6-design.md",
-      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
-      "sha256": "f8c51d40b0ecd7e7065af6cd6f64c644cb0a16ba1e233243621aefd36eaf8c6c"
+      "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
+      "sha256": "d911a111c09fbd0ecd5e0a72a732db826c630db69092271fe65c1ab76067037c"
     },
     {
       "path": "docs/superpowers/specs/2026-09-13-creative-production-phases-7-8-design.md",
-      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
-      "sha256": "975531af77efda8c7604a5b06cde4953d147162132aa2746cd960606203bbf52"
+      "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
+      "sha256": "6220377037218cc2e2681cb87ffb7479c798a125fad0d7761026906fb313158c"
     },
     {
       "path": "docs/superpowers/specs/2026-09-13-phase-7-8-release-gate-phase-9-publishing-design.md",
-      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
-      "sha256": "318c1cad0d6f283d3539a6652fb2278859482cac6996a4048da5c0785ce8690b"
+      "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
+      "sha256": "02868d2c6be860a86bac260588acd0732d67f650b46b7993c5b9462510584c33"
     },
     {
       "path": "docs/trust-model.md",
-      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
-      "sha256": "1bb2c09e79a74814a52052b503e46d2859dc7de57aa7399ec34a98172c38044f"
+      "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
+      "sha256": "8f8cff9ddd269cdcd4eb8072b41adbd5969e31e04fc69d7e857969fda75ec9ed"
     },
     {
       "path": "docs/v4/IMPLEMENTATION-BLUEPRINT.md",
-      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
-      "sha256": "a3142a22ec4ad31785ecd5b1abe17102946e98d71e152f75f2c31014cdf55075"
+      "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
+      "sha256": "71e00266aa71928ee8154d90dc527c1d51415dc82b052fb44d09c7e00ed5b382"
     },
     {
       "path": "docs/v4/allocation-evidence.json",
@@ -1064,7 +1174,8 @@
     },
     {
       "path": "docs/v4/documentation-status-audit.json",
-      "disposition": "current documentation status audit"
+      "disposition": "current documentation audit; self hash omitted to avoid a recursive digest",
+      "sha256": null
     },
     {
       "path": "docs/v4/evidence-baseline.json",
@@ -1073,8 +1184,8 @@
     },
     {
       "path": "docs/v4/evidence-lock.json",
-      "disposition": "current 344-file root-qualified legacy source lock",
-      "sha256": "b09a36becde6fcd7725e88f2d91c4e91f727d523df3a4271a5a9c5355927f067"
+      "disposition": "current 352-file root-qualified legacy publication source lock",
+      "sha256": "8f926b74c92f54ee6e2e7e639d38563a12a87c4892a81472248d648e0a297967"
     },
     {
       "path": "docs/v4/goal-revision-evidence.json",
@@ -1158,8 +1269,8 @@
     },
     {
       "path": "docs/v4/legacy-dispatch-contract.md",
-      "disposition": "active legacy integration contract",
-      "sha256": "58c8874e23e8395e329eb5fe81deaad4479bdb2093dab9295362bc93f12aac24"
+      "disposition": "active legacy integration contract for locally qualified no-effects stages and retained production obligations",
+      "sha256": "5e47bcd905ca01b974e94f68ad219b1a1d8e606c8d10103d7cae3374f28c29bc"
     },
     {
       "path": "docs/v4/legacy-dispatch-evidence.json",
@@ -1173,8 +1284,8 @@
     },
     {
       "path": "docs/v4/p0-release.json",
-      "disposition": "current release ledger; dry creative local PASS, broader P1 ACTIVE, RG0/RG1 HELD",
-      "sha256": "ddc73a6c8cb5473c54fe2cc8af5708531d8386b159425b74345898805046f60a"
+      "disposition": "current release ledger; local legacy publication fixture PASS, broader P1 ACTIVE, RG0/RG1 HELD",
+      "sha256": "a8b52619f9e3b986ceb0562d9cc20db5d49ff35bff60ba24fb46d24baf4c74d1"
     },
     {
       "path": "docs/v4/p1-increment-evidence.json",
@@ -1183,13 +1294,13 @@
     },
     {
       "path": "docs/v4/p1-qualification-matrix.json",
-      "disposition": "current 17-requirement acceptance matrix; historical item7 review and separate legacy/parallel qualifications",
-      "sha256": "09bb944037c22292cd7aaa77cdced10faff200750de3030d5355cdd2503f18bc"
+      "disposition": "current P1 matrix with local legacy publication evidence and retained release holds",
+      "sha256": "4415a1d0867d057fdab6c2698c2aa04cf4152b8064089c5af620f90101a1f403"
     },
     {
       "path": "docs/v4/parallel-agent-contract.md",
-      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
-      "sha256": "a26d2fc2f2596c8c334c57c6d21cf6f246ed34936282b05aa6ff51097fc9bb8b"
+      "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
+      "sha256": "65a84f7229370742694acd31845d0cfcda2092cc328ffe0e78af790f5a656db7"
     },
     {
       "path": "docs/v4/parallel-agents-evidence.json",
@@ -1198,58 +1309,58 @@
     },
     {
       "path": "docs/v4/progress.md",
-      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
-      "sha256": "c19ec71812ce0da6a8d02aaf17afb8a75b24326eddf01e17b5b8911eb32ec95a"
+      "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
+      "sha256": "09ad0f72771c275e4bfca64382d848071e367ddfd46c5427c105e24dd3b81ea1"
     },
     {
       "path": "docs/v4/repository-enforcement-evidence.json",
-      "disposition": "rolling exact-commit readback of published pre-extension base4bbffb6",
+      "disposition": "preserved historical exact-commit readback for published base 4bbffb6; current 20be781 readback is separately recorded",
       "sha256": "89ba61981b9d5062b16ecdf6d1ef4e992e3130e63a7aa1ca8383c180116f40a7"
     },
     {
       "path": "docs/v4/validation.md",
-      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
-      "sha256": "33c04b0da788031e61315c37b766959a4e0fa752da77197f032dc1b8124244df"
+      "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
+      "sha256": "b469f3764f29f0496dc9cf8fd1de1ba315d268ef38119e710a34ee0d3f4a438e"
     },
     {
       "path": "docs/verification.md",
-      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
-      "sha256": "2cd44949b16d9a6e3ffa905e5c7090152670430149df9ede80ee6cecbce33f32"
+      "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
+      "sha256": "e4cacc2f8824f7d6c4b03bc3ec3c3305f695c871c3955d787ab9667e61574b9f"
     },
     {
       "path": "docs/workflows.md",
-      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
-      "sha256": "4551191d8b0e747991f5927dd8047c0039cfa4e52cfaa020df9ca60e096ab61a"
+      "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
+      "sha256": "8efaaac00ec9a766762e3325bb1ac490f4786f931b50be289fb420b290e0d1c7"
     },
     {
-      "path": "prompts/Build Creative Production Loop \u2014 Phases 7\u20138 End-to-End.md",
-      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
-      "sha256": "e5e5390ce36fc44d40958a56b63c3bb27b4020c9bd8789f884685fb031e586fe"
+      "path": "prompts/Build Creative Production Loop — Phases 7–8 End-to-End.md",
+      "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
+      "sha256": "f18085037fa168f1f90aa16926bcf90305c345caaeab872f27981acbac43a8f5"
     },
     {
-      "path": "prompts/Build Phase 10 \u2014 Multi-Platform Production Publishing, Analytics, Attribution & Experiments.md",
-      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
-      "sha256": "d701d2392e72a324eed28fe491c846684dc19d0e101b5f47f558a75e1de62742"
+      "path": "prompts/Build Phase 10 — Multi-Platform Production Publishing, Analytics, Attribution & Experiments.md",
+      "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
+      "sha256": "adc631942cb842acd31e3a65f9a8109fa198ce77f541754e24af4e815b61565b"
     },
     {
-      "path": "prompts/Build Phases 1\u20134 End-to-End.md",
-      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
-      "sha256": "8d38b915189a1869f293295f2bf41bb7270c33b53d03bc31db0329a50de1fddd"
+      "path": "prompts/Build Phases 1–4 End-to-End.md",
+      "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
+      "sha256": "40a5998b495b6cf91449c1d1a4e7ae81f66c73a81c0ad6d292849eda63c78b89"
     },
     {
-      "path": "prompts/Build Real Intelligence Loop \u2014 Pre-Phase 5 + Phases 5\u20136 End-to-End.md",
-      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
-      "sha256": "ce4d075aa91492041a265a24617c6de9d1cf13a6896dcfcb9f7830d106be9fbe"
+      "path": "prompts/Build Real Intelligence Loop — Pre-Phase 5 + Phases 5–6 End-to-End.md",
+      "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
+      "sha256": "82fc704ef0346aec58659ae59ebdddd67029a22d066855b25efd6116431dec91"
     },
     {
-      "path": "prompts/Complete Phase 7\u20138 Release Gate, Then Build Phase 9 Governed Publishing.md",
-      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
-      "sha256": "6cc8f87f06a801459cfb7e0ced3ea1d07639937eb8123d0edf5890f10eef8255"
+      "path": "prompts/Complete Phase 7–8 Release Gate, Then Build Phase 9 Governed Publishing.md",
+      "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
+      "sha256": "985de777173924d9fba4ec540afc2741e904f4ed22319d7d535799b3797089c8"
     },
     {
       "path": "prompts/Install and Verify Browser Evidence on Linux EC2.md",
-      "disposition": "active project Markdown aligned with resumed P1 dry creative and retained holds",
-      "sha256": "5ce8c160e51135561ee6d9a18349f68531bed4f769b0ecbbb859eca58fc5365e"
+      "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
+      "sha256": "e3d65c99c360abda91b9e3977098786178a7cad06434e7084f379eb9449556b9"
     },
     {
       "path": "docs/v4/legacy-schedule-evidence.json",
@@ -1270,13 +1381,114 @@
       "path": "docs/v4/legacy-creative-evidence.json",
       "disposition": "durable local canonical dry creative qualification report",
       "sha256": "8e1c69f1a666a9e1f8b7eebb4e4d7a3c823e98bdfc714d4cf0834a2e5e8de008"
+    },
+    {
+      "path": "docs/v4/legacy-publication-evidence.json",
+      "disposition": "durable local no-effects legacy publication/native schedule evidence",
+      "sha256": "3e6384209f059306326254df53c6580cf3f5a5efd431d66e307d062957d21a30"
     }
   ],
-  "qualified_application_commit": "57eb84f62d978ca235f1119939d9f6adda781735",
-  "next_action": "Continue restored P1 publication and native publication schedule integration with exact current account/native approval/budget authority, then retained general authorization/runtime/recovery and production obligations; P2\u2013P7 gated, optional P6 disabled",
+  "qualified_application_commit": "3986a1de43d1ca8e9ca84e7c69dedbe698b3d312",
+  "next_action": "Complete retained general policy/recovery, production schedule inventory/routing/drain/rollback, RG0/RG1 production obligations and final published-head checks; keep P2-P7 gated and P6 disabled.",
   "parallel_agents_status": "PASS_IMPLEMENTED_LOCAL_PARALLEL_AGENT_FIXTURE_SCOPE",
   "parallel_qualified_application_commit": "2653d2ecb3f0d5bb8ea6560de274137dd6032a96",
   "legacy_intelligence_status": "PASS_IMPLEMENTED_LOCAL_LEGACY_CREATIVE_STAGE",
   "goal_status": "ACTIVE",
-  "independent_review_scope": "Historical item7 e49a214 only; no new independent approval claimed"
+  "independent_review_scope": "Historical item7 e49a214 only; no new independent approval claimed",
+  "tracked_markdown_paths": [
+    ".agents/skills/archify/SKILL.md",
+    ".agents/skills/archify/THIRD_PARTY_NOTICES.md",
+    ".agents/skills/archify/brand-marks/README.md",
+    ".agents/skills/archify/references/authoring-contract.md",
+    ".agents/skills/archify/references/brand-marks.md",
+    ".agents/skills/archify/references/delivery-contract.md",
+    ".agents/skills/archify/references/viewer-runtime.md",
+    ".agents/skills/archify/renderers/dataflow/README.md",
+    ".agents/skills/archify/renderers/lifecycle/README.md",
+    ".agents/skills/archify/renderers/sequence/README.md",
+    ".agents/skills/archify/renderers/workflow/README.md",
+    ".agents/skills/archify/schemas/README.md",
+    "README.md",
+    "docs-new-arch/ArchV3-implementation-notes.md",
+    "docs-new-arch/ArchV4-implementation-notes.md",
+    "docs-new-arch/README.md",
+    "docs/README.md",
+    "docs/adr/0001-durable-runtime.md",
+    "docs/adr/0002-object-storage.md",
+    "docs/adr/0003-api-persistence-and-contracts.md",
+    "docs/adr/0004-governance-secrets-and-protocols.md",
+    "docs/adr/0005-mcp-a2a-and-browser-sdk-adoption.md",
+    "docs/adr/0006-governed-publishing.md",
+    "docs/agents.md",
+    "docs/api.md",
+    "docs/architecture.md",
+    "docs/archive/2026-09-22/README.md",
+    "docs/bootstrap.md",
+    "docs/compatibility.md",
+    "docs/contracts/adapter-contracts.md",
+    "docs/core/00_BUILD_AGENT_PROMPT.md",
+    "docs/core/01_PRODUCT_CONTEXT_AND_INTENT.md",
+    "docs/core/02_REFERENCE_RESEARCH.md",
+    "docs/core/03_TARGET_ARCHITECTURE.md",
+    "docs/core/04_BROWSER_APP_AND_RESEARCH_CONTROL.md",
+    "docs/core/05_IMPLEMENTATION_PLAN.md",
+    "docs/core/06_ACCEPTANCE_TESTS_AND_GUARDRAILS.md",
+    "docs/core/07_REUSE_EXTENSION_AND_FUTURE_PROOFING.md",
+    "docs/core/08_LEAD_AGENT_AND_CREATIVE_TOOL_RUNTIME.md",
+    "docs/core/09_CALLABLE_AGENTS_AND_ENGINEERING_METHOD.md",
+    "docs/core/README.md",
+    "docs/database.md",
+    "docs/dependencies.md",
+    "docs/deployment.md",
+    "docs/governance.md",
+    "docs/implementation-progress.md",
+    "docs/limitations.md",
+    "docs/local-development.md",
+    "docs/mcp-a2a.md",
+    "docs/memory.md",
+    "docs/model-execution.md",
+    "docs/model-gateway.md",
+    "docs/phase-7-handoff.md",
+    "docs/phase-9-handoff.md",
+    "docs/plugins.md",
+    "docs/recovery.md",
+    "docs/research.md",
+    "docs/superpowers/plans/2026-09-12-browser-evidence.md",
+    "docs/superpowers/plans/2026-09-12-intelligence-loop-phases-5-6.md",
+    "docs/superpowers/plans/2026-09-12-phases-1-4-foundation.md",
+    "docs/superpowers/plans/2026-09-13-creative-production-phases-7-8.md",
+    "docs/superpowers/plans/2026-09-13-phase-7-8-release-gate-phase-9-publishing.md",
+    "docs/superpowers/plans/2026-09-13-phase-7-8-review-repairs.md",
+    "docs/superpowers/plans/2026-09-13-phase-9-independent-review-repairs.md",
+    "docs/superpowers/reviews/2026-09-13-phase-7-8-release-gate.md",
+    "docs/superpowers/reviews/2026-09-13-phase-9-independent-review.md",
+    "docs/superpowers/specs/2026-09-12-browser-evidence-design.md",
+    "docs/superpowers/specs/2026-09-12-intelligence-loop-phases-5-6-design.md",
+    "docs/superpowers/specs/2026-09-13-creative-production-phases-7-8-design.md",
+    "docs/superpowers/specs/2026-09-13-phase-7-8-release-gate-phase-9-publishing-design.md",
+    "docs/trust-model.md",
+    "docs/v4/IMPLEMENTATION-BLUEPRINT.md",
+    "docs/v4/item7-independent-review.md",
+    "docs/v4/legacy-dispatch-contract.md",
+    "docs/v4/parallel-agent-contract.md",
+    "docs/v4/progress.md",
+    "docs/v4/validation.md",
+    "docs/verification.md",
+    "docs/workflows.md",
+    "prompts/Build Creative Production Loop — Phases 7–8 End-to-End.md",
+    "prompts/Build Phase 10 — Multi-Platform Production Publishing, Analytics, Attribution & Experiments.md",
+    "prompts/Build Phases 1–4 End-to-End.md",
+    "prompts/Build Real Intelligence Loop — Pre-Phase 5 + Phases 5–6 End-to-End.md",
+    "prompts/Complete Phase 7–8 Release Gate, Then Build Phase 9 Governed Publishing.md",
+    "prompts/Install and Verify Browser Evidence on Linux EC2.md"
+  ],
+  "repository_readback": {
+    "published_base_commit": "20be7815d5e5c95fea2161c908ce8ac5cae88ce6",
+    "inspected_at": "2026-10-05T10:15:06.262580+00:00",
+    "status": "PASS for required CI checks and strict branch protection on the published base only",
+    "artifact": "artifacts/v4-legacy-creative-qualified-head.json",
+    "current_feature_application_commit": "3986a1de43d1ca8e9ca84e7c69dedbe698b3d312",
+    "current_feature_head_ci": "NOT CLAIMED",
+    "formal_pr_approval": "NOT RUN"
+  }
 }

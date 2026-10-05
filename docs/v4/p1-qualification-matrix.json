@@ -3,7 +3,7 @@
   "requirements": [
     {
       "id": "R02",
-      "requirement": "\u00a71: deterministic activities, compatible workflow upgrades and bounded histories",
+      "requirement": "§1: deterministic activities, compatible workflow upgrades and bounded histories",
       "phase": "P1",
       "dependencies": "P0,R01",
       "acceptance": "Replay captured old histories on compatible worker; external I/O absent from coordinator; Continue-As-New preserves cycle/context/operation and finite history limits.",
@@ -31,21 +31,31 @@
           "tests/integration/test_v4_legacy_brief_dispatch.py"
         ],
         "application_commit": "fcc5dfa11fa6281a1e281ac41867b3b0e4d8c722"
+      },
+      "native_publication_schedule_extension": {
+        "scope": "Root-qualified actual original paired governed-publication Temporal schedule conversion, pause/drain/fence/watermark/rollback, bounded real resumed ingress and canonical outbox only; effects-disabled fixture scope",
+        "evidence": "docs/v4/legacy-publication-evidence.json",
+        "verifiers": [
+          "tests/integration/test_v4_legacy_publication.py",
+          "tests/integration/test_v4_native_publication_schedules.py",
+          "tests/integration/test_v4_migrations.py"
+        ],
+        "application_commit": "3986a1de43d1ca8e9ca84e7c69dedbe698b3d312"
       }
     },
     {
       "id": "R03",
-      "requirement": "\u00a71: atomic business transition/outbox, acknowledged ordered delivery and deduplication",
+      "requirement": "§1: atomic business transition/outbox, acknowledged ordered delivery and deduplication",
       "phase": "P1",
       "dependencies": "P0,R01",
-      "acceptance": "Local test_v4_outbox, test_v4_auto_dispatch and test_v4_outbox_recovery prove atomic enqueue, ordered bounded fixture dispatch, final-attempt escalation, consumer-ack loss, killed-worker restart and deduplication; item-5a public fixture admission/closure uses the same outbox, and item-5c cutover poll reuses it without a direct Temporal start. Live legacy start/signal conversion remains required.",
+      "acceptance": "Local test_v4_outbox, test_v4_auto_dispatch and test_v4_outbox_recovery prove atomic enqueue, ordered bounded fixture dispatch, final-attempt escalation, consumer-ack loss, killed-worker restart and deduplication; item-5a public fixture admission/closure uses the same outbox, and item-5c cutover poll reuses it without a direct Temporal start. Root-qualified isolated publication start/outbox plus original native publication schedule resumed ingress are recorded in legacy-publication-evidence.json; production dispatch and live legacy routing remain unqualified.",
       "migration_rollback": "M1: shadow outbox then cut over dispatch, keep unacked rows/consumer ledger on rollback.",
       "gate": "RG1",
       "executed_verifier_cases": 58,
       "local_verifier_status": "PASS; covers implemented local fixtures, not unimplemented production acceptance",
       "independent_review_status": "PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE; production acceptance remains HELD",
       "production_release_status": "HELD",
-      "remaining_acceptance": "Publication API/scheduler start and signal integration with exact current account/native approval/budget authorization; production dispatch remains unqualified. Intelligence/briefs/native intelligence schedules/dummy/dry creative are separately root-qualified.",
+      "remaining_acceptance": "Production dispatcher/provider and approved account authorization; supported production routing, native schedule inventory/fencing, remote reconciliation and complete RG1 acceptance. The isolated fixture publication and paired native schedule extension is separately root-qualified.",
       "independent_review_evidence": [
         "docs/v4/item7-runtime-review.json"
       ],
@@ -87,14 +97,34 @@
           "tests/integration/test_v4_legacy_creative.py"
         ],
         "application_commit": "57eb84f62d978ca235f1119939d9f6adda781735"
+      },
+      "native_publication_schedule_extension": {
+        "scope": "Root-qualified actual original paired governed-publication Temporal schedule conversion, pause/drain/fence/watermark/rollback, bounded real resumed ingress and canonical outbox only; effects-disabled fixture scope",
+        "evidence": "docs/v4/legacy-publication-evidence.json",
+        "verifiers": [
+          "tests/integration/test_v4_legacy_publication.py",
+          "tests/integration/test_v4_native_publication_schedules.py",
+          "tests/integration/test_v4_migrations.py"
+        ],
+        "application_commit": "3986a1de43d1ca8e9ca84e7c69dedbe698b3d312"
+      },
+      "legacy_publication_extension": {
+        "scope": "Root-qualified effects-disabled original publication API/outbox and paired native publication schedule conversion with canonical resumed ingress, added to the separately qualified original native intelligence schedule conversion; exact account/baseline/current approval/policy/rights, zero-budget internal fixture, receipt-only expired-permit recovery and typed hold",
+        "evidence": "docs/v4/legacy-publication-evidence.json",
+        "verifiers": [
+          "tests/integration/test_v4_legacy_publication.py",
+          "tests/integration/test_v4_native_publication_schedules.py",
+          "tests/integration/test_v4_migrations.py"
+        ],
+        "application_commit": "3986a1de43d1ca8e9ca84e7c69dedbe698b3d312"
       }
     },
     {
       "id": "R05",
-      "requirement": "\u00a72: versioned GoalSpec, complete scope/metric/cadence/budget/stop fields and approved baseline",
+      "requirement": "§2: versioned GoalSpec, complete scope/metric/cadence/budget/stop fields and approved baseline",
       "phase": "P1",
       "dependencies": "P0,R01",
-      "acceptance": "Local revision/baseline and test_v4_cadence_policy prove V2 program/account/channel/policy/resource/stop envelopes, exact retries, explicit fixture approval and no implicit trial; test_v4_cycle_accounting adds immutable V3 allocation policy and fixture G0 caps; items 5a\u20135b verify exact signed goal creation, revision/state and baseline revocation; production baseline qualification remains required.",
+      "acceptance": "Local revision/baseline and test_v4_cadence_policy prove V2 program/account/channel/policy/resource/stop envelopes, exact retries, explicit fixture approval and no implicit trial; test_v4_cycle_accounting adds immutable V3 allocation policy and fixture G0 caps; items 5a–5b verify exact signed goal creation, revision/state and baseline revocation; production baseline qualification remains required. The isolated publication extension binds a fixture account to the approved goal revision/baseline and rechecks exact account scope/current native authorization; general registry and production baseline eligibility remain required.",
       "migration_rollback": "M1: new revisions, no authority inferred from program rows; disable new goals on rollback.",
       "gate": "RG1",
       "executed_verifier_cases": 97,
@@ -104,21 +134,31 @@
       "remaining_acceptance": "production baseline/registry eligibility qualification beyond the explicitly approved no-effects fixture.",
       "independent_review_evidence": [
         "docs/v4/item7-admission-review.json"
-      ]
+      ],
+      "legacy_publication_extension": {
+        "scope": "Root-qualified effects-disabled original publication API/outbox and paired native publication schedule conversion with canonical resumed ingress, added to the separately qualified original native intelligence schedule conversion; exact account/baseline/current approval/policy/rights, zero-budget internal fixture, receipt-only expired-permit recovery and typed hold",
+        "evidence": "docs/v4/legacy-publication-evidence.json",
+        "verifiers": [
+          "tests/integration/test_v4_legacy_publication.py",
+          "tests/integration/test_v4_native_publication_schedules.py",
+          "tests/integration/test_v4_migrations.py"
+        ],
+        "application_commit": "3986a1de43d1ca8e9ca84e7c69dedbe698b3d312"
+      }
     },
     {
       "id": "R06",
-      "requirement": "\u00a72: stable CycleIntent/cycle ID, slots and manual/event idempotency across revisions",
+      "requirement": "§2: stable CycleIntent/cycle ID, slots and manual/event idempotency across revisions",
       "phase": "P1",
       "dependencies": "R03,R05",
-      "acceptance": "Local cadence tests prove concurrent manual/event/scheduled coalescing, bounded source-event identity, stable cross-revision/interval retries and crash rollback; V1/V2 worker-kill replay preserves canonical IDs. Items 5a/5c signed requests and scoped schedule cutover preserve one intent/cycle/context/outbox across competing origins and restart; live conversion remains gated.",
+      "acceptance": "Local cadence tests prove concurrent manual/event/scheduled coalescing, bounded source-event identity, stable cross-revision/interval retries and crash rollback; V1/V2 worker-kill replay preserves canonical IDs. Items 5a/5c signed requests and scoped schedule cutover preserve one intent/cycle/context/outbox across competing origins and restart; actual original native publication schedule conversion and resumed canonical outbox ingress are locally qualified in the effects-disabled fixture; production conversion remains gated. Actual resumed publication ticks preserve the distinct original job/publication schedule identities and atomically commit one canonical outbox operation under the original goal/cycle/context.",
       "migration_rollback": "M1: slot uniqueness/coalescing and legacy mapping; retain mapping during rollback.",
       "gate": "RG1",
       "executed_verifier_cases": 56,
       "local_verifier_status": "PASS; covers implemented local fixtures, not unimplemented production acceptance",
       "independent_review_status": "PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE; production acceptance remains HELD",
       "production_release_status": "HELD",
-      "remaining_acceptance": "production legacy slot/cycle mapping/cutover qualification beyond local signed fixture coalescing.",
+      "remaining_acceptance": "Production legacy slot/cycle mapping/cutover, supported routing, full native schedule inventory/fencing and deployment rollback qualification beyond the local signed fixture.",
       "independent_review_evidence": [
         "docs/v4/item7-admission-review.json"
       ],
@@ -160,11 +200,31 @@
           "tests/integration/test_v4_legacy_creative.py"
         ],
         "application_commit": "57eb84f62d978ca235f1119939d9f6adda781735"
+      },
+      "native_publication_schedule_extension": {
+        "scope": "Root-qualified actual original paired governed-publication Temporal schedule conversion, pause/drain/fence/watermark/rollback, bounded real resumed ingress and canonical outbox only; effects-disabled fixture scope",
+        "evidence": "docs/v4/legacy-publication-evidence.json",
+        "verifiers": [
+          "tests/integration/test_v4_legacy_publication.py",
+          "tests/integration/test_v4_native_publication_schedules.py",
+          "tests/integration/test_v4_migrations.py"
+        ],
+        "application_commit": "3986a1de43d1ca8e9ca84e7c69dedbe698b3d312"
+      },
+      "legacy_publication_extension": {
+        "scope": "Root-qualified effects-disabled original publication API/outbox and paired native publication schedule conversion with canonical resumed ingress, added to the separately qualified original native intelligence schedule conversion; exact account/baseline/current approval/policy/rights, zero-budget internal fixture, receipt-only expired-permit recovery and typed hold",
+        "evidence": "docs/v4/legacy-publication-evidence.json",
+        "verifiers": [
+          "tests/integration/test_v4_legacy_publication.py",
+          "tests/integration/test_v4_native_publication_schedules.py",
+          "tests/integration/test_v4_migrations.py"
+        ],
+        "application_commit": "3986a1de43d1ca8e9ca84e7c69dedbe698b3d312"
       }
     },
     {
       "id": "R07",
-      "requirement": "\u00a72: single G0 checks scope, goal, freshness/due time, overlap, capacity, quota, budget and trial eligibility",
+      "requirement": "§2: single G0 checks scope, goal, freshness/due time, overlap, capacity, quota, budget and trial eligibility",
       "phase": "P1",
       "dependencies": "R05,R06",
       "acceptance": "Local cadence/admission races enforce current scope, G0 freshness, due time, overlap, current-revision pending caps, quota and review without duplicate cycles. Fixture G0 canonical allocations add scoped period/currency caps; item-5a public and item-5c fixture-auto admission invoke this same gate after a committed schedule batch, with crash recovery but no stage-start bypass. Production and trial eligibility remain later gates.",
@@ -181,17 +241,17 @@
     },
     {
       "id": "R08",
-      "requirement": "\u00a72: bounded overlap/catch-up/stale/backfill policies and independent cadence",
+      "requirement": "§2: bounded overlap/catch-up/stale/backfill policies and independent cadence",
       "phase": "P1",
       "dependencies": "R07",
-      "acceptance": "Local cadence tests prove bounded skip/latest/catch-up, stale-slot denial, scoped reviewed backfill, overlap and capacity-aware coalescing. Item-5c opt-in independent fixture poller uses a durable first-V4 watermark, pause/readback and rollback fence; live Temporal conversion and observation-independent production execution remain required.",
+      "acceptance": "Local cadence tests prove bounded skip/latest/catch-up, stale-slot denial, scoped reviewed backfill, overlap and capacity-aware coalescing. Item-5c opt-in independent fixture poller uses a durable first-V4 watermark, pause/readback and rollback fence; original native intelligence and paired governed-publication schedules now have separate root-qualified no-effects SDK conversion/rollback reports; production inventory, routing, fencing and observation-independent execution remain required.",
       "migration_rollback": "M1: version schedules and convert slots at watermark; avoid dual old/new dispatch on rollback.",
       "gate": "RG1",
       "executed_verifier_cases": 49,
       "local_verifier_status": "PASS; covers implemented local fixtures, not unimplemented production acceptance",
       "independent_review_status": "PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE; production acceptance remains HELD",
       "production_release_status": "HELD",
-      "remaining_acceptance": "live Temporal scheduling/fencing/monitoring qualification beyond the isolated job_schedules fixture poller.",
+      "remaining_acceptance": "Production live schedule inventory, routing, monitoring, stop/fencing, rollback and operational response beyond both isolated original native intelligence/publication SDK fixtures.",
       "independent_review_evidence": [
         "docs/v4/item7-admission-review.json",
         "docs/v4/item7-governance-review.json"
@@ -218,11 +278,21 @@
           "tests/integration/test_v4_native_schedules.py"
         ],
         "application_commit": "10eb77f22180d70e0803777e6305cac189142ecc"
+      },
+      "native_publication_schedule_extension": {
+        "scope": "Root-qualified actual original paired governed-publication Temporal schedule conversion, pause/drain/fence/watermark/rollback, bounded real resumed ingress and canonical outbox only; effects-disabled fixture scope",
+        "evidence": "docs/v4/legacy-publication-evidence.json",
+        "verifiers": [
+          "tests/integration/test_v4_legacy_publication.py",
+          "tests/integration/test_v4_native_publication_schedules.py",
+          "tests/integration/test_v4_migrations.py"
+        ],
+        "application_commit": "3986a1de43d1ca8e9ca84e7c69dedbe698b3d312"
       }
     },
     {
       "id": "R09",
-      "requirement": "\u00a72: strategic defer/abstain closes cycle; pre-admission deferral and recovery retain their own identities",
+      "requirement": "§2: strategic defer/abstain closes cycle; pre-admission deferral and recovery retain their own identities",
       "phase": "P1",
       "dependencies": "R07,R08",
       "acceptance": "test_v4_cycle_admission proves pre-admission wake reuses intent without an earlier cycle, retry/reconcile retains cycle/operation, and strategic closure needs an authorized coalesced successor; item-6 real Temporal timers and PostgreSQL tests exercise all three identities through restart and finite expiry; production qualification remains required.",
@@ -255,7 +325,7 @@
     },
     {
       "id": "R10",
-      "requirement": "\u00a73: authoritative immutable context resolved after admission and before affected work",
+      "requirement": "§3: authoritative immutable context resolved after admission and before affected work",
       "phase": "P1",
       "dependencies": "R07",
       "acceptance": "Local V2 tests validate typed immutable RunContext with canonical scope/IDs, current grant snapshot, approved bundle, trace/lineage, evidence cutoff and resource deadline; no assignment or fallback. Full candidate/plan and effect integration remain gated.",
@@ -288,10 +358,10 @@
     },
     {
       "id": "R13",
-      "requirement": "\u00a73: current revocation constrains pinned context; revisions invalidate approvals",
+      "requirement": "§3: current revocation constrains pinned context; revisions invalidate approvals",
       "phase": "P1",
       "dependencies": "R10",
-      "acceptance": "Local V2 non-owner/race tests serialize grant and program revocation, pin current authority, reject stale/expired recovery and hold consumption without rewriting context; item-3 fixture permits/reviews recheck current authority, baseline and frozen binding. Items 5a\u20135c signed public fixture commands and restricted non-owner roles recheck separate current schedule/review grants without authority UPDATE privilege; a revoked cutover actor auto-polls nothing. Full version revocation remains required.",
+      "acceptance": "Local V2 non-owner/race tests serialize grant and program revocation, pin current authority, reject stale/expired recovery and hold consumption without rewriting context; item-3 fixture permits/reviews recheck current authority, baseline and frozen binding. Items 5a–5c signed public fixture commands and restricted non-owner roles recheck separate current schedule/review grants without authority UPDATE privilege; a revoked cutover actor auto-polls nothing. Full version revocation remains required.",
       "migration_rollback": "M1: append linked revisions/invalidations; do not restore revoked approval on rollback.",
       "gate": "RG1",
       "executed_verifier_cases": 123,
@@ -321,10 +391,10 @@
     },
     {
       "id": "R15",
-      "requirement": "\u00a74: one versioned policy model, exact approval purpose/effect/artifact/account/expiry binding",
+      "requirement": "§4: one versioned policy model, exact approval purpose/effect/artifact/account/expiry binding",
       "phase": "P1",
       "dependencies": "P0,R05",
-      "acceptance": "Item-3 fixture review DTO and item-5b signed review route reject wrong context/operation/hash/account/purpose/version/expiry and store immutable decisions; a general versioned policy model, LLM-text denial and production effect gates remain to be qualified.",
+      "acceptance": "Item-3 fixture review DTO and item-5b signed review route reject wrong context/operation/hash/account/purpose/version/expiry and store immutable decisions; a general versioned policy model, LLM-text denial and production effect gates remain to be qualified. The publication fixture path also revalidates native profile, disclosure, policy, rights, approval, exact account and zero budget at bind/intake/activity/reconciliation boundaries; this is not a general policy model or production effect gate.",
       "migration_rollback": "M1: authority/decision sidecars; legacy approvals do not become dispatch permits.",
       "gate": "RG1",
       "executed_verifier_cases": 32,
@@ -350,11 +420,21 @@
           "tests/integration/test_v4_legacy_creative.py"
         ],
         "application_commit": "57eb84f62d978ca235f1119939d9f6adda781735"
+      },
+      "legacy_publication_extension": {
+        "scope": "Root-qualified effects-disabled original publication API/outbox and paired native publication schedule conversion with canonical resumed ingress, added to the separately qualified original native intelligence schedule conversion; exact account/baseline/current approval/policy/rights, zero-budget internal fixture, receipt-only expired-permit recovery and typed hold",
+        "evidence": "docs/v4/legacy-publication-evidence.json",
+        "verifiers": [
+          "tests/integration/test_v4_legacy_publication.py",
+          "tests/integration/test_v4_native_publication_schedules.py",
+          "tests/integration/test_v4_migrations.py"
+        ],
+        "application_commit": "3986a1de43d1ca8e9ca84e7c69dedbe698b3d312"
       }
     },
     {
       "id": "R17",
-      "requirement": "\u00a74: atomically claim one bounded dispatch permit with serialized stop/revocation",
+      "requirement": "§4: atomically claim one bounded dispatch permit with serialized stop/revocation",
       "phase": "P1",
       "dependencies": "R03,R15",
       "acceptance": "Item-3 PostgreSQL races prove stop-before-claim denial and one claim-before-stop send authority; item-4 mock adapter invokes only after the true claim, never on duplicate activity or uncertain outcome. V3 liability changes share the claim transaction; actual providers remain gated.",
@@ -402,17 +482,17 @@
     },
     {
       "id": "R18",
-      "requirement": "\u00a74: emergency stop and policy outage fail closed; independent read reconciliation allowed only with scope",
+      "requirement": "§4: emergency stop and policy outage fail closed; independent read reconciliation allowed only with scope",
       "phase": "P1",
       "dependencies": "R17",
-      "acceptance": "Item-3 workspace/goal stop and item-5b signed stop commands deny new fixture claims/recovery under revoked authority; unavailable authority DB issues no permit. Item-5c fixture activation, auto poll and legacy resume hold on current stop; live scheduler cancellation and separately scoped remote reconciliation remain unimplemented release obligations.",
+      "acceptance": "Item-3 workspace/goal stop and item-5b signed stop commands deny new fixture claims/recovery under revoked authority; unavailable authority DB issues no permit. Item-5c fixture activation, auto poll and legacy resume hold on current stop; production live-scheduler cancellation and production remote read-only reconciliation remain unqualified. The isolated publication fixture permits receipt readback after permit expiry only under a separate exact account reconciliation grant, only for an immutable already-accepted receipt, and then holds for typed recovery; no second submit, blind status progression or fabricated close-race projection is authorized.",
       "migration_rollback": "M1: stop revision persists across restart/rollback; renewed authority required to resume.",
       "gate": "RG1",
       "executed_verifier_cases": 69,
       "local_verifier_status": "PASS; covers implemented local fixtures, not unimplemented production acceptance",
       "independent_review_status": "PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE; production acceptance remains HELD",
       "production_release_status": "HELD",
-      "remaining_acceptance": "live scheduler stop/cancellation/fencing and separately scoped remote read-only reconciliation beyond local stops/cutover.",
+      "remaining_acceptance": "Production live schedule stop/cancellation/fencing, production-wide cross-service revocation, typed recovery workers and independently scoped remote reconciliation beyond the isolated fixture receipt-only hold.",
       "independent_review_evidence": [
         "docs/v4/item7-governance-review.json"
       ],
@@ -454,29 +534,59 @@
           "tests/integration/test_v4_legacy_creative.py"
         ],
         "application_commit": "57eb84f62d978ca235f1119939d9f6adda781735"
+      },
+      "native_publication_schedule_extension": {
+        "scope": "Root-qualified actual original paired governed-publication Temporal schedule conversion, pause/drain/fence/watermark/rollback, bounded real resumed ingress and canonical outbox only; effects-disabled fixture scope",
+        "evidence": "docs/v4/legacy-publication-evidence.json",
+        "verifiers": [
+          "tests/integration/test_v4_legacy_publication.py",
+          "tests/integration/test_v4_native_publication_schedules.py",
+          "tests/integration/test_v4_migrations.py"
+        ],
+        "application_commit": "3986a1de43d1ca8e9ca84e7c69dedbe698b3d312"
+      },
+      "legacy_publication_extension": {
+        "scope": "Root-qualified effects-disabled original publication API/outbox and paired native publication schedule conversion with canonical resumed ingress, added to the separately qualified original native intelligence schedule conversion; exact account/baseline/current approval/policy/rights, zero-budget internal fixture, receipt-only expired-permit recovery and typed hold",
+        "evidence": "docs/v4/legacy-publication-evidence.json",
+        "verifiers": [
+          "tests/integration/test_v4_legacy_publication.py",
+          "tests/integration/test_v4_native_publication_schedules.py",
+          "tests/integration/test_v4_migrations.py"
+        ],
+        "application_commit": "3986a1de43d1ca8e9ca84e7c69dedbe698b3d312"
       }
     },
     {
       "id": "R32",
-      "requirement": "\u00a76: typed recovery states/actions, failure records, ownership and limits",
+      "requirement": "§6: typed recovery states/actions, failure records, ownership and limits",
       "phase": "P1",
       "dependencies": "R03,R15",
-      "acceptance": "Item-3 fixture cases and item-5b scoped signed case commands persist retry_due/reconciling/rework_due/awaiting_review/suspended/terminal/resolved with owner, deadline and bounded actions; reconciliation/rework cannot masquerade as retry, and pre-admission review targets the same intent. Item-6 fixture timers suspend existing cases at bounded deadlines; production recovery workers remain required.",
+      "acceptance": "Item-3 fixture cases and item-5b scoped signed case commands persist retry_due/reconciling/rework_due/awaiting_review/suspended/terminal/resolved with owner, deadline and bounded actions; reconciliation/rework cannot masquerade as retry, and pre-admission review targets the same intent. Item-6 fixture timers suspend existing cases at bounded deadlines; production recovery workers remain required. Expired publication permits with no durable receipt deny before provider readback; exact accepted receipts can be read back only under the separately scoped account grant and then remain held for typed recovery.",
       "migration_rollback": "M1: cases reference existing identities; terminal cases stay closed on rollback.",
       "gate": "RG1",
       "executed_verifier_cases": 74,
       "local_verifier_status": "PASS; covers implemented local fixtures, not unimplemented production acceptance",
       "independent_review_status": "PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE; production acceptance remains HELD",
       "production_release_status": "HELD",
-      "remaining_acceptance": "production typed recovery worker/failure delivery qualification beyond canonical fixture cases/timers.",
+      "remaining_acceptance": "Production typed recovery state transitions, durable recovery worker and external failure delivery beyond the local publication receipt-only recovery hold.",
       "independent_review_evidence": [
         "docs/v4/item7-governance-review.json",
         "docs/v4/item7-runtime-review.json"
-      ]
+      ],
+      "legacy_publication_extension": {
+        "scope": "Root-qualified effects-disabled original publication API/outbox and paired native publication schedule conversion with canonical resumed ingress, added to the separately qualified original native intelligence schedule conversion; exact account/baseline/current approval/policy/rights, zero-budget internal fixture, receipt-only expired-permit recovery and typed hold",
+        "evidence": "docs/v4/legacy-publication-evidence.json",
+        "verifiers": [
+          "tests/integration/test_v4_legacy_publication.py",
+          "tests/integration/test_v4_native_publication_schedules.py",
+          "tests/integration/test_v4_migrations.py"
+        ],
+        "application_commit": "3986a1de43d1ca8e9ca84e7c69dedbe698b3d312"
+      }
     },
     {
       "id": "R33",
-      "requirement": "\u00a76: exact idempotent resume command and current stage reauthorization",
+      "requirement": "§6: exact idempotent resume command and current stage reauthorization",
       "phase": "P1",
       "dependencies": "R17,R32",
       "acceptance": "Item-3 command CAS and item-5b signed resume route reject stale case/context/operation and resumes only the original intent revision or cycle/operation, with case state and recovery outbox atomic under injected crash; delivery and stage-specific production gate remain required.",
@@ -494,7 +604,7 @@
     },
     {
       "id": "R34",
-      "requirement": "\u00a76: authorized bound review with expiry, deduplicated notification/ack/escalation",
+      "requirement": "§6: authorized bound review with expiry, deduplicated notification/ack/escalation",
       "phase": "P1",
       "dependencies": "R32,R33",
       "acceptance": "Item-3 owner/scope/revision/artifact binding and item-5b signed review/ack parity, immutable decision, deadline escalation and deduplicated acknowledgment pass PostgreSQL tests; item-6 durable fixture timers, deduplicated database notification acceptance and process-crash redelivery are qualified separately; external alert delivery remains required.",
@@ -512,7 +622,7 @@
     },
     {
       "id": "R35",
-      "requirement": "\u00a76: durable idempotent archive with reason/evidence/retention and no implicit reuse",
+      "requirement": "§6: durable idempotent archive with reason/evidence/retention and no implicit reuse",
       "phase": "P1",
       "dependencies": "R32",
       "acceptance": "Item-3 archive and item-5b signed archive route reject pre-disposition calls, deduplicates committed reason/evidence/retention and preserves immutable history; rights-filtered discovery and later record families remain to qualify.",
@@ -529,29 +639,49 @@
     },
     {
       "id": "R53",
-      "requirement": "\u00a710: schema envelope, unique business/events, superseding correction and audited mutable pointers",
+      "requirement": "§10: schema envelope, unique business/events, superseding correction and audited mutable pointers",
       "phase": "P1",
       "dependencies": "P0,R03",
-      "acceptance": "Local V2/V3 DTO/SQL tests enforce immutable context and accounting receipts; migrations 0026\u20130034 add scoped stop/permit/case, cutover-transition and runtime-wait guards, unique dead-letter/fixture-acceptance events, immutable goal-create/state/runtime-hold/notification receipts and canonical delivery scope and populated rollback refusal. Later record families still require envelope tests.",
+      "acceptance": "Local V2/V3 DTO/SQL tests enforce immutable context and accounting receipts; migrations 0026–0034 add scoped stop/permit/case, cutover-transition and runtime-wait guards, unique dead-letter/fixture-acceptance events, immutable goal-create/state/runtime-hold/notification receipts and canonical delivery scope and populated rollback refusal. Later record families still require envelope tests. M0040 adds immutable publication stage/account/receipt guards and M0041 adds separate immutable original native publication schedule source/progress/plan guards; empty downgrade preserves prior guards and populated history refuses destructive rollback.",
       "migration_rollback": "M1: additive common envelope and exact-match migration; never invent historical scope.",
       "gate": "RG1",
       "executed_verifier_cases": 146,
       "local_verifier_status": "PASS; covers implemented local fixtures, not unimplemented production acceptance",
       "independent_review_status": "PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE; production acceptance remains HELD",
       "production_release_status": "HELD",
-      "remaining_acceptance": "Current P1 envelopes, immutable state/other command receipts, canonical delivery scope and additive 0032\u20130034 ownership/rollback guards are independently reviewed and locally tested; later record families require envelope tests in their assigned phases.",
+      "remaining_acceptance": "Current P1 envelopes, immutable state/other command receipts, canonical delivery scope and additive 0032–0034 ownership/rollback guards are independently reviewed and locally tested; later record families require envelope tests in their assigned phases.",
       "independent_review_evidence": [
         "docs/v4/item7-admission-review.json",
         "docs/v4/item7-governance-review.json",
         "docs/v4/item7-runtime-review.json"
-      ]
+      ],
+      "native_publication_schedule_extension": {
+        "scope": "Root-qualified actual original paired governed-publication Temporal schedule conversion, pause/drain/fence/watermark/rollback, bounded real resumed ingress and canonical outbox only; effects-disabled fixture scope",
+        "evidence": "docs/v4/legacy-publication-evidence.json",
+        "verifiers": [
+          "tests/integration/test_v4_legacy_publication.py",
+          "tests/integration/test_v4_native_publication_schedules.py",
+          "tests/integration/test_v4_migrations.py"
+        ],
+        "application_commit": "3986a1de43d1ca8e9ca84e7c69dedbe698b3d312"
+      },
+      "legacy_publication_extension": {
+        "scope": "Root-qualified effects-disabled original publication API/outbox and paired native publication schedule conversion with canonical resumed ingress, added to the separately qualified original native intelligence schedule conversion; exact account/baseline/current approval/policy/rights, zero-budget internal fixture, receipt-only expired-permit recovery and typed hold",
+        "evidence": "docs/v4/legacy-publication-evidence.json",
+        "verifiers": [
+          "tests/integration/test_v4_legacy_publication.py",
+          "tests/integration/test_v4_native_publication_schedules.py",
+          "tests/integration/test_v4_migrations.py"
+        ],
+        "application_commit": "3986a1de43d1ca8e9ca84e7c69dedbe698b3d312"
+      }
     }
   ],
-  "review_status": "PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE; all 17 rows independently reviewed, findings repaired/re-reviewed; complete production RG1 acceptance HELD",
+  "review_status": "Historical item-7 independent review PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE at e49a214 for its original 17-row scope; the current 3986a1de publication/native-schedule extension has root qualification only and independent review is pending; complete production RG1 acceptance remains HELD.",
   "production_effects_enabled": false,
   "RG0": "HELD",
   "RG1": "HELD",
-  "source_lock_sha256": "4daab8861eb63d21d5aad81dc5f6a45624f4f7dcc8ded7ebe2d5a8633548ff58",
+  "source_lock_sha256": "8f926b74c92f54ee6e2e7e639d38563a12a87c4892a81472248d648e0a297967",
   "verifiers": {
     "R02": [
       "tests/e2e/test_v4_worker_upgrade.py",
@@ -673,13 +803,15 @@
     "p1_mapped_cases": 199
   },
   "current_qualification": {
-    "evidence": "docs/v4/legacy-creative-evidence.json",
-    "full_non_live_tests": 585,
-    "focused_tests": 116,
-    "source_files": 344,
-    "status": "PASS_IMPLEMENTED_LOCAL_LEGACY_CREATIVE_STAGE; root qualification only; historical item7 review retained; RG0/RG1 HELD",
-    "qualified_application_commit": "57eb84f62d978ca235f1119939d9f6adda781735",
-    "source_lock_sha256": "b09a36becde6fcd7725e88f2d91c4e91f727d523df3a4271a5a9c5355927f067"
+    "evidence": "docs/v4/legacy-publication-evidence.json",
+    "focused_tests": 20,
+    "full_non_live_tests": 603,
+    "source_files": 352,
+    "status": "PASS_IMPLEMENTED_LOCAL_LEGACY_PUBLICATION_AND_NATIVE_SCHEDULE_FIXTURE_SCOPE; root qualification only; historical item7 review retained; RG0/RG1 HELD",
+    "qualified_application_commit": "3986a1de43d1ca8e9ca84e7c69dedbe698b3d312",
+    "source_lock_sha256": "8f926b74c92f54ee6e2e7e639d38563a12a87c4892a81472248d648e0a297967",
+    "base_commit": "20be7815d5e5c95fea2161c908ce8ac5cae88ce6",
+    "direct_parent": "20be7815d5e5c95fea2161c908ce8ac5cae88ce6"
   },
   "remaining_release_obligations": [
     "General registry/provider eligibility beyond the approved no-effects fixture baseline; later capability and production qualification gates remain binding",
@@ -688,7 +820,7 @@
     "General policy/model authorization, live scheduler stop/fencing integration and separately scoped remote read-only reconciliation beyond fixture permits/cases/cutover",
     "Deployment-specific supported worker routing/rollback, external durable alert delivery beyond the local item-6 patch/timer/restore fixture"
   ],
-  "qualified_application_commit": "e49a214cd371d0417f093d3a24fa2a4f4a359e83",
+  "qualified_application_commit": "3986a1de43d1ca8e9ca84e7c69dedbe698b3d312",
   "independent_review_reports": [
     {
       "reviewer": "admission",
@@ -732,7 +864,7 @@
     "status": "PASS root-reviewed bounded parallel-agent local extension; historical item7 independent review retained; RG0/RG1/RG5 HELD",
     "qualified_application_commit": "2653d2ecb3f0d5bb8ea6560de274137dd6032a96"
   },
-  "current_independent_review_scope": "Historical item7 application e49a214 only; legacy and parallel extensions have their separate root local qualifications",
+  "current_independent_review_scope": "At this evidence capture the publication extension has not received independent review; GPT-6.1-Sol read-only review followed by GPT-5.6-Sol meta-review is pending. Any review-driven edits require user approval. Historical item7 review remains bound to e49a214; production approval is separate and not claimed.",
   "historical_legacy_intelligence_qualification": {
     "evidence": "docs/v4/legacy-dispatch-evidence.json",
     "full_non_live_tests": 556,
@@ -767,5 +899,6 @@
     "status": "PASS_IMPLEMENTED_LOCAL_LEGACY_DUMMY_STAGE; root qualification only; historical item7 review retained; RG0/RG1 HELD",
     "qualified_application_commit": "6e0b266da4a453e293e4494384ed0457b6ab88b8",
     "source_lock_sha256": "369725d5debea886934ce5d0978405b0c571861b5c870981277261a14e773d37"
-  }
+  },
+  "historical_legacy_creative_qualification": {}
 }

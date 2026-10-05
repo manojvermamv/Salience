@@ -1,6 +1,6 @@
 {
   "phase": "P0",
-  "updated_at": "2026-10-05T10:00:02.148621+00:00",
+  "updated_at": "2026-10-05T13:42:03.837639+00:00",
   "baseline_commit": "8e50d68efbf2bec2aabfb2fe3226e01635de2adb",
   "scope": "Isolated local foundation; no production traffic or effects",
   "requirements": [
@@ -20,13 +20,20 @@
       "exit_code": 0
     },
     "full_non_live": {
-      "passed": 585,
+      "passed": 603,
       "failed": 0,
       "errors": 0,
       "skipped": 0,
       "exit_code": 0,
-      "seconds": 634.889,
-      "junit": "artifacts/v4-legacy-creative/regression.xml"
+      "seconds": 796.148,
+      "junit": "artifacts/v4-legacy-publication/agents/publication_qualification/candidate-attempts/20261005T132549Z-final-full-non-live-publication-cutover-v2/junit.xml",
+      "failures": 0,
+      "pytest_exit_code": 0,
+      "runner_exit_code": 0,
+      "runner_recovery": {
+        "reconstructed": false
+      },
+      "exit_code_semantics": "exit_code records the pytest subprocess; runner_exit_code separately records the outer harness process"
     },
     "documentation_tests": {
       "passed": 15,
@@ -40,22 +47,29 @@
       "failed": 0,
       "version": "12.0.0"
     },
-    "locked_evidence_files": 344,
+    "locked_evidence_files": 352,
     "original_inventory_dispositions": 360,
-    "warning": "Pre-existing Starlette/AnyIO deprecation warning",
+    "warning": "The final full non-live run emitted three Alembic DeprecationWarnings about missing path_separator configuration for prepend_sys_path; all 603 tests passed.",
     "focused_p1": {
-      "passed": 116,
+      "passed": 20,
       "failed": 0,
       "errors": 0,
       "skipped": 0,
       "exit_code": 0,
-      "seconds": 222.462,
-      "junit": "artifacts/v4-legacy-creative/focused.xml",
-      "scope": "Impacted legacy/outbox/cutover/public/parallel/migration/wait/restart contracts plus dry creative with current per-activity authority and original cancellation"
+      "seconds": 149.973,
+      "junit": "artifacts/v4-legacy-publication/agents/publication_qualification/candidate-attempts/20261005T132139Z-final-focused-guard-reason-regression/junit.xml",
+      "scope": "Impacted legacy/outbox/cutover/public/parallel/migration/wait/restart contracts plus dry creative with current per-activity authority and original cancellation",
+      "failures": 0,
+      "pytest_exit_code": 0,
+      "runner_exit_code": 0,
+      "runner_recovery": {
+        "reconstructed": false
+      },
+      "exit_code_semantics": "exit_code records the pytest subprocess; runner_exit_code separately records the outer harness process"
     },
     "application_qualified_at": "2026-10-05",
-    "application_commit": "57eb84f62d978ca235f1119939d9f6adda781735",
-    "application_scope": "Root-qualified dry CreativeProductionWorkflow through canonical original goal/workspace/program/cycle/context/operation/job/outbox/permit. Independent current legacy:creative grant, fixed profile and bounded variants; every activity checks original request, scoped brief and current execution authority before business data access. Internal provider refuses all sends/polls/reconciliation/download/cancellation. Atomic concurrent replay, mixed-stage conflict, signed API/SDK/CLI, forged native payload denial before business read, grant revocation before start and between activities, original run-pinned cancellation with lost acknowledgment, exact empty/populated migration rollback. Separate explicitly reviewed synthetic fixture brief supports the success case; native unverified intelligence brief remains unchanged. No asset/ready-package/media/provider/P2 qualification. Shared-worker intelligence fetch also pins the original intelligence stage and exact request before any business read/write; actual wrong-stage and forged workspace requests reject without business fetch. Prior scopes retained; publication and its native schedules plus general production obligations remain open.",
+    "application_commit": "3986a1de43d1ca8e9ca84e7c69dedbe698b3d312",
+    "application_scope": "Root-qualified effects-disabled original governed-publication dispatch and actual original native publication schedule conversion in isolated fixture mode. The job retains dry_run=false because that is the existing GovernedPublicationWorkflow contract; the only execution adapter is internally controlled fixture code, the publication budget is exactly zero, and production effects remain disabled. Current publication account mapping is immutable and tied to the approved goal revision/baseline and exact account grant. Current native approval, policy, rights, profile, disclosure, request and zero-budget facts are rechecked. Native Temporal adoption stores the original paired job_schedules/publication_schedules identities and actual SDK action history; remote IDs are publication:<publication_schedule_uuid>, distinct from job schedule UUIDs. Cutover pauses and reads back the original GovernedPublicationWorkflow action, fences the first V4 slot, physically drains in-flight actions, and preserves rollback watermark. After rollback, the original remote schedule carries bounded SalienceLegacyScheduledIngress; the activity validates the real scheduled action and commits one canonical publication outbox admission only. It never calls the old scheduled job-creation activity. Expired permits can read back only an already durable exact receipt under a separate current account reconciliation grant, then hold for typed recovery; no second submit or automatic published projection occurs. Published-versus-close ambiguity retains the original receipt and stays held. No live publisher, production account/schedule migration, P2 artifact qualification, full RG1 release, or production-wide cross-service revocation is claimed.",
     "focused_parallel_agents": {
       "passed": 45,
       "failed": 0,
@@ -201,6 +215,16 @@
       "path": "docs/v4/legacy-creative-evidence.json",
       "sha256": "8e1c69f1a666a9e1f8b7eebb4e4d7a3c823e98bdfc714d4cf0834a2e5e8de008",
       "local_only": false
+    },
+    {
+      "path": "docs/v4/legacy-publication-evidence.json",
+      "sha256": "3e6384209f059306326254df53c6580cf3f5a5efd431d66e307d062957d21a30",
+      "local_only": false
+    },
+    {
+      "path": "docs/v4/evidence-lock.json",
+      "sha256": "8f926b74c92f54ee6e2e7e639d38563a12a87c4892a81472248d648e0a297967",
+      "local_only": true
     }
   ],
   "release_gate": "RG0",
@@ -230,11 +254,11 @@
     {
       "check": "remote repository gate enforcement",
       "status": "PASS",
-      "evidence": "Published preparation base e572bc7fe1b84db705b8c500aaebcf95f847023c: required verify/p0-regression and strict app-bound main protection PASS at 2026-10-04T01:23:04.307181+00:00. Rolling report binds that exact published base; final feature head requires separate inspection. Formal PR approval NOT RUN, no main merge or production release."
+      "evidence": "Published base 20be7815d5e5c95fea2161c908ce8ac5cae88ce6: required verify/p0-regression checks and strict branch protection PASS at 2026-10-05T10:15:06.262580+00:00; exact readback artifact artifacts/v4-legacy-creative-qualified-head.json. This is base evidence only and does not establish CI/protection for local feature application 3986a1de43d1ca8e9ca84e7c69dedbe698b3d312 or this later documentation commit. Formal PR approval NOT RUN, no main merge or production release."
     }
   ],
   "later_phase_boundaries": {
-    "P1": "Items 1\u20136 implemented locally; item 7 independently reviewed/repaired/re-reviewed, 132 focused / 507 full PASS. Complete retained RG0/RG1 production acceptance before later-phase release; live schedules/routing, current general policy/scoped remote reads, real providers/alerts and deployment contracts remain HELD.",
+    "P1": "Items 1–6 implemented locally; item 7 independently reviewed/repaired/re-reviewed, 132 focused / 507 full PASS. Complete retained RG0/RG1 production acceptance before later-phase release; live schedules/routing, current general policy/scoped remote reads, real providers/alerts and deployment contracts remain HELD.",
     "P2": "Production G1 provider charge/effect integration using the fixture-qualified allocation transfer contract, ready-package reference/outbox integration and enabled provider qualification",
     "P3": "Trial/evaluation isolation and separate strategy/capability namespaces",
     "P4": "Promotion/invalidation serialization; mandatory typed learning proposals with optional qualified semantic analyst",
@@ -274,7 +298,7 @@
   },
   "p1_increment": {
     "name": "Local admission/outbox, revisions, approved baseline, V2/V3 fixture policy/accounting, item-3 stop/permit/cases, item-4 handoff/mock trace and item-5a/5b/5c signed fixture commands/cutover; item-6 compatible fixture runtime/waits/notification receipts; item 7 independently reviewed and repaired local fixture contracts",
-    "local_status": "PASS",
+    "local_status": "PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE",
     "release_gate": "RG1",
     "release_status": "HELD",
     "production_effects_enabled": false,
@@ -297,13 +321,12 @@
       "R35",
       "R53"
     ],
-    "evidence": "docs/v4/item7-evidence.json",
+    "evidence": "docs/v4/legacy-publication-evidence.json",
     "remaining": [
-      "General registry/provider eligibility beyond the approved no-effects fixture baseline; later capability and production qualification gates remain binding",
-      "Production G1 provider charge identity and effect integration beyond the fixture-qualified transfer/reconciliation contract",
-      "Production dispatcher/alert service, live Temporal legacy start/signal cutover, public V4 API-to-provider outbox integration and production typed delivery recovery beyond the automatic local fixture",
-      "General policy/model authorization, live scheduler stop/fencing integration and separately scoped remote read-only reconciliation beyond fixture permits/cases/cutover",
-      "Deployment-specific supported worker routing/rollback, external durable alert delivery beyond the local item-6 patch/timer/restore fixture"
+      "deployment-specific supported routing, live schedule inventory, fencing, drain, rollback and operator recovery",
+      "general versioned policy/registry eligibility and production account/provider qualification",
+      "typed production recovery workers and external durable alerts/on-call delivery",
+      "retained RG0/RG1 production prerequisites and final published-head CI/protection readback"
     ],
     "completed_queue_items": [
       1,
@@ -320,7 +343,7 @@
       "5c"
     ],
     "next_queue_item": null,
-    "next_action": "Continue restored P1 integration: remaining legacy stages, current general authorization/version eligibility, typed recovery and retained production acceptance; P2\u2013P7 remain gated, optional P6 disabled",
+    "next_action": "Continue restored P1 integration: remaining legacy stages, current general authorization/version eligibility, typed recovery and retained production acceptance; P2–P7 remain gated, optional P6 disabled",
     "independent_review": "PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE"
   },
   "documentation_refresh": {
@@ -546,25 +569,25 @@
     "status": "ACTIVE",
     "restored_from_own_output_at": "2026-10-04T02:44:31.946Z",
     "base_commit": "380416d35cffb6e4bf33003cb6e8df0638874436",
-    "direction": "Remaining P1 legacy dispatch-to-outbox integration, followed by retained P1 authorization/runtime/recovery acceptance; reuse completed items 1\u20137 and parallel extension",
-    "current_increment": "Dry actual creative workflow under original scope/operation/outbox/permit, current legacy:creative authority at intake and every activity, fixed no-send provider, signed SDK/CLI and original run-pinned cancellation with lost-ack readback; earlier stages retained",
-    "qualification": "PASS_IMPLEMENTED_LOCAL_LEGACY_CREATIVE_STAGE",
+    "direction": "Remaining P1 legacy dispatch-to-outbox integration, followed by retained P1 authorization/runtime/recovery acceptance; reuse completed items 1–7 and parallel extension",
+    "current_increment": "Effects-disabled original governed-publication API/SDK/CLI integration and actual original native intelligence plus paired native publication schedule conversions; immutable original IDs, current exact account/baseline/approval/policy/rights, zero-budget internal fixture, canonical outbox-only resumed ingress, and receipt-only expired-permit recovery held for typed recovery",
+    "qualification": "PASS_IMPLEMENTED_LOCAL_LEGACY_PUBLICATION_AND_NATIVE_SCHEDULE_FIXTURE_SCOPE",
     "remaining_scope": [
-      "Publication stage ingress/dispatch, native publication schedules and exact current account/native approval/budget authorization",
-      "Full live schedule inventory/fencing and supported deployment routing/drain/rollback",
-      "General current policy/version eligibility and separately scoped remote reconciliation",
-      "External durable notification/alert delivery and retained RG0 production prerequisites"
+      "deployment-specific supported routing, live schedule inventory, fencing, drain, rollback and operator recovery",
+      "general versioned policy/registry eligibility and production account/provider qualification",
+      "typed production recovery workers and external durable alerts/on-call delivery",
+      "retained RG0/RG1 production prerequisites and final published-head CI/protection readback"
     ],
     "contract": "docs/v4/legacy-dispatch-contract.md",
     "production_effects_enabled": false,
     "RG0": "HELD",
     "RG1": "HELD",
     "main_merge": "NOT AUTHORIZED",
-    "qualified_application_commit": "57eb84f62d978ca235f1119939d9f6adda781735",
-    "focused_tests": 116,
-    "full_non_live_tests": 585,
-    "source_files": 344,
-    "evidence": "docs/v4/legacy-creative-evidence.json",
-    "publication": "Application published; final documentation head requires exact-head CI. Broader integration goal ACTIVE."
+    "qualified_application_commit": "3986a1de43d1ca8e9ca84e7c69dedbe698b3d312",
+    "focused_tests": 20,
+    "full_non_live_tests": 603,
+    "source_files": 352,
+    "evidence": "docs/v4/legacy-publication-evidence.json",
+    "publication": "Application evidence is local and fixture-scoped; documentation/final published-head CI remains separate. Broader P1 goal ACTIVE; RG0/RG1 HELD."
   }
 }

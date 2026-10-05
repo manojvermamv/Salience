@@ -1,8 +1,8 @@
 # V4 implementation progress and checkpoints
 
-The pre-parallel-worker P1 integration direction has resumed from `380416d`. The intelligence, selected-brief, native schedule, no-send dummy and dry creative increment is locally qualified at `57eb84f` (116 focused / 585 full non-live PASS); the broader P1 integration goal remains active. See the [integration contract](legacy-dispatch-contract.md). Item 7 and the parallel extension retain their completed, dated scopes; production is disabled, RG0/RG1 HELD and main unmerged.
+The original legacy-to-canonical integration is locally qualified at `3986a1d` (**20 focused / 603 full non-live PASS**); publication and paired original native publication schedules now join the qualified intelligence/brief, original native intelligence schedule, dummy and dry-creative fixture stages. The broader P1 goal remains active for production/general policy, recovery, routing and retained obligations. Production is disabled, RG0/RG1 HELD, main unmerged and P2–P7 gated.
 
-**Current checkpoint — 2026-10-05:** Resumed P1 intelligence, selected briefs, native intelligence schedules, no-send dummy and dry creative integration are locally qualified (**116 focused / 585 full non-live PASS**, 344 source hashes) at `57eb84f`. Creative retains original scope/operation/outbox/permit, independently requires current stage authority, guards every activity and forbids provider effects. Run-pinned cancellation and earlier schedule identity/drain/rollback qualification are retained. See the [legacy integration contract](legacy-dispatch-contract.md). Item 7 and the parallel extension retain their completed, dated scopes. The broader P1 goal remains active for publication/native publication schedules and retained obligations; production disabled, RG0/RG1 HELD, main unmerged, P2–P7 gated and optional P6 disabled.
+**Current checkpoint — 2026-10-05:** The no-effects original legacy intelligence, selected-brief, dummy, dry-creative and governed-publication stages, plus actual original native intelligence and publication schedule conversions with resumed ingress, are locally qualified (**20 focused / 603 full non-live PASS**, 352 source hashes) at `3986a1d`. Publication retains original goal, cycle, context, operation and schedule identities; current exact account/baseline/approval/policy/rights checks and the zero-budget controlled internal fixture adapter keep effects disabled. Native publication ingress uses the distinct `publication:<publication_schedule_uuid>` remote identity and commits canonical outbox work only. Expired permits with an accepted receipt require a separate exact reconciliation grant and end held for typed recovery; unknown or close-race outcomes do not receive invented business projections. See the [legacy integration contract](legacy-dispatch-contract.md). Broader P1 and RG0/RG1 production acceptance remain active/held; main is unmerged and P2–P7 remain gated. Read-only GPT-6.1-Sol review followed by GPT-5.6-Sol meta-review is pending; review-driven edits require user approval.
 
 <a id="v4-documentation-transition-checkpoint"></a>
 
@@ -11,13 +11,26 @@ The pre-parallel-worker P1 integration direction has resumed from `380416d`. The
 <a id="current-state--2026-09-24"></a>
 <a id="current-state--2026-09-27"></a>
 
+## Current legacy publication integration — 2026-10-05
+
+The local original publication API/SDK/CLI and actual original native intelligence/publication schedule lifecycles are now qualified: **20 focused / 603 full non-live PASS**, zero failures/errors/skips, 352 source hashes at `3986a1de43d1ca8e9ca84e7c69dedbe698b3d312`. The fixture preserves original publication identities and uses a zero-budget internal provider with effects disabled; actual resumed publication Temporal ingress writes only canonical outbox admission. Expired accepted receipts hold for typed recovery. The broader P1 objective remains active for production/general policy, routing, schedule inventory, recovery workers, alerts and RG0/RG1 obligations. Scheduled read-only GPT-6.1-Sol review followed by GPT-5.6-Sol meta-review is pending; review-driven edits require user approval. See [the contract](legacy-dispatch-contract.md#governed-publication-stage) and [evidence](legacy-publication-evidence.json).
+
+
+### Current application and repository readback
+
+| Evidence | Current status |
+| --- | --- |
+| Local application qualification | `3986a1de43d1ca8e9ca84e7c69dedbe698b3d312`; **20 focused / 603 full non-live PASS**, zero failures/errors/skips, 352 frozen application files. Exact current-run JUnit, commands, provenance and source manifests are in [publication evidence](legacy-publication-evidence.json). |
+| Published-base CI/protection | Published base `20be7815d5e5c95fea2161c908ce8ac5cae88ce6` passed both required checks and strict branch protection at 2026-10-05T10:15:06.262580Z. Readback path: `artifacts/v4-legacy-creative-qualified-head.json`. This is base evidence only. |
+| Feature-head CI/PR | No exact-head CI/protection claim is made here for `3986a1de43d1ca8e9ca84e7c69dedbe698b3d312`; formal PR approval remains NOT RUN. Main is unmerged. |
+
 ## Completed parallel delegation extension — 2026-10-05
 
 The completed parallel-agent extension was qualified at `2653d2ecb3f0d5bb8ea6560de274137dd6032a96`: **45 focused / 540 full non-live PASS**, zero failures/errors/skips, 325 source hashes. Its final commands and source lock are recorded in [parallel evidence](parallel-agents-evidence.json). It is a local extension of the callable-agent boundary associated with R59; RG5 and later phases remain gated.
 
-### Completed item 7 qualification — 2026-10-04
+### Historical item 7 qualification snapshot — 2026-10-04
 
-P1 items 1–6 are locally implemented; item 7 independent review/evidence reconciliation is **COMPLETE for implemented fixture scope** at application `e49a214`. Three reviewers assessed all 17 rows, reproduced eight original findings, reviewed repair follow-ups and independently closed every actionable local finding. Final qualification: **132 focused / 507 full non-live PASS**, zero failures/errors/skips, 316 source hashes and 250 mapped fixture cases. [Evidence](item7-evidence.json), [review summary](item7-independent-review.md) and [matrix](p1-qualification-matrix.json) retain exact sources and remaining acceptance.
+This table preserves the item-7 evidence capture before the 2026-10-05 publication extension. Its application/repository rows below are historical and remain bound to `e49a214` and the then-current 4bbffb6 readback. The current application and published-base evidence are recorded above. P1 items 1–6 were locally implemented; item 7 independent review/evidence reconciliation was **COMPLETE for implemented fixture scope** at application `e49a214`. Three reviewers assessed all 17 rows, reproduced eight original findings, reviewed repair follow-ups and independently closed every actionable local finding. Final qualification: **132 focused / 507 full non-live PASS**, zero failures/errors/skips, 316 source hashes and 250 mapped fixture cases. [Evidence](item7-evidence.json), [review summary](item7-independent-review.md) and [matrix](p1-qualification-matrix.json) retain exact sources and remaining acceptance.
 
 | Area | Current state |
 | --- | --- |
@@ -26,9 +39,9 @@ P1 items 1–6 are locally implemented; item 7 independent review/evidence recon
 | P1 item 7 | Independent implemented-fixture qualification complete; 132 / 507 PASS, three reviewers, all 17 rows, no unresolved reproduced local finding. |
 | Full P1/RG1 | HELD: live schedule/fencing, deployment routing, general current policy/scoped remote reads, real providers/stages and external alert/recovery delivery remain required. |
 | P2–P7 | Gated/planned; optional P6 disabled. |
-| Repository/main | Published pre-extension base 4bbffb6 CI/protection PASS at 2026-10-05T03:14:43.864463+00:00; final feature-head inspection required after publication. Formal PR approval NOT RUN; main 8e50d68 unmerged. |
+| Repository/main at item-7 capture | Published pre-extension base `4bbffb6` CI/protection PASS at 2026-10-05T03:14:43.864463+00:00; final feature-head inspection was pending at that capture. Formal PR approval NOT RUN; main `8e50d68` unmerged. |
 
-### Next handoff after parallel delegation
+### Historical handoff after parallel delegation
 
 Reuse the historical item-7 independent evidence and the new parallel-agent source lock and completed local fixtures. Complete the explicit RG0/RG1 acceptance obligations under their required authorization; do not treat item 7 review as production approval or start later-phase release from partial acceptance. Disable opt-in fixture drivers for rollback, preserve canonical history/liabilities, and retain compatible workers for patched histories. Populated 0032–0035 downgrades refuse weakened protection or destruction of parallel execution history. Local PostgreSQL restore/Temporal restart remains distinct from R66/P7 coordinated production restore.
 
@@ -60,7 +73,7 @@ Rollback disables opt-in automatic processes, preserves runtime waits/holds/deli
 | `2fbb384` | Automatic fixture outbox/mock trace item 4 with 113 focused / 399 full tests, 296 source hashes and exact implementation-head CI PASS. |
 | `c78ce13` | Signed fixture commands item 5a; [item-5a evidence](item5a-evidence.json), 83 focused / 408 full PASS. |
 | `5ae20d3` | Typed goal/stop/case/review command parity item 5b; [item-5b evidence](item5b-evidence.json), 63 focused / 411 full PASS. |
-| `7009d51` | One-goal fixture schedule cutover/poller item 5c; [item-5c evidence](item5c-evidence.json), 37 focused / 425 full PASS; exact implementation-head CI/enforcement PASS on 2026-10-03. |
+| `7009d51` | At the item-5c capture, one-goal fixture `job_schedules` cutover/poller; [item-5c evidence](item5c-evidence.json), 37 focused / 425 full PASS; exact implementation-head CI/enforcement PASS on 2026-10-03. This did not qualify original native Temporal schedule conversion; original native intelligence and paired publication schedule conversions are qualified separately in the current 2026-10-05 checkpoint above. |
 | `03f3cb9` | Item-6 compatible workflow replay/continuation, canonical finite waits, fixture notification receipts and local restart/restore; [initial evidence](item6-evidence.json), 84 focused / 455 full PASS. |
 | `e5d1840` | Separate authorized expiry operator with original owner retained; [final qualification](item6-operator-evidence.json), 85 focused / 456 full PASS, 310 source hashes; final application CI/protection PASS. |
 | `e572bc7` | Published preparation/0032 original-owner guard; 32/462 local PASS and CI/protection PASS. |
@@ -68,9 +81,9 @@ Rollback disables opt-in automatic processes, preserves runtime waits/holds/deli
 
 ### Current resume instructions
 
-1. Inspect actual branch/HEAD, [source lock](evidence-lock.json) and exact published-head CI readback. Application `e49a214` retains its historical 316-file independent review; the parallel extension has a new source lock and its own qualification evidence.
-2. Items 1–7 are complete within local implementation/independent fixture qualification. Complete outstanding RG0/RG1 production acceptance in the [matrix](p1-qualification-matrix.json); phase P1 remains ongoing until those obligations pass.
-3. Preserve disabled effects, dry run/zero spend/fallback denial, canonical IDs, unknown liabilities and compatible-worker rollback. Do not infer production authorization or GitHub PR approval from reviewer-agent conclusions.
+1. Start from the current application checkpoint `3986a1de43d1ca8e9ca84e7c69dedbe698b3d312`, inspect the [source lock](evidence-lock.json) and [publication evidence](legacy-publication-evidence.json), and preserve the final 352-file application pool. The `e49a214`/316-file item-7 review and the parallel extension remain separately scoped historical evidence.
+2. The no-effects local legacy integration through governed publication and both original native schedule conversions is qualified within the fixture boundaries recorded above. Complete the still-held general policy/recovery/routing and RG0/RG1 production acceptance in the [matrix](p1-qualification-matrix.json) before calling P1 release complete.
+3. Preserve disabled effects, the zero-budget internal fixture, canonical identities, unknown liabilities and compatible-worker rollback. The 20be781 readback is published-base evidence only; do not infer current feature-head CI, production authorization or formal PR approval from fixture/reviewer evidence.
 4. Main remains unmerged; P2–P7 are gated and optional P6 disabled.
 
 ### Completed item-6 execution snapshot — 2026-10-03
@@ -126,7 +139,7 @@ The [blueprint](IMPLEMENTATION-BLUEPRINT.md#current-execution) is the execution 
 | `2fbb384` | Automatic fixture outbox/mock trace item 4 with 113 focused / 399 full tests, 296 source hashes and exact implementation-head CI PASS. |
 | `c78ce13` | Signed fixture commands item 5a; [item-5a evidence](item5a-evidence.json), 83 focused / 408 full PASS. |
 | `5ae20d3` | Typed goal/stop/case/review command parity item 5b; [item-5b evidence](item5b-evidence.json), 63 focused / 411 full PASS. |
-| `7009d51` | One-goal fixture schedule cutover/poller item 5c; [item-5c evidence](item5c-evidence.json), 37 focused / 425 full PASS; exact implementation-head CI/enforcement PASS on 2026-10-03. |
+| `7009d51` | At the item-5c capture, one-goal fixture `job_schedules` cutover/poller; [item-5c evidence](item5c-evidence.json), 37 focused / 425 full PASS; exact implementation-head CI/enforcement PASS on 2026-10-03. This did not qualify original native Temporal schedule conversion; original native intelligence and paired publication schedule conversions are qualified separately in the current 2026-10-05 checkpoint above. |
 
 Latest application execution remains dated 2026-09-27; no local application rerun in this documentation refresh: **425 full non-live / 37 focused PASS**, zero failures/errors/skips; one existing Starlette/AnyIO warning. That historical qualification includes fifteen documentation tests, the 75-obligation validator (302 locked source files, 360 dispositions, 82 Markdown, five HTML including local artifacts, six negative controls), six Mermaid renders, four shell contracts, dependency consistency and whitespace. Fresh documentation-only checks and preservation results are recorded in [validation](validation.md#documentation-reinspection-verification--2026-10-03); six unchanged diagram blocks were not rerendered. [Item-5c evidence](item5c-evidence.json) preserves command/JUnit/source digests and partial requirement coverage; [item-5b evidence](item5b-evidence.json) and older results remain historical. The prior item-4 late-receipt failure and repair remain recorded in its historical report.
 
@@ -322,3 +335,12 @@ At 2026-09-23T17:49:03.182364+00:00, both required GitHub checks (`verify`, `p0-
 Reinspected clean `483b905` source, canonical cycle/baseline contracts, migration head 0020, regression tests, CI configuration and persisted execution evidence before editing. Confirmed both required checks on that final documentation head and main enforcement through a fresh read-only GitHub inspection. Corrected the stale "no V4 application implementation" progress alias, P0-only introductions and rolling-evidence references. Added a current completed/ongoing/planned summary, commit/evidence index and an ordered P1 handoff without changing requirements or marking partial work complete. Core and all thirteen Superpowers navigation aliases now lead to the same authoritative status and remaining queue.
 
 Verification: fourteen documentation tests PASS; complete validator PASS for 75 obligations, 280 evidence files, 360 preserved dispositions, 82 Markdown files, five HTML files and six negative controls; all six Mermaid diagrams freshly rendered; four documentation/browser command-contract scripts PASS; whitespace and preserved report/source/JUnit hashes PASS. See [fresh verification details](validation.md#documentation-refresh-verification--2026-09-24). Original source/archives/instructions remain untouched. Application tests were NOT RUN again; retain the dated 317/47 results. This task leaves documentation changes local, with no application changes, commit/push, main merge or production effects. The next application task is still queue item 1, not replaying this documentation refresh.
+
+
+<!-- legacy-publication-checkpoint:start -->
+
+## Isolated legacy publication and native schedule qualification — 2026-10-05
+
+The current isolated legacy integration extends through governed-publication intake/readback/cancel and actual original native intelligence/publication schedule conversions. Exact qualification is in [legacy publication evidence](legacy-publication-evidence.json): **20 focused / 603 full non-live PASS**, zero failures/errors/skips and 352 locked application files. This fixture slice preserves original goal/cycle/context/operation/job and both publication schedule identities; publication remains an internal zero-budget fixture with effects disabled. Expired accepted receipts require separate current reconciliation scope and a typed hold; no automatic success/retry is inferred. Full production RG1, production routing and P2–P7 remain held/gated.
+
+<!-- legacy-publication-checkpoint:end -->
