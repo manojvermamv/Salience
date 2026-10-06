@@ -55,7 +55,7 @@
   "RG1": "HELD",
   "verification": {
     "status": "PASS_LOCAL_FIXTURE_SCOPE; CURRENT_FULL_NON_LIVE_614_PASS; PRODUCTION_RELEASE_HELD",
-    "documentation_tests": "PASS: 15 documentation tests; checker and self-test PASS (75 requirements, 356 source files, 360 inventory files, 6 negative controls); all 4 shell contracts and 6 Mermaid diagrams passed; 6 modified JSON files parsed; pip check, compileall, 14 historical hash checks, 356-file source lock validation, and git diff --check passed.",
+    "documentation_tests": "PASS: 15 documentation tests; checker and self-test PASS (75 requirements, 2 source files, 356 evidence files, 360 inventory files, 6 negative controls); all 4 shell contracts and 6 Mermaid diagrams passed; 6 modified JSON files parsed; pip check, compileall, 14 historical hash checks, 356-file application evidence-lock validation, and git diff --check passed.",
     "mapped_obligations": 75,
     "negative_controls": 6,
     "documentation_shell_contracts": 4,
@@ -1315,7 +1315,7 @@
     {
       "path": "docs/v4/legacy-publication-evidence.json",
       "disposition": "historical A4 publication qualification with current recovery-hold evidence pointer and exact A4/d031172 rereview scope",
-      "sha256": "36f5efaddee194517df428993fb4f2b867da262b77473684d43961c5792a48f7"
+      "sha256": "099fce0869b655aed8c83ab53e2a27c0b2a74d9afd8bdc51680ad2bc7ff24c0f"
     },
     {
       "path": "docs/v4/legacy-schedule-evidence.json",
@@ -1335,7 +1335,7 @@
     {
       "path": "docs/v4/p0-release.json",
       "disposition": "current release ledger; 614-test clean-database fixture qualification PASS, production release remains HELD",
-      "sha256": "b5d6bd7a96835604f66689c8643b9df77253732edef13e524c6c4c6e7e3fc246"
+      "sha256": "990096d37e7edcfef10654a07d52b9fa858b296a344e4eb4f5fcc217800233c6"
     },
     {
       "path": "docs/v4/p1-increment-evidence.json",
@@ -1365,7 +1365,7 @@
     {
       "path": "docs/v4/publication-recovery-hold-evidence.json",
       "disposition": "durable current source-bound local publication recovery-hold evidence; production remains HELD",
-      "sha256": "7f31b6f648ee7d4bbe7926721c468dc39fb247db3d3d2aa33846d52f310c80d2"
+      "sha256": "8570f08fa127f7ed62c26e476b3dd0e3b4679d59d7bdef65aa26b051a8c3a4b0"
     },
     {
       "path": "docs/v4/repository-enforcement-evidence.json",
@@ -1527,5 +1527,5 @@
   "application_source_preservation_basis": "Compared the A4-era 352-file source lock with application candidate 7878208: 347 prior checked files retain identical bytes, five prior files are updated, and four source files are added, for 356 current checked paths. This is a content comparison and lock, not an independent code review. The Task 8 source manifest and final clean-database Task 9 manifest are separately retained.",
   "historical_a4_qualified_application_commit": "a4b2368cdb463939d093020224a5b5667392aee6",
   "current_publication_recovery_hold_evidence": "docs/v4/publication-recovery-hold-evidence.json",
-  "current_publication_recovery_hold_evidence_sha256": "7f31b6f648ee7d4bbe7926721c468dc39fb247db3d3d2aa33846d52f310c80d2"
+  "current_publication_recovery_hold_evidence_sha256": "8570f08fa127f7ed62c26e476b3dd0e3b4679d59d7bdef65aa26b051a8c3a4b0"
 }

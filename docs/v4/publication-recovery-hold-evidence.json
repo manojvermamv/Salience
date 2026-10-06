@@ -337,19 +337,19 @@
       "errors": 0,
       "skipped": 0,
       "log": {
-        "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/final-checks/docs-tests.log"
+        "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/fix-round-1/stable-final-checks/docs-tests.log"
       }
     },
     "documentation_checker": {
       "self_test": {
         "status": "PASS",
         "requirements": 75,
-        "source_files": 356,
+        "source_files": 2,
         "evidence_files": 356,
         "inventory_files": 360,
         "negative_controls": 6,
         "log": {
-          "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/final-checks/checker-self-test.log"
+          "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/fix-round-1/stable-final-checks/checker-self-test.log"
         }
       },
       "normal": {
@@ -362,7 +362,7 @@
         "html_files_checked": 4,
         "negative_controls": 6,
         "log": {
-          "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/final-checks/checker.log"
+          "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/fix-round-1/stable-final-checks/checker.log"
         }
       }
     },
@@ -371,19 +371,19 @@
       "failed": 0,
       "scripts": [
         {
-          "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/final-checks/shell-browser-docs.log",
+          "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/fix-round-1/stable-final-checks/shell-browser-docs.log",
           "status": "PASS"
         },
         {
-          "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/final-checks/shell-phase-7-8.log",
+          "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/fix-round-1/stable-final-checks/shell-phase-7-8.log",
           "status": "PASS"
         },
         {
-          "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/final-checks/shell-phase-9.log",
+          "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/fix-round-1/stable-final-checks/shell-phase-9.log",
           "status": "PASS"
         },
         {
-          "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/final-checks/shell-verify-browser.log",
+          "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/fix-round-1/stable-final-checks/shell-verify-browser.log",
           "status": "PASS"
         }
       ]
@@ -392,40 +392,44 @@
       "rendered": 6,
       "failed": 0,
       "version": "12.0.0",
-      "command": "/home/admin/Salience/.venv/bin/python docs/v4/verify_diagrams.py --node-modules /tmp/salience-item6-mermaid/node_modules --browser /home/admin/.cache/ms-playwright/chromium_headless_shell-1234/chrome-headless-shell-linux64/chrome-headless-shell --output artifacts/v4-next-p1/qualification-diagrams",
-      "results": "artifacts/v4-next-p1/qualification-diagrams/results.json",
+      "command": "/home/admin/Salience/.venv/bin/python docs/v4/verify_diagrams.py --node-modules /tmp/salience-item6-mermaid/node_modules --browser /home/admin/.cache/ms-playwright/chromium_headless_shell-1234/chrome-headless-shell-linux64/chrome-headless-shell --output artifacts/v4-next-p1/agents/task-09-doc-reconciliation/fix-round-1/diagram-rendered",
+      "results": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/fix-round-1/diagram-rendered/results.json",
       "results_sha256": "6a04203cacd481c7c9e2000bd83834a2ac1ad0cb0ab4d4db433ba6aa557502ba",
       "log": {
-        "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/final-checks/mermaid.log"
+        "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/fix-round-1/stable-final-checks/mermaid.log"
       }
     },
     "json_parse": {
       "status": "PASS",
-      "modified_json_files": 6
+      "modified_json_files": 6,
+      "log": {
+        "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/fix-round-1/stable-final-checks/json-parse.log"
+      }
     },
     "pip_check": {
       "status": "PASS",
       "log": {
-        "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/final-checks/pip-check.log"
+        "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/fix-round-1/stable-final-checks/pip-check.log"
       }
     },
     "compileall": {
       "status": "PASS",
       "command": "/home/admin/Salience/.venv/bin/python -m compileall -q src tests scripts docs/v4",
       "log": {
-        "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/final-checks/compileall.log"
+        "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/fix-round-1/stable-final-checks/compileall.log"
       }
     },
     "git_diff_check": {
       "status": "PASS",
       "log": {
-        "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/final-checks/diff-check.log"
+        "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/fix-round-1/stable-final-checks/diff-check.log"
       }
     },
     "historical_preservation": {
       "status": "PASS",
       "paths": 14,
-      "manifest": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/historical-preservation-sha256.json"
+      "manifest": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/historical-preservation-sha256.json",
+      "manifest_sha256": "8295bde6d21b2a1939b1ca6f534b2ebd1c578a61aededf1a762dcdc12e29623e"
     },
     "source_lock_validation": {
       "status": "PASS",
@@ -437,6 +441,20 @@
       "active_project_markdown_files": 70,
       "documentation_artifacts": 246,
       "checker_inventory_files": 360
+    },
+    "integrity_assertions": {
+      "status": "PASS",
+      "source_lock_files_verified": 356,
+      "historical_paths_verified": 14,
+      "diagram_results_sha256": "6a04203cacd481c7c9e2000bd83834a2ac1ad0cb0ab4d4db433ba6aa557502ba",
+      "log": {
+        "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/fix-round-1/stable-final-checks/integrity-assertions.log"
+      }
+    },
+    "artifact_digest_manifest": {
+      "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/fix-round-1/final-documentation-artifact-digests.json",
+      "sha256": "41d4d7266dbad0431e47cabc7c8f6ebf9e1aa179c6ca93a9d0591971f8d8f6b0",
+      "artifact_count": 18
     }
   }
 }

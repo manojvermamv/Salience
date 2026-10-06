@@ -508,7 +508,7 @@
     "status": "PASS_LOCAL_FIXTURE_SCOPE; this is distinct from the historical A4 qualification above.",
     "application_commit": "7878208e7a353f93bb70279ad0dd7f0760f93ec4",
     "evidence": "docs/v4/publication-recovery-hold-evidence.json",
-    "evidence_sha256": "7f31b6f648ee7d4bbe7926721c468dc39fb247db3d3d2aa33846d52f310c80d2",
+    "evidence_sha256": "8570f08fa127f7ed62c26e476b3dd0e3b4679d59d7bdef65aa26b051a8c3a4b0",
     "focused_tests": 116,
     "full_non_live_tests": 614,
     "source_files": 356,
