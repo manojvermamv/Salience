@@ -40,11 +40,15 @@ flowchart TB
     STATE["PostgreSQL canonical state<br/>Transactional outbox and inbox"]
     DISPATCH["Ordered dispatcher<br/>Token-fenced delivery"]
     TEMPORAL["Temporal workflows<br/>Compatible workers"]
-    AGENTS["Bounded parallel AI agents<br/>Scoped research and strategy"]
     RESEARCH["Research and evidence"]
     BRIEFS["Selected briefs"]
     CREATIVE["Creative production"]
     PUBLICATION["Governed publication<br/>Zero-budget fixture"]
+  end
+  subgraph parallelLane["SEPARATE local callable-agent fixture lane"]
+    PARALLEL_COMMAND["Separate signed fixture command"]
+    AGENTS["Bounded parallel AI agents<br/>Separately qualified extension"]
+    PARALLEL_COMMAND --> AGENTS
   end
   EFFECTS["External providers and effects<br/>PRODUCTION HELD; effects disabled"]
   OBSERVATION["Observation and outcomes<br/>PLANNED / GATED"]
@@ -54,12 +58,12 @@ flowchart TB
   OPS["Operations, restore, and rollout<br/>PRODUCTION HELD"]
 
   SIGNED --> GOVERN
+  SIGNED -.-> PARALLEL_COMMAND
   SCHEDULES --> GOVERN
   GOVERN --> STATE
   STATE --> DISPATCH
   DISPATCH --> TEMPORAL
-  TEMPORAL --> AGENTS
-  AGENTS --> RESEARCH
+  TEMPORAL --> RESEARCH
   RESEARCH --> BRIEFS
   BRIEFS --> CREATIVE
   CREATIVE --> PUBLICATION
@@ -67,7 +71,6 @@ flowchart TB
   EFFECTS -.-> OBSERVATION
   OBSERVATION -.-> LEARNING
   LEARNING -.-> RELEASE
-  RELEASE -.-> AGENTS
   RELEASE -.-> TRAINING
   STATE -.-> OPS
   TEMPORAL -.-> OPS
@@ -77,17 +80,17 @@ flowchart TB
   classDef held fill:#ffe8d8,stroke:#b45b18,color:#572b0c
   classDef planned fill:#e6efff,stroke:#3b67a0,color:#193354
   classDef optional fill:#eee8f5,stroke:#71518f,color:#362247
-  class GOVERN,STATE,DISPATCH,TEMPORAL,AGENTS,RESEARCH,BRIEFS,CREATIVE,PUBLICATION local
+  class GOVERN,STATE,DISPATCH,TEMPORAL,RESEARCH,BRIEFS,CREATIVE,PUBLICATION,AGENTS,PARALLEL_COMMAND local
   class EFFECTS,OPS held
   class OBSERVATION,LEARNING,RELEASE planned
   class TRAINING optional
 ```
 
-P0/P1 controls govern signed commands and schedule ticks before work is admitted. PostgreSQL commits canonical identities, context, allocation, admission, and outbox records together. The dispatcher delivers work to compatible Temporal workflows, which coordinate bounded agent and content stages. In the target system, provider outcomes feed observation, learning proposals, and controlled strategy or capability release. Those later phases, real provider effects, and production operations remain gated.
+P0/P1 controls govern signed commands and schedule ticks before work is admitted. PostgreSQL commits canonical identities, context, allocation, admission, and outbox records together. The target overview groups product phases; it does not mean one legacy execution automatically traverses every stage. The bounded parallel-agent extension has its own signed fixture command and worker lane, separate from the original legacy intelligence workflow. In the target system, provider outcomes feed observation, learning proposals, and controlled strategy or capability release. Those later phases, real provider effects, and production operations remain gated.
 
 ## Locally qualified governed execution path
 
-The following path describes the local implementation boundary. Stage checks run against current authority each time; the internal fixture adapters cannot send externally.
+The following path describes the local implementation boundary. Each admitted operation selects exactly one legacy stage from its immutable binding. Stage activities recheck current authority; the internal fixture adapters cannot send externally.
 
 ```mermaid
 flowchart TB
@@ -100,26 +103,42 @@ flowchart TB
     CMD --> AUTH --> ADMIT --> ID
   end
 
-  subgraph durable["Atomic state and delivery"]
+  subgraph durable["Atomic state and ordered delivery"]
     direction LR
     COMMIT["Atomic PostgreSQL commit:<br/>allocation, admission, context, and outbox"]
     DB["Canonical PostgreSQL state<br/>Transactional outbox and inbox"]
     DISPATCH["Ordered token-fenced dispatcher"]
-    RECEIPT["Durable inbox receipt"]
-    COMMIT --> DB --> DISPATCH --> RECEIPT
+    COMMIT --> DB --> DISPATCH
   end
 
-  subgraph runtime["Compatible workflow and bounded stages"]
-    WF["Temporal compatible workflow<br/>Replay and Continue-As-New"]
-    WAIT["Finite waits and review deadlines"]
-    STAGECHECK["BEFORE EACH STAGE:<br/>recheck permit, current policy,<br/>account, approval, and rights"]
-    FANOUT["Bounded parallel agents"]
-    INTEL["Original intelligence and research"]
-    BRIEF["Selected brief"]
-    DUMMY["No-send dummy"]
-    CREATIVE["Dry creative"]
-    PUB["Governed publication"]
-    WF --> WAIT --> STAGECHECK --> FANOUT --> INTEL --> BRIEF --> DUMMY --> CREATIVE --> PUB
+  subgraph runtime["Canonical Temporal control workflow"]
+    CTRL["Compatible control workflow<br/>Replay, Continue-As-New, finite waits,<br/>and review deadlines"]
+    CONSUME["Consume activity"]
+    RECEIPT["Durable inbox receipt committed"]
+    PERMIT["Issue and claim fixture permit"]
+    STAGECHECK["Recheck current permit, policy, and bound stage;<br/>account, approval, and rights as applicable"]
+    SELECT["Dispatch exactly ONE stage selected<br/>by the immutable admitted binding"]
+    CTRL --> CONSUME --> RECEIPT --> PERMIT --> STAGECHECK --> SELECT
+  end
+
+  subgraph stages["Alternative bound legacy workflows: one per admission"]
+    direction TB
+    INTEL["Original intelligence workflow"]
+    BRIEF["Selected-opportunity intelligence variant/output:<br/>selected brief"]
+    DUMMY["No-send dummy workflow"]
+    CREATIVE["Dry creative workflow"]
+    NO_PACKAGE["No media asset or ready package"]
+    PUB["Governed publication workflow:<br/>exact package, account, approval, and budget"]
+    INTEL --> BRIEF
+    CREATIVE --> NO_PACKAGE
+  end
+  READY["Separately supplied exact ready package;<br/>not produced by dry creative"]
+
+  subgraph parallelLane["Separate local callable-agent lane"]
+    TEAM_COMMAND["Separate signed fixture API, SDK, or CLI command"]
+    TEAM_WORKER["Dedicated parallel-agent worker boundary"]
+    FANOUT["Bounded parallel agents<br/>separately fixture-qualified"]
+    TEAM_COMMAND --> TEAM_WORKER --> FANOUT
   end
 
   FIXTURE["Internal fixture/mock boundary<br/>zero budget; effects disabled"]
@@ -128,25 +147,36 @@ flowchart TB
   TRACE["Trace, audit, and provenance link identities<br/>across ingress, state, workflow, and stage results"]
   OPS["Rollback keeps patched histories on compatible workers<br/>LOCAL fixture restart only; production routing and restore HELD"]
 
-  RECEIPT --> WF
   ID --> COMMIT
+  DISPATCH --> CTRL
+  SELECT --> INTEL
+  SELECT --> DUMMY
+  SELECT --> CREATIVE
+  SELECT --> PUB
+  READY --> PUB
   PUB --> FIXTURE
   FIXTURE -.-> EXTERNAL
   EXTERNAL -.-> RECORDS
+  BRIEF --> RECORDS
+  DUMMY --> RECORDS
+  NO_PACKAGE --> RECORDS
   PUB --> RECORDS
   RECORDS --> DB
   PUB -.-> TRACE
-  WF -.-> OPS
+  CTRL -.-> TRACE
+  CTRL -.-> OPS
 
   classDef local fill:#e4f3e7,stroke:#347a46,color:#173b20
   classDef held fill:#ffe8d8,stroke:#b45b18,color:#572b0c
   classDef planned fill:#e6efff,stroke:#3b67a0,color:#193354
   classDef optional fill:#eee8f5,stroke:#71518f,color:#362247
-  class CMD,AUTH,ADMIT,ID,COMMIT,DB,DISPATCH,RECEIPT,WF,WAIT,STAGECHECK,FANOUT,INTEL,BRIEF,DUMMY,CREATIVE,PUB,FIXTURE,RECORDS,TRACE local
+  class CMD,AUTH,ADMIT,ID,COMMIT,DB,DISPATCH,CTRL,CONSUME,RECEIPT,PERMIT,STAGECHECK,SELECT,INTEL,BRIEF,DUMMY,CREATIVE,NO_PACKAGE,READY,PUB,TEAM_COMMAND,TEAM_WORKER,FANOUT,FIXTURE,RECORDS,TRACE local
   class EXTERNAL,OPS held
 ```
 
-The original legacy stages and both original native schedule conversions run through this governed path in isolated fixtures. Transactional admission preserves goal, intent, cycle, context, and operation identity with the outbox. Ordered token-fenced delivery records a durable inbox receipt before compatible Temporal workers execute. Workflow replay, continuation, finite waits, and review deadlines retain those identities. Receipts, liabilities, reservations, cases, notifications, reconciliation, archive, trace, audit, and provenance remain tied to the canonical records.
+The shared delivery order is dispatcher, compatible canonical control workflow, consume activity, then durable inbox receipt. After the receipt is recorded, the control activity issues and claims the fixture permit; current policy and the immutable stage binding are checked before the adapter dispatches the one selected legacy workflow. Replay, Continue-As-New, finite waits, and review deadlines belong to this canonical control workflow.
+
+The stage branches are alternatives with separate admissions, not a serial chain. The intelligence workflow supports the selected-opportunity variant that produces a selected brief. The dry-creative fixture produces no ready package. Governed publication consumes a separately supplied exact ready package and its own account, approval, and budget bindings. The bounded parallel-agent extension is a separate signed fixture command and worker lane; no edge claims the original legacy intelligence workflow invokes it. Stage receipts, liabilities, reservations, cases, notifications, reconciliation, archive, trace, audit, and provenance remain linked to canonical state.
 
 Patched workflow histories require compatible workers through rollback. Local fixture rollback and restart evidence does not qualify production worker routing, coordinated restore, or external-effect recovery. The held provider boundary remains closed until the required production gates pass.
 
@@ -166,6 +196,16 @@ Production effects remain disabled. RG0 and RG1 are **HELD**. P2–P7 remain gat
 - [Application qualification evidence](docs/v4/legacy-publication-evidence.json)
 - [Inventory and preservation record](docs/v4/inventory.json)
 
+## Historical and separate qualification records
+
+These records retain their own local-fixture or repository-readback scope; they do not establish production release or CI for this README update.
+
+- [P1 item-7 fixture qualification evidence](docs/v4/item7-evidence.json) — historical qualification at `e49a214`, 132 focused / 507 full non-live tests, implemented-fixture scope.
+- [P1 item-7 independent-review summary](docs/v4/item7-independent-review.md) — the same historical fixture-review scope.
+- [Parallel-agent operating contract](docs/v4/parallel-agent-contract.md) — a separate callable-agent extension and signed fixture lane.
+- [Parallel-agent qualification evidence](docs/v4/parallel-agents-evidence.json) — separate local fixture qualification at `2653d2e`, 45 focused / 540 full non-live tests.
+- [Repository-enforcement readback](docs/v4/repository-enforcement-evidence.json) — historical published-base evidence; it does not establish status for this README update.
+
 ## Verification and navigation
 
 Run the documentation validator and its built-in tests:
@@ -174,6 +214,8 @@ Run the documentation validator and its built-in tests:
 python3 docs/v4/check.py --self-test
 python3 docs/v4/check.py
 ```
+
+The documentation gate covers 75 mapped obligations, preservation and drift checks, and local links. A protected-main merge also requires exact-head documentation (`verify`) and non-live regression (`p0-regression`) checks plus independent PR approval; the earlier checkpoint readback above does not apply to a later commit.
 
 Existing fixture verification commands remain available:
 
