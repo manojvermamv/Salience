@@ -112,7 +112,7 @@ flowchart TB
   end
 
   subgraph runtime["Canonical Temporal control workflow"]
-    CTRL["Compatible control workflow<br/>Replay, Continue-As-New, finite waits,<br/>and review deadlines"]
+    CTRL["Compatible control workflow<br/>Replay, Continue-As-New,<br/>and finite execution wait"]
     CONSUME["Consume activity"]
     RECEIPT["Durable inbox receipt committed"]
     PERMIT["Issue and claim fixture permit"]
@@ -133,6 +133,7 @@ flowchart TB
     CREATIVE --> NO_PACKAGE
   end
   READY["Separately supplied exact ready package;<br/>not produced by dry creative"]
+  CASEWAIT["Separate opt-in FixtureWaitDriver and wait workflow<br/>review/case deadlines; existing cycle, context, and operation"]
 
   subgraph parallelLane["Separate local callable-agent lane"]
     TEAM_COMMAND["Separate signed fixture API, SDK, or CLI command"]
@@ -157,6 +158,7 @@ flowchart TB
   PUB --> FIXTURE
   FIXTURE -.-> EXTERNAL
   EXTERNAL -.-> RECORDS
+  CASEWAIT --> RECORDS
   BRIEF --> RECORDS
   DUMMY --> RECORDS
   NO_PACKAGE --> RECORDS
@@ -170,11 +172,11 @@ flowchart TB
   classDef held fill:#ffe8d8,stroke:#b45b18,color:#572b0c
   classDef planned fill:#e6efff,stroke:#3b67a0,color:#193354
   classDef optional fill:#eee8f5,stroke:#71518f,color:#362247
-  class CMD,AUTH,ADMIT,ID,COMMIT,DB,DISPATCH,CTRL,CONSUME,RECEIPT,PERMIT,STAGECHECK,SELECT,INTEL,BRIEF,DUMMY,CREATIVE,NO_PACKAGE,READY,PUB,TEAM_COMMAND,TEAM_WORKER,FANOUT,FIXTURE,RECORDS,TRACE local
+  class CMD,AUTH,ADMIT,ID,COMMIT,DB,DISPATCH,CTRL,CONSUME,RECEIPT,PERMIT,STAGECHECK,SELECT,INTEL,BRIEF,DUMMY,CREATIVE,NO_PACKAGE,READY,CASEWAIT,PUB,TEAM_COMMAND,TEAM_WORKER,FANOUT,FIXTURE,RECORDS,TRACE local
   class EXTERNAL,OPS held
 ```
 
-The shared delivery order is dispatcher, compatible canonical control workflow, consume activity, then durable inbox receipt. After the receipt is recorded, the control activity issues and claims the fixture permit; current policy and the immutable stage binding are checked before the adapter dispatches the one selected legacy workflow. Replay, Continue-As-New, finite waits, and review deadlines belong to this canonical control workflow.
+The shared delivery order is dispatcher, compatible canonical control workflow, consume activity, then durable inbox receipt. After the receipt is recorded, the control activity issues and claims the fixture permit; current policy and the immutable stage binding are checked before the adapter dispatches the one selected legacy workflow. Replay, Continue-As-New, and the finite execution wait belong to the canonical control workflow. Review and case deadlines use the separately registered `SalienceLocalWaitWorkflow`, started by the opt-in `FixtureWaitDriver` when fixture automatic waits are enabled; its due activity preserves the existing cycle, context, and operation identity. The dispatcher-to-consume path does not start that driver.
 
 The stage branches are alternatives with separate admissions, not a serial chain. The intelligence workflow supports the selected-opportunity variant that produces a selected brief. The dry-creative fixture produces no ready package. Governed publication consumes a separately supplied exact ready package and its own account, approval, and budget bindings. The bounded parallel-agent extension is a separate signed fixture command and worker lane; no edge claims the original legacy intelligence workflow invokes it. Stage receipts, liabilities, reservations, cases, notifications, reconciliation, archive, trace, audit, and provenance remain linked to canonical state.
 

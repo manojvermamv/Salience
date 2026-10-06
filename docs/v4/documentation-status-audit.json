@@ -444,7 +444,7 @@
     {
       "path": "README.md",
       "disposition": "active project Markdown aligned with root-qualified legacy publication and retained production holds",
-      "sha256": "01d79583b0ad627b910152fb486178a577b6a0d108884e0692cf5479f0ecd40b"
+      "sha256": "b880cd47a63545b4f6f1410d119f9e1a747a0dc035d1c3679bdc36bdad81e37d"
     },
     {
       "path": "docs-new-arch/ArchCurrent.mermaid",
