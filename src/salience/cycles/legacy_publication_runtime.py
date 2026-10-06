@@ -278,9 +278,19 @@ class GuardedPublicationActivities(PublicationActivities):
         recovery = await _expired_permit_receipt_recovery(self.outbox, binding)
         result = await super().submit_or_reconcile(payload)
         if recovery:
+            from salience.cycles.publication_recovery import record_publication_recovery_hold
+
+            hold = await asyncio.to_thread(
+                record_publication_recovery_hold,
+                self.outbox.database_url,
+                workspace_id=self.outbox.workspace_id,
+                operation_id=binding["operation_id"],
+                reason="expired_permit_receipt",
+            )
             await self._checkpoint("publication.receipt_recovered_requires_typed_recovery")
             raise ApplicationError(
                 "durable publication receipt recovered; typed execution recovery is required",
+                {"hold_id": str(hold.id)},
                 type="LegacyPublicationRecoveryHeld",
                 non_retryable=True,
             )

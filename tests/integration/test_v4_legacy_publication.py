@@ -144,6 +144,23 @@ async def legacy_publication(monkeypatch):
     return await _publication_fixture(os.environ["TEST_DATABASE_URL"])
 
 
+@pytest_asyncio.fixture
+async def legacy_publication_current_schema(monkeypatch):
+    from test_v4_publication_recovery_holds import _create_database, _drop_database, _migrate
+
+    source = os.environ["TEST_DATABASE_URL"]
+    name, database = _create_database(source, "legacy_publication_current_")
+    monkeypatch.setenv("TEST_DATABASE_URL", database)
+    monkeypatch.setenv("SALIENCE_DEPLOYMENT_MODE", "fixture")
+    monkeypatch.setenv("SALIENCE_EFFECTS_ENABLED", "false")
+    try:
+        upgraded = _migrate(database, "upgrade", "head")
+        assert upgraded.returncode == 0, upgraded.stderr
+        yield await _publication_fixture(database)
+    finally:
+        _drop_database(source, name)
+
+
 async def _wait_started(client, workflow_id):
     from temporalio.service import RPCError, RPCStatusCode
 
@@ -219,7 +236,9 @@ def _exception_chain(error):
         current = getattr(current, "__cause__", None) or getattr(current, "__context__", None)
 
 
-async def _hard_exit_publication_worker(fixture, tmp_path, *, after_acceptance):
+async def _hard_exit_publication_worker(
+    fixture, tmp_path, *, after_acceptance, permit_ttl_seconds=None
+):
     worker_script = tmp_path / ("publication_worker_" + str(uuid4()) + ".py")
     worker_script.write_text(
         """import asyncio, os
@@ -228,6 +247,14 @@ from salience.cycles.outbox import CycleOutbox
 from salience.cycles.legacy_publication_runtime import DurableLegacyFixturePublisher
 from salience.cycles.legacy_runtime import build_legacy_worker
 from salience.cycles.runtime import TemporalCycleTransport
+
+if 'PUB_PERMIT_TTL_SECONDS' in os.environ:
+    from salience.cycles.governance import CycleGovernance
+    original_issue_permit = CycleGovernance.issue_permit
+    def issue_short_lived_permit(self, cycle_id, request, *, idempotency_key):
+        request = request.model_copy(update={'ttl_seconds': int(os.environ['PUB_PERMIT_TTL_SECONDS'])})
+        return original_issue_permit(self, cycle_id, request, idempotency_key=idempotency_key)
+    CycleGovernance.issue_permit = issue_short_lived_permit
 
 async def main():
     client = await Client.connect(os.environ['TEST_TEMPORAL_TARGET'])
@@ -264,6 +291,8 @@ asyncio.run(main())
         "PUB_QUEUE": fixture["queue"],
         "PUB_CRASH_MODE": "after" if after_acceptance else "before",
     }
+    if permit_ttl_seconds is not None:
+        child_environment["PUB_PERMIT_TTL_SECONDS"] = str(permit_ttl_seconds)
     process = await asyncio.create_subprocess_exec(
         sys.executable,
         str(worker_script),
@@ -278,6 +307,27 @@ asyncio.run(main())
         await process.wait()
         pytest.fail("publication worker did not exit at the requested receipt boundary")
     return code
+
+
+async def _wait_for_publication_permit_expiry(database, operation_id):
+    with psycopg.connect(database) as connection:
+        expires_at = connection.execute(
+            """SELECT permit.expires_at FROM v4_dispatch_permits permit
+               JOIN v4_permit_claims claim ON claim.current_permit_id=permit.id
+               WHERE claim.operation_id=%s""",
+            (operation_id,),
+        ).fetchone()[0]
+    remaining = (expires_at - datetime.now(timezone.utc)).total_seconds()
+    if remaining > 0:
+        await asyncio.sleep(remaining + 0.05)
+    with psycopg.connect(database) as connection:
+        assert connection.execute(
+            """SELECT permit.expires_at<=clock_timestamp()
+               FROM v4_dispatch_permits permit
+               JOIN v4_permit_claims claim ON claim.current_permit_id=permit.id
+               WHERE claim.operation_id=%s""",
+            (operation_id,),
+        ).fetchone()[0]
 
 
 def test_publication_atomic_replay_current_facts_and_native_job_is_not_dry_run(
@@ -605,10 +655,10 @@ async def test_publication_revoked_between_native_activities_never_submits(
 
 
 @pytest.mark.asyncio
-async def test_publication_subprocess_crash_after_durable_acceptance_reconciles_original_run(
-    legacy_publication, monkeypatch, tmp_path
+async def test_expired_receipt_hold_requires_current_reconcile_scope_and_never_resubmits(
+    legacy_publication_current_schema, monkeypatch, tmp_path
 ):
-    """A hard worker exit recovers only the accepted receipt, never a new outcome."""
+    """Expired-permit recovery records a safe hold after exact receipt readback."""
     from temporalio import activity
     from temporalio.client import Client, WorkflowFailureError
 
@@ -620,7 +670,7 @@ async def test_publication_subprocess_crash_after_durable_acceptance_reconciles_
     from salience.cycles.legacy_runtime import build_legacy_worker
     from salience.cycles.runtime import TemporalCycleTransport
 
-    f = legacy_publication
+    f = legacy_publication_current_schema
     bridge, database = f["bridge"], f["database"]
     submitted = bridge.submit_publication(f["command"])
     _allow(
@@ -629,11 +679,21 @@ async def test_publication_subprocess_crash_after_durable_acceptance_reconciles_
         f["actor_id"],
         ("legacy:publication:reconcile:account:" + f["account"].id,),
     )
-    assert await _hard_exit_publication_worker(f, tmp_path, after_acceptance=True) == 73
+    assert (
+        await _hard_exit_publication_worker(
+            f, tmp_path, after_acceptance=True, permit_ttl_seconds=10
+        )
+        == 73
+    )
 
     operation_id = submitted["operation_id"]
     workflow_id = "salience-v4-legacy-operation:" + operation_id
+    await _wait_for_publication_permit_expiry(database, operation_id)
     with psycopg.connect(database) as connection:
+        connection.execute(
+            "UPDATE publisher_accounts SET status='suspended' WHERE id=%s",
+            (f["account"].id,),
+        )
         assert connection.execute(
             "SELECT count(*) FROM v4_legacy_publication_fixture_receipts WHERE operation_id=%s",
             (operation_id,),
@@ -665,12 +725,15 @@ async def test_publication_subprocess_crash_after_durable_acceptance_reconciles_
     first_worker_identity = initial_activity.last_worker_identity
     resubmit_calls = []
     reconcile_calls = []
+    status_calls = []
     recovered = asyncio.Event()
-    retry_entered = asyncio.Event()
+    authorization_rejected = asyncio.Event()
+    valid_retry_entered = asyncio.Event()
     release_retry = asyncio.Event()
     retry_finished = asyncio.Event()
     original_submit = DurableLegacyFixturePublisher.submit
     original_reconcile = DurableLegacyFixturePublisher.reconcile
+    original_status = DurableLegacyFixturePublisher.status
     original_activity = GuardedPublicationActivities.submit_or_reconcile
 
     async def counted_submit(self, request, lease):
@@ -683,32 +746,52 @@ async def test_publication_subprocess_crash_after_durable_acceptance_reconciles_
         recovered.set()
         return receipt
 
+    async def counted_status(self, remote_id):
+        status_calls.append(remote_id)
+        return await original_status(self, remote_id)
+
     @activity.defn(name="salience.publication.submit_or_reconcile")
     async def tracked_activity(self, payload):
-        if activity.info().attempt >= 2:
-            retry_entered.set()
+        attempt = activity.info().attempt
+        if attempt >= 3:
+            valid_retry_entered.set()
             await release_retry.wait()
         try:
             return await original_activity(self, payload)
+        except PermissionError:
+            if attempt == 2:
+                authorization_rejected.set()
+            raise
         finally:
-            if activity.info().attempt >= 2:
+            if attempt >= 3:
                 retry_finished.set()
 
     monkeypatch.setattr(DurableLegacyFixturePublisher, "submit", counted_submit)
     monkeypatch.setattr(DurableLegacyFixturePublisher, "reconcile", counted_reconcile)
+    monkeypatch.setattr(DurableLegacyFixturePublisher, "status", counted_status)
     monkeypatch.setattr(GuardedPublicationActivities, "submit_or_reconcile", tracked_activity)
     outbox = CycleOutbox(database, workspace_id=f["workspace_id"], delivery_lane="legacy")
     worker = build_legacy_worker(client, task_queue=f["queue"], outbox=outbox)
     worker_task = asyncio.create_task(worker.run())
     try:
-        await asyncio.wait_for(retry_entered.wait(), timeout=65)
+        await asyncio.wait_for(valid_retry_entered.wait(), timeout=65)
         retry_activity = await _wait_activity_started(
             client,
             workflow_id,
             "salience.publication.submit_or_reconcile",
-            attempt=2,
+            attempt=3,
             timeout=5,
         )
+        assert authorization_rejected.is_set()
+        with psycopg.connect(database) as connection:
+            assert connection.execute(
+                "SELECT count(*) FROM v4_legacy_publication_recovery_holds WHERE operation_id=%s",
+                (operation_id,),
+            ).fetchone()[0] == 0
+            connection.execute(
+                "UPDATE publisher_accounts SET status='active' WHERE id=%s",
+                (f["account"].id,),
+            )
         assert retry_activity.last_worker_identity
         assert retry_activity.last_worker_identity != first_worker_identity
         assert retry_activity.last_started_time.seconds > 0
@@ -718,10 +801,12 @@ async def test_publication_subprocess_crash_after_durable_acceptance_reconciles_
         assert reconcile_calls[0] is not None
         with pytest.raises(WorkflowFailureError) as failure:
             await asyncio.wait_for(handle.result(), timeout=20)
-        assert any(
-            getattr(error, "type", None) == "LegacyPublicationRecoveryHeld"
+        typed_failures = [
+            error
             for error in _exception_chain(failure.value)
-        )
+            if getattr(error, "type", None) == "LegacyPublicationRecoveryHeld"
+        ]
+        assert len(typed_failures) == 1
         await asyncio.wait_for(retry_finished.wait(), timeout=5)
     finally:
         release_retry.set()
@@ -731,7 +816,21 @@ async def test_publication_subprocess_crash_after_durable_acceptance_reconciles_
     assert after.run_id == original_description.run_id
     assert after.status.name == "FAILED"
     assert resubmit_calls == []
+    assert status_calls == []
     with psycopg.connect(database) as connection:
+        hold_rows = connection.execute(
+            """SELECT id,reason,liability_snapshot
+               FROM v4_legacy_publication_recovery_holds WHERE operation_id=%s""",
+            (operation_id,),
+        ).fetchall()
+        assert len(hold_rows) == 1
+        hold_id, reason, hold_snapshot = hold_rows[0]
+        assert reason == "expired_permit_receipt"
+        assert typed_failures[0].details == ({"hold_id": str(hold_id)},)
+        from test_v4_publication_recovery_holds import _SNAPSHOT_SQL
+
+        current_snapshot = connection.execute(_SNAPSHOT_SQL, (operation_id,)).fetchone()[0]
+        assert current_snapshot == hold_snapshot
         assert connection.execute(
             "SELECT count(*) FROM v4_legacy_publication_fixture_receipts WHERE operation_id=%s",
             (operation_id,),
@@ -780,9 +879,15 @@ async def test_publication_subprocess_crash_without_receipt_never_retries_submit
         f["actor_id"],
         ("legacy:publication:reconcile:account:" + f["account"].id,),
     )
-    assert await _hard_exit_publication_worker(f, tmp_path, after_acceptance=False) == 72
+    assert (
+        await _hard_exit_publication_worker(
+            f, tmp_path, after_acceptance=False, permit_ttl_seconds=10
+        )
+        == 72
+    )
     operation_id = submitted["operation_id"]
     workflow_id = "salience-v4-legacy-operation:" + operation_id
+    await _wait_for_publication_permit_expiry(f["database"], operation_id)
     with psycopg.connect(f["database"]) as connection:
         assert connection.execute(
             "SELECT count(*) FROM v4_legacy_publication_fixture_receipts WHERE operation_id=%s",
@@ -859,6 +964,10 @@ async def test_publication_subprocess_crash_without_receipt_never_retries_submit
     assert (await handle.describe()).run_id == original.run_id
     assert submit_calls == []
     with psycopg.connect(f["database"]) as connection:
+        assert connection.execute(
+            "SELECT count(*) FROM v4_legacy_publication_recovery_holds WHERE operation_id=%s",
+            (operation_id,),
+        ).fetchone()[0] == 0
         assert connection.execute(
             "SELECT count(*) FROM v4_legacy_publication_fixture_receipts WHERE operation_id=%s",
             (operation_id,),
@@ -1419,19 +1528,27 @@ async def test_post_close_cancel_reads_published_then_holds_original_liability(
 
 @pytest.mark.asyncio
 async def test_publication_revoked_reconcile_scope_holds_durable_acceptance(
-    legacy_publication, monkeypatch
+    legacy_publication_current_schema, monkeypatch
 ):
     from temporalio import activity
     from temporalio.client import Client, WorkflowFailureError
 
     from salience.cycles.outbox import CycleOutbox
+    from salience.cycles.governance import CycleGovernance
     from salience.cycles.legacy_publication_runtime import DurableLegacyFixturePublisher
     from salience.cycles.legacy_runtime import build_legacy_worker
     from salience.cycles.runtime import TemporalCycleTransport
 
-    f = legacy_publication
+    f = legacy_publication_current_schema
     scope = "legacy:publication:reconcile:account:" + f["account"].id
     _allow(f["database"], f["workspace_id"], f["actor_id"], (scope,))
+    original_issue_permit = CycleGovernance.issue_permit
+
+    def short_lived_permit(self, cycle_id, request, *, idempotency_key):
+        request = request.model_copy(update={"ttl_seconds": 10})
+        return original_issue_permit(self, cycle_id, request, idempotency_key=idempotency_key)
+
+    monkeypatch.setattr(CycleGovernance, "issue_permit", short_lived_permit)
     reached, release = asyncio.Event(), asyncio.Event()
     from salience.cycles.legacy_publication_runtime import GuardedPublicationActivities
 
@@ -1454,6 +1571,9 @@ async def test_publication_revoked_reconcile_scope_holds_durable_acceptance(
                 client, "salience-v4-legacy-operation:" + submitted["operation_id"]
             )
             await asyncio.wait_for(reached.wait(), 15)
+            await _wait_for_publication_permit_expiry(
+                f["database"], submitted["operation_id"]
+            )
             with psycopg.connect(f["database"]) as connection:
                 assert connection.execute(
                     "SELECT count(*) FROM v4_legacy_publication_fixture_receipts WHERE operation_id=%s",
@@ -1469,6 +1589,10 @@ async def test_publication_revoked_reconcile_scope_holds_durable_acceptance(
         finally:
             release.set()
     with psycopg.connect(f["database"]) as connection:
+        assert connection.execute(
+            "SELECT count(*) FROM v4_legacy_publication_recovery_holds WHERE operation_id=%s",
+            (submitted["operation_id"],),
+        ).fetchone()[0] == 0
         assert connection.execute(
             "SELECT state FROM v4_legacy_publication_fixture_progress WHERE operation_id=%s",
             (submitted["operation_id"],),
