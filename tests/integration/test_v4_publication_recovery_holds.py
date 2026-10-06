@@ -827,3 +827,377 @@ async def test_concurrent_exact_hold_insert_returns_one_stable_hold(
     assert _recovery_hold_count(database, operation_id) == 1
     after = _liability_snapshot(database, operation_id)
     _assert_named_liabilities_unchanged(before, after)
+
+
+@pytest.mark.asyncio
+async def test_rollback_verifier_requires_both_reasons_and_unchanged_liabilities(
+    published_cancelled_recovery_case, monkeypatch, tmp_path
+):
+    from salience.cycles.publication_recovery import (
+        PublicationRecoveryConflictError,
+        record_publication_recovery_hold,
+        verify_publication_recovery_rollback,
+    )
+
+    from test_v4_legacy_publication import (
+        _hard_exit_publication_worker,
+        _publication_fixture,
+        _wait_for_publication_permit_expiry,
+    )
+
+    cancelled_fixture, cancelled = published_cancelled_recovery_case
+    database = cancelled_fixture["database"]
+    workspace_id = cancelled_fixture["workspace_id"]
+    cancelled_operation_id = UUID(cancelled["operation_id"])
+    from temporalio.client import Client
+
+    from salience.cycles.outbox import CycleOutbox
+    from salience.cycles.runtime import TemporalCycleTransport
+
+    client = await Client.connect(os.environ["TEST_TEMPORAL_TARGET"])
+    outbox = CycleOutbox(
+        database, workspace_id=workspace_id, delivery_lane="legacy"
+    )
+    assert await outbox.dispatch_one(
+        TemporalCycleTransport(client, task_queue=cancelled_fixture["queue"])
+    )
+    cancelled_hold = record_publication_recovery_hold(
+        database,
+        workspace_id=workspace_id,
+        operation_id=cancelled_operation_id,
+        reason="published_during_cancel",
+    )
+
+    import test_creative_release_gate_migration as release_gate
+
+    original_ready_package = release_gate._approved_ready_package
+
+    async def reuse_approved_ready_package(*, publication_proofs=True):
+        return cancelled_fixture["ready"]
+
+    monkeypatch.setattr(
+        release_gate, "_approved_ready_package", reuse_approved_ready_package
+    )
+    try:
+        expired_fixture = await _publication_fixture(database)
+    finally:
+        monkeypatch.setattr(
+            release_gate, "_approved_ready_package", original_ready_package
+        )
+    assert expired_fixture["workspace_id"] == workspace_id
+    assert expired_fixture["queue"] != cancelled_fixture["queue"]
+    expired = expired_fixture["bridge"].submit_publication(expired_fixture["command"])
+    assert await _hard_exit_publication_worker(
+        expired_fixture, tmp_path, after_acceptance=True, permit_ttl_seconds=5
+    ) == 73
+    expired_operation_id = UUID(expired["operation_id"])
+    await _wait_for_publication_permit_expiry(database, expired["operation_id"])
+    expired_hold = record_publication_recovery_hold(
+        database,
+        workspace_id=workspace_id,
+        operation_id=expired_operation_id,
+        reason="expired_permit_receipt",
+    )
+
+    operation_ids = {
+        "expired_permit_receipt": expired_operation_id,
+        "published_during_cancel": cancelled_operation_id,
+    }
+    expected_holds = {
+        "expired_permit_receipt": expired_hold.id,
+        "published_during_cancel": cancelled_hold.id,
+    }
+
+    with pytest.raises(ValueError):
+        verify_publication_recovery_rollback(
+            database,
+            workspace_id=workspace_id,
+            operation_ids={"expired_permit_receipt": expired_operation_id},
+        )
+    with pytest.raises(ValueError):
+        verify_publication_recovery_rollback(
+            database,
+            workspace_id=workspace_id,
+            operation_ids={
+                "expired_permit_receipt": expired_operation_id,
+                "published_during_cancel": expired_operation_id,
+            },
+        )
+    with pytest.raises(PublicationRecoveryConflictError):
+        verify_publication_recovery_rollback(
+            database,
+            workspace_id=workspace_id,
+            operation_ids={
+                "expired_permit_receipt": cancelled_operation_id,
+                "published_during_cancel": expired_operation_id,
+            },
+        )
+
+    verifier_module = sys.modules["salience.cycles.publication_recovery"]
+    original_connect = verifier_module.psycopg.connect
+    transaction_settings = []
+
+    class ReadOnlyConnectionObserver:
+        def __init__(self, connection):
+            self.connection = connection
+
+        def __enter__(self):
+            self.connection.__enter__()
+            return self
+
+        def __exit__(self, *args):
+            return self.connection.__exit__(*args)
+
+        def __getattr__(self, name):
+            return getattr(self.connection, name)
+
+        def execute(self, statement, *args, **kwargs):
+            result = self.connection.execute(statement, *args, **kwargs)
+            if str(statement).strip().upper().startswith("SET TRANSACTION"):
+                settings = self.connection.execute(
+                    "SELECT current_setting('transaction_read_only') AS transaction_read_only, "
+                    "current_setting('transaction_isolation') AS transaction_isolation"
+                ).fetchone()
+                transaction_settings.append(
+                    (settings["transaction_read_only"], settings["transaction_isolation"])
+                )
+            return result
+
+    def observed_connect(*args, **kwargs):
+        return ReadOnlyConnectionObserver(original_connect(*args, **kwargs))
+
+    monkeypatch.setattr(verifier_module.psycopg, "connect", observed_connect)
+    try:
+        expired_view, cancelled_view = verify_publication_recovery_rollback(
+            database, workspace_id=workspace_id, operation_ids=operation_ids
+        )
+    finally:
+        monkeypatch.setattr(verifier_module.psycopg, "connect", original_connect)
+    assert transaction_settings == [("on", "repeatable read")]
+    assert (expired_view.id, cancelled_view.id) == (
+        expected_holds["expired_permit_receipt"],
+        expected_holds["published_during_cancel"],
+    )
+
+    script = ROOT / "scripts" / "verify-v4-publication-recovery-rollback.py"
+
+    def run_script(*, expired_id, cancelled_id=None):
+        arguments = [
+            sys.executable,
+            str(script),
+            "--database-url",
+            database,
+            "--workspace-id",
+            str(workspace_id),
+            "--expired-operation-id",
+            str(expired_id),
+        ]
+        if cancelled_id is not None:
+            arguments.extend(("--cancel-operation-id", str(cancelled_id)))
+        return subprocess.run(
+            arguments,
+            cwd=ROOT,
+            env=os.environ.copy(),
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+
+    success = run_script(
+        expired_id=expired_operation_id, cancelled_id=cancelled_operation_id
+    )
+    assert success.returncode == 0, success.stderr
+    payload = json.loads(success.stdout)
+    assert payload == {
+        "workspace_id": str(workspace_id),
+        "reasons": ["expired_permit_receipt", "published_during_cancel"],
+        "operation_ids": {
+            key: str(value) for key, value in operation_ids.items()
+        },
+        "hold_ids": {key: str(value) for key, value in expected_holds.items()},
+        "verified": True,
+    }
+
+    def assert_script_fails_without_snapshots(result):
+        assert result.returncode != 0
+        assert "liability_snapshot" not in result.stdout + result.stderr
+        assert "fixture_receipt" not in result.stdout + result.stderr
+
+    assert_script_fails_without_snapshots(
+        run_script(expired_id=expired_operation_id)
+    )
+    assert_script_fails_without_snapshots(
+        run_script(expired_id=expired_operation_id, cancelled_id=expired_operation_id)
+    )
+    assert_script_fails_without_snapshots(
+        run_script(expired_id=cancelled_operation_id, cancelled_id=expired_operation_id)
+    )
+
+    def mutate_and_restore(table, update, update_params, restore, restore_params):
+        with psycopg.connect(database) as connection:
+            connection.execute(f"ALTER TABLE public.{table} DISABLE TRIGGER USER")
+            changed = connection.execute(update, update_params)
+            assert changed.rowcount == 1, table
+            connection.execute(f"ALTER TABLE public.{table} ENABLE TRIGGER USER")
+        try:
+            with pytest.raises(PublicationRecoveryConflictError):
+                verify_publication_recovery_rollback(
+                    database,
+                    workspace_id=workspace_id,
+                    operation_ids=operation_ids,
+                )
+            assert_script_fails_without_snapshots(
+                run_script(
+                    expired_id=expired_operation_id,
+                    cancelled_id=cancelled_operation_id,
+                )
+            )
+        finally:
+            with psycopg.connect(database) as connection:
+                connection.execute(
+                    f"ALTER TABLE public.{table} DISABLE TRIGGER USER"
+                )
+                connection.execute(restore, restore_params)
+                connection.execute(f"ALTER TABLE public.{table} ENABLE TRIGGER USER")
+
+    with psycopg.connect(database) as connection:
+        cancel_snapshot = connection.execute(
+            f"SELECT liability_snapshot FROM public.{TABLE} WHERE operation_id=%s",
+            (cancelled_operation_id,),
+        ).fetchone()[0]
+        receipt = connection.execute(
+            "SELECT receipt FROM public.v4_legacy_publication_fixture_receipts WHERE operation_id=%s",
+            (cancelled_operation_id,),
+        ).fetchone()[0]
+        progress_polls = connection.execute(
+            "SELECT polls FROM public.v4_legacy_publication_fixture_progress WHERE operation_id=%s",
+            (cancelled_operation_id,),
+        ).fetchone()[0]
+        effect = cancel_snapshot["external_effect"]
+        reservation = cancel_snapshot["budget_reservation"]
+        assert effect is not None and reservation is not None
+        effect_updated_at = connection.execute(
+            "SELECT updated_at FROM public.external_effects WHERE id=%s",
+            (effect["id"],),
+        ).fetchone()[0]
+        reservation_updated_at = connection.execute(
+            "SELECT updated_at FROM public.budget_reservations WHERE id=%s",
+            (reservation["id"],),
+        ).fetchone()[0]
+        job_id = cancel_snapshot["job"]["id"]
+        job_updated_at, output_payload = connection.execute(
+            "SELECT updated_at,output_payload FROM public.jobs WHERE id=%s", (job_id,)
+        ).fetchone()
+        cycle_id = cancel_snapshot["cycle"]["id"]
+        recovery_count = connection.execute(
+            "SELECT recovery_count FROM public.v4_cycles WHERE id=%s", (cycle_id,)
+        ).fetchone()[0]
+        cycle_event = cancel_snapshot["cycle_events"][0]
+        event_payload = connection.execute(
+            "SELECT payload FROM public.v4_cycle_events WHERE id=%s",
+            (cycle_event["id"],),
+        ).fetchone()[0]
+        cycle_outbox = cancel_snapshot["cycle_outbox"][0]
+        outbox_attempts = connection.execute(
+            "SELECT attempts FROM public.v4_cycle_outbox WHERE id=%s",
+            (cycle_outbox["id"],),
+        ).fetchone()[0]
+
+    with psycopg.connect(database) as connection:
+        connection.execute(
+            f"ALTER TABLE public.{TABLE} DISABLE TRIGGER USER"
+        )
+        connection.execute(
+            f"UPDATE public.{TABLE} SET reason='expired_permit_receipt' WHERE operation_id=%s",
+            (cancelled_operation_id,),
+        )
+        connection.execute(f"ALTER TABLE public.{TABLE} ENABLE TRIGGER USER")
+    try:
+        with pytest.raises(PublicationRecoveryConflictError):
+            verify_publication_recovery_rollback(
+                database,
+                workspace_id=workspace_id,
+                operation_ids=operation_ids,
+            )
+        assert_script_fails_without_snapshots(
+            run_script(
+                expired_id=expired_operation_id,
+                cancelled_id=cancelled_operation_id,
+            )
+        )
+    finally:
+        with psycopg.connect(database) as connection:
+            connection.execute(
+                f"ALTER TABLE public.{TABLE} DISABLE TRIGGER USER"
+            )
+            connection.execute(
+                f"UPDATE public.{TABLE} SET reason='published_during_cancel' WHERE operation_id=%s",
+                (cancelled_operation_id,),
+            )
+            connection.execute(f"ALTER TABLE public.{TABLE} ENABLE TRIGGER USER")
+
+    from psycopg.types.json import Jsonb
+
+    mutate_and_restore(
+        "v4_legacy_publication_fixture_receipts",
+        "UPDATE public.v4_legacy_publication_fixture_receipts SET receipt=jsonb_set(receipt,'{rollback_test}','true'::jsonb) WHERE operation_id=%s",
+        (cancelled_operation_id,),
+        "UPDATE public.v4_legacy_publication_fixture_receipts SET receipt=%s WHERE operation_id=%s",
+        (Jsonb(receipt), cancelled_operation_id),
+    )
+    mutate_and_restore(
+        "v4_legacy_publication_fixture_progress",
+        "UPDATE public.v4_legacy_publication_fixture_progress SET polls=polls+1 WHERE operation_id=%s",
+        (cancelled_operation_id,),
+        "UPDATE public.v4_legacy_publication_fixture_progress SET polls=%s WHERE operation_id=%s",
+        (progress_polls, cancelled_operation_id),
+    )
+    mutate_and_restore(
+        "external_effects",
+        "UPDATE public.external_effects SET updated_at=updated_at+interval '1 second' WHERE id=%s",
+        (effect["id"],),
+        "UPDATE public.external_effects SET updated_at=%s WHERE id=%s",
+        (effect_updated_at, effect["id"]),
+    )
+    mutate_and_restore(
+        "jobs",
+        "UPDATE public.jobs SET updated_at=updated_at+interval '1 second' WHERE id=%s",
+        (job_id,),
+        "UPDATE public.jobs SET updated_at=%s WHERE id=%s",
+        (job_updated_at, job_id),
+    )
+    mutate_and_restore(
+        "jobs",
+        "UPDATE public.jobs SET output_payload=%s WHERE id=%s",
+        (Jsonb({"rollback_test": True}), job_id),
+        "UPDATE public.jobs SET output_payload=%s WHERE id=%s",
+        (Jsonb(output_payload) if output_payload is not None else None, job_id),
+    )
+    mutate_and_restore(
+        "budget_reservations",
+        "UPDATE public.budget_reservations SET updated_at=updated_at+interval '1 second' WHERE id=%s",
+        (reservation["id"],),
+        "UPDATE public.budget_reservations SET updated_at=%s WHERE id=%s",
+        (reservation_updated_at, reservation["id"]),
+    )
+    mutate_and_restore(
+        "v4_cycles",
+        "UPDATE public.v4_cycles SET recovery_count=recovery_count+1 WHERE id=%s",
+        (cycle_id,),
+        "UPDATE public.v4_cycles SET recovery_count=%s WHERE id=%s",
+        (recovery_count, cycle_id),
+    )
+    mutate_and_restore(
+        "v4_cycle_events",
+        "UPDATE public.v4_cycle_events SET payload=jsonb_set(payload,'{rollback_test}','true'::jsonb) WHERE id=%s",
+        (cycle_event["id"],),
+        "UPDATE public.v4_cycle_events SET payload=%s WHERE id=%s",
+        (Jsonb(event_payload), cycle_event["id"]),
+    )
+    mutate_and_restore(
+        "v4_cycle_outbox",
+        "UPDATE public.v4_cycle_outbox SET attempts=attempts+1 WHERE id=%s",
+        (cycle_outbox["id"],),
+        "UPDATE public.v4_cycle_outbox SET attempts=%s WHERE id=%s",
+        (outbox_attempts, cycle_outbox["id"]),
+    )

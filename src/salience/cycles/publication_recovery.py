@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 from datetime import datetime
+from collections.abc import Mapping
 from typing import Literal
 from uuid import UUID
 
@@ -240,6 +241,11 @@ execution_deadline, permit_expires_at, request_fingerprint,
 receipt_fingerprint, liability_fingerprint, remote_id, remote_state,
 reason, state, liability_snapshot, created_at"""
 
+_ROLLBACK_REASON_ORDER: tuple[PublicationRecoveryReason, ...] = (
+    "expired_permit_receipt",
+    "published_during_cancel",
+)
+
 
 def _fetchone(connection, statement, params=()):
     with connection.cursor(row_factory=dict_row) as cursor:
@@ -414,3 +420,75 @@ def record_publication_recovery_hold(
                 "concurrent publication recovery hold has different evidence"
             )
         return _view(raced)
+
+
+def verify_publication_recovery_rollback(
+    database_url: str,
+    *,
+    workspace_id: UUID,
+    operation_ids: Mapping[PublicationRecoveryReason, UUID],
+) -> tuple[PublicationRecoveryHoldView, PublicationRecoveryHoldView]:
+    """Verify both retained rollback holds and their unchanged liabilities."""
+    if not isinstance(operation_ids, Mapping) or set(operation_ids) != set(
+        _ROLLBACK_REASON_ORDER
+    ):
+        raise ValueError("exactly both publication recovery reasons are required")
+
+    workspace_id = UUID(str(workspace_id))
+    normalized_operation_ids = {}
+    for reason in _ROLLBACK_REASON_ORDER:
+        try:
+            normalized_operation_ids[reason] = UUID(str(operation_ids[reason]))
+        except (TypeError, ValueError, AttributeError):
+            raise ValueError("valid operation IDs are required") from None
+    if len(set(normalized_operation_ids.values())) != len(_ROLLBACK_REASON_ORDER):
+        raise ValueError("publication recovery operation IDs must be distinct")
+
+    verified = []
+    with psycopg.connect(
+        database_url, row_factory=dict_row, connect_timeout=3
+    ) as connection:
+        connection.execute(
+            "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY"
+        )
+        connection.execute("SET LOCAL statement_timeout='3s'")
+
+        for reason in _ROLLBACK_REASON_ORDER:
+            operation_id = normalized_operation_ids[reason]
+            stored = _fetchone(
+                connection,
+                f"""SELECT {_HOLD_COLUMNS}
+                    FROM public.v4_legacy_publication_recovery_holds
+                    WHERE workspace_id=%s AND operation_id=%s""",
+                (workspace_id, operation_id),
+            )
+            if stored is None:
+                raise PublicationRecoveryConflictError(
+                    "both immutable publication recovery holds are required"
+                )
+
+            candidate = _fetchone(
+                connection,
+                _CANDIDATE_SQL,
+                (reason, operation_id, workspace_id, reason, reason),
+            )
+            if candidate is None:
+                raise PublicationRecoveryConflictError(
+                    "publication recovery evidence changed after the original hold"
+                )
+
+            candidate_snapshot = Jsonb(candidate["liability_snapshot"])
+            candidate["liability_fingerprint"] = _fetchone(
+                connection,
+                """SELECT encode(
+                        public.digest(%s::jsonb::text, 'sha256'), 'hex'
+                    ) AS fingerprint""",
+                (candidate_snapshot,),
+            )["fingerprint"]
+            if not _same_evidence(stored, candidate):
+                raise PublicationRecoveryConflictError(
+                    "publication recovery evidence conflicts with the original hold"
+                )
+            verified.append(_view(stored))
+
+    return verified[0], verified[1]
