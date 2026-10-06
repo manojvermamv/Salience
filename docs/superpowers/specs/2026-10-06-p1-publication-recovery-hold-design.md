@@ -104,11 +104,13 @@ Tests are written first and must fail for the missing behavior.
 ### Recovery hold
 
 - Each of the two triggers creates exactly one hold bound to the original identities and exact receipt.
+- Concurrent exact hold inserts for the same operation and reason converge on one row and one stable hold ID; neither caller can duplicate business events, change liability, or observe a conflicting success.
 - Exact activity retry/readback returns the stable hold; changed request, receipt, remote ID, operation, or reason conflicts.
 - Published-after-close cancellation retains receipt/effect/job/reservation/closed-cycle state and creates no publication/status event, output, settlement/release, or extra outbox work.
 - Expired-permit recovery performs receipt-only readback under the separate reconciliation grant and never performs a second submit or status poll.
 - Missing or foreign receipt, missing canonical effect, revoked reconciliation authority, altered account/policy/rights facts, or inconsistent stop/binding fails before a misleading hold or business projection.
 - Injected hold-transaction failure produces no false hold, terminal projection, or new effect; an exact later retry can persist the one hold.
+- A process crash after the hold transaction commits but before the activity reports the typed failure is recovered by exact replay of the committed hold. The retry returns the same hold ID and leaves the receipt, effect, job, reservation, cycle, status events, output, and outbox liabilities unchanged.
 - Signed API, SDK, and CLI inspection expose the same safe hold projection. No public mutation path can resume, resolve, retry, cancel, settle, or release it.
 - Direct SQL cannot update/delete a hold or insert a cross-workspace/cross-operation/fingerprint-mismatched row.
 
@@ -117,13 +119,14 @@ Tests are written first and must fail for the missing behavior.
 - Upgrade from `0041` creates the table, constraints, trigger, and required narrow application-role privileges.
 - Empty downgrade to `0041` and re-upgrade succeeds.
 - Populated downgrade refuses to destroy hold history while leaving the database at `0042`.
+- Before any prior-code worker is restarted, rollback qualification creates and verifies one retained hold for each reason (`expired_permit_receipt` and `published_during_cancel`), drains current workers, and proves both holds and all associated liabilities remain unchanged. A missing, rewritten, or mismatched reason blocks the restart.
 - Existing `0040` receipts and `0041` native publication schedule history remain byte/identity compatible.
 
 ## Migration and operational rollback
 
 Migration is additive and does not backfill or fabricate holds for historical failures. Existing application readers continue to work because the new inspection member is additive. Narrow privileges allow the fixture worker to insert exact holds and authorized application readers to select them; no identity, grant, receipt, cycle, job, reservation, or publication mutation privilege is added.
 
-Operational rollback first stops/drains the compatible fixture publication worker, then deploys the prior code while retaining migration `0042` and its rows. The prior `LegacyPublicationRecoveryHeld` behavior continues to fail closed, so rollback cannot replay or settle a held effect. Destructive downgrade is permitted only when the table is empty. Populated history requires a later separately reviewed migration; it is never deleted to make rollback pass.
+Operational rollback first creates or identifies a qualified retained hold for each recovery reason, snapshots their exact receipt/effect/job/reservation/cycle/event/output/outbox liabilities, and stops/drains the compatible fixture publication worker. Before a prior-code worker may restart, the rollback verifier reads both committed hold rows directly, matches their immutable identities and reason-specific evidence, and proves every snapshotted liability is unchanged. It refuses restart if either reason is absent, rewritten, duplicated, or inconsistent. The prior code is then deployed while migration `0042` and its rows remain in place. Its existing `LegacyPublicationRecoveryHeld` behavior continues to fail closed, so rollback cannot replay or settle a held effect. Destructive downgrade is permitted only when the table is empty. Populated history requires a later separately reviewed migration; it is never deleted to make rollback pass.
 
 ## Documentation and durable evidence
 
