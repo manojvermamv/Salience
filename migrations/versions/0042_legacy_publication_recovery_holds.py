@@ -67,13 +67,13 @@ def upgrade():
             'fixture_progress', to_jsonb(progress),
             'publication_request', to_jsonb(pub_request),
             'publication_plan', to_jsonb(plan),
-            'publication_attempt', to_jsonb(attempt),
+            'publication_attempt', to_jsonb(publication_attempt_row.*),
             'external_effect', COALESCE(to_jsonb(effect), 'null'::jsonb),
             'budget_reservation', COALESCE(to_jsonb(reservation), 'null'::jsonb),
             'publication_status_events', COALESCE((
               SELECT jsonb_agg(to_jsonb(status_event) ORDER BY status_event.sequence_no,status_event.id)
               FROM public.publication_status_events status_event
-              WHERE status_event.publication_attempt_id=attempt.id
+              WHERE status_event.publication_attempt_id=publication_attempt_row.id
             ), '[]'::jsonb),
             'cycle_events', COALESCE((
               SELECT jsonb_agg(to_jsonb(cycle_event) ORDER BY cycle_event.created_at,cycle_event.id)
@@ -112,9 +112,9 @@ def upgrade():
               AND receipt_row.receipt->>'publication_attempt_id'=pub_request.id::text
           JOIN public.publication_plans plan
             ON plan.publication_request_id=pub_request.id
-          JOIN public.publication_attempts attempt
-            ON attempt.publication_plan_id=plan.id
-              AND attempt.idempotency_key=receipt_row.idempotency_key||':attempt:1'
+          JOIN public.publication_attempts publication_attempt_row
+            ON publication_attempt_row.publication_plan_id=plan.id
+              AND publication_attempt_row.idempotency_key=receipt_row.idempotency_key||':attempt:1'
           LEFT JOIN public.external_effects effect
             ON effect.id=plan.external_effect_id
           LEFT JOIN public.budget_reservations reservation
@@ -151,7 +151,7 @@ def upgrade():
             AND pub_request.request_key=receipt_row.idempotency_key
             AND pub_request.publisher_account_id::text=binding.payload->>'publisher_account_id'
             AND pub_request.ready_package_id::text=binding.payload->>'ready_package_id'
-            AND attempt.id=NEW.publication_attempt_id
+            AND publication_attempt_row.id=NEW.publication_attempt_id
             AND receipt_row.receipt->>'state'='accepted'
             AND receipt_row.receipt->>'remote_id'=receipt_row.remote_id
             AND receipt_row.remote_id='fixture-v4-publication:'||binding.operation_id::text

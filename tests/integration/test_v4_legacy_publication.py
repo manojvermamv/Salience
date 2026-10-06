@@ -236,6 +236,53 @@ def _exception_chain(error):
         current = getattr(current, "__cause__", None) or getattr(current, "__context__", None)
 
 
+def _recovery_projection_counts(database, operation_id):
+    with psycopg.connect(database) as connection:
+        job_id, attempt_id = connection.execute(
+            """SELECT binding.job_id,publication_attempt_row.id
+               FROM v4_legacy_dispatches binding
+               JOIN v4_legacy_publication_fixture_receipts receipt
+                 ON receipt.operation_id=binding.operation_id
+               JOIN publication_requests request
+                 ON request.id=(receipt.request->>'id')::uuid
+               JOIN publication_plans plan ON plan.publication_request_id=request.id
+               JOIN publication_attempts publication_attempt_row
+                 ON publication_attempt_row.publication_plan_id=plan.id
+               WHERE binding.operation_id=%s""",
+            (operation_id,),
+        ).fetchone()
+        remote_receipts = connection.execute(
+            "SELECT count(*) FROM remote_publication_receipts WHERE publication_attempt_id=%s",
+            (attempt_id,),
+        ).fetchone()[0]
+        status_events = connection.execute(
+            "SELECT count(*) FROM publication_status_events WHERE publication_attempt_id=%s",
+            (attempt_id,),
+        ).fetchone()[0]
+        checkpoints = connection.execute(
+            """SELECT count(*),
+                      count(*) FILTER (WHERE checkpoint_payload->>'checkpoint'='publication.accepted'),
+                      count(*) FILTER (WHERE checkpoint_payload->>'checkpoint'='publication.receipt_recovered_requires_typed_recovery')
+               FROM job_checkpoints WHERE job_id=%s""",
+            (job_id,),
+        ).fetchone()
+        audit_events = connection.execute(
+            "SELECT count(*) FROM audit_events WHERE job_id=%s", (job_id,)
+        ).fetchone()[0]
+        provenance_records = connection.execute(
+            "SELECT count(*) FROM provenance_records WHERE job_id=%s", (job_id,)
+        ).fetchone()[0]
+    return {
+        "remote_receipts": remote_receipts,
+        "status_events": status_events,
+        "checkpoints": checkpoints[0],
+        "accepted_checkpoints": checkpoints[1],
+        "recovery_checkpoints": checkpoints[2],
+        "audit_events": audit_events,
+        "provenance_records": provenance_records,
+    }
+
+
 async def _hard_exit_publication_worker(
     fixture, tmp_path, *, after_acceptance, permit_ttl_seconds=None,
     after_hold_commit=False, precommit_snapshot_path=None,
@@ -264,13 +311,9 @@ if 'PUB_PERMIT_TTL_SECONDS' in os.environ:
     CycleGovernance.issue_permit = issue_short_lived_permit
 
 if os.environ.get('PUB_CRASH_AFTER_HOLD_COMMIT') == 'true':
-    from test_v4_publication_recovery_holds import _SNAPSHOT_SQL
     import salience.cycles.publication_recovery as recovery
     original_record_hold = recovery.record_publication_recovery_hold
     def crash_after_hold_commit(*args, **kwargs):
-        with psycopg.connect(os.environ['TEST_DATABASE_URL']) as connection:
-            snapshot = connection.execute(_SNAPSHOT_SQL, (kwargs['operation_id'],)).fetchone()[0]
-        Path(os.environ['PUB_HOLD_PRECOMMIT_SNAPSHOT']).write_text(json.dumps(snapshot, default=str))
         original_record_hold(*args, **kwargs)
         os._exit(74)
     recovery.record_publication_recovery_hold = crash_after_hold_commit
@@ -286,6 +329,18 @@ if os.environ.get('PUB_ACTIVITY_LOG'):
         info = activity.info()
         started_at = datetime.now(timezone.utc).isoformat()
         log_activity_event('started', info.attempt, at=started_at)
+        if (
+            os.environ.get('PUB_HOLD_PRECOMMIT_SNAPSHOT')
+            and info.attempt == int(os.environ.get('PUB_CAPTURE_ATTEMPT_TIMING', '0'))
+        ):
+            from test_v4_publication_recovery_holds import _SNAPSHOT_SQL
+            with psycopg.connect(os.environ['TEST_DATABASE_URL']) as connection:
+                snapshot = connection.execute(
+                    _SNAPSHOT_SQL, (os.environ['PUB_OPERATION_ID'],)
+                ).fetchone()[0]
+            Path(os.environ['PUB_HOLD_PRECOMMIT_SNAPSHOT']).write_text(
+                json.dumps(snapshot, default=str), encoding='utf-8'
+            )
         if info.attempt == int(os.environ.get('PUB_CAPTURE_ATTEMPT_TIMING', '0')):
             with psycopg.connect(os.environ['TEST_DATABASE_URL']) as connection:
                 timing = connection.execute(
@@ -762,7 +817,7 @@ async def test_publication_revoked_between_native_activities_never_submits(
 async def test_expired_receipt_hold_requires_current_reconcile_scope_and_never_resubmits(
     legacy_publication_current_schema, monkeypatch, tmp_path
 ):
-    """Expired-permit recovery records a safe hold after exact receipt readback."""
+    """Expired-permit recovery records a hold without a canonical projection."""
     from temporalio import activity
     from temporalio.client import Client, WorkflowFailureError
 
@@ -773,6 +828,7 @@ async def test_expired_receipt_hold_requires_current_reconcile_scope_and_never_r
     )
     from salience.cycles.legacy_runtime import build_legacy_worker
     from salience.cycles.runtime import TemporalCycleTransport
+    from test_v4_publication_recovery_holds import _SNAPSHOT_SQL
 
     f = legacy_publication_current_schema
     bridge, database = f["bridge"], f["database"]
@@ -830,7 +886,6 @@ async def test_expired_receipt_hold_requires_current_reconcile_scope_and_never_r
     resubmit_calls = []
     reconcile_calls = []
     status_calls = []
-    recovered = asyncio.Event()
     authorization_rejected = asyncio.Event()
     valid_retry_entered = asyncio.Event()
     release_retry = asyncio.Event()
@@ -847,7 +902,6 @@ async def test_expired_receipt_hold_requires_current_reconcile_scope_and_never_r
     async def counted_reconcile(self, idempotency_key):
         receipt = await original_reconcile(self, idempotency_key)
         reconcile_calls.append(receipt)
-        recovered.set()
         return receipt
 
     async def counted_status(self, remote_id):
@@ -896,13 +950,14 @@ async def test_expired_receipt_hold_requires_current_reconcile_scope_and_never_r
                 "UPDATE publisher_accounts SET status='active' WHERE id=%s",
                 (f["account"].id,),
             )
+            before_recovery_snapshot = connection.execute(
+                _SNAPSHOT_SQL, (operation_id,)
+            ).fetchone()[0]
+        before_projection_counts = _recovery_projection_counts(database, operation_id)
         assert retry_activity.last_worker_identity
         assert retry_activity.last_worker_identity != first_worker_identity
         assert retry_activity.last_started_time.seconds > 0
         release_retry.set()
-        await asyncio.wait_for(recovered.wait(), timeout=10)
-        assert len(reconcile_calls) == 1
-        assert reconcile_calls[0] is not None
         with pytest.raises(WorkflowFailureError) as failure:
             await asyncio.wait_for(handle.result(), timeout=20)
         typed_failures = [
@@ -921,6 +976,13 @@ async def test_expired_receipt_hold_requires_current_reconcile_scope_and_never_r
     assert after.status.name == "FAILED"
     assert resubmit_calls == []
     assert status_calls == []
+    assert reconcile_calls == []
+    after_projection_counts = _recovery_projection_counts(database, operation_id)
+    assert after_projection_counts == before_projection_counts
+    assert after_projection_counts["remote_receipts"] == 0
+    assert after_projection_counts["status_events"] == 0
+    assert after_projection_counts["accepted_checkpoints"] == 0
+    assert after_projection_counts["recovery_checkpoints"] == 0
     with psycopg.connect(database) as connection:
         hold_rows = connection.execute(
             """SELECT id,reason,liability_snapshot
@@ -931,10 +993,15 @@ async def test_expired_receipt_hold_requires_current_reconcile_scope_and_never_r
         hold_id, reason, hold_snapshot = hold_rows[0]
         assert reason == "expired_permit_receipt"
         assert typed_failures[0].details == ({"hold_id": str(hold_id)},)
-        from test_v4_publication_recovery_holds import _SNAPSHOT_SQL
-
         current_snapshot = connection.execute(_SNAPSHOT_SQL, (operation_id,)).fetchone()[0]
-        assert current_snapshot == hold_snapshot
+        assert before_recovery_snapshot == current_snapshot == hold_snapshot
+        from test_v4_publication_recovery_holds import _assert_publication_attempt_snapshot
+
+        publication_attempt_id = connection.execute(
+            "SELECT publication_attempt_id FROM v4_legacy_publication_recovery_holds WHERE operation_id=%s",
+            (operation_id,),
+        ).fetchone()[0]
+        _assert_publication_attempt_snapshot(hold_snapshot, publication_attempt_id)
         assert connection.execute(
             "SELECT count(*) FROM v4_legacy_publication_fixture_receipts WHERE operation_id=%s",
             (operation_id,),
@@ -946,7 +1013,7 @@ async def test_expired_receipt_hold_requires_current_reconcile_scope_and_never_r
                JOIN publication_requests request ON request.id=plan.publication_request_id
                WHERE request.request_key=%s""",
             ("v4-legacy:" + operation_id,),
-        ).fetchone()[0] == 1
+        ).fetchone()[0] == 0
         assert connection.execute(
             "SELECT state FROM v4_legacy_publication_fixture_progress WHERE operation_id=%s",
             (operation_id,),
@@ -958,6 +1025,150 @@ async def test_expired_receipt_hold_requires_current_reconcile_scope_and_never_r
             "SELECT count(*) FROM publications publication JOIN publication_requests request ON request.id=publication.publication_request_id WHERE request.request_key=%s",
             ("v4-legacy:" + operation_id,),
         ).fetchone()[0] == 0
+
+
+@pytest.mark.asyncio
+async def test_expired_hold_insert_failure_preserves_activity_entry_liability(
+    legacy_publication_current_schema, monkeypatch, tmp_path
+):
+    from threading import Event
+    from temporalio import activity
+    from temporalio.client import Client, WorkflowFailureError
+
+    from salience.cycles.outbox import CycleOutbox
+    from salience.cycles.legacy_publication_runtime import (
+        DurableLegacyFixturePublisher,
+        GuardedPublicationActivities,
+    )
+    from salience.cycles.legacy_runtime import build_legacy_worker
+    from test_v4_publication_recovery_holds import (
+        _SNAPSHOT_SQL,
+        _assert_publication_attempt_snapshot,
+        _recovery_hold_count,
+    )
+
+    f = legacy_publication_current_schema
+    submitted = f["bridge"].submit_publication(f["command"])
+    _allow(
+        f["database"],
+        f["workspace_id"],
+        f["actor_id"],
+        ("legacy:publication:reconcile:account:" + f["account"].id,),
+    )
+    assert await _hard_exit_publication_worker(
+        f, tmp_path, after_acceptance=True, permit_ttl_seconds=5
+    ) == 73
+    operation_id = submitted["operation_id"]
+    workflow_id = "salience-v4-legacy-operation:" + operation_id
+    await _wait_for_publication_permit_expiry(f["database"], operation_id)
+    with psycopg.connect(f["database"]) as connection:
+        before = connection.execute(_SNAPSHOT_SQL, (operation_id,)).fetchone()[0]
+    before_projection_counts = _recovery_projection_counts(f["database"], operation_id)
+
+    import salience.cycles.publication_recovery as recovery
+
+    original_record = recovery.record_publication_recovery_hold
+    original_submit = DurableLegacyFixturePublisher.submit
+    original_reconcile = DurableLegacyFixturePublisher.reconcile
+    original_status = DurableLegacyFixturePublisher.status
+    original_activity = GuardedPublicationActivities.submit_or_reconcile
+    record_calls = []
+    first_insert_failed = Event()
+    failed_attempt_entry_snapshots = []
+    retry_entered = asyncio.Event()
+    release_retry = asyncio.Event()
+    attempts = []
+    submit_calls, reconcile_calls, status_calls = [], [], []
+
+    def fail_first_insert(*args, **kwargs):
+        record_calls.append(kwargs["operation_id"])
+        if len(record_calls) == 1:
+            first_insert_failed.set()
+            raise RuntimeError("injected recovery hold insert failure")
+        return original_record(*args, **kwargs)
+
+    async def counted_submit(self, request, lease):
+        submit_calls.append(request.idempotency_key)
+        return await original_submit(self, request, lease)
+
+    async def counted_reconcile(self, idempotency_key):
+        reconcile_calls.append(idempotency_key)
+        return await original_reconcile(self, idempotency_key)
+
+    async def counted_status(self, remote_id):
+        status_calls.append(remote_id)
+        return await original_status(self, remote_id)
+
+    @activity.defn(name="salience.publication.submit_or_reconcile")
+    async def tracked_activity(self, payload):
+        attempt = activity.info().attempt
+        attempts.append(attempt)
+        if attempt == 2:
+            with psycopg.connect(f["database"]) as connection:
+                failed_attempt_entry_snapshots.append(
+                    connection.execute(_SNAPSHOT_SQL, (operation_id,)).fetchone()[0]
+                )
+        if attempt >= 3:
+            retry_entered.set()
+            await release_retry.wait()
+        return await original_activity(self, payload)
+
+    monkeypatch.setattr(recovery, "record_publication_recovery_hold", fail_first_insert)
+    monkeypatch.setattr(DurableLegacyFixturePublisher, "submit", counted_submit)
+    monkeypatch.setattr(DurableLegacyFixturePublisher, "reconcile", counted_reconcile)
+    monkeypatch.setattr(DurableLegacyFixturePublisher, "status", counted_status)
+    monkeypatch.setattr(GuardedPublicationActivities, "submit_or_reconcile", tracked_activity)
+    client = await Client.connect(os.environ["TEST_TEMPORAL_TARGET"])
+    handle = client.get_workflow_handle(workflow_id)
+    outbox = CycleOutbox(
+        f["database"], workspace_id=f["workspace_id"], delivery_lane="legacy"
+    )
+    worker = build_legacy_worker(client, task_queue=f["queue"], outbox=outbox)
+    worker_task = asyncio.create_task(worker.run())
+    try:
+        await asyncio.wait_for(retry_entered.wait(), timeout=65)
+        assert await asyncio.to_thread(first_insert_failed.wait, 5)
+        assert attempts == [2, 3]
+        assert len(record_calls) == 1
+        assert failed_attempt_entry_snapshots == [before]
+        assert _recovery_hold_count(f["database"], operation_id) == 0
+        with psycopg.connect(f["database"]) as connection:
+            after_insert_failure = connection.execute(
+                _SNAPSHOT_SQL, (operation_id,)
+            ).fetchone()[0]
+        assert after_insert_failure == before
+        assert _recovery_projection_counts(f["database"], operation_id) == before_projection_counts
+
+        release_retry.set()
+        with pytest.raises(WorkflowFailureError) as failure:
+            await asyncio.wait_for(handle.result(), timeout=20)
+        typed_failures = [
+            error
+            for error in _exception_chain(failure.value)
+            if getattr(error, "type", None) == "LegacyPublicationRecoveryHeld"
+        ]
+        assert len(typed_failures) == 1
+    finally:
+        release_retry.set()
+        await asyncio.wait_for(worker.shutdown(), timeout=10)
+        await asyncio.wait_for(worker_task, timeout=10)
+
+    assert record_calls == [UUID(operation_id), UUID(operation_id)]
+    assert submit_calls == []
+    assert reconcile_calls == []
+    assert status_calls == []
+    assert _recovery_hold_count(f["database"], operation_id) == 1
+    assert _recovery_projection_counts(f["database"], operation_id) == before_projection_counts
+    with psycopg.connect(f["database"]) as connection:
+        hold_id, hold_snapshot, publication_attempt_id = connection.execute(
+            """SELECT id,liability_snapshot,publication_attempt_id
+               FROM v4_legacy_publication_recovery_holds WHERE operation_id=%s""",
+            (operation_id,),
+        ).fetchone()
+        after_retry = connection.execute(_SNAPSHOT_SQL, (operation_id,)).fetchone()[0]
+    assert typed_failures[0].details == ({"hold_id": str(hold_id)},)
+    assert before == hold_snapshot == after_retry
+    _assert_publication_attempt_snapshot(hold_snapshot, publication_attempt_id)
 
 
 @pytest.mark.asyncio

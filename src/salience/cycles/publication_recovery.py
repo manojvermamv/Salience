@@ -51,14 +51,14 @@ _SNAPSHOT_SELECT = """jsonb_build_object(
     'fixture_progress', to_jsonb(progress),
     'publication_request', to_jsonb(pub_request),
     'publication_plan', to_jsonb(plan),
-    'publication_attempt', to_jsonb(attempt),
+    'publication_attempt', to_jsonb(publication_attempt_row.*),
     'external_effect', COALESCE(to_jsonb(effect), 'null'::jsonb),
     'budget_reservation', COALESCE(to_jsonb(reservation), 'null'::jsonb),
     'publication_status_events', COALESCE((
         SELECT jsonb_agg(to_jsonb(status_event)
                          ORDER BY status_event.sequence_no, status_event.id)
         FROM public.publication_status_events status_event
-        WHERE status_event.publication_attempt_id=attempt.id
+        WHERE status_event.publication_attempt_id=publication_attempt_row.id
     ), '[]'::jsonb),
     'cycle_events', COALESCE((
         SELECT jsonb_agg(to_jsonb(cycle_event)
@@ -103,9 +103,9 @@ JOIN public.publication_requests pub_request
  AND receipt_row.receipt->>'publication_attempt_id'=pub_request.id::text
 JOIN public.publication_plans plan
   ON plan.publication_request_id=pub_request.id
-JOIN public.publication_attempts attempt
-  ON attempt.publication_plan_id=plan.id
- AND attempt.idempotency_key=receipt_row.idempotency_key||':attempt:1'
+JOIN public.publication_attempts publication_attempt_row
+  ON publication_attempt_row.publication_plan_id=plan.id
+ AND publication_attempt_row.idempotency_key=receipt_row.idempotency_key||':attempt:1'
 LEFT JOIN public.external_effects effect
   ON effect.id=plan.external_effect_id
 LEFT JOIN public.budget_reservations reservation
@@ -141,13 +141,13 @@ JOIN public.publication_requests pub_request
  AND receipt_row.receipt->>'publication_attempt_id'=pub_request.id::text
 JOIN public.publication_plans plan
   ON plan.publication_request_id=pub_request.id
-JOIN public.publication_attempts attempt
-  ON attempt.publication_plan_id=plan.id
- AND attempt.idempotency_key=receipt_row.idempotency_key||':attempt:1'
+JOIN public.publication_attempts publication_attempt_row
+  ON publication_attempt_row.publication_plan_id=plan.id
+ AND publication_attempt_row.idempotency_key=receipt_row.idempotency_key||':attempt:1'
 WHERE binding.operation_id=%s AND binding.workspace_id=%s
   AND binding.stage='publication'
 FOR UPDATE OF binding, cycle, intent, goal, context, owner, job, claim,
-              permit, receipt_row, progress, pub_request, plan, attempt"""
+              permit, receipt_row, progress, pub_request, plan, publication_attempt_row"""
 
 _CANDIDATE_SQL = f"""WITH candidate AS (
     SELECT binding.operation_id,
@@ -157,7 +157,7 @@ _CANDIDATE_SQL = f"""WITH candidate AS (
            binding.cycle_id,
            binding.context_id,
            binding.job_id,
-           attempt.id AS publication_attempt_id,
+           publication_attempt_row.id AS publication_attempt_id,
            claim.current_permit_id AS permit_id,
            binding.actor_id AS owner_id,
            (context.payload->>'execution_deadline')::timestamptz AS execution_deadline,

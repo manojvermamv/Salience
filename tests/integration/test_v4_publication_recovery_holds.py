@@ -176,13 +176,13 @@ SELECT jsonb_build_object(
     'fixture_progress', to_jsonb(progress),
     'publication_request', to_jsonb(pub_request),
     'publication_plan', to_jsonb(plan),
-    'publication_attempt', to_jsonb(attempt),
+    'publication_attempt', to_jsonb(publication_attempt_row.*),
     'external_effect', COALESCE(to_jsonb(effect), 'null'::jsonb),
     'budget_reservation', COALESCE(to_jsonb(reservation), 'null'::jsonb),
     'publication_status_events', COALESCE((
         SELECT jsonb_agg(to_jsonb(status_event) ORDER BY status_event.sequence_no, status_event.id)
         FROM publication_status_events status_event
-        WHERE status_event.publication_attempt_id=attempt.id), '[]'::jsonb),
+        WHERE status_event.publication_attempt_id=publication_attempt_row.id), '[]'::jsonb),
     'cycle_events', COALESCE((
         SELECT jsonb_agg(to_jsonb(cycle_event) ORDER BY cycle_event.created_at, cycle_event.id)
         FROM v4_cycle_events cycle_event WHERE cycle_event.cycle_id=cycle.id), '[]'::jsonb),
@@ -201,8 +201,9 @@ JOIN v4_legacy_publication_fixture_receipts receipt_row ON receipt_row.operation
 JOIN v4_legacy_publication_fixture_progress progress ON progress.operation_id=receipt_row.operation_id
 JOIN publication_requests pub_request ON pub_request.id=(receipt_row.request->>'id')::uuid
 JOIN publication_plans plan ON plan.publication_request_id=pub_request.id
-JOIN publication_attempts attempt ON attempt.publication_plan_id=plan.id
-    AND attempt.idempotency_key=receipt_row.idempotency_key||':attempt:1'
+JOIN publication_attempts publication_attempt_row
+    ON publication_attempt_row.publication_plan_id=plan.id
+    AND publication_attempt_row.idempotency_key=receipt_row.idempotency_key||':attempt:1'
 LEFT JOIN external_effects effect ON effect.id=plan.external_effect_id
 LEFT JOIN budget_reservations reservation ON reservation.id=plan.budget_reservation_id
 WHERE binding.operation_id=%s
@@ -227,7 +228,7 @@ def _hold_values(connection, operation_id, *, reason="published_during_cancel", 
                   receipt_row.fingerprint AS request_fingerprint,
                   encode(digest(receipt_row.receipt::text,'sha256'),'hex') AS receipt_fingerprint,
                   receipt_row.remote_id, progress.state AS remote_state,
-                  attempt.id AS publication_attempt_id
+                  publication_attempt_row.id AS publication_attempt_id
            FROM v4_legacy_dispatches binding
            JOIN v4_cycles cycle ON cycle.id=binding.cycle_id
            JOIN v4_run_contexts context ON context.id=binding.context_id
@@ -237,8 +238,9 @@ def _hold_values(connection, operation_id, *, reason="published_during_cancel", 
            JOIN v4_legacy_publication_fixture_progress progress ON progress.operation_id=receipt_row.operation_id
            JOIN publication_requests pub_request ON pub_request.id=(receipt_row.request->>'id')::uuid
            JOIN publication_plans plan ON plan.publication_request_id=pub_request.id
-           JOIN publication_attempts attempt ON attempt.publication_plan_id=plan.id
-               AND attempt.idempotency_key=receipt_row.idempotency_key||':attempt:1'
+           JOIN publication_attempts publication_attempt_row
+               ON publication_attempt_row.publication_plan_id=plan.id
+               AND publication_attempt_row.idempotency_key=receipt_row.idempotency_key||':attempt:1'
            WHERE binding.operation_id=%s""",
         (operation_id,),
     ).fetchone()
@@ -335,6 +337,17 @@ async def test_direct_sql_recovery_hold_guards_race_and_populated_downgrade(monk
         with psycopg.connect(database) as connection:
             valid = _hold_values(connection, submitted["operation_id"])
             assert connection.execute("SELECT jsonb_typeof(%s)", (valid[-1],)).fetchone()[0] == "object"
+
+            legacy_scalar_snapshot = dict(valid[-1].obj)
+            legacy_scalar_snapshot["publication_attempt"] = legacy_scalar_snapshot["job"]["attempt"]
+            legacy_scalar_values = list(valid)
+            legacy_scalar_values[-1] = Jsonb(legacy_scalar_snapshot)
+            legacy_scalar_values[15] = connection.execute(
+                "SELECT encode(digest(%s::jsonb::text,'sha256'),'hex')",
+                (Jsonb(legacy_scalar_snapshot),),
+            ).fetchone()[0]
+            with pytest.raises(psycopg.Error, match="snapshot"), connection.transaction():
+                connection.execute(_INSERT_SQL, tuple(legacy_scalar_values))
 
             alternate_workspace = uuid4()
             connection.execute(
@@ -473,6 +486,22 @@ def _assert_named_liabilities_unchanged(before, after):
     assert after["job"]["output_payload"] == before["job"]["output_payload"]
 
 
+def _assert_publication_attempt_snapshot(snapshot, publication_attempt_id):
+    attempt = snapshot["publication_attempt"]
+    assert isinstance(attempt, dict)
+    assert attempt["id"] == str(publication_attempt_id)
+    assert {
+        "publication_plan_id",
+        "attempt_number",
+        "idempotency_key",
+        "state",
+        "request_fingerprint",
+        "reconciliation",
+        "created_at",
+        "updated_at",
+    } <= attempt.keys()
+
+
 def _recovery_hold_count(database, operation_id):
     with psycopg.connect(database) as connection:
         return connection.execute(
@@ -539,7 +568,7 @@ async def test_hold_commit_then_process_death_replays_without_liability_change(
         ]
         assert [
             (event["event"], event["attempt"]) for event in child_activity_events
-        ] == [("started", 1), ("failed", 1), ("started", 2), ("reconcile", 2)]
+        ] == [("started", 1), ("failed", 1), ("started", 2)]
         attempt_2_timing = json.loads(activity_timing_path.read_text())
         assert attempt_2_timing["attempt"] == 2
         assert attempt_2_timing["deadline_is_future"] is True
@@ -740,12 +769,12 @@ async def test_exact_hold_replay_returns_stable_id(published_cancelled_recovery_
     _assert_named_liabilities_unchanged(before, after)
     assert _recovery_hold_count(database, operation_id) == 1
     with psycopg.connect(database) as connection:
-        hold = connection.execute(
-            f"SELECT to_jsonb(row) FROM public.{TABLE} row WHERE operation_id=%s",
+        publication_attempt_id, stored_snapshot = connection.execute(
+            f"SELECT publication_attempt_id,liability_snapshot FROM public.{TABLE} WHERE operation_id=%s",
             (operation_id,),
-        ).fetchone()[0]
-    assert hold["id"] == str(first.id)
-    assert hold["liability_snapshot"] == before
+        ).fetchone()
+    _assert_publication_attempt_snapshot(stored_snapshot, publication_attempt_id)
+    assert stored_snapshot == before
     with psycopg.connect(database) as connection:
         assert load_publication_recovery_hold(
             connection,
@@ -757,6 +786,69 @@ async def test_exact_hold_replay_returns_stable_id(published_cancelled_recovery_
             workspace_id=uuid4(),
             operation_id=operation_id,
         ) is None
+
+
+@pytest.mark.asyncio
+async def test_exact_replay_rejects_attempt_only_privileged_mutation(
+    published_cancelled_recovery_case,
+):
+    from salience.cycles.publication_recovery import (
+        PublicationRecoveryConflictError,
+        record_publication_recovery_hold,
+    )
+
+    fixture, submitted = published_cancelled_recovery_case
+    database = fixture["database"]
+    operation_id = UUID(submitted["operation_id"])
+    hold = record_publication_recovery_hold(
+        database,
+        workspace_id=fixture["workspace_id"],
+        operation_id=operation_id,
+        reason="published_during_cancel",
+    )
+    with psycopg.connect(database) as connection:
+        attempt_id, original_reconciliation = connection.execute(
+            """SELECT publication_attempt_row.id,publication_attempt_row.reconciliation
+               FROM publication_attempts publication_attempt_row
+               JOIN publication_plans plan
+                 ON plan.id=publication_attempt_row.publication_plan_id
+               JOIN publication_requests request ON request.id=plan.publication_request_id
+               WHERE request.request_key=%s""",
+            ("v4-legacy:" + str(operation_id),),
+        ).fetchone()
+        connection.execute("ALTER TABLE public.publication_attempts DISABLE TRIGGER USER")
+        connection.execute(
+            """UPDATE public.publication_attempts
+               SET reconciliation=jsonb_set(reconciliation,'{privileged_restore}','true'::jsonb)
+               WHERE id=%s""",
+            (attempt_id,),
+        )
+        connection.execute("ALTER TABLE public.publication_attempts ENABLE TRIGGER USER")
+
+    try:
+        with pytest.raises(PublicationRecoveryConflictError):
+            record_publication_recovery_hold(
+                database,
+                workspace_id=fixture["workspace_id"],
+                operation_id=operation_id,
+                reason="published_during_cancel",
+            )
+    finally:
+        with psycopg.connect(database) as connection:
+            connection.execute("ALTER TABLE public.publication_attempts DISABLE TRIGGER USER")
+            connection.execute(
+                "UPDATE public.publication_attempts SET reconciliation=%s WHERE id=%s",
+                (Jsonb(original_reconciliation), attempt_id),
+            )
+            connection.execute("ALTER TABLE public.publication_attempts ENABLE TRIGGER USER")
+
+    assert _recovery_hold_count(database, operation_id) == 1
+    with psycopg.connect(database) as connection:
+        stored_attempt = connection.execute(
+            f"SELECT liability_snapshot->'publication_attempt' FROM public.{TABLE} WHERE id=%s",
+            (hold.id,),
+        ).fetchone()[0]
+    _assert_publication_attempt_snapshot({"publication_attempt": stored_attempt}, attempt_id)
 
 
 @pytest.mark.asyncio
@@ -1076,6 +1168,14 @@ async def test_rollback_verifier_requires_both_reasons_and_unchanged_liabilities
         effect = cancel_snapshot["external_effect"]
         reservation = cancel_snapshot["budget_reservation"]
         assert effect is not None and reservation is not None
+        publication_attempt_id = connection.execute(
+            f"SELECT publication_attempt_id FROM public.{TABLE} WHERE operation_id=%s",
+            (cancelled_operation_id,),
+        ).fetchone()[0]
+        publication_attempt_reconciliation = connection.execute(
+            "SELECT reconciliation FROM public.publication_attempts WHERE id=%s",
+            (publication_attempt_id,),
+        ).fetchone()[0]
         effect_updated_at = connection.execute(
             "SELECT updated_at FROM public.external_effects WHERE id=%s",
             (effect["id"],),
@@ -1200,4 +1300,11 @@ async def test_rollback_verifier_requires_both_reasons_and_unchanged_liabilities
         (cycle_outbox["id"],),
         "UPDATE public.v4_cycle_outbox SET attempts=%s WHERE id=%s",
         (outbox_attempts, cycle_outbox["id"]),
+    )
+    mutate_and_restore(
+        "publication_attempts",
+        "UPDATE public.publication_attempts SET reconciliation=jsonb_set(reconciliation,'{rollback_test}','true'::jsonb) WHERE id=%s",
+        (publication_attempt_id,),
+        "UPDATE public.publication_attempts SET reconciliation=%s WHERE id=%s",
+        (Jsonb(publication_attempt_reconciliation), publication_attempt_id),
     )

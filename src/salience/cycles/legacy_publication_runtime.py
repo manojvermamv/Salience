@@ -287,7 +287,6 @@ class GuardedPublicationActivities(PublicationActivities):
                 operation_id=binding["operation_id"],
                 reason="expired_permit_receipt",
             )
-            await self._checkpoint("publication.receipt_recovered_requires_typed_recovery")
             raise ApplicationError(
                 "durable publication receipt recovered; typed execution recovery is required",
                 {"hold_id": str(hold.id)},
@@ -296,27 +295,9 @@ class GuardedPublicationActivities(PublicationActivities):
             )
 
         if recovery:
-            from salience.cycles.publication_recovery import load_publication_recovery_hold
-
-            def load_existing_hold():
-                with self.outbox._connect() as connection:
-                    return load_publication_recovery_hold(
-                        connection,
-                        workspace_id=self.outbox.workspace_id,
-                        operation_id=binding["operation_id"],
-                    )
-
-            existing_hold = await asyncio.to_thread(load_existing_hold)
-            if existing_hold is not None:
-                # Validate the exact durable evidence again, but do not run the
-                # base activity: it calls complete_effect and changes the
-                # immutable liability snapshot before Task 3 can replay it.
-                await raise_recovery_hold()
-
-        result = await super().submit_or_reconcile(payload)
-        if recovery:
             await raise_recovery_hold()
-        return result
+
+        return await super().submit_or_reconcile(payload)
 
     @activity.defn(name="salience.publication.await")
     async def await_publication(self,payload:dict[str,Any]):
