@@ -264,7 +264,7 @@
   "P6": "DISABLED",
   "main_merge": "NOT AUTHORIZED",
   "formal_pr_approval": "NOT RUN",
-  "independent_review": "Initial GPT-6.1-Sol static review found P1 published-cancellation success projection and P3 default-profile/opt-in-intake wording conflict; GPT-5.6-Sol accepted both. User authorized the P1/P3 corrections with 'While keep going'. The direct P1 RED was reproduced and the corrected focused/full candidate was requalified. Exact-corrected-application-and-documentation rereview is pending at this evidence capture; do not infer production approval.",
+  "independent_review": "Corrected-publication rereview completed with verdict NO_FINDINGS_WITHIN_REVIEWED_FIXTURE_CORRECTION_SCOPE for application a4b2368cdb463939d093020224a5b5667392aee6 and documentation/observed HEAD d0311725686d81b7b4747c2d6225986e5ea3a524; meta-review ACCEPT with zero issues. This review covers only that earlier fixture-correction slice and does not review current application 7878208 or authorize production.",
   "remaining_goal": [
     "deployment-specific supported routing, live schedule inventory, fencing, drain, rollback and operator recovery",
     "general versioned policy/registry eligibility and production account/provider qualification",
@@ -438,25 +438,85 @@
       "source_files": 352,
       "direct_cancel_test": "test_post_close_cancel_reads_published_then_holds_original_liability",
       "p3_signed_api_test": "test_signed_publication_routes_sdk_cli_and_safe_default_denial",
-      "exact_head_rereview": "PENDING at evidence capture; no re-review pass claimed.",
+      "exact_head_rereview": "COMPLETE for application a4b2368cdb463939d093020224a5b5667392aee6 with documentation/observed HEAD d0311725686d81b7b4747c2d6225986e5ea3a524; verdict NO_FINDINGS_WITHIN_REVIEWED_FIXTURE_CORRECTION_SCOPE; this does not review application 7878208.",
       "exact_head_rereview_artifacts": {
         "independent_review_findings": {
-          "path": "artifacts/v4-legacy-publication/agents/publication_recheck_review/findings.md",
-          "status": "PENDING; file not created at this capture"
+          "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/corrected-publication-rereview/findings.md",
+          "sha256": "483b57e8ae1aee0993dea01d8e9c5b50f5add3bed0f9bb04887ecc2e013117d5",
+          "status": "PRESENT"
         },
         "independent_review_result": {
-          "path": "artifacts/v4-legacy-publication/agents/publication_recheck_review/read-only-review-result.json",
-          "status": "PENDING; file not created at this capture"
+          "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/corrected-publication-rereview/read-only-review-result.json",
+          "sha256": "3ed1e9052513a850a878a802f0d5137f69275c34d9b25e16f73d5baccbe6d992",
+          "status": "PRESENT"
         },
         "meta_review_report": {
-          "path": "artifacts/v4-legacy-publication/agents/publication_recheck_meta_review/meta-review.md",
-          "status": "PENDING; file not created at this capture"
+          "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/corrected-publication-rereview/meta-review.md",
+          "sha256": "507d7c5422f43f28cb953ffa34d472ad7933def6da6b2dce1a30119624c4b96e",
+          "status": "PRESENT"
         },
         "meta_review_result": {
-          "path": "artifacts/v4-legacy-publication/agents/publication_recheck_meta_review/result.json",
-          "status": "PENDING; file not created at this capture"
+          "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/corrected-publication-rereview/meta-review-result.json",
+          "sha256": "169129ec9673cd98c0545b17152d3246921b8bee34b45e9a257c60295b0dee3e",
+          "status": "PRESENT"
+        }
+      },
+      "qualification_scope": "HISTORICAL_A4_FIXTURE_QUALIFICATION"
+    },
+    "corrected_publication_rereview_scope": {
+      "reviewed_application_commit": "a4b2368cdb463939d093020224a5b5667392aee6",
+      "documentation_context_head": "d0311725686d81b7b4747c2d6225986e5ea3a524",
+      "observed_head": "d0311725686d81b7b4747c2d6225986e5ea3a524",
+      "verdict": "NO_FINDINGS_WITHIN_REVIEWED_FIXTURE_CORRECTION_SCOPE",
+      "findings": 0,
+      "meta_review_verdict": "ACCEPT",
+      "meta_review_issues": 0,
+      "current_application_reviewed": false,
+      "targeted_five_case_rerun": {
+        "tests": 5,
+        "passed": 5,
+        "seconds": 19.97,
+        "reported_by": "root orchestrator",
+        "executed_by_meta_reviewer": false,
+        "standalone_junit_or_log_found": false
+      },
+      "artifacts": {
+        "independent_review_findings": {
+          "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/corrected-publication-rereview/findings.md",
+          "sha256": "483b57e8ae1aee0993dea01d8e9c5b50f5add3bed0f9bb04887ecc2e013117d5",
+          "status": "PRESENT"
+        },
+        "independent_review_result": {
+          "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/corrected-publication-rereview/read-only-review-result.json",
+          "sha256": "3ed1e9052513a850a878a802f0d5137f69275c34d9b25e16f73d5baccbe6d992",
+          "status": "PRESENT"
+        },
+        "meta_review_report": {
+          "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/corrected-publication-rereview/meta-review.md",
+          "sha256": "507d7c5422f43f28cb953ffa34d472ad7933def6da6b2dce1a30119624c4b96e",
+          "status": "PRESENT"
+        },
+        "meta_review_result": {
+          "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/corrected-publication-rereview/meta-review-result.json",
+          "sha256": "169129ec9673cd98c0545b17152d3246921b8bee34b45e9a257c60295b0dee3e",
+          "status": "PRESENT"
         }
       }
     }
+  },
+  "current_publication_recovery_hold_increment": {
+    "status": "PASS_LOCAL_FIXTURE_SCOPE; this is distinct from the historical A4 qualification above.",
+    "application_commit": "7878208e7a353f93bb70279ad0dd7f0760f93ec4",
+    "evidence": "docs/v4/publication-recovery-hold-evidence.json",
+    "evidence_sha256": "7f31b6f648ee7d4bbe7926721c468dc39fb247db3d3d2aa33846d52f310c80d2",
+    "focused_tests": 116,
+    "full_non_live_tests": 614,
+    "source_files": 356,
+    "source_lock_sha256": "d1d9f95af6f67192eb70c57bde2e066763ef1dadca6c5f58809e2833bc7ed638",
+    "review_scope_note": "The corrected-publication rereview remains scoped to A4/d031172 and did not review this increment.",
+    "production_effects_enabled": false,
+    "RG0": "HELD",
+    "RG1": "HELD",
+    "P2-P7": "OPEN_OR_HELD"
   }
 }

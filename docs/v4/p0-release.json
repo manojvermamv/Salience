@@ -1,6 +1,6 @@
 {
   "phase": "P0",
-  "updated_at": "2026-10-05T15:27:11.824698+00:00",
+  "updated_at": "2026-10-06",
   "baseline_commit": "8e50d68efbf2bec2aabfb2fe3226e01635de2adb",
   "scope": "Isolated local foundation; no production traffic or effects",
   "requirements": [
@@ -20,37 +20,56 @@
       "exit_code": 0
     },
     "full_non_live": {
-      "passed": 604,
+      "passed": 614,
+      "failures": 0,
       "failed": 0,
       "errors": 0,
       "skipped": 0,
       "exit_code": 0,
-      "seconds": 816.261,
-      "junit": "artifacts/v4-legacy-publication/agents/publication_qualification/candidate-attempts/20261005T150256Z-final-full-direct-cancel-regression/junit.xml",
-      "failures": 0,
       "pytest_exit_code": 0,
       "runner_exit_code": 0,
-      "runner_recovery": {
-        "reconstructed": false
-      },
-      "exit_code_semantics": "exit_code records pytest subprocess; runner_exit_code records the outer runner",
-      "direct_cancel_regression": "test_post_close_cancel_reads_published_then_holds_original_liability"
+      "seconds": 917.367,
+      "runner_seconds": 920.214,
+      "warnings": 3,
+      "warning": "Three Alembic DeprecationWarnings about missing path_separator configuration for prepend_sys_path.",
+      "junit": "artifacts/v4-next-p1/agents/task-09-full-qualification/clean-db-rerun/full-non-live.xml",
+      "junit_sha256": "ed97fc0aaf5c1b2f89c17f7c77f9aaf08679feb22634933632e5b7a3757c605a",
+      "log": "artifacts/v4-next-p1/agents/task-09-full-qualification/clean-db-rerun/full-non-live.log",
+      "log_sha256": "64985ba84b268d8056ebb56bec3951e79c086b84d995901d33e39ad791d379f4",
+      "result": "artifacts/v4-next-p1/agents/task-09-full-qualification/clean-db-rerun/result.json",
+      "result_sha256": "c6e2cc1037089aa8153f64b87dc7c0702d6a5ff924e8e5df734e3afaab75b010",
+      "summary": "artifacts/v4-next-p1/agents/task-09-full-qualification/clean-db-rerun/pytest-summary.json",
+      "summary_sha256": "460745c0b5ae812d2b4c62b1613b83797f09dfc6d6fb4ea77c58589f87fd3bbb",
+      "commands_manifest": "artifacts/v4-next-p1/agents/task-09-full-qualification/clean-db-rerun/commands.txt",
+      "commands_manifest_sha256": "d369286bb3b276ea64376924e6a15d701e28177eefe69ef969f1930af920ca65",
+      "source_manifest": "artifacts/v4-next-p1/agents/task-09-full-qualification/source-manifest.json",
+      "source_manifest_sha256": "0553ddba439cffa4b9a99ae1cc1dd7012120c564277e744dc42b9b13c157d187",
+      "application_commit": "7878208e7a353f93bb70279ad0dd7f0760f93ec4",
+      "database_template": "template0",
+      "database_revision": "0042_publication_recovery_holds",
+      "zero_relevant_baseline": true,
+      "disposable_database_dropped": true,
+      "original_database_preserved": true
     },
     "documentation_tests": {
       "passed": 15,
       "failed": 0,
       "errors": 0,
       "skipped": 0,
-      "exit_code": 0
+      "exit_code": 0,
+      "command": "/home/admin/Salience/.venv/bin/python docs/v4/test_checks.py",
+      "result_log": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/final-checks/docs-tests.log"
     },
     "mermaid_diagrams": {
       "rendered": 6,
       "failed": 0,
-      "version": "12.0.0"
+      "version": "12.0.0",
+      "results": "artifacts/v4-next-p1/qualification-diagrams/results.json",
+      "sha256": "6a04203cacd481c7c9e2000bd83834a2ac1ad0cb0ab4d4db433ba6aa557502ba"
     },
-    "locked_evidence_files": 352,
+    "locked_evidence_files": 356,
     "original_inventory_dispositions": 360,
-    "warning": "The final full non-live run emitted three Alembic DeprecationWarnings about missing path_separator configuration for prepend_sys_path; all 604 tests passed.",
+    "warning": "The authoritative clean-database full non-live run passed all 614 tests and emitted three Alembic DeprecationWarnings about missing path_separator configuration for prepend_sys_path.",
     "focused_p1": {
       "passed": 21,
       "failed": 0,
@@ -80,6 +99,47 @@
       "exit_code": 0,
       "seconds": 42.076,
       "junit": "artifacts/parallel-agents/focused.xml"
+    },
+    "publication_recovery_holds": {
+      "application_commit": "7878208e7a353f93bb70279ad0dd7f0760f93ec4",
+      "focused_tests": 116,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "rollback_rehearsal_tests": 1,
+      "rollback_rehearsal_status": "PASS",
+      "evidence": "docs/v4/publication-recovery-hold-evidence.json",
+      "source_lock_sha256": "d1d9f95af6f67192eb70c57bde2e066763ef1dadca6c5f58809e2833bc7ed638",
+      "scope": "Local no-effects fixtures only; production remains HELD.",
+      "evidence_sha256": "7f31b6f648ee7d4bbe7926721c468dc39fb247db3d3d2aa33846d52f310c80d2"
+    },
+    "documentation_checker": {
+      "status": "PASS",
+      "requirements": 75,
+      "source_files": 2,
+      "evidence_files": 356,
+      "inventory_files": 360,
+      "markdown_files_checked": 87,
+      "html_files_checked": 4,
+      "negative_controls": 6,
+      "self_test_status": "PASS"
+    },
+    "documentation_shell_contracts": {
+      "passed": 4,
+      "failed": 0
+    },
+    "pip_check": "PASS",
+    "compileall": "PASS",
+    "modified_json_files_parsed": 6,
+    "git_diff_check": "PASS",
+    "historical_snapshot_hashes": {
+      "status": "PASS",
+      "paths": 14
+    },
+    "source_lock_validation": {
+      "status": "PASS",
+      "files": 356,
+      "sha256": "d1d9f95af6f67192eb70c57bde2e066763ef1dadca6c5f58809e2833bc7ed638"
     }
   },
   "evidence_artifacts": [
@@ -220,7 +280,12 @@
     },
     {
       "path": "docs/v4/legacy-publication-evidence.json",
-      "sha256": "1ba531c27ab36158bb6e96875c38c26376b1db6607ad3858f4397afc0df1ee6b",
+      "sha256": "36f5efaddee194517df428993fb4f2b867da262b77473684d43961c5792a48f7",
+      "local_only": false
+    },
+    {
+      "path": "docs/v4/publication-recovery-hold-evidence.json",
+      "sha256": "7f31b6f648ee7d4bbe7926721c468dc39fb247db3d3d2aa33846d52f310c80d2",
       "local_only": false
     }
   ],
@@ -294,7 +359,7 @@
     ]
   },
   "p1_increment": {
-    "name": "Local admission/outbox, revisions, approved baseline, V2/V3 fixture policy/accounting, item-3 stop/permit/cases, item-4 handoff/mock trace and item-5a/5b/5c signed fixture commands/cutover; item-6 compatible fixture runtime/waits/notification receipts; item 7 independently reviewed and repaired local fixture contracts",
+    "name": "Local admission/outbox, revisions, approved baseline, V2/V3 fixture policy/accounting, item-3 stop/permit/cases, item-4 handoff/mock trace and item-5a/5b/5c signed fixture commands/cutover; item-6 compatible fixture runtime/waits/notification receipts; item 7 independently reviewed and repaired local fixture contracts; Task 8 added local immutable publication recovery holds and a read-only two-reason rollback verifier",
     "local_status": "PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE",
     "release_gate": "RG1",
     "release_status": "HELD",
@@ -318,7 +383,7 @@
       "R35",
       "R53"
     ],
-    "evidence": "docs/v4/legacy-publication-evidence.json",
+    "evidence": "docs/v4/publication-recovery-hold-evidence.json",
     "remaining": [
       "deployment-specific supported routing, live schedule inventory, fencing, drain, rollback and operator recovery",
       "general versioned policy/registry eligibility and production account/provider qualification",
@@ -340,8 +405,18 @@
       "5c"
     ],
     "next_queue_item": null,
-    "next_action": "Continue restored P1 integration: remaining legacy stages, current general authorization/version eligibility, typed recovery and retained production acceptance; P2–P7 remain gated, optional P6 disabled",
-    "independent_review": "PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE"
+    "next_action": "Complete Task 9 documentation/evidence reconciliation and Task 10 review/final verification; then continue remaining general policy, routing/live schedule inventory, production recovery/alerts and RG0/RG1 obligations. P2–P7 remain gated; optional P6 disabled.",
+    "independent_review": "Task 8 evidence review PASS with zero findings for its bounded local recovery-hold evidence; corrected-publication rereview is separately scoped to A4/d031172 and does not review 7878208.",
+    "completed_implementation_tasks": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+    ]
   },
   "documentation_refresh": {
     "date": "2026-09-24",
@@ -567,6 +642,83 @@
     "restored_from_own_output_at": "2026-10-04T02:44:31.946Z",
     "base_commit": "380416d35cffb6e4bf33003cb6e8df0638874436",
     "direction": "Remaining P1 legacy dispatch-to-outbox integration, followed by retained P1 authorization/runtime/recovery acceptance; reuse completed items 1–7 and parallel extension",
+    "current_increment": "Current application candidate 7878208 includes Task 1–7 implementation plus Task 8 local recovery-hold qualification (116 focused tests, compileall and two-reason rollback rehearsal); the clean template0-database full non-live suite passed 614 tests with zero failures/errors/skips. Corrected-publication rereview is complete only for A4/d031172 and does not review 7878208.",
+    "qualification": "PASS_IMPLEMENTED_LOCAL_PUBLICATION_RECOVERY_HOLD_AND_PARALLEL_PARENT_STATUS_FIXTURE_SCOPE",
+    "remaining_scope": [
+      "deployment-specific supported routing, live schedule inventory, fencing, drain, rollback and operator recovery",
+      "general versioned policy/registry eligibility and production account/provider qualification",
+      "typed production recovery workers and external durable alerts/on-call delivery",
+      "retained RG0/RG1 production prerequisites and final published-head CI/protection readback"
+    ],
+    "contract": "docs/v4/legacy-dispatch-contract.md",
+    "production_effects_enabled": false,
+    "RG0": "HELD",
+    "RG1": "HELD",
+    "main_merge": "NOT AUTHORIZED",
+    "qualified_application_commit": "7878208e7a353f93bb70279ad0dd7f0760f93ec4",
+    "focused_tests": 116,
+    "full_non_live_tests": 614,
+    "source_files": 356,
+    "evidence": "docs/v4/publication-recovery-hold-evidence.json",
+    "publication": "Fixture-only current recovery-hold evidence; production effects disabled, RG0/RG1 HELD, P2–P7 gated, optional P6 disabled, main unmerged.",
+    "source_lock_sha256": "d1d9f95af6f67192eb70c57bde2e066763ef1dadca6c5f58809e2833bc7ed638",
+    "review_scope": "Corrected-publication rereview: A4 application with documentation/observed HEAD d031172 only; Task 8 evidence review is bounded to local recovery-hold evidence. No current all-row independent review or production approval is implied."
+  },
+  "publication_review_correction": {
+    "initial_review_sha256": "d154e13a1ab393ca83e771891fef48f2345ebe3a0532e7d3fd575ba15d195c68",
+    "meta_review_sha256": "ad848de07de66ce5efa0cde78c1859e1b237ccfdb59f1d2dcb8a33532cdf47cd",
+    "user_authorization_sha256": "c07a6670ab5d83f42d448630045be323b01b02cb1c1b8e06d633bdcb6b3f931b",
+    "direct_p1_red_junit_sha256": "751a2631e8d30bfac84ac92e53eb538dc232aaef9abfea756b2996dcde59a1c4",
+    "corrected_head_rereview": "COMPLETE_WITHIN_REVIEWED_FIXTURE_CORRECTION_SCOPE; verdict NO_FINDINGS_WITHIN_REVIEWED_FIXTURE_CORRECTION_SCOPE; meta-review ACCEPT; scope is application a4b2368cdb463939d093020224a5b5667392aee6 and documentation/observed HEAD d0311725686d81b7b4747c2d6225986e5ea3a524 only, and does not review application 7878208.",
+    "independent_review_findings_path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/corrected-publication-rereview/findings.md",
+    "independent_review_result_path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/corrected-publication-rereview/read-only-review-result.json",
+    "meta_review_report_path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/corrected-publication-rereview/meta-review.md",
+    "meta_review_result_path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/corrected-publication-rereview/meta-review-result.json",
+    "artifact_status": "All four rereview artifacts are present under the Task 9 ignored artifact directory and their SHA-256 values are recorded in the current evidence record.",
+    "corrected_publication_rereview": {
+      "reviewed_application_commit": "a4b2368cdb463939d093020224a5b5667392aee6",
+      "documentation_context_head": "d0311725686d81b7b4747c2d6225986e5ea3a524",
+      "observed_head": "d0311725686d81b7b4747c2d6225986e5ea3a524",
+      "verdict": "NO_FINDINGS_WITHIN_REVIEWED_FIXTURE_CORRECTION_SCOPE",
+      "findings": 0,
+      "meta_review_verdict": "ACCEPT",
+      "meta_review_issues": 0,
+      "current_application_reviewed": false,
+      "targeted_five_case_rerun": {
+        "tests": 5,
+        "passed": 5,
+        "seconds": 19.97,
+        "reported_by": "root orchestrator per meta-review",
+        "executed_by_meta_reviewer": false,
+        "standalone_junit_or_log_found": false
+      },
+      "artifacts": [
+        {
+          "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/corrected-publication-rereview/findings.md",
+          "sha256": "483b57e8ae1aee0993dea01d8e9c5b50f5add3bed0f9bb04887ecc2e013117d5"
+        },
+        {
+          "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/corrected-publication-rereview/read-only-review-result.json",
+          "sha256": "3ed1e9052513a850a878a802f0d5137f69275c34d9b25e16f73d5baccbe6d992"
+        },
+        {
+          "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/corrected-publication-rereview/meta-review.md",
+          "sha256": "507d7c5422f43f28cb953ffa34d472ad7933def6da6b2dce1a30119624c4b96e"
+        },
+        {
+          "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/corrected-publication-rereview/meta-review-result.json",
+          "sha256": "169129ec9673cd98c0545b17152d3246921b8bee34b45e9a257c60295b0dee3e"
+        }
+      ]
+    }
+  },
+  "RG0": "HELD",
+  "RG1": "HELD",
+  "historical_2026_10_05_resumed_development_goal": {
+    "status": "ACTIVE",
+    "restored_from_own_output_at": "2026-10-04T02:44:31.946Z",
+    "base_commit": "380416d35cffb6e4bf33003cb6e8df0638874436",
+    "direction": "Remaining P1 legacy dispatch-to-outbox integration, followed by retained P1 authorization/runtime/recovery acceptance; reuse completed items 1–7 and parallel extension",
     "current_increment": "Effects-disabled original governed-publication API/outbox and paired native schedules, including P1 typed hold on post-close published cancel and P3 invocation-scope correction; initial independent P1/P3 findings accepted, fixed and freshly qualified; exact-head rereview pending",
     "qualification": "PASS_IMPLEMENTED_LOCAL_LEGACY_PUBLICATION_AND_NATIVE_SCHEDULE_FIXTURE_SCOPE_AFTER_ACCEPTED_REVIEW_CORRECTIONS",
     "remaining_scope": [
@@ -586,19 +738,5 @@
     "source_files": 352,
     "evidence": "docs/v4/legacy-publication-evidence.json",
     "publication": "Corrected local evidence is fixture-scoped; exact corrected-head rereview and feature-head CI/protection are separate. Broader P1 ACTIVE; production effects disabled; RG0/RG1 HELD."
-  },
-  "publication_review_correction": {
-    "initial_review_sha256": "d154e13a1ab393ca83e771891fef48f2345ebe3a0532e7d3fd575ba15d195c68",
-    "meta_review_sha256": "ad848de07de66ce5efa0cde78c1859e1b237ccfdb59f1d2dcb8a33532cdf47cd",
-    "user_authorization_sha256": "c07a6670ab5d83f42d448630045be323b01b02cb1c1b8e06d633bdcb6b3f931b",
-    "direct_p1_red_junit_sha256": "751a2631e8d30bfac84ac92e53eb538dc232aaef9abfea756b2996dcde59a1c4",
-    "corrected_head_rereview": "PENDING at evidence capture",
-    "independent_review_findings_path": "artifacts/v4-legacy-publication/agents/publication_recheck_review/findings.md",
-    "independent_review_result_path": "artifacts/v4-legacy-publication/agents/publication_recheck_review/read-only-review-result.json",
-    "meta_review_report_path": "artifacts/v4-legacy-publication/agents/publication_recheck_meta_review/meta-review.md",
-    "meta_review_result_path": "artifacts/v4-legacy-publication/agents/publication_recheck_meta_review/result.json",
-    "artifact_status": "These exact-head review artifacts are pending and were not hashed because the files do not exist at this capture."
-  },
-  "RG0": "HELD",
-  "RG1": "HELD"
+  }
 }

@@ -55,7 +55,7 @@
       "local_verifier_status": "PASS; covers implemented local fixtures, not unimplemented production acceptance",
       "independent_review_status": "PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE; production acceptance remains HELD",
       "production_release_status": "HELD",
-      "remaining_acceptance": "Production dispatcher/provider and approved account authorization; supported production routing, native schedule inventory/fencing, remote reconciliation and complete RG1 acceptance. Local fixture publication, paired native schedule conversion, and post-close published-cancel typed hold are requalified; corrected exact-head rereview remains pending.",
+      "remaining_acceptance": "Production dispatcher/provider, approved account authorization, supported routing, native schedule inventory/fencing, remote reconciliation and complete RG1 acceptance remain unqualified. Corrected-publication rereview is complete only for A4/d031172 and does not review current candidate 7878208.",
       "independent_review_evidence": [
         "docs/v4/item7-runtime-review.json"
       ],
@@ -485,12 +485,12 @@
       "requirement": "§4: emergency stop and policy outage fail closed; independent read reconciliation allowed only with scope",
       "phase": "P1",
       "dependencies": "R17",
-      "acceptance": "Item-3 workspace/goal stop and item-5b signed stop commands deny new fixture claims/recovery under revoked authority; unavailable authority DB issues no permit. Item-5c fixture activation, auto poll and legacy resume hold on current stop; production live-scheduler cancellation and production remote read-only reconciliation remain unqualified. The isolated publication fixture permits receipt readback after permit expiry only under a separate exact account reconciliation grant, only for an immutable already-accepted receipt, and then holds for typed recovery; no second submit, blind status progression or fabricated close-race projection is authorized. The fresh direct close-race test proves published cancellation readback produces typed recovery hold without canonical success, publication/status event or reservation settlement. The fresh direct close-race test proves published cancellation readback produces typed recovery hold without canonical success, publication/status event or reservation settlement. The fresh direct close-race test proves published cancellation readback produces typed recovery hold without canonical success, publication/status event or reservation settlement. The fresh direct close-race test proves published cancellation readback produces typed recovery hold without canonical success, publication/status event or reservation settlement. The fresh direct close-race test proves published cancellation readback produces typed recovery hold without canonical success, publication/status event or reservation settlement.",
+      "acceptance": "Item-3 workspace/goal stop and item-5b signed stop commands deny new fixture claims/recovery under revoked authority; unavailable authority DB issues no permit. Item-5c fixture activation, auto poll and legacy resume hold on current stop; production live-scheduler cancellation and production remote read-only reconciliation remain unqualified. The isolated publication fixture permits receipt readback after permit expiry only under a separate exact account reconciliation grant, only for an immutable already-accepted receipt, and then holds for typed recovery; no second submit, blind status progression or fabricated close-race projection is authorized. Task 1–8 additionally qualify immutable durable hold creation/replay, both-reason read-only pre-restart verification and preserved liabilities in the local fixture; production-wide revocation and live schedule fencing remain unqualified.",
       "migration_rollback": "M1: stop revision persists across restart/rollback; renewed authority required to resume.",
       "gate": "RG1",
-      "executed_verifier_cases": 69,
-      "local_verifier_status": "PASS; covers implemented local fixtures, not unimplemented production acceptance",
-      "independent_review_status": "PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE; production acceptance remains HELD",
+      "executed_verifier_cases": 76,
+      "local_verifier_status": "PASS for implemented local fixtures, including the Task 1–8 durable publication recovery-hold extension at 7878208; production acceptance remains HELD.",
+      "independent_review_status": "Prior independent-review artifacts apply only to their recorded fixture scope. The corrected-publication rereview covers A4/d031172 and does not review the Task 1–8 extension at 7878208; production acceptance remains HELD.",
       "production_release_status": "HELD",
       "remaining_acceptance": "Production live schedule stop/cancellation/fencing, production-wide cross-service revocation, typed recovery workers and independently scoped remote reconciliation beyond the isolated fixture receipt-only hold.",
       "independent_review_evidence": [
@@ -554,6 +554,16 @@
           "tests/integration/test_v4_migrations.py"
         ],
         "application_commit": "a4b2368cdb463939d093020224a5b5667392aee6"
+      },
+      "publication_recovery_hold_extension": {
+        "scope": "Local no-effects fixture hold persistence, stable operation ownership, exact replay/crash behavior and both-reason rollback verification only.",
+        "evidence": "docs/v4/publication-recovery-hold-evidence.json",
+        "application_commit": "7878208e7a353f93bb70279ad0dd7f0760f93ec4",
+        "source_lock_sha256": "d1d9f95af6f67192eb70c57bde2e066763ef1dadca6c5f58809e2833bc7ed638",
+        "verifier": "tests/integration/test_v4_publication_recovery_holds.py",
+        "verifier_cases_in_clean_full_junit": 7,
+        "executed_verifier_cases_for_requirement_row": 76,
+        "production_release_status": "HELD"
       }
     },
     {
@@ -561,12 +571,12 @@
       "requirement": "§6: typed recovery states/actions, failure records, ownership and limits",
       "phase": "P1",
       "dependencies": "R03,R15",
-      "acceptance": "Item-3 fixture cases and item-5b scoped signed case commands persist retry_due/reconciling/rework_due/awaiting_review/suspended/terminal/resolved with owner, deadline and bounded actions; reconciliation/rework cannot masquerade as retry, and pre-admission review targets the same intent. Item-6 fixture timers suspend existing cases at bounded deadlines; production recovery workers remain required. Expired publication permits with no durable receipt deny before provider readback; exact accepted receipts can be read back only under the separately scoped account grant and then remain held for typed recovery.",
+      "acceptance": "Item-3 fixture cases and item-5b scoped signed case commands persist retry_due/reconciling/rework_due/awaiting_review/suspended/terminal/resolved with owner, deadline and bounded actions; reconciliation/rework cannot masquerade as retry, and pre-admission review targets the same intent. Item-6 fixture timers suspend existing cases at bounded deadlines; production recovery workers remain required. Expired publication permits with no durable receipt deny before provider readback; exact accepted receipts can be read back only under the separately scoped account grant and then remain held for typed recovery. Task 1–8 additionally qualify durable publication recovery-hold ownership, exact replay, crash recovery and two-reason read-only verification in the local fixture; production recovery workers and external delivery remain unqualified.",
       "migration_rollback": "M1: cases reference existing identities; terminal cases stay closed on rollback.",
       "gate": "RG1",
-      "executed_verifier_cases": 74,
-      "local_verifier_status": "PASS; covers implemented local fixtures, not unimplemented production acceptance",
-      "independent_review_status": "PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE; production acceptance remains HELD",
+      "executed_verifier_cases": 81,
+      "local_verifier_status": "PASS for implemented local fixtures, including the Task 1–8 durable publication recovery-hold extension at 7878208; production acceptance remains HELD.",
+      "independent_review_status": "Prior independent-review artifacts apply only to their recorded fixture scope. The corrected-publication rereview covers A4/d031172 and does not review the Task 1–8 extension at 7878208; production acceptance remains HELD.",
       "production_release_status": "HELD",
       "remaining_acceptance": "Production typed recovery state transitions, durable recovery worker and external failure delivery beyond the local publication receipt-only recovery hold.",
       "independent_review_evidence": [
@@ -582,6 +592,16 @@
           "tests/integration/test_v4_migrations.py"
         ],
         "application_commit": "a4b2368cdb463939d093020224a5b5667392aee6"
+      },
+      "publication_recovery_hold_extension": {
+        "scope": "Local no-effects fixture hold persistence, stable operation ownership, exact replay/crash behavior and both-reason rollback verification only.",
+        "evidence": "docs/v4/publication-recovery-hold-evidence.json",
+        "application_commit": "7878208e7a353f93bb70279ad0dd7f0760f93ec4",
+        "source_lock_sha256": "d1d9f95af6f67192eb70c57bde2e066763ef1dadca6c5f58809e2833bc7ed638",
+        "verifier": "tests/integration/test_v4_publication_recovery_holds.py",
+        "verifier_cases_in_clean_full_junit": 7,
+        "executed_verifier_cases_for_requirement_row": 81,
+        "production_release_status": "HELD"
       }
     },
     {
@@ -677,11 +697,11 @@
       }
     }
   ],
-  "review_status": "Historical item-7 independent review PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE at e49a214 for its original 17-row scope; the current 3986a1de publication/native-schedule extension has root qualification only and independent review is pending; complete production RG1 acceptance remains HELD.",
+  "review_status": "Task 8 recovery-hold evidence review PASS with zero findings for its bounded fixture scope. Corrected-publication rereview/meta-review accepted the A4 fixture-correction slice only (application a4b2368; documentation/observed HEAD d031172); it predates and does not review 7878208. RG0/RG1 remain HELD.",
   "production_effects_enabled": false,
   "RG0": "HELD",
   "RG1": "HELD",
-  "source_lock_sha256": "a972dfadd0f72bdf86c52969a55c94c2fa17ff29a07b4cf8c8d21ff9dc55b08c",
+  "source_lock_sha256": "d1d9f95af6f67192eb70c57bde2e066763ef1dadca6c5f58809e2833bc7ed638",
   "verifiers": {
     "R02": [
       "tests/e2e/test_v4_worker_upgrade.py",
@@ -754,13 +774,15 @@
       "tests/integration/test_v4_cycle_governance.py",
       "tests/integration/test_v4_schedule_cutover.py",
       "tests/integration/test_v4_runtime_waits.py",
-      "tests/integration/test_v4_item7_governance.py"
+      "tests/integration/test_v4_item7_governance.py",
+      "tests/integration/test_v4_publication_recovery_holds.py"
     ],
     "R32": [
       "tests/integration/test_v4_cycle_governance.py",
       "tests/integration/test_v4_runtime_waits.py",
       "tests/integration/test_v4_public_commands.py",
-      "tests/e2e/test_v4_item7_delivery_recovery.py"
+      "tests/e2e/test_v4_item7_delivery_recovery.py",
+      "tests/integration/test_v4_publication_recovery_holds.py"
     ],
     "R33": [
       "tests/integration/test_v4_cycle_governance.py",
@@ -803,15 +825,15 @@
     "p1_mapped_cases": 199
   },
   "current_qualification": {
-    "evidence": "docs/v4/legacy-publication-evidence.json",
-    "focused_tests": 21,
-    "full_non_live_tests": 604,
-    "source_files": 352,
-    "status": "PASS_IMPLEMENTED_LOCAL_LEGACY_PUBLICATION_AND_NATIVE_SCHEDULE_FIXTURE_SCOPE_AFTER_ACCEPTED_REVIEW_CORRECTIONS; P1/P3 review findings accepted, corrected and requalified; exact corrected-head rereview pending; RG0/RG1 HELD",
-    "qualified_application_commit": "a4b2368cdb463939d093020224a5b5667392aee6",
-    "source_lock_sha256": "a972dfadd0f72bdf86c52969a55c94c2fa17ff29a07b4cf8c8d21ff9dc55b08c",
-    "base_commit": "5683cfab4a3a8f20cb83506de5debb0b5692f010",
-    "direct_parent": "5683cfab4a3a8f20cb83506de5debb0b5692f010"
+    "evidence": "docs/v4/publication-recovery-hold-evidence.json",
+    "focused_tests": 116,
+    "full_non_live_tests": 614,
+    "source_files": 356,
+    "status": "PASS_IMPLEMENTED_LOCAL_PUBLICATION_RECOVERY_HOLD_AND_PARALLEL_STATUS_FIXTURE_SCOPE; current full non-live clean-database suite passed; corrected-publication rereview remains scoped to A4/d031172 and does not review this candidate; RG0/RG1 HELD",
+    "qualified_application_commit": "7878208e7a353f93bb70279ad0dd7f0760f93ec4",
+    "source_lock_sha256": "d1d9f95af6f67192eb70c57bde2e066763ef1dadca6c5f58809e2833bc7ed638",
+    "base_commit": "931840ddfc78314b93d306b8c130e9f39ed7ec4f",
+    "direct_parent": "931840ddfc78314b93d306b8c130e9f39ed7ec4f"
   },
   "remaining_release_obligations": [
     "General registry/provider eligibility beyond the approved no-effects fixture baseline; later capability and production qualification gates remain binding",
@@ -820,7 +842,7 @@
     "General policy/model authorization, live scheduler stop/fencing integration and separately scoped remote read-only reconciliation beyond fixture permits/cases/cutover",
     "Deployment-specific supported worker routing/rollback, external durable alert delivery beyond the local item-6 patch/timer/restore fixture"
   ],
-  "qualified_application_commit": "a4b2368cdb463939d093020224a5b5667392aee6",
+  "qualified_application_commit": "7878208e7a353f93bb70279ad0dd7f0760f93ec4",
   "independent_review_reports": [
     {
       "reviewer": "admission",
@@ -845,6 +867,22 @@
       "reviewed_application_commit": "e49a214cd371d0417f093d3a24fa2a4f4a359e83",
       "artifact_root": "artifacts/v4-p0/item7",
       "status": "PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE"
+    },
+    {
+      "reviewer": "corrected-publication-rereview",
+      "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/corrected-publication-rereview/read-only-review-result.json",
+      "sha256": "3ed1e9052513a850a878a802f0d5137f69275c34d9b25e16f73d5baccbe6d992",
+      "reviewed_application_commit": "a4b2368cdb463939d093020224a5b5667392aee6",
+      "documentation_head": "d0311725686d81b7b4747c2d6225986e5ea3a524",
+      "status": "NO_FINDINGS_WITHIN_REVIEWED_FIXTURE_CORRECTION_SCOPE"
+    },
+    {
+      "reviewer": "corrected-publication-meta-review",
+      "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/corrected-publication-rereview/meta-review-result.json",
+      "sha256": "169129ec9673cd98c0545b17152d3246921b8bee34b45e9a257c60295b0dee3e",
+      "reviewed_application_commit": "a4b2368cdb463939d093020224a5b5667392aee6",
+      "documentation_head": "d0311725686d81b7b4747c2d6225986e5ea3a524",
+      "status": "ACCEPT"
     }
   ],
   "historical_item7_qualification": {
@@ -855,7 +893,7 @@
     "source_files": 316,
     "status": "PASS independent implemented-fixture qualification; RG0/RG1 HELD"
   },
-  "qualified_application_commit_scope": "Historical independent item7 review; the current root-qualified extension is separately bound in current_qualification",
+  "qualified_application_commit_scope": "Current Task 1–8 local fixture recovery-hold and parallel parent-status increment at 7878208; not an independent all-row review or production qualification.",
   "historical_parallel_qualification": {
     "evidence": "docs/v4/parallel-agents-evidence.json",
     "full_non_live_tests": 540,
@@ -864,7 +902,7 @@
     "status": "PASS root-reviewed bounded parallel-agent local extension; historical item7 independent review retained; RG0/RG1/RG5 HELD",
     "qualified_application_commit": "2653d2ecb3f0d5bb8ea6560de274137dd6032a96"
   },
-  "current_independent_review_scope": "The initial exact 3986 application/docs review returned P1/P3 findings, both accepted by meta-review and authorized for correction by the user. The direct P1 regression was reproduced RED, fixes were included in the fresh source-bound qualification, and corrected exact-head rereview is pending. Its future artifacts are artifacts/v4-legacy-publication/agents/publication_recheck_review/read-only-review-result.json, artifacts/v4-legacy-publication/agents/publication_recheck_review/findings.md, artifacts/v4-legacy-publication/agents/publication_recheck_meta_review/result.json and artifacts/v4-legacy-publication/agents/publication_recheck_meta_review/meta-review.md. These paths are pending, not evidence of review completion. This does not constitute production approval.",
+  "current_independent_review_scope": "Corrected-publication rereview verdict NO_FINDINGS_WITHIN_REVIEWED_FIXTURE_CORRECTION_SCOPE for application a4b2368cdb463939d093020224a5b5667392aee6 and documentation/observed HEAD d0311725686d81b7b4747c2d6225986e5ea3a524; meta-review ACCEPT, zero issues. The meta-review reports a root-orchestrator 5/5 targeted rerun in 19.97s (meta-reviewer did not execute it; no standalone JUnit/log artifact found). This review predates Task 1–8 and does not review 7878208.",
   "historical_legacy_intelligence_qualification": {
     "evidence": "docs/v4/legacy-dispatch-evidence.json",
     "full_non_live_tests": 556,
@@ -902,15 +940,177 @@
   },
   "historical_legacy_creative_qualification": {},
   "review_correction_provenance": {
-    "initial_review_sha256": "d154e13a1ab393ca83e771891fef48f2345ebe3a0532e7d3fd575ba15d195c68",
-    "meta_review_sha256": "ad848de07de66ce5efa0cde78c1859e1b237ccfdb59f1d2dcb8a33532cdf47cd",
-    "user_authorization_sha256": "c07a6670ab5d83f42d448630045be323b01b02cb1c1b8e06d633bdcb6b3f931b",
-    "direct_p1_red_junit_sha256": "751a2631e8d30bfac84ac92e53eb538dc232aaef9abfea756b2996dcde59a1c4",
-    "corrected_head_rereview": "PENDING at evidence capture",
-    "independent_review_findings_path": "artifacts/v4-legacy-publication/agents/publication_recheck_review/findings.md",
-    "independent_review_result_path": "artifacts/v4-legacy-publication/agents/publication_recheck_review/read-only-review-result.json",
-    "meta_review_report_path": "artifacts/v4-legacy-publication/agents/publication_recheck_meta_review/meta-review.md",
-    "meta_review_result_path": "artifacts/v4-legacy-publication/agents/publication_recheck_meta_review/result.json",
-    "artifact_status": "These exact-head review artifacts are pending and were not hashed because the files do not exist at this capture."
+    "initial_independent_review": {
+      "result": "artifacts/v4-legacy-publication/agents/publication_independent_review/read-only-review-result.json",
+      "result_sha256": "3eb8d5315edd9798bb59ade8b62b2b4c6d2c19c3c5d96513e62ad93301efbf2b",
+      "findings_report": "artifacts/v4-legacy-publication/agents/publication_independent_review/findings.md",
+      "findings_report_sha256": "d154e13a1ab393ca83e771891fef48f2345ebe3a0532e7d3fd575ba15d195c68",
+      "review_report_sha256": "d154e13a1ab393ca83e771891fef48f2345ebe3a0532e7d3fd575ba15d195c68",
+      "verdict": "CHANGES_REQUIRED",
+      "scope": "READ_ONLY static independent review",
+      "reproduced_at_initial_review": false,
+      "findings": [
+        {
+          "priority": "P1",
+          "kind": "published cancellation success projection after closure",
+          "file": "src/salience/cycles/legacy_publication_runtime.py",
+          "line": 326,
+          "reproduced": false
+        },
+        {
+          "priority": "P3",
+          "kind": "active publication invocation documentation contradiction",
+          "file": "docs/v4/legacy-dispatch-contract.md",
+          "line": 15
+        }
+      ]
+    },
+    "initial_meta_review": {
+      "result": "artifacts/v4-legacy-publication/agents/publication_meta_review/result.json",
+      "result_sha256": "db3977128e60d2b0d6cd77c6a8a64c827aff319586f70f5f9bb947fb62cfdbda",
+      "report": "artifacts/v4-legacy-publication/agents/publication_meta_review/meta-review.md",
+      "report_sha256": "ad848de07de66ce5efa0cde78c1859e1b237ccfdb59f1d2dcb8a33532cdf47cd",
+      "meta_report_sha256": "ad848de07de66ce5efa0cde78c1859e1b237ccfdb59f1d2dcb8a33532cdf47cd",
+      "verdict": "ACCEPT_BOTH_REVIEW_FINDINGS"
+    },
+    "user_authorization": {
+      "path": "artifacts/v4-legacy-publication/review-fixes-user-authorization.json",
+      "sha256": "c07a6670ab5d83f42d448630045be323b01b02cb1c1b8e06d633bdcb6b3f931b",
+      "record": {
+        "recorded_at": "2026-10-05T14:53:06.054617+00:00",
+        "source": "Current conversation user continuation immediately following the assistant approval request for accepted P1 and P3 findings",
+        "user_message_verbatim": "While keep going, check any worktree is seperately leaved, if leave than it should be merged in current branch.\n\nOne more major thing, just don't patches the code as per needed over older code (This way codebase getting more complex over time), if needed the architecture file redesign that go step by step in every items/phases.\nUse superpowers plugins",
+        "preceding_approval_request": "Approve GPT-6-Luna-Max to implement both fixes and rerun qualification?",
+        "authorization_kind": "User instruction to continue the existing reviewed two-fix work; contextual authorization, not a separately stated yes/approve-both quote",
+        "authorized_findings": [
+          "P1 published cancellation must preserve original receipt/liability under nonretryable LegacyPublicationRecoveryHeld with no terminal business writes",
+          "P3 default profile denies publication; explicitly enabled fixture profile admits signed canonical publication"
+        ],
+        "authorized_related_work": [
+          "Architecture assessment and simplification",
+          "Deterministic regression and fresh qualification",
+          "Evidence/documentation reconciliation",
+          "Worktree consolidation",
+          "Superpowers use (installed by subsequent explicit plugin-management add request)"
+        ],
+        "approved_scope": "Initial accepted P1/P3 corrections and existing active goal continuation",
+        "new_review_driven_edits": "Require actual GPT6.1 read-only findings thenGPT5.6 meta-review and userapproval, per prior instruction",
+        "constraints": [
+          "production disabled",
+          "RG0/RG1 held",
+          "P2-P7 gated",
+          "P6 disabled",
+          "main unmerged",
+          "preserve item7 and parallel extension"
+        ],
+        "review_head": "9bf888cfd983ce502b46f9a0683c219fe24f002a"
+      },
+      "scope": [
+        "P1 post-close published-cancellation projection",
+        "P3 default-versus-opt-in signed publication intake wording"
+      ]
+    },
+    "direct_p1_red": {
+      "run_dir": "artifacts/v4-legacy-publication/agents/publication_qualification/candidate-attempts/20261005T143842Z-direct-published-cancel-red",
+      "junit": "artifacts/v4-legacy-publication/agents/publication_qualification/candidate-attempts/20261005T143842Z-direct-published-cancel-red/junit.xml",
+      "junit_sha256": "751a2631e8d30bfac84ac92e53eb538dc232aaef9abfea756b2996dcde59a1c4",
+      "pytest_log": "artifacts/v4-legacy-publication/agents/publication_qualification/candidate-attempts/20261005T143842Z-direct-published-cancel-red/pytest.log",
+      "pytest_log_sha256": "98d4712585b0e9584450c781d6e16571428944de41dc769627734d752d2052f6",
+      "command_record": "artifacts/v4-legacy-publication/agents/publication_qualification/candidate-attempts/20261005T143842Z-direct-published-cancel-red/command-record.json",
+      "command_record_sha256": "fff053d87399c63f7b0821f71a72a9116e985464ee4fc2fab009516bc84c7613",
+      "test_name": "test_post_close_cancel_reads_published_then_holds_original_liability",
+      "tests": 1,
+      "expected_failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "observed": "real pinned cancel activity read back published after close and exercised the pre-fix success projection"
+    },
+    "corrected_qualification": {
+      "focused_tests": 21,
+      "full_non_live_tests": 604,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "application_commit": "a4b2368cdb463939d093020224a5b5667392aee6",
+      "source_files": 352,
+      "direct_cancel_test": "test_post_close_cancel_reads_published_then_holds_original_liability",
+      "p3_signed_api_test": "test_signed_publication_routes_sdk_cli_and_safe_default_denial",
+      "exact_head_rereview": "COMPLETE for application a4b2368cdb463939d093020224a5b5667392aee6 with documentation/observed HEAD d0311725686d81b7b4747c2d6225986e5ea3a524; verdict NO_FINDINGS_WITHIN_REVIEWED_FIXTURE_CORRECTION_SCOPE; this does not review application 7878208.",
+      "exact_head_rereview_artifacts": {
+        "independent_review_findings": {
+          "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/corrected-publication-rereview/findings.md",
+          "sha256": "483b57e8ae1aee0993dea01d8e9c5b50f5add3bed0f9bb04887ecc2e013117d5",
+          "status": "PRESENT"
+        },
+        "independent_review_result": {
+          "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/corrected-publication-rereview/read-only-review-result.json",
+          "sha256": "3ed1e9052513a850a878a802f0d5137f69275c34d9b25e16f73d5baccbe6d992",
+          "status": "PRESENT"
+        },
+        "meta_review_report": {
+          "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/corrected-publication-rereview/meta-review.md",
+          "sha256": "507d7c5422f43f28cb953ffa34d472ad7933def6da6b2dce1a30119624c4b96e",
+          "status": "PRESENT"
+        },
+        "meta_review_result": {
+          "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/corrected-publication-rereview/meta-review-result.json",
+          "sha256": "169129ec9673cd98c0545b17152d3246921b8bee34b45e9a257c60295b0dee3e",
+          "status": "PRESENT"
+        }
+      },
+      "qualification_scope": "HISTORICAL_A4_FIXTURE_QUALIFICATION"
+    },
+    "corrected_publication_rereview_scope": {
+      "reviewed_application_commit": "a4b2368cdb463939d093020224a5b5667392aee6",
+      "documentation_context_head": "d0311725686d81b7b4747c2d6225986e5ea3a524",
+      "observed_head": "d0311725686d81b7b4747c2d6225986e5ea3a524",
+      "verdict": "NO_FINDINGS_WITHIN_REVIEWED_FIXTURE_CORRECTION_SCOPE",
+      "findings": 0,
+      "meta_review_verdict": "ACCEPT",
+      "meta_review_issues": 0,
+      "current_application_reviewed": false,
+      "targeted_five_case_rerun": {
+        "tests": 5,
+        "passed": 5,
+        "seconds": 19.97,
+        "reported_by": "root orchestrator",
+        "executed_by_meta_reviewer": false,
+        "standalone_junit_or_log_found": false
+      },
+      "artifacts": {
+        "independent_review_findings": {
+          "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/corrected-publication-rereview/findings.md",
+          "sha256": "483b57e8ae1aee0993dea01d8e9c5b50f5add3bed0f9bb04887ecc2e013117d5",
+          "status": "PRESENT"
+        },
+        "independent_review_result": {
+          "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/corrected-publication-rereview/read-only-review-result.json",
+          "sha256": "3ed1e9052513a850a878a802f0d5137f69275c34d9b25e16f73d5baccbe6d992",
+          "status": "PRESENT"
+        },
+        "meta_review_report": {
+          "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/corrected-publication-rereview/meta-review.md",
+          "sha256": "507d7c5422f43f28cb953ffa34d472ad7933def6da6b2dce1a30119624c4b96e",
+          "status": "PRESENT"
+        },
+        "meta_review_result": {
+          "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/corrected-publication-rereview/meta-review-result.json",
+          "sha256": "169129ec9673cd98c0545b17152d3246921b8bee34b45e9a257c60295b0dee3e",
+          "status": "PRESENT"
+        }
+      }
+    }
+  },
+  "historical_a4_qualification": {
+    "evidence": "docs/v4/legacy-publication-evidence.json",
+    "focused_tests": 21,
+    "full_non_live_tests": 604,
+    "source_files": 352,
+    "status": "HISTORICAL_A4 fixture qualification; 21 focused / 604 full non-live / 352 source hashes. Corrected-publication rereview completed only for A4/d031172; this does not review current 7878208. RG0/RG1 HELD.",
+    "qualified_application_commit": "a4b2368cdb463939d093020224a5b5667392aee6",
+    "source_lock_sha256": "a972dfadd0f72bdf86c52969a55c94c2fa17ff29a07b4cf8c8d21ff9dc55b08c",
+    "base_commit": "5683cfab4a3a8f20cb83506de5debb0b5692f010",
+    "direct_parent": "5683cfab4a3a8f20cb83506de5debb0b5692f010",
+    "historical_status": "HISTORICAL_A4_FIXTURE_QUALIFICATION; 21 focused / 604 full non-live / 352 source hashes."
   }
 }

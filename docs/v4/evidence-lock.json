@@ -1,5 +1,5 @@
 {
-  "baseline_commit": "a4b2368cdb463939d093020224a5b5667392aee6",
+  "baseline_commit": "7878208e7a353f93bb70279ad0dd7f0760f93ec4",
   "scope": "All tracked application source, migrations, tests, scripts and named deployment/dependency configuration. Hash changes require fresh claim review, not automatic acceptance.",
   "files": [
     {
@@ -195,6 +195,10 @@
       "sha256": "51f4ef497019b37196c6c8a774e69058388bdb9c36c77f604da53877c2c6b314"
     },
     {
+      "path": "migrations/versions/0042_legacy_publication_recovery_holds.py",
+      "sha256": "ad096213e662c320ba25d0d62a546369f382dd534c21cfe215fb7c75fb0c33f6"
+    },
+    {
       "path": "migrations/versions/__init__.py",
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
@@ -217,6 +221,10 @@
     {
       "path": "scripts/verify-phases-7-8.sh",
       "sha256": "c532561e480f91eeb984fa0a5b23320ede5b5fec75dac5e852663a34110f8804"
+    },
+    {
+      "path": "scripts/verify-v4-publication-recovery-rollback.py",
+      "sha256": "5cc468e80d964d4707c1152b0a3cf360fd7d83abd8be5f44c17009c4fdc49004"
     },
     {
       "path": "src/salience/__init__.py",
@@ -280,7 +288,7 @@
     },
     {
       "path": "src/salience/agents/parallel_store.py",
-      "sha256": "c880f2130ff4ebf642679346788c7bacf826d6f3919acae53f76e08cbe37606b"
+      "sha256": "dc06c2593cc4b06e7b8e3c1e3ea260b469935e7d344bcd3c3d01d310708daec2"
     },
     {
       "path": "src/salience/agents/parallel_worker.py",
@@ -508,7 +516,7 @@
     },
     {
       "path": "src/salience/cycles/legacy_dispatch.py",
-      "sha256": "a643cf23610c196f1c1798700ea1b5de1b717a6ec004ae5554c571bb4e2df224"
+      "sha256": "51d713751438496fab502a666dcaf5044fa40fe89fcbda6b6eabda4c5deaa0f2"
     },
     {
       "path": "src/salience/cycles/legacy_publication.py",
@@ -516,7 +524,7 @@
     },
     {
       "path": "src/salience/cycles/legacy_publication_runtime.py",
-      "sha256": "e2669c624b4571b66498bbc0ca72ed7541458c79a6789bc3d55e23b4d64292fb"
+      "sha256": "7a73dedb7890b4fb78c05f1ec00684a850d90ba095f948ff1f161fe742fc5ca9"
     },
     {
       "path": "src/salience/cycles/legacy_runtime.py",
@@ -541,6 +549,10 @@
     {
       "path": "src/salience/cycles/outbox.py",
       "sha256": "d779b508c0985c4767ad2301a50fea1320e646075e7c59ceb6c0849e1bccc0ab"
+    },
+    {
+      "path": "src/salience/cycles/publication_recovery.py",
+      "sha256": "9a9b5e6ef699a83a2c4e465496838ee6b672e6b57ff3536a3e3f9c862b60beb6"
     },
     {
       "path": "src/salience/cycles/runtime.py",
@@ -1072,7 +1084,7 @@
     },
     {
       "path": "tests/integration/test_durable_parallel_teams.py",
-      "sha256": "249407dda1d7df817660d8f56b55053f37f7a23321795a68b96c47d0d8c8ecb3"
+      "sha256": "64e6a259c223e28d0f0e28ac3e940b7a306d61d0e890bc9a2ef25879ecabca0d"
     },
     {
       "path": "tests/integration/test_fixture_publisher.py",
@@ -1192,7 +1204,7 @@
     },
     {
       "path": "tests/integration/test_v4_legacy_publication.py",
-      "sha256": "5a98eff5b7404e7cc63df53a25c77a52eab99b02e5449f9c4aafe144d15b65ec"
+      "sha256": "af12e833b4929de5db31c649f40619854baa6e4ce8e9e9e600956be6f968dd79"
     },
     {
       "path": "tests/integration/test_v4_legacy_schedule_ingress.py",
@@ -1225,6 +1237,10 @@
     {
       "path": "tests/integration/test_v4_public_commands.py",
       "sha256": "5df09173378a61226a4bf90320c276adf77466012c475f5a4b4ff66599a374b9"
+    },
+    {
+      "path": "tests/integration/test_v4_publication_recovery_holds.py",
+      "sha256": "c600b83e87c9a607c3977d863dde1a46f3c5e1f17ea12238fb6315e8122297f3"
     },
     {
       "path": "tests/integration/test_v4_runtime_waits.py",
@@ -1411,6 +1427,6 @@
       "sha256": "7f76114852b4b9d95b3517c49718ccf2e007d64d442a1b4e05ef696dd37a8bbc"
     }
   ],
-  "reviewed_at": "2026-10-05T15:27:11.824698+00:00",
-  "review_scope": "Fresh root-qualified V4 P1 no-effects publication close-race hold and original paired native schedule fixture; initial independent-review P1/P3 findings accepted, corrected and requalified; exact corrected-head rereview pending; RG0/RG1 HELD"
+  "reviewed_at": "2026-10-06T13:54:00Z",
+  "review_scope": "Content lock for the checked application source at candidate 7878208e7a353f93bb70279ad0dd7f0760f93ec4 (356 checked files). This lock records exact bytes only and is not a code review of that candidate. The corrected-publication rereview covered application a4b2368cdb463939d093020224a5b5667392aee6 with documentation/observed HEAD d0311725686d81b7b4747c2d6225986e5ea3a524; it does not cover 7878208. Production effects are disabled; RG0/RG1 remain HELD."
 }

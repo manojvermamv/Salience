@@ -1,0 +1,442 @@
+{
+  "schema_version": 1,
+  "recorded_at": "2026-10-06T13:54:00Z",
+  "status": "PASS_LOCAL_FIXTURE_SCOPE; PRODUCTION_RELEASE_HELD",
+  "application": {
+    "candidate_commit": "7878208e7a353f93bb70279ad0dd7f0760f93ec4",
+    "branch": "work/v4-p1-publication-recovery",
+    "effects_enabled": false,
+    "deployment_mode": "fixture",
+    "source_lock_path": "docs/v4/evidence-lock.json",
+    "source_lock_sha256": "d1d9f95af6f67192eb70c57bde2e066763ef1dadca6c5f58809e2833bc7ed638",
+    "locked_application_files": 356
+  },
+  "task_1_to_8": {
+    "tasks": [
+      {
+        "task": 1,
+        "application_commits": [
+          "3be94979d0d05b68a748ff5ef47735077f06e7c1"
+        ],
+        "result": "Corrected parallel parent fold and queued-only resume semantics; 34 focused tests passed.",
+        "report": ".superpowers/sdd/2026-10-06-p1-publication-recovery-hold/task-1-report.md",
+        "report_sha256": "0823e89ff8579e649969b5a78df935cd3b09687589956a2f914c015a9b22810f"
+      },
+      {
+        "task": 2,
+        "application_commits": [
+          "c1865b7b293dd9a7ec744d4823c266da8dc14f9d"
+        ],
+        "result": "Added immutable recovery-hold migration 0042; migration/direct-SQL selection passed 2 tests.",
+        "report": ".superpowers/sdd/2026-10-06-p1-publication-recovery-hold/task-2-report.md",
+        "report_sha256": "f24038acf66da27944dbda2d7d690fbc957e9270d1f2411ec46478b234526dcb"
+      },
+      {
+        "task": 3,
+        "application_commits": [
+          "78383f27a3caf368f5cefd55f9aff0a9dd6a4c84"
+        ],
+        "result": "Added serialized exact hold creation/replay; 3 passed, 2 deselected.",
+        "report": ".superpowers/sdd/2026-10-06-p1-publication-recovery-hold/task-3-report.md",
+        "report_sha256": "5b8971a97d020f717c0a44008287fac3b4306d8d2ec903c324362c964796c7e2"
+      },
+      {
+        "task": 4,
+        "application_commits": [
+          "42242b6f20028405368b8c219bdd44cd36e976d1",
+          "75ef7944a5c7b033d26cfa20e83800534b074ea9"
+        ],
+        "result": "Expired-permit accepted-receipt recovery records its durable hold before raising; final expiry, replay, revoked-scope and missing-receipt regressions passed.",
+        "report": ".superpowers/sdd/2026-10-06-p1-publication-recovery-hold/task-4-report.md",
+        "report_sha256": "3ffe1a4fbbe91f7424ef437028c45023b30c97102ad98f2d049c48787c06b769"
+      },
+      {
+        "task": 5,
+        "application_commits": [
+          "5ce27ab47f230f91f35b02c1e02d95a2f557c1d8"
+        ],
+        "result": "Published-during-cancel state is durably held before typed failure; cancellation regressions passed.",
+        "report": ".superpowers/sdd/2026-10-06-p1-publication-recovery-hold/task-5-report.md",
+        "report_sha256": "56ed1cda6f8eeb3baf4081495f8cb50a41b15a6bc82adf3b79f157c0996e20b5"
+      },
+      {
+        "task": 6,
+        "application_commits": [
+          "931840ddfc78314b93d306b8c130e9f39ed7ec4f"
+        ],
+        "result": "Process-death/replay and both-reason signed inspection parity passed; tests preserved hold IDs and liabilities.",
+        "report": ".superpowers/sdd/2026-10-06-p1-publication-recovery-hold/task-6-report.md",
+        "report_sha256": "4be2613ae92e1b4a854d0c2f238d64ccb12b36ff386825f7b04d2c83f8a38c17"
+      },
+      {
+        "task": 7,
+        "application_commits": [
+          "7878208e7a353f93bb70279ad0dd7f0760f93ec4"
+        ],
+        "result": "Read-only REPEATABLE READ verifier requires both reasons and unchanged liabilities before restart; rollback verifier test passed.",
+        "report": ".superpowers/sdd/2026-10-06-p1-publication-recovery-hold/task-7-report.md",
+        "report_sha256": "c3bdfd022821c1420d64486233bfb5b43ce2d7aacc5855eebdb57b447e1e3c71"
+      },
+      {
+        "task": 8,
+        "application_commits": [],
+        "candidate_application_commit": "7878208e7a353f93bb70279ad0dd7f0760f93ec4",
+        "result": "Focused suite 116 passed, zero failures/errors/skips; compileall passed; local two-reason rollback rehearsal passed one test; Task 8 evidence review PASS with zero findings. No application commit was created.",
+        "report": ".superpowers/sdd/2026-10-06-p1-publication-recovery-hold/task-8-report.md",
+        "report_sha256": "b0ea89d7f24ad4a409f44f6888f8cbe9aad2e2a0821e980d56cae1de7c2f254d",
+        "review": ".superpowers/sdd/2026-10-06-p1-publication-recovery-hold/task-8-review.md",
+        "review_sha256": "a2f1fa64acb842cd35af5a6292c98e435f6065d6b520afdea4d77c21b7f3fc93"
+      }
+    ],
+    "task_8": {
+      "candidate_application_commit": "7878208e7a353f93bb70279ad0dd7f0760f93ec4",
+      "focused_tests": {
+        "passed": 116,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "pytest_seconds": 402.479,
+        "runner_seconds": 403.787,
+        "junit": "artifacts/v4-next-p1/agents/task-08-focused-qualification/focused.xml",
+        "junit_sha256": "14dd31cd7fe25682ec8508c7afdf935e22ac08b6241d94d14745734dca7465cb",
+        "result": "artifacts/v4-next-p1/agents/task-08-focused-qualification/focused-result.json",
+        "result_sha256": "2672380df520423a8db7590444da53168d1e5937dca98bd17613542c316613dc"
+      },
+      "rollback_rehearsal": {
+        "passed_tests": 1,
+        "status": "PASS",
+        "effects_enabled": false,
+        "scope": "Disposable local PostgreSQL and Temporal fixture only",
+        "result": "artifacts/v4-next-p1/agents/task-08-focused-qualification/rollback-rehearsal.json",
+        "result_sha256": "532074ecc816d28964eeeab1e9fb0654e8bb49ebbe300692fdf50d14362d5963",
+        "result_detail": "artifacts/v4-next-p1/agents/task-08-focused-qualification/rollback-rehearsal-result.json",
+        "result_detail_sha256": "098f2cd4790983965f718d661d6a68584df4488e9ca6f69541ede8fab7c102ad",
+        "junit": "artifacts/v4-next-p1/agents/task-08-focused-qualification/rollback-rehearsal.xml",
+        "junit_sha256": "8a851604b97483ba388a554f5ccef3267f248794bd3463e23921036efaea0b2f",
+        "operation_ids": {
+          "expired_permit_receipt": "92c6fd4e-61cb-493d-8ef6-3733ea7ef9d0",
+          "published_during_cancel": "13f2a181-aa06-4ead-8ae4-27a9ec9420f7"
+        },
+        "hold_ids": {
+          "expired_permit_receipt": "7b206fa4-888b-4b03-ba79-81d693dc94c4",
+          "published_during_cancel": "494960b4-fbc1-43bd-aaca-7ed1f2a2b066"
+        },
+        "both_verifications_same_ids_and_payload": true,
+        "liability_snapshots_identical_before_and_after_compatible_local_worker_drain": true,
+        "valid_verification_restart_callback_count": 1,
+        "malformed_mapping_rejected_before_callback": true,
+        "downgrade_invoked": false
+      },
+      "compileall": {
+        "status": "PASS",
+        "result": "artifacts/v4-next-p1/agents/task-08-focused-qualification/compileall-result.json",
+        "sha256": "832c33c4ade648dafc17d05ea4e02fcc2bd77f9ee84c5f4a4e6d1f9eeab65d92"
+      },
+      "evidence_review": {
+        "status": "PASS",
+        "findings": 0,
+        "report": ".superpowers/sdd/2026-10-06-p1-publication-recovery-hold/task-8-review.md",
+        "sha256": "a2f1fa64acb842cd35af5a6292c98e435f6065d6b520afdea4d77c21b7f3fc93"
+      },
+      "source_manifest": {
+        "path": "artifacts/v4-next-p1/agents/task-08-focused-qualification/source-manifest.json",
+        "sha256": "df2ada82b86e86700db5883a9d21e86a3a9476c9a0b961453c3b48067975424d"
+      }
+    }
+  },
+  "corrected_publication_rereview": {
+    "status": "COMPLETE_WITHIN_REVIEWED_FIXTURE_CORRECTION_SCOPE",
+    "verdict": "NO_FINDINGS_WITHIN_REVIEWED_FIXTURE_CORRECTION_SCOPE",
+    "findings": 0,
+    "reviewed_application_commit": "a4b2368cdb463939d093020224a5b5667392aee6",
+    "documentation_context_head": "d0311725686d81b7b4747c2d6225986e5ea3a524",
+    "observed_head": "d0311725686d81b7b4747c2d6225986e5ea3a524",
+    "does_not_review_application_commit": "7878208e7a353f93bb70279ad0dd7f0760f93ec4",
+    "review_artifacts": [
+      {
+        "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/corrected-publication-rereview/findings.md",
+        "sha256": "483b57e8ae1aee0993dea01d8e9c5b50f5add3bed0f9bb04887ecc2e013117d5"
+      },
+      {
+        "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/corrected-publication-rereview/read-only-review-result.json",
+        "sha256": "3ed1e9052513a850a878a802f0d5137f69275c34d9b25e16f73d5baccbe6d992"
+      },
+      {
+        "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/corrected-publication-rereview/meta-review.md",
+        "sha256": "507d7c5422f43f28cb953ffa34d472ad7933def6da6b2dce1a30119624c4b96e"
+      },
+      {
+        "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/corrected-publication-rereview/meta-review-result.json",
+        "sha256": "169129ec9673cd98c0545b17152d3246921b8bee34b45e9a257c60295b0dee3e"
+      }
+    ],
+    "meta_review_verdict": "ACCEPT",
+    "meta_review_issues": 0,
+    "targeted_five_case_rerun": {
+      "tests": 5,
+      "passed": 5,
+      "seconds": 19.97,
+      "reported_by": "root orchestrator per meta-review result",
+      "executed_by_meta_reviewer": false,
+      "standalone_junit_or_run_log_found": false
+    }
+  },
+  "full_non_live": {
+    "status": "PASS",
+    "application_commit": "7878208e7a353f93bb70279ad0dd7f0760f93ec4",
+    "branch": "work/v4-p1-publication-recovery",
+    "command": "/home/admin/Salience/.venv/bin/python -m pytest -p no:cacheprovider tests/contracts tests/unit tests/integration tests/e2e tests/evals -m 'not live' -q -rs --junitxml=/tmp/salience-v4-p1-recovery-20261006/artifacts/v4-next-p1/agents/task-09-full-qualification/clean-db-rerun/full-non-live.xml",
+    "argv": [
+      "/home/admin/Salience/.venv/bin/python",
+      "-m",
+      "pytest",
+      "-p",
+      "no:cacheprovider",
+      "tests/contracts",
+      "tests/unit",
+      "tests/integration",
+      "tests/e2e",
+      "tests/evals",
+      "-m",
+      "not live",
+      "-q",
+      "-rs",
+      "--junitxml=/tmp/salience-v4-p1-recovery-20261006/artifacts/v4-next-p1/agents/task-09-full-qualification/clean-db-rerun/full-non-live.xml"
+    ],
+    "exit_code": 0,
+    "tests": 614,
+    "passed": 614,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "pytest_seconds": 917.367,
+    "runner_seconds": 920.214,
+    "warnings": 3,
+    "warning_summary": "Three Alembic DeprecationWarnings about missing path_separator configuration for prepend_sys_path.",
+    "junit": "artifacts/v4-next-p1/agents/task-09-full-qualification/clean-db-rerun/full-non-live.xml",
+    "junit_sha256": "ed97fc0aaf5c1b2f89c17f7c77f9aaf08679feb22634933632e5b7a3757c605a",
+    "log": "artifacts/v4-next-p1/agents/task-09-full-qualification/clean-db-rerun/full-non-live.log",
+    "log_sha256": "64985ba84b268d8056ebb56bec3951e79c086b84d995901d33e39ad791d379f4",
+    "result": "artifacts/v4-next-p1/agents/task-09-full-qualification/clean-db-rerun/result.json",
+    "result_sha256": "c6e2cc1037089aa8153f64b87dc7c0702d6a5ff924e8e5df734e3afaab75b010",
+    "summary": "artifacts/v4-next-p1/agents/task-09-full-qualification/clean-db-rerun/pytest-summary.json",
+    "summary_sha256": "460745c0b5ae812d2b4c62b1613b83797f09dfc6d6fb4ea77c58589f87fd3bbb",
+    "commands_manifest": "artifacts/v4-next-p1/agents/task-09-full-qualification/clean-db-rerun/commands.txt",
+    "commands_manifest_sha256": "d369286bb3b276ea64376924e6a15d701e28177eefe69ef969f1930af920ca65",
+    "source_manifest": "artifacts/v4-next-p1/agents/task-09-full-qualification/source-manifest.json",
+    "source_manifest_sha256": "0553ddba439cffa4b9a99ae1cc1dd7012120c564277e744dc42b9b13c157d187",
+    "environment_manifest": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/clean-db-rerun-environment.json",
+    "environment_manifest_sha256": "5aabf834f1e3c17aa15bbd93bf2863ce07efe62088e315248118742e4ab6a154",
+    "database": {
+      "template": "template0",
+      "created": true,
+      "revision_before_tests": "0042_publication_recovery_holds",
+      "relevant_baseline_rows": {
+        "alembic_revision": "0042_publication_recovery_holds",
+        "workspaces": 0,
+        "native_publication_schedule_sources": 0,
+        "native_publication_schedule_progress": 0,
+        "legacy_publication_schedule_plans": 0,
+        "legacy_publication_accounts": 0,
+        "legacy_publication_fixture_receipts": 0,
+        "legacy_dispatches_by_stage": {},
+        "publication_recovery_holds": 0
+      },
+      "revision_after_tests": "0042_publication_recovery_holds",
+      "dropped_after_run": true,
+      "original_database_preserved": true,
+      "drop_scope": "New disposable database only; original salience database preserved."
+    }
+  },
+  "superseded_dirty_database_attempt": {
+    "status": "SUPERSEDED_QUALIFICATION_SETUP_EVIDENCE",
+    "application_commit": "7878208e7a353f93bb70279ad0dd7f0760f93ec4",
+    "tests": 614,
+    "passed": 612,
+    "failures": 2,
+    "errors": 0,
+    "skipped": 0,
+    "warnings": 3,
+    "junit": "artifacts/v4-next-p1/agents/task-09-full-qualification/pytest.xml",
+    "junit_sha256": "8ce2cabff3d14e324b4d7ea8ae6334bf2a7c0f65daeafbbfe44ec8bad360d36a",
+    "log": "artifacts/v4-next-p1/agents/task-09-full-qualification/pytest-non-live.log",
+    "log_sha256": "57bf976a3ddac00c8864b875bfb745b095b4ba3a3cf2f9d8aab59704ecd75acd",
+    "diagnosis": "The shared dirty database retained unrelated legacy publication schedule state. Two creative/dummy migration preservation tests encountered the higher publication-schedule downgrade guard before their expected lower-stage guard. Fresh disposable template0 scenarios and the authoritative clean-database full suite passed; these setup-contaminated outcomes are superseded and are not treated as product failures."
+  },
+  "requirement_case_mapping": {
+    "method": "Distinct testcase (classname,name) entries in the authoritative clean-database JUnit, selected by each matrix row declared verifier files plus tests/integration/test_v4_publication_recovery_holds.py.",
+    "R18": {
+      "executed_verifier_cases": 76,
+      "source_files": [
+        "tests/integration/test_v4_cycle_governance.py",
+        "tests/integration/test_v4_schedule_cutover.py",
+        "tests/integration/test_v4_runtime_waits.py",
+        "tests/integration/test_v4_item7_governance.py",
+        "tests/integration/test_v4_publication_recovery_holds.py"
+      ],
+      "per_file_counts": {
+        "tests/integration/test_v4_cycle_governance.py": 18,
+        "tests/integration/test_v4_schedule_cutover.py": 11,
+        "tests/integration/test_v4_runtime_waits.py": 25,
+        "tests/integration/test_v4_item7_governance.py": 15,
+        "tests/integration/test_v4_publication_recovery_holds.py": 7
+      }
+    },
+    "R32": {
+      "executed_verifier_cases": 81,
+      "source_files": [
+        "tests/integration/test_v4_cycle_governance.py",
+        "tests/integration/test_v4_runtime_waits.py",
+        "tests/integration/test_v4_public_commands.py",
+        "tests/e2e/test_v4_item7_delivery_recovery.py",
+        "tests/integration/test_v4_publication_recovery_holds.py"
+      ],
+      "per_file_counts": {
+        "tests/integration/test_v4_cycle_governance.py": 18,
+        "tests/integration/test_v4_runtime_waits.py": 25,
+        "tests/integration/test_v4_public_commands.py": 14,
+        "tests/e2e/test_v4_item7_delivery_recovery.py": 17,
+        "tests/integration/test_v4_publication_recovery_holds.py": 7
+      }
+    },
+    "scope": "Only local fixture hold and ownership coverage is advanced. No production-wide recovery, general policy, or whole-row independent review is implied."
+  },
+  "release_boundaries": {
+    "production_effects_enabled": false,
+    "RG0": "HELD",
+    "RG1": "HELD",
+    "P2-P7": "OPEN_OR_HELD",
+    "P6": "DISABLED",
+    "main": "UNMERGED",
+    "production_wide_revocation": "OPEN",
+    "general_policy_and_provider_routing": "OPEN",
+    "live_schedule_inventory_and_routing": "OPEN",
+    "production_recovery_workers": "OPEN",
+    "R33_resume": "OPEN",
+    "R34_external_alerts": "OPEN",
+    "full_RG1": "HELD"
+  },
+  "commands": [
+    {
+      "suite": "full_non_live_clean_database",
+      "command": "/home/admin/Salience/.venv/bin/python -m pytest -p no:cacheprovider tests/contracts tests/unit tests/integration tests/e2e tests/evals -m 'not live' -q -rs --junitxml=/tmp/salience-v4-p1-recovery-20261006/artifacts/v4-next-p1/agents/task-09-full-qualification/clean-db-rerun/full-non-live.xml",
+      "tests": 614,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "exit_code": 0,
+      "junit_sha256": "ed97fc0aaf5c1b2f89c17f7c77f9aaf08679feb22634933632e5b7a3757c605a"
+    }
+  ],
+  "documentation_verification": {
+    "status": "PASS",
+    "documentation_tests": {
+      "command": "/home/admin/Salience/.venv/bin/python docs/v4/test_checks.py",
+      "passed": 15,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "log": {
+        "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/final-checks/docs-tests.log"
+      }
+    },
+    "documentation_checker": {
+      "self_test": {
+        "status": "PASS",
+        "requirements": 75,
+        "source_files": 356,
+        "evidence_files": 356,
+        "inventory_files": 360,
+        "negative_controls": 6,
+        "log": {
+          "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/final-checks/checker-self-test.log"
+        }
+      },
+      "normal": {
+        "status": "PASS",
+        "requirements": 75,
+        "source_files": 2,
+        "evidence_files": 356,
+        "inventory_files": 360,
+        "markdown_files_checked": 87,
+        "html_files_checked": 4,
+        "negative_controls": 6,
+        "log": {
+          "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/final-checks/checker.log"
+        }
+      }
+    },
+    "documentation_shell_contracts": {
+      "passed": 4,
+      "failed": 0,
+      "scripts": [
+        {
+          "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/final-checks/shell-browser-docs.log",
+          "status": "PASS"
+        },
+        {
+          "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/final-checks/shell-phase-7-8.log",
+          "status": "PASS"
+        },
+        {
+          "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/final-checks/shell-phase-9.log",
+          "status": "PASS"
+        },
+        {
+          "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/final-checks/shell-verify-browser.log",
+          "status": "PASS"
+        }
+      ]
+    },
+    "mermaid": {
+      "rendered": 6,
+      "failed": 0,
+      "version": "12.0.0",
+      "command": "/home/admin/Salience/.venv/bin/python docs/v4/verify_diagrams.py --node-modules /tmp/salience-item6-mermaid/node_modules --browser /home/admin/.cache/ms-playwright/chromium_headless_shell-1234/chrome-headless-shell-linux64/chrome-headless-shell --output artifacts/v4-next-p1/qualification-diagrams",
+      "results": "artifacts/v4-next-p1/qualification-diagrams/results.json",
+      "results_sha256": "6a04203cacd481c7c9e2000bd83834a2ac1ad0cb0ab4d4db433ba6aa557502ba",
+      "log": {
+        "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/final-checks/mermaid.log"
+      }
+    },
+    "json_parse": {
+      "status": "PASS",
+      "modified_json_files": 6
+    },
+    "pip_check": {
+      "status": "PASS",
+      "log": {
+        "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/final-checks/pip-check.log"
+      }
+    },
+    "compileall": {
+      "status": "PASS",
+      "command": "/home/admin/Salience/.venv/bin/python -m compileall -q src tests scripts docs/v4",
+      "log": {
+        "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/final-checks/compileall.log"
+      }
+    },
+    "git_diff_check": {
+      "status": "PASS",
+      "log": {
+        "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/final-checks/diff-check.log"
+      }
+    },
+    "historical_preservation": {
+      "status": "PASS",
+      "paths": 14,
+      "manifest": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/historical-preservation-sha256.json"
+    },
+    "source_lock_validation": {
+      "status": "PASS",
+      "files": 356,
+      "sha256": "d1d9f95af6f67192eb70c57bde2e066763ef1dadca6c5f58809e2833bc7ed638"
+    },
+    "documentation_audit_counts": {
+      "tracked_markdown_files": 88,
+      "active_project_markdown_files": 70,
+      "documentation_artifacts": 246,
+      "checker_inventory_files": 360
+    }
+  }
+}

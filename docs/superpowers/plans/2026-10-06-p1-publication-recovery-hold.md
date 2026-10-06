@@ -57,32 +57,34 @@
 - Consumes: persisted child states in `ParallelTeamStore._inspect(connection, team_id)`.
 - Produces: the existing snapshot dictionary with corrected `status`; no new public type or database state.
 
-- [ ] **Step 1: Write deterministic failing status tests**
+- [x] **Step 1: Write deterministic failing status tests**
 
 Add `test_started_team_with_completed_or_unknown_child_and_queued_siblings_is_running`. Use `max_concurrency=1`; assert all-queued is `queued`, succeeded-plus-queued is `running`, unknown-plus-queued is `running`, the parent `agent_runs.state` remains `delegating`, and no `team.finished` event exists. Extend the existing `test_process_death_keeps_completed_and_unknown_and_resumes_queued` path to kill the worker, observe `running` while unknown and queued siblings coexist, reclaim only queued siblings with their original run IDs, and reach the existing terminal aggregate. Extend the signed interface case to assert the same store status passes through API, SDK, and CLI output.
 
-- [ ] **Step 2: Prove the red behavior**
+- [x] **Step 2: Prove the red behavior**
 
 Run: `.venv/bin/pytest -q tests/integration/test_durable_parallel_teams.py -k 'started_team or process_death_keeps_completed_and_unknown_and_resumes_queued or signed_api_sdk_cli'`
 
 Expected: FAIL because the parent becomes `queued` after the active child leaves `running`.
 
-- [ ] **Step 3: Implement the status fold**
+- [x] **Step 3: Implement the status fold**
 
 In `_inspect`, make `queued` require `all(state == "queued")`; return `running` whenever any child is queued/running after any child has progressed; preserve terminal precedence and the ordered task projection.
 
-- [ ] **Step 4: Verify the focused parallel suite**
+- [x] **Step 4: Verify the focused parallel suite**
 
 Run: `.venv/bin/pytest -q tests/unit/test_parallel_agent_teams.py tests/integration/test_durable_parallel_teams.py`
 
 Expected: all tests PASS; no migration change.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/salience/agents/parallel_store.py tests/integration/test_durable_parallel_teams.py
 git commit -m "fix(agents): preserve progressed parallel team status"
 ```
+
+**Recorded result:** Commit `3be94979d0d05b68a748ff5ef47735077f06e7c1`; the requested focused parallel suite passed 34 tests.
 
 ### Task 2: Add the immutable recovery-hold schema
 
@@ -94,32 +96,34 @@ git commit -m "fix(agents): preserve progressed parallel team status"
 - Consumes: `v4_legacy_dispatches`, `v4_legacy_publication_fixture_receipts`, `v4_legacy_publication_fixture_progress`, `v4_permit_claims`, `v4_dispatch_permits`, publication attempt/request, job, context, cycle, effect, reservation, event, and outbox rows.
 - Produces: `v4_legacy_publication_recovery_holds` keyed uniquely by `operation_id` and protected from update/delete.
 
-- [ ] **Step 1: Write red migration and direct-SQL tests**
+- [x] **Step 1: Write red migration and direct-SQL tests**
 
 Add tests that upgrade `0041 -> 0042`, inspect exact columns/constraints/revision, reject cross-workspace/cross-operation/fingerprint/reason/state mismatches, reject update/delete, pass empty downgrade/re-upgrade, and refuse populated downgrade without changing `alembic_version` or deleting the row. Use two direct SQL transactions racing the same `operation_id` to prove the database admits one row only. Assert `PUBLIC` has no table access. Following the repository's restricted-role convention, create a per-test fixture-runtime role during test/deployment provisioning, grant it only schema `USAGE` plus table `SELECT`/`INSERT`, and prove it lacks `UPDATE`/`DELETE`/`TRUNCATE`; the migration does not invent or discover a named application role.
 
-- [ ] **Step 2: Prove the migration is absent**
+- [x] **Step 2: Prove the migration is absent**
 
 Run: `.venv/bin/pytest -q tests/integration/test_v4_publication_recovery_holds.py -k 'migration or direct_sql'`
 
 Expected: FAIL because revision `0042_publication_recovery_holds` and its table do not exist.
 
-- [ ] **Step 3: Implement revision `0042_publication_recovery_holds`**
+- [x] **Step 3: Implement revision `0042_publication_recovery_holds`**
 
 Create an additive table with stable `id`, unique `operation_id`, all spec identities, `publication_attempt_id`, `permit_id`, `owner_id`, frozen execution deadline, permit expiry, request/receipt/liability fingerprints, remote identity/state, reason, fixed `held` state, immutable liability snapshot, and timestamps. Add composite scope FKs where current schema permits them, an insert trigger that derives/compares the original canonical rows and reason-specific state, an update/delete rejection trigger, explicit revocation from `PUBLIC`, a three-second downgrade lock, and populated downgrade refusal. Runtime role provisioning owns the explicit per-principal `SELECT`/`INSERT` grants.
 
-- [ ] **Step 4: Verify schema and preservation behavior**
+- [x] **Step 4: Verify schema and preservation behavior**
 
 Run: `.venv/bin/pytest -q tests/integration/test_v4_publication_recovery_holds.py -k 'migration or direct_sql'`
 
 Expected: PASS for valid insert, one-row concurrent uniqueness, narrow role privileges, hostile SQL denial, empty rollback, and populated preservation.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add migrations/versions/0042_legacy_publication_recovery_holds.py tests/integration/test_v4_publication_recovery_holds.py
 git commit -m "feat(v4): add immutable publication recovery holds"
 ```
+
+**Recorded result:** Commit `c1865b7b293dd9a7ec744d4823c266da8dc14f9d`; the migration/direct-SQL selection passed 2 tests.
 
 ### Task 3: Implement serialized hold creation and exact replay
 
@@ -134,32 +138,34 @@ git commit -m "feat(v4): add immutable publication recovery holds"
 - Produces: `record_publication_recovery_hold(database_url: str, *, workspace_id: UUID, operation_id: UUID, reason: PublicationRecoveryReason) -> PublicationRecoveryHoldView`.
 - Produces: `load_publication_recovery_hold(connection, *, workspace_id: UUID, operation_id: UUID) -> PublicationRecoveryHoldView | None`.
 
-- [ ] **Step 1: Write red helper tests**
+- [x] **Step 1: Write red helper tests**
 
 Add `test_exact_hold_replay_returns_stable_id`, `test_hold_replay_conflicting_reason_or_evidence_denies`, and `test_concurrent_exact_hold_insert_returns_one_stable_hold`. Assert an advisory-lock/unique-key race yields one row and identical views. Compare the exact receipt, effect, job, reservation, cycle, ordered status events, output/absence, and ordered outbox rows before and after; only the one hold row may be added.
 
-- [ ] **Step 2: Prove the helper is absent**
+- [x] **Step 2: Prove the helper is absent**
 
 Run: `.venv/bin/pytest -q tests/integration/test_v4_publication_recovery_holds.py -k 'exact_hold or conflicting_reason or concurrent_exact'`
 
 Expected: collection/import FAIL for the missing module or functions.
 
-- [ ] **Step 3: Implement typed projection and record/load functions**
+- [x] **Step 3: Implement typed projection and record/load functions**
 
 Derive all identities, fingerprints, current remote progress, permit dates, and liability snapshot inside one PostgreSQL transaction. Serialize with an operation-scoped advisory transaction lock. Return the stored view and stable ID only after every immutable binding, reason, fingerprint, and evidence field matches. Raise `PublicationRecoveryConflictError` for any differing replay and `PermissionError` when required evidence/authority is unavailable. Do not accept caller-supplied authority, fingerprints, liability, owner, or deadline.
 
-- [ ] **Step 4: Verify idempotency, concurrency, and conflict**
+- [x] **Step 4: Verify idempotency, concurrency, and conflict**
 
 Run: `.venv/bin/pytest -q tests/integration/test_v4_publication_recovery_holds.py -k 'exact_hold or conflicting_reason or concurrent_exact'`
 
 Expected: PASS with one stable hold and unchanged liabilities.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/salience/cycles/publication_recovery.py tests/integration/test_v4_publication_recovery_holds.py
 git commit -m "feat(v4): record publication recovery holds"
 ```
+
+**Recorded result:** Commit `78383f27a3caf368f5cefd55f9aff0a9dd6a4c84`; the exact replay/conflict/concurrency selection passed 3 tests (2 deselected).
 
 ### Task 4: Persist expired-permit receipt recovery holds
 
@@ -171,32 +177,34 @@ git commit -m "feat(v4): record publication recovery holds"
 - Consumes: `record_publication_recovery_hold(..., reason="expired_permit_receipt")` from Task 3.
 - Produces: existing nonretryable `LegacyPublicationRecoveryHeld` with safe `hold_id` details.
 
-- [ ] **Step 1: Extend the expired-permit test red**
+- [x] **Step 1: Extend the expired-permit test red**
 
 Add `test_expired_receipt_hold_requires_current_reconcile_scope_and_never_resubmits` assertions: one typed row, matching stable ID in failure details, one durable accepted receipt, no second submit/status progress, and unchanged canonical liabilities. Cover missing receipt, altered authorization, and revoked reconcile grant creating no misleading hold. Task 6 owns the signed inspection assertion after that projection exists.
 
-- [ ] **Step 2: Prove no hold is persisted**
+- [x] **Step 2: Prove no hold is persisted**
 
 Run the named test with `.venv/bin/pytest -q tests/integration/test_v4_legacy_publication.py::test_expired_receipt_hold_requires_current_reconcile_scope_and_never_resubmits`
 
 Expected: FAIL on missing hold/failure details while existing fail-closed behavior remains.
 
-- [ ] **Step 3: Record the hold at the validated boundary**
+- [x] **Step 3: Record the hold at the validated boundary**
 
 After `_expired_permit_receipt_recovery` has validated the exact effect, receipt, current publication facts, and separate reconciliation grant, record/exact-replay the hold before raising the typed failure. Do not move provider readback earlier or add status polling.
 
-- [ ] **Step 4: Verify expired-permit recovery**
+- [x] **Step 4: Verify expired-permit recovery**
 
 Run the named test again plus `test_publication_revoked_reconcile_scope_holds_durable_acceptance`.
 
 Expected: PASS; revoked reconciliation creates no new hold/effect, exact recovery creates one hold and no resubmit.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/salience/cycles/legacy_publication_runtime.py tests/integration/test_v4_legacy_publication.py
 git commit -m "feat(v4): hold expired publication receipt recovery durably"
 ```
+
+**Recorded result:** Commits `42242b6` and `75ef794`; the final expiry, exact replay, revoked-scope and missing-receipt regressions passed on the current schema.
 
 ### Task 5: Persist post-close published-cancellation holds
 
@@ -208,32 +216,34 @@ git commit -m "feat(v4): hold expired publication receipt recovery durably"
 - Consumes: `record_publication_recovery_hold(..., reason="published_during_cancel")` from Task 3.
 - Produces: the same typed failure with stable hold ID, before base cancellation writes.
 
-- [ ] **Step 1: Extend the direct cancellation regression red**
+- [x] **Step 1: Extend the direct cancellation regression red**
 
 Update `test_post_close_cancel_reads_published_then_holds_original_liability` to require one `published_during_cancel` row and stable failure detail while retaining all existing zero-terminal-write and unchanged-liability assertions.
 
-- [ ] **Step 2: Prove the new record is missing**
+- [x] **Step 2: Prove the new record is missing**
 
 Run: `.venv/bin/python -m pytest -q tests/integration/test_v4_legacy_publication.py::test_post_close_cancel_reads_published_then_holds_original_liability`
 
 Expected: FAIL only on recovery-hold assertions.
 
-- [ ] **Step 3: Record before the existing typed failure**
+- [x] **Step 3: Record before the existing typed failure**
 
 When the exact cancellation readback is `published`, call the Task 3 recorder before raising. Do not call the base cancellation projector or change the confirmed-cancelled branch.
 
-- [ ] **Step 4: Verify both cancellation branches**
+- [x] **Step 4: Verify both cancellation branches**
 
 Run: `.venv/bin/pytest -q tests/integration/test_v4_legacy_publication.py -k 'post_close_cancel or cancellation'`
 
 Expected: PASS; published holds, confirmed cancelled retains its existing projection.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/salience/cycles/legacy_publication_runtime.py tests/integration/test_v4_legacy_publication.py
 git commit -m "feat(v4): hold published cancellation readback durably"
 ```
+
+**Recorded result:** Commit `5ce27ab47f230f91f35b02c1e02d95a2f557c1d8`; post-close cancellation and confirmed-cancel regressions passed (2 tests).
 
 ### Task 6: Prove crash-after-commit recovery and inspection parity
 
@@ -247,11 +257,11 @@ git commit -m "feat(v4): hold published cancellation readback durably"
 - Consumes: `load_publication_recovery_hold` from Task 3.
 - Produces: additive `recovery_hold: dict | None` in the existing run inspection response.
 
-- [ ] **Step 1: Write red crash and inspection tests**
+- [x] **Step 1: Write red crash and inspection tests**
 
 Add `test_hold_commit_then_process_death_replays_without_liability_change`: terminate the activity/worker after the hold commit but before its typed failure is acknowledged, restart a compatible worker, and assert one stable row/ID. Compare the exact receipt, effect, job, reservation, cycle, ordered status events, output/absence, and ordered outbox rows before commit, after process death, and after retry. Extend signed route, `LegacyPublicationClient.inspect`, and `content legacy-publication inspect` assertions for both hold reasons, the same safe projection, and absence of any hold mutation command.
 
-- [ ] **Step 2: Prove inspection is missing and crash recovery is incomplete**
+- [x] **Step 2: Prove inspection is missing and crash recovery is incomplete**
 
 Run:
 
@@ -263,22 +273,24 @@ Run:
 
 Expected: FAIL on missing `recovery_hold` and stable failure detail; no duplicate effect is allowed even in red.
 
-- [ ] **Step 3: Add the bounded inspection projection**
+- [x] **Step 3: Add the bounded inspection projection**
 
 Join/load by the already scoped operation in `LegacyDispatch.inspect`; return only the model's safe fields or `None`. Keep SDK/CLI passthrough code unchanged unless a failing typed contract proves an additive field declaration is required.
 
-- [ ] **Step 4: Verify crash recovery and all three clients**
+- [x] **Step 4: Verify crash recovery and all three clients**
 
 Repeat the exact two-test command from Step 2.
 
 Expected: PASS; one hold survives process death, retry reuses it, liabilities remain unchanged, and no mutation route exists.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/salience/cycles/legacy_dispatch.py tests/integration/test_v4_publication_recovery_holds.py tests/integration/test_v4_legacy_publication.py
 git commit -m "feat(v4): expose immutable publication recovery holds"
 ```
+
+**Recorded result:** Commit `931840ddfc78314b93d306b8c130e9f39ed7ec4f`; process-death replay/inspection passed (2 tests), and both hold-reason projections passed (2 tests).
 
 ### Task 7: Add the both-reason pre-restart rollback verifier
 
@@ -291,21 +303,21 @@ git commit -m "feat(v4): expose immutable publication recovery holds"
 - Produces: `verify_publication_recovery_rollback(database_url: str, *, workspace_id: UUID, operation_ids: Mapping[PublicationRecoveryReason, UUID]) -> tuple[PublicationRecoveryHoldView, PublicationRecoveryHoldView]`.
 - Produces: offline script arguments `--database-url`, `--workspace-id`, `--expired-operation-id`, `--cancel-operation-id`; exit 0 only after both holds and liabilities match.
 
-- [ ] **Step 1: Write the red rollback test**
+- [x] **Step 1: Write the red rollback test**
 
 Add `test_rollback_verifier_requires_both_reasons_and_unchanged_liabilities`. Assert missing reason, duplicate operation, changed reason/evidence, or any changed receipt/effect/job/reservation/cycle/event/output/outbox value raises and yields nonzero script exit. Assert exact retained rows return both stable IDs and exit 0.
 
-- [ ] **Step 2: Prove no verifier exists**
+- [x] **Step 2: Prove no verifier exists**
 
 Run: `.venv/bin/python -m pytest -q tests/integration/test_v4_publication_recovery_holds.py::test_rollback_verifier_requires_both_reasons_and_unchanged_liabilities`
 
 Expected: import/script FAIL.
 
-- [ ] **Step 3: Implement read-only verification**
+- [x] **Step 3: Implement read-only verification**
 
 Require the mapping keys to equal both exact reasons and operations to be distinct. Reload each immutable hold and recompute its current liability snapshot/fingerprint in one repeatable-read transaction; compare with stored snapshots. The script prints bounded JSON containing only workspace, reasons, operation IDs, hold IDs, and `verified: true`.
 
-- [ ] **Step 4: Verify the mandatory rollback gate**
+- [x] **Step 4: Verify the mandatory rollback gate**
 
 Run the named pytest command from Step 2, then invoke the script against the disposable fixture database populated by the rehearsal harness:
 
@@ -319,12 +331,14 @@ Run the named pytest command from Step 2, then invoke the script against the dis
 
 Expected: exact both-reason state PASS; every missing/mutated case blocks prior-code restart.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/salience/cycles/publication_recovery.py scripts/verify-v4-publication-recovery-rollback.py tests/integration/test_v4_publication_recovery_holds.py
 git commit -m "feat(v4): gate publication hold rollback on both reasons"
 ```
+
+**Recorded result:** Commit `7878208e7a353f93bb70279ad0dd7f0760f93ec4`; the both-reason rollback verifier test passed.
 
 ### Task 8: Run the complete focused application qualification
 
@@ -335,7 +349,7 @@ git commit -m "feat(v4): gate publication hold rollback on both reasons"
 - Consumes: all implementation and tests above.
 - Produces: a clean application commit and captured focused command/JUnit/log/source manifest for evidence.
 
-- [ ] **Step 1: Run migration and focused suites**
+- [x] **Step 1: Run migration and focused suites**
 
 Run:
 
@@ -355,19 +369,21 @@ Run:
 
 Expected: all PASS, zero failures/errors/skips; record exact counts and duration rather than predicting them.
 
-- [ ] **Step 2: Run rollback rehearsal for both reasons**
+- [x] **Step 2: Run rollback rehearsal for both reasons**
 
 Populate one exact hold per reason, execute the offline verifier, stop/drain the compatible fixture worker, re-run the verifier, and exercise the retained prior-code fail-closed path without downgrading `0042`.
 
 Expected: both verification passes report the same hold IDs; all liability snapshots remain identical; prior-code restart is not attempted on a failed verifier.
 
-- [ ] **Step 3: Repair only evidenced failures and rerun affected scope**
+- [x] **Step 3: Repair only evidenced failures and rerun affected scope**
 
 Use `superpowers:systematic-debugging` for any failure. Add a regression before changing behavior. Repeat the complete focused command after the last repair.
 
-- [ ] **Step 4: Commit the final application candidate**
+- [x] **Step 4: Commit the final application candidate**
 
 If Step 3 produced repairs, stage only the exact reviewed files named by `git diff --name-only`, inspect `git diff --cached`, and commit `feat(v4): qualify durable publication recovery holds`. If no repair was needed, create no empty commit. Record the resulting application HEAD as the qualified application commit.
+
+**Recorded result:** No application commit; candidate remains `7878208e7a353f93bb70279ad0dd7f0760f93ec4`. Focused suite: 116 passed; compileall passed; rollback rehearsal: 1 passed; Task 8 evidence review: PASS with zero findings. Three Alembic deprecation warnings were reported.
 
 ### Task 9: Reconcile active documentation and durable evidence
 
@@ -388,7 +404,7 @@ If Step 3 produced repairs, stage only the exact reviewed files named by `git di
 - Consumes: actual Task 8 SHA/results; rereview findings hash `483b57e8ae1aee0993dea01d8e9c5b50f5add3bed0f9bb04887ecc2e013117d5`; rereview result hash `3ed1e9052513a850a878a802f0d5137f69275c34d9b25e16f73d5baccbe6d992`; meta-review report hash `507d7c5422f43f28cb953ffa34d472ad7933def6da6b2dce1a30119624c4b96e`; and meta-review result hash `169129ec9673cd98c0545b17152d3246921b8bee34b45e9a257c60295b0dee3e`.
 - Produces: source-bound current evidence with R18/R32 local advancement and every retained production gate explicit.
 
-- [ ] **Step 1: Capture actual full non-live and documentation results**
+- [x] **Step 1: Capture actual full non-live and documentation results**
 
 Run:
 
@@ -407,21 +423,29 @@ Parse every modified JSON file with Python's `json` module. Render the six Merma
 
 Expected: PASS with actual counts; do not reuse 604 as the new total.
 
-- [ ] **Step 2: Update only current status and evidence**
+**Recorded result:** The authoritative clean disposable-DB run passed 614 tests, zero failures/errors/skips, with three Alembic deprecation warnings (917.367s pytest; 920.214s runner). It used a fresh `template0` database with zero relevant baseline, remained at `0042_publication_recovery_holds`, dropped the disposable database, and preserved the original database. Final JUnit SHA-256 is `ed97fc0aaf5c1b2f89c17f7c77f9aaf08679feb22634933632e5b7a3757c605a`; final log SHA-256 is `64985ba84b268d8056ebb56bec3951e79c086b84d995901d33e39ad791d379f4`.
+
+- [x] **Step 2: Update only current status and evidence**
 
 Record completed 2026-10-06 rereview/meta-review, targeted 5/5 rerun, Task 8 focused results, new full results, both-reason rollback proof, application SHA, and source hashes. Correct the five audited stale references, remove the repeated R18 sentence, update all active “rereview pending” checkpoint aliases now made stale, and preserve historical captures verbatim.
 
-- [ ] **Step 3: Preserve requirement and gate accuracy**
+**Recorded result:** All 54 active exact stale-banner Markdown paths, root `README.md`, the active legacy dispatch contract, the five current JSON records, and the new recovery-hold evidence record are reconciled. The corrected-publication rereview remains explicitly scoped to application `a4b2368cdb463939d093020224a5b5667392aee6` with documentation/observed HEAD `d0311725686d81b7b4747c2d6225986e5ea3a524`; its four supplied artifact hashes and the bounded 5/5 orchestrator attribution are recorded. It does not review application `7878208`. Four duplicate R18 acceptance sentences were removed; one remains.
+
+- [x] **Step 3: Preserve requirement and gate accuracy**
 
 Advance only local fixture R18/R32 hold/ownership coverage. Keep production-wide revocation, general policy, routing/live schedule inventory, production recovery workers, R33 resume, R34 external alerts, RG0/RG1, and P2–P7 open/held.
 
-- [ ] **Step 4: Run documentation verification after tracked updates**
+**Recorded result:** Current R18/R32 mapped verifier counts were derived from distinct test cases in the authoritative JUnit as 76 and 81. Only local no-effects fixture hold/ownership coverage advances. Production effects remain disabled; production-wide revocation, general policy, routing/live schedule inventory, production recovery workers, R33/R34, RG0/RG1, full RG1, and P2–P7 remain open or held; P6 remains disabled and `main` remains unmerged.
+
+- [x] **Step 4: Run documentation verification after tracked updates**
 
 Repeat `.venv/bin/python docs/v4/test_checks.py`, `.venv/bin/python docs/v4/check.py --self-test`, `.venv/bin/python docs/v4/check.py`, all four `tests/scripts/*.sh`, JSON parsing for every modified JSON, Mermaid rendering, `.venv/bin/python -m pip check`, `.venv/bin/python -m compileall -q src tests scripts docs/v4`, and `git diff --check`.
 
 Expected: all PASS and every referenced hash resolves to the final tracked content or named ignored artifact.
 
-- [ ] **Step 5: Commit documentation/evidence**
+**Recorded result:** `docs/v4/test_checks.py` passed 15 tests; the consolidated checker and self-test passed 75 requirements with 356 locked source files, 360 inventory entries, and 6 negative controls; all 4 documentation shell contracts passed; all 6 Mermaid diagrams rendered with Mermaid 12.0.0; all 6 modified JSON files parsed; `pip check`, compileall, historical 14-path SHA verification, 356-file source-lock verification, and `git diff --check` passed. The tracked documentation audit was recomputed as 88 Markdown paths and 246 documentation artifacts.
+
+- [x] **Step 5: Commit documentation/evidence**
 
 Stage only the exact reviewed paths listed in this task and any current-banner aliases proven stale by the recorded search. Inspect `git diff --cached --name-only` and `git diff --cached` before committing `docs(v4): qualify publication recovery hold increment`; never stage the unrelated `.gitignore` change.
 

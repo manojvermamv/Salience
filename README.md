@@ -1,21 +1,23 @@
 # Salience V4
 
-Salience is a self-hostable, provider-neutral content operating system built around PostgreSQL, Temporal workflows, typed agents, governed artifacts, and replaceable adapters. The V4 blueprint describes the full target architecture. The current application is locally qualified within no-effects fixture boundaries; production is not fully integrated or released.
+Salience is a self-hostable, provider-neutral content operating system built around PostgreSQL, Temporal workflows, typed agents, governed artifacts, and replaceable adapters. The V4 blueprint describes the full target architecture. Current application evidence remains bounded to local fixtures; production is not fully integrated or released.
 
 ## Current status and evidence
 
-Three evidence anchors describe different things:
+The current application candidate is `7878208e7a353f93bb70279ad0dd7f0760f93ec4`. Tasks 1–7 implement corrected parallel parent status and durable publication recovery holds; Task 8 qualified **116 focused tests**, compileall and a two-reason rollback rehearsal with stable hold IDs and unchanged liabilities through a local worker drain. The clean template0-database full non-live suite passed **614 tests** with 0 failures, errors or skips and 3 Alembic deprecation warnings (917.37s pytest; 920.214s runner). Its disposable database was dropped and the original preserved. See the [current publication recovery-hold evidence](docs/v4/publication-recovery-hold-evidence.json).
 
-- **Application qualification:** `a4b2368cdb463939d093020224a5b5667392aee6` passed **21 focused / 604 full non-live tests**, with **352 source hashes**. This locally qualifies the original legacy intelligence, selected-brief, no-send dummy, dry-creative, governed-publication stages, and both original native schedule conversions with resumed ingress. Qualification uses isolated fixtures, a zero publication budget, and disabled effects. See the [application evidence](docs/v4/legacy-publication-evidence.json).
-- **Published feature/documentation checkpoint:** `a2e73c7242d67388e8cd3be4361283cd8e6c081a`.
-- **CI readback for that exact checkpoint:** [run 37346137016](https://github.com/manojvermamv/Salience/actions/runs/37346137016) passed both `verify` and `p0-regression`; `p0-regression` reported **604 passed** and **three warnings**. This readback is bound to the checkpoint above. A later documentation commit needs its own exact-head readback after publication.
+The corrected-publication rereview returned `NO_FINDINGS_WITHIN_REVIEWED_FIXTURE_CORRECTION_SCOPE` for application `a4b2368cdb463939d093020224a5b5667392aee6`, with documentation and observed HEAD `d0311725686d81b7b4747c2d6225986e5ea3a524`; its meta-review returned `ACCEPT`. That review predates Tasks 1–8 and does not review `7878208`.
 
-P0 and P1 items 1–7 are locally qualified inside no-effects fixture boundaries. The accepted P1/P3 corrections are included in the fresh application qualification; exact corrected-head publication rereview remains pending. A CI pass or local fixture result does not complete that rereview or authorize production.
+**Historical publication qualification:** `a4b2368cdb463939d093020224a5b5667392aee6` passed **21 focused / 604 full non-live tests**, with **352 source hashes**, for the original legacy intelligence, selected-brief, no-send dummy, dry-creative, governed-publication stages and both original native schedule conversions. It used isolated fixtures, a zero publication budget and disabled effects. See the [historical application evidence](docs/v4/legacy-publication-evidence.json).
+
+**Historical published checkpoint and CI:** `a2e73c7242d67388e8cd3be4361283cd8e6c081a` was the published feature/documentation checkpoint. [CI run 37346137016](https://github.com/manojvermamv/Salience/actions/runs/37346137016) passed `verify` and `p0-regression` for that checkpoint; `p0-regression` reported **604 passed** and **three warnings**. This is not a CI result for `7878208`.
+
+The parallel-agent extension remains a separately scoped fixture result at `2653d2ecb3f0d5bb8ea6560de274137dd6032a96`. Current fixture evidence advances R18/R32 hold and ownership coverage only. Production effects remain disabled; production-wide revocation, general policy, production routing and live schedule inventory, production recovery workers, R33/R34, RG0/RG1, and P2–P7 remain open or held. `main` remains unmerged and formal PR approval remains NOT RUN.
 
 | Area | Current evidence | Production status |
 | --- | --- | --- |
-| P0 foundation and P1 items 1–7 | Locally qualified within no-effects fixture boundaries; the current application anchor is `a4b2368cdb463939d093020224a5b5667392aee6` | Effects disabled; RG0 and RG1 are **HELD** |
-| Original legacy stages and native schedules | Original intelligence, selected brief, no-send dummy, dry creative, governed publication, and both original native schedule conversions locally qualified | Fixture-only; no live provider or production schedule routing qualification |
+| Task 1–8 publication recovery increment | 116 focused tests, rollback rehearsal and 614-test full non-live suite pass in local fixtures at `7878208` | Effects disabled; RG0 and RG1 are **HELD** |
+| Historical original legacy stages and native schedules | Locally qualified at application `a4b2368` within the dated 21/604/352 fixture evidence | No live provider or production schedule routing qualification |
 | Later phases | P2–P7 gated/planned; optional P6 disabled | Not released |
 | Main branch | `8e50d68efbf2bec2aabfb2fe3226e01635de2adb` | Unmerged; formal independent PR approval remains NOT RUN |
 
@@ -24,6 +26,8 @@ Local green status below means implemented and qualified in a fixture scope. It 
 ## V4 target architecture
 
 This overview shows the complete target and the status of each area. The arrows into held or planned areas show intended architecture; they do not assert that external effects or later phases are enabled.
+
+An approved creative decision is immutable: a changed governed decision creates a new distribution and ready-package version. `ReadyToPublishPackage@v1` is the only valid Phase-9 publishing input; V4 additionally requires the current account-bound request and G3 permit.
 
 ```mermaid
 flowchart TB
@@ -184,7 +188,7 @@ Patched workflow histories require compatible workers through rollback. Local fi
 
 ## What is and is not production-ready
 
-The local results qualify specific no-effects fixtures. They do not qualify live providers, real production accounts, nonzero publication budgets, production schedule inventory or routing, production-wide recovery and alert delivery, later-phase records, or a full RG1 release. The application and CI evidence above answer separate questions: `a4b2368…` is the source-bound local application qualification; `a2e73c7…` is the published feature/documentation checkpoint; run `37346137016` is the exact-head GitHub CI readback for that checkpoint. None of these claims that the pending exact corrected-head publication rereview is complete.
+The local results qualify specific no-effects fixtures. They do not qualify live providers, real production accounts, nonzero publication budgets, production schedule inventory or routing, production-wide recovery and alert delivery, later-phase records, or a full RG1 release. The application and CI evidence above answer separate questions: `a4b2368…` is the source-bound local application qualification; `a2e73c7…` is the published feature/documentation checkpoint; run `37346137016` is the exact-head GitHub CI readback for that checkpoint. The corrected-publication rereview is complete only for application `a4b2368` with documentation/observed HEAD `d031172`; it does not review `7878208`. No CI or PR approval is claimed for `7878208`.
 
 Production effects remain disabled. RG0 and RG1 are **HELD**. P2–P7 remain gated/planned, optional P6 remains disabled, and `main` remains at `8e50d68efbf2bec2aabfb2fe3226e01635de2adb` without this feature merged. Production is not fully integrated or released.
 
