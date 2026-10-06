@@ -1,10 +1,11 @@
 """No-effects legacy intelligence compatibility over canonical V4 admission."""
 
+from dataclasses import asdict
+from datetime import datetime, timezone
 from hashlib import sha256
 import json
 import os
 from typing import Literal
-from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
 from psycopg.types.json import Jsonb
@@ -191,7 +192,33 @@ class LegacyDispatch(LegacyPublicationCommands, CycleAdmission):
             if not row:
                 raise LookupError("legacy job outside current scope")
             claim = connection.execute("SELECT state FROM v4_permit_claims WHERE cycle_id=%s",(row["cycle_id"],)).fetchone()
-            return self._view(row) | {"state":row["job_state"],"cycle_state":row["cycle_state"],"dispatch_state":claim["state"] if claim else "pending","output":row["output_payload"] or {},"dry_run":row.get("stage")!="publication"}
+            from salience.cycles.publication_recovery import load_publication_recovery_hold
+
+            recovery_hold = load_publication_recovery_hold(
+                connection,
+                workspace_id=self.workspace_id,
+                operation_id=row["operation_id"],
+            )
+            recovery_hold_view = (
+                {
+                    key: value.isoformat()
+                    if isinstance(value, datetime)
+                    else str(value)
+                    if isinstance(value, UUID)
+                    else value
+                    for key, value in asdict(recovery_hold).items()
+                }
+                if recovery_hold
+                else None
+            )
+            return self._view(row) | {
+                "state": row["job_state"],
+                "cycle_state": row["cycle_state"],
+                "dispatch_state": claim["state"] if claim else "pending",
+                "output": row["output_payload"] or {},
+                "dry_run": row.get("stage") != "publication",
+                "recovery_hold": recovery_hold_view,
+            }
 
     def bind_schedule(self, goal_id, *, expected_revision, niche):
         require_fixture()

@@ -2,6 +2,8 @@
 
 from concurrent.futures import ThreadPoolExecutor
 import asyncio
+from datetime import datetime, timezone
+import json
 import os
 from pathlib import Path
 import subprocess
@@ -477,6 +479,233 @@ def _recovery_hold_count(database, operation_id):
             f"SELECT count(*) FROM public.{TABLE} WHERE operation_id=%s",
             (operation_id,),
         ).fetchone()[0]
+
+
+@pytest.mark.asyncio
+async def test_hold_commit_then_process_death_replays_without_liability_change(
+    monkeypatch, tmp_path
+):
+    from temporalio import activity
+    from temporalio.client import Client, WorkflowExecutionStatus, WorkflowFailureError
+
+    from test_v4_legacy_publication import (
+        _allow,
+        _exception_chain,
+        _hard_exit_publication_worker,
+        _publication_fixture,
+    )
+
+    source = os.environ["TEST_DATABASE_URL"]
+    name, database = _create_database(source, "recovery_expired_receipt_")
+    monkeypatch.setenv("TEST_DATABASE_URL", database)
+    monkeypatch.setenv("SALIENCE_DEPLOYMENT_MODE", "fixture")
+    monkeypatch.setenv("SALIENCE_EFFECTS_ENABLED", "false")
+    try:
+        upgraded = _migrate(database, "upgrade", "head")
+        assert upgraded.returncode == 0, upgraded.stderr
+        fixture = await _publication_fixture(database)
+        submitted = fixture["bridge"].submit_publication(fixture["command"])
+        _allow(
+            database,
+            fixture["workspace_id"],
+            fixture["actor_id"],
+            ("legacy:publication:reconcile:account:" + fixture["account"].id,),
+        )
+        operation_id = submitted["operation_id"]
+        workflow_id = "salience-v4-legacy-operation:" + operation_id
+        precommit_path = tmp_path / "recovery-hold-precommit-snapshot.json"
+        activity_log_path = tmp_path / "recovery-hold-child-activity.jsonl"
+        activity_timing_path = tmp_path / "recovery-hold-attempt-2-timing.json"
+        hold_worker_exit = await _hard_exit_publication_worker(
+            fixture,
+            tmp_path,
+            after_acceptance=True,
+            permit_ttl_seconds=10,
+            after_hold_commit=True,
+            precommit_snapshot_path=precommit_path,
+            expire_after_first_submit=True,
+            activity_log_path=activity_log_path,
+            activity_timing_path=activity_timing_path,
+            operation_id=operation_id,
+        )
+        assert hold_worker_exit == 74, (
+            f"hold worker exit={hold_worker_exit}, activity log="
+            f"{activity_log_path.read_text() if activity_log_path.exists() else None!r}, "
+            f"timing written={activity_timing_path.exists()}, "
+            f"precommit written={precommit_path.exists()}"
+        )
+        child_activity_events = [
+            json.loads(line) for line in activity_log_path.read_text().splitlines()
+        ]
+        assert [
+            (event["event"], event["attempt"]) for event in child_activity_events
+        ] == [("started", 1), ("failed", 1), ("started", 2), ("reconcile", 2)]
+        attempt_2_timing = json.loads(activity_timing_path.read_text())
+        assert attempt_2_timing["attempt"] == 2
+        assert attempt_2_timing["deadline_is_future"] is True
+        assert attempt_2_timing["permit_is_expired"] is True
+        assert attempt_2_timing["runtime_hold_reasons"] == []
+        assert (
+            datetime.fromisoformat(attempt_2_timing["started_at"])
+            > datetime.fromisoformat(child_activity_events[1]["at"])
+        )
+
+        client = await Client.connect(os.environ["TEST_TEMPORAL_TARGET"])
+        handle = client.get_workflow_handle(workflow_id)
+        precommit_snapshot = json.loads(precommit_path.read_text())
+        execution_deadline = precommit_snapshot["context"]["payload"]["execution_deadline"]
+
+        with psycopg.connect(database) as connection:
+            hold_rows = connection.execute(
+                f"SELECT id,reason,liability_snapshot FROM public.{TABLE} WHERE operation_id=%s",
+                (operation_id,),
+            ).fetchall()
+            assert len(hold_rows) == 1
+            hold_id, reason, hold_snapshot = hold_rows[0]
+            assert reason == "expired_permit_receipt"
+            after_process_death = connection.execute(
+                _SNAPSHOT_SQL, (operation_id,)
+            ).fetchone()[0]
+            post_death_timing = connection.execute(
+                """SELECT clock_timestamp(), context.payload->>'execution_deadline',
+                          (context.payload->>'execution_deadline')::timestamptz > clock_timestamp()
+                   FROM v4_run_contexts context WHERE context.id=%s""",
+                (submitted["context_id"],),
+            ).fetchone()
+            runtime_holds_after_death = connection.execute(
+                "SELECT reason,created_at FROM v4_runtime_holds WHERE cycle_id=%s",
+                (submitted["cycle_id"],),
+            ).fetchall()
+
+        assert precommit_snapshot == hold_snapshot == after_process_death
+        assert _recovery_hold_count(database, operation_id) == 1
+        assert post_death_timing[2], post_death_timing
+        assert runtime_holds_after_death == []
+
+        description = await handle.describe()
+        assert description.status == WorkflowExecutionStatus.RUNNING
+
+        from salience.cycles.outbox import CycleOutbox
+        from salience.cycles.legacy_publication_runtime import (
+            DurableLegacyFixturePublisher,
+            GuardedPublicationActivities,
+        )
+        from salience.cycles.legacy_runtime import build_legacy_worker
+        import salience.cycles.publication_recovery as recovery
+
+        original_record = recovery.record_publication_recovery_hold
+        replayed_ids = []
+
+        def track_replay(*args, **kwargs):
+            hold = original_record(*args, **kwargs)
+            replayed_ids.append(str(hold.id))
+            return hold
+
+        original_reconcile = DurableLegacyFixturePublisher.reconcile
+        reconcile_calls = []
+
+        async def track_reconcile(self, idempotency_key):
+            receipt = await original_reconcile(self, idempotency_key)
+            reconcile_calls.append(receipt)
+            return receipt
+
+        original_activity = GuardedPublicationActivities.submit_or_reconcile
+        activity_attempts = []
+        activity_started_at = []
+
+        @activity.defn(name="salience.publication.submit_or_reconcile")
+        async def tracked_activity(self, payload):
+            activity_attempts.append(activity.info().attempt)
+            activity_started_at.append(datetime.now(timezone.utc))
+            return await original_activity(self, payload)
+
+        monkeypatch.setattr(recovery, "record_publication_recovery_hold", track_replay)
+        monkeypatch.setattr(DurableLegacyFixturePublisher, "reconcile", track_reconcile)
+        monkeypatch.setattr(GuardedPublicationActivities, "submit_or_reconcile", tracked_activity)
+        outbox = CycleOutbox(
+            database, workspace_id=fixture["workspace_id"], delivery_lane="legacy"
+        )
+        worker = build_legacy_worker(client, task_queue=fixture["queue"], outbox=outbox)
+        worker_task = asyncio.create_task(worker.run())
+        try:
+            with pytest.raises(WorkflowFailureError) as failure:
+                await asyncio.wait_for(handle.result(), timeout=35)
+        finally:
+            await asyncio.wait_for(worker.shutdown(), timeout=10)
+            await asyncio.wait_for(worker_task, timeout=10)
+
+        assert activity_attempts == [3]
+        assert activity_started_at[0] > datetime.fromisoformat(
+            attempt_2_timing["started_at"]
+        )
+        assert activity_started_at[0] < datetime.fromisoformat(execution_deadline)
+        assert reconcile_calls == []
+        typed_failures = [
+            error
+            for error in _exception_chain(failure.value)
+            if getattr(error, "type", None) == "LegacyPublicationRecoveryHeld"
+        ]
+        assert len(typed_failures) == 1
+        assert typed_failures[0].details == ({"hold_id": str(hold_id)},)
+
+        with psycopg.connect(database) as connection:
+            after_retry = connection.execute(
+                _SNAPSHOT_SQL, (operation_id,)
+            ).fetchone()[0]
+            receipt_count = connection.execute(
+                "SELECT count(*) FROM v4_legacy_publication_fixture_receipts WHERE operation_id=%s",
+                (operation_id,),
+            ).fetchone()[0]
+            job = connection.execute(
+                "SELECT state,output_payload FROM jobs WHERE id=%s",
+                (submitted["job_id"],),
+            ).fetchone()
+            publication_count = connection.execute(
+                """SELECT count(*) FROM publications publication
+                   JOIN publication_requests request
+                     ON request.id=publication.publication_request_id
+                   WHERE request.request_key=%s""",
+                ("v4-legacy:" + operation_id,),
+            ).fetchone()[0]
+            retry_timing = connection.execute(
+                """SELECT clock_timestamp(),
+                          (context.payload->>'execution_deadline')::timestamptz > clock_timestamp(),
+                          (SELECT jsonb_agg(to_jsonb(hold) ORDER BY hold.created_at)
+                           FROM v4_runtime_holds hold WHERE hold.cycle_id=binding.cycle_id),
+                          (SELECT jsonb_agg(to_jsonb(event) ORDER BY event.created_at,event.id)
+                           FROM v4_cycle_events event
+                           WHERE event.cycle_id=binding.cycle_id AND event.kind='runtime_held')
+                   FROM v4_legacy_dispatches binding
+                   JOIN v4_run_contexts context ON context.id=binding.context_id
+                   WHERE binding.operation_id=%s""",
+                (operation_id,),
+            ).fetchone()
+
+        assert precommit_snapshot == hold_snapshot == after_process_death == after_retry
+        assert retry_timing[1] is True, retry_timing
+        assert retry_timing[2] is None
+        assert retry_timing[3] is None
+        assert receipt_count == 1
+        assert job[0] != "succeeded" and job[1] is None
+        assert publication_count == 0
+        assert replayed_ids == [str(hold_id)], (
+            f"replayed_ids={replayed_ids!r}, activity_attempts={activity_attempts!r}, "
+            f"execution_deadline={execution_deadline!r}, post_death_timing={post_death_timing!r}, "
+            f"runtime_holds_after_death={runtime_holds_after_death!r}, retry_timing={retry_timing!r}"
+        )
+        for field in (
+            "fixture_receipt",
+            "external_effect",
+            "budget_reservation",
+            "job",
+            "cycle",
+            "publication_status_events",
+            "cycle_events",
+            "cycle_outbox",
+        ):
+            assert after_retry[field] == precommit_snapshot[field], field
+    finally:
+        _drop_database(source, name)
 
 
 @pytest.mark.asyncio
