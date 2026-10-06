@@ -45,7 +45,7 @@ The parent canonical run remains `delegating` until all children are terminal. N
 
 ### 2. Durable publication recovery hold
 
-Add migration `0042_legacy_publication_recovery_holds` after `0041_native_publication_sources`. It creates `v4_legacy_publication_recovery_holds`, an append-only sidecar with:
+Add `migrations/versions/0042_legacy_publication_recovery_holds.py` with revision `0042_publication_recovery_holds` after `0041_native_publication_sources`. It creates `v4_legacy_publication_recovery_holds`, an append-only sidecar with:
 
 - stable hold ID;
 - unique original `operation_id`;
@@ -116,7 +116,7 @@ Tests are written first and must fail for the missing behavior.
 
 ### Migration and rollback
 
-- Upgrade from `0041` creates the table, constraints, trigger, and required narrow application-role privileges.
+- Upgrade from `0041` creates the table, constraints, triggers, and public-access revocation; existing deployment/test provisioning grants the concrete fixture runtime principal only `SELECT` and `INSERT`.
 - Empty downgrade to `0041` and re-upgrade succeeds.
 - Populated downgrade refuses to destroy hold history while leaving the database at `0042`.
 - Before any prior-code worker is restarted, rollback qualification creates and verifies one retained hold for each reason (`expired_permit_receipt` and `published_during_cancel`), drains current workers, and proves both holds and all associated liabilities remain unchanged. A missing, rewritten, or mismatched reason blocks the restart.
@@ -124,7 +124,7 @@ Tests are written first and must fail for the missing behavior.
 
 ## Migration and operational rollback
 
-Migration is additive and does not backfill or fabricate holds for historical failures. Existing application readers continue to work because the new inspection member is additive. Narrow privileges allow the fixture worker to insert exact holds and authorized application readers to select them; no identity, grant, receipt, cycle, job, reservation, or publication mutation privilege is added.
+Migration is additive and does not backfill or fabricate holds for historical failures. Existing application readers continue to work because the new inspection member is additive. The migration revokes public table access. Existing deployment/test role provisioning explicitly grants the fixture runtime principal only `SELECT` and `INSERT` on the hold table; no migration-managed application role is assumed. No identity, grant, receipt, cycle, job, reservation, or publication mutation privilege is added.
 
 Operational rollback first creates or identifies a qualified retained hold for each recovery reason, snapshots their exact receipt/effect/job/reservation/cycle/event/output/outbox liabilities, and stops/drains the compatible fixture publication worker. Before a prior-code worker may restart, the rollback verifier reads both committed hold rows directly, matches their immutable identities and reason-specific evidence, and proves every snapshotted liability is unchanged. It refuses restart if either reason is absent, rewritten, duplicated, or inconsistent. The prior code is then deployed while migration `0042` and its rows remain in place. Its existing `LegacyPublicationRecoveryHeld` behavior continues to fail closed, so rollback cannot replay or settle a held effect. Destructive downgrade is permitted only when the table is empty. Populated history requires a later separately reviewed migration; it is never deleted to make rollback pass.
 
