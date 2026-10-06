@@ -8,12 +8,13 @@ import subprocess
 import sys
 from threading import Barrier
 from urllib.parse import urlsplit, urlunsplit
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import psycopg
 from psycopg import sql
 from psycopg.types.json import Jsonb
 import pytest
+import pytest_asyncio
 
 
 ROOT = Path(__file__).parents[2]
@@ -407,3 +408,193 @@ async def test_direct_sql_recovery_hold_guards_race_and_populated_downgrade(monk
             ).fetchone()[0] == before_downgrade
     finally:
         _drop_database(source, name, role)
+
+
+@pytest_asyncio.fixture
+async def published_cancelled_recovery_case(monkeypatch, tmp_path):
+    from test_v4_legacy_publication import (
+        _hard_exit_publication_worker,
+        _publication_fixture,
+    )
+
+    source = os.environ["TEST_DATABASE_URL"]
+    name, database = _create_database(source, "recovery_helper_")
+    monkeypatch.setenv("SALIENCE_DEPLOYMENT_MODE", "fixture")
+    monkeypatch.setenv("SALIENCE_EFFECTS_ENABLED", "false")
+    monkeypatch.setenv("TEST_DATABASE_URL", database)
+    try:
+        upgraded = _migrate(database, "upgrade", "head")
+        assert upgraded.returncode == 0, upgraded.stderr
+        fixture = await _publication_fixture(database)
+        submitted = fixture["bridge"].submit_publication(fixture["command"])
+        assert await _hard_exit_publication_worker(
+            fixture, tmp_path, after_acceptance=True
+        ) == 73
+        with psycopg.connect(database) as connection:
+            connection.execute(
+                """UPDATE v4_legacy_publication_fixture_progress
+                   SET state='published', polls=2, updated_at=clock_timestamp()
+                   WHERE operation_id=%s AND state IN ('accepted','processing')""",
+                (submitted["operation_id"],),
+            )
+        fixture["bridge"].close(
+            submitted["cycle_id"],
+            disposition="cancelled",
+            reason="Preserve accepted publication liability while reading its final remote state",
+        )
+        yield fixture, submitted
+    finally:
+        _drop_database(source, name)
+
+
+def _liability_snapshot(database, operation_id):
+    with psycopg.connect(database) as connection:
+        row = connection.execute(_SNAPSHOT_SQL, (operation_id,)).fetchone()
+        assert row is not None and row[0] is not None
+        return row[0]
+
+
+def _assert_named_liabilities_unchanged(before, after):
+    assert after == before
+    for name in (
+        "fixture_receipt",
+        "fixture_progress",
+        "job",
+        "cycle",
+        "publication_status_events",
+        "external_effect",
+        "budget_reservation",
+        "cycle_events",
+        "cycle_outbox",
+    ):
+        assert after[name] == before[name], name
+    assert after["job"]["output_payload"] == before["job"]["output_payload"]
+
+
+def _recovery_hold_count(database, operation_id):
+    with psycopg.connect(database) as connection:
+        return connection.execute(
+            f"SELECT count(*) FROM public.{TABLE} WHERE operation_id=%s",
+            (operation_id,),
+        ).fetchone()[0]
+
+
+@pytest.mark.asyncio
+async def test_exact_hold_replay_returns_stable_id(published_cancelled_recovery_case):
+    from salience.cycles.publication_recovery import (
+        load_publication_recovery_hold,
+        record_publication_recovery_hold,
+    )
+
+    fixture, submitted = published_cancelled_recovery_case
+    database = fixture["database"]
+    operation_id = UUID(submitted["operation_id"])
+    before = _liability_snapshot(database, operation_id)
+    assert _recovery_hold_count(database, operation_id) == 0
+
+    first = record_publication_recovery_hold(
+        database,
+        workspace_id=fixture["workspace_id"],
+        operation_id=operation_id,
+        reason="published_during_cancel",
+    )
+    replay = record_publication_recovery_hold(
+        database,
+        workspace_id=fixture["workspace_id"],
+        operation_id=operation_id,
+        reason="published_during_cancel",
+    )
+
+    assert replay == first
+    assert replay.id is not None
+    after = _liability_snapshot(database, operation_id)
+    _assert_named_liabilities_unchanged(before, after)
+    assert _recovery_hold_count(database, operation_id) == 1
+    with psycopg.connect(database) as connection:
+        hold = connection.execute(
+            f"SELECT to_jsonb(row) FROM public.{TABLE} row WHERE operation_id=%s",
+            (operation_id,),
+        ).fetchone()[0]
+    assert hold["id"] == str(first.id)
+    assert hold["liability_snapshot"] == before
+    with psycopg.connect(database) as connection:
+        assert load_publication_recovery_hold(
+            connection,
+            workspace_id=fixture["workspace_id"],
+            operation_id=operation_id,
+        ) == first
+        assert load_publication_recovery_hold(
+            connection,
+            workspace_id=uuid4(),
+            operation_id=operation_id,
+        ) is None
+
+
+@pytest.mark.asyncio
+async def test_hold_replay_conflicting_reason_or_evidence_denies(
+    published_cancelled_recovery_case,
+):
+    from salience.cycles.publication_recovery import (
+        PublicationRecoveryConflictError,
+        record_publication_recovery_hold,
+    )
+
+    fixture, submitted = published_cancelled_recovery_case
+    database = fixture["database"]
+    operation_id = UUID(submitted["operation_id"])
+    before = _liability_snapshot(database, operation_id)
+    record_publication_recovery_hold(
+        database,
+        workspace_id=fixture["workspace_id"],
+        operation_id=operation_id,
+        reason="published_during_cancel",
+    )
+
+    with pytest.raises(PublicationRecoveryConflictError):
+        record_publication_recovery_hold(
+            database,
+            workspace_id=fixture["workspace_id"],
+            operation_id=operation_id,
+            reason="expired_permit_receipt",
+        )
+    with pytest.raises(PublicationRecoveryConflictError):
+        record_publication_recovery_hold(
+            database,
+            workspace_id=uuid4(),
+            operation_id=operation_id,
+            reason="published_during_cancel",
+        )
+
+    after = _liability_snapshot(database, operation_id)
+    _assert_named_liabilities_unchanged(before, after)
+    assert _recovery_hold_count(database, operation_id) == 1
+
+
+@pytest.mark.asyncio
+async def test_concurrent_exact_hold_insert_returns_one_stable_hold(
+    published_cancelled_recovery_case,
+):
+    from salience.cycles.publication_recovery import record_publication_recovery_hold
+
+    fixture, submitted = published_cancelled_recovery_case
+    database = fixture["database"]
+    operation_id = UUID(submitted["operation_id"])
+    before = _liability_snapshot(database, operation_id)
+    barrier = Barrier(2)
+
+    def record():
+        barrier.wait(timeout=10)
+        return record_publication_recovery_hold(
+            database,
+            workspace_id=fixture["workspace_id"],
+            operation_id=operation_id,
+            reason="published_during_cancel",
+        )
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        views = list(pool.map(lambda _: record(), range(2)))
+
+    assert views[0] == views[1]
+    assert _recovery_hold_count(database, operation_id) == 1
+    after = _liability_snapshot(database, operation_id)
+    _assert_named_liabilities_unchanged(before, after)
