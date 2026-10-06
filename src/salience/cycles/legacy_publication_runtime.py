@@ -352,8 +352,20 @@ class GuardedPublicationActivities(PublicationActivities):
 
         run = await self._run()
         if receipt.state == "published":
+            from salience.cycles.legacy_runtime import binding_for_job
+            from salience.cycles.publication_recovery import record_publication_recovery_hold
+
+            binding = await asyncio.to_thread(binding_for_job, self.outbox, run.job_id)
+            hold = await asyncio.to_thread(
+                record_publication_recovery_hold,
+                self.outbox.database_url,
+                workspace_id=self.outbox.workspace_id,
+                operation_id=binding["operation_id"],
+                reason="published_during_cancel",
+            )
             raise ApplicationError(
                 "published publication readback during cancellation requires typed execution recovery",
+                {"hold_id": str(hold.id)},
                 type="LegacyPublicationRecoveryHeld",
                 non_retryable=True,
             )

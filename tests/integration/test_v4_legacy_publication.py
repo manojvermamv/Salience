@@ -1292,7 +1292,7 @@ async def test_publication_cancel_race_does_not_fabricate_cancel_for_published_r
 
 @pytest.mark.asyncio
 async def test_post_close_cancel_reads_published_then_holds_original_liability(
-    legacy_publication, monkeypatch, record_testsuite_property
+    legacy_publication_current_schema, monkeypatch, record_testsuite_property
 ):
     from temporalio import activity
     from temporalio.client import Client, WorkflowExecutionStatus, WorkflowFailureError
@@ -1302,7 +1302,7 @@ async def test_post_close_cancel_reads_published_then_holds_original_liability(
     from salience.cycles.legacy_runtime import build_legacy_worker
     from salience.cycles.runtime import TemporalCycleTransport
 
-    f = legacy_publication
+    f = legacy_publication_current_schema
     processing_read, release_processing, cancel_readback = (
         asyncio.Event(),
         asyncio.Event(),
@@ -1506,6 +1506,10 @@ async def test_post_close_cancel_reads_published_then_holds_original_liability(
             "SELECT kind FROM v4_cycle_outbox WHERE cycle_id=%s ORDER BY sequence",
             (submitted["cycle_id"],),
         ).fetchall()
+        recovery_holds = connection.execute(
+            "SELECT id, reason FROM v4_legacy_publication_recovery_holds WHERE operation_id=%s",
+            (submitted["operation_id"],),
+        ).fetchall()
 
     cancel_scheduled_events = [
         {
@@ -1606,6 +1610,28 @@ async def test_post_close_cancel_reads_published_then_holds_original_liability(
     )
     if not has_typed_hold:
         violations.append("workflow failure is not LegacyPublicationRecoveryHeld")
+    typed_failures = (
+        [
+            error
+            for error in _exception_chain(workflow_error)
+            if getattr(error, "type", None) == "LegacyPublicationRecoveryHeld"
+        ]
+        if workflow_error is not None
+        else []
+    )
+    if len(recovery_holds) != 1:
+        violations.append(f"persisted recovery holds={recovery_holds!r}")
+    elif recovery_holds[0][1] != "published_during_cancel":
+        violations.append(f"persisted recovery hold reason={recovery_holds[0][1]!r}")
+    if len(typed_failures) != 1:
+        violations.append(f"typed recovery failures={typed_failures!r}")
+    elif len(recovery_holds) == 1 and typed_failures[0].details != (
+        {"hold_id": str(recovery_holds[0][0])},
+    ):
+        violations.append(
+            f"typed recovery failure details={typed_failures[0].details!r}, "
+            f"persisted hold id={recovery_holds[0][0]}"
+        )
     typed_nonretryable_failure = any(
         failure["type"] == "LegacyPublicationRecoveryHeld" and failure["non_retryable"]
         for failure in application_failures
