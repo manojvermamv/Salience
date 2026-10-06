@@ -136,6 +136,27 @@ async def test_mixed_results_revocation_and_cancellation(setup_team):
     assert all(t['status']=='held' for t in store.inspect(actor,run['run_id'])['tasks'])
     with pytest.raises(PermissionError):store.submit(actor,plan,'after-revoke')
 
+def test_started_team_with_completed_or_unknown_child_and_queued_siblings_is_running(setup_team):
+    db,workspace,actor,registry,service,store,plan=setup_team
+    run=store.submit(actor,plan.model_copy(update={'max_concurrency':1}),'progressed-status')
+    assert run['status']=='queued'
+    assert all(task['status']=='queued' for task in run['tasks'])
+
+    succeeded=store.claim();assert succeeded
+    assert store.finish(succeeded,state='succeeded',output={'completed':True})
+    progressed=store.inspect(actor,run['run_id'])
+    assert progressed['status']=='running'
+    assert [task['status'] for task in progressed['tasks']]==['succeeded','queued','queued','queued']
+
+    unknown=store.claim();assert unknown
+    assert store.finish(unknown,state='unknown')
+    progressed=store.inspect(actor,run['run_id'])
+    assert progressed['status']=='running'
+    assert [task['status'] for task in progressed['tasks']]==['succeeded','unknown','queued','queued']
+    with store.connect() as c:
+        assert c.execute('SELECT state FROM agent_runs WHERE id=%s',(run['run_id'],)).fetchone()['state']=='delegating'
+        assert c.execute("SELECT count(*) AS n FROM agent_events WHERE agent_run_id=%s AND event_type='team.finished'",(run['run_id'],)).fetchone()['n']==0
+
 def test_signed_api_sdk_cli_and_opt_in(setup_team,monkeypatch,capsys):
     db,workspace,actor,registry,service,store,plan=setup_team
     key=rsa.generate_private_key(public_exponent=65537,key_size=2048);now=datetime.now(timezone.utc)
@@ -156,7 +177,13 @@ def test_signed_api_sdk_cli_and_opt_in(setup_team,monkeypatch,capsys):
         assert json.loads(capsys.readouterr().out)['run_id']==result['run_id']
         main(['agent-teams','submit','--workspace-id',str(workspace),'--plan-json',plan.model_dump_json(),'--idempotency-key','public'])
         assert json.loads(capsys.readouterr().out)['run_id']==result['run_id']
-        assert sdk.inspect(str(workspace),result['run_id'])['status']=='queued'
+        task=store.claim();assert task
+        assert store.finish(task,state='succeeded',output={'completed':True})
+        api_snapshot=client.get(path+'/'+result['run_id'],headers=headers).json()
+        sdk_snapshot=sdk.inspect(str(workspace),result['run_id'])
+        main(['agent-teams','inspect','--workspace-id',str(workspace),'--run-id',result['run_id']])
+        cli_snapshot=json.loads(capsys.readouterr().out)
+        assert [api_snapshot['status'],sdk_snapshot['status'],cli_snapshot['status']]==['running']*3
         assert sdk.cancel(str(workspace),result['run_id'])['status']=='cancelled'
         main(['agent-teams','cancel','--workspace-id',str(workspace),'--run-id',result['run_id']])
         assert json.loads(capsys.readouterr().out)['status']=='cancelled'
@@ -173,10 +200,10 @@ def test_process_death_keeps_completed_and_unknown_and_resumes_queued(setup_team
     name='parallel_process_fixture'
     plan=ParallelTeamRequest(team_id='restart',lead_agent_id=name,tasks=tuple({'key':str(i),'agent_id':name,'input':{'value':i,'block':i==1}} for i in range(3)),max_concurrency=1,timeout_seconds=20)
     original=store.submit(actor,plan,'restart');env=os.environ|{'TEST_WORKSPACE_ID':str(workspace),'PYTHONPATH':'src'}
-    def until(predicate,process):
+    def until(predicate,process=None):
         deadline=time.monotonic()+8
         while time.monotonic()<deadline:
-            assert process.poll() is None
+            if process is not None:assert process.poll() is None
             result=store.inspect(actor,original['run_id'])
             if predicate(result):return result
             time.sleep(.02)
@@ -191,6 +218,9 @@ def test_process_death_keeps_completed_and_unknown_and_resumes_queued(setup_team
         # A durable claim precedes runtime entry. Kill only after the blocked call entered.
         until(lambda r:entered_blocked(),first)
         first.kill();first.communicate(timeout=5)
+        after_death=until(lambda r:r['tasks'][1]['status']=='unknown' and r['tasks'][2]['status']=='queued')
+        assert after_death['status']=='running'
+        assert [t['status'] for t in after_death['tasks']]==['succeeded','unknown','queued']
         second=subprocess.Popen([sys.executable,str(helper)],env=env,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
         done=until(lambda r:r['status']=='partial',second)
         assert [t['status'] for t in done['tasks']]==['succeeded','unknown','succeeded']

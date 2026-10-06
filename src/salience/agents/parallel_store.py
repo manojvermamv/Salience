@@ -102,7 +102,7 @@ class ParallelTeamStore:
         if not team:raise LookupError('team run unavailable in current workspace')
         tasks=c.execute('SELECT * FROM parallel_agent_tasks WHERE team_run_id=%s ORDER BY ordinal',(team_id,)).fetchall()
         states=[task['state'] for task in tasks]
-        status='running' if 'running' in states else 'queued' if 'queued' in states else 'succeeded' if all(s=='succeeded' for s in states) else 'cancelled' if team['cancelled'] else 'partial' if 'succeeded' in states else 'failed'
+        status='running' if 'running' in states else 'queued' if all(s=='queued' for s in states) else 'running' if 'queued' in states else 'succeeded' if all(s=='succeeded' for s in states) else 'cancelled' if team['cancelled'] else 'partial' if 'succeeded' in states else 'failed'
         return {'run_id':str(team_id),'team_id':team['plan']['team_id'],'lead_agent_id':team['plan']['lead_agent_id'],'status':status,'cancelled':team['cancelled'],
             'max_concurrency':team['max_concurrency'],'deadline':team['deadline'].isoformat(),'max_spend_micros':0,
             'tasks':[{'key':t['task_key'],'run_id':str(t['id']),'parent_run_id':str(team_id),'agent_id':t['agent_manifest']['agent_id'],'status':t['state'],'output':t['output'],'error_type':t['error_type']} for t in tasks]}
