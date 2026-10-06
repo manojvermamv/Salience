@@ -2,9 +2,11 @@
 
 **Approved:** 2026-10-06
 
+**Rollback-floor amendment approved in chat:** 2026-10-06
+
 **Starting HEAD:** `d0311725686d81b7b4747c2d6225986e5ea3a524`
 
-**Qualified publication application:** `a4b2368cdb463939d093020224a5b5667392aee6`
+**Previously qualified publication baseline (not an `0042` rollback target):** `a4b2368cdb463939d093020224a5b5667392aee6`
 
 ## Purpose
 
@@ -26,6 +28,16 @@ Production effects remain disabled. The fixture publication budget remains zero.
 Implement a dedicated publication recovery-hold sidecar and enrich the existing signed run inspection. Do not relax the general `v4_recovery_cases` rule that rejects new recovery cases for closed cycles. The hold records unresolved evidence and ownership but grants no action.
 
 This approach is selected because it closes a concrete gap in the current publication path while preserving closed-cycle, permit, liability, and revocation rules. A general versioned production policy gate is broader than one bounded slice and still needs separate policy decisions. Production worker routing, live schedule inventory, drain, and rollback qualification require a real deployment and cannot be established by a local fixture.
+
+### Rollback compatibility amendment
+
+The retained `039ddf39cb9b846c205f352e083293fbec6f9fc5` application (runtime-equivalent to qualified A4 `a4b2368cdb463939d093020224a5b5667392aee6`) is a proven unsafe rollback target once migration `0042` has retained holds. In the exact retained-code reproduction, that worker projected an expired-receipt effect to completion and added receipt, status, checkpoint, audit, and provenance liabilities before returning its typed held failure. It remains prohibited and is retained only as a negative control.
+
+Adopt a forward compatibility floor. The supported rollback target becomes the first independently reviewed and qualified hold-aware application whose commit is `69d7ab5da02cc9b8013f17b3e9aed3f7edb758a6` or a descendant of it in the same Git history. The floor is not established merely by naming a commit: qualification must bind its full Git SHA, source manifest, built artifact digest, and runtime import paths, then execute that actual artifact against authentic retained holds. Unknown, unpinned, unrelated-history, and pre-floor artifacts must fail closed before publication-worker registration whenever `0042` is in use. An empty hold table does not by itself authorize pre-floor code because an unrecorded expired-receipt retry may still reach the unsafe path.
+
+Before restarting any prior supported application, including the qualified floor, rollback verification must validate **both** recovery-hold reasons (`expired_permit_receipt` and `published_during_cancel`) and compare their full canonical liability snapshots. Missing, duplicated, rewritten, reason-mismatched, or liability-mismatched evidence blocks restart. Migration `0042` and its immutable rows remain in place; populated downgrade stays prohibited. Because this increment defines no hold-retirement path, the compatibility floor remains binding until a separately reviewed migration changes that rule.
+
+This amendment qualifies only the disposable, effects-disabled local fixture. It does not qualify a production artifact, production routing, live drain, or production rollback, and it does not release any gate.
 
 ## Deliverables
 
@@ -104,13 +116,13 @@ Tests are written first and must fail for the missing behavior.
 ### Recovery hold
 
 - Each of the two triggers creates exactly one hold bound to the original identities and exact receipt.
-- Concurrent exact hold inserts for the same operation and reason converge on one row and one stable hold ID; neither caller can duplicate business events, change liability, or observe a conflicting success.
+- For **each** recovery reason, concurrent exact hold inserts for the same operation and reason converge on one row and one stable hold ID; neither caller can duplicate business events, change liability, or observe a conflicting success. Complete before/after snapshots prove the hold row and every associated receipt, publication attempt, effect, job, reservation, cycle, event, output, outbox, checkpoint, audit, and provenance liability are unchanged apart from the one first hold insertion.
 - Exact activity retry/readback returns the stable hold; changed request, receipt, remote ID, operation, or reason conflicts.
 - Published-after-close cancellation retains receipt/effect/job/reservation/closed-cycle state and creates no publication/status event, output, settlement/release, or extra outbox work.
 - Expired-permit recovery performs receipt-only readback under the separate reconciliation grant and never performs a second submit or status poll.
 - Missing or foreign receipt, missing canonical effect, revoked reconciliation authority, altered account/policy/rights facts, or inconsistent stop/binding fails before a misleading hold or business projection.
 - Injected hold-transaction failure produces no false hold, terminal projection, or new effect; an exact later retry can persist the one hold.
-- A process crash after the hold transaction commits but before the activity reports the typed failure is recovered by exact replay of the committed hold. The retry returns the same hold ID and leaves the receipt, effect, job, reservation, cycle, status events, output, and outbox liabilities unchanged.
+- For **each** recovery reason, a real process crash after the hold transaction commits but before the activity reports the typed failure is recovered by exact replay of the committed hold. The retry returns the same stable hold ID, leaves exactly one hold row, and leaves every associated receipt, publication attempt, effect, job, reservation, cycle, event, output, outbox, checkpoint, audit, and provenance liability unchanged.
 - Signed API, SDK, and CLI inspection expose the same safe hold projection. No public mutation path can resume, resolve, retry, cancel, settle, or release it.
 - Direct SQL cannot update/delete a hold or insert a cross-workspace/cross-operation/fingerprint-mismatched row.
 
@@ -119,14 +131,18 @@ Tests are written first and must fail for the missing behavior.
 - Upgrade from `0041` creates the table, constraints, triggers, and public-access revocation; existing deployment/test provisioning grants the concrete fixture runtime principal only `SELECT` and `INSERT`.
 - Empty downgrade to `0041` and re-upgrade succeeds.
 - Populated downgrade refuses to destroy hold history while leaving the database at `0042`.
-- Before any prior-code worker is restarted, rollback qualification creates and verifies one retained hold for each reason (`expired_permit_receipt` and `published_during_cancel`), drains current workers, and proves both holds and all associated liabilities remain unchanged. A missing, rewritten, or mismatched reason blocks the restart.
+- Before any prior supported worker is restarted, rollback qualification creates and verifies one retained hold for each reason (`expired_permit_receipt` and `published_during_cancel`), drains current workers, and proves both holds and all associated liabilities remain unchanged. A missing, duplicated, rewritten, mismatched, or liability-changing reason blocks the restart.
+- The launch gate rejects `039ddf`/A4, unknown artifacts, unpinned artifacts, unrelated-history artifacts, and every pre-floor artifact before publication-worker registration. It accepts only the exact independently reviewed floor artifact, or a separately qualified compatible Git descendant, after the both-reason verifier passes.
+- The actual pinned floor worker executes the retained workflows for both reasons after verification and returns the typed held outcome with zero provider submission/status polling, exactly one stable hold per operation, and byte-identical liability snapshots. A second both-reason verification passes after execution.
 - Existing `0040` receipts and `0041` native publication schedule history remain byte/identity compatible.
 
 ## Migration and operational rollback
 
 Migration is additive and does not backfill or fabricate holds for historical failures. Existing application readers continue to work because the new inspection member is additive. The migration revokes public table access. Existing deployment/test role provisioning explicitly grants the fixture runtime principal only `SELECT` and `INSERT` on the hold table; no migration-managed application role is assumed. No identity, grant, receipt, cycle, job, reservation, or publication mutation privilege is added.
 
-Operational rollback first creates or identifies a qualified retained hold for each recovery reason, snapshots their exact receipt/effect/job/reservation/cycle/event/output/outbox liabilities, and stops/drains the compatible fixture publication worker. Before a prior-code worker may restart, the rollback verifier reads both committed hold rows directly, matches their immutable identities and reason-specific evidence, and proves every snapshotted liability is unchanged. It refuses restart if either reason is absent, rewritten, duplicated, or inconsistent. The prior code is then deployed while migration `0042` and its rows remain in place. Its existing `LegacyPublicationRecoveryHeld` behavior continues to fail closed, so rollback cannot replay or settle a held effect. Destructive downgrade is permitted only when the table is empty. Populated history requires a later separately reviewed migration; it is never deleted to make rollback pass.
+Operational rollback first creates or identifies a qualified retained hold for each recovery reason, snapshots their exact receipt/publication-attempt/effect/job/reservation/cycle/event/output/outbox/checkpoint/audit/provenance liabilities, and stops/drains the compatible fixture publication worker. Before any prior supported worker may restart, the rollback verifier reads both committed hold rows directly, matches their immutable identities and reason-specific evidence, and proves every snapshotted liability is unchanged. It refuses restart if either reason is absent, rewritten, duplicated, inconsistent, or associated with changed liability.
+
+The restart gate then authenticates the candidate application from its pinned Git SHA, source manifest, artifact digest, and runtime import paths. It rejects `039ddf`/A4 and all unknown, unpinned, unrelated-history, or pre-floor artifacts before they register a publication worker. Only the independently reviewed and qualified hold-aware floor, or a separately qualified compatible Git descendant, may restart while migration `0042` remains in use. Qualification runs the actual floor worker against both retained reasons, expects the typed held result with zero provider calls, and requires the same stable hold IDs plus byte-identical liabilities before a second verifier pass. Destructive downgrade is permitted only when the table is empty. Populated history requires a later separately reviewed migration; it is never deleted to make rollback pass.
 
 ## Documentation and durable evidence
 
@@ -172,4 +188,4 @@ Implementation may use a focused repository/helper module if tests show that pla
 
 ## Completion boundary
 
-This slice is complete only when the status correction, durable non-resumable hold, tracked rereview closure, active documentation reconciliation, focused/full/documentation verification, independent final review/meta-review, exact feature-commit push, and exact-commit CI all pass. It advances only the locally tested fixture portions of R18 and R32. It does not release production, RG0, RG1, R33, R34, P2–P7, optional P6, or `main` integration.
+This slice is complete only when the status correction, durable non-resumable hold, both-reason rollback verification, floor-artifact qualification, concurrent-insert and post-commit-crash matrices for both reasons, tracked rereview closure, active documentation reconciliation, focused/full/documentation verification, independent final review/meta-review, exact feature-commit push, and exact-commit CI all pass. It advances only the locally tested fixture portions of R18 and R32. It does not release production, RG0, RG1, R33, R34, P2–P7, optional P6, or `main` integration.
