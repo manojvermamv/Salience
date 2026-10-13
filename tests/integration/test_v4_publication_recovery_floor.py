@@ -10,11 +10,13 @@ import hashlib
 import importlib.util
 import io
 import json
+import marshal
 import os
 from pathlib import Path
 import shutil
 import sys
 import subprocess
+import struct
 from uuid import UUID
 import zipfile
 from types import SimpleNamespace
@@ -225,6 +227,208 @@ def _write_test_lock(tmp_path, monkeypatch, *, include_interpreter_prefix_record
     return lock, wheel_path, runtime_root, observed_paths
 
 
+def _write_local_launcher_process_fixture(tmp_path, monkeypatch, *, allow_worker=False):
+    """Build a synthetic, no-effects bundle for real launcher subprocess tests."""
+    lock, wheel_path, source_root, _ = _write_test_lock(tmp_path, monkeypatch)
+    prefix = tmp_path / "python-prefix"
+    interpreter_path = prefix / "bin" / "python"
+    interpreter_path.parent.mkdir(parents=True)
+    shutil.copy2(Path(sys.executable).resolve(), interpreter_path)
+    (prefix / "pyvenv.cfg").write_text(
+        "home = /usr\ninclude-system-site-packages = false\nversion = 3.13.5\n",
+        encoding="utf-8",
+    )
+    runtime_root = prefix / "lib" / "python3.13" / "site-packages"
+    runtime_root.parent.mkdir(parents=True)
+    shutil.copytree(source_root, runtime_root)
+
+    control_bundle = tmp_path / "control-bundle"
+    control_bundle.mkdir()
+    launcher_path = control_bundle / "launch-v4-publication-worker.py"
+    lock_path = control_bundle / "publication-worker-launch-lock.json"
+    digest_path = control_bundle / "publication-worker-launch-lock.sha256"
+    preflight_import_marker = tmp_path / "preflight-imported"
+    site_marker = tmp_path / "site-startup-ran"
+    worker_marker = tmp_path / "worker-started"
+
+    launcher_text = (ROOT / "scripts/launch-v4-publication-worker.py").read_text(
+        encoding="utf-8"
+    )
+    replacements = {
+        'CONTROL_LAUNCHER_PATH = Path("/run/salience-control/launch-v4-publication-worker.py")':
+            f"CONTROL_LAUNCHER_PATH = Path({str(launcher_path)!r})",
+        'CONTROL_LOCK_PATH = Path("/run/salience-control/publication-worker-launch-lock.json")':
+            f"CONTROL_LOCK_PATH = Path({str(lock_path)!r})",
+        'CONTROL_LOCK_DIGEST_PATH = Path("/run/salience-control/publication-worker-launch-lock.sha256")':
+            f"CONTROL_LOCK_DIGEST_PATH = Path({str(digest_path)!r})",
+        'RETAINED_WHEEL_PATH = Path("/opt/salience-artifacts/salience.whl")':
+            f"RETAINED_WHEEL_PATH = Path({str(wheel_path)!r})",
+        'FIXED_INTERPRETER_PATH = "/usr/local/bin/python"':
+            f"FIXED_INTERPRETER_PATH = {str(interpreter_path)!r}",
+        'FIXED_RUNTIME_ROOT = Path("/usr/local/lib/python3.13/site-packages")':
+            f"FIXED_RUNTIME_ROOT = Path({str(runtime_root)!r})",
+    }
+    for original, replacement_text in replacements.items():
+        launcher_text = launcher_text.replace(original, replacement_text)
+    launcher_data = launcher_text.encode()
+    launcher_path.write_bytes(launcher_data)
+
+    compatibility_source = f"""from pathlib import Path
+import sys
+Path({str(preflight_import_marker)!r}).write_text(
+    f"{{sys.flags.isolated}},{{sys.flags.dont_write_bytecode}},{{sys.flags.no_site}}",
+    encoding="utf-8",
+)
+
+def _launch_lock_from_json(payload):
+    return payload
+
+def require_publication_worker_compatibility(*args, **kwargs):
+    {"return None" if allow_worker else 'raise RuntimeError("synthetic preflight denial")'}
+""".encode()
+    worker_source = f"""from pathlib import Path
+import sys
+Path({str(worker_marker)!r}).write_text(
+    f"{{sys.flags.isolated}},{{sys.flags.dont_write_bytecode}},{{sys.flags.no_site}}",
+    encoding="utf-8",
+)
+""".encode()
+    runtime_files = {
+        "src/salience/cycles/publication_recovery_compatibility.py": compatibility_source,
+        "src/salience/cycles/legacy_runtime.py": worker_source,
+        "src/salience/workflows/worker.py": worker_source,
+    }
+    for source_name, data in runtime_files.items():
+        (runtime_root / _installed_path(source_name)).write_bytes(data)
+
+    record_path = runtime_root / Path(lock.pin.distribution_record_path).relative_to(source_root)
+    old_rows = list(csv.reader(record_path.read_text(encoding="utf-8").splitlines()))
+    record_relative = str(record_path.relative_to(runtime_root))
+    recorded_paths = [row[0] for row in old_rows if row[0] != record_relative]
+    record_rows = []
+    for relative in recorded_paths:
+        content = (runtime_root / relative).read_bytes()
+        record_rows.append((relative, "sha256=" + _record_digest(content), str(len(content))))
+    record_rows.append((record_relative, "", ""))
+    with record_path.open("w", encoding="utf-8", newline="") as stream:
+        csv.writer(stream, lineterminator="\n").writerows(record_rows)
+    record_data = record_path.read_bytes()
+    with zipfile.ZipFile(wheel_path, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+        for relative in recorded_paths:
+            archive.write(runtime_root / relative, relative)
+        archive.writestr(record_relative, record_data)
+    wheel_bytes = wheel_path.read_bytes()
+
+    updated_source_data = {
+        "scripts/launch-v4-publication-worker.py": launcher_data,
+        **runtime_files,
+    }
+    source_files = tuple(
+        sorted(
+            (
+                replace(
+                    item,
+                    git_blob=_git_blob(updated_source_data[item.path]),
+                    sha256=_sha256(updated_source_data[item.path]),
+                )
+                if item.path in updated_source_data
+                else item
+                for item in lock.pin.source_files
+            ),
+            key=lambda item: item.path,
+        )
+    )
+    runtime_imports = tuple(
+        replace(
+            item,
+            observed_path=str(runtime_root / item.wheel_path),
+            sha256=_sha256(runtime_files.get(
+                "src/" + item.wheel_path,
+                (runtime_root / item.wheel_path).read_bytes(),
+            )),
+        )
+        for item in lock.pin.runtime_imports
+    )
+    pin = replace(
+        lock.pin,
+        artifact_sha256=_sha256(wheel_bytes),
+        distribution_record_path=str(record_path),
+        distribution_record_sha256=_sha256(record_data),
+        source_files=source_files,
+        source_manifest_sha256=_source_manifest_sha256(source_files),
+        runtime_imports=runtime_imports,
+    )
+    lock = replace(
+        lock,
+        launcher_sha256=_sha256(launcher_data),
+        interpreter_path=str(interpreter_path),
+        interpreter_sha256=_sha256(interpreter_path.read_bytes()),
+        runtime_root=str(runtime_root),
+        pin=pin,
+    )
+    raw_lock = _lock_bytes(lock)
+    lock_path.write_bytes(raw_lock)
+    digest_path.write_text(_sha256(raw_lock) + "\n", encoding="ascii")
+
+    (runtime_root / "00-hostile-startup.pth").write_text(
+        f"import pathlib; pathlib.Path({str(site_marker)!r}).write_text('site', encoding='utf-8')\n",
+        encoding="utf-8",
+    )
+    return {
+        "lock": lock,
+        "wheel": wheel_path,
+        "runtime_root": runtime_root,
+        "interpreter": interpreter_path,
+        "control_bundle": control_bundle,
+        "launcher": launcher_path,
+        "lock_path": lock_path,
+        "digest_path": digest_path,
+        "preflight_import_marker": preflight_import_marker,
+        "site_marker": site_marker,
+        "worker_marker": worker_marker,
+    }
+
+
+def _run_local_supported_launcher(
+    fixture, *, worker_kind="legacy-fixture", cwd=None, extra_environment=None
+):
+    database_url = "postgresql://no-effects.invalid/local-fixture"
+    environment = os.environ.copy()
+    for key in tuple(environment):
+        if key.startswith("PYTHON") or key.startswith("SALIENCE_PUBLICATION_"):
+            environment.pop(key)
+    environment["DATABASE_URL"] = database_url
+    environment["TEST_DATABASE_URL"] = database_url
+    environment.update(extra_environment or {})
+    return subprocess.run(
+        [
+            str(fixture["interpreter"]),
+            "-I",
+            "-B",
+            "-S",
+            str(fixture["launcher"]),
+            "--mode",
+            "current",
+            "--worker-kind",
+            worker_kind,
+        ],
+        cwd=cwd or fixture["runtime_root"],
+        env=environment,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+
+
+def _rewrite_process_fixture_lock(fixture, update):
+    lock = json.loads(fixture["lock_path"].read_text(encoding="utf-8"))
+    update(lock)
+    raw = (json.dumps(lock, sort_keys=True, separators=(",", ":")) + "\n").encode()
+    fixture["lock_path"].write_bytes(raw)
+    fixture["digest_path"].write_text(_sha256(raw) + "\n", encoding="ascii")
+
+
 def _with_pinned_source(lock, source_name, data, *, write_runtime=True):
     runtime_root = Path(lock.runtime_root)
     installed_name = _installed_path(source_name)
@@ -318,6 +522,10 @@ def _configure_launcher(launcher, tmp_path, lock, wheel_path, monkeypatch):
     monkeypatch.setattr(launcher, "CONTROL_LOCK_DIGEST_PATH", digest_path)
     monkeypatch.setattr(launcher, "RETAINED_WHEEL_PATH", wheel_path)
     monkeypatch.setattr(launcher, "FIXED_INTERPRETER_PATH", sys.executable)
+    monkeypatch.setattr(launcher, "FIXED_RUNTIME_ROOT", Path(lock.runtime_root))
+    # These tests exercise main() as a unit. The real startup flags are covered
+    # by the subprocess tests below.
+    monkeypatch.setattr(launcher, "_require_isolated_startup", lambda: None)
     monkeypatch.setattr(
         launcher,
         "_interpreter_installation_prefix",
@@ -1293,7 +1501,16 @@ def test_launcher_binds_valid_floor_lock_to_fixed_interpreter_runtime_and_entryp
     assert executed == [
         (
             lock.interpreter_path,
-            [lock.interpreter_path, "-I", "-m", "salience.workflows.worker"],
+            [
+                lock.interpreter_path,
+                "-I",
+                "-B",
+                "-S",
+                "-c",
+                launcher._WORKER_BOOTSTRAP,
+                str(runtime_root),
+                "salience.workflows.worker",
+            ],
         )
     ]
     assert working_directories == [runtime_root]
@@ -1554,6 +1771,9 @@ def test_docker_and_compose_worker_use_pinned_wheel_and_trusted_launcher():
     docker_command = json.loads(command_line.removeprefix("CMD "))
     expected_command = [
         "/usr/local/bin/python",
+        "-I",
+        "-B",
+        "-S",
         "/run/salience-control/launch-v4-publication-worker.py",
         "--mode",
         "current",
@@ -1570,6 +1790,391 @@ def test_docker_and_compose_worker_use_pinned_wheel_and_trusted_launcher():
         "/run/salience-control/publication-worker-launch-lock.sha256:ro" in volume
         for volume in services["worker"]["volumes"]
     )
+
+
+def test_dockerfile_and_compose_worker_command_use_isolated_launcher_flags():
+    import yaml
+
+    expected = [
+        "/usr/local/bin/python",
+        "-I",
+        "-B",
+        "-S",
+        "/run/salience-control/launch-v4-publication-worker.py",
+        "--mode",
+        "current",
+        "--worker-kind",
+        "deployable",
+    ]
+    dockerfile = (ROOT / "Dockerfile").read_text(encoding="utf-8")
+    command_line = next(line for line in dockerfile.splitlines() if line.startswith("CMD "))
+    assert json.loads(command_line.removeprefix("CMD ")) == expected
+    compose = yaml.safe_load((ROOT / "compose.yaml").read_text(encoding="utf-8"))
+    assert compose["services"]["worker"]["command"] == expected
+
+
+def test_compose_worker_mounts_generated_candidate_control_bundle_read_only():
+    import yaml
+
+    compose = yaml.safe_load((ROOT / "compose.yaml").read_text(encoding="utf-8"))
+    worker = compose["services"]["worker"]
+    expected = {
+        "PUBLICATION_WORKER_LAUNCHER_PATH": (
+            "./artifacts/v4-next-p1/agents/p1-publication-recovery-0043/control-bundle/launch-v4-publication-worker.py",
+            "/run/salience-control/launch-v4-publication-worker.py",
+        ),
+        "PUBLICATION_WORKER_LOCK_PATH": (
+            "./artifacts/v4-next-p1/agents/p1-publication-recovery-0043/control-bundle/publication-worker-launch-lock.json",
+            "/run/salience-control/publication-worker-launch-lock.json",
+        ),
+        "PUBLICATION_WORKER_LOCK_DIGEST_PATH": (
+            "./artifacts/v4-next-p1/agents/p1-publication-recovery-0043/control-bundle/publication-worker-launch-lock.sha256",
+            "/run/salience-control/publication-worker-launch-lock.sha256",
+        ),
+    }
+    assert worker["read_only"] is True
+    assert len(worker["volumes"]) == len(expected)
+    observed = {}
+    for volume in worker["volumes"]:
+        variable, default = volume.split(":-", 1)
+        variable = variable.removeprefix("${").removesuffix("}")
+        source, destination, mode = default.rsplit(":", 2)
+        source = source.removesuffix("}")
+        assert mode == "ro"
+        observed[variable] = (source, destination)
+    assert observed == expected
+
+
+def _load_worker_harness():
+    path = ROOT / "tests/fixtures/v4_publication_floor_worker.py"
+    spec = importlib.util.spec_from_file_location("v4_publication_floor_worker", path)
+    assert spec is not None and spec.loader is not None
+    harness = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(harness)
+    return harness
+
+
+def test_start_rollback_worker_argv_uses_isolated_launcher_flags(tmp_path, monkeypatch):
+    harness = _load_worker_harness()
+    calls = []
+
+    def fake_run(command, **kwargs):
+        calls.append(command)
+        return subprocess.CompletedProcess(command, 0, stdout="container-id\n", stderr="")
+
+    monkeypatch.setattr(harness.subprocess, "run", fake_run)
+    monkeypatch.setattr(harness, "image_id", lambda _image: "sha256:test-image")
+    bundle = tmp_path / "control-bundle"
+    bundle.mkdir()
+    result = harness.start_rollback_worker(
+        image="synthetic-no-effects-worker:fixture",
+        database_url="postgresql://no-effects.invalid/fixture",
+        temporal_target="127.0.0.1:1",
+        workspace_id="00000000-0000-0000-0000-000000000001",
+        expired_operation_id="00000000-0000-0000-0000-000000000002",
+        cancel_operation_id="00000000-0000-0000-0000-000000000003",
+        task_queue="no-effects-fixture",
+        control_bundle=bundle,
+        name="task4-argv-test",
+    )
+    command = calls[0]
+    image_index = command.index("synthetic-no-effects-worker:fixture")
+    assert command.index("--read-only") < image_index
+    expected_argv = [
+        "/usr/local/bin/python",
+        "-I",
+        "-B",
+        "-S",
+        "/run/salience-control/launch-v4-publication-worker.py",
+        "--mode",
+        "rollback-restart",
+        "--worker-kind",
+        "legacy-fixture",
+        "--workspace-id",
+        "00000000-0000-0000-0000-000000000001",
+        "--expired-hold-operation-id",
+        "00000000-0000-0000-0000-000000000002",
+        "--cancel-hold-operation-id",
+        "00000000-0000-0000-0000-000000000003",
+    ]
+    assert command[image_index + 1 :] == expected_argv
+    assert json.loads(result["launcher_argv"]) == expected_argv
+    mounts = [command[index + 1] for index, item in enumerate(command[:-1]) if item == "--mount"]
+    assert mounts == [
+        f"type=bind,source={(bundle / 'launch-v4-publication-worker.py').resolve()},target=/run/salience-control/launch-v4-publication-worker.py,readonly",
+        f"type=bind,source={(bundle / 'publication-worker-launch-lock.json').resolve()},target=/run/salience-control/publication-worker-launch-lock.json,readonly",
+        f"type=bind,source={(bundle / 'publication-worker-launch-lock.sha256').resolve()},target=/run/salience-control/publication-worker-launch-lock.sha256,readonly",
+    ]
+
+
+def test_invoke_launcher_argv_uses_isolated_launcher_flags(tmp_path, monkeypatch):
+    harness = _load_worker_harness()
+    calls = []
+
+    def fake_run(command, **kwargs):
+        calls.append(command)
+        return subprocess.CompletedProcess(command, 78, stdout="", stderr="denied")
+
+    monkeypatch.setattr(harness.subprocess, "run", fake_run)
+    bundle = tmp_path / "control-bundle"
+    bundle.mkdir()
+    result = harness.invoke_launcher(
+        image="synthetic-no-effects-worker:fixture",
+        database_url="postgresql://no-effects.invalid/fixture",
+        control_bundle=bundle,
+        argv=("--mode", "current", "--worker-kind", "legacy-fixture"),
+    )
+    assert result.returncode == 78
+    command = calls[0]
+    image_index = command.index("synthetic-no-effects-worker:fixture")
+    assert command.index("--read-only") < image_index
+    assert command[image_index + 1 :] == [
+        "/usr/local/bin/python",
+        "-I",
+        "-B",
+        "-S",
+        "/run/salience-control/launch-v4-publication-worker.py",
+        "--mode",
+        "current",
+        "--worker-kind",
+        "legacy-fixture",
+    ]
+
+
+@pytest.mark.parametrize(
+    ("case", "expected_error"),
+    (
+        ("artifact-digest-mismatch", "retained publication worker wheel hash mismatch"),
+        ("lock-digest-mismatch", "independent trust root"),
+        ("launcher-hash-mismatch", "launcher source hash mismatch"),
+        ("interpreter-hash-mismatch", "interpreter hash mismatch"),
+        ("runtime-root-mismatch", "runtime root does not match the fixed root"),
+    ),
+    ids=(
+        "artifact-digest-mismatch",
+        "lock-digest-mismatch",
+        "launcher-hash-mismatch",
+        "interpreter-hash-mismatch",
+        "runtime-root-mismatch",
+    ),
+)
+def test_supported_launcher_authenticates_artifact_lock_interpreter_and_runtime_root_before_registration(
+    case, expected_error, tmp_path, monkeypatch
+):
+    fixture = _write_local_launcher_process_fixture(tmp_path, monkeypatch)
+    if case == "artifact-digest-mismatch":
+        fixture["wheel"].write_bytes(fixture["wheel"].read_bytes() + b"tamper")
+    elif case == "lock-digest-mismatch":
+        fixture["lock_path"].write_bytes(fixture["lock_path"].read_bytes() + b" ")
+    elif case == "launcher-hash-mismatch":
+        fixture["launcher"].write_bytes(fixture["launcher"].read_bytes() + b"\n")
+        changed_launcher = fixture["launcher"].read_bytes()
+
+        def update_launcher_source_pin(lock):
+            source_files = lock["pin"]["source_files"]
+            source_pin = next(
+                item for item in source_files
+                if item["path"] == "scripts/launch-v4-publication-worker.py"
+            )
+            source_pin["git_blob"] = _git_blob(changed_launcher)
+            source_pin["sha256"] = _sha256(changed_launcher)
+            manifest = (json.dumps(source_files, sort_keys=True, separators=(",", ":")) + "\n").encode()
+            lock["pin"]["source_manifest_sha256"] = _sha256(manifest)
+
+        _rewrite_process_fixture_lock(fixture, update_launcher_source_pin)
+    elif case == "interpreter-hash-mismatch":
+        _rewrite_process_fixture_lock(
+            fixture,
+            lambda lock: lock.__setitem__("interpreter_sha256", "0" * 64),
+        )
+    elif case == "runtime-root-mismatch":
+        (tmp_path / "untrusted-root").mkdir()
+        _rewrite_process_fixture_lock(
+            fixture,
+            lambda lock: lock.__setitem__("runtime_root", str(tmp_path / "untrusted-root")),
+        )
+    result = _run_local_supported_launcher(fixture)
+    assert result.returncode == 78, result.stderr
+    assert expected_error in result.stderr
+    assert not fixture["preflight_import_marker"].exists()
+    assert not fixture["site_marker"].exists()
+    assert not fixture["worker_marker"].exists()
+
+
+@pytest.mark.parametrize(
+    "case",
+    (
+        "hostile-pythonpath",
+        "hostile-pythonhome-sitecustomize",
+        "hostile-working-directory",
+        "valid-pyc",
+    ),
+    ids=(
+        "hostile-pythonpath",
+        "hostile-pythonhome-sitecustomize",
+        "hostile-working-directory",
+        "valid-pyc",
+    ),
+)
+def test_supported_launcher_rejects_hostile_startup_and_pyc_before_registration(
+    case, tmp_path, monkeypatch
+):
+    fixture = _write_local_launcher_process_fixture(tmp_path, monkeypatch)
+    hostile = tmp_path / "hostile-startup"
+    hostile.mkdir()
+    hostile_marker = tmp_path / "hostile-module-imported"
+    (hostile / "sitecustomize.py").write_text(
+        f"from pathlib import Path; Path({str(hostile_marker)!r}).write_text('hostile')\n",
+        encoding="utf-8",
+    )
+    (hostile / "salience.py").write_text(
+        f"from pathlib import Path; Path({str(hostile_marker)!r}).write_text('shadow')\n",
+        encoding="utf-8",
+    )
+    child_cwd = fixture["runtime_root"]
+    extra_environment = {}
+    if case == "hostile-pythonpath":
+        extra_environment["PYTHONPATH"] = str(hostile)
+    elif case == "hostile-pythonhome-sitecustomize":
+        extra_environment["PYTHONHOME"] = str(hostile)
+        extra_environment["PYTHONPATH"] = str(hostile)
+    elif case == "hostile-working-directory":
+        child_cwd = hostile
+    else:
+        source = fixture["runtime_root"] / "salience/cycles/publication_recovery_compatibility.py"
+        cache_path = Path(importlib.util.cache_from_source(str(source)))
+        cache_path.parent.mkdir(parents=True)
+        malicious = compile(
+            f"from pathlib import Path; Path({str(hostile_marker)!r}).write_text('cached')",
+            str(source),
+            "exec",
+        )
+        header = importlib.util.MAGIC_NUMBER + struct.pack(
+            "<III", 0, int(source.stat().st_mtime), source.stat().st_size
+        )
+        cache_path.write_bytes(header + marshal.dumps(malicious))
+        positive_control = subprocess.run(
+            [
+                str(fixture["interpreter"]),
+                "-I",
+                "-B",
+                "-S",
+                "-c",
+                "import sys; sys.path.insert(0, sys.argv[1]); import salience.cycles.publication_recovery_compatibility",
+                str(fixture["runtime_root"]),
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert positive_control.returncode == 0, positive_control.stderr
+        assert hostile_marker.read_text(encoding="utf-8") == "cached"
+        hostile_marker.unlink()
+    result = _run_local_supported_launcher(
+        fixture, cwd=child_cwd, extra_environment=extra_environment
+    )
+    assert result.returncode == 78, result.stderr
+    assert "synthetic preflight denial" in result.stderr or ".pyc" in result.stderr
+    assert not fixture["site_marker"].exists()
+    assert not fixture["worker_marker"].exists()
+    assert not hostile_marker.exists()
+    if case == "valid-pyc":
+        assert cache_path.is_file()
+        assert not fixture["preflight_import_marker"].exists()
+        cache_path.unlink()
+        external_cache = tmp_path / "untrusted-module.pyc"
+        external_cache.write_bytes(b"not imported; symlink target must be rejected")
+        cache_link = fixture["runtime_root"] / "salience" / "untrusted-module.py"
+        cache_link.symlink_to(external_cache)
+        symlink_result = _run_local_supported_launcher(fixture)
+        assert symlink_result.returncode == 78, symlink_result.stderr
+        assert "symlink to .pyc" in symlink_result.stderr
+        assert not fixture["preflight_import_marker"].exists()
+        assert not fixture["worker_marker"].exists()
+
+
+@pytest.mark.parametrize(
+    "worker_kind",
+    ("deployable", "legacy-fixture"),
+    ids=("deployable-entrypoint", "legacy-fixture-entrypoint"),
+)
+def test_supported_launcher_read_only_root_creates_no_pyc(tmp_path, monkeypatch, worker_kind):
+    fixture = _write_local_launcher_process_fixture(tmp_path, monkeypatch, allow_worker=True)
+
+    def pyc_paths():
+        return sorted(path.relative_to(fixture["runtime_root"]).as_posix()
+                      for path in fixture["runtime_root"].rglob("*.pyc"))
+
+    before_files = {
+        path.relative_to(fixture["runtime_root"]).as_posix(): _sha256(path.read_bytes())
+        for path in fixture["runtime_root"].rglob("*")
+        if path.is_file()
+    }
+    writable_control = _run_local_supported_launcher(fixture, worker_kind=worker_kind)
+    assert writable_control.returncode == 0, writable_control.stderr
+    assert fixture["preflight_import_marker"].read_text(encoding="utf-8") == "1,1,1"
+    assert fixture["worker_marker"].read_text(encoding="utf-8") == "1,1,1"
+    assert pyc_paths() == []
+    fixture["worker_marker"].unlink()
+
+    for path in sorted(fixture["runtime_root"].rglob("*"), reverse=True):
+        path.chmod(0o555 if path.is_dir() else 0o444)
+    fixture["runtime_root"].chmod(0o555)
+    try:
+        read_only_control = _run_local_supported_launcher(fixture, worker_kind=worker_kind)
+        assert read_only_control.returncode == 0, read_only_control.stderr
+        assert fixture["worker_marker"].read_text(encoding="utf-8") == "1,1,1"
+        assert pyc_paths() == []
+        after_files = {
+            path.relative_to(fixture["runtime_root"]).as_posix(): _sha256(path.read_bytes())
+            for path in fixture["runtime_root"].rglob("*")
+            if path.is_file()
+        }
+        assert after_files == before_files
+    finally:
+        fixture["runtime_root"].chmod(0o755)
+        for path in sorted(fixture["runtime_root"].rglob("*"), reverse=True):
+            path.chmod(0o755 if path.is_dir() else 0o644)
+
+
+def _task8_rollback_image_or_skip():
+    candidate_root = ROOT / "artifacts/v4-next-p1/agents/p1-publication-recovery-0043"
+    attestation_path = candidate_root / "image-attestation.json"
+    control_bundle = candidate_root / "control-bundle"
+    if not attestation_path.is_file() or not control_bundle.is_dir():
+        pytest.skip(
+            "Task 8 exact-candidate image attestation/control bundle is not available; "
+            "rollback liability qualification is deferred"
+        )
+    attestation = json.loads(attestation_path.read_text(encoding="utf-8"))
+    return attestation["image_ref"], control_bundle
+
+
+@pytest.mark.parametrize(
+    "collection",
+    (
+        "remote-publication-receipts",
+        "job-checkpoints",
+        "audit-events",
+        "provenance-records",
+    ),
+    ids=(
+        "remote-publication-receipts",
+        "job-checkpoints",
+        "audit-events",
+        "provenance-records",
+    ),
+)
+def test_rollback_restart_launcher_denies_omitted_collection_mutation_before_registration(collection):
+    _task8_rollback_image_or_skip()
+    pytest.skip(
+        f"Task 8 must provide dual-reason fixture IDs for the {collection} mutation rehearsal"
+    )
+
+
+def test_rollback_restart_launcher_denies_legacy_null_v1_before_registration():
+    _task8_rollback_image_or_skip()
+    pytest.skip("Task 8 must provide the populated legacy NULL-v1 fixture for launcher rehearsal")
 
 
 def test_pre_0043_database_is_rejected_by_hard_floor(tmp_path, monkeypatch):

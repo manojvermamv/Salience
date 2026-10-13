@@ -12,6 +12,7 @@ import json
 import os
 from pathlib import Path
 import re
+import stat
 import subprocess
 import sys
 from uuid import UUID
@@ -21,7 +22,9 @@ CONTROL_LAUNCHER_PATH = Path("/run/salience-control/launch-v4-publication-worker
 CONTROL_LOCK_PATH = Path("/run/salience-control/publication-worker-launch-lock.json")
 CONTROL_LOCK_DIGEST_PATH = Path("/run/salience-control/publication-worker-launch-lock.sha256")
 RETAINED_WHEEL_PATH = Path("/opt/salience-artifacts/salience.whl")
+RETAINED_WHEEL_ARTIFACT_PATH = "/opt/salience-artifacts/salience.whl"
 FIXED_INTERPRETER_PATH = "/usr/local/bin/python"
+FIXED_RUNTIME_ROOT = Path("/usr/local/lib/python3.13/site-packages")
 _HEX_40 = re.compile(r"^[0-9a-f]{40}$")
 _HEX_64 = re.compile(r"^[0-9a-f]{64}$")
 _REQUIRED_SOURCE_PATHS = {
@@ -50,11 +53,12 @@ _REQUIRED_IMPORT_MODULES = {
 }
 _PREFLIGHT = r"""
 import json, sys
+payload = json.load(sys.stdin)
+sys.path.insert(0, payload["runtime_root"])
 from salience.cycles.publication_recovery_compatibility import (
     _launch_lock_from_json,
     require_publication_worker_compatibility,
 )
-payload = json.load(sys.stdin)
 lock = _launch_lock_from_json(payload["launch_lock"])
 require_publication_worker_compatibility(
     payload["database_url"],
@@ -64,6 +68,13 @@ require_publication_worker_compatibility(
     rollback_workspace_id=payload.get("workspace_id"),
     rollback_operation_ids=payload.get("operation_ids"),
 )
+"""
+_WORKER_BOOTSTRAP = r"""
+import runpy, sys
+runtime_root, module, *module_args = sys.argv[1:]
+sys.path.insert(0, runtime_root)
+sys.argv = [module, *module_args]
+runpy.run_module(module, run_name="__main__", alter_sys=True)
 """
 
 
@@ -77,6 +88,24 @@ def _sha256(path: Path) -> str:
         for block in iter(lambda: stream.read(1024 * 1024), b""):
             digest.update(block)
     return digest.hexdigest()
+
+
+def _require_isolated_startup() -> None:
+    if not (sys.flags.isolated and sys.flags.dont_write_bytecode and sys.flags.no_site):
+        raise LauncherError("publication worker launcher requires Python -I -B -S startup")
+
+
+def _read_fixed_control_file(path: Path, description: str) -> bytes:
+    try:
+        metadata = path.lstat()
+    except OSError as error:
+        raise LauncherError(f"fixed {description} is unavailable") from error
+    if stat.S_ISLNK(metadata.st_mode) or not stat.S_ISREG(metadata.st_mode):
+        raise LauncherError(f"fixed {description} is not a regular file")
+    try:
+        return path.read_bytes()
+    except OSError as error:
+        raise LauncherError(f"fixed {description} is unavailable") from error
 
 
 def _git_blob(data: bytes) -> str:
@@ -192,6 +221,8 @@ def _verify_authenticated_lock(raw: bytes, trusted_digest: str) -> tuple[dict, s
         lock = json.loads(raw)
     except (json.JSONDecodeError, UnicodeDecodeError) as error:
         raise LauncherError("launch-lock JSON is invalid") from error
+    if not isinstance(lock, dict):
+        raise LauncherError("launch-lock root must be an object")
     canonical = (json.dumps(lock, sort_keys=True, separators=(",", ":")) + "\n").encode()
     if canonical != raw:
         raise LauncherError("launch-lock bytes are not canonical")
@@ -213,7 +244,7 @@ def _verify_pin(lock: dict) -> Path:
         "a4b2368cdb463939d093020224a5b5667392aee6",
     }:
         raise LauncherError("publication worker application commit is prohibited")
-    if pin.get("artifact_path") != "/opt/salience-artifacts/salience.whl":
+    if pin.get("artifact_path") != RETAINED_WHEEL_ARTIFACT_PATH:
         raise LauncherError("publication worker artifact path is not retained")
     if _sha256(RETAINED_WHEEL_PATH) != pin.get("artifact_sha256"):
         raise LauncherError("retained publication worker wheel hash mismatch")
@@ -223,10 +254,19 @@ def _verify_pin(lock: dict) -> Path:
         raise LauncherError("publication worker interpreter path is not fixed")
     if _sha256(Path(interpreter)) != lock.get("interpreter_sha256"):
         raise LauncherError("publication worker interpreter hash mismatch")
-    root = Path(lock.get("runtime_root", ""))
-    if not root.is_absolute():
-        raise LauncherError("publication worker runtime root must be absolute")
-    root = root.resolve(strict=True)
+    root_value = lock.get("runtime_root")
+    if root_value != str(FIXED_RUNTIME_ROOT):
+        raise LauncherError("publication worker runtime root does not match the fixed root")
+    root = Path(root_value)
+    if root.is_symlink():
+        raise LauncherError("publication worker runtime root must not be a symlink")
+    try:
+        fixed_root = FIXED_RUNTIME_ROOT.resolve(strict=True)
+        root = root.resolve(strict=True)
+    except OSError as error:
+        raise LauncherError("publication worker runtime root is unavailable") from error
+    if root != fixed_root:
+        raise LauncherError("publication worker runtime root does not match the fixed root")
     if not root.is_dir():
         raise LauncherError("publication worker runtime root is not a directory")
 
@@ -272,9 +312,55 @@ def _verify_pin(lock: dict) -> Path:
     if lock.get("workers") != expected_workers:
         raise LauncherError("publication worker entrypoint is not a closed pin")
     launcher_hash = lock.get("launcher_sha256")
-    if not _HEX_64.fullmatch(launcher_hash or "") or _sha256(CONTROL_LAUNCHER_PATH) != launcher_hash:
+    launcher_bytes = _read_fixed_control_file(CONTROL_LAUNCHER_PATH, "control launcher")
+    if not _HEX_64.fullmatch(launcher_hash or "") or hashlib.sha256(launcher_bytes).hexdigest() != launcher_hash:
         raise LauncherError("publication worker launcher source hash mismatch")
+    _reject_bytecode_cache(root)
     return root
+
+
+def _reject_bytecode_cache(runtime_root: Path) -> None:
+    """Reject cache entries before any application or third-party import."""
+    resolved_root = runtime_root.resolve(strict=True)
+    pending = [resolved_root]
+    visited: set[tuple[int, int]] = set()
+    while pending:
+        directory = pending.pop()
+        try:
+            metadata = directory.stat()
+        except OSError as error:
+            raise LauncherError("authenticated runtime root cannot be scanned") from error
+        identity = (metadata.st_dev, metadata.st_ino)
+        if identity in visited:
+            continue
+        visited.add(identity)
+        try:
+            entries = list(os.scandir(directory))
+        except OSError as error:
+            raise LauncherError("authenticated runtime root cannot be scanned") from error
+        for entry in entries:
+            path = Path(entry.path)
+            if entry.name.endswith(".pyc"):
+                raise LauncherError(f"authenticated runtime root contains a .pyc entry: {path}")
+            try:
+                if entry.is_symlink():
+                    target = path.resolve(strict=True)
+                    if target.suffix == ".pyc":
+                        raise LauncherError(
+                            f"authenticated runtime root contains a symlink to .pyc: {path}"
+                        )
+                    if target.is_dir():
+                        try:
+                            target.relative_to(resolved_root)
+                        except ValueError as error:
+                            raise LauncherError(
+                                "authenticated runtime root contains a directory symlink escape"
+                            ) from error
+                        pending.append(target)
+                elif entry.is_dir(follow_symlinks=False):
+                    pending.append(path)
+            except OSError as error:
+                raise LauncherError("authenticated runtime root cannot be scanned") from error
 
 
 def _environment_for_child(mode: str, workspace: str | None, expired: str | None, cancelled: str | None, lock_digest: str) -> dict[str, str]:
@@ -304,6 +390,7 @@ def _parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
+    _require_isolated_startup()
     arguments = _parser().parse_args(argv)
     rollback_values = (
         arguments.workspace_id,
@@ -336,12 +423,20 @@ def main(argv: list[str] | None = None) -> int:
                 "legacy fixture TEST_DATABASE_URL must match the checked DATABASE_URL"
             )
     try:
-        raw_lock = CONTROL_LOCK_PATH.read_bytes()
-        trusted_digest = CONTROL_LOCK_DIGEST_PATH.read_text(encoding="ascii").strip()
-    except OSError as error:
+        raw_lock = _read_fixed_control_file(CONTROL_LOCK_PATH, "launch lock")
+        raw_digest = _read_fixed_control_file(CONTROL_LOCK_DIGEST_PATH, "launch-lock digest")
+        digest_text = raw_digest.decode("ascii")
+    except (OSError, UnicodeError) as error:
         raise LauncherError("fixed publication worker control bundle is unavailable") from error
-    lock, lock_digest = _verify_authenticated_lock(raw_lock, trusted_digest)
-    runtime_root = _verify_pin(lock)
+    if not digest_text.endswith("\n") or not _HEX_64.fullmatch(digest_text[:-1]):
+        raise LauncherError("independent launch-lock digest is malformed")
+    lock, lock_digest = _verify_authenticated_lock(raw_lock, digest_text[:-1])
+    try:
+        runtime_root = _verify_pin(lock)
+    except LauncherError:
+        raise
+    except (OSError, ValueError, TypeError, KeyError, AttributeError) as error:
+        raise LauncherError("publication worker launch pin is invalid") from error
     if not _HEX_64.fullmatch(lock.get("launcher_sha256", "")):
         raise LauncherError("publication worker launcher hash is malformed")
     worker = lock["workers"][arguments.worker_kind]
@@ -356,6 +451,7 @@ def main(argv: list[str] | None = None) -> int:
     payload = {
         "launch_lock": lock,
         "lock_sha256": lock_digest,
+        "runtime_root": str(runtime_root),
         "database_url": database_url,
         "mode": arguments.mode,
         "workspace_id": str(arguments.workspace_id) if arguments.workspace_id else None,
@@ -370,7 +466,7 @@ def main(argv: list[str] | None = None) -> int:
     }
     try:
         result = subprocess.run(
-            [interpreter, "-I", "-c", _PREFLIGHT],
+            [interpreter, "-I", "-B", "-S", "-c", _PREFLIGHT],
             cwd=runtime_root,
             env=environment,
             input=json.dumps(payload, sort_keys=True, separators=(",", ":")),
@@ -387,8 +483,21 @@ def main(argv: list[str] | None = None) -> int:
 
     environment["DATABASE_URL"] = database_url
     os.chdir(runtime_root)
-    command = [interpreter, "-I", "-m", worker["module"], *worker["argv"]]
-    os.execve(interpreter, command, environment)
+    command = [
+        interpreter,
+        "-I",
+        "-B",
+        "-S",
+        "-c",
+        _WORKER_BOOTSTRAP,
+        str(runtime_root),
+        worker["module"],
+        *worker["argv"],
+    ]
+    try:
+        os.execve(interpreter, command, environment)
+    except OSError as error:
+        raise LauncherError("publication worker execve failed") from error
     raise LauncherError("publication worker execve returned unexpectedly")
 
 

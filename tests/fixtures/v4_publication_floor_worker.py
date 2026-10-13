@@ -82,6 +82,7 @@ def start_rollback_worker(
         "docker",
         "run",
         "--detach",
+        "--read-only",
         "--name",
         name,
         "--network",
@@ -106,8 +107,12 @@ def start_rollback_worker(
         _mount(control_bundle / "publication-worker-launch-lock.json", CONTROL_LOCK),
         "--mount",
         _mount(control_bundle / "publication-worker-launch-lock.sha256", CONTROL_DIGEST),
-        image,
+    ]
+    container_argv = [
         "/usr/local/bin/python",
+        "-I",
+        "-B",
+        "-S",
         CONTROL_LAUNCHER,
         "--mode",
         "rollback-restart",
@@ -120,6 +125,7 @@ def start_rollback_worker(
         "--cancel-hold-operation-id",
         cancel_operation_id,
     ]
+    command.extend((image, *container_argv))
     with _without_shared_checkout():
         result = subprocess.run(
             command,
@@ -135,9 +141,7 @@ def start_rollback_worker(
         "container_name": name,
         "image": image,
         "image_id": image_id(image),
-        "launcher_argv": json.dumps(
-            command[-12:], separators=(",", ":")
-        ),
+        "launcher_argv": json.dumps(container_argv, separators=(",", ":")),
     }
 
 
@@ -254,6 +258,7 @@ def invoke_launcher(
         "docker",
         "run",
         "--rm",
+        "--read-only",
         "--network",
         NETWORK,
         "--env",
@@ -269,7 +274,17 @@ def invoke_launcher(
     ]
     for source, target in extra_mounts:
         command.extend(("--mount", _mount(source, target)))
-    command.extend((image, "/usr/local/bin/python", CONTROL_LAUNCHER, *argv))
+    command.extend(
+        (
+            image,
+            "/usr/local/bin/python",
+            "-I",
+            "-B",
+            "-S",
+            CONTROL_LAUNCHER,
+            *argv,
+        )
+    )
     with _without_shared_checkout():
         return subprocess.run(
             command,

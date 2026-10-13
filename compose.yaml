@@ -62,11 +62,12 @@ services:
       args:
         SALIENCE_WHEEL_FILE: ${SALIENCE_WHEEL_FILE:-artifacts/salience.whl}
     profiles: ["application"]
-    command: ["/usr/local/bin/python", "/run/salience-control/launch-v4-publication-worker.py", "--mode", "current", "--worker-kind", "deployable"]
+    command: ["/usr/local/bin/python", "-I", "-B", "-S", "/run/salience-control/launch-v4-publication-worker.py", "--mode", "current", "--worker-kind", "deployable"]
+    read_only: true
     volumes:
-      - ${PUBLICATION_WORKER_LAUNCHER_PATH:-./scripts/launch-v4-publication-worker.py}:/run/salience-control/launch-v4-publication-worker.py:ro
-      - ${PUBLICATION_WORKER_LOCK_PATH:-./deployment/v4/publication-worker-launch-lock.json}:/run/salience-control/publication-worker-launch-lock.json:ro
-      - ${PUBLICATION_WORKER_LOCK_DIGEST_PATH:-./artifacts/v4-next-p1/agents/task-10-floor-qualification/publication-worker-launch-lock.sha256}:/run/salience-control/publication-worker-launch-lock.sha256:ro
+      - ${PUBLICATION_WORKER_LAUNCHER_PATH:-./artifacts/v4-next-p1/agents/p1-publication-recovery-0043/control-bundle/launch-v4-publication-worker.py}:/run/salience-control/launch-v4-publication-worker.py:ro
+      - ${PUBLICATION_WORKER_LOCK_PATH:-./artifacts/v4-next-p1/agents/p1-publication-recovery-0043/control-bundle/publication-worker-launch-lock.json}:/run/salience-control/publication-worker-launch-lock.json:ro
+      - ${PUBLICATION_WORKER_LOCK_DIGEST_PATH:-./artifacts/v4-next-p1/agents/p1-publication-recovery-0043/control-bundle/publication-worker-launch-lock.sha256}:/run/salience-control/publication-worker-launch-lock.sha256:ro
     environment:
       CONTROL_PLANE_TOKEN: ${CONTROL_PLANE_TOKEN:-development-control-token}
       DATABASE_URL: postgresql+asyncpg://salience:salience@postgres:5432/salience

@@ -12,4 +12,4 @@ RUN ln -s /opt/salience-artifacts/salience.whl /opt/salience-artifacts/salience-
     && rm /opt/salience-artifacts/salience-0.1.0-py3-none-any.whl
 COPY migrations /usr/local/lib/python3.13/site-packages/migrations
 
-CMD ["/usr/local/bin/python", "/run/salience-control/launch-v4-publication-worker.py", "--mode", "current", "--worker-kind", "deployable"]
+CMD ["/usr/local/bin/python", "-I", "-B", "-S", "/run/salience-control/launch-v4-publication-worker.py", "--mode", "current", "--worker-kind", "deployable"]
