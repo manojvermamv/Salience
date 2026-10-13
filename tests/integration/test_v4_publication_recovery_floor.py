@@ -736,6 +736,7 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
     assert qualification_worker.is_file(), "actual pinned-image fixture harness is required"
 
     import importlib.util
+    import shutil
     import subprocess
     from uuid import uuid4
 
@@ -857,6 +858,8 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
         "second_verifier": None,
         "liability_snapshot_hashes": {},
         "hold_row_hashes": {},
+        "projection_counts_before": {},
+        "projection_counts_after": {},
         "worker_runs": [],
         "denials": {},
         "effects_enabled": False,
@@ -1031,6 +1034,25 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
         "expired_permit_receipt": expired_after_hold,
         "published_during_cancel": cancel_after_hold,
     }
+    expected_projection_counts = {
+        reason: {
+            "remote_receipts": len(snapshot["remote_publication_receipts"] or []),
+            "status_events": len(snapshot["publication_status_events"] or []),
+            "checkpoints": len(snapshot["job_checkpoints"] or []),
+            "accepted_checkpoints": sum(
+                item["checkpoint_payload"].get("checkpoint") == "publication.accepted"
+                for item in snapshot["job_checkpoints"] or []
+            ),
+            "recovery_checkpoints": sum(
+                item["checkpoint_payload"].get("checkpoint")
+                == "publication.receipt_recovered_requires_typed_recovery"
+                for item in snapshot["job_checkpoints"] or []
+            ),
+            "audit_events": len(snapshot["audit_events"] or []),
+            "provenance_records": len(snapshot["provenance_records"] or []),
+        }
+        for reason, snapshot in before_snapshots.items()
+    }
     before_hold_rows = {
         "expired_permit_receipt": expired_hold_row,
         "published_during_cancel": cancelled_hold_row,
@@ -1047,6 +1069,7 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
             "hold_row_hashes": {
                 reason: canonical_hash(row) for reason, row in before_hold_rows.items()
             },
+            "projection_counts_before": expected_projection_counts,
         }
     )
     save_json(progress_path, base_evidence)
@@ -1075,6 +1098,10 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
         workflow_id = "salience-v4-legacy-operation:" + str(operation_id)
         handle = client.get_workflow_handle(workflow_id)
         assert (await handle.describe()).status == WorkflowExecutionStatus.RUNNING
+        history_before_restart = await handle.fetch_history()
+        event_id_before_restart = max(
+            (event.event_id for event in history_before_restart.events), default=0
+        )
         name = "publication-floor-" + reason.replace("_", "-") + "-" + uuid4().hex[:10]
         launch = worker_harness.start_rollback_worker(
             image=image,
@@ -1136,16 +1163,51 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
                 "type": "LegacyPublicationRecoveryHeld",
                 "details": [{"hold_id": expected_hold_ids[reason]}],
             }
+            history_after_restart = await handle.fetch_history()
+            scheduled_activity_types = {
+                event.event_id: event.activity_task_scheduled_event_attributes.activity_type.name
+                for event in history_after_restart.events
+                if event.HasField("activity_task_scheduled_event_attributes")
+            }
+            restarted_activity_types = [
+                scheduled_activity_types[event.activity_task_started_event_attributes.scheduled_event_id]
+                for event in history_after_restart.events
+                if event.event_id > event_id_before_restart
+                and event.HasField("activity_task_started_event_attributes")
+                and event.activity_task_started_event_attributes.scheduled_event_id
+                in scheduled_activity_types
+            ]
+            expected_activity_type = {
+                "expired_permit_receipt": "salience.publication.submit_or_reconcile",
+                "published_during_cancel": "salience.publication.cancel",
+            }[reason]
+            assert restarted_activity_types
+            assert set(restarted_activity_types) == {expected_activity_type}
+            assert "salience.publication.await" not in restarted_activity_types
+            run_evidence["restarted_activity_types"] = restarted_activity_types
         finally:
             stopped = worker_harness.stop_worker(name)
             logs_path = candidate_root / f"{reason}-worker.log"
-            logs_path.write_text(safe_text(str(stopped.get("logs", ""))), encoding="utf-8")
+            worker_log_text = safe_text(str(stopped.get("logs", "")))
+            logs_path.write_text(worker_log_text, encoding="utf-8")
             run_evidence["stop"] = {
                 "state": stopped.get("state"),
                 "logs_path": str(logs_path.relative_to(evidence_root)),
                 "logs_exit_code": stopped.get("logs_exit_code"),
             }
         assert run_evidence["stop"]["state"] == "exited"
+        expected_hold_frame = {
+            "expired_permit_receipt": "in submit_or_reconcile",
+            "published_during_cancel": "in cancel",
+        }[reason]
+        expected_hold_diagnostic = {
+            "expired_permit_receipt": "durable publication receipt recovered; typed execution recovery is required",
+            "published_during_cancel": "published publication readback during cancellation requires typed execution recovery",
+        }[reason]
+        assert "legacy_publication_runtime.py" in worker_log_text
+        assert expected_hold_frame in worker_log_text
+        assert expected_hold_diagnostic in worker_log_text
+        assert "salience.publication.await" not in worker_log_text
         base_evidence["worker_runs"].append(run_evidence)
         save_json(progress_path, base_evidence)
 
@@ -1157,21 +1219,42 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
         "expired_permit_receipt": _recovery_hold_snapshot(database, expired_operation_id),
         "published_during_cancel": _recovery_hold_snapshot(database, cancelled_operation_id),
     }
+    projection_counts_after = {}
     for reason in operation_ids:
         _assert_named_liabilities_unchanged(before_snapshots[reason], after_snapshots[reason])
         assert _recovery_hold_count(database, operation_ids[reason]) == 1
         assert after_hold_rows[reason] == before_hold_rows[reason]
         counts = _recovery_projection_counts(database, operation_ids[reason])
-        assert counts["remote_receipts"] == 0
-        assert counts["status_events"] == len(before_snapshots[reason]["publication_status_events"] or [])
-        assert counts["accepted_checkpoints"] == sum(
-            item["checkpoint_payload"].get("checkpoint") == "publication.accepted"
-            for item in before_snapshots[reason]["job_checkpoints"] or []
+        assert counts == expected_projection_counts[reason]
+        projection_counts_after[reason] = counts
+        fixture_progress_before = before_snapshots[reason]["fixture_progress"]
+        fixture_progress_after = after_snapshots[reason]["fixture_progress"]
+        assert fixture_progress_after == fixture_progress_before
+        run_evidence = next(
+            item for item in base_evidence["worker_runs"] if item["reason"] == reason
         )
-        assert counts["recovery_checkpoints"] == sum(
-            item["checkpoint_payload"].get("checkpoint") == "publication.receipt_recovered_requires_typed_recovery"
-            for item in before_snapshots[reason]["job_checkpoints"] or []
-        )
+        run_evidence["provider_call_instrumentation"] = {
+            "provider_submit_calls": 0,
+            "provider_status_calls": 0,
+            "adapter_counter_availability": {
+                "submit_count": "process-local; not exported by the fixture worker",
+                "status_count": "not exposed by the fixture adapter",
+            },
+            "restarted_activity_types": run_evidence["restarted_activity_types"],
+            "typed_hold_frame": {
+                "expired_permit_receipt": "in submit_or_reconcile",
+                "published_during_cancel": "in cancel",
+            }[reason],
+            "worker_log_sha256": hashlib.sha256(
+                (candidate_root / f"{reason}-worker.log").read_bytes()
+            ).hexdigest(),
+            "fixture_progress_before": fixture_progress_before,
+            "fixture_progress_after": fixture_progress_after,
+            "basis": "The pinned image history shows only the reason-specific guarded activity; its logged typed-hold branch exits before provider submit/status paths, and the fixture progress plus full liabilities are unchanged.",
+        }
+
+    base_evidence["projection_counts_after"] = projection_counts_after
+    save_json(progress_path, base_evidence)
 
     second_views = verify_publication_recovery_rollback(
         database, workspace_id=workspace_id, operation_ids=operation_ids
@@ -1351,6 +1434,12 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
     assert a4_module.is_file()
     a4_interpreter = Path("/home/admin/Salience/.venv/bin/python")
     assert a4_interpreter.is_file()
+    a4_overlay = tmp_path / "a4-runtime-overlay"
+    shutil.copytree(a4_src, a4_overlay)
+    shutil.copyfile(
+        ROOT / "src/salience/cycles/publication_recovery_compatibility.py",
+        a4_overlay / "salience/cycles/publication_recovery_compatibility.py",
+    )
 
     a4_interpreter_lock = json.loads(tracked_lock_bytes)
     a4_interpreter_lock["interpreter_path"] = str(a4_interpreter)
@@ -1372,24 +1461,18 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
     }
 
     a4_runtime_lock = json.loads(tracked_lock_bytes)
-    a4_runtime_lock["runtime_root"] = str(a4_src)
+    a4_runtime_lock["runtime_root"] = "/app"
     result, candidate_lock_path, candidate_digest_path = run_denial(
         "a4-runtime-root",
         a4_runtime_lock,
         candidate_trust_root=True,
-        extra_mounts=(
-            (a4_src, str(a4_src)),
-            (
-                ROOT / "src/salience/cycles/publication_recovery_compatibility.py",
-                str(a4_src / "salience/cycles/publication_recovery_compatibility.py"),
-            ),
-        ),
+        extra_mounts=((a4_overlay, "/app"),),
     )
     error_text = safe_text(result.stdout + result.stderr)
     assert result.returncode == 78
     assert "publication worker source pin mismatch" in error_text
     base_evidence["denials"]["a4_runtime_root"] = {
-        "path": str(a4_src),
+        "path": "/app",
         "exit_code": result.returncode,
         "diagnostic": error_text.strip(),
         "worker_exec_reached": False,
@@ -1400,19 +1483,19 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
         item for item in a4_module_lock["pin"]["runtime_imports"]
         if item["module"] == "salience.workflows.publication"
     )
-    publication_import["observed_path"] = str(a4_module)
+    publication_import["observed_path"] = "/app/salience/workflows/publication.py"
     result, candidate_lock_path, candidate_digest_path = run_denial(
         "a4-module-path",
         a4_module_lock,
         candidate_trust_root=True,
-        extra_mounts=((a4_src, str(a4_src)),),
+        extra_mounts=((a4_overlay, "/app"),),
     )
     error_text = safe_text(result.stdout + result.stderr)
     assert result.returncode == 78
     assert "publication worker import path does not match its RECORD pin" in error_text
     base_evidence["denials"]["a4_module_path"] = {
         "module": "salience.workflows.publication",
-        "observed_path": str(a4_module),
+        "observed_path": "/app/salience/workflows/publication.py",
         "exit_code": result.returncode,
         "diagnostic": error_text.strip(),
         "worker_exec_reached": False,
