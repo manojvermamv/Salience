@@ -96,6 +96,11 @@ def upgrade():
         AS $$
         DECLARE expected_snapshot jsonb;
         BEGIN
+          IF TG_RELID <> 'public.v4_legacy_publication_recovery_holds'::regclass
+             OR TG_TABLE_SCHEMA <> 'public'
+             OR TG_TABLE_NAME <> 'v4_legacy_publication_recovery_holds' THEN
+            RAISE EXCEPTION 'v1 publication recovery guard only permits the target hold table';
+          END IF;
           IF TG_OP <> 'INSERT' THEN
             RAISE EXCEPTION 'legacy publication recovery hold is immutable';
           END IF;
@@ -277,6 +282,9 @@ def upgrade():
         $$"""
     )
     op.execute(
+        "REVOKE EXECUTE ON FUNCTION public.v4_guard_legacy_publication_recovery_hold_v1() FROM PUBLIC"
+    )
+    op.execute(
         """CREATE TRIGGER validate_legacy_publication_recovery_hold_v1
            BEFORE INSERT ON public.v4_legacy_publication_recovery_holds
            FOR EACH ROW EXECUTE FUNCTION
@@ -304,6 +312,9 @@ def downgrade():
     op.execute(
         """DROP TRIGGER validate_legacy_publication_recovery_hold_v1
            ON public.v4_legacy_publication_recovery_holds"""
+    )
+    op.execute(
+        "REVOKE EXECUTE ON FUNCTION public.v4_guard_legacy_publication_recovery_hold_v1() FROM PUBLIC"
     )
     op.execute(
         "DROP FUNCTION public.v4_guard_legacy_publication_recovery_hold_v1()"

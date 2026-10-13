@@ -173,6 +173,21 @@ def _hold_contract(connection, role):
              ) ORDER BY tgname""",
         (_HOLD_TABLE,),
     ).fetchall()
+    old_constraints = connection.execute(
+        """SELECT conname, pg_get_constraintdef(oid)
+           FROM pg_constraint WHERE conrelid=%s::regclass
+             AND conname NOT LIKE 'ck_v4_legacy_publication_recovery_holds_v1_%%'
+           ORDER BY conname""",
+        (_HOLD_TABLE,),
+    ).fetchall()
+    table_acl = connection.execute(
+        """SELECT acl.grantee, acl.privilege_type, acl.is_grantable
+           FROM pg_class relation,
+                LATERAL aclexplode(COALESCE(relation.relacl, acldefault('r', relation.relowner))) acl
+           WHERE relation.oid=%s::regclass
+           ORDER BY acl.grantee, acl.privilege_type""",
+        (_HOLD_TABLE,),
+    ).fetchall()
     public_privileges = connection.execute(
         """SELECT count(*) FROM pg_class relation,
                   LATERAL aclexplode(COALESCE(relation.relacl, acldefault('r', relation.relowner))) acl
@@ -198,13 +213,15 @@ def _hold_contract(connection, role):
         "old_guard": old_guard,
         "immutable_guard": immutable_guard,
         "old_triggers": old_triggers,
+        "old_constraints": old_constraints,
+        "table_acl": table_acl,
         "public_privileges": public_privileges,
         "role": role_contract,
         "role_count": connection.execute("SELECT count(*) FROM pg_roles").fetchone()[0],
     }
 
 
-def _assert_0043_schema_and_guard(connection):
+def _assert_0043_schema_and_guard(connection, role):
     columns = connection.execute(
         """SELECT column_name, data_type, is_nullable
            FROM information_schema.columns WHERE table_schema='public'
@@ -341,6 +358,9 @@ def _assert_0043_schema_and_guard(connection):
         assert expected_collection in normalized
     assert "encode(public.digest(new.liability_snapshot_v1::text,'sha256'),'hex')" in normalized
     assert "new.liability_snapshot_v1isdistinctfromexpected_snapshot" in normalized
+    assert "tg_relid<>'public.v4_legacy_publication_recovery_holds'::regclass" in normalized
+    assert "tg_table_schema<>'public'" in normalized
+    assert "tg_table_name<>'v4_legacy_publication_recovery_holds'" in normalized
     proc = connection.execute(
         """SELECT prosecdef, proconfig, pg_get_userbyid(proowner)
            FROM pg_proc WHERE oid='public.v4_guard_legacy_publication_recovery_hold_v1()'::regprocedure"""
@@ -352,6 +372,17 @@ def _assert_0043_schema_and_guard(connection):
         (_HOLD_TABLE,),
     ).fetchone()[0]
     assert proc[2] == table_owner
+    public_execute = connection.execute(
+        """SELECT count(*) FROM pg_proc function,
+                  LATERAL aclexplode(COALESCE(function.proacl, acldefault('f', function.proowner))) acl
+           WHERE function.oid='public.v4_guard_legacy_publication_recovery_hold_v1()'::regprocedure
+             AND acl.grantee=0 AND acl.privilege_type='EXECUTE'"""
+    ).fetchone()[0]
+    assert public_execute == 0
+    assert connection.execute(
+        "SELECT has_function_privilege(%s, 'public.v4_guard_legacy_publication_recovery_hold_v1()', 'EXECUTE')",
+        (role,),
+    ).fetchone()[0] is False
     trigger = connection.execute(
         """SELECT pg_get_triggerdef(oid) FROM pg_trigger
            WHERE tgrelid=%s::regclass AND tgname='validate_legacy_publication_recovery_hold_v1'
@@ -375,6 +406,14 @@ async def _insert_fixture_hold_case(database, tmp_path, monkeypatch, *, legacy_r
     return fixture, submitted
 
 
+def _alembic_version_num_type(connection):
+    return connection.execute(
+        """SELECT data_type, character_maximum_length
+           FROM information_schema.columns WHERE table_schema='public'
+             AND table_name='alembic_version' AND column_name='version_num'"""
+    ).fetchone()
+
+
 @pytest.mark.asyncio
 async def test_0043_upgrade_preserves_populated_0042_rows_and_contract(
     monkeypatch, tmp_path
@@ -390,6 +429,7 @@ async def test_0043_upgrade_preserves_populated_0042_rows_and_contract(
         role = _fixture_role(database)
 
         with psycopg.connect(database) as connection:
+            assert _alembic_version_num_type(connection) == ("character varying", 32)
             old_columns = connection.execute(
                 """SELECT column_name, data_type, is_nullable
                    FROM information_schema.columns WHERE table_schema='public'
@@ -408,6 +448,7 @@ async def test_0043_upgrade_preserves_populated_0042_rows_and_contract(
             assert connection.execute(
                 "SELECT version_num FROM alembic_version"
             ).fetchone()[0] == _REVISION_0043
+            assert _alembic_version_num_type(connection) == ("character varying", 64)
             row_after = connection.execute(
                 f"SELECT to_jsonb(hold) FROM {_HOLD_TABLE} hold WHERE operation_id=%s",
                 (submitted["operation_id"],),
@@ -448,7 +489,7 @@ async def test_0043_upgrade_preserves_populated_0042_rows_and_contract(
                 False,
                 False,
             )
-            _assert_0043_schema_and_guard(connection)
+            _assert_0043_schema_and_guard(connection, role)
             with pytest.raises(psycopg.Error, match="immutable"), connection.transaction():
                 connection.execute(
                     f"UPDATE {_HOLD_TABLE} SET liability_snapshot_version='bad' WHERE operation_id=%s",
@@ -463,6 +504,60 @@ async def test_0043_upgrade_preserves_populated_0042_rows_and_contract(
                 f"SELECT to_jsonb(hold) FROM {_HOLD_TABLE} hold WHERE operation_id=%s",
                 (submitted["operation_id"],),
             ).fetchone()[0] == row_after
+    finally:
+        _drop_migration_database(source, name, role)
+
+
+@pytest.mark.asyncio
+async def test_0043_v1_guard_denies_public_and_caller_owned_trigger_paths(
+    monkeypatch, tmp_path
+):
+    source = os.environ["TEST_DATABASE_URL"]
+    name, database = _create_migration_database(source, "publication_0043_acl_")
+    role = None
+    try:
+        _, submitted = await _insert_fixture_hold_case(
+            database, tmp_path, monkeypatch
+        )
+        role = _fixture_role(database)
+        with psycopg.connect(database) as connection:
+            _assert_0043_schema_and_guard(connection, role)
+            with connection.transaction():
+                connection.execute(
+                    psycopg.sql.SQL("SET LOCAL ROLE {}").format(
+                        psycopg.sql.Identifier(role)
+                    )
+                )
+                connection.execute(
+                    "CREATE TEMP TABLE caller_hold AS "
+                    "SELECT * FROM public.v4_legacy_publication_recovery_holds WITH NO DATA"
+                )
+                with pytest.raises(psycopg.errors.InsufficientPrivilege):
+                    with connection.transaction():
+                        connection.execute(
+                            """CREATE TRIGGER caller_hold_v1_guard BEFORE INSERT ON caller_hold
+                               FOR EACH ROW EXECUTE FUNCTION
+                                 public.v4_guard_legacy_publication_recovery_hold_v1()"""
+                        )
+                with pytest.raises(psycopg.errors.InsufficientPrivilege):
+                    with connection.transaction():
+                        connection.execute(
+                            "SELECT public.v4_guard_legacy_publication_recovery_hold_v1()"
+                        )
+                connection.execute("RESET ROLE")
+
+            connection.execute(
+                "CREATE TEMP TABLE owner_hold AS "
+                "SELECT * FROM public.v4_legacy_publication_recovery_holds WITH NO DATA"
+            )
+            connection.execute(
+                """CREATE TRIGGER owner_hold_v1_guard BEFORE INSERT ON owner_hold
+                   FOR EACH ROW EXECUTE FUNCTION
+                     public.v4_guard_legacy_publication_recovery_hold_v1()"""
+            )
+            with pytest.raises(psycopg.Error, match="target"):
+                with connection.transaction():
+                    connection.execute("INSERT INTO owner_hold DEFAULT VALUES")
     finally:
         _drop_migration_database(source, name, role)
 
@@ -615,11 +710,23 @@ async def test_0043_downgrade_without_v1_preserves_legacy_rows(
 ):
     source = os.environ["TEST_DATABASE_URL"]
     name, database = _create_migration_database(source, "publication_0043_down_legacy_")
+    role = None
     try:
-        _, submitted = await _insert_fixture_hold_case(
-            database, tmp_path, monkeypatch, legacy_row=True
-        )
+        before = _migration(database, "upgrade", _REVISION_0041)
+        assert before.returncode == 0, before.stderr
+        old_schema = _migration(database, "upgrade", _REVISION_0042)
+        assert old_schema.returncode == 0, old_schema.stderr
+        _, submitted = await _publication_graph(database, tmp_path, monkeypatch)
+        old_row = _insert_0042_hold(database, submitted["operation_id"])
+        role = _fixture_role(database)
         with psycopg.connect(database) as connection:
+            assert _alembic_version_num_type(connection) == ("character varying", 32)
+            old_contract = _hold_contract(connection, role)
+
+        upgraded = _migration(database, "upgrade", _REVISION_0043)
+        assert upgraded.returncode == 0, upgraded.stderr
+        with psycopg.connect(database) as connection:
+            assert _alembic_version_num_type(connection) == ("character varying", 64)
             row_at_0043 = connection.execute(
                 f"SELECT to_jsonb(hold) FROM {_HOLD_TABLE} hold WHERE operation_id=%s",
                 (submitted["operation_id"],),
@@ -627,7 +734,7 @@ async def test_0043_downgrade_without_v1_preserves_legacy_rows(
             assert row_at_0043["liability_snapshot_version"] is None
             assert row_at_0043["liability_snapshot_v1"] is None
             assert row_at_0043["liability_fingerprint_v1"] is None
-            old_row = {
+            assert {
                 key: value
                 for key, value in row_at_0043.items()
                 if key not in {
@@ -635,7 +742,7 @@ async def test_0043_downgrade_without_v1_preserves_legacy_rows(
                     "liability_snapshot_v1",
                     "liability_fingerprint_v1",
                 }
-            }
+            } == old_row
 
         rolled_back = _migration(database, "downgrade", _REVISION_0042)
         assert rolled_back.returncode == 0, rolled_back.stderr
@@ -643,6 +750,8 @@ async def test_0043_downgrade_without_v1_preserves_legacy_rows(
             assert connection.execute(
                 "SELECT version_num FROM alembic_version"
             ).fetchone()[0] == _REVISION_0042
+            assert _alembic_version_num_type(connection) == ("character varying", 64)
+            assert _hold_contract(connection, role) == old_contract
             assert connection.execute(
                 f"SELECT to_jsonb(hold) FROM {_HOLD_TABLE} hold WHERE operation_id=%s",
                 (submitted["operation_id"],),
@@ -661,12 +770,14 @@ async def test_0043_downgrade_without_v1_preserves_legacy_rows(
             assert connection.execute(
                 "SELECT version_num FROM alembic_version"
             ).fetchone()[0] == _REVISION_0042
+            assert _alembic_version_num_type(connection) == ("character varying", 64)
+            assert _hold_contract(connection, role) == old_contract
             assert connection.execute(
                 f"SELECT to_jsonb(hold) FROM {_HOLD_TABLE} hold WHERE operation_id=%s",
                 (submitted["operation_id"],),
             ).fetchone()[0] == old_row
     finally:
-        _drop_migration_database(source, name)
+        _drop_migration_database(source, name, role)
 
 
 def test_clean_upgrade_empty_rollback_and_populated_preservation():

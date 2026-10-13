@@ -562,6 +562,27 @@ async def expired_permit_recovery_case(monkeypatch, tmp_path):
         _drop_database(source, name)
 
 
+@pytest.mark.asyncio
+async def test_0043_v1_guard_accepts_expired_permit_receipt(
+    expired_permit_recovery_case,
+):
+    fixture, submitted = expired_permit_recovery_case
+    with psycopg.connect(fixture["database"]) as connection:
+        connection.execute(
+            _INSERT_V1_SQL,
+            _hold_values_v1(
+                connection,
+                submitted["operation_id"],
+                reason="expired_permit_receipt",
+            ),
+        )
+        row = connection.execute(
+            f"SELECT reason, liability_snapshot_version FROM public.{TABLE} WHERE operation_id=%s",
+            (submitted["operation_id"],),
+        ).fetchone()
+    assert row == ("expired_permit_receipt", _V1_VERSION)
+
+
 @pytest_asyncio.fixture
 async def cancel_process_death_recovery_case(monkeypatch):
     from test_v4_legacy_publication import _allow, _publication_fixture
