@@ -790,20 +790,82 @@ def test_migration_import_surface_rejects_executable_function_declarations(sourc
         compatibility._parse_revision_metadata("synthetic_revision.py", source.encode())
 
 
-def test_migration_import_surface_accepts_pure_dotted_and_generic_annotations():
+def test_migration_import_surface_accepts_current_inert_imports_and_annotations():
     from salience.cycles import publication_recovery_compatibility as compatibility
 
     source = (
-        "import module\n"
+        "from alembic import op\n"
+        "from sqlalchemy import text\n"
         "revision = '0043_floor'\ndown_revision = '0042_parent'\n"
-        "def upgrade(*args: tuple[str, module.Type | None], "
-        "**kwargs: dict[str, int]) -> module.Result:\n    pass\n"
+        "items: list[str] = []\n"
+        "def upgrade(value: list[str]) -> None:\n    pass\n"
     )
 
     assert compatibility._parse_revision_metadata("synthetic_revision.py", source.encode()) == (
         "0043_floor",
         ("0042_parent",),
     )
+
+
+@pytest.mark.parametrize(
+    "annotation",
+    (
+        "descriptor.Type",
+        "generic.Type[str]",
+        "left.Type | right.Type",
+    ),
+    ids=("descriptor-getattr", "custom-class-getitem", "custom-union-or"),
+)
+def test_migration_import_surface_rejects_annotations_that_dispatch_user_code(annotation):
+    """Reject AST forms that can invoke user-defined attribute or operator hooks."""
+    from salience.cycles import publication_recovery_compatibility as compatibility
+
+    source = (
+        "revision = '0043_floor'\ndown_revision = '0042_parent'\n"
+        f"def upgrade(value: {annotation}):\n    pass\n"
+    )
+
+    with pytest.raises(PublicationWorkerCompatibilityError):
+        compatibility._parse_revision_metadata("synthetic_revision.py", source.encode())
+
+
+@pytest.mark.parametrize(
+    "import_statement",
+    (
+        "import malicious_helper",
+        "from malicious_helper import rewrite_revision",
+        "from . import malicious_helper",
+        "from importlib import import_module",
+    ),
+    ids=("module-side-effect", "imported-rewriter", "relative-import", "dynamic-import-helper"),
+)
+def test_migration_import_surface_rejects_imports_that_can_rewrite_metadata(import_statement):
+    from salience.cycles import publication_recovery_compatibility as compatibility
+
+    source = (
+        "# The imported module may rewrite this module's metadata during initialization.\n"
+        f"{import_statement}\n"
+        "revision = '0043_floor'\ndown_revision = '0042_parent'\n"
+    )
+
+    with pytest.raises(PublicationWorkerCompatibilityError):
+        compatibility._parse_revision_metadata("synthetic_revision.py", source.encode())
+
+
+@pytest.mark.parametrize("shadowed_name", ("list", "str"), ids=("list", "str"))
+def test_migration_import_surface_rejects_shadowing_safe_annotation_builtins(shadowed_name):
+    from salience.cycles import publication_recovery_compatibility as compatibility
+
+    value = "[]" if shadowed_name == "list" else "'shadowed'"
+    annotation = "list[str]" if shadowed_name == "list" else "str"
+    source = (
+        f"{shadowed_name} = {value}\n"
+        "revision = '0043_floor'\ndown_revision = '0042_parent'\n"
+        f"def upgrade(value: {annotation}):\n    pass\n"
+    )
+
+    with pytest.raises(PublicationWorkerCompatibilityError):
+        compatibility._parse_revision_metadata("synthetic_revision.py", source.encode())
 
 
 def test_every_current_numbered_migration_has_safe_import_surface():

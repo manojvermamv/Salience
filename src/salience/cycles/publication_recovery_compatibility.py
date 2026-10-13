@@ -731,29 +731,26 @@ def _safe_migration_expression(node: ast.AST, safe_names: set[str]) -> bool:
     return False
 
 
+_MIGRATION_ANNOTATION_BUILTINS = {"list", "str"}
+_MIGRATION_ANNOTATION_RESERVED_NAMES = _MIGRATION_ANNOTATION_BUILTINS | {"__builtins__"}
+_ALLOWED_MIGRATION_IMPORTS = {"alembic": "op", "sqlalchemy": "text"}
+
+
 def _safe_migration_annotation(node: ast.AST) -> bool:
+    """Accept only inert literal and exact builtin annotation forms."""
     if isinstance(node, ast.Constant):
-        return node.value is None or isinstance(node.value, (str, bytes, int, float, bool))
+        return node.value is None or isinstance(node.value, str)
     if isinstance(node, ast.Name):
-        return isinstance(node.ctx, ast.Load)
-    if isinstance(node, ast.Attribute):
-        return isinstance(node.ctx, ast.Load) and _safe_migration_annotation(node.value)
+        return isinstance(node.ctx, ast.Load) and node.id == "str"
     if isinstance(node, ast.Subscript):
         return (
             isinstance(node.ctx, ast.Load)
-            and _safe_migration_annotation(node.value)
-            and _safe_migration_annotation(node.slice)
-        )
-    if isinstance(node, ast.Tuple):
-        return isinstance(node.ctx, ast.Load) and all(
-            _safe_migration_annotation(item) for item in node.elts
-        )
-    if isinstance(node, ast.BinOp) and isinstance(node.op, ast.BitOr):
-        return _safe_migration_annotation(node.left) and _safe_migration_annotation(node.right)
-    if isinstance(node, ast.Slice):
-        return all(
-            item is None or _safe_migration_annotation(item)
-            for item in (node.lower, node.upper, node.step)
+            and isinstance(node.value, ast.Name)
+            and isinstance(node.value.ctx, ast.Load)
+            and node.value.id == "list"
+            and isinstance(node.slice, ast.Name)
+            and isinstance(node.slice.ctx, ast.Load)
+            and node.slice.id == "str"
         )
     return False
 
@@ -772,11 +769,20 @@ def _validate_migration_module_import_surface(tree: ast.Module) -> None:
         ):
             continue
         if isinstance(statement, ast.Import):
-            continue
+            raise PublicationWorkerCompatibilityError(
+                "trusted Alembic migration has an import outside the authenticated allowlist"
+            )
         if isinstance(statement, ast.ImportFrom):
-            if any(alias.name == "*" for alias in statement.names):
+            allowed_name = _ALLOWED_MIGRATION_IMPORTS.get(statement.module)
+            if (
+                statement.level != 0
+                or allowed_name is None
+                or len(statement.names) != 1
+                or statement.names[0].name != allowed_name
+                or statement.names[0].asname is not None
+            ):
                 raise PublicationWorkerCompatibilityError(
-                    "trusted Alembic migration has an unsupported wildcard import"
+                    "trusted Alembic migration has an import outside the authenticated allowlist"
                 )
             continue
         if isinstance(statement, (ast.Assign, ast.AnnAssign)):
@@ -791,6 +797,10 @@ def _validate_migration_module_import_surface(tree: ast.Module) -> None:
                     "trusted Alembic migration has unsupported module-level assignment behavior"
                 )
             target_names = {target.id for target in targets if isinstance(target, ast.Name)}
+            if target_names & _MIGRATION_ANNOTATION_RESERVED_NAMES:
+                raise PublicationWorkerCompatibilityError(
+                    "trusted Alembic migration shadows a safe annotation builtin"
+                )
             if target_names & metadata_names:
                 if not isinstance(statement, ast.Assign) or len(targets) != 1:
                     raise PublicationWorkerCompatibilityError(
@@ -809,6 +819,10 @@ def _validate_migration_module_import_surface(tree: ast.Module) -> None:
             safe_names.update(target_names)
             continue
         if isinstance(statement, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            if statement.name in _MIGRATION_ANNOTATION_RESERVED_NAMES:
+                raise PublicationWorkerCompatibilityError(
+                    "trusted Alembic migration shadows a safe annotation builtin"
+                )
             arguments = [
                 *statement.args.posonlyargs,
                 *statement.args.args,
