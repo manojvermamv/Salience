@@ -150,28 +150,52 @@ def _atomic_write_task5_evidence(evidence):
         temporary.unlink(missing_ok=True)
 
 
-def _committed_source_revision():
-    revision = subprocess.run(
-        ["git", "rev-parse", "HEAD"],
-        cwd=_MIGRATION_ROOT,
+def _verify_task5_source_snapshot(source_root, recorded_source_commit=None):
+    head_command = ["git", "rev-parse", "HEAD"]
+    head = subprocess.run(
+        head_command,
+        cwd=source_root,
         capture_output=True,
         text=True,
         timeout=30,
     )
-    assert revision.returncode == 0, revision.stdout + revision.stderr
+    assert head.returncode == 0, head.stdout + head.stderr
+    status_command = ["git", "status", "--porcelain", "--untracked-files=all"]
     status = subprocess.run(
-        ["git", "status", "--porcelain", "--untracked-files=no"],
-        cwd=_MIGRATION_ROOT,
+        status_command,
+        cwd=source_root,
         capture_output=True,
         text=True,
         timeout=30,
     )
     assert status.returncode == 0, status.stdout + status.stderr
+    source_commit = head.stdout.strip()
+    if recorded_source_commit is not None:
+        assert source_commit == recorded_source_commit, (
+            f"HEAD {source_commit} does not match recorded source commit "
+            f"{recorded_source_commit}"
+        )
     assert not status.stdout.strip(), (
-        "Task5 evidence requires committed source; tracked changes remain: "
+        "Task5 source tree must be clean before build; staged, unstaged, or "
+        "non-ignored untracked paths remain: "
         + status.stdout.strip()
     )
-    return revision.stdout.strip()
+    return {
+        "source_commit": source_commit,
+        "recorded_source_commit": recorded_source_commit or source_commit,
+        "head_check": {
+            "command_argv": head_command,
+            "exit_code": head.returncode,
+            "stdout": head.stdout,
+            "stderr": head.stderr,
+        },
+        "clean_status_check": {
+            "command_argv": status_command,
+            "exit_code": status.returncode,
+            "stdout": status.stdout,
+            "stderr": status.stderr,
+        },
+    }
 
 
 def _installed_wheel_digest(image_id):
@@ -197,7 +221,8 @@ def _installed_wheel_digest(image_id):
 def task5_worker_image(tmp_path_factory):
     """Build the real wheel-only worker image from a temporary retained wheel."""
     _TASK5_EVIDENCE.unlink(missing_ok=True)
-    source_commit = _committed_source_revision()
+    before_wheel_build = _verify_task5_source_snapshot(_MIGRATION_ROOT)
+    source_commit = before_wheel_build["source_commit"]
     if shutil.which("docker") is None:
         pytest.skip("Docker is required for the installed-image migration contract")
     docker_info = subprocess.run(
@@ -232,7 +257,9 @@ def task5_worker_image(tmp_path_factory):
     wheels = list(wheel_dir.glob("salience-*.whl"))
     assert len(wheels) == 1, f"expected one retained Salience wheel, got {wheels}"
 
-    stage = _MIGRATION_ROOT / f".task5-wheel-{uuid4().hex}"
+    staged_wheel_root = _MIGRATION_ROOT / "build"
+    staged_wheel_root.mkdir(parents=True, exist_ok=True)
+    stage = staged_wheel_root / f".task5-wheel-{uuid4().hex}"
     stage.mkdir()
     shutil.copy2(wheels[0], stage / "salience.whl")
     project = "salience-task5-" + uuid4().hex[:12]
@@ -268,6 +295,9 @@ def task5_worker_image(tmp_path_factory):
         ),
     ]
     try:
+        before_image_build = _verify_task5_source_snapshot(
+            _MIGRATION_ROOT, recorded_source_commit=source_commit
+        )
         image_build = subprocess.run(
             [*compose, "build", "worker"],
             cwd=_MIGRATION_ROOT,
@@ -291,6 +321,10 @@ def task5_worker_image(tmp_path_factory):
         assert image_id.startswith("sha256:"), f"expected worker image ID, got {image_id!r}"
         yield {
             "source_commit": source_commit,
+            "source_provenance": {
+                "before_wheel_build": before_wheel_build,
+                "before_image_build": before_image_build,
+            },
             "image_id": image_id,
             "image_digest": image_id,
             "image_repo_digests": image_metadata.get("RepoDigests") or [],
@@ -562,6 +596,7 @@ def test_installed_image_migrates_disposable_database_to_0043(task5_worker_image
             "evidence_scope": "Task5 installed-image migration run qualification only",
             "task8_candidate_lock_evidence": False,
             "source_commit": task5_worker_image["source_commit"],
+            "source_provenance": task5_worker_image["source_provenance"],
             "worker_image": {
                 "id": task5_worker_image["image_id"],
                 "digest": task5_worker_image["image_digest"],
@@ -689,6 +724,117 @@ def test_cleanup_rejects_undocumented_absence_errors():
     assert failures == [
         "container stop: exit 1: Error response from daemon: container is still in use"
     ]
+
+
+def _synthetic_task5_source_repo(root):
+    root.mkdir()
+    subprocess.run(["git", "init", "--quiet"], cwd=root, check=True)
+    subprocess.run(
+        ["git", "config", "user.name", "Task5 Test"], cwd=root, check=True
+    )
+    subprocess.run(
+        ["git", "config", "user.email", "task5-test@example.invalid"],
+        cwd=root,
+        check=True,
+    )
+    (root / "pyproject.toml").write_text(
+        "[build-system]\nrequires = ['setuptools']\nbuild-backend = 'setuptools.build_meta'\n"
+        "[project]\nname = 'synthetic-task5-wheel'\nversion = '0.0.1'\n"
+        "[tool.setuptools.packages.find]\nwhere = ['src']\n",
+        encoding="utf-8",
+    )
+    package = root / "src" / "synthetic_package"
+    package.mkdir(parents=True)
+    (package / "__init__.py").write_text("BASELINE = True\n", encoding="utf-8")
+    subprocess.run(["git", "add", "."], cwd=root, check=True)
+    subprocess.run(
+        ["git", "commit", "--quiet", "-m", "synthetic source baseline"],
+        cwd=root,
+        check=True,
+    )
+    return subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=root,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+
+
+def test_task5_source_gate_rejects_untracked_package_source_before_build_or_evidence(
+    tmp_path,
+):
+    repo = tmp_path / "synthetic-repo"
+    source_commit = _synthetic_task5_source_repo(repo)
+    untracked_module = repo / "src" / "synthetic_package" / "would_ship_in_wheel.py"
+    # Setuptools package discovery includes Python modules under src packages.
+    untracked_module.write_text("UNTRACKED_WHEEL_CONTENT = True\n", encoding="utf-8")
+    wheel_build_attempts = []
+    evidence_path = tmp_path / "task5-evidence.json"
+
+    def qualification():
+        _verify_task5_source_snapshot(repo, source_commit)
+        wheel_build_attempts.append("pip wheel")
+        evidence_path.write_text("{}\n", encoding="utf-8")
+
+    with pytest.raises(AssertionError, match="clean"):
+        qualification()
+
+    assert untracked_module.exists()
+    assert wheel_build_attempts == []
+    assert not evidence_path.exists()
+
+
+def test_task5_source_snapshot_records_exact_clean_status_command(tmp_path):
+    repo = tmp_path / "synthetic-repo"
+    source_commit = _synthetic_task5_source_repo(repo)
+
+    snapshot = _verify_task5_source_snapshot(repo, source_commit)
+
+    assert snapshot["source_commit"] == source_commit
+    assert snapshot["recorded_source_commit"] == source_commit
+    assert snapshot["head_check"]["command_argv"] == ["git", "rev-parse", "HEAD"]
+    assert snapshot["head_check"]["stdout"] == source_commit + "\n"
+    assert snapshot["clean_status_check"] == {
+        "command_argv": [
+            "git",
+            "status",
+            "--porcelain",
+            "--untracked-files=all",
+        ],
+        "exit_code": 0,
+        "stdout": "",
+        "stderr": "",
+    }
+
+
+@pytest.mark.parametrize("change_kind", ["unstaged", "staged"])
+def test_task5_source_gate_rejects_tracked_changes(tmp_path, change_kind):
+    repo = tmp_path / "synthetic-repo"
+    source_commit = _synthetic_task5_source_repo(repo)
+    package_source = repo / "src" / "synthetic_package" / "__init__.py"
+    package_source.write_text("BASELINE = False\n", encoding="utf-8")
+    if change_kind == "staged":
+        subprocess.run(["git", "add", str(package_source)], cwd=repo, check=True)
+
+    with pytest.raises(AssertionError, match="clean"):
+        _verify_task5_source_snapshot(repo, source_commit)
+
+
+def test_task5_source_gate_rejects_head_mismatch(tmp_path):
+    repo = tmp_path / "synthetic-repo"
+    original_commit = _synthetic_task5_source_repo(repo)
+    package_source = repo / "src" / "synthetic_package" / "__init__.py"
+    package_source.write_text("BASELINE = False\n", encoding="utf-8")
+    subprocess.run(["git", "add", str(package_source)], cwd=repo, check=True)
+    subprocess.run(
+        ["git", "commit", "--quiet", "-m", "advance source commit"],
+        cwd=repo,
+        check=True,
+    )
+
+    with pytest.raises(AssertionError, match="recorded source commit"):
+        _verify_task5_source_snapshot(repo, original_commit)
 
 
 def _create_migration_database(source, prefix):
