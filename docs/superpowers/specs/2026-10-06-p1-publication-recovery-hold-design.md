@@ -14,6 +14,8 @@ Continue the existing V4 P1 implementation without restarting completed P0/P1 wo
 
 Production effects remain disabled. The fixture publication budget remains zero. RG0 and full RG1 remain `HELD`; P2–P7 remain gated, optional P6 remains disabled, and `main` remains unmerged.
 
+This P1 hold is safety evidence only: it does not advance or reopen a cycle, select another stage or provider, invoke or authorize a platform adapter, create an analytics observation or outcome, or trigger learning, an experiment, or a release decision. This slice adds no platform connector or production authorization. Platform delivery and measurement remain later gated phases, and all evidence here remains effects-disabled fixture evidence.
+
 ## Reconciled starting state
 
 - The effects-disabled publication fixture already rechecks the original account, baseline, approval, policy, rights, current scoped authority, exact request, and immutable receipt. An expired execution permit permits only exact receipt readback under a separate current reconciliation grant. Production-wide cross-service revocation remains unqualified.
