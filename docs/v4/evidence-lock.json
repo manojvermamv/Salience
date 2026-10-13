@@ -1,6 +1,6 @@
 {
-  "baseline_commit": "dbc8478f8e8ce9e8ba05ddb816eb6e0e75e9f672",
-  "scope": "All tracked application source, migrations, tests, scripts and named deployment/dependency configuration in the Task 10 qualification checkout. The application artifact pin is d32005efc8b402d614b624c35fc166deeed3db65; the test-only qualification harness is at dbc8478f8e8ce9e8ba05ddb816eb6e0e75e9f672. Hash changes require fresh claim review, not automatic acceptance.",
+  "baseline_commit": "14801007310232f59708566ca9a3eefb80bfea87",
+  "scope": "All tracked application source, migrations, tests, scripts and named deployment/dependency configuration in the Task 10 qualification checkout. The application artifact pin is 5cb57910c2c6dc2f6ea37da75640c5c947c8907b; the test-only qualification harness is 14801007310232f59708566ca9a3eefb80bfea87. Hash changes require fresh claim review, not automatic acceptance.",
   "files": [
     {
       "path": ".env.example",
@@ -208,7 +208,7 @@
     },
     {
       "path": "scripts/launch-v4-publication-worker.py",
-      "sha256": "7460531ff4d40152d78095f0ff7fbc5a2ec162f07b550eb9501be06508000363"
+      "sha256": "9d920874191fc2378b7e7bc8e92d8cbe14b76f62dcc6e63df37b936e7649c224"
     },
     {
       "path": "scripts/verify-browser-evidence.sh",
@@ -532,7 +532,7 @@
     },
     {
       "path": "src/salience/cycles/legacy_runtime.py",
-      "sha256": "20225bea677bb2e14cd3655bad948f9e585feec69668d1126ddc409ef907c595"
+      "sha256": "2a04a0a4dd454b17617b137fa9e40f52b9b40a6dfa572ae30c216bbde19fbaa9"
     },
     {
       "path": "src/salience/cycles/legacy_schedule_workflow.py",
@@ -1012,7 +1012,7 @@
     },
     {
       "path": "tests/fixtures/v4_publication_floor_worker.py",
-      "sha256": "b74374eca6a649d0e5349f7fb85684dfcd197f38698d66b3b86a50d044663cf4"
+      "sha256": "3dd2c45ca74c0e214117e1c799c14cf0895aaeee18d1b615f5b174612ef5edf5"
     },
     {
       "path": "tests/integration/test_a2a_gateway.py",
@@ -1216,7 +1216,7 @@
     },
     {
       "path": "tests/integration/test_v4_legacy_publication.py",
-      "sha256": "ba1b2cae0828d5d5d8a0cf75eb0db3589ae4cc20efff07a5c8748b27f3d45ff4"
+      "sha256": "557e33fc352379dae2a64ee9d2b713a017661046ec6450416c5d6efd3131a8f9"
     },
     {
       "path": "tests/integration/test_v4_legacy_schedule_ingress.py",
@@ -1252,11 +1252,11 @@
     },
     {
       "path": "tests/integration/test_v4_publication_recovery_floor.py",
-      "sha256": "b3161b08320f42e28abd38f3dc26726058abccb18c6945334835c16530c97f4f"
+      "sha256": "2bc82d5b79d05e7e60c397e99b432f4d274e448f86f2cdba66a46fb50ab4df8b"
     },
     {
       "path": "tests/integration/test_v4_publication_recovery_holds.py",
-      "sha256": "f29b2d67d978cfbbbffdbb96b7eb6e74671794429a37dc1f5e765e2d9417c546"
+      "sha256": "56512510e03cdd2a0639d5627a99682c8421527dac2495b083833db18172f888"
     },
     {
       "path": "tests/integration/test_v4_runtime_waits.py",
@@ -1443,6 +1443,6 @@
       "sha256": "7f76114852b4b9d95b3517c49718ccf2e007d64d442a1b4e05ef696dd37a8bbc"
     }
   ],
-  "reviewed_at": "2026-10-06T13:54:00Z",
-  "review_scope": "Content lock for the checked application source at candidate 7878208e7a353f93bb70279ad0dd7f0760f93ec4 (356 checked files). This lock records exact bytes only and is not a code review of that candidate. The corrected-publication rereview covered application a4b2368cdb463939d093020224a5b5667392aee6 with documentation/observed HEAD d0311725686d81b7b4747c2d6225986e5ea3a524; it does not cover 7878208. Production effects are disabled; RG0/RG1 remain HELD."
+  "reviewed_at": "2026-10-13T05:20:50Z",
+  "review_scope": "Content lock for the checked application source at candidate 5cb57910c2c6dc2f6ea37da75640c5c947c8907b (360 checked files). This lock records exact bytes only and is not an independent code review. The corrected-publication rereview covered application a4b2368cdb463939d093020224a5b5667392aee6 with documentation/observed HEAD d0311725686d81b7b4747c2d6225986e5ea3a524; it does not cover this Task 10 candidate. Production effects are disabled; RG0/RG1 remain HELD."
 }

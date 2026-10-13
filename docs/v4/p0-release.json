@@ -58,16 +58,17 @@
       "skipped": 0,
       "exit_code": 0,
       "command": "/home/admin/Salience/.venv/bin/python docs/v4/test_checks.py",
-      "result_log": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/final-checks/docs-tests.log"
+      "result_log": "artifacts/v4-next-p1/agents/task-10-doc-reconciliation/fix-r1/final-verification/docs-tests.log"
     },
     "mermaid_diagrams": {
       "rendered": 6,
       "failed": 0,
       "version": "12.0.0",
-      "results": "artifacts/v4-next-p1/qualification-diagrams/results.json",
-      "sha256": "6a04203cacd481c7c9e2000bd83834a2ac1ad0cb0ab4d4db433ba6aa557502ba"
+      "results": "artifacts/v4-next-p1/agents/task-10-doc-reconciliation/fix-r1/final-verification/diagram-rendered/results.json",
+      "sha256": "6a04203cacd481c7c9e2000bd83834a2ac1ad0cb0ab4d4db433ba6aa557502ba",
+      "log": "artifacts/v4-next-p1/agents/task-10-doc-reconciliation/fix-r1/final-verification/mermaid.log"
     },
-    "locked_evidence_files": 356,
+    "locked_evidence_files": 360,
     "original_inventory_dispositions": 360,
     "warning": "The authoritative clean-database full non-live run passed all 614 tests and emitted three Alembic DeprecationWarnings about missing path_separator configuration for prepend_sys_path.",
     "focused_p1": {
@@ -101,28 +102,28 @@
       "junit": "artifacts/parallel-agents/focused.xml"
     },
     "publication_recovery_holds": {
-      "application_commit": "d32005efc8b402d614b624c35fc166deeed3db65",
-      "focused_tests": 17,
+      "application_commit": "5cb57910c2c6dc2f6ea37da75640c5c947c8907b",
+      "focused_tests": 20,
       "failures": 0,
       "errors": 0,
       "skipped": 0,
       "rollback_rehearsal_tests": 1,
       "rollback_rehearsal_status": "PASS",
       "evidence": "docs/v4/publication-recovery-hold-evidence.json",
-      "source_lock_sha256": "d3176a0fd96386324f483702a96944078c02fdf892dd60dddd585a9bd25d038a",
+      "source_lock_sha256": "62fa6a44498d891bcc8ff6911f243a65573174ff44b6985bdbdc26097fd10fe0",
       "scope": "Task 10 retained-wheel actual-image rehearsal in disposable effects-disabled local fixtures only; Task 11 review pending; production remains HELD.",
-      "evidence_sha256": "0940112655e5b03d05a500678e1c1560e6bd0d5b08ad4ec0d1208b2221c4634a",
-      "qualification_harness_commit": "dbc8478f8e8ce9e8ba05ddb816eb6e0e75e9f672",
+      "evidence_sha256": "d21747aa4756e04fdee7a57b50f1381e692e7e4e97fbd91daa38599a4f5cd426",
+      "qualification_harness_commit": "14801007310232f59708566ca9a3eefb80bfea87",
       "task_8_focused_tests": 116,
       "focused_matrix_result": "PASS",
       "full_non_live_tests": 614,
       "full_non_live_application_commit": "7878208e7a353f93bb70279ad0dd7f0760f93ec4",
       "full_non_live_rerun_on_current_candidate": false,
-      "artifact_sha256": "2028f7f30e8c19933308f1044ae49ca7b85698a52bcc7c773a596a1367fecb8b",
-      "wheel_sha256": "f046f6807399fe64c5bf87610142516e2456d367249ecb68b8405e92d8e16b28",
-      "image_id": "sha256:9edf0f1864347a830236a20343dc3138fca21ad007cabc272772ad1e6c9a3048",
-      "record_sha256": "ac09f63cc880efd1023614e3d466ce56771aabd305d615ecdc034f1a33facff9",
-      "launch_lock_sha256": "abd5ca958b6f649753d7a5f7c7b3311d97515fc59948db3ce3c6906e2792d727",
+      "artifact_sha256": "863144b1f2a050f7204ac399a1d43cc3332e77fc4fb7e6da860a1597885ad190",
+      "wheel_sha256": "578eeb40a26ed79ce8f50d9fdc73f841005da563c69a0ec220c7008b91879cec",
+      "image_id": "sha256:a206c5b62c9a8dd59fb47e2062b27b206fd2f7071832af706472f9c5e290cb77",
+      "record_sha256": "559c508fd0f3b84cbb4644be5d89991ffcb3d053b46553bc0a6719c6d3ac4c5e",
+      "launch_lock_sha256": "0b3aa513e5ca74775ccab46013b37b129d98eb8c250dc091cd666189f1d28e56",
       "documentation_checker": {
         "status": "PASS",
         "requirements": 75,
@@ -156,29 +157,49 @@
       "status": "PASS",
       "requirements": 75,
       "source_files": 2,
-      "evidence_files": 356,
+      "evidence_files": 360,
       "inventory_files": 360,
-      "markdown_files_checked": 87,
+      "markdown_files_checked": 93,
       "html_files_checked": 4,
       "negative_controls": 6,
-      "self_test_status": "PASS"
+      "self_test_status": "PASS",
+      "normal_log": "artifacts/v4-next-p1/agents/task-10-doc-reconciliation/fix-r1/final-verification/checker.log",
+      "self_test_log": "artifacts/v4-next-p1/agents/task-10-doc-reconciliation/fix-r1/final-verification/checker-self-test.log"
     },
     "documentation_shell_contracts": {
       "passed": 4,
-      "failed": 0
+      "failed": 0,
+      "logs": [
+        "artifacts/v4-next-p1/agents/task-10-doc-reconciliation/fix-r1/final-verification/shell-browser-docs.log",
+        "artifacts/v4-next-p1/agents/task-10-doc-reconciliation/fix-r1/final-verification/shell-phase-7-8.log",
+        "artifacts/v4-next-p1/agents/task-10-doc-reconciliation/fix-r1/final-verification/shell-phase-9.log",
+        "artifacts/v4-next-p1/agents/task-10-doc-reconciliation/fix-r1/final-verification/shell-verify-browser.log"
+      ]
     },
-    "pip_check": "PASS",
-    "compileall": "PASS",
+    "pip_check": {
+      "status": "PASS",
+      "log": "artifacts/v4-next-p1/agents/task-10-doc-reconciliation/fix-r1/final-verification/pip-check.log"
+    },
+    "compileall": {
+      "status": "PASS",
+      "log": "artifacts/v4-next-p1/agents/task-10-doc-reconciliation/fix-r1/final-verification/compileall.log"
+    },
     "modified_json_files_parsed": 6,
-    "git_diff_check": "PASS",
+    "git_diff_check": {
+      "status": "PASS",
+      "log": "artifacts/v4-next-p1/agents/task-10-doc-reconciliation/fix-r1/final-verification/diff-check.log"
+    },
     "historical_snapshot_hashes": {
       "status": "PASS",
-      "paths": 14
+      "paths": 14,
+      "manifest": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/historical-preservation-sha256.json",
+      "log": "artifacts/v4-next-p1/agents/task-10-doc-reconciliation/fix-r1/final-verification/historical-preservation.log"
     },
     "source_lock_validation": {
       "status": "PASS",
-      "files": 356,
-      "sha256": "d1d9f95af6f67192eb70c57bde2e066763ef1dadca6c5f58809e2833bc7ed638"
+      "files": 360,
+      "sha256": "62fa6a44498d891bcc8ff6911f243a65573174ff44b6985bdbdc26097fd10fe0",
+      "log": "artifacts/v4-next-p1/agents/task-10-doc-reconciliation/fix-r1/final-verification/integrity-validation.log"
     }
   },
   "evidence_artifacts": [
@@ -324,7 +345,7 @@
     },
     {
       "path": "docs/v4/publication-recovery-hold-evidence.json",
-      "sha256": "0940112655e5b03d05a500678e1c1560e6bd0d5b08ad4ec0d1208b2221c4634a",
+      "sha256": "d21747aa4756e04fdee7a57b50f1381e692e7e4e97fbd91daa38599a4f5cd426",
       "local_only": false
     }
   ],
@@ -359,7 +380,7 @@
     }
   ],
   "later_phase_boundaries": {
-    "P1": "Items 1\u20136 implemented locally; item 7 independently reviewed/repaired/re-reviewed, 132 focused / 507 full PASS. Complete retained RG0/RG1 production acceptance before later-phase release; live schedules/routing, current general policy/scoped remote reads, real providers/alerts and deployment contracts remain HELD.",
+    "P1": "Items 1–6 implemented locally; item 7 independently reviewed/repaired/re-reviewed, 132 focused / 507 full PASS. Complete retained RG0/RG1 production acceptance before later-phase release; live schedules/routing, current general policy/scoped remote reads, real providers/alerts and deployment contracts remain HELD.",
     "P2": "Production G1 provider charge/effect integration using the fixture-qualified allocation transfer contract, ready-package reference/outbox integration and enabled provider qualification",
     "P3": "Trial/evaluation isolation and separate strategy/capability namespaces",
     "P4": "Promotion/invalidation serialization; mandatory typed learning proposals with optional qualified semantic analyst",
@@ -444,8 +465,8 @@
       "5c"
     ],
     "next_queue_item": null,
-    "next_action": "Complete Task 11 independent review, meta-review, final artifact rerun and exact-head checks for the Task 10 candidate; then continue remaining production policy, routing/live schedule inventory, recovery/alerts and RG0/RG1 obligations. Keep production effects disabled, fixture budget zero, P2\u2013P7 gated, P6 disabled and main unmerged.",
-    "independent_review": "Task 8 bounded evidence review passed; Task 10 actual-image local fixture qualification passed, but Task 11 independent review/meta-review/final artifact rerun/exact-head checks are pending. Corrected-publication rereview remains scoped to A4/d031172 and does not review d32005e.",
+    "next_action": "Complete Task 11 independent review, meta-review, final artifact rerun and exact-head checks for the Task 10 candidate; then continue remaining production policy, routing/live schedule inventory, recovery/alerts and RG0/RG1 obligations. Keep production effects disabled, fixture budget zero, P2–P7 gated, P6 disabled and main unmerged.",
+    "independent_review": "Task 8 bounded evidence review passed; Task 10 actual-image local fixture qualification passed, but Task 11 independent review/meta-review/final artifact rerun/exact-head checks are pending. Corrected-publication rereview remains scoped to A4/d031172 and does not review 5cb5791.",
     "completed_implementation_tasks": [
       1,
       2,
@@ -458,8 +479,8 @@
       9,
       10
     ],
-    "latest_task_10_application_commit": "d32005efc8b402d614b624c35fc166deeed3db65",
-    "task_10_qualification_harness_commit": "dbc8478f8e8ce9e8ba05ddb816eb6e0e75e9f672",
+    "latest_task_10_application_commit": "5cb57910c2c6dc2f6ea37da75640c5c947c8907b",
+    "task_10_qualification_harness_commit": "14801007310232f59708566ca9a3eefb80bfea87",
     "task_10_status": "PASS_LOCAL_FIXTURE_CANDIDATE; TASK_11_REVIEW_PENDING"
   },
   "documentation_refresh": {
@@ -685,8 +706,8 @@
     "status": "ACTIVE",
     "restored_from_own_output_at": "2026-10-04T02:44:31.946Z",
     "base_commit": "380416d35cffb6e4bf33003cb6e8df0638874436",
-    "direction": "Remaining P1 legacy dispatch-to-outbox integration, followed by retained P1 authorization/runtime/recovery acceptance; reuse completed items 1\u20137 and parallel extension",
-    "current_increment": "Current application candidate 7878208 includes Task 1\u20137 implementation plus Task 8 local recovery-hold qualification (116 focused tests, compileall and two-reason rollback rehearsal); the clean template0-database full non-live suite passed 614 tests with zero failures/errors/skips. Corrected-publication rereview is complete only for A4/d031172 and does not review 7878208.",
+    "direction": "Remaining P1 legacy dispatch-to-outbox integration, followed by retained P1 authorization/runtime/recovery acceptance; reuse completed items 1–7 and parallel extension",
+    "current_increment": "Current application candidate 7878208 includes Task 1–7 implementation plus Task 8 local recovery-hold qualification (116 focused tests, compileall and two-reason rollback rehearsal); the clean template0-database full non-live suite passed 614 tests with zero failures/errors/skips. Corrected-publication rereview is complete only for A4/d031172 and does not review 7878208.",
     "qualification": "PASS_IMPLEMENTED_LOCAL_PUBLICATION_RECOVERY_HOLD_AND_PARALLEL_PARENT_STATUS_FIXTURE_SCOPE",
     "remaining_scope": [
       "deployment-specific supported routing, live schedule inventory, fencing, drain, rollback and operator recovery",
@@ -704,7 +725,7 @@
     "full_non_live_tests": 614,
     "source_files": 356,
     "evidence": "docs/v4/publication-recovery-hold-evidence.json",
-    "publication": "Fixture-only current recovery-hold evidence; production effects disabled, RG0/RG1 HELD, P2\u2013P7 gated, optional P6 disabled, main unmerged.",
+    "publication": "Fixture-only current recovery-hold evidence; production effects disabled, RG0/RG1 HELD, P2–P7 gated, optional P6 disabled, main unmerged.",
     "source_lock_sha256": "d1d9f95af6f67192eb70c57bde2e066763ef1dadca6c5f58809e2833bc7ed638",
     "review_scope": "Corrected-publication rereview: A4 application with documentation/observed HEAD d031172 only; Task 8 evidence review is bounded to local recovery-hold evidence. No current all-row independent review or production approval is implied."
   },
@@ -762,7 +783,7 @@
     "status": "ACTIVE",
     "restored_from_own_output_at": "2026-10-04T02:44:31.946Z",
     "base_commit": "380416d35cffb6e4bf33003cb6e8df0638874436",
-    "direction": "Remaining P1 legacy dispatch-to-outbox integration, followed by retained P1 authorization/runtime/recovery acceptance; reuse completed items 1\u20137 and parallel extension",
+    "direction": "Remaining P1 legacy dispatch-to-outbox integration, followed by retained P1 authorization/runtime/recovery acceptance; reuse completed items 1–7 and parallel extension",
     "current_increment": "Effects-disabled original governed-publication API/outbox and paired native schedules, including P1 typed hold on post-close published cancel and P3 invocation-scope correction; initial independent P1/P3 findings accepted, fixed and freshly qualified; exact-head rereview pending",
     "qualification": "PASS_IMPLEMENTED_LOCAL_LEGACY_PUBLICATION_AND_NATIVE_SCHEDULE_FIXTURE_SCOPE_AFTER_ACCEPTED_REVIEW_CORRECTIONS",
     "remaining_scope": [
