@@ -2633,7 +2633,9 @@ def test_candidate_control_bundle_authenticates_full_0043_inventory(
     lock_path = ROOT / "deployment/v4/publication-worker-launch-lock.json"
     digest_path = artifact_root / "publication-worker-launch-lock.sha256"
     wheel_path = artifact_root / "salience.whl"
-    runtime_root = Path("/tmp/p1-publication-recovery-0043/site-packages")
+    runtime_root = Path(
+        "/tmp/p1-publication-recovery-0043/runtime-prefix/usr/local/lib/python3.13/site-packages"
+    )
     assert control_bundle.is_dir()
     assert runtime_root.is_dir()
     lock_bytes = lock_path.read_bytes()
@@ -3394,15 +3396,10 @@ def _task8_rollback_image_or_skip(
 
     attestation = read_json(candidate_root / "image-attestation.json")
     image_id = attestation.get("image_id")
-    image_id_paths = (
-        candidate_root / "worker-image-id.txt",
-        ROOT / "artifacts/v4-next-p1/agents/p1-publication-recovery-0043/worker-image-id.txt",
-    )
-    assert read_regular(image_id_paths[0]).decode("ascii").strip() == image_id
-    for image_id_path in image_id_paths:
-        if os.path.lexists(image_id_path):
-            saved_image_id = read_regular(image_id_path).decode("ascii").strip()
-            assert saved_image_id == image_id
+    saved_image_id = read_regular(candidate_root / "worker-image-id.txt").decode(
+        "ascii"
+    ).strip()
+    assert saved_image_id == image_id
     image_ref = f"salience-p1-floor-{pin['application_commit'][:7]}-worker:latest"
     assert re.fullmatch(r"sha256:[0-9a-f]{64}", image_id)
     assert attestation.get("application_commit") == pin["application_commit"]
