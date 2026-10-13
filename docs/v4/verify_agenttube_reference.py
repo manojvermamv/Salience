@@ -67,6 +67,12 @@ UPSTREAM_REFERENCE = re.compile(
     re.IGNORECASE,
 )
 FULL_SHA = re.compile(r"^[0-9a-f]{40}$")
+GIT_SUBMODULE_COMMAND = re.compile(r"\bgit\s+(?:-C\s+\S+\s+)?submodule\b", re.IGNORECASE)
+DIRECT_AGENTTUBE_NODE_COMMAND = re.compile(
+    r"\bcd\s+['\"]?(?:\./)?youtube-automation-agent/?['\"]?"
+    r"\s*(?:&&[ \t]*|\r?\n[ \t]*)(?:node|nodejs)\b",
+    re.IGNORECASE,
+)
 
 
 def _is_mapping(value: object) -> bool:
@@ -332,7 +338,8 @@ def _workflow_errors(root: Path) -> list[str]:
     for workflow in workflows:
         relative = workflow.relative_to(root).as_posix()
         try:
-            lines = workflow.read_text(encoding="utf-8").splitlines()
+            content = workflow.read_text(encoding="utf-8")
+            lines = content.splitlines()
         except (OSError, UnicodeError) as exc:
             errors.append(f"cannot read workflow {relative}: {exc}")
             continue
@@ -342,10 +349,14 @@ def _workflow_errors(root: Path) -> list[str]:
                 value = submodules.group(1).strip().strip("\"'").lower()
                 if value not in {"false", "no"}:
                     errors.append(f"workflow {relative}:{number} opts into submodule checkout")
-            if re.search(r"\bgit\s+submodule\b", line, re.IGNORECASE):
+            if GIT_SUBMODULE_COMMAND.search(line):
                 errors.append(f"workflow {relative}:{number} invokes git submodule setup")
             if re.search(r"\b(npm|pnpm|yarn)\s+(ci|install|start|run)\b", line, re.IGNORECASE):
                 errors.append(f"workflow {relative}:{number} runs a Node package command in normal CI")
+        runtime = DIRECT_AGENTTUBE_NODE_COMMAND.search(content)
+        if runtime:
+            number = content.count("\n", 0, runtime.start()) + 1
+            errors.append(f"workflow {relative}:{number} directly runs Node from {REFERENCE_GITLINK}")
     return errors
 
 

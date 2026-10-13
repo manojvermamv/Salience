@@ -323,6 +323,26 @@ class AgentTubeReferenceContracts(unittest.TestCase):
             errors = self.verifier().validate_reference_boundary(root)
         self.assertTrue(any("src/unsafe_adapter.py" in error for error in errors), errors)
 
+    def test_workflow_rejects_git_c_submodule_and_node_from_submodule(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            copy_workflows(root)
+            workflow = root / ".github" / "workflows" / "unsafe.yml"
+            workflow.write_text(
+                "steps:\n"
+                "  - run: git -C . submodule update --init --recursive\n"
+                "  - run: cd youtube-automation-agent && node index.js\n"
+            )
+            errors = self.verifier().validate_reference_boundary(root)
+        self.assertTrue(
+            any("git" in error.lower() and "submodule" in error.lower() for error in errors),
+            errors,
+        )
+        self.assertTrue(
+            any("node" in error.lower() or "runtime" in error.lower() for error in errors),
+            errors,
+        )
+
     def test_evidence_keeps_all_current_release_gates(self):
         manifest = self.actual_manifest()
         self.assertEqual(self.verifier().validate_manifest(manifest, ROOT), [])
