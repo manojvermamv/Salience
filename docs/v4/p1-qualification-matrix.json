@@ -898,7 +898,7 @@
     "source_files": 316,
     "status": "PASS independent implemented-fixture qualification; RG0/RG1 HELD"
   },
-  "qualified_application_commit_scope": "Task 10 local publication-worker floor candidate at `5cb5791`; its actual retained-wheel Docker image passed both hold reasons in disabled-effects fixtures. Task 11 review found floor/evidence gaps, so it is unsupported as the rollback floor. The approved 0043 design awaits implementation, new-candidate requalification, final independent review/meta-review and exact-head checks. The 614-test full non-live run remains bound to `7878208`; no result transfers to the new candidate.",
+  "qualified_application_commit_scope": "Task 10 local fixture results remain historical at 5cb5791; Task 11 found floor/evidence gaps, so that candidate is unsupported as the rollback floor. The exact 0043 candidate at 6b2cdc2f68f3323edfaf9b92583b0a5cf0398eb4 has a built and authenticated wheel/image/lock recorded in .superpowers/sdd/2026-10-13-p1-publication-recovery-floor-repair/task-8-report.md. Its candidate-specific qualification results are reported there; no counts transfer from 5cb5791 or 7878208. Final independent review/meta-review and exact-head CI remain required; production acceptance, RG0/full RG1 remain HELD and P2–P7 gated.",
   "historical_parallel_qualification": {
     "evidence": "docs/v4/parallel-agents-evidence.json",
     "full_non_live_tests": 540,
@@ -907,7 +907,7 @@
     "status": "PASS root-reviewed bounded parallel-agent local extension; historical item7 independent review retained; RG0/RG1/RG5 HELD",
     "qualified_application_commit": "2653d2ecb3f0d5bb8ea6560de274137dd6032a96"
   },
-  "current_independent_review_scope": "Task 11 review found floor/evidence gaps in candidate `5cb5791`, which is unsupported as the rollback floor. The corrected-publication rereview covers only application `a4b2368cdb463939d093020224a5b5667392aee6` with documentation/observed HEAD `d0311725686d81b7b4747c2d6225986e5ea3a524`; it does not cover `7878208` or `5cb5791`. The approved 0043 design awaits implementation, new-candidate requalification, final independent review/meta-review and exact-head checks.",
+  "current_independent_review_scope": "Task 11 review found floor/evidence gaps in candidate 5cb5791, which is unsupported as the rollback floor. The exact 0043 candidate at 6b2cdc2f68f3323edfaf9b92583b0a5cf0398eb4 and its artifact build are recorded in .superpowers/sdd/2026-10-13-p1-publication-recovery-floor-repair/task-8-report.md; it remains outside all prior independent review scopes until the corrected-publication rereview and meta-review. The corrected-publication rereview already completed covers only application a4b2368cdb463939d093020224a5b5667392aee6 with documentation/observed HEAD d0311725686d81b7b4747c2d6225986e5ea3a524; it does not cover 7878208, 5cb5791, or 6b2cdc2f68f3323edfaf9b92583b0a5cf0398eb4.",
   "historical_legacy_intelligence_qualification": {
     "evidence": "docs/v4/legacy-dispatch-evidence.json",
     "full_non_live_tests": 556,
@@ -1117,5 +1117,41 @@
     "base_commit": "5683cfab4a3a8f20cb83506de5debb0b5692f010",
     "direct_parent": "5683cfab4a3a8f20cb83506de5debb0b5692f010",
     "historical_status": "HISTORICAL_A4_FIXTURE_QUALIFICATION; 21 focused / 604 full non-live / 352 source hashes."
+  },
+  "task_8_exact_candidate_artifact_build": {
+    "status": "EXACT_CANDIDATE_ARTIFACT_BUILD_RECORDED",
+    "application_commit": "6b2cdc2f68f3323edfaf9b92583b0a5cf0398eb4",
+    "image_ref": "salience-p1-floor-6b2cdc2-worker:latest",
+    "image_id": "sha256:a87ae41599e97260155f39b733968fc3ed147649863cbc68a89599ec6082d134",
+    "wheel_sha256": "10953131660068fd4a82f2319f31921e9933088c5ab20cac72c8936834a0de8b",
+    "record_sha256": "8398448bdd111da2ea23741bae31bf2c243c6b99a7ba3461b0b82a40e9e98877",
+    "record_entry_count": 172,
+    "launch_lock_sha256": "10ef32f33b7051f4637edd27d20d0de77c8cc2b03e2002bf00c861f7284de07f",
+    "source_manifest_sha256": "cf3e0d3da75c92a45c94671ddaab6f764a1a5823f17a5fa8a2a508fbbc578820",
+    "interpreter_sha256": "73b68fc2dac176af16098180a2c98a03ee9f1f1b02db25d42d44d782e79e2330",
+    "runtime_root": "/usr/local/lib/python3.13/site-packages",
+    "runtime_manifest_sha256": "31b15dee3d49152c0910f6a798345e7e6f10f0f42179f992c937876234dbb99b",
+    "runtime_file_count": 9151,
+    "pyc_files": [],
+    "dockerignore": [
+      ".git",
+      ".venv",
+      "**/__pycache__",
+      "**/*.py[cod]"
+    ],
+    "qualification_report": ".superpowers/sdd/2026-10-13-p1-publication-recovery-floor-repair/task-8-report.md",
+    "m1_digest_correction": {
+      "path": "artifacts/v4-next-p1/agents/p1-publication-recovery-0043/m1-report-digest-correction.json",
+      "sha256": "f11f93c3090fc6571590e6484cc2e9076649dec7f5a8d9609a1d5ef8e8d4e062",
+      "tracked": false
+    },
+    "source_path_separation": {
+      "host_runtime_root": "/tmp/p1-publication-recovery-0043-candidate-6b2cdc2/runtime-prefix/usr/local/lib/python3.13/site-packages",
+      "host_interpreter_source": "/tmp/p1-publication-recovery-0043-candidate-6b2cdc2/runtime-prefix/usr/local/bin/python3.13",
+      "locked_interpreter_path": "/usr/local/bin/python",
+      "note": "Extracted runtime topology preserves installed RECORD resolution; interpreter source bytes come from this image while the authenticated in-container path remains fixed."
+    },
+    "artifact_build_result": "PASS",
+    "qualification_results": "Recorded separately in the referenced Task 8 report; this entry records artifact pins only."
   }
 }

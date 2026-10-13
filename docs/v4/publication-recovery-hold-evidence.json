@@ -1216,5 +1216,41 @@
       "path": "artifacts/v4-next-p1/agents/task-10-floor-qualification/candidate-5cb5791/image-attestation.json",
       "sha256": "0616e59bf279800387c0832ce6557d69ad5a5403834661a0663636a4531f5ba7"
     }
+  },
+  "task_8_exact_candidate_artifact_build": {
+    "status": "EXACT_CANDIDATE_ARTIFACT_BUILD_RECORDED",
+    "application_commit": "6b2cdc2f68f3323edfaf9b92583b0a5cf0398eb4",
+    "image_ref": "salience-p1-floor-6b2cdc2-worker:latest",
+    "image_id": "sha256:a87ae41599e97260155f39b733968fc3ed147649863cbc68a89599ec6082d134",
+    "wheel_sha256": "10953131660068fd4a82f2319f31921e9933088c5ab20cac72c8936834a0de8b",
+    "record_sha256": "8398448bdd111da2ea23741bae31bf2c243c6b99a7ba3461b0b82a40e9e98877",
+    "record_entry_count": 172,
+    "launch_lock_sha256": "10ef32f33b7051f4637edd27d20d0de77c8cc2b03e2002bf00c861f7284de07f",
+    "source_manifest_sha256": "cf3e0d3da75c92a45c94671ddaab6f764a1a5823f17a5fa8a2a508fbbc578820",
+    "interpreter_sha256": "73b68fc2dac176af16098180a2c98a03ee9f1f1b02db25d42d44d782e79e2330",
+    "runtime_root": "/usr/local/lib/python3.13/site-packages",
+    "runtime_manifest_sha256": "31b15dee3d49152c0910f6a798345e7e6f10f0f42179f992c937876234dbb99b",
+    "runtime_file_count": 9151,
+    "pyc_files": [],
+    "dockerignore": [
+      ".git",
+      ".venv",
+      "**/__pycache__",
+      "**/*.py[cod]"
+    ],
+    "qualification_report": ".superpowers/sdd/2026-10-13-p1-publication-recovery-floor-repair/task-8-report.md",
+    "m1_digest_correction": {
+      "path": "artifacts/v4-next-p1/agents/p1-publication-recovery-0043/m1-report-digest-correction.json",
+      "sha256": "f11f93c3090fc6571590e6484cc2e9076649dec7f5a8d9609a1d5ef8e8d4e062",
+      "tracked": false
+    },
+    "source_path_separation": {
+      "host_runtime_root": "/tmp/p1-publication-recovery-0043-candidate-6b2cdc2/runtime-prefix/usr/local/lib/python3.13/site-packages",
+      "host_interpreter_source": "/tmp/p1-publication-recovery-0043-candidate-6b2cdc2/runtime-prefix/usr/local/bin/python3.13",
+      "locked_interpreter_path": "/usr/local/bin/python",
+      "note": "Extracted runtime topology preserves installed RECORD resolution; interpreter source bytes come from this image while the authenticated in-container path remains fixed."
+    },
+    "artifact_build_result": "PASS",
+    "qualification_results": "Recorded separately in the referenced Task 8 report; this entry records artifact pins only."
   }
 }

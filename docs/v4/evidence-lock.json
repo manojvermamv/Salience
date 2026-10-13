@@ -1,18 +1,22 @@
 {
-  "baseline_commit": "14801007310232f59708566ca9a3eefb80bfea87",
-  "scope": "All tracked application source, migrations, tests, scripts and named deployment/dependency configuration in the Task 10 qualification checkout. The application artifact pin is 5cb57910c2c6dc2f6ea37da75640c5c947c8907b; the test-only qualification harness is 14801007310232f59708566ca9a3eefb80bfea87. Hash changes require fresh claim review, not automatic acceptance.",
+  "baseline_commit": "6b2cdc2f68f3323edfaf9b92583b0a5cf0398eb4",
+  "scope": "Current Task 8 candidate source, migrations, tests, scripts, named deployment/dependency configuration, and the durable Docker build-context boundary. Exact candidate commit 6b2cdc2f68f3323edfaf9b92583b0a5cf0398eb4; historical Task 10 source inventory is retained separately. This file is a content lock, not independent code review or release acceptance.",
   "files": [
+    {
+      "path": ".dockerignore",
+      "sha256": "0f227855dd10725669a4a7b005729165e66306e7a8836168f648fa115f37307e"
+    },
     {
       "path": ".env.example",
       "sha256": "8f0e9ae50d532ba3fd02b195b77ca07954cf41dc3f3399aa789cd0fe00a7ec28"
     },
     {
       "path": "Dockerfile",
-      "sha256": "728afeb9c417b474e09b627e9f63aa4d6685336843f14aeeeef3b8baa91df891"
+      "sha256": "679a3b77a3ee508aa1cd2a3034b388d5bd4c62b6400d260f70a975b53ecde7a3"
     },
     {
       "path": "alembic.ini",
-      "sha256": "2970805c5fd07dca092369fc07b4741ff0ac1ef4264bb781769c1b408c4c822e"
+      "sha256": "4685aee6973d9432f55c72810a005f4ba2a2b2e89e477ebff2680dfd67a094b1"
     },
     {
       "path": "compose.p0.yaml",
@@ -20,7 +24,7 @@
     },
     {
       "path": "compose.yaml",
-      "sha256": "7df882a307ded4287c260487396cb5410eae444f9c662fcb1c4fa6b09b82a167"
+      "sha256": "c7f70a22a7e794008b4550640f12e6d06c011aac68a4b0ec59f2b57334c2dd21"
     },
     {
       "path": "migrations/__init__.py",
@@ -199,6 +203,10 @@
       "sha256": "99e44ea4e84c40f338d06789b2bd2e52593cd40877d1b2c016b8823b13180715"
     },
     {
+      "path": "migrations/versions/0043_complete_publication_recovery_liabilities.py",
+      "sha256": "77c2ccd2d785c98868fc889aba7039cbf82bf04159ac760e5769e999c13f857a"
+    },
+    {
       "path": "migrations/versions/__init__.py",
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
@@ -207,8 +215,12 @@
       "sha256": "62ea69b09b0f513ca80e4957b69ab4d26f006f27d041b27d5722b7a36f384920"
     },
     {
+      "path": "scripts/build_publication_worker_launch_lock.py",
+      "sha256": "7bb7bce018a2f1e3fcb73004b94f95afb4bd38e50e48db1cf1da443deb4fe4d2"
+    },
+    {
       "path": "scripts/launch-v4-publication-worker.py",
-      "sha256": "9d920874191fc2378b7e7bc8e92d8cbe14b76f62dcc6e63df37b936e7649c224"
+      "sha256": "2c8f072e05a4ca6ce695e73d5e0f6f8d17e01b4f79562c202fd61ae4b9b68f11"
     },
     {
       "path": "scripts/verify-browser-evidence.sh",
@@ -556,11 +568,11 @@
     },
     {
       "path": "src/salience/cycles/publication_recovery.py",
-      "sha256": "d427fe22d2cb48c552cb59ff6184087291ceb3d5658caf60296077f476b3863b"
+      "sha256": "62599890237b82755201132dca4699a837f68eaca7e2f349ca368cc928508c5a"
     },
     {
       "path": "src/salience/cycles/publication_recovery_compatibility.py",
-      "sha256": "1d6a11b90e2b67d7223f43083a75d5aecf3d3993edbf0b27c6a128a67bcf0487"
+      "sha256": "e19c8d8aa3c9ec24f6e2e70e572144e07fac45242a0d95315a67c196be6eec15"
     },
     {
       "path": "src/salience/cycles/runtime.py",
@@ -1011,8 +1023,16 @@
       "sha256": "9b86b3f0629879b4ff69f5ad7b0bc572c15bd4f75667d102310057d884a3cd98"
     },
     {
+      "path": "tests/fixtures/v4_publication_adapter_operation_receiver.py",
+      "sha256": "c054f6a349267b04daaabf311a512866cc3018849306a21050f6c858f82283da"
+    },
+    {
+      "path": "tests/fixtures/v4_publication_adapter_operation_recorder.py",
+      "sha256": "6119a60227f2a29384eb62d6941791a779666771bdc27f0bf30652b1f9e125fc"
+    },
+    {
       "path": "tests/fixtures/v4_publication_floor_worker.py",
-      "sha256": "3dd2c45ca74c0e214117e1c799c14cf0895aaeee18d1b615f5b174612ef5edf5"
+      "sha256": "5b90fa3606ae85dcba5e8beebb7d21f0f56b13d13af6acbfe2a379e43222e567"
     },
     {
       "path": "tests/integration/test_a2a_gateway.py",
@@ -1224,7 +1244,7 @@
     },
     {
       "path": "tests/integration/test_v4_migrations.py",
-      "sha256": "2ad5ed2e89f078db64dee8aa4ece1d1a156283def200e14d5ed193b737041719"
+      "sha256": "45dfc0a1e0d7ecb2a40cebf34efcfb02ec6407fa5d9905b4f0c8a025a25f8233"
     },
     {
       "path": "tests/integration/test_v4_native_publication_schedules.py",
@@ -1252,11 +1272,11 @@
     },
     {
       "path": "tests/integration/test_v4_publication_recovery_floor.py",
-      "sha256": "2bc82d5b79d05e7e60c397e99b432f4d274e448f86f2cdba66a46fb50ab4df8b"
+      "sha256": "afd37a5e3177db1a0b2a52832e4647a919a156940feb4d5ad09c0924c3b75696"
     },
     {
       "path": "tests/integration/test_v4_publication_recovery_holds.py",
-      "sha256": "56512510e03cdd2a0639d5627a99682c8421527dac2495b083833db18172f888"
+      "sha256": "f0ca26ca45ba21bb8cdd666709c6d0982ee7138ed58563f7a17d305cb831e49e"
     },
     {
       "path": "tests/integration/test_v4_runtime_waits.py",
@@ -1444,5 +1464,13 @@
     }
   ],
   "reviewed_at": "2026-10-13T05:20:50Z",
-  "review_scope": "Content lock for the checked application source at Task 10 candidate `5cb57910c2c6dc2f6ea37da75640c5c947c8907b` (360 checked files); this lock records exact bytes only and is not an independent code review. The separate Task 11 review found floor/evidence gaps in `5cb5791`, which is unsupported as the rollback floor. Corrected-publication rereview covers only application `a4b2368cdb463939d093020224a5b5667392aee6` with documentation/observed HEAD `d0311725686d81b7b4747c2d6225986e5ea3a524`; it does not cover `7878208` or `5cb5791`. The 0043 design is approved; implementation, new-candidate requalification, final review/meta-review and exact-head checks remain open. Production effects are disabled; RG0/RG1 remain HELD."
+  "review_scope": "This active content lock records exact Task 8 candidate source bytes at application commit 6b2cdc2f68f3323edfaf9b92583b0a5cf0398eb4 (365 source/configuration files, including the durable build-context boundary). The previous Task 10 360-file lock and digest are retained in historical_task_10_lock. The current lock is a content boundary, not independent code review or production acceptance; corrected-publication final review/meta-review, exact-head CI, and broader production gates remain required. Production effects are disabled and RG0/RG1 remain HELD.",
+  "historical_task_10_lock": {
+    "baseline_commit": "14801007310232f59708566ca9a3eefb80bfea87",
+    "application_commit": "5cb57910c2c6dc2f6ea37da75640c5c947c8907b",
+    "source_lock_sha256": "62fa6a44498d891bcc8ff6911f243a65573174ff44b6985bdbdc26097fd10fe0",
+    "file_count": 360,
+    "meaning": "Retained Task 10 source inventory; historical contents remain available in the original committed evidence lock."
+  },
+  "application_commit": "6b2cdc2f68f3323edfaf9b92583b0a5cf0398eb4"
 }
