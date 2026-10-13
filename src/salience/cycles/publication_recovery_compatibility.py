@@ -210,39 +210,95 @@ def _git_blob_sha1(data: bytes) -> str:
     return hashlib.sha1(b"blob " + str(len(data)).encode() + b"\0" + data).hexdigest()
 
 
+def _interpreter_installation_prefix(interpreter_path: str) -> Path:
+    try:
+        installation_prefix = Path(interpreter_path).absolute().parent.parent.resolve(strict=True)
+    except OSError as error:
+        raise PublicationWorkerCompatibilityError(
+            "fixed interpreter installation prefix is unavailable"
+        ) from error
+    if not installation_prefix.is_dir():
+        raise PublicationWorkerCompatibilityError(
+            "fixed interpreter installation prefix is not a directory"
+        )
+    return installation_prefix
+
+
 def _validate_record(lock: PublicationWorkerLaunchLock, runtime_root: Path) -> set[str]:
     record_path = _contained_file(Path(lock.pin.distribution_record_path), runtime_root)
     if _sha256_file(record_path) != lock.pin.distribution_record_sha256:
         raise PublicationWorkerCompatibilityError("installed distribution RECORD digest mismatch")
+    installation_prefix = _interpreter_installation_prefix(lock.interpreter_path)
     recorded: set[str] = set()
+    normalized_targets: set[str] = set()
     try:
         rows = list(csv.reader(io.StringIO(record_path.read_text(encoding="utf-8"))))
     except (OSError, UnicodeError, csv.Error) as error:
         raise PublicationWorkerCompatibilityError("installed distribution RECORD is invalid") from error
     if not rows:
         raise PublicationWorkerCompatibilityError("installed distribution RECORD is empty")
+    normalized_root = runtime_root.resolve(strict=True)
+    record_relative = str(record_path.relative_to(normalized_root))
     for row in rows:
         if len(row) != 3:
             raise PublicationWorkerCompatibilityError("installed distribution RECORD row is malformed")
         relative, encoded_digest, size = row
         candidate = Path(relative)
-        if candidate.is_absolute() or ".." in candidate.parts or not relative:
+        if candidate.is_absolute() or not relative:
             raise PublicationWorkerCompatibilityError("installed distribution RECORD path is unsafe")
         if relative in recorded:
             raise PublicationWorkerCompatibilityError("installed distribution RECORD repeats a path")
         recorded.add(relative)
-        file_path = _contained_file(runtime_root / candidate, runtime_root)
+        is_record_self = relative == record_relative
+        if is_record_self:
+            if encoded_digest or size:
+                raise PublicationWorkerCompatibilityError(
+                    "installed distribution RECORD self entry must be unhashed"
+                )
+            file_path = record_path
+        else:
+            if (
+                not encoded_digest.startswith("sha256=")
+                or not size.isascii()
+                or not size.isdecimal()
+            ):
+                raise PublicationWorkerCompatibilityError(
+                    "installed distribution RECORD file hash or size is missing"
+                )
+            try:
+                file_path = (runtime_root / candidate).resolve(strict=True)
+            except OSError as error:
+                raise PublicationWorkerCompatibilityError(
+                    f"installed distribution RECORD file is unavailable: {relative}"
+                ) from error
+            try:
+                file_path.relative_to(installation_prefix)
+            except ValueError as error:
+                raise PublicationWorkerCompatibilityError(
+                    f"installed distribution RECORD path escapes interpreter prefix: {relative}"
+                ) from error
+            if not file_path.is_file():
+                raise PublicationWorkerCompatibilityError(
+                    f"installed distribution RECORD path is not a file: {relative}"
+                )
+            if file_path == record_path:
+                raise PublicationWorkerCompatibilityError(
+                    "installed distribution RECORD path aliases its self entry"
+                )
+        normalized_target = str(file_path)
+        if normalized_target in normalized_targets:
+            raise PublicationWorkerCompatibilityError(
+                "installed distribution RECORD repeats a normalized target"
+            )
+        normalized_targets.add(normalized_target)
         content = file_path.read_bytes()
-        if relative == str(record_path.relative_to(runtime_root)) and not encoded_digest and not size:
+        if is_record_self:
             continue
-        if not encoded_digest.startswith("sha256=") or not size.isdecimal():
-            raise PublicationWorkerCompatibilityError("installed distribution RECORD hash is missing")
         actual = base64.urlsafe_b64encode(hashlib.sha256(content).digest()).decode().rstrip("=")
-        if encoded_digest[7:] != actual or int(size) != len(content):
+        if encoded_digest[7:] != actual or size != str(len(content)):
             raise PublicationWorkerCompatibilityError(
                 f"installed distribution RECORD file mismatch: {relative}"
             )
-    record_relative = str(record_path.relative_to(runtime_root))
     if record_relative not in recorded:
         raise PublicationWorkerCompatibilityError("installed distribution RECORD omits itself")
     return recorded

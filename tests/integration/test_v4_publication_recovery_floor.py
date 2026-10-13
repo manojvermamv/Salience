@@ -80,11 +80,20 @@ def _lock_bytes(lock) -> bytes:
     return (json.dumps(asdict(lock), sort_keys=True, separators=(",", ":")) + "\n").encode()
 
 
-def _write_test_lock(tmp_path, monkeypatch):
+def _write_test_lock(tmp_path, monkeypatch, *, include_interpreter_prefix_record=False):
     from salience.cycles import publication_recovery_compatibility as compatibility
 
-    runtime_root = tmp_path / "runtime"
-    runtime_root.mkdir()
+    if include_interpreter_prefix_record:
+        interpreter_installation = tmp_path / "test-python-prefix"
+        runtime_root = interpreter_installation / "lib/python3.13/site-packages"
+        runtime_root.mkdir(parents=True)
+        interpreter_path = interpreter_installation / "bin/python"
+        interpreter_path.parent.mkdir(parents=True)
+        interpreter_path.write_bytes(b"synthetic fixed interpreter bytes\n")
+    else:
+        runtime_root = tmp_path / "runtime"
+        runtime_root.mkdir()
+        interpreter_path = Path(sys.executable)
     source_pins = []
     import_pins = []
     observed_paths = {}
@@ -120,6 +129,14 @@ def _write_test_lock(tmp_path, monkeypatch):
     record_rows = []
     for relative, data in copied:
         record_rows.append((relative, "sha256=" + _record_digest(data), str(len(data))))
+    if include_interpreter_prefix_record:
+        prefix_file = interpreter_installation / "bin/content"
+        prefix_content = b"synthetic retained console script\n"
+        prefix_file.write_bytes(prefix_content)
+        prefix_relative = os.path.relpath(prefix_file, runtime_root)
+        record_rows.append(
+            (prefix_relative, "sha256=" + _record_digest(prefix_content), str(len(prefix_content)))
+        )
     record_rows.append((str(record.relative_to(runtime_root)), "", ""))
     with record.open("w", encoding="utf-8", newline="") as stream:
         csv.writer(stream, lineterminator="\n").writerows(record_rows)
@@ -150,8 +167,8 @@ def _write_test_lock(tmp_path, monkeypatch):
     lock = PublicationWorkerLaunchLock(
         schema_version="salience.publication-worker-launch-lock.v1",
         launcher_sha256=_sha256(launcher_data),
-        interpreter_path=sys.executable,
-        interpreter_sha256=_sha256(Path(sys.executable).read_bytes()),
+        interpreter_path=str(interpreter_path),
+        interpreter_sha256=_sha256(interpreter_path.read_bytes()),
         runtime_root=str(runtime_root),
         workers={
             "deployable": PublicationWorkerEntrypoint(
@@ -174,6 +191,12 @@ def _write_test_lock(tmp_path, monkeypatch):
         "_observed_import_path",
         lambda module: observed_paths[module],
     )
+    if not include_interpreter_prefix_record:
+        monkeypatch.setattr(
+            compatibility,
+            "_interpreter_installation_prefix",
+            lambda _path: runtime_root.parent.resolve(),
+        )
     return lock, wheel_path, runtime_root, observed_paths
 
 
@@ -200,6 +223,11 @@ def _configure_launcher(launcher, tmp_path, lock, wheel_path, monkeypatch):
     monkeypatch.setattr(launcher, "CONTROL_LOCK_DIGEST_PATH", digest_path)
     monkeypatch.setattr(launcher, "RETAINED_WHEEL_PATH", wheel_path)
     monkeypatch.setattr(launcher, "FIXED_INTERPRETER_PATH", sys.executable)
+    monkeypatch.setattr(
+        launcher,
+        "_interpreter_installation_prefix",
+        lambda: Path(lock.runtime_root).parent.resolve(),
+    )
     return lock_path, digest_path, launcher_path, digest
 
 
@@ -397,6 +425,72 @@ def test_launcher_rejects_candidate_selected_lock_and_modified_launcher(tmp_path
     assert lock.launcher_sha256 == _sha256(
         (ROOT / "scripts/launch-v4-publication-worker.py").read_bytes()
     )
+
+
+def test_record_verifiers_hash_external_script_rows_within_interpreter_prefix(
+    tmp_path, monkeypatch
+):
+    from salience.cycles import publication_recovery_compatibility as compatibility
+
+    lock, _, runtime_root, _ = _write_test_lock(
+        tmp_path, monkeypatch, include_interpreter_prefix_record=True
+    )
+    launcher = _launcher_module()
+    monkeypatch.setattr(launcher, "FIXED_INTERPRETER_PATH", lock.interpreter_path)
+    installation_prefix = Path(lock.interpreter_path).absolute().parent.parent.resolve()
+    record_path = Path(lock.pin.distribution_record_path)
+    rows = list(csv.reader(record_path.read_text(encoding="utf-8").splitlines()))
+    external_row = next(
+        row for row in rows if (runtime_root / row[0]).resolve() == installation_prefix / "bin/content"
+    )
+    assert external_row[0].startswith("..")
+
+    compatibility_recorded = compatibility._validate_record(lock, runtime_root)
+    assert external_row[0] in compatibility_recorded
+    launcher_recorded = launcher._verify_record(asdict(lock.pin), runtime_root)
+    assert external_row[0] in launcher_recorded
+
+    def rewrite_record(updated_rows):
+        with record_path.open("w", encoding="utf-8", newline="") as stream:
+            csv.writer(stream, lineterminator="\n").writerows(updated_rows)
+        data = record_path.read_bytes()
+        return replace(
+            lock,
+            pin=replace(lock.pin, distribution_record_sha256=_sha256(data)),
+        )
+
+    alias = runtime_root / "venv-config-alias"
+    alias.symlink_to(installation_prefix / "bin/content")
+    alias_rows = rows + [
+        ["venv-config-alias", external_row[1], external_row[2]],
+    ]
+    duplicate_lock = rewrite_record(alias_rows)
+    with pytest.raises(PublicationWorkerCompatibilityError, match="repeat|duplicate"):
+        compatibility._validate_record(duplicate_lock, runtime_root)
+    with pytest.raises(launcher.LauncherError, match="duplicate"):
+        launcher._verify_record(asdict(duplicate_lock.pin), runtime_root)
+
+    escaping = runtime_root / "outside-prefix"
+    escaping.symlink_to(Path("/etc/passwd"))
+    escape_content = Path("/etc/passwd").read_bytes()
+    escape_rows = rows + [
+        ["outside-prefix", "sha256=" + _record_digest(escape_content), str(len(escape_content))],
+    ]
+    escape_lock = rewrite_record(escape_rows)
+    with pytest.raises(PublicationWorkerCompatibilityError, match="prefix|escapes"):
+        compatibility._validate_record(escape_lock, runtime_root)
+    with pytest.raises(launcher.LauncherError, match="prefix|escapes"):
+        launcher._verify_record(asdict(escape_lock.pin), runtime_root)
+
+    for encoded_hash, size in (("", ""), (external_row[1], ""), ("", external_row[2])):
+        incomplete_rows = list(rows)
+        index = incomplete_rows.index(external_row)
+        incomplete_rows[index] = [external_row[0], encoded_hash, size]
+        incomplete_lock = rewrite_record(incomplete_rows)
+        with pytest.raises(PublicationWorkerCompatibilityError, match="hash|size"):
+            compatibility._validate_record(incomplete_lock, runtime_root)
+        with pytest.raises(launcher.LauncherError, match="hash|size"):
+            launcher._verify_record(asdict(incomplete_lock.pin), runtime_root)
 
 
 def test_floor_gate_requires_workspace_and_both_reason_verification_for_rollback_restart(
@@ -632,3 +726,736 @@ def test_inprocess_gate_wraps_malformed_rollback_environment_as_compatibility_er
 
     with pytest.raises(PublicationWorkerCompatibilityError):
         compatibility.require_publication_worker_compatibility_from_environment("unused")
+
+
+@pytest.mark.asyncio
+async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_passes(
+    active_0042_database, monkeypatch, tmp_path,
+):
+    qualification_worker = ROOT / "tests/fixtures/v4_publication_floor_worker.py"
+    assert qualification_worker.is_file(), "actual pinned-image fixture harness is required"
+
+    import importlib.util
+    import subprocess
+    from uuid import uuid4
+
+    import psycopg
+    from temporalio.client import Client, WorkflowExecutionStatus, WorkflowFailureError
+
+    from test_v4_legacy_publication import (
+        _allow,
+        _exception_chain,
+        _hard_exit_publication_worker,
+        _publication_fixture,
+        _recovery_projection_counts,
+        _wait_for_publication_permit_expiry,
+    )
+    from test_v4_publication_recovery_holds import (
+        _assert_named_liabilities_unchanged,
+        _liability_snapshot,
+        _recovery_hold_count,
+        _recovery_hold_snapshot,
+    )
+    from salience.cycles.outbox import CycleOutbox
+    from salience.cycles.publication_recovery import (
+        record_publication_recovery_hold,
+        verify_publication_recovery_rollback,
+    )
+    from salience.cycles.runtime import TemporalCycleTransport
+
+    database = active_0042_database
+    monkeypatch.setenv("SALIENCE_DEPLOYMENT_MODE", "fixture")
+    monkeypatch.setenv("SALIENCE_EFFECTS_ENABLED", "false")
+    monkeypatch.setenv("TEST_DATABASE_URL", database)
+
+    spec = importlib.util.spec_from_file_location(
+        "v4_publication_floor_worker", qualification_worker
+    )
+    assert spec is not None and spec.loader is not None
+    worker_harness = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(worker_harness)
+
+    evidence_root = ROOT / "artifacts/v4-next-p1/agents/task-10-floor-qualification"
+    tracked_lock_path = ROOT / "deployment/v4/publication-worker-launch-lock.json"
+    tracked_lock_bytes = tracked_lock_path.read_bytes()
+    tracked_lock = json.loads(tracked_lock_bytes)
+    application_commit = tracked_lock["pin"]["application_commit"]
+    candidate_suffix = application_commit[:7]
+    candidate_root = evidence_root / f"candidate-{candidate_suffix}"
+    control_bundle = candidate_root / "control-bundle"
+    attestation = json.loads(
+        (candidate_root / "image-attestation.json").read_text(encoding="utf-8")
+    )
+    image = attestation["image_ref"]
+    expected_image_id = attestation["image_id"]
+    trusted_digest = hashlib.sha256(tracked_lock_bytes).hexdigest()
+    assert (control_bundle / "publication-worker-launch-lock.json").read_bytes() == tracked_lock_bytes
+    assert (control_bundle / "publication-worker-launch-lock.sha256").read_text(
+        encoding="ascii"
+    ).strip() == trusted_digest
+    assert hashlib.sha256(
+        (control_bundle / "launch-v4-publication-worker.py").read_bytes()
+    ).hexdigest() == tracked_lock["launcher_sha256"]
+    assert attestation["application_commit"] == application_commit
+    assert image == f"salience-p1-floor-{candidate_suffix}-worker:latest"
+    assert tracked_lock["pin"]["artifact_sha256"] == attestation["wheel_sha256"]
+    assert tracked_lock["pin"]["distribution_record_sha256"] == attestation["record_sha256"]
+    assert attestation["record_ok"] is True
+    assert attestation["pyc_files"] == []
+    assert attestation["source_tree_loaded"] is False
+
+    def canonical_bytes(value):
+        return (json.dumps(value, sort_keys=True, separators=(",", ":")) + "\n").encode()
+
+    def canonical_hash(value):
+        return hashlib.sha256(canonical_bytes(value)).hexdigest()
+
+    def save_json(path, value):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(value, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+
+    def safe_text(value):
+        return value.replace(database, "<redacted-database-url>")
+
+    def save_candidate_lock(name, candidate):
+        raw = canonical_bytes(candidate)
+        path = tmp_path / f"{name}-candidate-lock.json"
+        path.write_bytes(raw)
+        digest_path = tmp_path / f"{name}-candidate-lock.sha256"
+        digest_path.write_text(hashlib.sha256(raw).hexdigest() + "\n", encoding="ascii")
+        return path, digest_path
+
+    base_evidence = {
+        "schema_version": "salience.publication-floor-qualification.v1",
+        "application_commit": tracked_lock["pin"]["application_commit"],
+        "eligible_anchor": ANCHOR,
+        "application_ancestry": None,
+        "wheel_build_command": attestation["wheel_build_command"],
+        "compose_build_command": attestation["compose_build_command"],
+        "image_ref": image,
+        "image_id": expected_image_id,
+        "wheel_sha256": attestation["wheel_sha256"],
+        "wheel_path": attestation["wheel_path"],
+        "record_path": attestation["record_path"],
+        "record_sha256": attestation["record_sha256"],
+        "record_entry_count": attestation["record_entry_count"],
+        "record_ok": attestation["record_ok"],
+        "pyc_files": attestation["pyc_files"],
+        "runtime_root": attestation["runtime_root"],
+        "interpreter": tracked_lock["interpreter_path"],
+        "interpreter_sha256": tracked_lock["interpreter_sha256"],
+        "source_manifest_sha256": tracked_lock["pin"]["source_manifest_sha256"],
+        "source_files": tracked_lock["pin"]["source_files"],
+        "runtime_imports": tracked_lock["pin"]["runtime_imports"],
+        "launcher_sha256": tracked_lock["launcher_sha256"],
+        "launch_lock_sha256": trusted_digest,
+        "rollback_argv": None,
+        "workspace_id": None,
+        "operation_ids": {},
+        "hold_ids": {},
+        "first_verifier": None,
+        "second_verifier": None,
+        "liability_snapshot_hashes": {},
+        "hold_row_hashes": {},
+        "worker_runs": [],
+        "denials": {},
+        "effects_enabled": False,
+        "production_effects_enabled": False,
+        "fixture_publication_budget": 0,
+        "known_running_image_workers_before_restart": None,
+    }
+    progress_path = candidate_root / "worker-qualification-progress.json"
+    final_evidence_path = candidate_root / "worker-qualification.json"
+    save_json(progress_path, base_evidence)
+
+    ancestry = subprocess.run(
+        ["git", "merge-base", "--is-ancestor", ANCHOR, tracked_lock["pin"]["application_commit"]],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=10,
+    )
+    assert ancestry.returncode == 0, safe_text(ancestry.stderr)
+    base_evidence["application_ancestry"] = {
+        "anchor": ANCHOR,
+        "candidate": tracked_lock["pin"]["application_commit"],
+        "is_ancestor": True,
+        "command": f"git merge-base --is-ancestor {ANCHOR} {tracked_lock['pin']['application_commit']}",
+        "exit_code": ancestry.returncode,
+    }
+
+    # Create the authentic cancellation hold, waiting for Temporal to persist the
+    # cancellation signal before the crash-after-commit recorder runs.
+    cancelled_fixture = await _publication_fixture(database)
+    cancelled = cancelled_fixture["bridge"].submit_publication(cancelled_fixture["command"])
+    cancelled_operation_id = UUID(cancelled["operation_id"])
+    workspace_id = cancelled_fixture["workspace_id"]
+    _allow(
+        database,
+        workspace_id,
+        cancelled_fixture["actor_id"],
+        ("legacy:publication:reconcile:account:" + cancelled_fixture["account"].id,),
+    )
+
+    async def close_after_processing_read():
+        with psycopg.connect(database) as connection:
+            updated = connection.execute(
+                """UPDATE v4_legacy_publication_fixture_progress
+                   SET state='published', polls=2, updated_at=clock_timestamp()
+                   WHERE operation_id=%s AND state IN ('accepted','processing')
+                   RETURNING state""",
+                (str(cancelled_operation_id),),
+            ).fetchone()
+        assert updated == ("published",)
+        cancelled_fixture["bridge"].close(
+            cancelled["cycle_id"],
+            disposition="cancelled",
+            reason="Preserve accepted publication liability while reading its final remote state",
+        )
+        client = await Client.connect(os.environ["TEST_TEMPORAL_TARGET"])
+        outbox = CycleOutbox(
+            database, workspace_id=workspace_id, delivery_lane="legacy"
+        )
+        assert await outbox.dispatch_one(
+            TemporalCycleTransport(client, task_queue=cancelled_fixture["queue"])
+        )
+        handle = client.get_workflow_handle(
+            "salience-v4-legacy-operation:" + str(cancelled_operation_id)
+        )
+        async with asyncio.timeout(10):
+            while True:
+                history = await handle.fetch_history()
+                if any(
+                    event.HasField("workflow_execution_signaled_event_attributes")
+                    and event.workflow_execution_signaled_event_attributes.signal_name
+                    == "request_cancellation"
+                    for event in history.events
+                ):
+                    return
+                description = await handle.describe()
+                assert description.status == WorkflowExecutionStatus.RUNNING
+                await asyncio.sleep(0.05)
+
+    cancel_precommit_path = tmp_path / "cancel-hold-precommit-liabilities.json"
+    cancel_exit = await _hard_exit_publication_worker(
+        cancelled_fixture,
+        tmp_path,
+        after_acceptance=False,
+        after_hold_commit=True,
+        precommit_snapshot_path=cancel_precommit_path,
+        operation_id=str(cancelled_operation_id),
+        cancel_after_processing=True,
+        cancel_ready_callback=close_after_processing_read,
+    )
+    assert cancel_exit == 74, (
+        f"cancel crash-after-commit worker exited {cancel_exit}; "
+        f"diagnostics={safe_text(cancel_precommit_path.read_text()) if cancel_precommit_path.exists() else 'missing'}"
+    )
+    assert cancel_precommit_path.is_file()
+    cancel_before = json.loads(cancel_precommit_path.read_text(encoding="utf-8"))
+    cancel_after_hold = _liability_snapshot(database, cancelled_operation_id)
+    _assert_named_liabilities_unchanged(cancel_before, cancel_after_hold)
+    cancelled_hold_row = _recovery_hold_snapshot(database, cancelled_operation_id)
+    assert cancelled_hold_row is not None
+    assert cancelled_hold_row["reason"] == "published_during_cancel"
+    assert _recovery_hold_count(database, cancelled_operation_id) == 1
+
+    # The expired-receipt hold uses a distinct queue and operation in the same
+    # workspace, while sharing the exact approved ready package.
+    import test_creative_release_gate_migration as release_gate
+
+    original_ready_package = release_gate._approved_ready_package
+
+    async def reuse_cancelled_ready_package(*, publication_proofs=True):
+        return cancelled_fixture["ready"]
+
+    monkeypatch.setattr(release_gate, "_approved_ready_package", reuse_cancelled_ready_package)
+    try:
+        expired_fixture = await _publication_fixture(database)
+    finally:
+        monkeypatch.setattr(release_gate, "_approved_ready_package", original_ready_package)
+    assert expired_fixture["workspace_id"] == workspace_id
+    assert expired_fixture["queue"] != cancelled_fixture["queue"]
+    _allow(
+        database,
+        workspace_id,
+        expired_fixture["actor_id"],
+        ("legacy:publication:reconcile:account:" + expired_fixture["account"].id,),
+    )
+    expired = expired_fixture["bridge"].submit_publication(expired_fixture["command"])
+    expired_operation_id = UUID(expired["operation_id"])
+    assert await _hard_exit_publication_worker(
+        expired_fixture,
+        tmp_path,
+        after_acceptance=True,
+        permit_ttl_seconds=5,
+        operation_id=str(expired_operation_id),
+    ) == 73
+    await _wait_for_publication_permit_expiry(database, str(expired_operation_id))
+    expired_before_hold = _liability_snapshot(database, expired_operation_id)
+    expired_hold = record_publication_recovery_hold(
+        database,
+        workspace_id=workspace_id,
+        operation_id=expired_operation_id,
+        reason="expired_permit_receipt",
+    )
+    expired_after_hold = _liability_snapshot(database, expired_operation_id)
+    _assert_named_liabilities_unchanged(expired_before_hold, expired_after_hold)
+    expired_hold_row = _recovery_hold_snapshot(database, expired_operation_id)
+    assert expired_hold_row is not None
+    assert expired_hold_row["reason"] == "expired_permit_receipt"
+    assert _recovery_hold_count(database, expired_operation_id) == 1
+
+    operation_ids = {
+        "expired_permit_receipt": expired_operation_id,
+        "published_during_cancel": cancelled_operation_id,
+    }
+    expected_hold_ids = {
+        "expired_permit_receipt": str(expired_hold.id),
+        "published_during_cancel": cancelled_hold_row["id"],
+    }
+    first_views = verify_publication_recovery_rollback(
+        database, workspace_id=workspace_id, operation_ids=operation_ids
+    )
+    first_verifier = {
+        "workspace_id": str(workspace_id),
+        "reasons": ["expired_permit_receipt", "published_during_cancel"],
+        "operation_ids": {key: str(value) for key, value in operation_ids.items()},
+        "hold_ids": {"expired_permit_receipt": str(first_views[0].id), "published_during_cancel": str(first_views[1].id)},
+        "verified": True,
+    }
+    assert first_verifier["hold_ids"] == expected_hold_ids
+
+    before_snapshots = {
+        "expired_permit_receipt": expired_after_hold,
+        "published_during_cancel": cancel_after_hold,
+    }
+    before_hold_rows = {
+        "expired_permit_receipt": expired_hold_row,
+        "published_during_cancel": cancelled_hold_row,
+    }
+    base_evidence.update(
+        {
+            "workspace_id": str(workspace_id),
+            "operation_ids": {key: str(value) for key, value in operation_ids.items()},
+            "hold_ids": expected_hold_ids,
+            "first_verifier": first_verifier,
+            "liability_snapshot_hashes": {
+                reason: canonical_hash(snapshot) for reason, snapshot in before_snapshots.items()
+            },
+            "hold_row_hashes": {
+                reason: canonical_hash(row) for reason, row in before_hold_rows.items()
+            },
+        }
+    )
+    save_json(progress_path, base_evidence)
+
+    # Both setup workers hard-exited at their intended boundaries. Confirm that
+    # no prior qualified-image worker is still running before restart.
+    with worker_harness._without_shared_checkout():
+        running = subprocess.run(
+            ["docker", "ps", "--filter", f"ancestor={image}", "--format", "{{.ID}} {{.Names}}"],
+            capture_output=True,
+            text=True,
+            check=True,
+            cwd=tmp_path,
+            env=worker_harness._docker_environment(),
+            timeout=15,
+        ).stdout.splitlines()
+    assert running == [], running
+    base_evidence["known_running_image_workers_before_restart"] = running
+
+    client = await Client.connect(os.environ["TEST_TEMPORAL_TARGET"])
+    worker_cases = (
+        ("expired_permit_receipt", expired_fixture["queue"], expired_operation_id),
+        ("published_during_cancel", cancelled_fixture["queue"], cancelled_operation_id),
+    )
+    for reason, task_queue, operation_id in worker_cases:
+        workflow_id = "salience-v4-legacy-operation:" + str(operation_id)
+        handle = client.get_workflow_handle(workflow_id)
+        assert (await handle.describe()).status == WorkflowExecutionStatus.RUNNING
+        name = "publication-floor-" + reason.replace("_", "-") + "-" + uuid4().hex[:10]
+        launch = worker_harness.start_rollback_worker(
+            image=image,
+            database_url=database,
+            temporal_target=os.environ["TEST_TEMPORAL_TARGET"],
+            workspace_id=str(workspace_id),
+            expired_operation_id=str(expired_operation_id),
+            cancel_operation_id=str(cancelled_operation_id),
+            task_queue=task_queue,
+            control_bundle=control_bundle,
+            name=name,
+        )
+        run_evidence = {
+            "reason": reason,
+            "task_queue": task_queue,
+            "operation_id": str(operation_id),
+            "hold_id": expected_hold_ids[reason],
+            "container_id": launch["container_id"],
+            "container_name": name,
+            "image_id": launch["image_id"],
+            "launcher_argv": json.loads(launch["launcher_argv"]),
+            "effects_enabled": False,
+            "fixture_mode": True,
+        }
+        base_evidence["rollback_argv"] = json.loads(launch["launcher_argv"])
+        try:
+            inspected = worker_harness.inspect_worker(name)
+            run_evidence["container_inspection"] = inspected
+            assert inspected["image_id"] == expected_image_id
+            assert inspected["path"] == "/usr/local/bin/python"
+            assert inspected["args"][:3] == [
+                "/run/salience-control/launch-v4-publication-worker.py",
+                "--mode",
+                "rollback-restart",
+            ]
+            assert inspected["state"] == "running"
+            assert inspected["environment"]["SALIENCE_DEPLOYMENT_MODE"] == "fixture"
+            assert inspected["environment"]["SALIENCE_EFFECTS_ENABLED"] == "false"
+            assert inspected["environment"]["V4_LEGACY_FIXTURE_QUEUE"] == task_queue
+            assert inspected["environment"]["V4_FIXTURE_WORKSPACE"] == str(workspace_id)
+            mounted = {item["destination"]: item["read_write"] for item in inspected["mounts"]}
+            assert mounted == {
+                "/run/salience-control/launch-v4-publication-worker.py": False,
+                "/run/salience-control/publication-worker-launch-lock.json": False,
+                "/run/salience-control/publication-worker-launch-lock.sha256": False,
+            }
+            with pytest.raises(WorkflowFailureError) as failure:
+                await asyncio.wait_for(handle.result(), timeout=45)
+            typed_holds = [
+                error
+                for error in _exception_chain(failure.value)
+                if getattr(error, "type", None) == "LegacyPublicationRecoveryHeld"
+            ]
+            assert len(typed_holds) == 1
+            assert typed_holds[0].details == ({"hold_id": expected_hold_ids[reason]},)
+            run_evidence["workflow_status"] = (await handle.describe()).status.name
+            assert run_evidence["workflow_status"] == "FAILED"
+            run_evidence["typed_failure"] = {
+                "type": "LegacyPublicationRecoveryHeld",
+                "details": [{"hold_id": expected_hold_ids[reason]}],
+            }
+        finally:
+            stopped = worker_harness.stop_worker(name)
+            logs_path = candidate_root / f"{reason}-worker.log"
+            logs_path.write_text(safe_text(str(stopped.get("logs", ""))), encoding="utf-8")
+            run_evidence["stop"] = {
+                "state": stopped.get("state"),
+                "logs_path": str(logs_path.relative_to(evidence_root)),
+                "logs_exit_code": stopped.get("logs_exit_code"),
+            }
+        assert run_evidence["stop"]["state"] == "exited"
+        base_evidence["worker_runs"].append(run_evidence)
+        save_json(progress_path, base_evidence)
+
+    after_snapshots = {
+        "expired_permit_receipt": _liability_snapshot(database, expired_operation_id),
+        "published_during_cancel": _liability_snapshot(database, cancelled_operation_id),
+    }
+    after_hold_rows = {
+        "expired_permit_receipt": _recovery_hold_snapshot(database, expired_operation_id),
+        "published_during_cancel": _recovery_hold_snapshot(database, cancelled_operation_id),
+    }
+    for reason in operation_ids:
+        _assert_named_liabilities_unchanged(before_snapshots[reason], after_snapshots[reason])
+        assert _recovery_hold_count(database, operation_ids[reason]) == 1
+        assert after_hold_rows[reason] == before_hold_rows[reason]
+        counts = _recovery_projection_counts(database, operation_ids[reason])
+        assert counts["remote_receipts"] == 0
+        assert counts["status_events"] == len(before_snapshots[reason]["publication_status_events"] or [])
+        assert counts["accepted_checkpoints"] == sum(
+            item["checkpoint_payload"].get("checkpoint") == "publication.accepted"
+            for item in before_snapshots[reason]["job_checkpoints"] or []
+        )
+        assert counts["recovery_checkpoints"] == sum(
+            item["checkpoint_payload"].get("checkpoint") == "publication.receipt_recovered_requires_typed_recovery"
+            for item in before_snapshots[reason]["job_checkpoints"] or []
+        )
+
+    second_views = verify_publication_recovery_rollback(
+        database, workspace_id=workspace_id, operation_ids=operation_ids
+    )
+    second_verifier = {
+        "workspace_id": str(workspace_id),
+        "reasons": ["expired_permit_receipt", "published_during_cancel"],
+        "operation_ids": {key: str(value) for key, value in operation_ids.items()},
+        "hold_ids": {
+            "expired_permit_receipt": str(second_views[0].id),
+            "published_during_cancel": str(second_views[1].id),
+        },
+        "verified": True,
+    }
+    assert second_verifier == first_verifier
+    base_evidence["second_verifier"] = second_verifier
+    base_evidence["liability_snapshot_hashes_after"] = {
+        reason: canonical_hash(snapshot) for reason, snapshot in after_snapshots.items()
+    }
+    base_evidence["hold_row_hashes_after"] = {
+        reason: canonical_hash(row) for reason, row in after_hold_rows.items()
+    }
+    assert base_evidence["liability_snapshot_hashes_after"] == base_evidence[
+        "liability_snapshot_hashes"
+    ]
+    assert base_evidence["hold_row_hashes_after"] == base_evidence["hold_row_hashes"]
+
+    # The exact control bundle denies every candidate descriptor because the
+    # lock bytes no longer match its deployment-owned digest. A separately
+    # supplied matching digest is mounted as an untrusted file but has no CLI
+    # selection path and cannot replace the fixed trust root.
+    rev_main = subprocess.run(
+        ["git", "rev-parse", "origin/main"], cwd=ROOT, capture_output=True, text=True, check=True
+    ).stdout.strip()
+    unrelated_ancestry = subprocess.run(
+        ["git", "merge-base", "--is-ancestor", ANCHOR, rev_main],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert unrelated_ancestry.returncode == 1, "origin/main unexpectedly descends from the eligible anchor"
+    unpinned_candidate = "e7a24a38ef920da3af071a51a288b859db9aaef1"
+    unpinned_ancestry = subprocess.run(
+        ["git", "merge-base", "--is-ancestor", ANCHOR, unpinned_candidate],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert unpinned_ancestry.returncode == 0
+
+    def run_denial(name, candidate, *, candidate_trust_root=False, extra_mounts=(), argv=None):
+        lock_path, candidate_digest_path = save_candidate_lock(name, candidate)
+        result = worker_harness.invoke_launcher(
+            image=image,
+            database_url=database,
+            control_bundle=control_bundle,
+            candidate_lock=lock_path,
+            independent_digest=candidate_digest_path if candidate_trust_root else None,
+            extra_mounts=extra_mounts,
+            argv=argv or (
+                "--mode",
+                "rollback-restart",
+                "--worker-kind",
+                "legacy-fixture",
+                "--workspace-id",
+                str(workspace_id),
+                "--expired-hold-operation-id",
+                str(expired_operation_id),
+                "--cancel-hold-operation-id",
+                str(cancelled_operation_id),
+            ),
+        )
+        return result, lock_path, candidate_digest_path
+
+    descriptors = {
+        "a4": A4,
+        "unknown": "f" * 40,
+        "unpinned_same_history_descendant": unpinned_candidate,
+        "unrelated_history": rev_main,
+        "pre_floor": PREFLOOR,
+    }
+    descriptor_ancestry = {}
+    for name, descriptor in descriptors.items():
+        result = subprocess.run(
+            ["git", "merge-base", "--is-ancestor", ANCHOR, descriptor],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=10,
+        )
+        descriptor_ancestry[name] = (
+            True if result.returncode == 0 else False if result.returncode == 1 else None
+        )
+    for name, descriptor in descriptors.items():
+        candidate = json.loads(tracked_lock_bytes)
+        candidate["pin"]["application_commit"] = descriptor
+        result, candidate_lock_path, candidate_digest_path = run_denial(name, candidate)
+        error_text = safe_text(result.stdout + result.stderr)
+        assert result.returncode == 78, f"{name} candidate was not denied: {error_text}"
+        assert "independent trust root" in error_text
+        base_evidence["denials"][name] = {
+            "application_commit": descriptor,
+            "anchor_ancestor": descriptor_ancestry[name],
+            "exit_code": result.returncode,
+            "diagnostic": error_text.strip(),
+            "candidate_lock_sha256": hashlib.sha256(candidate_lock_path.read_bytes()).hexdigest(),
+            "candidate_digest_sha256": candidate_digest_path.read_text(encoding="ascii").strip(),
+            "independent_digest_unchanged": (control_bundle / "publication-worker-launch-lock.sha256").read_text(encoding="ascii").strip() == trusted_digest,
+            "worker_exec_reached": False,
+        }
+
+    for name in ("a4", "pre_floor"):
+        candidate = json.loads(tracked_lock_bytes)
+        candidate["pin"]["application_commit"] = descriptors[name]
+        result, candidate_lock_path, candidate_digest_path = run_denial(
+            f"{name}-authorized-test-root",
+            candidate,
+            candidate_trust_root=True,
+        )
+        error_text = safe_text(result.stdout + result.stderr)
+        assert result.returncode == 78
+        assert "application commit is prohibited" in error_text
+        base_evidence["denials"][f"{name}_authenticated_candidate"] = {
+            "application_commit": descriptors[name],
+            "test_root_sha256": candidate_digest_path.read_text(encoding="ascii").strip(),
+            "exit_code": result.returncode,
+            "diagnostic": error_text.strip(),
+            "worker_exec_reached": False,
+        }
+
+    self_generated = json.loads(tracked_lock_bytes)
+    self_generated["pin"]["application_commit"] = unpinned_candidate
+    self_lock_path, self_digest_path = save_candidate_lock("self-generated", self_generated)
+    self_digest_mount = (self_digest_path, "/tmp/candidate-publication-worker-lock.sha256")
+    self_result = worker_harness.invoke_launcher(
+        image=image,
+        database_url=database,
+        control_bundle=control_bundle,
+        candidate_lock=self_lock_path,
+        extra_mounts=(self_digest_mount,),
+        argv=(
+            "--mode",
+            "rollback-restart",
+            "--worker-kind",
+            "legacy-fixture",
+            "--workspace-id",
+            str(workspace_id),
+            "--expired-hold-operation-id",
+            str(expired_operation_id),
+            "--cancel-hold-operation-id",
+            str(cancelled_operation_id),
+        ),
+    )
+    self_error = safe_text(self_result.stdout + self_result.stderr)
+    assert self_result.returncode == 78
+    assert "independent trust root" in self_error
+    base_evidence["denials"]["self_generated_lock_and_untrusted_matching_digest"] = {
+        "candidate_lock_sha256": hashlib.sha256(self_lock_path.read_bytes()).hexdigest(),
+        "candidate_supplied_digest": self_digest_path.read_text(encoding="ascii").strip(),
+        "candidate_supplied_digest_mount": "/tmp/candidate-publication-worker-lock.sha256",
+        "fixed_independent_digest": trusted_digest,
+        "fixed_independent_digest_unchanged": (control_bundle / "publication-worker-launch-lock.sha256").read_text(encoding="ascii").strip() == trusted_digest,
+        "exit_code": self_result.returncode,
+        "diagnostic": self_error.strip(),
+        "worker_exec_reached": False,
+    }
+
+    # Independently authorized test locks get as far as the closed path checks,
+    # which proves the real retained launcher rejects A4's executable, runtime,
+    # and observed module paths before it can exec a worker.
+    a4_checkout = Path("/tmp/salience-f3-retained-039ddf39cb9b846c205f352e083293fbec6f9fc5")
+    a4_src = a4_checkout / "src"
+    a4_module = a4_src / "salience/workflows/publication.py"
+    assert a4_module.is_file()
+    a4_interpreter = Path("/home/admin/Salience/.venv/bin/python")
+    assert a4_interpreter.is_file()
+
+    a4_interpreter_lock = json.loads(tracked_lock_bytes)
+    a4_interpreter_lock["interpreter_path"] = str(a4_interpreter)
+    a4_interpreter_lock["interpreter_sha256"] = hashlib.sha256(a4_interpreter.read_bytes()).hexdigest()
+    result, candidate_lock_path, candidate_digest_path = run_denial(
+        "a4-interpreter",
+        a4_interpreter_lock,
+        candidate_trust_root=True,
+    )
+    error_text = safe_text(result.stdout + result.stderr)
+    assert result.returncode == 78
+    assert "interpreter path is not fixed" in error_text
+    base_evidence["denials"]["a4_interpreter"] = {
+        "path": str(a4_interpreter),
+        "sha256": a4_interpreter_lock["interpreter_sha256"],
+        "exit_code": result.returncode,
+        "diagnostic": error_text.strip(),
+        "worker_exec_reached": False,
+    }
+
+    a4_runtime_lock = json.loads(tracked_lock_bytes)
+    a4_runtime_lock["runtime_root"] = str(a4_src)
+    result, candidate_lock_path, candidate_digest_path = run_denial(
+        "a4-runtime-root",
+        a4_runtime_lock,
+        candidate_trust_root=True,
+        extra_mounts=(
+            (a4_src, str(a4_src)),
+            (
+                ROOT / "src/salience/cycles/publication_recovery_compatibility.py",
+                str(a4_src / "salience/cycles/publication_recovery_compatibility.py"),
+            ),
+        ),
+    )
+    error_text = safe_text(result.stdout + result.stderr)
+    assert result.returncode == 78
+    assert "publication worker source pin mismatch" in error_text
+    base_evidence["denials"]["a4_runtime_root"] = {
+        "path": str(a4_src),
+        "exit_code": result.returncode,
+        "diagnostic": error_text.strip(),
+        "worker_exec_reached": False,
+    }
+
+    a4_module_lock = json.loads(tracked_lock_bytes)
+    publication_import = next(
+        item for item in a4_module_lock["pin"]["runtime_imports"]
+        if item["module"] == "salience.workflows.publication"
+    )
+    publication_import["observed_path"] = str(a4_module)
+    result, candidate_lock_path, candidate_digest_path = run_denial(
+        "a4-module-path",
+        a4_module_lock,
+        candidate_trust_root=True,
+        extra_mounts=((a4_src, str(a4_src)),),
+    )
+    error_text = safe_text(result.stdout + result.stderr)
+    assert result.returncode == 78
+    assert "publication worker import path does not match its RECORD pin" in error_text
+    base_evidence["denials"]["a4_module_path"] = {
+        "module": "salience.workflows.publication",
+        "observed_path": str(a4_module),
+        "exit_code": result.returncode,
+        "diagnostic": error_text.strip(),
+        "worker_exec_reached": False,
+    }
+
+    wrong_workspace = uuid4()
+    cross_workspace = worker_harness.invoke_launcher(
+        image=image,
+        database_url=database,
+        control_bundle=control_bundle,
+        argv=(
+            "--mode",
+            "rollback-restart",
+            "--worker-kind",
+            "legacy-fixture",
+            "--workspace-id",
+            str(wrong_workspace),
+            "--expired-hold-operation-id",
+            str(expired_operation_id),
+            "--cancel-hold-operation-id",
+            str(cancelled_operation_id),
+        ),
+    )
+    cross_error = safe_text(cross_workspace.stdout + cross_workspace.stderr)
+    assert cross_workspace.returncode == 78
+    assert "both retained publication recovery holds failed verification" in cross_error
+    base_evidence["denials"]["cross_workspace"] = {
+        "workspace_id": str(wrong_workspace),
+        "operation_ids": {key: str(value) for key, value in operation_ids.items()},
+        "exit_code": cross_workspace.returncode,
+        "diagnostic": cross_error.strip(),
+        "worker_exec_reached": False,
+    }
+
+    base_evidence["liability_snapshot_hashes_after"] = {
+        reason: canonical_hash(_liability_snapshot(database, operation_id))
+        for reason, operation_id in operation_ids.items()
+    }
+    assert base_evidence["liability_snapshot_hashes_after"] == base_evidence[
+        "liability_snapshot_hashes"
+    ]
+    assert verify_publication_recovery_rollback(
+        database, workspace_id=workspace_id, operation_ids=operation_ids
+    ) == second_views
+    save_json(final_evidence_path, base_evidence)
+    save_json(progress_path, base_evidence)

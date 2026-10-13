@@ -106,33 +106,80 @@ def _source_path(source: str, runtime_root: Path) -> Path:
     return runtime_root / relative
 
 
+def _interpreter_installation_prefix() -> Path:
+    try:
+        installation_prefix = (
+            Path(FIXED_INTERPRETER_PATH).absolute().parent.parent.resolve(strict=True)
+        )
+    except OSError as error:
+        raise LauncherError("fixed interpreter installation prefix is unavailable") from error
+    if not installation_prefix.is_dir():
+        raise LauncherError("fixed interpreter installation prefix is not a directory")
+    return installation_prefix
+
+
 def _verify_record(pin: dict, root: Path) -> set[str]:
     record_path = _inside(Path(pin["distribution_record_path"]), root)
     if _sha256(record_path) != pin["distribution_record_sha256"]:
         raise LauncherError("installed distribution RECORD digest mismatch")
+    installation_prefix = _interpreter_installation_prefix()
     try:
         rows = list(csv.reader(io.StringIO(record_path.read_text(encoding="utf-8"))))
     except (OSError, UnicodeError, csv.Error) as error:
         raise LauncherError("installed distribution RECORD is invalid") from error
-    seen = set()
+    seen_paths = set()
+    seen_targets = set()
+    normalized_root = root.resolve(strict=True)
+    record_relative = str(record_path.relative_to(normalized_root))
     for row in rows:
         if len(row) != 3:
             raise LauncherError("installed distribution RECORD row is malformed")
         relative, encoded_hash, size = row
         item = Path(relative)
-        if not relative or item.is_absolute() or ".." in item.parts or relative in seen:
+        if not relative or item.is_absolute() or relative in seen_paths:
             raise LauncherError("installed distribution RECORD path is unsafe or duplicated")
-        seen.add(relative)
-        actual_path = _inside(root / item, root)
+        seen_paths.add(relative)
+        is_record_self = relative == record_relative
+        if is_record_self:
+            if encoded_hash or size:
+                raise LauncherError("installed distribution RECORD self entry must be unhashed")
+            actual_path = record_path
+        else:
+            if (
+                not encoded_hash.startswith("sha256=")
+                or not size.isascii()
+                or not size.isdecimal()
+            ):
+                raise LauncherError("installed distribution RECORD file hash or size is missing")
+            try:
+                actual_path = (root / item).resolve(strict=True)
+            except OSError as error:
+                raise LauncherError(
+                    f"installed distribution RECORD file is unavailable: {relative}"
+                ) from error
+            try:
+                actual_path.relative_to(installation_prefix)
+            except ValueError as error:
+                raise LauncherError(
+                    f"installed distribution RECORD path escapes interpreter prefix: {relative}"
+                ) from error
+            if not actual_path.is_file():
+                raise LauncherError(f"installed distribution RECORD path is not a file: {relative}")
+            if actual_path == record_path:
+                raise LauncherError("installed distribution RECORD path aliases its self entry")
+        normalized_target = str(actual_path)
+        if normalized_target in seen_targets:
+            raise LauncherError("installed distribution RECORD contains a duplicate normalized target")
+        seen_targets.add(normalized_target)
         content = actual_path.read_bytes()
-        if relative == str(record_path.relative_to(root)) and not encoded_hash and not size:
+        if is_record_self:
             continue
         digest = base64.urlsafe_b64encode(hashlib.sha256(content).digest()).decode().rstrip("=")
-        if not encoded_hash.startswith("sha256=") or encoded_hash[7:] != digest or size != str(len(content)):
+        if encoded_hash[7:] != digest or size != str(len(content)):
             raise LauncherError(f"installed distribution RECORD file mismatch: {relative}")
-    if str(record_path.relative_to(root)) not in seen:
+    if record_relative not in seen_paths:
         raise LauncherError("installed distribution RECORD omits itself")
-    return seen
+    return seen_paths
 
 
 def _verify_authenticated_lock(raw: bytes, trusted_digest: str) -> tuple[dict, str]:
