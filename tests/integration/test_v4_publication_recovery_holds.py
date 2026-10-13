@@ -179,6 +179,11 @@ SELECT jsonb_build_object(
     'publication_attempt', to_jsonb(publication_attempt_row.*),
     'external_effect', COALESCE(to_jsonb(effect), 'null'::jsonb),
     'budget_reservation', COALESCE(to_jsonb(reservation), 'null'::jsonb),
+    'output', to_jsonb(job.output_payload),
+    'remote_publication_receipts', COALESCE((
+        SELECT jsonb_agg(to_jsonb(remote_receipt) ORDER BY remote_receipt.created_at, remote_receipt.id)
+        FROM remote_publication_receipts remote_receipt
+        WHERE remote_receipt.publication_attempt_id=publication_attempt_row.id), '[]'::jsonb),
     'publication_status_events', COALESCE((
         SELECT jsonb_agg(to_jsonb(status_event) ORDER BY status_event.sequence_no, status_event.id)
         FROM publication_status_events status_event
@@ -188,7 +193,16 @@ SELECT jsonb_build_object(
         FROM v4_cycle_events cycle_event WHERE cycle_event.cycle_id=cycle.id), '[]'::jsonb),
     'cycle_outbox', COALESCE((
         SELECT jsonb_agg(to_jsonb(outbox) ORDER BY outbox.sequence, outbox.id)
-        FROM v4_cycle_outbox outbox WHERE outbox.cycle_id=cycle.id), '[]'::jsonb)
+        FROM v4_cycle_outbox outbox WHERE outbox.cycle_id=cycle.id), '[]'::jsonb),
+    'job_checkpoints', COALESCE((
+        SELECT jsonb_agg(to_jsonb(checkpoint) ORDER BY checkpoint.sequence_no, checkpoint.id)
+        FROM job_checkpoints checkpoint WHERE checkpoint.job_id=job.id), '[]'::jsonb),
+    'audit_events', COALESCE((
+        SELECT jsonb_agg(to_jsonb(audit_event) ORDER BY audit_event.created_at, audit_event.sequence_no, audit_event.id)
+        FROM audit_events audit_event WHERE audit_event.job_id=job.id), '[]'::jsonb),
+    'provenance_records', COALESCE((
+        SELECT jsonb_agg(to_jsonb(provenance) ORDER BY provenance.created_at, provenance.id)
+        FROM provenance_records provenance WHERE provenance.job_id=job.id), '[]'::jsonb)
 )
 FROM v4_legacy_dispatches binding
 JOIN v4_cycles cycle ON cycle.id=binding.cycle_id AND cycle.operation_id=binding.operation_id
@@ -207,6 +221,17 @@ JOIN publication_attempts publication_attempt_row
 LEFT JOIN external_effects effect ON effect.id=plan.external_effect_id
 LEFT JOIN budget_reservations reservation ON reservation.id=plan.budget_reservation_id
 WHERE binding.operation_id=%s
+"""
+
+# Migration 0042 pins this 16-key payload as part of its original trigger
+# contract. Full immutability assertions use `_SNAPSHOT_SQL` above and add the
+# separately named canonical collections excluded from this stored projection.
+_RECOVERY_HOLD_SNAPSHOT_SQL = f"""
+SELECT full_snapshot.snapshot - ARRAY[
+    'output', 'remote_publication_receipts', 'job_checkpoints',
+    'audit_events', 'provenance_records'
+]::text[]
+FROM ({_SNAPSHOT_SQL}) AS full_snapshot(snapshot)
 """
 
 _INSERT_SQL = f"""INSERT INTO public.{TABLE} (
@@ -245,7 +270,7 @@ def _hold_values(connection, operation_id, *, reason="published_during_cancel", 
         (operation_id,),
     ).fetchone()
     assert canonical is not None
-    snapshot = connection.execute(_SNAPSHOT_SQL, (operation_id,)).fetchone()[0]
+    snapshot = connection.execute(_RECOVERY_HOLD_SNAPSHOT_SQL, (operation_id,)).fetchone()[0]
     assert snapshot is not None
     names = (
         "id",
@@ -462,6 +487,70 @@ async def published_cancelled_recovery_case(monkeypatch, tmp_path):
         _drop_database(source, name)
 
 
+@pytest_asyncio.fixture
+async def expired_permit_recovery_case(monkeypatch, tmp_path):
+    from test_v4_legacy_publication import (
+        _allow,
+        _hard_exit_publication_worker,
+        _publication_fixture,
+        _wait_for_publication_permit_expiry,
+    )
+
+    source = os.environ["TEST_DATABASE_URL"]
+    name, database = _create_database(source, "recovery_expired_concurrent_")
+    monkeypatch.setenv("SALIENCE_DEPLOYMENT_MODE", "fixture")
+    monkeypatch.setenv("SALIENCE_EFFECTS_ENABLED", "false")
+    monkeypatch.setenv("TEST_DATABASE_URL", database)
+    try:
+        upgraded = _migrate(database, "upgrade", "head")
+        assert upgraded.returncode == 0, upgraded.stderr
+        fixture = await _publication_fixture(database)
+        submitted = fixture["bridge"].submit_publication(fixture["command"])
+        operation_id = submitted["operation_id"]
+        _allow(
+            database,
+            fixture["workspace_id"],
+            fixture["actor_id"],
+            ("legacy:publication:reconcile:account:" + fixture["account"].id,),
+        )
+        assert await _hard_exit_publication_worker(
+            fixture,
+            tmp_path,
+            after_acceptance=True,
+            permit_ttl_seconds=10,
+            operation_id=operation_id,
+        ) == 73
+        await _wait_for_publication_permit_expiry(database, operation_id)
+        yield fixture, submitted
+    finally:
+        _drop_database(source, name)
+
+
+@pytest_asyncio.fixture
+async def cancel_process_death_recovery_case(monkeypatch):
+    from test_v4_legacy_publication import _allow, _publication_fixture
+
+    source = os.environ["TEST_DATABASE_URL"]
+    name, database = _create_database(source, "recovery_cancel_crash_")
+    monkeypatch.setenv("SALIENCE_DEPLOYMENT_MODE", "fixture")
+    monkeypatch.setenv("SALIENCE_EFFECTS_ENABLED", "false")
+    monkeypatch.setenv("TEST_DATABASE_URL", database)
+    try:
+        upgraded = _migrate(database, "upgrade", "head")
+        assert upgraded.returncode == 0, upgraded.stderr
+        fixture = await _publication_fixture(database)
+        submitted = fixture["bridge"].submit_publication(fixture["command"])
+        _allow(
+            database,
+            fixture["workspace_id"],
+            fixture["actor_id"],
+            ("legacy:publication:reconcile:account:" + fixture["account"].id,),
+        )
+        yield fixture, submitted
+    finally:
+        _drop_database(source, name)
+
+
 def _liability_snapshot(database, operation_id):
     with psycopg.connect(database) as connection:
         row = connection.execute(_SNAPSHOT_SQL, (operation_id,)).fetchone()
@@ -474,16 +563,31 @@ def _assert_named_liabilities_unchanged(before, after):
     for name in (
         "fixture_receipt",
         "fixture_progress",
+        "publication_attempt",
+        "remote_publication_receipts",
         "job",
+        "output",
         "cycle",
         "publication_status_events",
         "external_effect",
         "budget_reservation",
         "cycle_events",
         "cycle_outbox",
+        "job_checkpoints",
+        "audit_events",
+        "provenance_records",
     ):
         assert after[name] == before[name], name
     assert after["job"]["output_payload"] == before["job"]["output_payload"]
+
+
+def _recovery_hold_snapshot(database, operation_id):
+    with psycopg.connect(database) as connection:
+        row = connection.execute(
+            f"SELECT to_jsonb(hold) FROM public.{TABLE} hold WHERE operation_id=%s",
+            (operation_id,),
+        ).fetchone()
+        return None if row is None else row[0]
 
 
 def _assert_publication_attempt_snapshot(snapshot, publication_attempt_id):
@@ -585,13 +689,12 @@ async def test_hold_commit_then_process_death_replays_without_liability_change(
         execution_deadline = precommit_snapshot["context"]["payload"]["execution_deadline"]
 
         with psycopg.connect(database) as connection:
-            hold_rows = connection.execute(
-                f"SELECT id,reason,liability_snapshot FROM public.{TABLE} WHERE operation_id=%s",
+            hold_row_after_death = connection.execute(
+                f"SELECT to_jsonb(hold) FROM public.{TABLE} hold WHERE operation_id=%s",
                 (operation_id,),
-            ).fetchall()
-            assert len(hold_rows) == 1
-            hold_id, reason, hold_snapshot = hold_rows[0]
-            assert reason == "expired_permit_receipt"
+            ).fetchone()[0]
+            hold_id = hold_row_after_death["id"]
+            assert hold_row_after_death["reason"] == "expired_permit_receipt"
             after_process_death = connection.execute(
                 _SNAPSHOT_SQL, (operation_id,)
             ).fetchone()[0]
@@ -606,7 +709,9 @@ async def test_hold_commit_then_process_death_replays_without_liability_change(
                 (submitted["cycle_id"],),
             ).fetchall()
 
-        assert precommit_snapshot == hold_snapshot == after_process_death
+        assert precommit_snapshot == after_process_death
+        _assert_named_liabilities_unchanged(precommit_snapshot, after_process_death)
+        assert hold_row_after_death["id"] == str(UUID(hold_row_after_death["id"]))
         assert _recovery_hold_count(database, operation_id) == 1
         assert post_death_timing[2], post_death_timing
         assert runtime_holds_after_death == []
@@ -710,7 +815,9 @@ async def test_hold_commit_then_process_death_replays_without_liability_change(
                 (operation_id,),
             ).fetchone()
 
-        assert precommit_snapshot == hold_snapshot == after_process_death == after_retry
+        assert precommit_snapshot == after_process_death == after_retry
+        _assert_named_liabilities_unchanged(precommit_snapshot, after_retry)
+        assert _recovery_hold_snapshot(database, operation_id) == hold_row_after_death
         assert retry_timing[1] is True, retry_timing
         assert retry_timing[2] is None
         assert retry_timing[3] is None
@@ -919,6 +1026,181 @@ async def test_concurrent_exact_hold_insert_returns_one_stable_hold(
     assert _recovery_hold_count(database, operation_id) == 1
     after = _liability_snapshot(database, operation_id)
     _assert_named_liabilities_unchanged(before, after)
+    hold_row = _recovery_hold_snapshot(database, operation_id)
+    assert hold_row is not None
+    assert hold_row["id"] == str(views[0].id)
+    assert hold_row["reason"] == "published_during_cancel"
+    replay = record_publication_recovery_hold(
+        database,
+        workspace_id=fixture["workspace_id"],
+        operation_id=operation_id,
+        reason="published_during_cancel",
+    )
+    assert replay == views[0]
+    assert _recovery_hold_snapshot(database, operation_id) == hold_row
+
+
+@pytest.mark.asyncio
+async def test_expired_permit_concurrent_exact_hold_insert_returns_one_stable_hold(
+    expired_permit_recovery_case,
+):
+    from salience.cycles.publication_recovery import record_publication_recovery_hold
+
+    fixture, submitted = expired_permit_recovery_case
+    database = fixture["database"]
+    operation_id = UUID(submitted["operation_id"])
+    before = _liability_snapshot(database, operation_id)
+    assert _recovery_hold_count(database, operation_id) == 0
+    barrier = Barrier(2)
+
+    def record():
+        barrier.wait(timeout=10)
+        return record_publication_recovery_hold(
+            database,
+            workspace_id=fixture["workspace_id"],
+            operation_id=operation_id,
+            reason="expired_permit_receipt",
+        )
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        views = list(pool.map(lambda _: record(), range(2)))
+
+    assert views[0] == views[1]
+    assert views[0].reason == "expired_permit_receipt"
+    assert _recovery_hold_count(database, operation_id) == 1
+    after = _liability_snapshot(database, operation_id)
+    _assert_named_liabilities_unchanged(before, after)
+    hold_row = _recovery_hold_snapshot(database, operation_id)
+    assert hold_row is not None
+    assert hold_row["id"] == str(views[0].id)
+    assert hold_row["reason"] == "expired_permit_receipt"
+
+    replay = record_publication_recovery_hold(
+        database,
+        workspace_id=fixture["workspace_id"],
+        operation_id=operation_id,
+        reason="expired_permit_receipt",
+    )
+    assert replay == views[0]
+    assert _recovery_hold_count(database, operation_id) == 1
+    assert _recovery_hold_snapshot(database, operation_id) == hold_row
+
+
+@pytest.mark.asyncio
+async def test_cancel_hold_commit_then_process_death_replays_without_liability_change(
+    cancel_process_death_recovery_case, tmp_path
+):
+    from temporalio.client import Client, WorkflowExecutionStatus, WorkflowFailureError
+
+    from test_v4_legacy_publication import (
+        _exception_chain,
+        _hard_exit_publication_worker,
+    )
+
+    from salience.cycles.outbox import CycleOutbox
+    from salience.cycles.legacy_runtime import build_legacy_worker
+    from salience.cycles.runtime import TemporalCycleTransport
+
+    fixture, submitted = cancel_process_death_recovery_case
+    database = fixture["database"]
+    operation_id = UUID(submitted["operation_id"])
+    assert _recovery_hold_count(database, operation_id) == 0
+
+    async def close_after_processing_read():
+        with psycopg.connect(database) as connection:
+            updated = connection.execute(
+                """UPDATE v4_legacy_publication_fixture_progress
+                   SET state='published', polls=2, updated_at=clock_timestamp()
+                   WHERE operation_id=%s AND state IN ('accepted','processing')
+                   RETURNING state""",
+                (str(operation_id),),
+            ).fetchone()
+        assert updated == ("published",)
+        fixture["bridge"].close(
+            submitted["cycle_id"],
+            disposition="cancelled",
+            reason="Preserve accepted publication liability while reading its final remote state",
+        )
+        client = await Client.connect(os.environ["TEST_TEMPORAL_TARGET"])
+        outbox = CycleOutbox(
+            database, workspace_id=fixture["workspace_id"], delivery_lane="legacy"
+        )
+        delivered = await outbox.dispatch_one(
+            TemporalCycleTransport(client, task_queue=fixture["queue"])
+        )
+        assert delivered is True
+        handle = client.get_workflow_handle(
+            "salience-v4-legacy-operation:" + str(operation_id)
+        )
+        async with asyncio.timeout(10):
+            while True:
+                history = await handle.fetch_history()
+                if any(
+                    event.HasField("workflow_execution_signaled_event_attributes")
+                    and event.workflow_execution_signaled_event_attributes.signal_name
+                    == "request_cancellation"
+                    for event in history.events
+                ):
+                    break
+                description = await handle.describe()
+                assert description.status == WorkflowExecutionStatus.RUNNING
+                await asyncio.sleep(0.05)
+    diagnostic_path = tmp_path / "cancel-hold-worker-diagnostics.jsonl"
+    activity_log_path = tmp_path / "cancel-hold-worker-activities.jsonl"
+    precommit_snapshot_path = tmp_path / "cancel-hold-precommit-liabilities.json"
+    exit_code = await _hard_exit_publication_worker(
+        fixture,
+        tmp_path,
+        after_acceptance=False,
+        after_hold_commit=True,
+        precommit_snapshot_path=precommit_snapshot_path,
+        operation_id=operation_id,
+        activity_log_path=activity_log_path,
+        diagnostic_path=diagnostic_path,
+        cancel_after_processing=True,
+        cancel_ready_callback=close_after_processing_read,
+    )
+    assert exit_code == 74, (
+        f"exit={exit_code}; diagnostics={diagnostic_path.read_text() if diagnostic_path.exists() else None!r}; "
+        f"activity_log={activity_log_path.read_text() if activity_log_path.exists() else None!r}"
+    )
+    assert precommit_snapshot_path.exists()
+    before = json.loads(precommit_snapshot_path.read_text(encoding="utf-8"))
+    after_process_death = _liability_snapshot(database, operation_id)
+    hold_row_after_death = _recovery_hold_snapshot(database, operation_id)
+    assert hold_row_after_death is not None
+    hold_id = hold_row_after_death["id"]
+    assert hold_row_after_death["reason"] == "published_during_cancel"
+    assert _recovery_hold_count(database, operation_id) == 1
+    _assert_named_liabilities_unchanged(before, after_process_death)
+
+    client = await Client.connect(os.environ["TEST_TEMPORAL_TARGET"])
+    handle = client.get_workflow_handle("salience-v4-legacy-operation:" + str(operation_id))
+    assert (await handle.describe()).status == WorkflowExecutionStatus.RUNNING
+    outbox = CycleOutbox(
+        database, workspace_id=fixture["workspace_id"], delivery_lane="legacy"
+    )
+    worker = build_legacy_worker(client, task_queue=fixture["queue"], outbox=outbox)
+    worker_task = asyncio.create_task(worker.run())
+    try:
+        with pytest.raises(WorkflowFailureError) as failure:
+            await asyncio.wait_for(handle.result(), timeout=35)
+    finally:
+        await asyncio.wait_for(worker.shutdown(), timeout=10)
+        await asyncio.wait_for(worker_task, timeout=10)
+
+    typed_failures = [
+        error
+        for error in _exception_chain(failure.value)
+        if getattr(error, "type", None) == "LegacyPublicationRecoveryHeld"
+    ]
+    assert len(typed_failures) == 1
+    assert typed_failures[0].details == ({"hold_id": hold_id},)
+    after_retry = _liability_snapshot(database, operation_id)
+    _assert_named_liabilities_unchanged(before, after_retry)
+    assert _recovery_hold_count(database, operation_id) == 1
+    assert _recovery_hold_snapshot(database, operation_id) == hold_row_after_death
+    assert after_process_death == after_retry
 
 
 @pytest.mark.asyncio

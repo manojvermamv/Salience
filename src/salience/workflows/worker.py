@@ -62,6 +62,11 @@ async def run_worker() -> None:
     if os.environ.get("SALIENCE_DEPLOYMENT_MODE", "fixture") != "fixture":
         raise ValueError("P0 does not authorize effect workers; production workers are not qualified")
     settings = Settings.from_environment()
+    from salience.cycles.publication_recovery_compatibility import (
+        require_publication_worker_compatibility_from_environment,
+    )
+
+    require_publication_worker_compatibility_from_environment(settings.database_url)
     client = await Client.connect(settings.temporal_target)
     state = WorkflowScenarioState(
         provider=HttpMockEffectProvider(settings.mock_effect_provider_url),

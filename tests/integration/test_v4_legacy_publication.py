@@ -287,7 +287,9 @@ async def _hard_exit_publication_worker(
     fixture, tmp_path, *, after_acceptance, permit_ttl_seconds=None,
     after_hold_commit=False, precommit_snapshot_path=None,
     expire_after_first_submit=False, activity_log_path=None,
-    activity_timing_path=None, operation_id=None,
+    activity_timing_path=None, operation_id=None, diagnostic_path=None,
+    timeout_seconds=25, cancel_after_processing=False,
+    cancel_ready_callback=None,
 ):
     worker_script = tmp_path / ("publication_worker_" + str(uuid4()) + ".py")
     worker_script.write_text(
@@ -302,6 +304,15 @@ from salience.cycles.legacy_publication_runtime import DurableLegacyFixturePubli
 from salience.cycles.legacy_runtime import build_legacy_worker
 from salience.cycles.runtime import TemporalCycleTransport
 
+def diagnostic(event, **fields):
+    path = os.environ.get('PUB_DIAGNOSTIC_LOG')
+    if path:
+        with open(path, 'a', encoding='utf-8') as log:
+            log.write(json.dumps({'event': event, **fields}) + '\\n')
+            log.flush()
+
+diagnostic('worker_imported')
+
 if 'PUB_PERMIT_TTL_SECONDS' in os.environ:
     from salience.cycles.governance import CycleGovernance
     original_issue_permit = CycleGovernance.issue_permit
@@ -314,9 +325,50 @@ if os.environ.get('PUB_CRASH_AFTER_HOLD_COMMIT') == 'true':
     import salience.cycles.publication_recovery as recovery
     original_record_hold = recovery.record_publication_recovery_hold
     def crash_after_hold_commit(*args, **kwargs):
-        original_record_hold(*args, **kwargs)
+        diagnostic('hold_record_started', reason=kwargs.get('reason'))
+        snapshot_path = os.environ.get('PUB_HOLD_PRECOMMIT_SNAPSHOT')
+        if snapshot_path:
+            from test_v4_publication_recovery_holds import _SNAPSHOT_SQL
+            with psycopg.connect(os.environ['TEST_DATABASE_URL']) as connection:
+                snapshot = connection.execute(
+                    _SNAPSHOT_SQL, (kwargs['operation_id'],)
+                ).fetchone()[0]
+            Path(snapshot_path).write_text(
+                json.dumps(snapshot, default=str), encoding='utf-8'
+            )
+            diagnostic('hold_precommit_snapshot_captured')
+        try:
+            original_record_hold(*args, **kwargs)
+        except BaseException as error:
+            diagnostic(
+                'hold_record_failed',
+                error=type(error).__name__,
+                message=str(error),
+            )
+            raise
         os._exit(74)
     recovery.record_publication_recovery_hold = crash_after_hold_commit
+
+original_cancel = DurableLegacyFixturePublisher.cancel
+async def track_cancel(self, remote_id):
+    diagnostic('cancel_started', remote_id=remote_id)
+    receipt = await original_cancel(self, remote_id)
+    diagnostic('cancel_returned', state=receipt.state if receipt is not None else None)
+    return receipt
+DurableLegacyFixturePublisher.cancel = track_cancel
+
+if os.environ.get('PUB_CANCEL_AFTER_PROCESSING') == 'true':
+    original_status = DurableLegacyFixturePublisher.status
+    async def pause_after_processing(self, remote_id):
+        receipt = await original_status(self, remote_id)
+        if receipt is not None and receipt.state == 'processing':
+            diagnostic('processing_read_ready')
+            with open(os.environ['PUB_CANCEL_READY'], 'w', encoding='utf-8') as ready:
+                ready.write('ready')
+        while receipt is not None and receipt.state == 'processing' and not os.path.exists(os.environ['PUB_CANCEL_RELEASE']):
+            await asyncio.sleep(.02)
+        return receipt
+    DurableLegacyFixturePublisher.status = pause_after_processing
 
 if os.environ.get('PUB_ACTIVITY_LOG'):
     original_activity = GuardedPublicationActivities.submit_or_reconcile
@@ -391,11 +443,20 @@ async def main():
     client = await Client.connect(os.environ['TEST_TEMPORAL_TARGET'])
     box = CycleOutbox(os.environ['TEST_DATABASE_URL'], workspace_id=os.environ['PUB_WORKSPACE'], delivery_lane='legacy')
     queue = os.environ['PUB_QUEUE']
+    with psycopg.connect(os.environ['TEST_DATABASE_URL']) as connection:
+        outbox_before = connection.execute(
+            '''SELECT kind,sequence,state,attempts,last_error
+               FROM v4_cycle_outbox WHERE workspace_id=%s ORDER BY sequence''',
+            (os.environ['PUB_WORKSPACE'],),
+        ).fetchall()
+    diagnostic('outbox_before_dispatch', rows=[list(row) for row in outbox_before])
     original = DurableLegacyFixturePublisher.submit
     async def crash_submit(self, request, lease):
+        diagnostic('submit_started')
         if os.environ['PUB_CRASH_MODE'] == 'before':
             os._exit(72)
         receipt = await original(self, request, lease)
+        diagnostic('submit_returned', state=receipt.state)
         if os.environ.get('PUB_EXPIRE_AFTER_FIRST_SUBMIT') == 'true':
             operation_id = os.environ['PUB_OPERATION_ID']
             with psycopg.connect(os.environ['TEST_DATABASE_URL']) as connection:
@@ -414,7 +475,16 @@ async def main():
         return receipt
     DurableLegacyFixturePublisher.submit = crash_submit
     async with build_legacy_worker(client, task_queue=queue, outbox=box):
-        await box.dispatch_one(TemporalCycleTransport(client, task_queue=queue))
+        delivered = await box.dispatch_one(TemporalCycleTransport(client, task_queue=queue))
+        diagnostic('outbox_dispatch_returned', delivered=bool(delivered))
+        if os.environ.get('PUB_OPERATION_ID'):
+            try:
+                description = await client.get_workflow_handle(
+                    'salience-v4-legacy-operation:' + os.environ['PUB_OPERATION_ID']
+                ).describe()
+                diagnostic('workflow_after_dispatch', status=str(description.status))
+            except Exception as error:
+                diagnostic('workflow_describe_failed', error=type(error).__name__)
         await asyncio.Event().wait()
 
 asyncio.run(main())
@@ -438,7 +508,10 @@ asyncio.run(main())
         "PUB_CRASH_MODE": "after" if after_acceptance else "before",
         "PUB_CRASH_AFTER_HOLD_COMMIT": "true" if after_hold_commit else "false",
         "PUB_EXPIRE_AFTER_FIRST_SUBMIT": "true" if expire_after_first_submit else "false",
+        "PUB_CANCEL_AFTER_PROCESSING": "true" if cancel_after_processing else "false",
     }
+    if cancel_after_processing:
+        child_environment["PUB_CRASH_MODE"] = "none"
     if permit_ttl_seconds is not None:
         child_environment["PUB_PERMIT_TTL_SECONDS"] = str(permit_ttl_seconds)
     if precommit_snapshot_path is not None:
@@ -450,22 +523,56 @@ asyncio.run(main())
         child_environment["PUB_CAPTURE_ATTEMPT_TIMING"] = "2"
     if operation_id is not None:
         child_environment["PUB_OPERATION_ID"] = str(operation_id)
+    if diagnostic_path is not None:
+        child_environment["PUB_DIAGNOSTIC_LOG"] = str(diagnostic_path)
+    cancel_ready_path = tmp_path / ("publication_cancel_ready_" + str(uuid4()) + ".txt")
+    cancel_release_path = tmp_path / ("publication_cancel_release_" + str(uuid4()) + ".txt")
+    if cancel_after_processing:
+        child_environment["PUB_CANCEL_READY"] = str(cancel_ready_path)
+        child_environment["PUB_CANCEL_RELEASE"] = str(cancel_release_path)
     process = await asyncio.create_subprocess_exec(
         sys.executable,
         str(worker_script),
         env=child_environment,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
+        stdout=subprocess.PIPE if diagnostic_path is not None else subprocess.DEVNULL,
+        stderr=subprocess.PIPE if diagnostic_path is not None else subprocess.DEVNULL,
     )
+    if cancel_after_processing:
+        try:
+            async with asyncio.timeout(20):
+                while not cancel_ready_path.exists():
+                    if process.returncode is not None:
+                        raise RuntimeError(
+                            f"publication worker exited before processing read: {process.returncode}"
+                        )
+                    await asyncio.sleep(.05)
+            if cancel_ready_callback is not None:
+                await cancel_ready_callback()
+            cancel_release_path.write_text("release", encoding="utf-8")
+        except BaseException:
+            if process.returncode is None:
+                process.kill()
+            await process.communicate()
+            raise
     try:
-        code = await asyncio.wait_for(process.wait(), timeout=25)
+        stdout, stderr = await asyncio.wait_for(
+            process.communicate(), timeout=timeout_seconds
+        )
     except TimeoutError:
         process.kill()
-        code = await process.wait()
+        stdout, stderr = await process.communicate()
+        code = process.returncode
+        if diagnostic_path is not None:
+            with open(diagnostic_path, 'a', encoding='utf-8') as log:
+                log.write(json.dumps({
+                    'event': 'worker_timeout',
+                    'stdout': stdout.decode(errors='replace'),
+                    'stderr': stderr.decode(errors='replace'),
+                }) + '\\n')
         if after_hold_commit:
             return code
         pytest.fail("publication worker did not exit at the requested receipt boundary")
-    return code
+    return process.returncode
 
 
 async def _wait_for_publication_permit_expiry(database, operation_id):

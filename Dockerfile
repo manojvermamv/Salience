@@ -1,13 +1,13 @@
 FROM python@sha256:4c2cf9917bd1cbacc5e9b07320025bdb7cdf2df7b0ceaccb55e9dd7e30987419
 
+ARG SALIENCE_WHEEL_FILE
+
 WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-COPY pyproject.toml ./
-COPY alembic.ini ./
-COPY migrations ./migrations
-COPY src ./src
-RUN python -m pip install --no-cache-dir .
+COPY ${SALIENCE_WHEEL_FILE} /opt/salience-artifacts/salience.whl
+RUN python -m pip install --no-cache-dir /opt/salience-artifacts/salience.whl
+COPY migrations /usr/local/lib/python3.13/site-packages/migrations
 
-CMD ["python", "-m", "salience.workflows.worker"]
+CMD ["/usr/local/bin/python", "/run/salience-control/launch-v4-publication-worker.py", "--mode", "current", "--worker-kind", "deployable"]
