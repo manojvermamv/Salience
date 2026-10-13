@@ -5232,6 +5232,19 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
     )
     legacy_null_operation_id = UUID(legacy_cancelled["operation_id"])
     assert legacy_null_operation_id not in {expired_operation_id, cancelled_operation_id}
+    assert await _hard_exit_publication_worker(
+        legacy_cancel_fixture,
+        tmp_path,
+        after_acceptance=True,
+        operation_id=str(legacy_null_operation_id),
+    ) == 73
+    with psycopg.connect(database) as connection:
+        accepted_progress = connection.execute(
+            "SELECT operation_id,state FROM v4_legacy_publication_fixture_progress "
+            "WHERE operation_id=%s",
+            (str(legacy_null_operation_id),),
+        ).fetchone()
+    assert accepted_progress == (legacy_null_operation_id, "accepted")
     _allow(
         database,
         workspace_id,
