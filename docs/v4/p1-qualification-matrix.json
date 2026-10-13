@@ -898,7 +898,7 @@
     "source_files": 316,
     "status": "PASS independent implemented-fixture qualification; RG0/RG1 HELD"
   },
-  "qualified_application_commit_scope": "Task 10 local fixture results remain historical at 5cb5791; Task 11 found floor/evidence gaps, so that candidate is unsupported as the rollback floor. The exact 0043 candidate at 9e4f2aa112353c46a69cdadba2d4699069a88d11 has a built and authenticated wheel/image/lock recorded in .superpowers/sdd/2026-10-13-p1-publication-recovery-floor-repair/task-8-report.md. Its candidate-specific qualification results are reported there; no counts transfer from 5cb5791 or 7878208. Final independent review/meta-review and exact-head CI remain required; production acceptance, RG0/full RG1 remain HELD and P2–P7 gated.",
+  "qualified_application_commit_scope": "Task 10 local fixture results remain historical at 5cb5791; Task 11 found floor/evidence gaps, so that candidate is unsupported as the rollback floor. The exact 0043 candidate at 43fc94e6ae4a11ca63eec32d537656ff3ef3024a has a built and authenticated wheel/image/lock recorded in .superpowers/sdd/2026-10-13-p1-publication-recovery-floor-repair/task-8-report.md. Its candidate-specific qualification results are reported there; no counts transfer from 5cb5791 or 7878208. Final independent review/meta-review and exact-head CI remain required; production acceptance, RG0/full RG1 remain HELD and P2–P7 gated.",
   "historical_parallel_qualification": {
     "evidence": "docs/v4/parallel-agents-evidence.json",
     "full_non_live_tests": 540,
@@ -907,7 +907,7 @@
     "status": "PASS root-reviewed bounded parallel-agent local extension; historical item7 independent review retained; RG0/RG1/RG5 HELD",
     "qualified_application_commit": "2653d2ecb3f0d5bb8ea6560de274137dd6032a96"
   },
-  "current_independent_review_scope": "Task 11 review found floor/evidence gaps in candidate 5cb5791, which is unsupported as the rollback floor. The exact 0043 candidate at 9e4f2aa112353c46a69cdadba2d4699069a88d11 and its artifact build are recorded in .superpowers/sdd/2026-10-13-p1-publication-recovery-floor-repair/task-8-report.md; it remains outside all prior independent review scopes until the corrected-publication rereview and meta-review. The corrected-publication rereview already completed covers only application a4b2368cdb463939d093020224a5b5667392aee6 with documentation/observed HEAD d0311725686d81b7b4747c2d6225986e5ea3a524; it does not cover 7878208, 5cb5791, or 9e4f2aa112353c46a69cdadba2d4699069a88d11.",
+  "current_independent_review_scope": "Task 11 review found floor/evidence gaps in candidate 5cb5791, which is unsupported as the rollback floor. The exact 0043 candidate at 43fc94e6ae4a11ca63eec32d537656ff3ef3024a and its artifact build are recorded in .superpowers/sdd/2026-10-13-p1-publication-recovery-floor-repair/task-8-report.md; it remains outside all prior independent review scopes until the corrected-publication rereview and meta-review. The corrected-publication rereview already completed covers only application a4b2368cdb463939d093020224a5b5667392aee6 with documentation/observed HEAD d0311725686d81b7b4747c2d6225986e5ea3a524; it does not cover 7878208, 5cb5791, or 43fc94e6ae4a11ca63eec32d537656ff3ef3024a.",
   "historical_legacy_intelligence_qualification": {
     "evidence": "docs/v4/legacy-dispatch-evidence.json",
     "full_non_live_tests": 556,
@@ -1120,17 +1120,17 @@
   },
   "task_8_exact_candidate_artifact_build": {
     "status": "EXACT_CANDIDATE_ARTIFACT_BUILD_RECORDED",
-    "application_commit": "9e4f2aa112353c46a69cdadba2d4699069a88d11",
-    "image_ref": "salience-p1-floor-9e4f2aa-worker:latest",
-    "image_id": "sha256:5adc8425eb21e4abb33807db6ed57b2b0455037d93dff00bacdf66cb6bef9ad3",
-    "wheel_sha256": "b99b3a408c5f24af70b8596d4501273b275c8051a857b514e15c50b34146f4b4",
-    "record_sha256": "5ada5ff5d09e026d151f67870bad4caceab13669e4df7a0b9357d8f5e8aca418",
+    "application_commit": "43fc94e6ae4a11ca63eec32d537656ff3ef3024a",
+    "image_ref": "salience-p1-floor-43fc94e-worker:latest",
+    "image_id": "sha256:9a7a71fceffdec6b3f0c0fd1f8a60f8b5f949d0d5caca451454871f6a561a5e9",
+    "wheel_sha256": "b8971a76767b538cbb72fef0e70d3197c036ba243afe82eac33519820a9c211b",
+    "record_sha256": "1080dac9c6201a5a943149aa5136461bfc195302ba6852875d3d555e0f63bcb7",
     "record_entry_count": 172,
-    "launch_lock_sha256": "42715543ab30f3f59644398fec1b5e1c88317c651e8a540218215d5bd10a25d8",
+    "launch_lock_sha256": "c55a1c4133a90c2a20b6468ac17251eccfd17210647b67479b80b3bfad42eae8",
     "source_manifest_sha256": "cf3e0d3da75c92a45c94671ddaab6f764a1a5823f17a5fa8a2a508fbbc578820",
     "interpreter_sha256": "73b68fc2dac176af16098180a2c98a03ee9f1f1b02db25d42d44d782e79e2330",
     "runtime_root": "/usr/local/lib/python3.13/site-packages",
-    "runtime_manifest_sha256": "226e390890a973293be98f8db388c7aa830f09a1e4da2a14cb48ee9a41507a5f",
+    "runtime_manifest_sha256": "13b7ed784707cfd99b51f3751834b92693cd25d444ea57cb9e76e0b28e0123ec",
     "runtime_file_count": 9151,
     "pyc_files": [],
     "dockerignore": [
@@ -1146,12 +1146,12 @@
       "tracked": false
     },
     "source_path_separation": {
-      "host_runtime_root": "/tmp/p1-publication-recovery-0043-candidate-9e4f2aa/runtime-prefix/usr/local/lib/python3.13/site-packages",
-      "host_interpreter_source": "/tmp/p1-publication-recovery-0043-candidate-9e4f2aa/runtime-prefix/usr/local/bin/python3.13",
+      "host_runtime_root": "/tmp/p1-publication-recovery-0043/runtime-prefix/usr/local/lib/python3.13/site-packages",
+      "host_interpreter_source": "/tmp/p1-publication-recovery-0043/runtime-prefix/usr/local/bin/python3.13",
       "locked_interpreter_path": "/usr/local/bin/python",
-      "note": "Extracted runtime topology preserves installed RECORD resolution; interpreter source bytes come from this image while the authenticated in-container path remains fixed."
+      "note": "The topology-preserving extraction keeps the installed RECORD target resolvable; the lock authenticates interpreter bytes from this exact image while retaining the fixed in-container path."
     },
     "artifact_build_result": "PASS",
-    "qualification_results": "Recorded separately in the referenced Task 8 report; this entry records artifact pins only."
+    "qualification_results": "Exact-candidate command outcomes are recorded in the referenced Task 8 report. This pin record does not transfer counts from Task 10, 9e4f2aa, or 7878208."
   }
 }
