@@ -3,7 +3,7 @@
   "requirements": [
     {
       "id": "R02",
-      "requirement": "§1: deterministic activities, compatible workflow upgrades and bounded histories",
+      "requirement": "\u00a71: deterministic activities, compatible workflow upgrades and bounded histories",
       "phase": "P1",
       "dependencies": "P0,R01",
       "acceptance": "Replay captured old histories on compatible worker; external I/O absent from coordinator; Continue-As-New preserves cycle/context/operation and finite history limits.",
@@ -45,7 +45,7 @@
     },
     {
       "id": "R03",
-      "requirement": "§1: atomic business transition/outbox, acknowledged ordered delivery and deduplication",
+      "requirement": "\u00a71: atomic business transition/outbox, acknowledged ordered delivery and deduplication",
       "phase": "P1",
       "dependencies": "P0,R01",
       "acceptance": "Local test_v4_outbox, test_v4_auto_dispatch and test_v4_outbox_recovery prove atomic enqueue, ordered bounded fixture dispatch, final-attempt escalation, consumer-ack loss, killed-worker restart and deduplication; item-5a public fixture admission/closure uses the same outbox, and item-5c cutover poll reuses it without a direct Temporal start. Root-qualified isolated publication start/outbox plus original native publication schedule resumed ingress are recorded in legacy-publication-evidence.json; production dispatch and live legacy routing remain unqualified.",
@@ -121,10 +121,10 @@
     },
     {
       "id": "R05",
-      "requirement": "§2: versioned GoalSpec, complete scope/metric/cadence/budget/stop fields and approved baseline",
+      "requirement": "\u00a72: versioned GoalSpec, complete scope/metric/cadence/budget/stop fields and approved baseline",
       "phase": "P1",
       "dependencies": "P0,R01",
-      "acceptance": "Local revision/baseline and test_v4_cadence_policy prove V2 program/account/channel/policy/resource/stop envelopes, exact retries, explicit fixture approval and no implicit trial; test_v4_cycle_accounting adds immutable V3 allocation policy and fixture G0 caps; items 5a–5b verify exact signed goal creation, revision/state and baseline revocation; production baseline qualification remains required. The isolated publication extension binds a fixture account to the approved goal revision/baseline and rechecks exact account scope/current native authorization; general registry and production baseline eligibility remain required.",
+      "acceptance": "Local revision/baseline and test_v4_cadence_policy prove V2 program/account/channel/policy/resource/stop envelopes, exact retries, explicit fixture approval and no implicit trial; test_v4_cycle_accounting adds immutable V3 allocation policy and fixture G0 caps; items 5a\u20135b verify exact signed goal creation, revision/state and baseline revocation; production baseline qualification remains required. The isolated publication extension binds a fixture account to the approved goal revision/baseline and rechecks exact account scope/current native authorization; general registry and production baseline eligibility remain required.",
       "migration_rollback": "M1: new revisions, no authority inferred from program rows; disable new goals on rollback.",
       "gate": "RG1",
       "executed_verifier_cases": 97,
@@ -148,7 +148,7 @@
     },
     {
       "id": "R06",
-      "requirement": "§2: stable CycleIntent/cycle ID, slots and manual/event idempotency across revisions",
+      "requirement": "\u00a72: stable CycleIntent/cycle ID, slots and manual/event idempotency across revisions",
       "phase": "P1",
       "dependencies": "R03,R05",
       "acceptance": "Local cadence tests prove concurrent manual/event/scheduled coalescing, bounded source-event identity, stable cross-revision/interval retries and crash rollback; V1/V2 worker-kill replay preserves canonical IDs. Items 5a/5c signed requests and scoped schedule cutover preserve one intent/cycle/context/outbox across competing origins and restart; actual original native publication schedule conversion and resumed canonical outbox ingress are locally qualified in the effects-disabled fixture; production conversion remains gated. Actual resumed publication ticks preserve the distinct original job/publication schedule identities and atomically commit one canonical outbox operation under the original goal/cycle/context.",
@@ -224,7 +224,7 @@
     },
     {
       "id": "R07",
-      "requirement": "§2: single G0 checks scope, goal, freshness/due time, overlap, capacity, quota, budget and trial eligibility",
+      "requirement": "\u00a72: single G0 checks scope, goal, freshness/due time, overlap, capacity, quota, budget and trial eligibility",
       "phase": "P1",
       "dependencies": "R05,R06",
       "acceptance": "Local cadence/admission races enforce current scope, G0 freshness, due time, overlap, current-revision pending caps, quota and review without duplicate cycles. Fixture G0 canonical allocations add scoped period/currency caps; item-5a public and item-5c fixture-auto admission invoke this same gate after a committed schedule batch, with crash recovery but no stage-start bypass. Production and trial eligibility remain later gates.",
@@ -241,7 +241,7 @@
     },
     {
       "id": "R08",
-      "requirement": "§2: bounded overlap/catch-up/stale/backfill policies and independent cadence",
+      "requirement": "\u00a72: bounded overlap/catch-up/stale/backfill policies and independent cadence",
       "phase": "P1",
       "dependencies": "R07",
       "acceptance": "Local cadence tests prove bounded skip/latest/catch-up, stale-slot denial, scoped reviewed backfill, overlap and capacity-aware coalescing. Item-5c opt-in independent fixture poller uses a durable first-V4 watermark, pause/readback and rollback fence; original native intelligence and paired governed-publication schedules now have separate root-qualified no-effects SDK conversion/rollback reports; production inventory, routing, fencing and observation-independent execution remain required.",
@@ -292,7 +292,7 @@
     },
     {
       "id": "R09",
-      "requirement": "§2: strategic defer/abstain closes cycle; pre-admission deferral and recovery retain their own identities",
+      "requirement": "\u00a72: strategic defer/abstain closes cycle; pre-admission deferral and recovery retain their own identities",
       "phase": "P1",
       "dependencies": "R07,R08",
       "acceptance": "test_v4_cycle_admission proves pre-admission wake reuses intent without an earlier cycle, retry/reconcile retains cycle/operation, and strategic closure needs an authorized coalesced successor; item-6 real Temporal timers and PostgreSQL tests exercise all three identities through restart and finite expiry; production qualification remains required.",
@@ -325,7 +325,7 @@
     },
     {
       "id": "R10",
-      "requirement": "§3: authoritative immutable context resolved after admission and before affected work",
+      "requirement": "\u00a73: authoritative immutable context resolved after admission and before affected work",
       "phase": "P1",
       "dependencies": "R07",
       "acceptance": "Local V2 tests validate typed immutable RunContext with canonical scope/IDs, current grant snapshot, approved bundle, trace/lineage, evidence cutoff and resource deadline; no assignment or fallback. Full candidate/plan and effect integration remain gated.",
@@ -358,10 +358,10 @@
     },
     {
       "id": "R13",
-      "requirement": "§3: current revocation constrains pinned context; revisions invalidate approvals",
+      "requirement": "\u00a73: current revocation constrains pinned context; revisions invalidate approvals",
       "phase": "P1",
       "dependencies": "R10",
-      "acceptance": "Local V2 non-owner/race tests serialize grant and program revocation, pin current authority, reject stale/expired recovery and hold consumption without rewriting context; item-3 fixture permits/reviews recheck current authority, baseline and frozen binding. Items 5a–5c signed public fixture commands and restricted non-owner roles recheck separate current schedule/review grants without authority UPDATE privilege; a revoked cutover actor auto-polls nothing. Full version revocation remains required.",
+      "acceptance": "Local V2 non-owner/race tests serialize grant and program revocation, pin current authority, reject stale/expired recovery and hold consumption without rewriting context; item-3 fixture permits/reviews recheck current authority, baseline and frozen binding. Items 5a\u20135c signed public fixture commands and restricted non-owner roles recheck separate current schedule/review grants without authority UPDATE privilege; a revoked cutover actor auto-polls nothing. Full version revocation remains required.",
       "migration_rollback": "M1: append linked revisions/invalidations; do not restore revoked approval on rollback.",
       "gate": "RG1",
       "executed_verifier_cases": 123,
@@ -391,7 +391,7 @@
     },
     {
       "id": "R15",
-      "requirement": "§4: one versioned policy model, exact approval purpose/effect/artifact/account/expiry binding",
+      "requirement": "\u00a74: one versioned policy model, exact approval purpose/effect/artifact/account/expiry binding",
       "phase": "P1",
       "dependencies": "P0,R05",
       "acceptance": "Item-3 fixture review DTO and item-5b signed review route reject wrong context/operation/hash/account/purpose/version/expiry and store immutable decisions; a general versioned policy model, LLM-text denial and production effect gates remain to be qualified. The publication fixture path also revalidates native profile, disclosure, policy, rights, approval, exact account and zero budget at bind/intake/activity/reconciliation boundaries; this is not a general policy model or production effect gate.",
@@ -434,7 +434,7 @@
     },
     {
       "id": "R17",
-      "requirement": "§4: atomically claim one bounded dispatch permit with serialized stop/revocation",
+      "requirement": "\u00a74: atomically claim one bounded dispatch permit with serialized stop/revocation",
       "phase": "P1",
       "dependencies": "R03,R15",
       "acceptance": "Item-3 PostgreSQL races prove stop-before-claim denial and one claim-before-stop send authority; item-4 mock adapter invokes only after the true claim, never on duplicate activity or uncertain outcome. V3 liability changes share the claim transaction; actual providers remain gated.",
@@ -482,15 +482,15 @@
     },
     {
       "id": "R18",
-      "requirement": "§4: emergency stop and policy outage fail closed; independent read reconciliation allowed only with scope",
+      "requirement": "\u00a74: emergency stop and policy outage fail closed; independent read reconciliation allowed only with scope",
       "phase": "P1",
       "dependencies": "R17",
-      "acceptance": "Item-3 workspace/goal stop and item-5b signed stop commands deny new fixture claims/recovery under revoked authority; unavailable authority DB issues no permit. Item-5c fixture activation, auto poll and legacy resume hold on current stop; production live-scheduler cancellation and production remote read-only reconciliation remain unqualified. The isolated publication fixture permits receipt readback after permit expiry only under a separate exact account reconciliation grant, only for an immutable already-accepted receipt, and then holds for typed recovery; no second submit, blind status progression or fabricated close-race projection is authorized. Task 1–8 additionally qualify immutable durable hold creation/replay, both-reason read-only pre-restart verification and preserved liabilities in the local fixture; production-wide revocation and live schedule fencing remain unqualified.",
+      "acceptance": "Item-3 workspace/goal stop and item-5b signed stop commands deny new fixture claims/recovery under revoked authority; unavailable authority DB issues no permit. Item-5c fixture activation, auto poll and legacy resume hold on current stop; production live-scheduler cancellation and production remote read-only reconciliation remain unqualified. The isolated publication fixture permits receipt readback after permit expiry only under a separate exact account reconciliation grant, only for an immutable already-accepted receipt, and then holds for typed recovery; no second submit, blind status progression or fabricated close-race projection is authorized. Task 1\u20138 and Task 10 additionally qualify immutable durable hold creation/replay, both-reason read-only pre-restart verification and preserved liabilities in the local fixture; production-wide revocation and live schedule fencing remain unqualified.",
       "migration_rollback": "M1: stop revision persists across restart/rollback; renewed authority required to resume.",
       "gate": "RG1",
       "executed_verifier_cases": 76,
-      "local_verifier_status": "PASS for implemented local fixtures, including the Task 1–8 durable publication recovery-hold extension at 7878208; production acceptance remains HELD.",
-      "independent_review_status": "Prior independent-review artifacts apply only to their recorded fixture scope. The corrected-publication rereview covers A4/d031172 and does not review the Task 1–8 extension at 7878208; production acceptance remains HELD.",
+      "local_verifier_status": "PASS for implemented no-effects local fixtures, including the Task 10 retained-wheel actual-image two-reason rehearsal (17 focused tests); Task 11 independent review remains pending and production acceptance remains HELD. The 614-test full suite remains bound to 7878208.",
+      "independent_review_status": "Task 10 candidate d32005e has not received its independent review; Task 11 review/meta-review/final artifact checks remain pending. Earlier review artifacts apply only to their recorded scopes; production acceptance remains HELD.",
       "production_release_status": "HELD",
       "remaining_acceptance": "Production live schedule stop/cancellation/fencing, production-wide cross-service revocation, typed recovery workers and independently scoped remote reconciliation beyond the isolated fixture receipt-only hold.",
       "independent_review_evidence": [
@@ -568,15 +568,15 @@
     },
     {
       "id": "R32",
-      "requirement": "§6: typed recovery states/actions, failure records, ownership and limits",
+      "requirement": "\u00a76: typed recovery states/actions, failure records, ownership and limits",
       "phase": "P1",
       "dependencies": "R03,R15",
-      "acceptance": "Item-3 fixture cases and item-5b scoped signed case commands persist retry_due/reconciling/rework_due/awaiting_review/suspended/terminal/resolved with owner, deadline and bounded actions; reconciliation/rework cannot masquerade as retry, and pre-admission review targets the same intent. Item-6 fixture timers suspend existing cases at bounded deadlines; production recovery workers remain required. Expired publication permits with no durable receipt deny before provider readback; exact accepted receipts can be read back only under the separately scoped account grant and then remain held for typed recovery. Task 1–8 additionally qualify durable publication recovery-hold ownership, exact replay, crash recovery and two-reason read-only verification in the local fixture; production recovery workers and external delivery remain unqualified.",
+      "acceptance": "Item-3 fixture cases and item-5b scoped signed case commands persist retry_due/reconciling/rework_due/awaiting_review/suspended/terminal/resolved with owner, deadline and bounded actions; reconciliation/rework cannot masquerade as retry, and pre-admission review targets the same intent. Item-6 fixture timers suspend existing cases at bounded deadlines; production recovery workers remain required. Expired publication permits with no durable receipt deny before provider readback; exact accepted receipts can be read back only under the separately scoped account grant and then remain held for typed recovery. Task 1\u20138 and Task 10 additionally qualify durable publication recovery-hold ownership, exact replay, crash recovery and two-reason read-only verification plus the Task 10 retained-wheel actual-image rehearsal in local fixtures; production recovery workers and external delivery remain unqualified.",
       "migration_rollback": "M1: cases reference existing identities; terminal cases stay closed on rollback.",
       "gate": "RG1",
       "executed_verifier_cases": 81,
-      "local_verifier_status": "PASS for implemented local fixtures, including the Task 1–8 durable publication recovery-hold extension at 7878208; production acceptance remains HELD.",
-      "independent_review_status": "Prior independent-review artifacts apply only to their recorded fixture scope. The corrected-publication rereview covers A4/d031172 and does not review the Task 1–8 extension at 7878208; production acceptance remains HELD.",
+      "local_verifier_status": "PASS for implemented no-effects local fixtures, including the Task 10 retained-wheel actual-image two-reason rehearsal (17 focused tests); Task 11 independent review remains pending and production acceptance remains HELD. The 614-test full suite remains bound to 7878208.",
+      "independent_review_status": "Task 10 candidate d32005e has not received its independent review; Task 11 review/meta-review/final artifact checks remain pending. Earlier review artifacts apply only to their recorded scopes; production acceptance remains HELD.",
       "production_release_status": "HELD",
       "remaining_acceptance": "Production typed recovery state transitions, durable recovery worker and external failure delivery beyond the local publication receipt-only recovery hold.",
       "independent_review_evidence": [
@@ -606,7 +606,7 @@
     },
     {
       "id": "R33",
-      "requirement": "§6: exact idempotent resume command and current stage reauthorization",
+      "requirement": "\u00a76: exact idempotent resume command and current stage reauthorization",
       "phase": "P1",
       "dependencies": "R17,R32",
       "acceptance": "Item-3 command CAS and item-5b signed resume route reject stale case/context/operation and resumes only the original intent revision or cycle/operation, with case state and recovery outbox atomic under injected crash; delivery and stage-specific production gate remain required.",
@@ -624,7 +624,7 @@
     },
     {
       "id": "R34",
-      "requirement": "§6: authorized bound review with expiry, deduplicated notification/ack/escalation",
+      "requirement": "\u00a76: authorized bound review with expiry, deduplicated notification/ack/escalation",
       "phase": "P1",
       "dependencies": "R32,R33",
       "acceptance": "Item-3 owner/scope/revision/artifact binding and item-5b signed review/ack parity, immutable decision, deadline escalation and deduplicated acknowledgment pass PostgreSQL tests; item-6 durable fixture timers, deduplicated database notification acceptance and process-crash redelivery are qualified separately; external alert delivery remains required.",
@@ -642,7 +642,7 @@
     },
     {
       "id": "R35",
-      "requirement": "§6: durable idempotent archive with reason/evidence/retention and no implicit reuse",
+      "requirement": "\u00a76: durable idempotent archive with reason/evidence/retention and no implicit reuse",
       "phase": "P1",
       "dependencies": "R32",
       "acceptance": "Item-3 archive and item-5b signed archive route reject pre-disposition calls, deduplicates committed reason/evidence/retention and preserves immutable history; rights-filtered discovery and later record families remain to qualify.",
@@ -659,17 +659,17 @@
     },
     {
       "id": "R53",
-      "requirement": "§10: schema envelope, unique business/events, superseding correction and audited mutable pointers",
+      "requirement": "\u00a710: schema envelope, unique business/events, superseding correction and audited mutable pointers",
       "phase": "P1",
       "dependencies": "P0,R03",
-      "acceptance": "Local V2/V3 DTO/SQL tests enforce immutable context and accounting receipts; migrations 0026–0034 add scoped stop/permit/case, cutover-transition and runtime-wait guards, unique dead-letter/fixture-acceptance events, immutable goal-create/state/runtime-hold/notification receipts and canonical delivery scope and populated rollback refusal. Later record families still require envelope tests. M0040 adds immutable publication stage/account/receipt guards and M0041 adds separate immutable original native publication schedule source/progress/plan guards; empty downgrade preserves prior guards and populated history refuses destructive rollback.",
+      "acceptance": "Local V2/V3 DTO/SQL tests enforce immutable context and accounting receipts; migrations 0026\u20130034 add scoped stop/permit/case, cutover-transition and runtime-wait guards, unique dead-letter/fixture-acceptance events, immutable goal-create/state/runtime-hold/notification receipts and canonical delivery scope and populated rollback refusal. Later record families still require envelope tests. M0040 adds immutable publication stage/account/receipt guards and M0041 adds separate immutable original native publication schedule source/progress/plan guards; empty downgrade preserves prior guards and populated history refuses destructive rollback.",
       "migration_rollback": "M1: additive common envelope and exact-match migration; never invent historical scope.",
       "gate": "RG1",
       "executed_verifier_cases": 146,
       "local_verifier_status": "PASS; covers implemented local fixtures, not unimplemented production acceptance",
       "independent_review_status": "PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE; production acceptance remains HELD",
       "production_release_status": "HELD",
-      "remaining_acceptance": "Current P1 envelopes, immutable state/other command receipts, canonical delivery scope and additive 0032–0034 ownership/rollback guards are independently reviewed and locally tested; later record families require envelope tests in their assigned phases.",
+      "remaining_acceptance": "Current P1 envelopes, immutable state/other command receipts, canonical delivery scope and additive 0032\u20130034 ownership/rollback guards are independently reviewed and locally tested; later record families require envelope tests in their assigned phases.",
       "independent_review_evidence": [
         "docs/v4/item7-admission-review.json",
         "docs/v4/item7-governance-review.json",
@@ -701,7 +701,7 @@
   "production_effects_enabled": false,
   "RG0": "HELD",
   "RG1": "HELD",
-  "source_lock_sha256": "d1d9f95af6f67192eb70c57bde2e066763ef1dadca6c5f58809e2833bc7ed638",
+  "source_lock_sha256": "d3176a0fd96386324f483702a96944078c02fdf892dd60dddd585a9bd25d038a",
   "verifiers": {
     "R02": [
       "tests/e2e/test_v4_worker_upgrade.py",
@@ -826,14 +826,19 @@
   },
   "current_qualification": {
     "evidence": "docs/v4/publication-recovery-hold-evidence.json",
-    "focused_tests": 116,
+    "focused_tests": 17,
     "full_non_live_tests": 614,
-    "source_files": 356,
-    "status": "PASS_IMPLEMENTED_LOCAL_PUBLICATION_RECOVERY_HOLD_AND_PARALLEL_STATUS_FIXTURE_SCOPE; current full non-live clean-database suite passed; corrected-publication rereview remains scoped to A4/d031172 and does not review this candidate; RG0/RG1 HELD",
-    "qualified_application_commit": "7878208e7a353f93bb70279ad0dd7f0760f93ec4",
-    "source_lock_sha256": "d1d9f95af6f67192eb70c57bde2e066763ef1dadca6c5f58809e2833bc7ed638",
+    "source_files": 360,
+    "status": "PASS_LOCAL_TASK_10_RETAINED_WHEEL_TWO_REASON_FIXTURE_CANDIDATE; TASK_11_REVIEW_PENDING; full 614-test non-live suite remains bound to 7878208; RG0/RG1 HELD",
+    "qualified_application_commit": "d32005efc8b402d614b624c35fc166deeed3db65",
+    "source_lock_sha256": "d3176a0fd96386324f483702a96944078c02fdf892dd60dddd585a9bd25d038a",
     "base_commit": "931840ddfc78314b93d306b8c130e9f39ed7ec4f",
-    "direct_parent": "931840ddfc78314b93d306b8c130e9f39ed7ec4f"
+    "direct_parent": "931840ddfc78314b93d306b8c130e9f39ed7ec4f",
+    "task_8_focused_tests": 116,
+    "full_non_live_application_commit": "7878208e7a353f93bb70279ad0dd7f0760f93ec4",
+    "full_non_live_rerun_on_candidate": false,
+    "qualification_harness_commit": "dbc8478f8e8ce9e8ba05ddb816eb6e0e75e9f672",
+    "plan_base_commit": "504cf18220fe445404a35d181f47491dc79304c8"
   },
   "remaining_release_obligations": [
     "General registry/provider eligibility beyond the approved no-effects fixture baseline; later capability and production qualification gates remain binding",
@@ -842,7 +847,7 @@
     "General policy/model authorization, live scheduler stop/fencing integration and separately scoped remote read-only reconciliation beyond fixture permits/cases/cutover",
     "Deployment-specific supported worker routing/rollback, external durable alert delivery beyond the local item-6 patch/timer/restore fixture"
   ],
-  "qualified_application_commit": "7878208e7a353f93bb70279ad0dd7f0760f93ec4",
+  "qualified_application_commit": "d32005efc8b402d614b624c35fc166deeed3db65",
   "independent_review_reports": [
     {
       "reviewer": "admission",
@@ -893,7 +898,7 @@
     "source_files": 316,
     "status": "PASS independent implemented-fixture qualification; RG0/RG1 HELD"
   },
-  "qualified_application_commit_scope": "Current Task 1–8 local fixture recovery-hold and parallel parent-status increment at 7878208; not an independent all-row review or production qualification.",
+  "qualified_application_commit_scope": "Task 10 local publication-worker floor candidate at d32005e; actual retained-wheel Docker image passed both hold reasons in disabled-effects fixtures. Task 11 independent review, meta-review, final artifact rerun and exact-head checks remain pending; this is not yet the supported floor. The 614-test full non-live run remains bound to 7878208.",
   "historical_parallel_qualification": {
     "evidence": "docs/v4/parallel-agents-evidence.json",
     "full_non_live_tests": 540,
@@ -902,7 +907,7 @@
     "status": "PASS root-reviewed bounded parallel-agent local extension; historical item7 independent review retained; RG0/RG1/RG5 HELD",
     "qualified_application_commit": "2653d2ecb3f0d5bb8ea6560de274137dd6032a96"
   },
-  "current_independent_review_scope": "Corrected-publication rereview verdict NO_FINDINGS_WITHIN_REVIEWED_FIXTURE_CORRECTION_SCOPE for application a4b2368cdb463939d093020224a5b5667392aee6 and documentation/observed HEAD d0311725686d81b7b4747c2d6225986e5ea3a524; meta-review ACCEPT, zero issues. The meta-review reports a root-orchestrator 5/5 targeted rerun in 19.97s (meta-reviewer did not execute it; no standalone JUnit/log artifact found). This review predates Task 1–8 and does not review 7878208.",
+  "current_independent_review_scope": "No independent review is claimed for Task 10 candidate d32005e. Task 11 independent review, meta-review, final artifact rerun and exact-head checks are pending. The corrected-publication rereview is scoped to A4/d031172 and does not review this candidate.",
   "historical_legacy_intelligence_qualification": {
     "evidence": "docs/v4/legacy-dispatch-evidence.json",
     "full_non_live_tests": 556,

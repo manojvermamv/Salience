@@ -1,6 +1,6 @@
 {
-  "baseline_commit": "7878208e7a353f93bb70279ad0dd7f0760f93ec4",
-  "scope": "All tracked application source, migrations, tests, scripts and named deployment/dependency configuration. Hash changes require fresh claim review, not automatic acceptance.",
+  "baseline_commit": "dbc8478f8e8ce9e8ba05ddb816eb6e0e75e9f672",
+  "scope": "All tracked application source, migrations, tests, scripts and named deployment/dependency configuration in the Task 10 qualification checkout. The application artifact pin is d32005efc8b402d614b624c35fc166deeed3db65; the test-only qualification harness is at dbc8478f8e8ce9e8ba05ddb816eb6e0e75e9f672. Hash changes require fresh claim review, not automatic acceptance.",
   "files": [
     {
       "path": ".env.example",
@@ -8,7 +8,7 @@
     },
     {
       "path": "Dockerfile",
-      "sha256": "20817a0ad1723ed25ddc87e25e3e930ac8c7e68c3e9c70ce84cfa2eebff5217f"
+      "sha256": "728afeb9c417b474e09b627e9f63aa4d6685336843f14aeeeef3b8baa91df891"
     },
     {
       "path": "alembic.ini",
@@ -20,7 +20,7 @@
     },
     {
       "path": "compose.yaml",
-      "sha256": "ab16859d63e6191cc1c6f53a47a036cf3600d12616102fb4e81df36a5dd785ea"
+      "sha256": "7df882a307ded4287c260487396cb5410eae444f9c662fcb1c4fa6b09b82a167"
     },
     {
       "path": "migrations/__init__.py",
@@ -196,7 +196,7 @@
     },
     {
       "path": "migrations/versions/0042_legacy_publication_recovery_holds.py",
-      "sha256": "ad096213e662c320ba25d0d62a546369f382dd534c21cfe215fb7c75fb0c33f6"
+      "sha256": "99e44ea4e84c40f338d06789b2bd2e52593cd40877d1b2c016b8823b13180715"
     },
     {
       "path": "migrations/versions/__init__.py",
@@ -205,6 +205,10 @@
     {
       "path": "pyproject.toml",
       "sha256": "62ea69b09b0f513ca80e4957b69ab4d26f006f27d041b27d5722b7a36f384920"
+    },
+    {
+      "path": "scripts/launch-v4-publication-worker.py",
+      "sha256": "7460531ff4d40152d78095f0ff7fbc5a2ec162f07b550eb9501be06508000363"
     },
     {
       "path": "scripts/verify-browser-evidence.sh",
@@ -524,11 +528,11 @@
     },
     {
       "path": "src/salience/cycles/legacy_publication_runtime.py",
-      "sha256": "7a73dedb7890b4fb78c05f1ec00684a850d90ba095f948ff1f161fe742fc5ca9"
+      "sha256": "3c1b0e369faa96cba3e7c2c4d0d780ba025338fa50e692e52b620f1177822556"
     },
     {
       "path": "src/salience/cycles/legacy_runtime.py",
-      "sha256": "eb9d44e3602e603259ff40d853c3d2b35451b409dbd79033aea53e7e93f5a1fb"
+      "sha256": "20225bea677bb2e14cd3655bad948f9e585feec69668d1126ddc409ef907c595"
     },
     {
       "path": "src/salience/cycles/legacy_schedule_workflow.py",
@@ -552,7 +556,11 @@
     },
     {
       "path": "src/salience/cycles/publication_recovery.py",
-      "sha256": "9a9b5e6ef699a83a2c4e465496838ee6b672e6b57ff3536a3e3f9c862b60beb6"
+      "sha256": "d427fe22d2cb48c552cb59ff6184087291ceb3d5658caf60296077f476b3863b"
+    },
+    {
+      "path": "src/salience/cycles/publication_recovery_compatibility.py",
+      "sha256": "1d6a11b90e2b67d7223f43083a75d5aecf3d3993edbf0b27c6a128a67bcf0487"
     },
     {
       "path": "src/salience/cycles/runtime.py",
@@ -872,7 +880,7 @@
     },
     {
       "path": "src/salience/workflows/worker.py",
-      "sha256": "5ed588ecadbfc7ef295874aacd3ad08e3a3eb45a046cb0fcc20ce8f734e5ed0d"
+      "sha256": "5acf9f8b4ce1595ce241245c1dcbdf84c3ad7cfe6d2fe1a7cd08853e8e73723c"
     },
     {
       "path": "tests/conftest.py",
@@ -1001,6 +1009,10 @@
     {
       "path": "tests/fixtures/parallel_agent_process.py",
       "sha256": "9b86b3f0629879b4ff69f5ad7b0bc572c15bd4f75667d102310057d884a3cd98"
+    },
+    {
+      "path": "tests/fixtures/v4_publication_floor_worker.py",
+      "sha256": "b74374eca6a649d0e5349f7fb85684dfcd197f38698d66b3b86a50d044663cf4"
     },
     {
       "path": "tests/integration/test_a2a_gateway.py",
@@ -1204,7 +1216,7 @@
     },
     {
       "path": "tests/integration/test_v4_legacy_publication.py",
-      "sha256": "af12e833b4929de5db31c649f40619854baa6e4ce8e9e9e600956be6f968dd79"
+      "sha256": "ba1b2cae0828d5d5d8a0cf75eb0db3589ae4cc20efff07a5c8748b27f3d45ff4"
     },
     {
       "path": "tests/integration/test_v4_legacy_schedule_ingress.py",
@@ -1239,8 +1251,12 @@
       "sha256": "5df09173378a61226a4bf90320c276adf77466012c475f5a4b4ff66599a374b9"
     },
     {
+      "path": "tests/integration/test_v4_publication_recovery_floor.py",
+      "sha256": "b3161b08320f42e28abd38f3dc26726058abccb18c6945334835c16530c97f4f"
+    },
+    {
       "path": "tests/integration/test_v4_publication_recovery_holds.py",
-      "sha256": "c600b83e87c9a607c3977d863dde1a46f3c5e1f17ea12238fb6315e8122297f3"
+      "sha256": "f29b2d67d978cfbbbffdbb96b7eb6e74671794429a37dc1f5e765e2d9417c546"
     },
     {
       "path": "tests/integration/test_v4_runtime_waits.py",

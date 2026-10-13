@@ -1,15 +1,17 @@
 {
   "schema_version": 1,
-  "recorded_at": "2026-10-06T13:54:00Z",
+  "recorded_at": "2026-10-13T04:11:53Z",
   "status": "PASS_LOCAL_FIXTURE_SCOPE; PRODUCTION_RELEASE_HELD",
   "application": {
-    "candidate_commit": "7878208e7a353f93bb70279ad0dd7f0760f93ec4",
+    "candidate_commit": "d32005efc8b402d614b624c35fc166deeed3db65",
     "branch": "work/v4-p1-publication-recovery",
     "effects_enabled": false,
     "deployment_mode": "fixture",
     "source_lock_path": "docs/v4/evidence-lock.json",
-    "source_lock_sha256": "d1d9f95af6f67192eb70c57bde2e066763ef1dadca6c5f58809e2833bc7ed638",
-    "locked_application_files": 356
+    "source_lock_sha256": "d3176a0fd96386324f483702a96944078c02fdf892dd60dddd585a9bd25d038a",
+    "locked_application_files": 360,
+    "qualification_harness_commit": "dbc8478f8e8ce9e8ba05ddb816eb6e0e75e9f672",
+    "fixture_publication_budget": 0
   },
   "task_1_to_8": {
     "tasks": [
@@ -179,7 +181,11 @@
       "reported_by": "root orchestrator per meta-review result",
       "executed_by_meta_reviewer": false,
       "standalone_junit_or_run_log_found": false
-    }
+    },
+    "does_not_review_application_commits": [
+      "7878208e7a353f93bb70279ad0dd7f0760f93ec4",
+      "d32005efc8b402d614b624c35fc166deeed3db65"
+    ]
   },
   "full_non_live": {
     "status": "PASS",
@@ -337,32 +343,31 @@
       "errors": 0,
       "skipped": 0,
       "log": {
-        "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/fix-round-1/stable-final-checks/docs-tests.log"
+        "path": "artifacts/v4-next-p1/agents/task-10-doc-reconciliation/step8-final/docs-tests.log"
       }
     },
     "documentation_checker": {
-      "self_test": {
-        "status": "PASS",
-        "requirements": 75,
-        "source_files": 2,
-        "evidence_files": 356,
-        "inventory_files": 360,
-        "negative_controls": 6,
-        "log": {
-          "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/fix-round-1/stable-final-checks/checker-self-test.log"
-        }
-      },
       "normal": {
         "status": "PASS",
         "requirements": 75,
         "source_files": 2,
-        "evidence_files": 356,
+        "evidence_files": 360,
         "inventory_files": 360,
-        "markdown_files_checked": 87,
+        "markdown_files_checked": 93,
         "html_files_checked": 4,
+        "log": {
+          "path": "artifacts/v4-next-p1/agents/task-10-doc-reconciliation/step8-final/checker.log"
+        }
+      },
+      "self_test": {
+        "status": "PASS",
+        "requirements": 75,
+        "source_files": 2,
+        "evidence_files": 360,
+        "inventory_files": 360,
         "negative_controls": 6,
         "log": {
-          "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/fix-round-1/stable-final-checks/checker.log"
+          "path": "artifacts/v4-next-p1/agents/task-10-doc-reconciliation/step8-final/checker-self-test.log"
         }
       }
     },
@@ -371,19 +376,19 @@
       "failed": 0,
       "scripts": [
         {
-          "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/fix-round-1/stable-final-checks/shell-browser-docs.log",
+          "path": "artifacts/v4-next-p1/agents/task-10-doc-reconciliation/step8-final/shell-browser-docs.log",
           "status": "PASS"
         },
         {
-          "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/fix-round-1/stable-final-checks/shell-phase-7-8.log",
+          "path": "artifacts/v4-next-p1/agents/task-10-doc-reconciliation/step8-final/shell-phase-7-8.log",
           "status": "PASS"
         },
         {
-          "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/fix-round-1/stable-final-checks/shell-phase-9.log",
+          "path": "artifacts/v4-next-p1/agents/task-10-doc-reconciliation/step8-final/shell-phase-9.log",
           "status": "PASS"
         },
         {
-          "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/fix-round-1/stable-final-checks/shell-verify-browser.log",
+          "path": "artifacts/v4-next-p1/agents/task-10-doc-reconciliation/step8-final/shell-verify-browser.log",
           "status": "PASS"
         }
       ]
@@ -392,49 +397,55 @@
       "rendered": 6,
       "failed": 0,
       "version": "12.0.0",
-      "command": "/home/admin/Salience/.venv/bin/python docs/v4/verify_diagrams.py --node-modules /tmp/salience-item6-mermaid/node_modules --browser /home/admin/.cache/ms-playwright/chromium_headless_shell-1234/chrome-headless-shell-linux64/chrome-headless-shell --output artifacts/v4-next-p1/agents/task-09-doc-reconciliation/fix-round-1/diagram-rendered",
-      "results": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/fix-round-1/diagram-rendered/results.json",
+      "command": "/home/admin/Salience/.venv/bin/python docs/v4/verify_diagrams.py --node-modules /tmp/salience-item6-mermaid/node_modules --browser /home/admin/.cache/ms-playwright/chromium_headless_shell-1234/chrome-headless-shell-linux64/chrome-headless-shell --output artifacts/v4-next-p1/agents/task-10-doc-reconciliation/step8-final/diagram-rendered",
+      "results": "artifacts/v4-next-p1/agents/task-10-doc-reconciliation/step8-final/diagram-rendered/results.json",
       "results_sha256": "6a04203cacd481c7c9e2000bd83834a2ac1ad0cb0ab4d4db433ba6aa557502ba",
       "log": {
-        "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/fix-round-1/stable-final-checks/mermaid.log"
+        "path": "artifacts/v4-next-p1/agents/task-10-doc-reconciliation/step8-final/mermaid.log"
       }
     },
     "json_parse": {
       "status": "PASS",
-      "modified_json_files": 6,
+      "modified_json_files": 5,
       "log": {
-        "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/fix-round-1/stable-final-checks/json-parse.log"
+        "path": "artifacts/v4-next-p1/agents/task-10-doc-reconciliation/step8-final/json-parse.log"
       }
     },
     "pip_check": {
       "status": "PASS",
       "log": {
-        "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/fix-round-1/stable-final-checks/pip-check.log"
+        "path": "artifacts/v4-next-p1/agents/task-10-doc-reconciliation/step8-final/pip-check.log"
       }
     },
     "compileall": {
       "status": "PASS",
       "command": "/home/admin/Salience/.venv/bin/python -m compileall -q src tests scripts docs/v4",
       "log": {
-        "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/fix-round-1/stable-final-checks/compileall.log"
+        "path": "artifacts/v4-next-p1/agents/task-10-doc-reconciliation/step8-final/compileall.log"
       }
     },
     "git_diff_check": {
       "status": "PASS",
       "log": {
-        "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/fix-round-1/stable-final-checks/diff-check.log"
+        "path": "artifacts/v4-next-p1/agents/task-10-doc-reconciliation/step8-final/diff-check.log"
       }
     },
     "historical_preservation": {
       "status": "PASS",
       "paths": 14,
       "manifest": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/historical-preservation-sha256.json",
-      "manifest_sha256": "8295bde6d21b2a1939b1ca6f534b2ebd1c578a61aededf1a762dcdc12e29623e"
+      "manifest_sha256": "8295bde6d21b2a1939b1ca6f534b2ebd1c578a61aededf1a762dcdc12e29623e",
+      "log": {
+        "path": "artifacts/v4-next-p1/agents/task-10-doc-reconciliation/step8-final/historical-preservation.log"
+      }
     },
     "source_lock_validation": {
       "status": "PASS",
-      "files": 356,
-      "sha256": "d1d9f95af6f67192eb70c57bde2e066763ef1dadca6c5f58809e2833bc7ed638"
+      "files": 360,
+      "sha256": "d3176a0fd96386324f483702a96944078c02fdf892dd60dddd585a9bd25d038a",
+      "log": {
+        "path": "artifacts/v4-next-p1/agents/task-10-doc-reconciliation/step8-final/source-lock-validation.log"
+      }
     },
     "documentation_audit_counts": {
       "tracked_markdown_files": 88,
@@ -444,11 +455,11 @@
     },
     "integrity_assertions": {
       "status": "PASS",
-      "source_lock_files_verified": 356,
+      "source_lock_files_verified": 360,
       "historical_paths_verified": 14,
       "diagram_results_sha256": "6a04203cacd481c7c9e2000bd83834a2ac1ad0cb0ab4d4db433ba6aa557502ba",
       "log": {
-        "path": "artifacts/v4-next-p1/agents/task-09-doc-reconciliation/fix-round-1/stable-final-checks/integrity-assertions.log"
+        "path": "artifacts/v4-next-p1/agents/task-10-doc-reconciliation/step8-final/integrity-validation.log"
       }
     },
     "artifact_digest_manifest": {
@@ -456,5 +467,572 @@
       "sha256": "41d4d7266dbad0431e47cabc7c8f6ebf9e1aa179c6ca93a9d0591971f8d8f6b0",
       "artifact_count": 18
     }
+  },
+  "task_10_floor_qualification": {
+    "status": "PASS_LOCAL_FIXTURE_CANDIDATE; TASK_11_REVIEW_PENDING; PRODUCTION_RELEASE_HELD",
+    "plan_base_commit": "504cf18220fe445404a35d181f47491dc79304c8",
+    "application_commit": "d32005efc8b402d614b624c35fc166deeed3db65",
+    "qualification_harness_and_lock_commit": "dbc8478f8e8ce9e8ba05ddb816eb6e0e75e9f672",
+    "eligible_anchor": "69d7ab5da02cc9b8013f17b3e9aed3f7edb758a6",
+    "application_ancestry": {
+      "anchor": "69d7ab5da02cc9b8013f17b3e9aed3f7edb758a6",
+      "candidate": "d32005efc8b402d614b624c35fc166deeed3db65",
+      "command": "git merge-base --is-ancestor 69d7ab5da02cc9b8013f17b3e9aed3f7edb758a6 d32005efc8b402d614b624c35fc166deeed3db65",
+      "exit_code": 0,
+      "is_ancestor": true
+    },
+    "qualification_artifact": {
+      "path": "artifacts/v4-next-p1/agents/task-10-floor-qualification/candidate-d32005e/worker-qualification.json",
+      "sha256": "2028f7f30e8c19933308f1044ae49ca7b85698a52bcc7c773a596a1367fecb8b"
+    },
+    "red_green_results": [
+      {
+        "case": "per-reason concurrency and crash-after-commit acceptance",
+        "red": "Four-node matrix failed because the stored hold snapshot and expanded named liability snapshot disagreed; migration 0042 requires its original 16-key immutable snapshot, so the test was separated into an unchanged 16-key INSERT projection and full before/after liability projection.",
+        "green": "4 passed in 88.23s; both reasons converge to one stable hold under concurrent exact insertion and exact replay after process death, with complete named liabilities unchanged."
+      },
+      {
+        "case": "launch gate presence and closed entrypoint behavior",
+        "red": "Initial floor suite failed collection because publication_recovery_compatibility was absent; additional gate tests exposed Docker/Compose still using the prior source install path.",
+        "green": "Final Task 10 focused matrix passed 17 tests; launch gate, closed worker kinds, explicit mode, exact lock, path and denial cases passed."
+      },
+      {
+        "case": "complete RECORD safe path resolution",
+        "red": "The in-process validator rejected the valid RECORD row ../../../bin/content before worker exec.",
+        "green": "Paired external/in-process validators resolve rows from the RECORD installation base, strictly contain them under /usr/local, require hash/size except RECORD self, reject symlink escapes and duplicate normalized targets, and pin /usr/local/bin/content; targeted regression passed 1 test."
+      },
+      {
+        "case": "Docker retained wheel install name and bytecode contract",
+        "red": "Pip rejected the retained path /opt/salience-artifacts/salience.whl as an invalid wheel filename; a later regression also failed because --no-compile was missing.",
+        "green": "The Dockerfile uses a deterministic valid wheel-name symlink to the retained bytes, installs with --no-compile, removes the alias, and keeps /opt/salience-artifacts/salience.whl; both named Docker regressions passed, final image has zero installed salience .pyc files."
+      }
+    ],
+    "test_results": {
+      "named_actual_image_two_reason_rehearsal": {
+        "test": "tests/integration/test_v4_publication_recovery_floor.py::test_floor_worker_executes_both_retained_reasons_and_second_verifier_passes",
+        "result": "1 passed in 80.32s",
+        "command": "/home/admin/Salience/.venv/bin/python .superpowers/sdd/2026-10-06-p1-publication-recovery-hold/run-task-command.py /home/admin/Salience/.venv/bin/python -m pytest -q tests/integration/test_v4_publication_recovery_floor.py::test_floor_worker_executes_both_retained_reasons_and_second_verifier_passes"
+      },
+      "final_focused_matrix": {
+        "result": "17 passed in 124.75s",
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "command": "/home/admin/Salience/.venv/bin/python .superpowers/sdd/2026-10-06-p1-publication-recovery-hold/run-task-command.py /home/admin/Salience/.venv/bin/python -m pytest -q tests/integration/test_v4_publication_recovery_floor.py tests/integration/test_v4_publication_recovery_holds.py::test_rollback_verifier_requires_both_reasons_and_unchanged_liabilities tests/integration/test_v4_publication_recovery_holds.py::test_migration_0042_schema_role_and_empty_rollback_reupgrade tests/integration/test_v4_publication_recovery_holds.py::test_direct_sql_recovery_hold_guards_race_and_populated_downgrade"
+      },
+      "full_non_live_suite": {
+        "result": "614 passed; 0 failures, errors or skips; 3 Alembic deprecation warnings",
+        "application_commit": "7878208e7a353f93bb70279ad0dd7f0760f93ec4",
+        "rerun_on_task_10_candidate": false
+      }
+    },
+    "wheel": {
+      "build_command": "/home/admin/Salience/.venv/bin/python -m pip wheel --no-deps --wheel-dir /tmp/salience-v4-p1-floor-wheel-build-d32005e .",
+      "candidate_path": "artifacts/v4-next-p1/agents/task-10-floor-qualification/candidate-d32005e/salience.whl",
+      "container_retained_path": "/opt/salience-artifacts/salience.whl",
+      "sha256": "f046f6807399fe64c5bf87610142516e2456d367249ecb68b8405e92d8e16b28",
+      "bytes": 312264,
+      "built_once_from_clean_detached_application_commit": "d32005efc8b402d614b624c35fc166deeed3db65"
+    },
+    "container_image": {
+      "compose_build_command": "SALIENCE_WHEEL_FILE=artifacts/v4-next-p1/agents/task-10-floor-qualification/candidate-d32005e/salience.whl docker compose -p salience-p1-floor-d32005e --profile application build worker",
+      "image_ref": "salience-p1-floor-d32005e-worker:latest",
+      "image_id": "sha256:9edf0f1864347a830236a20343dc3138fca21ad007cabc272772ad1e6c9a3048",
+      "installed_wheel_matches_retained_bytes": true,
+      "effects_enabled": false,
+      "fixture_publication_budget": 0
+    },
+    "complete_record_attestation": {
+      "path": "/usr/local/lib/python3.13/site-packages/salience-0.1.0.dist-info/RECORD",
+      "sha256": "ac09f63cc880efd1023614e3d466ce56771aabd305d615ecdc034f1a33facff9",
+      "rows": 172,
+      "all_nonself_rows_hash_and_size_verified": true,
+      "record_self_is_only_hash_size_exception": true,
+      "resolved_paths_contained_under": "/usr/local",
+      "runtime_import_root": "/usr/local/lib/python3.13/site-packages",
+      "console_script": {
+        "path": "/usr/local/bin/content",
+        "sha256": "f0c391a46be17bc39dedfb51a8a91d699afe81ee75a8333f16a1c12bfd8100b7",
+        "bytes": 216
+      },
+      "untracked_salience_pyc_files": 0,
+      "record_validation_passed": true
+    },
+    "source_manifest_sha256": "fc625c972fcfe73300b848782c791b710d0681c19bc062bf74e80938c909bb9e",
+    "source_pins": [
+      {
+        "git_blob": "aa7934899550eac0b0fbe4f8074a862fd3c4e0d2",
+        "path": "scripts/launch-v4-publication-worker.py",
+        "sha256": "7460531ff4d40152d78095f0ff7fbc5a2ec162f07b550eb9501be06508000363"
+      },
+      {
+        "git_blob": "33cc5363667d3de0f7166a02e15fd1720f253cfa",
+        "path": "src/salience/cycles/publication_recovery_compatibility.py",
+        "sha256": "1d6a11b90e2b67d7223f43083a75d5aecf3d3993edbf0b27c6a128a67bcf0487"
+      },
+      {
+        "git_blob": "501314dda134656e81ae09fb1a5e96dd2b395f0d",
+        "path": "src/salience/cycles/legacy_runtime.py",
+        "sha256": "20225bea677bb2e14cd3655bad948f9e585feec69668d1126ddc409ef907c595"
+      },
+      {
+        "git_blob": "3549d73c8b64f1b26ccfe5a69953bf9a7201ca77",
+        "path": "src/salience/cycles/legacy_publication_runtime.py",
+        "sha256": "3c1b0e369faa96cba3e7c2c4d0d780ba025338fa50e692e52b620f1177822556"
+      },
+      {
+        "git_blob": "ed842f8443f9c12ea193562feca7f09a40ce22aa",
+        "path": "src/salience/cycles/publication_recovery.py",
+        "sha256": "d427fe22d2cb48c552cb59ff6184087291ceb3d5658caf60296077f476b3863b"
+      },
+      {
+        "git_blob": "37b13b85e0f085e82de59cb6b8765945afd4abf6",
+        "path": "src/salience/cycles/legacy_publication.py",
+        "sha256": "17fc04db59a14d9fcc302b5284df32cadcbf0576bbda01e15ffd35416dbb3efd"
+      },
+      {
+        "git_blob": "1834fbea56153cdecb7071a6f02a84600e37a246",
+        "path": "src/salience/workflows/worker.py",
+        "sha256": "5acf9f8b4ce1595ce241245c1dcbdf84c3ad7cfe6d2fe1a7cd08853e8e73723c"
+      },
+      {
+        "git_blob": "bbdc7d3ae998f3f3a3f640babaae8b4b054d549a",
+        "path": "src/salience/workflows/publication.py",
+        "sha256": "72d24bfa52f677984277545f2f7f30888560d6c319b8389fc470a4d1786d3a4d"
+      },
+      {
+        "git_blob": "73a5fdabfc1cedaac63e79a44d1dd58c0352a330",
+        "path": "src/salience/workflows/persistence.py",
+        "sha256": "7666c2238050938f3508387aaddb472fb5e1c40585fa4523f520945965e846d5"
+      },
+      {
+        "git_blob": "53f1f60b7d9bfc9d7d143b041f9373a2d7fbca78",
+        "path": "src/salience/publication/repository.py",
+        "sha256": "2290e1a6b3a4137a7fa54901919e201b8b92c272c795107df10a52db2eed305e"
+      },
+      {
+        "git_blob": "1f5a06a3a561b86e2567f3a4039808f196c4a41c",
+        "path": "migrations/versions/0042_legacy_publication_recovery_holds.py",
+        "sha256": "99e44ea4e84c40f338d06789b2bd2e52593cd40877d1b2c016b8823b13180715"
+      }
+    ],
+    "runtime_import_pins": [
+      {
+        "module": "salience.cycles.publication_recovery_compatibility",
+        "observed_path": "/usr/local/lib/python3.13/site-packages/salience/cycles/publication_recovery_compatibility.py",
+        "sha256": "1d6a11b90e2b67d7223f43083a75d5aecf3d3993edbf0b27c6a128a67bcf0487",
+        "wheel_path": "salience/cycles/publication_recovery_compatibility.py"
+      },
+      {
+        "module": "salience.cycles.legacy_runtime",
+        "observed_path": "/usr/local/lib/python3.13/site-packages/salience/cycles/legacy_runtime.py",
+        "sha256": "20225bea677bb2e14cd3655bad948f9e585feec69668d1126ddc409ef907c595",
+        "wheel_path": "salience/cycles/legacy_runtime.py"
+      },
+      {
+        "module": "salience.cycles.legacy_publication_runtime",
+        "observed_path": "/usr/local/lib/python3.13/site-packages/salience/cycles/legacy_publication_runtime.py",
+        "sha256": "3c1b0e369faa96cba3e7c2c4d0d780ba025338fa50e692e52b620f1177822556",
+        "wheel_path": "salience/cycles/legacy_publication_runtime.py"
+      },
+      {
+        "module": "salience.cycles.publication_recovery",
+        "observed_path": "/usr/local/lib/python3.13/site-packages/salience/cycles/publication_recovery.py",
+        "sha256": "d427fe22d2cb48c552cb59ff6184087291ceb3d5658caf60296077f476b3863b",
+        "wheel_path": "salience/cycles/publication_recovery.py"
+      },
+      {
+        "module": "salience.cycles.legacy_publication",
+        "observed_path": "/usr/local/lib/python3.13/site-packages/salience/cycles/legacy_publication.py",
+        "sha256": "17fc04db59a14d9fcc302b5284df32cadcbf0576bbda01e15ffd35416dbb3efd",
+        "wheel_path": "salience/cycles/legacy_publication.py"
+      },
+      {
+        "module": "salience.workflows.worker",
+        "observed_path": "/usr/local/lib/python3.13/site-packages/salience/workflows/worker.py",
+        "sha256": "5acf9f8b4ce1595ce241245c1dcbdf84c3ad7cfe6d2fe1a7cd08853e8e73723c",
+        "wheel_path": "salience/workflows/worker.py"
+      },
+      {
+        "module": "salience.workflows.publication",
+        "observed_path": "/usr/local/lib/python3.13/site-packages/salience/workflows/publication.py",
+        "sha256": "72d24bfa52f677984277545f2f7f30888560d6c319b8389fc470a4d1786d3a4d",
+        "wheel_path": "salience/workflows/publication.py"
+      },
+      {
+        "module": "salience.workflows.persistence",
+        "observed_path": "/usr/local/lib/python3.13/site-packages/salience/workflows/persistence.py",
+        "sha256": "7666c2238050938f3508387aaddb472fb5e1c40585fa4523f520945965e846d5",
+        "wheel_path": "salience/workflows/persistence.py"
+      },
+      {
+        "module": "salience.publication.repository",
+        "observed_path": "/usr/local/lib/python3.13/site-packages/salience/publication/repository.py",
+        "sha256": "2290e1a6b3a4137a7fa54901919e201b8b92c272c795107df10a52db2eed305e",
+        "wheel_path": "salience/publication/repository.py"
+      }
+    ],
+    "interpreter": {
+      "path": "/usr/local/bin/python",
+      "sha256": "73b68fc2dac176af16098180a2c98a03ee9f1f1b02db25d42d44d782e79e2330"
+    },
+    "launcher": {
+      "path": "/run/salience-control/launch-v4-publication-worker.py",
+      "sha256": "7460531ff4d40152d78095f0ff7fbc5a2ec162f07b550eb9501be06508000363",
+      "launch_lock_path": "deployment/v4/publication-worker-launch-lock.json",
+      "launch_lock_sha256": "abd5ca958b6f649753d7a5f7c7b3311d97515fc59948db3ce3c6906e2792d727",
+      "independent_control_bundle_digest_matches": true,
+      "runtime_root": "/usr/local/lib/python3.13/site-packages",
+      "rollback_argv": [
+        "/usr/local/bin/python",
+        "/run/salience-control/launch-v4-publication-worker.py",
+        "--mode",
+        "rollback-restart",
+        "--worker-kind",
+        "legacy-fixture",
+        "--workspace-id",
+        "95416086-6229-460e-8007-90a20873d1a2",
+        "--expired-hold-operation-id",
+        "4000f343-7f68-4e03-8574-65087f465132",
+        "--cancel-hold-operation-id",
+        "06b54014-c574-4c6d-9409-0daf78767071"
+      ]
+    },
+    "two_reason_rehearsal": {
+      "workspace_id": "95416086-6229-460e-8007-90a20873d1a2",
+      "operation_ids": {
+        "expired_permit_receipt": "4000f343-7f68-4e03-8574-65087f465132",
+        "published_during_cancel": "06b54014-c574-4c6d-9409-0daf78767071"
+      },
+      "hold_ids": {
+        "expired_permit_receipt": "aa5b04bb-92e2-4559-b6af-1bde013bb2cf",
+        "published_during_cancel": "7090f32a-c8bc-4f08-894e-e4282541b515"
+      },
+      "first_verifier": {
+        "hold_ids": {
+          "expired_permit_receipt": "aa5b04bb-92e2-4559-b6af-1bde013bb2cf",
+          "published_during_cancel": "7090f32a-c8bc-4f08-894e-e4282541b515"
+        },
+        "operation_ids": {
+          "expired_permit_receipt": "4000f343-7f68-4e03-8574-65087f465132",
+          "published_during_cancel": "06b54014-c574-4c6d-9409-0daf78767071"
+        },
+        "reasons": [
+          "expired_permit_receipt",
+          "published_during_cancel"
+        ],
+        "verified": true,
+        "workspace_id": "95416086-6229-460e-8007-90a20873d1a2"
+      },
+      "second_verifier": {
+        "hold_ids": {
+          "expired_permit_receipt": "aa5b04bb-92e2-4559-b6af-1bde013bb2cf",
+          "published_during_cancel": "7090f32a-c8bc-4f08-894e-e4282541b515"
+        },
+        "operation_ids": {
+          "expired_permit_receipt": "4000f343-7f68-4e03-8574-65087f465132",
+          "published_during_cancel": "06b54014-c574-4c6d-9409-0daf78767071"
+        },
+        "reasons": [
+          "expired_permit_receipt",
+          "published_during_cancel"
+        ],
+        "verified": true,
+        "workspace_id": "95416086-6229-460e-8007-90a20873d1a2"
+      },
+      "liability_hashes_before": {
+        "expired_permit_receipt": "53404995a8a17291c4e7da82490ca133e981278a750db37d27733870b7a57933",
+        "published_during_cancel": "3e5d668b2a3d923e14f81c2437d5774ad2a63c56750b6b6a496b484ab9ccfc35"
+      },
+      "liability_hashes_after": {
+        "expired_permit_receipt": "53404995a8a17291c4e7da82490ca133e981278a750db37d27733870b7a57933",
+        "published_during_cancel": "3e5d668b2a3d923e14f81c2437d5774ad2a63c56750b6b6a496b484ab9ccfc35"
+      },
+      "hold_row_hashes_before": {
+        "expired_permit_receipt": "2cfad45932ec3a1337b95f426fe103792d58625fc712e3147295202fc2a9130a",
+        "published_during_cancel": "c23fde325499885867a815304cfb8091b2391fee3e180ba33adbd332f356cfde"
+      },
+      "hold_row_hashes_after": {
+        "expired_permit_receipt": "2cfad45932ec3a1337b95f426fe103792d58625fc712e3147295202fc2a9130a",
+        "published_during_cancel": "c23fde325499885867a815304cfb8091b2391fee3e180ba33adbd332f356cfde"
+      },
+      "projection_counts_before": {
+        "expired_permit_receipt": {
+          "accepted_checkpoints": 0,
+          "audit_events": 4,
+          "checkpoints": 3,
+          "provenance_records": 1,
+          "recovery_checkpoints": 0,
+          "remote_receipts": 0,
+          "status_events": 0
+        },
+        "published_during_cancel": {
+          "accepted_checkpoints": 1,
+          "audit_events": 6,
+          "checkpoints": 4,
+          "provenance_records": 2,
+          "recovery_checkpoints": 0,
+          "remote_receipts": 1,
+          "status_events": 2
+        }
+      },
+      "projection_counts_after": {
+        "expired_permit_receipt": {
+          "accepted_checkpoints": 0,
+          "audit_events": 4,
+          "checkpoints": 3,
+          "provenance_records": 1,
+          "recovery_checkpoints": 0,
+          "remote_receipts": 0,
+          "status_events": 0
+        },
+        "published_during_cancel": {
+          "accepted_checkpoints": 1,
+          "audit_events": 6,
+          "checkpoints": 4,
+          "provenance_records": 2,
+          "recovery_checkpoints": 0,
+          "remote_receipts": 1,
+          "status_events": 2
+        }
+      },
+      "worker_runs": [
+        {
+          "reason": "expired_permit_receipt",
+          "operation_id": "4000f343-7f68-4e03-8574-65087f465132",
+          "hold_id": "aa5b04bb-92e2-4559-b6af-1bde013bb2cf",
+          "workflow_status": "FAILED",
+          "typed_failure": {
+            "details": [
+              {
+                "hold_id": "aa5b04bb-92e2-4559-b6af-1bde013bb2cf"
+              }
+            ],
+            "type": "LegacyPublicationRecoveryHeld"
+          },
+          "launcher_argv": [
+            "/usr/local/bin/python",
+            "/run/salience-control/launch-v4-publication-worker.py",
+            "--mode",
+            "rollback-restart",
+            "--worker-kind",
+            "legacy-fixture",
+            "--workspace-id",
+            "95416086-6229-460e-8007-90a20873d1a2",
+            "--expired-hold-operation-id",
+            "4000f343-7f68-4e03-8574-65087f465132",
+            "--cancel-hold-operation-id",
+            "06b54014-c574-4c6d-9409-0daf78767071"
+          ],
+          "image_id": "sha256:9edf0f1864347a830236a20343dc3138fca21ad007cabc272772ad1e6c9a3048",
+          "effects_enabled": false,
+          "restarted_activity_types": [
+            "salience.publication.submit_or_reconcile"
+          ],
+          "provider_call_instrumentation": {
+            "adapter_counter_availability": {
+              "status_count": "not exposed by the fixture adapter",
+              "submit_count": "process-local; not exported by the fixture worker"
+            },
+            "basis": "The pinned image history shows only the reason-specific guarded activity; its logged typed-hold branch exits before provider submit/status paths, and the fixture progress plus full liabilities are unchanged.",
+            "fixture_progress_after": {
+              "operation_id": "4000f343-7f68-4e03-8574-65087f465132",
+              "polls": 0,
+              "state": "accepted",
+              "updated_at": "2026-10-13T03:50:36.798071+00:00"
+            },
+            "fixture_progress_before": {
+              "operation_id": "4000f343-7f68-4e03-8574-65087f465132",
+              "polls": 0,
+              "state": "accepted",
+              "updated_at": "2026-10-13T03:50:36.798071+00:00"
+            },
+            "provider_status_calls": 0,
+            "provider_submit_calls": 0,
+            "restarted_activity_types": [
+              "salience.publication.submit_or_reconcile"
+            ],
+            "typed_hold_frame": "in submit_or_reconcile",
+            "worker_log_sha256": "8e48cb693ad8e1b1dbb06c60678f1cc68d460645be9b1719455d20cd532b4245"
+          },
+          "worker_log_sha256": "8e48cb693ad8e1b1dbb06c60678f1cc68d460645be9b1719455d20cd532b4245",
+          "container_state_after_stop": "exited",
+          "mounts": [
+            {
+              "destination": "/run/salience-control/launch-v4-publication-worker.py",
+              "read_write": false,
+              "source": "/tmp/salience-v4-p1-recovery-20261006/artifacts/v4-next-p1/agents/task-10-floor-qualification/candidate-d32005e/control-bundle/launch-v4-publication-worker.py"
+            },
+            {
+              "destination": "/run/salience-control/publication-worker-launch-lock.json",
+              "read_write": false,
+              "source": "/tmp/salience-v4-p1-recovery-20261006/artifacts/v4-next-p1/agents/task-10-floor-qualification/candidate-d32005e/control-bundle/publication-worker-launch-lock.json"
+            },
+            {
+              "destination": "/run/salience-control/publication-worker-launch-lock.sha256",
+              "read_write": false,
+              "source": "/tmp/salience-v4-p1-recovery-20261006/artifacts/v4-next-p1/agents/task-10-floor-qualification/candidate-d32005e/control-bundle/publication-worker-launch-lock.sha256"
+            }
+          ]
+        },
+        {
+          "reason": "published_during_cancel",
+          "operation_id": "06b54014-c574-4c6d-9409-0daf78767071",
+          "hold_id": "7090f32a-c8bc-4f08-894e-e4282541b515",
+          "workflow_status": "FAILED",
+          "typed_failure": {
+            "details": [
+              {
+                "hold_id": "7090f32a-c8bc-4f08-894e-e4282541b515"
+              }
+            ],
+            "type": "LegacyPublicationRecoveryHeld"
+          },
+          "launcher_argv": [
+            "/usr/local/bin/python",
+            "/run/salience-control/launch-v4-publication-worker.py",
+            "--mode",
+            "rollback-restart",
+            "--worker-kind",
+            "legacy-fixture",
+            "--workspace-id",
+            "95416086-6229-460e-8007-90a20873d1a2",
+            "--expired-hold-operation-id",
+            "4000f343-7f68-4e03-8574-65087f465132",
+            "--cancel-hold-operation-id",
+            "06b54014-c574-4c6d-9409-0daf78767071"
+          ],
+          "image_id": "sha256:9edf0f1864347a830236a20343dc3138fca21ad007cabc272772ad1e6c9a3048",
+          "effects_enabled": false,
+          "restarted_activity_types": [
+            "salience.publication.cancel"
+          ],
+          "provider_call_instrumentation": {
+            "adapter_counter_availability": {
+              "status_count": "not exposed by the fixture adapter",
+              "submit_count": "process-local; not exported by the fixture worker"
+            },
+            "basis": "The pinned image history shows only the reason-specific guarded activity; its logged typed-hold branch exits before provider submit/status paths, and the fixture progress plus full liabilities are unchanged.",
+            "fixture_progress_after": {
+              "operation_id": "06b54014-c574-4c6d-9409-0daf78767071",
+              "polls": 2,
+              "state": "published",
+              "updated_at": "2026-10-13T03:50:31.695384+00:00"
+            },
+            "fixture_progress_before": {
+              "operation_id": "06b54014-c574-4c6d-9409-0daf78767071",
+              "polls": 2,
+              "state": "published",
+              "updated_at": "2026-10-13T03:50:31.695384+00:00"
+            },
+            "provider_status_calls": 0,
+            "provider_submit_calls": 0,
+            "restarted_activity_types": [
+              "salience.publication.cancel"
+            ],
+            "typed_hold_frame": "in cancel",
+            "worker_log_sha256": "e3da916468b94f814f6bd54cc624bcfb206fe6f1b0f953fedc6a8469da6a5a5d"
+          },
+          "worker_log_sha256": "e3da916468b94f814f6bd54cc624bcfb206fe6f1b0f953fedc6a8469da6a5a5d",
+          "container_state_after_stop": "exited",
+          "mounts": [
+            {
+              "destination": "/run/salience-control/launch-v4-publication-worker.py",
+              "read_write": false,
+              "source": "/tmp/salience-v4-p1-recovery-20261006/artifacts/v4-next-p1/agents/task-10-floor-qualification/candidate-d32005e/control-bundle/launch-v4-publication-worker.py"
+            },
+            {
+              "destination": "/run/salience-control/publication-worker-launch-lock.json",
+              "read_write": false,
+              "source": "/tmp/salience-v4-p1-recovery-20261006/artifacts/v4-next-p1/agents/task-10-floor-qualification/candidate-d32005e/control-bundle/publication-worker-launch-lock.json"
+            },
+            {
+              "destination": "/run/salience-control/publication-worker-launch-lock.sha256",
+              "read_write": false,
+              "source": "/tmp/salience-v4-p1-recovery-20261006/artifacts/v4-next-p1/agents/task-10-floor-qualification/candidate-d32005e/control-bundle/publication-worker-launch-lock.sha256"
+            }
+          ]
+        }
+      ]
+    },
+    "denial_matrix": {
+      "a4": {
+        "exit_code": 78,
+        "worker_exec_reached": false,
+        "diagnostic": "publication worker launch denied: launch-lock bytes do not match independent trust root"
+      },
+      "a4_authenticated_candidate": {
+        "exit_code": 78,
+        "worker_exec_reached": false,
+        "diagnostic": "publication worker launch denied: publication worker application commit is prohibited"
+      },
+      "a4_interpreter": {
+        "exit_code": 78,
+        "worker_exec_reached": false,
+        "diagnostic": "publication worker launch denied: publication worker interpreter path is not fixed"
+      },
+      "a4_module_path": {
+        "exit_code": 78,
+        "worker_exec_reached": false,
+        "diagnostic": "publication worker launch denied: publication worker import path does not match its RECORD pin: salience.workflows.publication"
+      },
+      "a4_runtime_root": {
+        "exit_code": 78,
+        "worker_exec_reached": false,
+        "diagnostic": "publication worker launch denied: publication worker source pin mismatch: src/salience/cycles/legacy_runtime.py"
+      },
+      "cross_workspace": {
+        "exit_code": 78,
+        "worker_exec_reached": false,
+        "diagnostic": "publication worker launch denied: Traceback (most recent call last):"
+      },
+      "pre_floor": {
+        "exit_code": 78,
+        "worker_exec_reached": false,
+        "diagnostic": "publication worker launch denied: launch-lock bytes do not match independent trust root"
+      },
+      "pre_floor_authenticated_candidate": {
+        "exit_code": 78,
+        "worker_exec_reached": false,
+        "diagnostic": "publication worker launch denied: publication worker application commit is prohibited"
+      },
+      "self_generated_lock_and_untrusted_matching_digest": {
+        "exit_code": 78,
+        "worker_exec_reached": false,
+        "diagnostic": "publication worker launch denied: launch-lock bytes do not match independent trust root"
+      },
+      "unknown": {
+        "exit_code": 78,
+        "worker_exec_reached": false,
+        "diagnostic": "publication worker launch denied: launch-lock bytes do not match independent trust root"
+      },
+      "unpinned_same_history_descendant": {
+        "exit_code": 78,
+        "worker_exec_reached": false,
+        "diagnostic": "publication worker launch denied: launch-lock bytes do not match independent trust root"
+      },
+      "unrelated_history": {
+        "exit_code": 78,
+        "worker_exec_reached": false,
+        "diagnostic": "publication worker launch denied: launch-lock bytes do not match independent trust root"
+      }
+    },
+    "release_boundaries": {
+      "production_effects_enabled": false,
+      "fixture_publication_budget": 0,
+      "RG0": "HELD",
+      "RG1": "HELD",
+      "P2-P7": "GATED",
+      "P6": "DISABLED",
+      "main": "UNMERGED",
+      "task_11_independent_review": "PENDING",
+      "supported_floor_claim": "PENDING_TASK_11"
+    },
+    "known_limitations": [
+      "This is disposable effects-disabled fixture evidence only; no production provider, account, schedule-routing, recovery-worker or alert claim is made.",
+      "The full 614-test non-live suite is bound to 7878208 and was not rerun for d32005e.",
+      "The fixture adapter does not expose a status counter and its submit counter is process-local; the actual image proof combines Temporal activity-history deltas, pinned worker logs/typed-hold frames, no await activity, zero observed submit/status calls, unchanged fixture progress, and byte-identical liabilities.",
+      "Task 11 independent review, meta-review, final artifact rerun and exact-head checks remain pending."
+    ]
   }
 }

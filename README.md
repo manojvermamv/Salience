@@ -4,9 +4,9 @@ Salience is a self-hostable, provider-neutral content operating system built aro
 
 ## Current status and evidence
 
-The current application candidate is `7878208e7a353f93bb70279ad0dd7f0760f93ec4`. Tasks 1–7 implement corrected parallel parent status and durable publication recovery holds; Task 8 qualified **116 focused tests**, compileall and a two-reason rollback rehearsal with stable hold IDs and unchanged liabilities through a local worker drain. The clean template0-database full non-live suite passed **614 tests** with 0 failures, errors or skips and 3 Alembic deprecation warnings (917.37s pytest; 920.214s runner). Its disposable database was dropped and the original preserved. See the [current publication recovery-hold evidence](docs/v4/publication-recovery-hold-evidence.json).
+The current Task 10 application candidate is `d32005efc8b402d614b624c35fc166deeed3db65`, with the artifact-qualification harness and tracked launch lock at `dbc8478f8e8ce9e8ba05ddb816eb6e0e75e9f672`. Its retained-wheel, effects-disabled fixture rehearsal passed for both publication hold reasons; the 17-test focused matrix and separate named image rehearsal passed. Task 11's independent review, meta-review, final artifact rerun and exact-head checks remain pending, so this is not yet the supported floor. The last full non-live suite passed **614 tests** on earlier candidate `7878208e7a353f93bb70279ad0dd7f0760f93ec4`; that result has not been rerun on `d32005e`. See the [current publication recovery-hold evidence](docs/v4/publication-recovery-hold-evidence.json).
 
-The corrected-publication rereview returned `NO_FINDINGS_WITHIN_REVIEWED_FIXTURE_CORRECTION_SCOPE` for application `a4b2368cdb463939d093020224a5b5667392aee6`, with documentation and observed HEAD `d0311725686d81b7b4747c2d6225986e5ea3a524`; its meta-review returned `ACCEPT`. That review predates Tasks 1–8 and does not review `7878208`.
+The corrected-publication rereview returned `NO_FINDINGS_WITHIN_REVIEWED_FIXTURE_CORRECTION_SCOPE` for application `a4b2368cdb463939d093020224a5b5667392aee6`, with documentation and observed HEAD `d0311725686d81b7b4747c2d6225986e5ea3a524`; its meta-review returned `ACCEPT`. That review covers only its A4 correction scope and does not review the current Task 10 candidate.
 
 **Historical publication qualification:** `a4b2368cdb463939d093020224a5b5667392aee6` passed **21 focused / 604 full non-live tests**, with **352 source hashes**, for the original legacy intelligence, selected-brief, no-send dummy, dry-creative, governed-publication stages and both original native schedule conversions. It used isolated fixtures, a zero publication budget and disabled effects. See the [historical application evidence](docs/v4/legacy-publication-evidence.json).
 
@@ -16,7 +16,7 @@ The parallel-agent extension remains a separately scoped fixture result at `2653
 
 | Area | Current evidence | Production status |
 | --- | --- | --- |
-| Task 1–8 publication recovery increment | 116 focused tests, rollback rehearsal and 614-test full non-live suite pass in local fixtures at `7878208` | Effects disabled; RG0 and RG1 are **HELD** |
+| Task 1–10 publication recovery candidate | The `d32005e` pinned image passed both-reason local fixture recovery; Task 10 focused matrix: 17 passed | Task 11 review remains pending; effects disabled; RG0 and RG1 are **HELD** |
 | Historical original legacy stages and native schedules | Locally qualified at application `a4b2368` within the dated 21/604/352 fixture evidence | No live provider or production schedule routing qualification |
 | Later phases | P2–P7 gated/planned; optional P6 disabled | Not released |
 | Main branch | `8e50d68efbf2bec2aabfb2fe3226e01635de2adb` | Unmerged; formal independent PR approval remains NOT RUN |
@@ -188,7 +188,7 @@ Patched workflow histories require compatible workers through rollback. Local fi
 
 ## What is and is not production-ready
 
-The local results qualify specific no-effects fixtures. They do not qualify live providers, real production accounts, nonzero publication budgets, production schedule inventory or routing, production-wide recovery and alert delivery, later-phase records, or a full RG1 release. The application and CI evidence above answer separate questions: `a4b2368…` is the source-bound local application qualification; `a2e73c7…` is the published feature/documentation checkpoint; run `37346137016` is the exact-head GitHub CI readback for that checkpoint. The corrected-publication rereview is complete only for application `a4b2368` with documentation/observed HEAD `d031172`; it does not review `7878208`. No CI or PR approval is claimed for `7878208`.
+The local results qualify specific no-effects fixtures. They do not qualify live providers, real production accounts, nonzero publication budgets, production schedule inventory or routing, production-wide recovery and alert delivery, later-phase records, or a full RG1 release. The application and CI evidence answer separate questions: `a4b2368…` is the historical source-bound qualification; `a2e73c7…` is the published feature/documentation checkpoint; run `37346137016` is the exact-head GitHub CI readback for that checkpoint. The corrected-publication rereview covers only application `a4b2368` with documentation/observed HEAD `d031172`; it does not review Task 10 candidate `d32005e`. No CI or PR approval is claimed for `d32005e`.
 
 Production effects remain disabled. RG0 and RG1 are **HELD**. P2–P7 remain gated/planned, optional P6 remains disabled, and `main` remains at `8e50d68efbf2bec2aabfb2fe3226e01635de2adb` without this feature merged. Production is not fully integrated or released.
 

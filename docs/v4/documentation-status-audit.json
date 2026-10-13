@@ -1,13 +1,12 @@
 {
-  "audited_at": "2026-10-06T14:38:00Z",
+  "audited_at": "2026-10-13",
   "base_commit": "7878208e7a353f93bb70279ad0dd7f0760f93ec4",
-  "scope": "Active documentation and durable V4 ledgers reconcile Task 1–8 local fixture results and the clean-database non-live suite at application candidate 7878208. Historical A4 21/604/352 and 2653d2e parallel evidence retain their original scope. The corrected-publication rereview is only A4 with documentation/observed HEAD d031172. The user-authored AGENTS.md and 14 historical exact-banner snapshots remain byte-preserved.",
+  "scope": "Active documentation and durable V4 ledgers reconcile Task 10 local retained-wheel publication-worker qualification at application candidate d32005e. The test-only harness/launch-lock commit is dbc8478. The 614-test full non-live suite remains bound to 7878208; Task 11 review gates and production release remain pending/held. Historical A4, AgentTube reference-only, and 2653d2e parallel evidence retain their original scopes.",
   "tracked_markdown_files": 88,
   "documentation_artifacts": 246,
   "summary": {
     "preserved plugin instructions, references and examples; independent skill scope": 57,
     "active user-authored project instructions; preserved verbatim": 1,
-    "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds": 70,
     "preserved original design source or historical diagram": 7,
     "preserved immutable historical snapshot; bytes retained verbatim": 1,
     "preserved immutable historical snapshot": 62,
@@ -15,7 +14,6 @@
     "preserved dated qualification report": 15,
     "preserved source, archive or coverage manifest": 4,
     "current documentation audit; self hash omitted to avoid a recursive digest": 1,
-    "current 356-file content lock for application candidate 7878208; this is a hash boundary, not an independent code review": 1,
     "preserved dated independent item7 qualification report": 6,
     "preserved dated preparation report": 1,
     "durable local canonical dry creative qualification report": 1,
@@ -26,43 +24,49 @@
     "preserved dated legacy brief and scheduled ingress qualification report": 1,
     "preserved dated original native schedule qualification report": 1,
     "current release ledger; 614-test clean-database fixture qualification PASS, production release remains HELD": 1,
-    "current Task 1–8 local publication recovery-hold fixture matrix; R18/R32 advance locally, production gates remain HELD": 1,
     "preserved dated parallel qualification report": 1,
     "durable current source-bound local publication recovery-hold evidence; production remains HELD": 1,
-    "preserved historical exact-commit readback for published base 4bbffb6; current 20be781 readback is separately recorded": 1
+    "preserved historical exact-commit readback for published base 4bbffb6; current 20be781 readback is separately recorded": 1,
+    "active project Markdown aligned with Task 10 publication recovery-hold candidate results and retained production holds": 70,
+    "current 360-file content lock for Task 10 qualification checkout; application candidate d32005e and harness commit dbc8478; hash boundary, not an independent code review": 1,
+    "current Task 10 local publication recovery-hold fixture qualification; R18/R32 advance in fixture scope, production gates remain HELD": 1
   },
-  "application_source_files_verified": 356,
+  "application_source_files_verified": 360,
   "prior_application_files_preserved": 347,
   "prior_application_files_updated": [
-    "src/salience/agents/parallel_store.py",
-    "src/salience/cycles/legacy_dispatch.py",
+    "Dockerfile",
+    "compose.yaml",
+    "migrations/versions/0042_legacy_publication_recovery_holds.py",
     "src/salience/cycles/legacy_publication_runtime.py",
-    "tests/integration/test_durable_parallel_teams.py",
-    "tests/integration/test_v4_legacy_publication.py"
+    "src/salience/cycles/legacy_runtime.py",
+    "src/salience/cycles/publication_recovery.py",
+    "src/salience/workflows/worker.py",
+    "tests/integration/test_v4_legacy_publication.py",
+    "tests/integration/test_v4_publication_recovery_holds.py"
   ],
   "application_files_added": [
-    "migrations/versions/0042_legacy_publication_recovery_holds.py",
-    "scripts/verify-v4-publication-recovery-rollback.py",
-    "src/salience/cycles/publication_recovery.py",
-    "tests/integration/test_v4_publication_recovery_holds.py"
+    "scripts/launch-v4-publication-worker.py",
+    "src/salience/cycles/publication_recovery_compatibility.py",
+    "tests/fixtures/v4_publication_floor_worker.py",
+    "tests/integration/test_v4_publication_recovery_floor.py"
   ],
   "mermaid_source_blocks_preserved": 13,
   "item7_status": "COMPLETE_IMPLEMENTED_LOCAL_FIXTURE_QUALIFICATION; historical item7 scope preserved",
-  "independent_review": "Corrected-publication rereview returned NO_FINDINGS_WITHIN_REVIEWED_FIXTURE_CORRECTION_SCOPE for application a4b2368cdb463939d093020224a5b5667392aee6 with documentation/observed HEAD d0311725686d81b7b4747c2d6225986e5ea3a524; meta-review ACCEPT, zero issues. The review predates and does not review 7878208. Task 8 evidence review PASS with zero findings within its bounded evidence scope; no production or current all-row approval is implied.",
+  "independent_review": "Corrected-publication rereview and meta-review apply only to A4/d031172. Task 10 candidate d32005e has not received independent review; Task 11 review remains pending.",
   "next_queue_item": null,
   "production_effects_enabled": false,
   "RG0": "HELD",
   "RG1": "HELD",
   "verification": {
-    "status": "PASS_LOCAL_FIXTURE_SCOPE; CURRENT_FULL_NON_LIVE_614_PASS; PRODUCTION_RELEASE_HELD",
-    "documentation_tests": "PASS: 15 documentation tests; checker and self-test PASS (75 requirements, 2 source files, 356 evidence files, 360 inventory files, 6 negative controls); all 4 shell contracts and 6 Mermaid diagrams passed; 6 modified JSON files parsed; pip check, compileall, 14 historical hash checks, 356-file application evidence-lock validation, and git diff --check passed.",
+    "status": "PASS_LOCAL_TASK_10_FIXTURE_SCOPE; FULL_NON_LIVE_614_BOUND_TO_7878208; PRODUCTION_RELEASE_HELD",
+    "documentation_tests": "PASS: 15 documentation tests; checker and self-test PASS (75 requirements, 2 source files, 360 evidence files, 360 inventory files, 6 negative controls); all 4 shell contracts and 6 Mermaid diagrams passed; 5 modified JSON files parsed; pip check, compileall, 14 historical hash checks, 360-file application evidence-lock validation, and git diff --check passed.",
     "mapped_obligations": 75,
     "negative_controls": 6,
     "documentation_shell_contracts": 4,
     "preserved_documentation_artifacts": 165,
     "independent_reviewers": 3,
     "reviewed_p1_rows": 17,
-    "independent_review_scope": "COMPLETE for application a4b2368cdb463939d093020224a5b5667392aee6 with documentation/observed HEAD d0311725686d81b7b4747c2d6225986e5ea3a524; this review does not cover 7878208. Task 8 evidence review is bounded to the local recovery-hold evidence; production review remains HELD.",
+    "independent_review_scope": "No independent review is claimed for Task 10 candidate d32005e. Task 11 review/meta-review/final artifact checks remain pending. The corrected-publication rereview applies only to A4/d031172; production acceptance remains HELD.",
     "tracked_markdown_files": 88,
     "active_project_markdown_files": 70,
     "active_integration_contracts": 1,
@@ -149,11 +153,11 @@
       "docs/v4/validation.md",
       "docs/verification.md",
       "docs/workflows.md",
-      "prompts/Build Creative Production Loop — Phases 7–8 End-to-End.md",
-      "prompts/Build Phase 10 — Multi-Platform Production Publishing, Analytics, Attribution & Experiments.md",
-      "prompts/Build Phases 1–4 End-to-End.md",
-      "prompts/Build Real Intelligence Loop — Pre-Phase 5 + Phases 5–6 End-to-End.md",
-      "prompts/Complete Phase 7–8 Release Gate, Then Build Phase 9 Governed Publishing.md",
+      "prompts/Build Creative Production Loop \u2014 Phases 7\u20138 End-to-End.md",
+      "prompts/Build Phase 10 \u2014 Multi-Platform Production Publishing, Analytics, Attribution & Experiments.md",
+      "prompts/Build Phases 1\u20134 End-to-End.md",
+      "prompts/Build Real Intelligence Loop \u2014 Pre-Phase 5 + Phases 5\u20136 End-to-End.md",
+      "prompts/Complete Phase 7\u20138 Release Gate, Then Build Phase 9 Governed Publishing.md",
       "prompts/Install and Verify Browser Evidence on Linux EC2.md"
     ],
     "mermaid_source_blocks_preserved": 13,
@@ -175,12 +179,12 @@
       "documentation_checker_requirements": 75,
       "documentation_shell_contracts": 4,
       "mermaid_diagrams": 6,
-      "modified_json_files_parsed": 6,
+      "modified_json_files_parsed": 5,
       "pip_check": "PASS",
       "compileall": "PASS",
       "git_diff_check": "PASS",
       "historical_paths_verified": 14,
-      "source_lock_files_verified": 356,
+      "source_lock_files_verified": 360,
       "documentation_artifacts_recomputed": 246,
       "tracked_markdown_files_recomputed": 88,
       "active_project_markdown_files_recomputed": 70
@@ -479,8 +483,8 @@
     },
     {
       "path": "README.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "386307688ab816d732f09a63c52d39fbdd77bb6f601796937cf1ad3376c85b97"
+      "disposition": "active project Markdown aligned with Task 10 publication recovery-hold candidate results and retained production holds",
+      "sha256": "233ff50cdd647a847902cf757cfbbdb862bd7e8fb39c9064e02c3904d4bf46a3"
     },
     {
       "path": "docs-new-arch/ArchCurrent.mermaid",
@@ -519,57 +523,57 @@
     },
     {
       "path": "docs-new-arch/README.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
+      "disposition": "active project Markdown aligned with Task 1\u20138 publication recovery-hold fixture results and retained production holds",
       "sha256": "4547ad5d160941ea5b9723fe0167fe6aa19bb6077f36d375d4bb26190260c493"
     },
     {
       "path": "docs/README.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "5c46c4e4975575c9c95aedcd4e4e7b6bb9a3b588d5ea99d96ea132f6e1fd608e"
+      "disposition": "active project Markdown aligned with Task 1\u20138 publication recovery-hold fixture results and retained production holds",
+      "sha256": "8d18bd72ce3b66cb195224282edac21d44e7408946a4e51ebeb4fdf95f195611"
     },
     {
       "path": "docs/adr/0001-durable-runtime.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
+      "disposition": "active project Markdown aligned with Task 1\u20138 publication recovery-hold fixture results and retained production holds",
       "sha256": "f29a411d110a13b70cfa4843c3d7dbecd0e44609ad37649e2dd8469d52b70a0d"
     },
     {
       "path": "docs/adr/0002-object-storage.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
+      "disposition": "active project Markdown aligned with Task 1\u20138 publication recovery-hold fixture results and retained production holds",
       "sha256": "140c2bb3a1ad9e1a3817ba674e0ed4524ff585be8d93b739b22d8561144edb75"
     },
     {
       "path": "docs/adr/0003-api-persistence-and-contracts.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
+      "disposition": "active project Markdown aligned with Task 1\u20138 publication recovery-hold fixture results and retained production holds",
       "sha256": "3e542747777dc63d78d9e2747b4b078fa11ddb6c108ec4c437b17a19e8f6f5c2"
     },
     {
       "path": "docs/adr/0004-governance-secrets-and-protocols.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
+      "disposition": "active project Markdown aligned with Task 1\u20138 publication recovery-hold fixture results and retained production holds",
       "sha256": "d72fcb1e8aff2e85e551d20a4008d51fa8add8ded818bfdd07d07eca7845d4a1"
     },
     {
       "path": "docs/adr/0005-mcp-a2a-and-browser-sdk-adoption.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
+      "disposition": "active project Markdown aligned with Task 1\u20138 publication recovery-hold fixture results and retained production holds",
       "sha256": "14a1c01fa6a5d26d878d6be1e13e580375c16606ac88dde0bb9f01c7ee9fc76b"
     },
     {
       "path": "docs/adr/0006-governed-publishing.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
+      "disposition": "active project Markdown aligned with Task 1\u20138 publication recovery-hold fixture results and retained production holds",
       "sha256": "53c04388bc53d731a860cea198a3227b8ce571b97f9fe3edbcf96f924b414acd"
     },
     {
       "path": "docs/agents.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
+      "disposition": "active project Markdown aligned with Task 1\u20138 publication recovery-hold fixture results and retained production holds",
       "sha256": "4e2b6309ecd5faf32e3118ddf3824bc58e3225367346f21fd80309412cf8bc15"
     },
     {
       "path": "docs/api.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
+      "disposition": "active project Markdown aligned with Task 1\u20138 publication recovery-hold fixture results and retained production holds",
       "sha256": "ef2fe6d08dfd2e45e2733f239d4931d0db0e6fe7349af8104cf2d61b4fa402ab"
     },
     {
       "path": "docs/architecture.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
+      "disposition": "active project Markdown aligned with Task 1\u20138 publication recovery-hold fixture results and retained production holds",
       "sha256": "dafd82f8c73e3d43e6b5bfd1dde39b0f83a505aeb5675f831d0458551b5bdf53"
     },
     {
@@ -858,27 +862,27 @@
       "sha256": "6301ff82f4816f7300de6b1101b802e5af27475219faa9241a79e9a91b5e12b1"
     },
     {
-      "path": "docs/archive/2026-09-22/prompts/Build Creative Production Loop — Phases 7–8 End-to-End.md.snapshot.b64",
+      "path": "docs/archive/2026-09-22/prompts/Build Creative Production Loop \u2014 Phases 7\u20138 End-to-End.md.snapshot.b64",
       "disposition": "preserved immutable historical snapshot",
       "sha256": "968ff9305b92e00907c7a2b7e493959b8f66c64f05bc431c975c1ca97d75b9e0"
     },
     {
-      "path": "docs/archive/2026-09-22/prompts/Build Phase 10 — Multi-Platform Production Publishing, Analytics, Attribution & Experiments.md.snapshot.b64",
+      "path": "docs/archive/2026-09-22/prompts/Build Phase 10 \u2014 Multi-Platform Production Publishing, Analytics, Attribution & Experiments.md.snapshot.b64",
       "disposition": "preserved immutable historical snapshot",
       "sha256": "bb7ee354bb59b4f599aeef44e0a18b17f1f672826454621ed56b0f1055aa55ed"
     },
     {
-      "path": "docs/archive/2026-09-22/prompts/Build Phases 1–4 End-to-End.md.snapshot",
+      "path": "docs/archive/2026-09-22/prompts/Build Phases 1\u20134 End-to-End.md.snapshot",
       "disposition": "preserved immutable historical snapshot",
       "sha256": "4486a0868585423a951e1a874eb55714cd35242963f9a0f47c9d53420d7c101a"
     },
     {
-      "path": "docs/archive/2026-09-22/prompts/Build Real Intelligence Loop — Pre-Phase 5 + Phases 5–6 End-to-End.md.snapshot.b64",
+      "path": "docs/archive/2026-09-22/prompts/Build Real Intelligence Loop \u2014 Pre-Phase 5 + Phases 5\u20136 End-to-End.md.snapshot.b64",
       "disposition": "preserved immutable historical snapshot",
       "sha256": "d009ce7b7d6b309591554a39a9841afaf8b470ff63a366d134a9535fdf977a93"
     },
     {
-      "path": "docs/archive/2026-09-22/prompts/Complete Phase 7–8 Release Gate, Then Build Phase 9 Governed Publishing.md.snapshot.b64",
+      "path": "docs/archive/2026-09-22/prompts/Complete Phase 7\u20138 Release Gate, Then Build Phase 9 Governed Publishing.md.snapshot.b64",
       "disposition": "preserved immutable historical snapshot",
       "sha256": "6f3bd7a20b4831fc95da3583d636ea6f4b6cccfa3e270425027cec63a6bcec95"
     },
@@ -889,152 +893,152 @@
     },
     {
       "path": "docs/bootstrap.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
+      "disposition": "active project Markdown aligned with Task 1\u20138 publication recovery-hold fixture results and retained production holds",
       "sha256": "18ca9c8ae9749b78163489c8c351483564d8cb891f1be5c784af91bb3db830d2"
     },
     {
       "path": "docs/compatibility.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
+      "disposition": "active project Markdown aligned with Task 1\u20138 publication recovery-hold fixture results and retained production holds",
       "sha256": "cda8240346ff1bd77bceb0be18a1f87a0d3bad99bc52e9424d15850aa6417d09"
     },
     {
       "path": "docs/contracts/adapter-contracts.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
+      "disposition": "active project Markdown aligned with Task 1\u20138 publication recovery-hold fixture results and retained production holds",
       "sha256": "f20bded6d85611a5d52d437c6776f2767278a84e9d8dc78583ddd167ce400eca"
     },
     {
       "path": "docs/core/00_BUILD_AGENT_PROMPT.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
+      "disposition": "active project Markdown aligned with Task 1\u20138 publication recovery-hold fixture results and retained production holds",
       "sha256": "5ac7307307c1d896a15c755c85806902798f0605ad54575edc621e62ff6169dd"
     },
     {
       "path": "docs/core/01_PRODUCT_CONTEXT_AND_INTENT.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
+      "disposition": "active project Markdown aligned with Task 1\u20138 publication recovery-hold fixture results and retained production holds",
       "sha256": "f7a6d8bfa11bb17af391e57f3befe8c645088ab62a9a01cffbfd40573fc42182"
     },
     {
       "path": "docs/core/02_REFERENCE_RESEARCH.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
+      "disposition": "active project Markdown aligned with Task 1\u20138 publication recovery-hold fixture results and retained production holds",
       "sha256": "45f9a821f8a41f3dc4da83a4cf6b6ccdcdbbcb177b41246a10b76d36627b1633"
     },
     {
       "path": "docs/core/03_TARGET_ARCHITECTURE.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
+      "disposition": "active project Markdown aligned with Task 1\u20138 publication recovery-hold fixture results and retained production holds",
       "sha256": "6daa3e56ce15ad89f83fe58f5ad4b12959fbcc9c540ab1166749030aa466e367"
     },
     {
       "path": "docs/core/04_BROWSER_APP_AND_RESEARCH_CONTROL.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
+      "disposition": "active project Markdown aligned with Task 1\u20138 publication recovery-hold fixture results and retained production holds",
       "sha256": "f21070ce398b739cea83c90b90775b4160057b99c9418a9c38d16adf962bfebb"
     },
     {
       "path": "docs/core/05_IMPLEMENTATION_PLAN.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
+      "disposition": "active project Markdown aligned with Task 1\u20138 publication recovery-hold fixture results and retained production holds",
       "sha256": "01cb1691e9ee1ad58cceb2369615a110491d690b70212f4ae64363372e3029e3"
     },
     {
       "path": "docs/core/06_ACCEPTANCE_TESTS_AND_GUARDRAILS.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
+      "disposition": "active project Markdown aligned with Task 1\u20138 publication recovery-hold fixture results and retained production holds",
       "sha256": "999b8dd05db54ffc1d4c569fb6fffb8e7bdc5f3d764f41ebc226b2399cae88a8"
     },
     {
       "path": "docs/core/07_REUSE_EXTENSION_AND_FUTURE_PROOFING.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
+      "disposition": "active project Markdown aligned with Task 1\u20138 publication recovery-hold fixture results and retained production holds",
       "sha256": "891f94edc685c415995e899551bb03eb037921c67a2795e4fc263b6dbdf3aaea"
     },
     {
       "path": "docs/core/08_LEAD_AGENT_AND_CREATIVE_TOOL_RUNTIME.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
+      "disposition": "active project Markdown aligned with Task 1\u20138 publication recovery-hold fixture results and retained production holds",
       "sha256": "dce0151669f0d4363ee359a1b0df086b6ee8ffe4e82c07de186ed1cda06a2c4e"
     },
     {
       "path": "docs/core/09_CALLABLE_AGENTS_AND_ENGINEERING_METHOD.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
+      "disposition": "active project Markdown aligned with Task 1\u20138 publication recovery-hold fixture results and retained production holds",
       "sha256": "107f6cb5ef157b03d3415ab382ec70b2b0be124de0db58de9a85a4c3d7ad1947"
     },
     {
       "path": "docs/core/README.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
+      "disposition": "active project Markdown aligned with Task 1\u20138 publication recovery-hold fixture results and retained production holds",
       "sha256": "59be9899471a07dc40d7f9809212ad49fa183983e79b5a449f23603fb4368f51"
     },
     {
       "path": "docs/database.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
+      "disposition": "active project Markdown aligned with Task 1\u20138 publication recovery-hold fixture results and retained production holds",
       "sha256": "e13389d6d104a1d524e13b9e7acba2f8e5f45889a449c3d5f9ba1f28ec5eaf5f"
     },
     {
       "path": "docs/dependencies.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
+      "disposition": "active project Markdown aligned with Task 1\u20138 publication recovery-hold fixture results and retained production holds",
       "sha256": "62027bc545ca7f0eff70741905e911f38876285681766fc600b3394f1bd4eb9b"
     },
     {
       "path": "docs/deployment.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
+      "disposition": "active project Markdown aligned with Task 1\u20138 publication recovery-hold fixture results and retained production holds",
       "sha256": "ea2af05d895dec487ec3d9dc9f10a3705c3729b2be34416ee2077d9294eb6b1f"
     },
     {
       "path": "docs/governance.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
+      "disposition": "active project Markdown aligned with Task 1\u20138 publication recovery-hold fixture results and retained production holds",
       "sha256": "1058c24c1d388c2808ba2143a7e53ef6bf383c843b4837063aca6ebaf44832d5"
     },
     {
       "path": "docs/implementation-progress.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "76ff34056b2b46cbce8182f7e9d70f0850493ff279daa6c4ec130df72e5fc1b3"
+      "disposition": "active project Markdown aligned with Task 1\u20138 publication recovery-hold fixture results and retained production holds",
+      "sha256": "97382a1391841329203f4db3b820a8d8c73870ad976fde6fc436d960f371fe2a"
     },
     {
       "path": "docs/limitations.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "e33515c1ec31686fbe7a582504c72dd08d19bad6e33974a78a20b68ed425b7fb"
+      "disposition": "active project Markdown aligned with Task 1\u20138 publication recovery-hold fixture results and retained production holds",
+      "sha256": "3a483ddf6d501597e470afb98bfb28844d09b0ae1dbfe735b50edcef3d30fe89"
     },
     {
       "path": "docs/local-development.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
+      "disposition": "active project Markdown aligned with Task 1\u20138 publication recovery-hold fixture results and retained production holds",
       "sha256": "ff3b80042f61f65a7c1db15bb3f713169f9ddc6d1a6deb76e669a6168560d15f"
     },
     {
       "path": "docs/mcp-a2a.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
+      "disposition": "active project Markdown aligned with Task 1\u20138 publication recovery-hold fixture results and retained production holds",
       "sha256": "ef72ff39486606ae0baf5d5f8cb06025ab8a9007a4366de1432ad9fd67b293ce"
     },
     {
       "path": "docs/memory.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "cc021c7c6a31eb1a7c89fb2398db829be5fd45fe1afc3c0da9ce0ecfc50bea9e"
+      "disposition": "active project Markdown aligned with Task 1\u20138 publication recovery-hold fixture results and retained production holds",
+      "sha256": "dc8a8482aaa4a79c3c9e34f4a0cd9d4d37ee07e4bec09185f22e67f208fc4efe"
     },
     {
       "path": "docs/model-execution.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
+      "disposition": "active project Markdown aligned with Task 1\u20138 publication recovery-hold fixture results and retained production holds",
       "sha256": "f698ab5b4bcb5a52cd198269ec70e111e9876a3a1d304afd3f63f36a9e1fb3dd"
     },
     {
       "path": "docs/model-gateway.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
+      "disposition": "active project Markdown aligned with Task 1\u20138 publication recovery-hold fixture results and retained production holds",
       "sha256": "877644b49155e1d9fda996c4349018cda7a749f5fbb6018e33e9bb0e63afdf25"
     },
     {
       "path": "docs/phase-7-handoff.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
+      "disposition": "active project Markdown aligned with Task 1\u20138 publication recovery-hold fixture results and retained production holds",
       "sha256": "417fb97cb31d11ebd58111932c7b5cb3d85f69c4b2fbb0965014dbec1d01949f"
     },
     {
       "path": "docs/phase-9-handoff.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
+      "disposition": "active project Markdown aligned with Task 1\u20138 publication recovery-hold fixture results and retained production holds",
       "sha256": "8e00ff28617f2e290f5da7cd8ee3dc494f42f49532215906e414e5905fb18615"
     },
     {
       "path": "docs/plugins.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
+      "disposition": "active project Markdown aligned with Task 1\u20138 publication recovery-hold fixture results and retained production holds",
       "sha256": "177ce557188c4816ed04ac95f8c5e4e428324cd31426ed75e20d597c01f2725b"
     },
     {
       "path": "docs/recovery.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
+      "disposition": "active project Markdown aligned with Task 1\u20138 publication recovery-hold fixture results and retained production holds",
       "sha256": "72a55b063b38d084db3a1366d31987f8eedf3531aee3ba3c1aac954f9093c1b5"
     },
     {
       "path": "docs/research.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
+      "disposition": "active project Markdown aligned with Task 1\u20138 publication recovery-hold fixture results and retained production holds",
       "sha256": "35cff8b863ff1aa01649d46226277dbd9d46066643231e745105250274eada54"
     },
     {
@@ -1079,88 +1083,88 @@
     },
     {
       "path": "docs/superpowers/plans/2026-09-12-browser-evidence.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
+      "disposition": "active project Markdown aligned with Task 1\u20138 publication recovery-hold fixture results and retained production holds",
       "sha256": "48700e39677cf5c2e81db2d61fa143d2f0123b1020036f957e79cbfb7c6c8898"
     },
     {
       "path": "docs/superpowers/plans/2026-09-12-intelligence-loop-phases-5-6.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
+      "disposition": "active project Markdown aligned with Task 1\u20138 publication recovery-hold fixture results and retained production holds",
       "sha256": "be80ce90ace5b0f3e7327c33be93c63e77fcd7fd6693b34c6ffe9cedf05a2a2d"
     },
     {
       "path": "docs/superpowers/plans/2026-09-12-phases-1-4-foundation.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
+      "disposition": "active project Markdown aligned with Task 1\u20138 publication recovery-hold fixture results and retained production holds",
       "sha256": "dc297b164eb1b8d648eb818f963d9dfb17f6d6ae580fcd4bff63be1b882e859e"
     },
     {
       "path": "docs/superpowers/plans/2026-09-13-creative-production-phases-7-8.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
+      "disposition": "active project Markdown aligned with Task 1\u20138 publication recovery-hold fixture results and retained production holds",
       "sha256": "095127885cd4ad2cc12f80f061356bb87fdb3fde384a18c45e1b727a3a43bc4b"
     },
     {
       "path": "docs/superpowers/plans/2026-09-13-phase-7-8-release-gate-phase-9-publishing.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
+      "disposition": "active project Markdown aligned with Task 1\u20138 publication recovery-hold fixture results and retained production holds",
       "sha256": "76aa4a55c0b28d1058c0438080d5a120e5b5c385c7742a19d6f1c78ecdf58d03"
     },
     {
       "path": "docs/superpowers/plans/2026-09-13-phase-7-8-review-repairs.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
+      "disposition": "active project Markdown aligned with Task 1\u20138 publication recovery-hold fixture results and retained production holds",
       "sha256": "01f1b373ddb00430e24f7e219fb7b33e2a6728d9c9dffe01eca3a0f989f90cb8"
     },
     {
       "path": "docs/superpowers/plans/2026-09-13-phase-9-independent-review-repairs.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
+      "disposition": "active project Markdown aligned with Task 1\u20138 publication recovery-hold fixture results and retained production holds",
       "sha256": "9734f35756fb521f0f0ffaeaca6083e52bd447f0672fcf99cf3d35000fd4d073"
     },
     {
       "path": "docs/superpowers/plans/2026-10-06-p1-publication-recovery-hold.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "4de0d53429e54ee05153e56cd89c5e92ddfc2b48764566b68f063ea6d3c7e767"
+      "disposition": "active project Markdown aligned with Task 1\u20138 publication recovery-hold fixture results and retained production holds",
+      "sha256": "446256292ff02c6995b45e9f7ce45f21ab2f314f5afadf3705d5c4142c7ef21e"
     },
     {
       "path": "docs/superpowers/reviews/2026-09-13-phase-7-8-release-gate.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
+      "disposition": "active project Markdown aligned with Task 1\u20138 publication recovery-hold fixture results and retained production holds",
       "sha256": "2d5697c930240fd323fd3920d4a876ad84b1dc0a76ac76ea3c23fc663c8fb4ed"
     },
     {
       "path": "docs/superpowers/reviews/2026-09-13-phase-9-independent-review.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
+      "disposition": "active project Markdown aligned with Task 1\u20138 publication recovery-hold fixture results and retained production holds",
       "sha256": "71bc1a44489f91341ad12ca6a79006c00ee8dd8ee3976c85a73c6349a0e9e397"
     },
     {
       "path": "docs/superpowers/specs/2026-09-12-browser-evidence-design.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
+      "disposition": "active project Markdown aligned with Task 1\u20138 publication recovery-hold fixture results and retained production holds",
       "sha256": "05941eab32589d3bef92cad53ce99ab46c4f93d9afc1dfacce39b277c7b972a0"
     },
     {
       "path": "docs/superpowers/specs/2026-09-12-intelligence-loop-phases-5-6-design.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
+      "disposition": "active project Markdown aligned with Task 1\u20138 publication recovery-hold fixture results and retained production holds",
       "sha256": "ef5f87c96dca9d5cf4450876230507447c35891e035aed5d6663183f684a2be3"
     },
     {
       "path": "docs/superpowers/specs/2026-09-13-creative-production-phases-7-8-design.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
+      "disposition": "active project Markdown aligned with Task 1\u20138 publication recovery-hold fixture results and retained production holds",
       "sha256": "ff6f896ab6fcf920ab7e0a95b7ff99361072befcb164c72ddeed4de61f9b0487"
     },
     {
       "path": "docs/superpowers/specs/2026-09-13-phase-7-8-release-gate-phase-9-publishing-design.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
+      "disposition": "active project Markdown aligned with Task 1\u20138 publication recovery-hold fixture results and retained production holds",
       "sha256": "c566a8ab9f9c2f96776582bb1d50ca62eb2696f0340287cf63c3150869364b53"
     },
     {
       "path": "docs/superpowers/specs/2026-10-06-p1-publication-recovery-hold-design.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "80423f2415c96e7d4af0e40a5c9fd96e2c32f0c55416c1d358725fe69c787165"
+      "disposition": "active project Markdown aligned with Task 1\u20138 publication recovery-hold fixture results and retained production holds",
+      "sha256": "9ca4d71e4471824feb517fcadc93485a1eee42aaf4c9bfbfdeaa4fc2ad3709d4"
     },
     {
       "path": "docs/trust-model.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
+      "disposition": "active project Markdown aligned with Task 1\u20138 publication recovery-hold fixture results and retained production holds",
       "sha256": "621f309bf9ae5015e6b3cc8c885cd1388b9900f0576e51c02634d979b2390f92"
     },
     {
       "path": "docs/v4/IMPLEMENTATION-BLUEPRINT.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "9be11da0a326bfe23780b43645993e16bd6f947dce8b5447a88ad35618bf623f"
+      "disposition": "active project Markdown aligned with Task 10 publication recovery-hold candidate results and retained production holds",
+      "sha256": "c7537ea8aa41f51448632a22cf706d1b50ca21fc2e33dd66e16e95be9d4834b7"
     },
     {
       "path": "docs/v4/allocation-evidence.json",
@@ -1209,8 +1213,8 @@
     },
     {
       "path": "docs/v4/evidence-lock.json",
-      "disposition": "current 356-file content lock for application candidate 7878208; this is a hash boundary, not an independent code review",
-      "sha256": "d1d9f95af6f67192eb70c57bde2e066763ef1dadca6c5f58809e2833bc7ed638"
+      "disposition": "current 360-file content lock for Task 10 qualification checkout; application candidate d32005e and harness commit dbc8478; hash boundary, not an independent code review",
+      "sha256": "d3176a0fd96386324f483702a96944078c02fdf892dd60dddd585a9bd25d038a"
     },
     {
       "path": "docs/v4/goal-revision-evidence.json",
@@ -1334,8 +1338,8 @@
     },
     {
       "path": "docs/v4/p0-release.json",
-      "disposition": "current release ledger; 614-test clean-database fixture qualification PASS, production release remains HELD",
-      "sha256": "990096d37e7edcfef10654a07d52b9fa858b296a344e4eb4f5fcc217800233c6"
+      "disposition": "current release ledger; 614-test full non-live run remains bound to 7878208; Task 10 fixture qualification passed; production release remains HELD",
+      "sha256": "ee9ae1a03daed729e7b9c10a1931b81f8155244ca1a5fd28e60e6ac4cbd72c1d"
     },
     {
       "path": "docs/v4/p1-increment-evidence.json",
@@ -1344,12 +1348,12 @@
     },
     {
       "path": "docs/v4/p1-qualification-matrix.json",
-      "disposition": "current Task 1–8 local publication recovery-hold fixture matrix; R18/R32 advance locally, production gates remain HELD",
-      "sha256": "79f122ac28255de26abd6073b7d981a9bfe7e1dd9b43c9996084256c354e0579"
+      "disposition": "current Task 10 local publication recovery-hold fixture qualification; R18/R32 advance in fixture scope, production gates remain HELD",
+      "sha256": "9a536e71fb730afb880d37de0b7cb50a33f51cce1d3c7319544da780df2b7d44"
     },
     {
       "path": "docs/v4/parallel-agent-contract.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
+      "disposition": "active project Markdown aligned with Task 1\u20138 publication recovery-hold fixture results and retained production holds",
       "sha256": "3f8c0b74c9864135209876b8f8a5aa926e1f8c749d3e1f932a9d2da3010ed389"
     },
     {
@@ -1359,13 +1363,13 @@
     },
     {
       "path": "docs/v4/progress.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "770f55b815f8c820db8fadf78b539bb6681630c3daa0712f91fdad55e5538a53"
+      "disposition": "active project Markdown aligned with Task 10 publication recovery-hold candidate results and retained production holds",
+      "sha256": "4d0ddb53c47c9c6a2e0b05191c6a56372eb585d25c70f62dfbad0335699fce51"
     },
     {
       "path": "docs/v4/publication-recovery-hold-evidence.json",
-      "disposition": "durable current source-bound local publication recovery-hold evidence; production remains HELD",
-      "sha256": "8570f08fa127f7ed62c26e476b3dd0e3b4679d59d7bdef65aa26b051a8c3a4b0"
+      "disposition": "durable current Task 10 source-bound local publication recovery-hold evidence; production remains HELD",
+      "sha256": "0940112655e5b03d05a500678e1c1560e6bd0d5b08ad4ec0d1208b2221c4634a"
     },
     {
       "path": "docs/v4/repository-enforcement-evidence.json",
@@ -1374,57 +1378,57 @@
     },
     {
       "path": "docs/v4/validation.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "7c2530dcd7ff10c0ea5c26c0044c865bf673eeb4b8f5709dffa7306c5d550a7f"
+      "disposition": "active project Markdown aligned with Task 10 publication recovery-hold candidate results and retained production holds",
+      "sha256": "cd84829060fee140726d5345f9e8dec97b9287b4fe56107a2a7b9c82d460b788"
     },
     {
       "path": "docs/verification.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
+      "disposition": "active project Markdown aligned with Task 1\u20138 publication recovery-hold fixture results and retained production holds",
       "sha256": "5e1ce79dca1178c05c0dbe36b640228880e30c18f37535b662830f504be18fdc"
     },
     {
       "path": "docs/workflows.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
+      "disposition": "active project Markdown aligned with Task 1\u20138 publication recovery-hold fixture results and retained production holds",
       "sha256": "5c18755856b03c61292e69d5858c985095711f9f282e3894d712f3d94536fc69"
     },
     {
-      "path": "prompts/Build Creative Production Loop — Phases 7–8 End-to-End.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
+      "path": "prompts/Build Creative Production Loop \u2014 Phases 7\u20138 End-to-End.md",
+      "disposition": "active project Markdown aligned with Task 1\u20138 publication recovery-hold fixture results and retained production holds",
       "sha256": "149f3c816b539f1b1ff9e7b219d778949e35612d479e667914f0fa1e54f0b0ab"
     },
     {
-      "path": "prompts/Build Phase 10 — Multi-Platform Production Publishing, Analytics, Attribution & Experiments.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
+      "path": "prompts/Build Phase 10 \u2014 Multi-Platform Production Publishing, Analytics, Attribution & Experiments.md",
+      "disposition": "active project Markdown aligned with Task 1\u20138 publication recovery-hold fixture results and retained production holds",
       "sha256": "9595b52c451375dafd4987169df82e206bdc81f53f07558d4bd09558c3a56a28"
     },
     {
-      "path": "prompts/Build Phases 1–4 End-to-End.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
+      "path": "prompts/Build Phases 1\u20134 End-to-End.md",
+      "disposition": "active project Markdown aligned with Task 1\u20138 publication recovery-hold fixture results and retained production holds",
       "sha256": "7b5ae83b6ab7b0d685752d211788c5f45b6428d961dcf76d2d31fc3dcccbce38"
     },
     {
-      "path": "prompts/Build Real Intelligence Loop — Pre-Phase 5 + Phases 5–6 End-to-End.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
+      "path": "prompts/Build Real Intelligence Loop \u2014 Pre-Phase 5 + Phases 5\u20136 End-to-End.md",
+      "disposition": "active project Markdown aligned with Task 1\u20138 publication recovery-hold fixture results and retained production holds",
       "sha256": "5a7613543416e86633e9738b9997c510817c578ca127b1ff2dadf70e3d175ebf"
     },
     {
-      "path": "prompts/Complete Phase 7–8 Release Gate, Then Build Phase 9 Governed Publishing.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
+      "path": "prompts/Complete Phase 7\u20138 Release Gate, Then Build Phase 9 Governed Publishing.md",
+      "disposition": "active project Markdown aligned with Task 1\u20138 publication recovery-hold fixture results and retained production holds",
       "sha256": "5e0949b2cb2b56a6b2245306774385c62e32bad3590b12b85bcd488a9fc76b6a"
     },
     {
       "path": "prompts/Install and Verify Browser Evidence on Linux EC2.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
+      "disposition": "active project Markdown aligned with Task 1\u20138 publication recovery-hold fixture results and retained production holds",
       "sha256": "0fe106e7a93229e7636815df12a9b79d9e633bbc60f9bbfbc6447f9eeced160b"
     }
   ],
-  "qualified_application_commit": "7878208e7a353f93bb70279ad0dd7f0760f93ec4",
-  "next_action": "Complete and record Task 9 documentation checks, then Task 10 review/final verification; continue production-wide revocation, general policy, routing/live schedule inventory, production recovery workers, R33/R34 and RG0/RG1 gates. Keep production effects disabled, P2–P7 gated and main unmerged.",
+  "qualified_application_commit": "d32005efc8b402d614b624c35fc166deeed3db65",
+  "next_action": "Complete Task 11 independent review, meta-review, final artifact rerun and exact-head checks for the d32005e local candidate; then continue production-wide revocation, general policy, routing/live schedule inventory, production recovery workers, R33/R34 and RG0/RG1 obligations. Keep production effects disabled, fixture publication budget zero, P2\u2013P7 gated, P6 disabled and main unmerged.",
   "parallel_agents_status": "PASS_IMPLEMENTED_LOCAL_PARALLEL_AGENT_FIXTURE_SCOPE",
   "parallel_qualified_application_commit": "2653d2ecb3f0d5bb8ea6560de274137dd6032a96",
   "legacy_intelligence_status": "PASS_LOCAL_LEGACY_INTELLIGENCE_AND_PUBLICATION_FIXTURE_STAGES; ORIGINAL_NATIVE_INTELLIGENCE_AND_PUBLICATION_SCHEDULES_QUALIFIED",
   "goal_status": "ACTIVE",
-  "independent_review_scope": "Corrected-publication rereview returned NO_FINDINGS_WITHIN_REVIEWED_FIXTURE_CORRECTION_SCOPE for application a4b2368cdb463939d093020224a5b5667392aee6 with documentation/observed HEAD d0311725686d81b7b4747c2d6225986e5ea3a524; meta-review ACCEPT, zero issues. The review predates and does not review 7878208. Task 8 evidence review PASS with zero findings within its bounded evidence scope; no production or current all-row approval is implied.",
+  "independent_review_scope": "No independent review is claimed for Task 10 candidate d32005e. Task 11 review, meta-review, final artifact rerun and exact-head checks are pending. The corrected-publication rereview is scoped to A4/d031172 and does not review this candidate.",
   "tracked_markdown_paths": [
     ".agents/skills/archify/SKILL.md",
     ".agents/skills/archify/THIRD_PARTY_NOTICES.md",
@@ -1508,11 +1512,11 @@
     "docs/v4/validation.md",
     "docs/verification.md",
     "docs/workflows.md",
-    "prompts/Build Creative Production Loop — Phases 7–8 End-to-End.md",
-    "prompts/Build Phase 10 — Multi-Platform Production Publishing, Analytics, Attribution & Experiments.md",
-    "prompts/Build Phases 1–4 End-to-End.md",
-    "prompts/Build Real Intelligence Loop — Pre-Phase 5 + Phases 5–6 End-to-End.md",
-    "prompts/Complete Phase 7–8 Release Gate, Then Build Phase 9 Governed Publishing.md",
+    "prompts/Build Creative Production Loop \u2014 Phases 7\u20138 End-to-End.md",
+    "prompts/Build Phase 10 \u2014 Multi-Platform Production Publishing, Analytics, Attribution & Experiments.md",
+    "prompts/Build Phases 1\u20134 End-to-End.md",
+    "prompts/Build Real Intelligence Loop \u2014 Pre-Phase 5 + Phases 5\u20136 End-to-End.md",
+    "prompts/Complete Phase 7\u20138 Release Gate, Then Build Phase 9 Governed Publishing.md",
     "prompts/Install and Verify Browser Evidence on Linux EC2.md"
   ],
   "repository_readback": {
@@ -1524,8 +1528,30 @@
     "current_feature_head_ci": "NOT CLAIMED",
     "formal_pr_approval": "NOT RUN"
   },
-  "application_source_preservation_basis": "Compared the A4-era 352-file source lock with application candidate 7878208: 347 prior checked files retain identical bytes, five prior files are updated, and four source files are added, for 356 current checked paths. This is a content comparison and lock, not an independent code review. The Task 8 source manifest and final clean-database Task 9 manifest are separately retained.",
+  "application_source_preservation_basis": "Compared the Task 9 356-path evidence lock at application 7878208 with the Task 10 qualification checkout: 347 existing paths retain identical bytes, nine existing paths have updated hashes, and four source paths were added, for 360 locked paths. The application artifact itself is pinned separately to d32005e; the test-only qualification harness is at dbc8478. This is a content comparison and lock, not an independent code review.",
   "historical_a4_qualified_application_commit": "a4b2368cdb463939d093020224a5b5667392aee6",
   "current_publication_recovery_hold_evidence": "docs/v4/publication-recovery-hold-evidence.json",
-  "current_publication_recovery_hold_evidence_sha256": "8570f08fa127f7ed62c26e476b3dd0e3b4679d59d7bdef65aa26b051a8c3a4b0"
+  "current_publication_recovery_hold_evidence_sha256": "0940112655e5b03d05a500678e1c1560e6bd0d5b08ad4ec0d1208b2221c4634a",
+  "task_10_candidate": {
+    "application_commit": "d32005efc8b402d614b624c35fc166deeed3db65",
+    "qualification_harness_commit": "dbc8478f8e8ce9e8ba05ddb816eb6e0e75e9f672",
+    "focused_matrix": "17 passed",
+    "named_actual_image_rehearsal": "1 passed",
+    "supported_floor": false,
+    "task_11_review_pending": true,
+    "production_effects_enabled": false,
+    "fixture_publication_budget": 0
+  },
+  "current_local_application_commit": "d32005efc8b402d614b624c35fc166deeed3db65",
+  "current_focused_tests": 17,
+  "current_full_non_live_tests": null,
+  "current_full_non_live_application_commit": "7878208e7a353f93bb70279ad0dd7f0760f93ec4",
+  "current_full_non_live_status": "NOT RUN on d32005e; 614 passes remain bound to 7878208",
+  "current_qualification_application": "d32005efc8b402d614b624c35fc166deeed3db65",
+  "focused_tests": 17,
+  "full_non_live_tests": null,
+  "previous_full_non_live_tests": 614,
+  "previous_full_non_live_application_commit": "7878208e7a353f93bb70279ad0dd7f0760f93ec4",
+  "source_files": 360,
+  "corrected_head_rereview": "COMPLETE only for application a4b2368cdb463939d093020224a5b5667392aee6 with documentation/observed HEAD d0311725686d81b7b4747c2d6225986e5ea3a524; this review does not cover Task 10 candidate d32005e."
 }

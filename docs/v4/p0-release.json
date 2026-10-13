@@ -1,6 +1,6 @@
 {
   "phase": "P0",
-  "updated_at": "2026-10-06",
+  "updated_at": "2026-10-13",
   "baseline_commit": "8e50d68efbf2bec2aabfb2fe3226e01635de2adb",
   "scope": "Isolated local foundation; no production traffic or effects",
   "requirements": [
@@ -101,17 +101,56 @@
       "junit": "artifacts/parallel-agents/focused.xml"
     },
     "publication_recovery_holds": {
-      "application_commit": "7878208e7a353f93bb70279ad0dd7f0760f93ec4",
-      "focused_tests": 116,
+      "application_commit": "d32005efc8b402d614b624c35fc166deeed3db65",
+      "focused_tests": 17,
       "failures": 0,
       "errors": 0,
       "skipped": 0,
       "rollback_rehearsal_tests": 1,
       "rollback_rehearsal_status": "PASS",
       "evidence": "docs/v4/publication-recovery-hold-evidence.json",
-      "source_lock_sha256": "d1d9f95af6f67192eb70c57bde2e066763ef1dadca6c5f58809e2833bc7ed638",
-      "scope": "Local no-effects fixtures only; production remains HELD.",
-      "evidence_sha256": "8570f08fa127f7ed62c26e476b3dd0e3b4679d59d7bdef65aa26b051a8c3a4b0"
+      "source_lock_sha256": "d3176a0fd96386324f483702a96944078c02fdf892dd60dddd585a9bd25d038a",
+      "scope": "Task 10 retained-wheel actual-image rehearsal in disposable effects-disabled local fixtures only; Task 11 review pending; production remains HELD.",
+      "evidence_sha256": "0940112655e5b03d05a500678e1c1560e6bd0d5b08ad4ec0d1208b2221c4634a",
+      "qualification_harness_commit": "dbc8478f8e8ce9e8ba05ddb816eb6e0e75e9f672",
+      "task_8_focused_tests": 116,
+      "focused_matrix_result": "PASS",
+      "full_non_live_tests": 614,
+      "full_non_live_application_commit": "7878208e7a353f93bb70279ad0dd7f0760f93ec4",
+      "full_non_live_rerun_on_current_candidate": false,
+      "artifact_sha256": "2028f7f30e8c19933308f1044ae49ca7b85698a52bcc7c773a596a1367fecb8b",
+      "wheel_sha256": "f046f6807399fe64c5bf87610142516e2456d367249ecb68b8405e92d8e16b28",
+      "image_id": "sha256:9edf0f1864347a830236a20343dc3138fca21ad007cabc272772ad1e6c9a3048",
+      "record_sha256": "ac09f63cc880efd1023614e3d466ce56771aabd305d615ecdc034f1a33facff9",
+      "launch_lock_sha256": "abd5ca958b6f649753d7a5f7c7b3311d97515fc59948db3ce3c6906e2792d727",
+      "documentation_checker": {
+        "status": "PASS",
+        "requirements": 75,
+        "source_files": 2,
+        "evidence_files": 360,
+        "inventory_files": 360,
+        "markdown_files_checked": 93,
+        "html_files_checked": 4,
+        "negative_controls": 6,
+        "self_test_status": "PASS"
+      },
+      "documentation_shell_contracts": {
+        "passed": 4,
+        "failed": 0
+      },
+      "pip_check": "PASS",
+      "compileall": "PASS",
+      "modified_json_files_parsed": 5,
+      "git_diff_check": "PASS",
+      "historical_snapshot_hashes": {
+        "status": "PASS",
+        "paths": 14
+      },
+      "source_lock_validation": {
+        "status": "PASS",
+        "files": 360,
+        "sha256": "d3176a0fd96386324f483702a96944078c02fdf892dd60dddd585a9bd25d038a"
+      }
     },
     "documentation_checker": {
       "status": "PASS",
@@ -285,7 +324,7 @@
     },
     {
       "path": "docs/v4/publication-recovery-hold-evidence.json",
-      "sha256": "8570f08fa127f7ed62c26e476b3dd0e3b4679d59d7bdef65aa26b051a8c3a4b0",
+      "sha256": "0940112655e5b03d05a500678e1c1560e6bd0d5b08ad4ec0d1208b2221c4634a",
       "local_only": false
     }
   ],
@@ -320,7 +359,7 @@
     }
   ],
   "later_phase_boundaries": {
-    "P1": "Items 1–6 implemented locally; item 7 independently reviewed/repaired/re-reviewed, 132 focused / 507 full PASS. Complete retained RG0/RG1 production acceptance before later-phase release; live schedules/routing, current general policy/scoped remote reads, real providers/alerts and deployment contracts remain HELD.",
+    "P1": "Items 1\u20136 implemented locally; item 7 independently reviewed/repaired/re-reviewed, 132 focused / 507 full PASS. Complete retained RG0/RG1 production acceptance before later-phase release; live schedules/routing, current general policy/scoped remote reads, real providers/alerts and deployment contracts remain HELD.",
     "P2": "Production G1 provider charge/effect integration using the fixture-qualified allocation transfer contract, ready-package reference/outbox integration and enabled provider qualification",
     "P3": "Trial/evaluation isolation and separate strategy/capability namespaces",
     "P4": "Promotion/invalidation serialization; mandatory typed learning proposals with optional qualified semantic analyst",
@@ -359,7 +398,7 @@
     ]
   },
   "p1_increment": {
-    "name": "Local admission/outbox, revisions, approved baseline, V2/V3 fixture policy/accounting, item-3 stop/permit/cases, item-4 handoff/mock trace and item-5a/5b/5c signed fixture commands/cutover; item-6 compatible fixture runtime/waits/notification receipts; item 7 independently reviewed and repaired local fixture contracts; Task 8 added local immutable publication recovery holds and a read-only two-reason rollback verifier",
+    "name": "Local admission/outbox, revisions, approved baseline, V2/V3 fixture policy/accounting, item-3 stop/permit/cases, item-4 handoff/mock trace and item-5a/5b/5c signed fixture commands/cutover; item-6 compatible fixture runtime/waits/notification receipts; item 7 independently reviewed and repaired local fixture contracts; Task 8 added local immutable publication recovery holds and a read-only two-reason rollback verifier; Task 10 pinned publication-worker candidate qualified against the retained wheel/image in local fixture scope",
     "local_status": "PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE",
     "release_gate": "RG1",
     "release_status": "HELD",
@@ -405,8 +444,8 @@
       "5c"
     ],
     "next_queue_item": null,
-    "next_action": "Complete Task 9 documentation/evidence reconciliation and Task 10 review/final verification; then continue remaining general policy, routing/live schedule inventory, production recovery/alerts and RG0/RG1 obligations. P2–P7 remain gated; optional P6 disabled.",
-    "independent_review": "Task 8 evidence review PASS with zero findings for its bounded local recovery-hold evidence; corrected-publication rereview is separately scoped to A4/d031172 and does not review 7878208.",
+    "next_action": "Complete Task 11 independent review, meta-review, final artifact rerun and exact-head checks for the Task 10 candidate; then continue remaining production policy, routing/live schedule inventory, recovery/alerts and RG0/RG1 obligations. Keep production effects disabled, fixture budget zero, P2\u2013P7 gated, P6 disabled and main unmerged.",
+    "independent_review": "Task 8 bounded evidence review passed; Task 10 actual-image local fixture qualification passed, but Task 11 independent review/meta-review/final artifact rerun/exact-head checks are pending. Corrected-publication rereview remains scoped to A4/d031172 and does not review d32005e.",
     "completed_implementation_tasks": [
       1,
       2,
@@ -415,8 +454,13 @@
       5,
       6,
       7,
-      8
-    ]
+      8,
+      9,
+      10
+    ],
+    "latest_task_10_application_commit": "d32005efc8b402d614b624c35fc166deeed3db65",
+    "task_10_qualification_harness_commit": "dbc8478f8e8ce9e8ba05ddb816eb6e0e75e9f672",
+    "task_10_status": "PASS_LOCAL_FIXTURE_CANDIDATE; TASK_11_REVIEW_PENDING"
   },
   "documentation_refresh": {
     "date": "2026-09-24",
@@ -641,8 +685,8 @@
     "status": "ACTIVE",
     "restored_from_own_output_at": "2026-10-04T02:44:31.946Z",
     "base_commit": "380416d35cffb6e4bf33003cb6e8df0638874436",
-    "direction": "Remaining P1 legacy dispatch-to-outbox integration, followed by retained P1 authorization/runtime/recovery acceptance; reuse completed items 1–7 and parallel extension",
-    "current_increment": "Current application candidate 7878208 includes Task 1–7 implementation plus Task 8 local recovery-hold qualification (116 focused tests, compileall and two-reason rollback rehearsal); the clean template0-database full non-live suite passed 614 tests with zero failures/errors/skips. Corrected-publication rereview is complete only for A4/d031172 and does not review 7878208.",
+    "direction": "Remaining P1 legacy dispatch-to-outbox integration, followed by retained P1 authorization/runtime/recovery acceptance; reuse completed items 1\u20137 and parallel extension",
+    "current_increment": "Current application candidate 7878208 includes Task 1\u20137 implementation plus Task 8 local recovery-hold qualification (116 focused tests, compileall and two-reason rollback rehearsal); the clean template0-database full non-live suite passed 614 tests with zero failures/errors/skips. Corrected-publication rereview is complete only for A4/d031172 and does not review 7878208.",
     "qualification": "PASS_IMPLEMENTED_LOCAL_PUBLICATION_RECOVERY_HOLD_AND_PARALLEL_PARENT_STATUS_FIXTURE_SCOPE",
     "remaining_scope": [
       "deployment-specific supported routing, live schedule inventory, fencing, drain, rollback and operator recovery",
@@ -660,7 +704,7 @@
     "full_non_live_tests": 614,
     "source_files": 356,
     "evidence": "docs/v4/publication-recovery-hold-evidence.json",
-    "publication": "Fixture-only current recovery-hold evidence; production effects disabled, RG0/RG1 HELD, P2–P7 gated, optional P6 disabled, main unmerged.",
+    "publication": "Fixture-only current recovery-hold evidence; production effects disabled, RG0/RG1 HELD, P2\u2013P7 gated, optional P6 disabled, main unmerged.",
     "source_lock_sha256": "d1d9f95af6f67192eb70c57bde2e066763ef1dadca6c5f58809e2833bc7ed638",
     "review_scope": "Corrected-publication rereview: A4 application with documentation/observed HEAD d031172 only; Task 8 evidence review is bounded to local recovery-hold evidence. No current all-row independent review or production approval is implied."
   },
@@ -718,7 +762,7 @@
     "status": "ACTIVE",
     "restored_from_own_output_at": "2026-10-04T02:44:31.946Z",
     "base_commit": "380416d35cffb6e4bf33003cb6e8df0638874436",
-    "direction": "Remaining P1 legacy dispatch-to-outbox integration, followed by retained P1 authorization/runtime/recovery acceptance; reuse completed items 1–7 and parallel extension",
+    "direction": "Remaining P1 legacy dispatch-to-outbox integration, followed by retained P1 authorization/runtime/recovery acceptance; reuse completed items 1\u20137 and parallel extension",
     "current_increment": "Effects-disabled original governed-publication API/outbox and paired native schedules, including P1 typed hold on post-close published cancel and P3 invocation-scope correction; initial independent P1/P3 findings accepted, fixed and freshly qualified; exact-head rereview pending",
     "qualification": "PASS_IMPLEMENTED_LOCAL_LEGACY_PUBLICATION_AND_NATIVE_SCHEDULE_FIXTURE_SCOPE_AFTER_ACCEPTED_REVIEW_CORRECTIONS",
     "remaining_scope": [
