@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+from threading import Lock
 from urllib.parse import urlsplit
 from urllib.request import Request, urlopen
 from uuid import UUID, uuid4
@@ -68,6 +69,37 @@ def _post_event(base_url: str, event: dict[str, object]) -> None:
             raise RuntimeError("adapter operation receiver rejected an event")
 
 
+class _AdapterOperationEventSink:
+    """Share one run sequence across every adapter owned by a worker."""
+
+    def __init__(
+        self,
+        *,
+        receiver_url: str,
+        run_id: str,
+        worker_id: str | None = None,
+    ) -> None:
+        self.receiver_url = _base_url(receiver_url)
+        self.run_id = _canonical_uuid(run_id)
+        self.worker_id = _canonical_uuid(worker_id or str(uuid4()))
+        self.sequence = 0
+        self.lock = Lock()
+
+    def record(self, operation: str) -> None:
+        if operation not in OPERATIONS:
+            raise ValueError("unknown PublisherAdapter operation")
+        with self.lock:
+            self.sequence += 1
+            event = {
+                "schema": EVENT_SCHEMA,
+                "run_id": self.run_id,
+                "worker_id": self.worker_id,
+                "sequence": self.sequence,
+                "operation": operation,
+            }
+        _post_event(self.receiver_url, event)
+
+
 class RecordingPublisherAdapter:
     """Record neutral operation names before forwarding to an adapter."""
 
@@ -75,28 +107,24 @@ class RecordingPublisherAdapter:
         self,
         adapter: PublisherAdapter,
         *,
-        receiver_url: str,
-        run_id: str,
+        receiver_url: str | None = None,
+        run_id: str | None = None,
         worker_id: str | None = None,
+        event_sink: _AdapterOperationEventSink | None = None,
     ) -> None:
         self._adapter = adapter
-        self._receiver_url = _base_url(receiver_url)
-        self._run_id = _canonical_uuid(run_id)
-        self._worker_id = _canonical_uuid(worker_id or str(uuid4()))
-        self._sequence = 0
+        if event_sink is None:
+            if receiver_url is None or run_id is None:
+                raise ValueError("adapter recorder URL and run ID are required")
+            event_sink = _AdapterOperationEventSink(
+                receiver_url=receiver_url,
+                run_id=run_id,
+                worker_id=worker_id,
+            )
+        self._event_sink = event_sink
 
     def _record(self, operation: str) -> None:
-        if operation not in OPERATIONS:
-            raise ValueError("unknown PublisherAdapter operation")
-        self._sequence += 1
-        event = {
-            "schema": EVENT_SCHEMA,
-            "run_id": self._run_id,
-            "worker_id": self._worker_id,
-            "sequence": self._sequence,
-            "operation": operation,
-        }
-        _post_event(self._receiver_url, event)
+        self._event_sink.record(operation)
 
     @property
     def capabilities(self) -> PublisherCapabilityProfile:
@@ -142,6 +170,55 @@ class RecordingPublisherAdapter:
     async def refresh_capabilities(self) -> PublisherCapabilityProfile:
         self._record("refresh_capabilities")
         return await self._adapter.refresh_capabilities()
+
+
+def install_publication_activities_adapter_recorder(
+    *,
+    receiver_url: str,
+    run_id: str,
+    worker_id: str | None = None,
+):
+    """Wrap the actual PublicationActivities adapter state before worker setup.
+
+    This test-only class hook is installed in the candidate process bootstrap,
+    after the authenticated launcher validates the pinned runtime and before
+    the legacy worker constructs its activities. It modifies no installed
+    module files.
+    """
+    from salience.workflows.publication import PublicationActivities
+
+    event_sink = _AdapterOperationEventSink(
+        receiver_url=receiver_url,
+        run_id=run_id,
+        worker_id=worker_id,
+    )
+    original_init = PublicationActivities.__init__
+    wrapped_by_identity: dict[int, RecordingPublisherAdapter] = {}
+
+    def wrap(adapter: PublisherAdapter) -> RecordingPublisherAdapter:
+        if isinstance(adapter, RecordingPublisherAdapter):
+            return adapter
+        wrapped = wrapped_by_identity.get(id(adapter))
+        if wrapped is None:
+            wrapped = RecordingPublisherAdapter(adapter, event_sink=event_sink)
+            wrapped_by_identity[id(adapter)] = wrapped
+        return wrapped
+
+    def instrumented_init(self, state) -> None:
+        state.provider = wrap(state.provider)
+        state.publisher_adapters = {
+            publisher_id: wrap(adapter)
+            for publisher_id, adapter in state.publisher_adapters.items()
+        }
+        original_init(self, state)
+
+    PublicationActivities.__init__ = instrumented_init
+
+    def restore() -> None:
+        if PublicationActivities.__init__ is instrumented_init:
+            PublicationActivities.__init__ = original_init
+
+    return restore
 
 
 class _NeutralProbeAdapter:

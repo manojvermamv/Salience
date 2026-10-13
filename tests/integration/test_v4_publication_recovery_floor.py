@@ -1907,6 +1907,176 @@ def test_start_rollback_worker_argv_uses_isolated_launcher_flags(tmp_path, monke
     ]
 
 
+def test_start_rollback_worker_installs_recorder_on_the_actual_adapter_path(
+    tmp_path, monkeypatch
+):
+    from uuid import uuid4
+
+    harness = _load_worker_harness()
+    calls = []
+
+    def fake_run(command, **kwargs):
+        calls.append(command)
+        return subprocess.CompletedProcess(command, 0, stdout="container-id\n", stderr="")
+
+    monkeypatch.setattr(harness.subprocess, "run", fake_run)
+    monkeypatch.setattr(harness, "image_id", lambda _image: "sha256:test-image")
+    bundle = tmp_path / "control-bundle"
+    bundle.mkdir()
+    recorder_url = "http://adapter-recorder:8081"
+    run_id = str(uuid4())
+    worker_id = str(uuid4())
+    harness.start_rollback_worker(
+        image="synthetic-no-effects-worker:fixture",
+        database_url="postgresql://no-effects.invalid/fixture",
+        temporal_target="127.0.0.1:1",
+        workspace_id="00000000-0000-0000-0000-000000000001",
+        expired_operation_id="00000000-0000-0000-0000-000000000002",
+        cancel_operation_id="00000000-0000-0000-0000-000000000003",
+        task_queue="no-effects-fixture",
+        control_bundle=bundle,
+        name="task7-instrumented-launch-test",
+        adapter_recorder_url=recorder_url,
+        adapter_recorder_run_id=run_id,
+        adapter_recorder_worker_id=worker_id,
+    )
+
+    command = calls[0]
+    command_pairs = tuple(zip(command, command[1:]))
+    assert ("--env", f"TASK7_ADAPTER_RECORDER_URL={recorder_url}") in command_pairs
+    assert f"TASK7_ADAPTER_RECORDER_RUN_ID={run_id}" in command
+    assert f"TASK7_ADAPTER_RECORDER_WORKER_ID={worker_id}" in command
+    recorder_mount = next(
+        item
+        for item in command
+        if item.endswith(
+            "target=/run/task7-adapter-operation-recorder.py,readonly"
+        )
+    )
+    assert recorder_mount.startswith("type=bind,source=")
+
+    image_index = command.index("synthetic-no-effects-worker:fixture")
+    worker_argv = command[image_index + 1 :]
+    assert worker_argv[:5] == ["/usr/local/bin/python", "-I", "-B", "-S", "-c"]
+    assert "install_publication_activities_adapter_recorder" in worker_argv[5]
+    assert worker_argv[6] == harness.CONTROL_LAUNCHER
+    assert worker_argv[7:9] == ["--mode", "rollback-restart"]
+
+
+def test_adapter_recorder_launch_shim_wraps_authenticated_launcher_exec(monkeypatch):
+    import os
+    import runpy
+    import sys
+
+    harness = _load_worker_harness()
+    run_id = "00000000-0000-0000-0000-000000000011"
+    worker_id = "00000000-0000-0000-0000-000000000012"
+    environment = {
+        "TASK7_ADAPTER_RECORDER_URL": "http://adapter-recorder:8081",
+        "TASK7_ADAPTER_RECORDER_RUN_ID": run_id,
+        "TASK7_ADAPTER_RECORDER_WORKER_ID": worker_id,
+    }
+    captured = {}
+
+    def fake_execve(path, argv, child_environment):
+        captured["path"] = path
+        captured["argv"] = list(argv)
+        captured["environment"] = child_environment
+        return None
+
+    def fake_run_path(path, *, run_name):
+        assert path == harness.CONTROL_LAUNCHER
+        assert run_name == "__main__"
+        worker_bootstrap = "import runpy, sys\nruntime_root, module, *module_args = sys.argv[1:]\n"
+        command = [
+            "/usr/local/bin/python",
+            "-I",
+            "-B",
+            "-S",
+            "-c",
+            worker_bootstrap,
+            "/usr/local/lib/python3.13/site-packages",
+            "salience.workflows.worker",
+        ]
+        return os.execve(command[0], command, environment)
+
+    monkeypatch.setattr(os, "execve", fake_execve)
+    monkeypatch.setattr(runpy, "run_path", fake_run_path)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "-c",
+            harness.CONTROL_LAUNCHER,
+            "--mode",
+            "rollback-restart",
+        ],
+    )
+    exec(
+        compile(harness._ADAPTER_RECORDER_LAUNCH_SHIM, "<task7-launch-shim>", "exec"),
+        {"__name__": "__main__"},
+    )
+
+    child_code = captured["argv"][5]
+    assert "install_publication_activities_adapter_recorder" in child_code
+    assert "runtime_root, module, *module_args = sys.argv[1:]" in child_code
+    assert captured["environment"] == environment
+
+
+def test_publication_activities_recorder_installer_observes_the_real_adapter_lookup():
+    from threading import Thread
+    from types import SimpleNamespace
+    from uuid import uuid4
+
+    from salience.workflows.publication import PublicationActivities
+
+    receiver = _load_adapter_operation_fixture(
+        ROOT / "tests/fixtures/v4_publication_adapter_operation_receiver.py",
+        "v4_publication_adapter_operation_receiver_for_worker_installer",
+    )
+    recorder = _load_adapter_operation_fixture(
+        ROOT / "tests/fixtures/v4_publication_adapter_operation_recorder.py",
+        "v4_publication_adapter_operation_recorder_for_worker_installer",
+    )
+    server = receiver.create_server("127.0.0.1", 0)
+    thread = Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    run_id = str(uuid4())
+    worker_id = str(uuid4())
+    restore = None
+    try:
+        restore = recorder.install_publication_activities_adapter_recorder(
+            receiver_url=f"http://127.0.0.1:{server.server_port}",
+            run_id=run_id,
+            worker_id=worker_id,
+        )
+        activities = PublicationActivities(
+            SimpleNamespace(
+                provider=recorder._NeutralProbeAdapter(),
+                publisher_adapters={},
+            )
+        )
+        adapter = activities._adapter_for(
+            SimpleNamespace(publisher_id="operation-probe")
+        )
+        asyncio.run(adapter.preflight(object()))
+        events = _read_adapter_recorder_events(
+            f"http://127.0.0.1:{server.server_port}", run_id
+        )
+        _assert_adapter_operation_events(
+            events,
+            run_id=run_id,
+            operations=("capabilities", "preflight"),
+        )
+        assert {event["worker_id"] for event in events} == {worker_id}
+    finally:
+        if restore is not None:
+            restore()
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=5)
+
+
 def test_invoke_launcher_argv_uses_isolated_launcher_flags(tmp_path, monkeypatch):
     harness = _load_worker_harness()
     calls = []
@@ -3592,6 +3762,12 @@ def test_cross_container_adapter_recorder_positive_control():
 async def test_cross_container_adapter_recorder_observes_zero_operations_for_both_holds(
     reason,
 ):
+    """Observe only the verified rollback-restart of already-held histories.
+
+    The initial current-mode execution creates each retained hold. This test
+    uses a fresh receiver run after that execution has drained, then instruments
+    the actual rollback worker before it registers its activities.
+    """
     import asyncio
     from uuid import uuid4
 
@@ -3605,8 +3781,10 @@ async def test_cross_container_adapter_recorder_observes_zero_operations_for_bot
         candidate, database_url=database_url
     )
     assert len(before["liabilities"][reason]) == 21
+    recorder_run_id = str(uuid4())
+    recorder_worker_id = str(uuid4())
     events_before = _read_adapter_recorder_events(
-        candidate["adapter_recorder_url"], candidate["adapter_recorder_run_id"]
+        candidate["adapter_recorder_url"], recorder_run_id
     )
     assert events_before == []
     _assert_no_adapter_operation_events(events_before)
@@ -3616,7 +3794,12 @@ async def test_cross_container_adapter_recorder_observes_zero_operations_for_bot
     operation_ids = fixture["operation_ids"]
     task_queue = fixture["history_fixture"][reason]["task_queue"]
     workflow_id = fixture["history_fixture"][reason]["workflow_id"]
-    worker_name = "task7-adapter-held-" + reason.replace("_", "-") + "-" + uuid4().hex[:8]
+    worker_name = (
+        "task7-adapter-rollback-restart-"
+        + reason.replace("_", "-")
+        + "-"
+        + uuid4().hex[:8]
+    )
     launch = None
     try:
         launch = worker_harness.start_rollback_worker(
@@ -3629,6 +3812,9 @@ async def test_cross_container_adapter_recorder_observes_zero_operations_for_bot
             task_queue=task_queue,
             control_bundle=candidate["control_bundle"],
             name=worker_name,
+            adapter_recorder_url=candidate["adapter_recorder_url"],
+            adapter_recorder_run_id=recorder_run_id,
+            adapter_recorder_worker_id=recorder_worker_id,
         )
         inspection = worker_harness.inspect_worker(worker_name)
         assert launch["image_id"] == candidate["image_id"]
@@ -3662,7 +3848,7 @@ async def test_cross_container_adapter_recorder_observes_zero_operations_for_bot
     assert after["liabilities"][reason] == before["liabilities"][reason]
     assert after["holds"] == before["holds"]
     events_after = _read_adapter_recorder_events(
-        candidate["adapter_recorder_url"], candidate["adapter_recorder_run_id"]
+        candidate["adapter_recorder_url"], recorder_run_id
     )
     assert events_after == events_before
     _assert_no_adapter_operation_events(events_after)

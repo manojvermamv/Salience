@@ -15,12 +15,13 @@ import sys
 import tempfile
 from typing import Iterator
 from urllib.parse import urlsplit
-from uuid import UUID
+from uuid import UUID, uuid4
 
 
 CONTROL_LAUNCHER = "/run/salience-control/launch-v4-publication-worker.py"
 CONTROL_LOCK = "/run/salience-control/publication-worker-launch-lock.json"
 CONTROL_DIGEST = "/run/salience-control/publication-worker-launch-lock.sha256"
+ADAPTER_RECORDER_FIXTURE = "/run/task7-adapter-operation-recorder.py"
 NETWORK = "salience_default"
 QUALIFICATION_PROGRESS_FIELDS = frozenset(
     {
@@ -112,6 +113,40 @@ for current, directories, names in os.walk(root, followlinks=False):
             if path.name.endswith(".pyc"):
                 pyc_files.append(relative)
 print(json.dumps({"files": files, "pyc_files": sorted(pyc_files)}, sort_keys=True, separators=(",", ":")))
+"""
+_ADAPTER_RECORDER_WORKER_BOOTSTRAP = r"""import importlib.util, os, sys
+runtime_root = sys.argv[1]
+sys.path.insert(0, runtime_root)
+fixture_path = os.environ["TASK7_ADAPTER_RECORDER_FIXTURE"]
+spec = importlib.util.spec_from_file_location(
+    "task7_adapter_operation_recorder", fixture_path
+)
+if spec is None or spec.loader is None:
+    raise RuntimeError("adapter-operation recorder fixture cannot be loaded")
+recorder = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(recorder)
+recorder.install_publication_activities_adapter_recorder(
+    receiver_url=os.environ["TASK7_ADAPTER_RECORDER_URL"],
+    run_id=os.environ["TASK7_ADAPTER_RECORDER_RUN_ID"],
+    worker_id=os.environ["TASK7_ADAPTER_RECORDER_WORKER_ID"],
+)
+"""
+_ADAPTER_RECORDER_LAUNCH_SHIM = f"""import os, runpy, sys
+launcher_path, *launcher_args = sys.argv[1:]
+original_execve = os.execve
+worker_bootstrap_prefix = {json.dumps(_ADAPTER_RECORDER_WORKER_BOOTSTRAP)}
+def execve_with_adapter_recorder(path, argv, environment):
+    argv = list(argv)
+    if (
+        len(argv) > 5
+        and argv[1:5] == ["-I", "-B", "-S", "-c"]
+        and "runtime_root, module, *module_args = sys.argv[1:]" in argv[5]
+    ):
+        argv[5] = worker_bootstrap_prefix + argv[5]
+    return original_execve(path, argv, environment)
+os.execve = execve_with_adapter_recorder
+sys.argv = [launcher_path, *launcher_args]
+runpy.run_path(launcher_path, run_name="__main__")
 """
 
 
@@ -556,8 +591,52 @@ def start_rollback_worker(
     task_queue: str,
     control_bundle: Path,
     name: str,
+    adapter_recorder_url: str | None = None,
+    adapter_recorder_run_id: str | None = None,
+    adapter_recorder_worker_id: str | None = None,
 ) -> dict[str, str]:
-    """Start the real Compose-built image through its fixed external launcher."""
+    """Start the real image through its authenticated external launcher.
+
+    When an operation receiver is provided, a test-only bootstrap wraps the
+    runtime's actual PublicationActivities adapters after launcher verification
+    and before worker setup. It does not modify the authenticated runtime files.
+    """
+    recorder_target = (
+        adapter_recorder_url is not None,
+        adapter_recorder_run_id is not None,
+    )
+    if any(recorder_target) and not all(recorder_target):
+        raise ValueError("adapter recorder URL and run ID must be provided together")
+
+    recorder_fixture = None
+    if all(recorder_target):
+        recorder_parts = urlsplit(adapter_recorder_url)
+        if (
+            recorder_parts.scheme != "http"
+            or not recorder_parts.hostname
+            or recorder_parts.username is not None
+            or recorder_parts.password is not None
+            or recorder_parts.path not in {"", "/"}
+            or recorder_parts.query
+            or recorder_parts.fragment
+        ):
+            raise ValueError("adapter recorder target must be a local HTTP receiver URL")
+        if str(UUID(adapter_recorder_run_id)) != adapter_recorder_run_id:
+            raise ValueError("adapter recorder run ID must be a canonical UUID")
+        if adapter_recorder_worker_id is None:
+            adapter_recorder_worker_id = str(uuid4())
+        if str(UUID(adapter_recorder_worker_id)) != adapter_recorder_worker_id:
+            raise ValueError("adapter recorder worker ID must be a canonical UUID")
+        recorder_fixture = Path(__file__).with_name(
+            "v4_publication_adapter_operation_recorder.py"
+        )
+        metadata = recorder_fixture.lstat()
+        if (
+            recorder_fixture.is_symlink()
+            or metadata.st_mode & 0o170000 != 0o100000
+        ):
+            raise ValueError("adapter-operation recorder fixture must be a regular file")
+
     command = [
         "docker",
         "run",
@@ -588,12 +667,23 @@ def start_rollback_worker(
         "--mount",
         _mount(control_bundle / "publication-worker-launch-lock.sha256", CONTROL_DIGEST),
     ]
-    container_argv = [
-        "/usr/local/bin/python",
-        "-I",
-        "-B",
-        "-S",
-        CONTROL_LAUNCHER,
+    if recorder_fixture is not None:
+        command.extend(
+            (
+                "--env",
+                f"TASK7_ADAPTER_RECORDER_URL={adapter_recorder_url.rstrip('/')}",
+                "--env",
+                f"TASK7_ADAPTER_RECORDER_RUN_ID={adapter_recorder_run_id}",
+                "--env",
+                f"TASK7_ADAPTER_RECORDER_WORKER_ID={adapter_recorder_worker_id}",
+                "--env",
+                f"TASK7_ADAPTER_RECORDER_FIXTURE={ADAPTER_RECORDER_FIXTURE}",
+                "--mount",
+                _mount(recorder_fixture, ADAPTER_RECORDER_FIXTURE),
+            )
+        )
+
+    launcher_argv = [
         "--mode",
         "rollback-restart",
         "--worker-kind",
@@ -605,6 +695,26 @@ def start_rollback_worker(
         "--cancel-hold-operation-id",
         cancel_operation_id,
     ]
+    if recorder_fixture is None:
+        container_argv = [
+            "/usr/local/bin/python",
+            "-I",
+            "-B",
+            "-S",
+            CONTROL_LAUNCHER,
+            *launcher_argv,
+        ]
+    else:
+        container_argv = [
+            "/usr/local/bin/python",
+            "-I",
+            "-B",
+            "-S",
+            "-c",
+            _ADAPTER_RECORDER_LAUNCH_SHIM,
+            CONTROL_LAUNCHER,
+            *launcher_argv,
+        ]
     command.extend((image, *container_argv))
     with _without_shared_checkout():
         result = subprocess.run(
