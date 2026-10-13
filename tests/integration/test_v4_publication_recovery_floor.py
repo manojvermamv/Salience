@@ -5208,92 +5208,8 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
     assert _recovery_hold_count(database, expired_operation_id) == 1
 
     # Build the separate legacy database from this authentic primary state.
-    # Its NULL-v1 operation gets a distinct real Temporal history, while the
-    # expired operation remains a valid v1 companion after the 0042 round trip.
-    import test_creative_release_gate_migration as release_gate
-
-    original_ready_package = release_gate._approved_ready_package
-
-    async def reuse_cancelled_ready_package(*, publication_proofs=True):
-        return cancelled_fixture["ready"]
-
-    monkeypatch.setattr(
-        release_gate, "_approved_ready_package", reuse_cancelled_ready_package
-    )
-    try:
-        legacy_cancel_fixture = await _publication_fixture(database)
-    finally:
-        monkeypatch.setattr(
-            release_gate, "_approved_ready_package", original_ready_package
-        )
-    assert legacy_cancel_fixture["workspace_id"] == workspace_id
-    legacy_cancelled = legacy_cancel_fixture["bridge"].submit_publication(
-        legacy_cancel_fixture["command"]
-    )
-    legacy_null_operation_id = UUID(legacy_cancelled["operation_id"])
-    assert legacy_null_operation_id not in {expired_operation_id, cancelled_operation_id}
-    assert await _hard_exit_publication_worker(
-        legacy_cancel_fixture,
-        tmp_path,
-        after_acceptance=True,
-        operation_id=str(legacy_null_operation_id),
-    ) == 73
-    with psycopg.connect(database) as connection:
-        accepted_progress = connection.execute(
-            "SELECT operation_id,state FROM v4_legacy_publication_fixture_progress "
-            "WHERE operation_id=%s",
-            (str(legacy_null_operation_id),),
-        ).fetchone()
-    assert accepted_progress == (legacy_null_operation_id, "accepted")
-    _allow(
-        database,
-        workspace_id,
-        legacy_cancel_fixture["actor_id"],
-        (
-            "legacy:publication:reconcile:account:"
-            + legacy_cancel_fixture["account"].id,
-        ),
-    )
-    with psycopg.connect(database) as connection:
-        updated = connection.execute(
-            """UPDATE v4_legacy_publication_fixture_progress
-               SET state='published', polls=2, updated_at=clock_timestamp()
-               WHERE operation_id=%s AND state IN ('accepted','processing')
-               RETURNING state""",
-            (str(legacy_null_operation_id),),
-        ).fetchone()
-    assert updated == ("published",)
-    legacy_cancel_fixture["bridge"].close(
-        legacy_cancelled["cycle_id"],
-        disposition="cancelled",
-        reason="Preserve accepted publication liability for the legacy NULL-v1 fixture",
-    )
-    legacy_client = await Client.connect(os.environ["TEST_TEMPORAL_TARGET"])
-    legacy_outbox = CycleOutbox(
-        database, workspace_id=workspace_id, delivery_lane="legacy"
-    )
-    assert await legacy_outbox.dispatch_one(
-        TemporalCycleTransport(
-            legacy_client, task_queue=legacy_cancel_fixture["queue"]
-        )
-    )
-    legacy_workflow_id = (
-        "salience-v4-legacy-operation:" + str(legacy_null_operation_id)
-    )
-    legacy_handle = legacy_client.get_workflow_handle(legacy_workflow_id)
-    async with asyncio.timeout(10):
-        while True:
-            legacy_history = await legacy_handle.fetch_history()
-            if any(
-                event.HasField("workflow_execution_signaled_event_attributes")
-                and event.workflow_execution_signaled_event_attributes.signal_name
-                == "request_cancellation"
-                for event in legacy_history.events
-            ):
-                break
-            assert (await legacy_handle.describe()).status == WorkflowExecutionStatus.RUNNING
-            await asyncio.sleep(0.05)
-
+    # The legacy-only operation and its NULL-v1 hold stay in this disposable
+    # clone, so the primary verifier is bound only to its two retained holds.
     legacy_database_name = "recovery_floor_legacy_" + uuid4().hex[:12]
     from urllib.parse import urlsplit, urlunsplit
 
@@ -5318,6 +5234,142 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
         else None
     )
     monkeypatch.setenv("TEST_LEGACY_NULL_DATABASE_URL", legacy_database)
+
+    import test_creative_release_gate_migration as release_gate
+
+    original_ready_package = release_gate._approved_ready_package
+
+    async def reuse_cancelled_ready_package(*, publication_proofs=True):
+        return cancelled_fixture["ready"]
+
+    monkeypatch.setattr(
+        release_gate, "_approved_ready_package", reuse_cancelled_ready_package
+    )
+    monkeypatch.setenv("TEST_DATABASE_URL", legacy_database)
+    try:
+        legacy_cancel_fixture = await _publication_fixture(legacy_database)
+    finally:
+        monkeypatch.setenv("TEST_DATABASE_URL", database)
+        monkeypatch.setattr(
+            release_gate, "_approved_ready_package", original_ready_package
+        )
+    assert legacy_cancel_fixture["workspace_id"] == workspace_id
+    legacy_cancelled = legacy_cancel_fixture["bridge"].submit_publication(
+        legacy_cancel_fixture["command"]
+    )
+    legacy_null_operation_id = UUID(legacy_cancelled["operation_id"])
+    assert legacy_null_operation_id not in {expired_operation_id, cancelled_operation_id}
+    assert await _hard_exit_publication_worker(
+        legacy_cancel_fixture,
+        tmp_path,
+        after_acceptance=True,
+        operation_id=str(legacy_null_operation_id),
+    ) == 73
+    with psycopg.connect(legacy_database) as connection:
+        accepted_progress = connection.execute(
+            "SELECT operation_id,state FROM v4_legacy_publication_fixture_progress "
+            "WHERE operation_id=%s",
+            (str(legacy_null_operation_id),),
+        ).fetchone()
+    assert accepted_progress == (legacy_null_operation_id, "accepted")
+    _allow(
+        legacy_database,
+        workspace_id,
+        legacy_cancel_fixture["actor_id"],
+        (
+            "legacy:publication:reconcile:account:"
+            + legacy_cancel_fixture["account"].id,
+        ),
+    )
+    async def close_legacy_after_processing_read():
+        with psycopg.connect(legacy_database) as connection:
+            processing_progress = connection.execute(
+                "SELECT operation_id,state FROM v4_legacy_publication_fixture_progress "
+                "WHERE operation_id=%s",
+                (str(legacy_null_operation_id),),
+            ).fetchone()
+        assert processing_progress == (legacy_null_operation_id, "processing")
+        with psycopg.connect(legacy_database) as connection:
+            updated = connection.execute(
+                """UPDATE v4_legacy_publication_fixture_progress
+                   SET state='published', polls=2, updated_at=clock_timestamp()
+                   WHERE operation_id=%s AND state='processing'
+                   RETURNING state""",
+                (str(legacy_null_operation_id),),
+            ).fetchone()
+        assert updated == ("published",)
+        legacy_cancel_fixture["bridge"].close(
+            legacy_cancelled["cycle_id"],
+            disposition="cancelled",
+            reason="Preserve accepted publication liability for the legacy NULL-v1 fixture",
+        )
+        legacy_client = await Client.connect(os.environ["TEST_TEMPORAL_TARGET"])
+        legacy_outbox = CycleOutbox(
+            legacy_database, workspace_id=workspace_id, delivery_lane="legacy"
+        )
+        assert await legacy_outbox.dispatch_one(
+            TemporalCycleTransport(
+                legacy_client, task_queue=legacy_cancel_fixture["queue"]
+            )
+        )
+        legacy_workflow_id = (
+            "salience-v4-legacy-operation:" + str(legacy_null_operation_id)
+        )
+        legacy_handle = legacy_client.get_workflow_handle(legacy_workflow_id)
+        async with asyncio.timeout(10):
+            while True:
+                legacy_history = await legacy_handle.fetch_history()
+                if any(
+                    event.HasField("workflow_execution_signaled_event_attributes")
+                    and event.workflow_execution_signaled_event_attributes.signal_name
+                    == "request_cancellation"
+                    for event in legacy_history.events
+                ):
+                    break
+                assert (
+                    await legacy_handle.describe()
+                ).status == WorkflowExecutionStatus.RUNNING
+                await asyncio.sleep(0.05)
+
+    legacy_cancel_precommit_path = (
+        tmp_path / "legacy-null-hold-precommit-liabilities.json"
+    )
+    legacy_cancel_exit = await _hard_exit_publication_worker(
+        legacy_cancel_fixture,
+        tmp_path,
+        after_acceptance=False,
+        after_hold_commit=True,
+        precommit_snapshot_path=legacy_cancel_precommit_path,
+        operation_id=str(legacy_null_operation_id),
+        cancel_after_processing=True,
+        cancel_ready_callback=close_legacy_after_processing_read,
+    )
+    assert legacy_cancel_exit == 74, (
+        f"legacy NULL-v1 cancel crash-after-commit worker exited {legacy_cancel_exit}; "
+        "diagnostics="
+        + (
+            safe_text(legacy_cancel_precommit_path.read_text())
+            if legacy_cancel_precommit_path.exists()
+            else "missing"
+        )
+    )
+    assert legacy_cancel_precommit_path.is_file()
+    legacy_cancel_before = json.loads(
+        legacy_cancel_precommit_path.read_text(encoding="utf-8")
+    )
+    legacy_cancel_after_hold = _liability_snapshot(
+        legacy_database, legacy_null_operation_id
+    )
+    _assert_named_liabilities_unchanged(
+        legacy_cancel_before, legacy_cancel_after_hold
+    )
+    legacy_cancel_hold_row = _recovery_hold_snapshot(
+        legacy_database, legacy_null_operation_id
+    )
+    assert legacy_cancel_hold_row is not None
+    assert legacy_cancel_hold_row["reason"] == "published_during_cancel"
+    assert _recovery_hold_count(legacy_database, legacy_null_operation_id) == 1
+
     with psycopg.connect(legacy_database) as connection:
         connection.execute("DELETE FROM v4_legacy_publication_recovery_holds")
     downgraded_legacy = _migrate(legacy_database, "downgrade", "0042_publication_recovery_holds")
