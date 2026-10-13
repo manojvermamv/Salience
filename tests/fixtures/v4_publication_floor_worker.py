@@ -258,6 +258,8 @@ def invoke_launcher(
         NETWORK,
         "--env",
         f"DATABASE_URL={database_url}",
+        "--env",
+        f"TEST_DATABASE_URL={database_url}",
         "--mount",
         _mount(control_bundle / "launch-v4-publication-worker.py", CONTROL_LAUNCHER),
         "--mount",
