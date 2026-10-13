@@ -92,6 +92,8 @@ Keep effect dispatch fail-closed. Persist the effect intent, stable ID, permit b
 
 This adoption is additive to the current blueprint, not a replacement phase plan. The existing P1 queue and gate definitions remain authoritative.
 
+This is an umbrella architecture decision, not one implementation unit. Do not create a single plan that spans P2–P7. The first bounded implementation after written-spec approval is only the pinned reference submodule plus its durable research record. Each native vertical slice—readiness/manifests, scene graph and repair, each platform adapter, analytics/learning, experiments, and capability evolution—receives its own phase-owned design, acceptance tests, migration/rollback contract, and implementation plan when its existing V4 entry gate is reached.
+
 | Order | Existing phase / gate | Native adoption work | Entry and exit boundary |
 | --- | --- | --- | --- |
 | 0 | Active P1 / RG1, plus RG0 | Resume exact-head Task 10 review and final local verification, then complete open P1 policy, production routing/revocation, schedule/fencing, recovery/alert, and external RG0/RG1 acceptance from the current matrix. | First work. Reuse completed P0/P1 increments and dated evidence; preserve zero effects and held release. No submodule or AgentTube workflow can close a P1 row. |
