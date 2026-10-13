@@ -102,6 +102,7 @@ def _lock_bytes(lock) -> bytes:
 
 
 def _write_test_lock(tmp_path, monkeypatch, *, include_interpreter_prefix_record=False):
+    """Create synthetic authenticated bytes for unit tests, not commit-bound evidence."""
     from salience.cycles import publication_recovery_compatibility as compatibility
 
     if include_interpreter_prefix_record:
@@ -675,7 +676,39 @@ def test_authenticated_migration_graph_rejects_branch_cycle_or_ambiguous_head(
     assert registered == []
 
 
-def _synthetic_builder_inputs(tmp_path):
+@pytest.mark.parametrize(
+    "source",
+    (
+        "revision = '0043_floor'\ndown_revision = '0042_parent'\n"
+        "if False:\n    revision = 'ignored-but-still-a-write'\n",
+        "revision = '0043_floor'\ndown_revision = '0042_parent'\n"
+        "revision += '_rewritten'\n",
+        "revision = '0043_floor'\ndown_revision = '0042_parent'\n"
+        "if (revision := dynamic_revision()):\n    pass\n",
+        "revision = '0043_floor'\ndown_revision = '0042_parent'\n"
+        "[revision], untouched = ['rewritten'], None\n",
+        "revision = '0043_floor'\ndown_revision = '0042_parent'\n"
+        "def rewrite():\n    down_revision: str = dynamic_parent()\n",
+        "revision = '0043_floor'\ndown_revision = '0042_parent'\n"
+        "revision = dynamic_revision()\n",
+    ),
+    ids=(
+        "literal-then-conditional-rewrite",
+        "augmented-rewrite",
+        "named-expression-rewrite",
+        "destructuring-rewrite",
+        "nested-annotated-rewrite",
+        "dynamic-rewrite",
+    ),
+)
+def test_migration_revision_metadata_rejects_every_unsupported_write(source):
+    from salience.cycles import publication_recovery_compatibility as compatibility
+
+    with pytest.raises(PublicationWorkerCompatibilityError):
+        compatibility._parse_revision_metadata("synthetic_revision.py", source.encode())
+
+
+def _synthetic_builder_inputs(tmp_path, *, extra_migrations=()):
     repo_root = tmp_path / "candidate-repository"
     runtime_root = tmp_path / "runtime-root"
     repo_root.mkdir()
@@ -683,6 +716,16 @@ def _synthetic_builder_inputs(tmp_path):
     source_data = {}
     for source_name in SOURCE_PATHS:
         data = (ROOT / source_name).read_bytes()
+        source_data[source_name] = data
+        target = repo_root / source_name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(data)
+    for filename, metadata in extra_migrations:
+        source_name = f"migrations/versions/{filename}"
+        data = (
+            f"revision = {metadata['revision']!r}\n"
+            f"down_revision = {metadata['down_revision']!r}\n"
+        ).encode()
         source_data[source_name] = data
         target = repo_root / source_name
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -768,6 +811,183 @@ def test_publication_worker_launch_lock_builder_emits_canonical_lock_digest_and_
     assert (control_dir / "publication-worker-launch-lock.sha256").read_bytes() == (
         independent_digest_path.read_bytes()
     )
+
+
+def _builder_output_paths(tmp_path):
+    return (
+        tmp_path / "deployment/publication-worker-launch-lock.json",
+        tmp_path / "artifacts/publication-worker-launch-lock.sha256",
+        tmp_path / "external-control",
+    )
+
+
+def _invoke_synthetic_builder(builder, tmp_path, application_commit, wheel_path, runtime_root):
+    lock_path, digest_path, control_dir = _builder_output_paths(tmp_path)
+    return builder.build_publication_worker_launch_lock(
+        application_commit=application_commit,
+        wheel=wheel_path,
+        runtime_root=runtime_root,
+        lock_path=lock_path,
+        independent_digest_path=digest_path,
+        control_dir=control_dir,
+    )
+
+
+def test_publication_worker_launch_lock_builder_accepts_real_synthetic_0044_descendant(
+    tmp_path, monkeypatch
+):
+    builder = _lock_builder_module()
+    repo_root, application_commit, wheel_path, runtime_root = _synthetic_builder_inputs(
+        tmp_path,
+        extra_migrations=(
+            (
+                "0044_qualified_builder_descendant.py",
+                {
+                    "revision": "0044_qualified_builder_descendant",
+                    "down_revision": "0043_complete_publication_recovery_liabilities",
+                },
+            ),
+        ),
+    )
+    monkeypatch.setattr(builder, "REPOSITORY_ROOT", repo_root)
+    monkeypatch.setattr(builder, "TARGET_RUNTIME_ROOT", "/usr/local/lib/python3.13/site-packages")
+    monkeypatch.setattr(builder, "TARGET_INTERPRETER_PATH", sys.executable)
+
+    lock = _invoke_synthetic_builder(
+        builder, tmp_path, application_commit, wheel_path, runtime_root
+    )
+
+    assert lock.pin.application_commit == application_commit
+    assert any(
+        item.path == "migrations/versions/0044_qualified_builder_descendant.py"
+        for item in lock.pin.source_files
+    )
+
+
+@pytest.mark.parametrize(
+    "case",
+    (
+        "application-commit-head-mismatch",
+        "dirty-tracked-worktree",
+        "runtime-inventory-mismatch",
+        "wheel-source-mismatch",
+        "wheel-record-mismatch",
+        "installed-record-mismatch",
+    ),
+    ids=(
+        "application-commit-head-mismatch",
+        "dirty-tracked-worktree",
+        "runtime-inventory-mismatch",
+        "wheel-source-mismatch",
+        "wheel-record-mismatch",
+        "installed-record-mismatch",
+    ),
+)
+def test_publication_worker_launch_lock_builder_rejects_untrusted_candidate_state(
+    case, tmp_path, monkeypatch
+):
+    builder = _lock_builder_module()
+    repo_root, application_commit, wheel_path, runtime_root = _synthetic_builder_inputs(tmp_path)
+    monkeypatch.setattr(builder, "REPOSITORY_ROOT", repo_root)
+    monkeypatch.setattr(builder, "TARGET_RUNTIME_ROOT", "/usr/local/lib/python3.13/site-packages")
+    monkeypatch.setattr(builder, "TARGET_INTERPRETER_PATH", sys.executable)
+
+    if case == "application-commit-head-mismatch":
+        subprocess.run(["git", "commit", "--allow-empty", "-m", "advance HEAD"], cwd=repo_root, check=True)
+    elif case == "dirty-tracked-worktree":
+        tracked_path = repo_root / "migrations/env.py"
+        tracked_path.write_bytes(tracked_path.read_bytes() + b"\n# dirty\n")
+    elif case == "runtime-inventory-mismatch":
+        extra_path = runtime_root / "migrations/versions/0044_unpinned.py"
+        extra_path.write_text(
+            "revision = '0044_unpinned'\ndown_revision = '0043_complete_publication_recovery_liabilities'\n",
+            encoding="utf-8",
+        )
+    elif case == "wheel-source-mismatch":
+        replacement = tmp_path / "changed-wheel-member.whl"
+        with zipfile.ZipFile(wheel_path) as source, zipfile.ZipFile(replacement, "w") as target:
+            for name in source.namelist():
+                data = source.read(name)
+                if name == "salience/cycles/publication_recovery_compatibility.py":
+                    data += b"\n# changed wheel source\n"
+                target.writestr(name, data)
+        replacement.replace(wheel_path)
+    elif case == "wheel-record-mismatch":
+        replacement = tmp_path / "changed-wheel-record.whl"
+        with zipfile.ZipFile(wheel_path) as source, zipfile.ZipFile(replacement, "w") as target:
+            for name in source.namelist():
+                data = source.read(name)
+                if name.endswith(".dist-info/RECORD"):
+                    rows = list(csv.reader(io.StringIO(data.decode())))
+                    rows[0][1] = "sha256=" + ("A" if rows[0][1][7] != "A" else "B") + rows[0][1][8:]
+                    stream = io.StringIO(newline="")
+                    csv.writer(stream, lineterminator="\n").writerows(rows)
+                    data = stream.getvalue().encode()
+                target.writestr(name, data)
+        replacement.replace(wheel_path)
+    else:
+        record_path = next(runtime_root.glob("*.dist-info/RECORD"))
+        record_path.write_bytes(record_path.read_bytes() + b"# changed installed RECORD\n")
+
+    lock_path, digest_path, control_dir = _builder_output_paths(tmp_path)
+    with pytest.raises(ValueError):
+        builder.build_publication_worker_launch_lock(
+            application_commit=application_commit,
+            wheel=wheel_path,
+            runtime_root=runtime_root,
+            lock_path=lock_path,
+            independent_digest_path=digest_path,
+            control_dir=control_dir,
+        )
+
+    assert not lock_path.exists()
+    assert not digest_path.exists()
+    assert not control_dir.exists()
+
+
+def test_publication_worker_launch_lock_builder_failure_preserves_published_bundle(
+    tmp_path, monkeypatch
+):
+    builder = _lock_builder_module()
+    repo_root, application_commit, wheel_path, runtime_root = _synthetic_builder_inputs(tmp_path)
+    monkeypatch.setattr(builder, "REPOSITORY_ROOT", repo_root)
+    monkeypatch.setattr(builder, "TARGET_RUNTIME_ROOT", "/usr/local/lib/python3.13/site-packages")
+    monkeypatch.setattr(builder, "TARGET_INTERPRETER_PATH", sys.executable)
+    lock_path, digest_path, control_dir = _builder_output_paths(tmp_path)
+    control_dir.mkdir(parents=True)
+    outputs = {
+        lock_path: b"old tracked lock\n",
+        digest_path: b"old independent digest\n",
+        control_dir / "publication-worker-launch-lock.json": b"old control lock\n",
+        control_dir / "publication-worker-launch-lock.sha256": b"old control digest\n",
+        control_dir / "launch-v4-publication-worker.py": b"old control launcher\n",
+    }
+    for path, content in outputs.items():
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(content)
+
+    original_replace = builder.os.replace
+    replacements = []
+
+    def fail_during_publish(source, destination):
+        replacements.append((Path(source), Path(destination)))
+        if len(replacements) == 3:
+            raise OSError("injected publication failure")
+        return original_replace(source, destination)
+
+    monkeypatch.setattr(builder.os, "replace", fail_during_publish)
+    with pytest.raises(OSError, match="injected publication failure"):
+        builder.build_publication_worker_launch_lock(
+            application_commit=application_commit,
+            wheel=wheel_path,
+            runtime_root=runtime_root,
+            lock_path=lock_path,
+            independent_digest_path=digest_path,
+            control_dir=control_dir,
+        )
+
+    assert len(replacements) >= 5
+    assert {path: path.read_bytes() for path in outputs} == outputs
 
 
 def test_launcher_binds_valid_floor_lock_to_fixed_interpreter_runtime_and_entrypoint(

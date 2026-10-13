@@ -701,28 +701,57 @@ def _parse_revision_metadata(path: str, content: bytes) -> tuple[str, tuple[str,
         ) from error
 
     expressions: dict[str, ast.expr] = {}
+    approved_targets: set[int] = set()
     for statement in tree.body:
-        if isinstance(statement, ast.Assign):
-            targets = statement.targets
+        if isinstance(statement, ast.Assign) and len(statement.targets) == 1:
+            target = statement.targets[0]
             value = statement.value
         elif isinstance(statement, ast.AnnAssign):
-            targets = [statement.target]
+            target = statement.target
             value = statement.value
         else:
             continue
-        names = [
-            target.id
-            for target in targets
-            if isinstance(target, ast.Name)
-            and target.id in {"revision", "down_revision"}
-        ]
-        if not names:
+        if not isinstance(target, ast.Name) or target.id not in {"revision", "down_revision"}:
             continue
-        if value is None or len(names) != 1 or names[0] in expressions:
+        name = target.id
+        if value is None or name in expressions:
             raise PublicationWorkerCompatibilityError(
                 "trusted Alembic revision metadata is ambiguous"
             )
-        expressions[names[0]] = value
+        expressions[name] = value
+        approved_targets.add(id(target))
+
+    def assigned_binding_names(node: ast.AST) -> tuple[str, ...]:
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            return (node.name,)
+        if isinstance(node, ast.alias):
+            return (node.asname or node.name.partition(".")[0],)
+        if isinstance(node, ast.ExceptHandler) and node.name:
+            return (node.name,)
+        if isinstance(node, ast.MatchAs) and node.name:
+            return (node.name,)
+        if isinstance(node, ast.MatchStar) and node.name:
+            return (node.name,)
+        if isinstance(node, ast.MatchMapping) and node.rest:
+            return (node.rest,)
+        if isinstance(node, ast.arg):
+            return (node.arg,)
+        return ()
+
+    for node in ast.walk(tree):
+        if (
+            isinstance(node, ast.Name)
+            and isinstance(node.ctx, ast.Store)
+            and node.id in {"revision", "down_revision"}
+            and id(node) not in approved_targets
+        ):
+            raise PublicationWorkerCompatibilityError(
+                "trusted Alembic revision metadata contains an unsupported write"
+            )
+        if any(name in {"revision", "down_revision"} for name in assigned_binding_names(node)):
+            raise PublicationWorkerCompatibilityError(
+                "trusted Alembic revision metadata contains an unsupported write"
+            )
 
     if set(expressions) != {"revision", "down_revision"}:
         raise PublicationWorkerCompatibilityError(

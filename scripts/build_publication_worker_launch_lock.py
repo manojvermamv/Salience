@@ -13,6 +13,7 @@ import json
 import os
 from pathlib import Path, PurePosixPath
 import re
+import shutil
 import stat
 import subprocess
 import sys
@@ -353,21 +354,118 @@ def _validate_wheel_and_installed_record(
     return record_relative, record_bytes
 
 
-def _atomic_write(path: Path, content: bytes) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    descriptor, temporary_name = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
-    temporary = Path(temporary_name)
+def _write_staged_file(path: Path, content: bytes, mode: int) -> None:
+    with path.open("xb") as stream:
+        stream.write(content)
+        stream.flush()
+        os.fsync(stream.fileno())
+    path.chmod(mode)
+    if path.read_bytes() != content:
+        raise OSError(f"staged output failed byte validation: {path.name}")
+
+
+def _publish_output_bundle(outputs: list[tuple[Path, bytes]]) -> None:
+    """Stage all outputs, then publish as a rollback-capable replacement set."""
+    normalized_outputs: list[tuple[Path, bytes]] = []
+    seen: set[Path] = set()
+    for requested_path, content in outputs:
+        requested_path = Path(requested_path)
+        requested_path.parent.mkdir(parents=True, exist_ok=True)
+        parent = requested_path.parent.resolve(strict=True)
+        target = parent / requested_path.name
+        if target in seen:
+            raise ValueError("launch-lock output paths must be distinct")
+        seen.add(target)
+        if target.is_symlink():
+            raise ValueError(f"launch-lock output must not be a symlink: {target}")
+        if target.exists() and not stat.S_ISREG(target.lstat().st_mode):
+            raise ValueError(f"launch-lock output is not a regular file: {target}")
+        normalized_outputs.append((target, content))
+
+    snapshots: dict[Path, tuple[bool, bytes | None, int]] = {}
+    for target, _content in normalized_outputs:
+        exists = target.exists()
+        if exists:
+            status = target.lstat()
+            snapshots[target] = (True, target.read_bytes(), stat.S_IMODE(status.st_mode))
+        else:
+            snapshots[target] = (False, None, 0o644)
+
+    stage_directories: dict[Path, Path] = {}
+    entries: list[dict[str, object]] = []
     try:
-        with os.fdopen(descriptor, "wb") as stream:
-            stream.write(content)
-            stream.flush()
-            os.fsync(stream.fileno())
-        os.replace(temporary, path)
-    finally:
+        for target, _content in normalized_outputs:
+            if target.parent not in stage_directories:
+                stage_directories[target.parent] = Path(
+                    tempfile.mkdtemp(
+                        prefix=".publication-worker-launch-lock-stage-",
+                        dir=target.parent,
+                    )
+                )
+
+        for index, (target, content) in enumerate(normalized_outputs):
+            stage_directory = stage_directories[target.parent]
+            staged = stage_directory / f"output-{index}.new"
+            was_present, prior_bytes, prior_mode = snapshots[target]
+            _write_staged_file(staged, content, prior_mode)
+            backup = None
+            if was_present:
+                backup = stage_directory / f"output-{index}.prior"
+                _write_staged_file(backup, prior_bytes or b"", prior_mode)
+            entries.append(
+                {
+                    "target": target,
+                    "staged": staged,
+                    "backup": backup,
+                    "content": content,
+                    "was_present": was_present,
+                }
+            )
+
+        # Confirm the published set is unchanged after staging and before the first rename.
+        for target, _content in normalized_outputs:
+            was_present, prior_bytes, prior_mode = snapshots[target]
+            if was_present:
+                if (
+                    target.is_symlink()
+                    or not target.is_file()
+                    or target.read_bytes() != prior_bytes
+                    or stat.S_IMODE(target.lstat().st_mode) != prior_mode
+                ):
+                    raise OSError(f"launch-lock output changed during staging: {target}")
+            elif target.exists() or target.is_symlink():
+                raise OSError(f"launch-lock output appeared during staging: {target}")
+
+        replaced: list[dict[str, object]] = []
+        current_entry: dict[str, object] | None = None
         try:
-            temporary.unlink()
-        except FileNotFoundError:
-            pass
+            for entry in entries:
+                current_entry = entry
+                os.replace(entry["staged"], entry["target"])
+                replaced.append(entry)
+                current_entry = None
+        except BaseException as publish_error:
+            # Include a rename that completed before an injected or I/O exception was raised.
+            if current_entry is not None and not Path(current_entry["staged"]).exists():
+                if Path(current_entry["target"]).exists():
+                    replaced.append(current_entry)
+            rollback_errors = []
+            for entry in reversed(replaced):
+                target = Path(entry["target"])
+                backup = entry["backup"]
+                try:
+                    if backup is not None:
+                        os.replace(backup, target)
+                    else:
+                        target.unlink(missing_ok=True)
+                except OSError as rollback_error:
+                    rollback_errors.append(rollback_error)
+            if rollback_errors:
+                raise RuntimeError("launch-lock output publication failed and rollback was incomplete") from publish_error
+            raise
+    finally:
+        for stage_directory in stage_directories.values():
+            shutil.rmtree(stage_directory, ignore_errors=True)
 
 
 def build_publication_worker_launch_lock(
@@ -480,11 +578,18 @@ def build_publication_worker_launch_lock(
     lock_bytes = _canonical_json(asdict(lock))
     digest_bytes = (_sha256(lock_bytes) + "\n").encode("ascii")
     control_dir = Path(control_dir)
-    _atomic_write(Path(lock_path), lock_bytes)
-    _atomic_write(Path(independent_digest_path), digest_bytes)
-    _atomic_write(control_dir / CONTROL_LOCK_NAME, lock_bytes)
-    _atomic_write(control_dir / CONTROL_DIGEST_NAME, digest_bytes)
-    _atomic_write(control_dir / CONTROL_LAUNCHER_NAME, launcher_bytes)
+    outputs = [
+        (Path(lock_path), lock_bytes),
+        (Path(independent_digest_path), digest_bytes),
+        (control_dir / CONTROL_LOCK_NAME, lock_bytes),
+        (control_dir / CONTROL_DIGEST_NAME, digest_bytes),
+        (control_dir / CONTROL_LAUNCHER_NAME, launcher_bytes),
+    ]
+    if digest_bytes != (_sha256(lock_bytes) + "\n").encode("ascii"):
+        raise ValueError("independent publication worker lock digest does not match canonical lock")
+    if outputs[0][1] != outputs[2][1] or outputs[1][1] != outputs[3][1]:
+        raise ValueError("publication worker control bundle is not byte-identical")
+    _publish_output_bundle(outputs)
     return lock
 
 
