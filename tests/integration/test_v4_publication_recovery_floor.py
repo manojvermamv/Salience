@@ -14,6 +14,7 @@ import os
 from pathlib import Path
 import shutil
 import sys
+import subprocess
 from uuid import UUID
 import zipfile
 from types import SimpleNamespace
@@ -35,7 +36,7 @@ ROOT = Path(__file__).parents[2]
 ANCHOR = "69d7ab5da02cc9b8013f17b3e9aed3f7edb758a6"
 A4 = "a4b2368cdb463939d093020224a5b5667392aee6"
 PREFLOOR = "039ddf39cb9b846c205f352e083293fbec6f9fc5"
-SOURCE_PATHS = (
+BASE_SOURCE_PATHS = (
     "scripts/launch-v4-publication-worker.py",
     "src/salience/cycles/publication_recovery_compatibility.py",
     "src/salience/cycles/legacy_runtime.py",
@@ -46,8 +47,28 @@ SOURCE_PATHS = (
     "src/salience/workflows/publication.py",
     "src/salience/workflows/persistence.py",
     "src/salience/publication/repository.py",
-    "migrations/versions/0042_legacy_publication_recovery_holds.py",
 )
+MIGRATION_SUPPORT_PATHS = (
+    "alembic.ini",
+    "migrations/__init__.py",
+    "migrations/env.py",
+    "migrations/versions/__init__.py",
+)
+APPLICATION_PACKAGE_PATHS = tuple(
+    path.relative_to(ROOT).as_posix()
+    for path in sorted((ROOT / "src" / "salience").rglob("*"))
+    if path.is_file() and "__pycache__" not in path.parts and path.suffix != ".pyc"
+)
+MIGRATION_REVISION_PATHS = tuple(
+    path.relative_to(ROOT).as_posix()
+    for path in sorted((ROOT / "migrations" / "versions").glob("[0-9][0-9][0-9][0-9]_*.py"))
+)
+SOURCE_PATHS = tuple(sorted(set(
+    BASE_SOURCE_PATHS
+    + APPLICATION_PACKAGE_PATHS
+    + MIGRATION_SUPPORT_PATHS
+    + MIGRATION_REVISION_PATHS
+)))
 
 
 def _sha256(data: bytes) -> str:
@@ -98,6 +119,7 @@ def _write_test_lock(tmp_path, monkeypatch, *, include_interpreter_prefix_record
     import_pins = []
     observed_paths = {}
     copied = []
+    recorded_files = []
     for source_name in SOURCE_PATHS:
         source = ROOT / source_name
         data = source.read_bytes()
@@ -112,6 +134,8 @@ def _write_test_lock(tmp_path, monkeypatch, *, include_interpreter_prefix_record
         target.write_bytes(data)
         copied.append((target_name, data))
         if source_name.startswith("src/"):
+            recorded_files.append((target_name, data))
+        if source_name.startswith("src/") and source_name.endswith(".py"):
             module = _module_for_source(source_name)
             observed_paths[module] = str(target)
             import_pins.append(
@@ -127,7 +151,7 @@ def _write_test_lock(tmp_path, monkeypatch, *, include_interpreter_prefix_record
     dist_info.mkdir()
     record = dist_info / "RECORD"
     record_rows = []
-    for relative, data in copied:
+    for relative, data in recorded_files:
         record_rows.append((relative, "sha256=" + _record_digest(data), str(len(data))))
     if include_interpreter_prefix_record:
         prefix_file = interpreter_installation / "bin/content"
@@ -144,7 +168,7 @@ def _write_test_lock(tmp_path, monkeypatch, *, include_interpreter_prefix_record
 
     wheel_path = tmp_path / "salience.whl"
     with zipfile.ZipFile(wheel_path, "w", compression=zipfile.ZIP_DEFLATED) as archive:
-        for relative, data in copied:
+        for relative, data in recorded_files:
             archive.writestr(relative, data)
         archive.writestr(
             "salience-0.1.0.dist-info/RECORD",
@@ -198,6 +222,76 @@ def _write_test_lock(tmp_path, monkeypatch, *, include_interpreter_prefix_record
             lambda _path: runtime_root.parent.resolve(),
         )
     return lock, wheel_path, runtime_root, observed_paths
+
+
+def _with_pinned_source(lock, source_name, data, *, write_runtime=True):
+    runtime_root = Path(lock.runtime_root)
+    installed_name = _installed_path(source_name)
+    target = runtime_root / installed_name
+    if write_runtime:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(data)
+    source_pin = PublicationWorkerSourcePin(
+        path=source_name,
+        git_blob=_git_blob(data),
+        sha256=_sha256(data),
+    )
+    source_files = [item for item in lock.pin.source_files if item.path != source_name]
+    source_files.append(source_pin)
+    source_files.sort(key=lambda item: item.path)
+    source_files = tuple(source_files)
+    return replace(
+        lock,
+        pin=replace(
+            lock.pin,
+            source_files=source_files,
+            source_manifest_sha256=_source_manifest_sha256(source_files),
+        ),
+    )
+
+
+def _add_migration_source(lock, filename, metadata):
+    source_name = f"migrations/versions/{filename}"
+    source = (
+        f"revision = {metadata['revision']!r}\n"
+        f"down_revision = {metadata['down_revision']!r}\n"
+    ).encode()
+    return _with_pinned_source(lock, source_name, source)
+
+
+def _compatibility_registration_probe(lock, database_revision, monkeypatch, *, digest=None):
+    from salience.cycles import publication_recovery_compatibility as compatibility
+
+    reads = []
+    monkeypatch.setattr(
+        compatibility,
+        "_database_revision",
+        lambda _database_url: reads.append(database_revision) or database_revision,
+    )
+    registered = []
+
+    def register_worker():
+        pin = require_publication_worker_compatibility(
+            "unused",
+            start_mode="current",
+            launch_lock=lock,
+            observed_launch_lock_sha256=digest or _sha256(_lock_bytes(lock)),
+        )
+        registered.append(pin)
+        return pin
+
+    return register_worker, reads, registered
+
+
+def _lock_builder_module():
+    builder_path = ROOT / "scripts" / "build_publication_worker_launch_lock.py"
+    assert builder_path.is_file(), "publication worker launch-lock builder must be available"
+    spec = importlib.util.spec_from_file_location("publication_worker_lock_builder", builder_path)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
 
 
 def _launcher_module():
@@ -335,6 +429,345 @@ def test_floor_gate_requires_exact_artifact_install_source_and_runtime_import_pi
             )
     finally:
         import_path.write_bytes(original)
+
+
+def test_worker_floor_rejects_empty_0042_before_registration(tmp_path, monkeypatch):
+    lock, _, _, _ = _write_test_lock(tmp_path, monkeypatch)
+    register_worker, database_reads, registered = _compatibility_registration_probe(
+        lock, "0042_publication_recovery_holds", monkeypatch
+    )
+
+    with pytest.raises(PublicationWorkerCompatibilityError, match="0043"):
+        register_worker()
+
+    assert database_reads == ["0042_publication_recovery_holds"]
+    assert registered == []
+
+
+@pytest.mark.parametrize(
+    "case,database_revision",
+    (
+        ("earlier-revision", "0001_canonical_foundation"),
+        ("unknown-revision", "unrecognized_revision"),
+        ("branched-history", "0043_complete_publication_recovery_liabilities"),
+        ("ambiguous-head", "0043_complete_publication_recovery_liabilities"),
+    ),
+    ids=("earlier-revision", "unknown-revision", "branched-history", "ambiguous-head"),
+)
+def test_worker_floor_rejects_unknown_pre_floor_and_ambiguous_lineages_before_registration(
+    case, database_revision, tmp_path, monkeypatch
+):
+    lock, _, _, _ = _write_test_lock(tmp_path, monkeypatch)
+    if case == "branched-history":
+        lock = _add_migration_source(
+            lock,
+            "0044_branch.py",
+            {"revision": "0044_branch", "down_revision": "0042_publication_recovery_holds"},
+        )
+    elif case == "ambiguous-head":
+        lock = _add_migration_source(
+            lock,
+            "0099_second_root.py",
+            {"revision": "0099_second_root", "down_revision": None},
+        )
+    register_worker, database_reads, registered = _compatibility_registration_probe(
+        lock, database_revision, monkeypatch
+    )
+
+    with pytest.raises(PublicationWorkerCompatibilityError):
+        register_worker()
+
+    assert registered == []
+    if case in {"earlier-revision", "unknown-revision"}:
+        assert database_reads == [database_revision]
+    else:
+        assert database_reads == []
+
+
+@pytest.mark.parametrize(
+    "case,database_revision",
+    (
+        ("exact-0043", "0043_complete_publication_recovery_liabilities"),
+        ("qualified-descendant", "0044_qualified_descendant"),
+    ),
+    ids=("exact-0043", "qualified-descendant"),
+)
+def test_worker_floor_accepts_0043_and_qualified_descendant(
+    case, database_revision, tmp_path, monkeypatch
+):
+    lock, _, _, _ = _write_test_lock(tmp_path, monkeypatch)
+    if case == "qualified-descendant":
+        lock = _add_migration_source(
+            lock,
+            "0044_qualified_descendant.py",
+            {
+                "revision": "0044_qualified_descendant",
+                "down_revision": "0043_complete_publication_recovery_liabilities",
+            },
+        )
+    register_worker, database_reads, registered = _compatibility_registration_probe(
+        lock, database_revision, monkeypatch
+    )
+
+    assert register_worker() == lock.pin
+
+    assert database_reads == [database_revision]
+    assert registered == [lock.pin]
+
+
+@pytest.mark.parametrize(
+    "case",
+    (
+        "extra-valid-descendant",
+        "missing-revision",
+        "modified-revision-hash",
+        "modified-down-revision",
+        "symlink-path-escape",
+        "independent-digest-mismatch",
+    ),
+    ids=(
+        "extra-valid-descendant",
+        "missing-revision",
+        "modified-revision-hash",
+        "modified-down-revision",
+        "symlink-path-escape",
+        "independent-digest-mismatch",
+    ),
+)
+def test_authenticated_migration_inventory_rejects_unexpected_state(
+    case, tmp_path, monkeypatch
+):
+    from salience.cycles import publication_recovery_compatibility as compatibility
+
+    lock, _, runtime_root, _ = _write_test_lock(tmp_path, monkeypatch)
+    revision_path = runtime_root / "migrations/versions/0043_complete_publication_recovery_liabilities.py"
+    observed_digest = None
+    if case == "extra-valid-descendant":
+        extra_path = runtime_root / "migrations/versions/0044_unpinned.py"
+        extra_path.write_text(
+            "revision = '0044_unpinned'\ndown_revision = '0043_complete_publication_recovery_liabilities'\n",
+            encoding="utf-8",
+        )
+    elif case == "missing-revision":
+        revision_path.unlink()
+    elif case == "modified-revision-hash":
+        original = next(
+            item for item in lock.pin.source_files
+            if item.path == "migrations/versions/0043_complete_publication_recovery_liabilities.py"
+        )
+        changed = replace(original, sha256="0" * 64)
+        source_files = tuple(changed if item.path == original.path else item for item in lock.pin.source_files)
+        lock = replace(
+            lock,
+            pin=replace(
+                lock.pin,
+                source_files=source_files,
+                source_manifest_sha256=_source_manifest_sha256(source_files),
+            ),
+        )
+    elif case == "modified-down-revision":
+        changed = revision_path.read_bytes().replace(
+            b"0042_publication_recovery_holds",
+            b"0041_native_publication_sources",
+        )
+        lock = _with_pinned_source(
+            lock,
+            "migrations/versions/0043_complete_publication_recovery_liabilities.py",
+            changed,
+        )
+    elif case == "symlink-path-escape":
+        escaped = tmp_path / "outside-migration.py"
+        escaped.write_bytes(revision_path.read_bytes())
+        revision_path.unlink()
+        revision_path.symlink_to(escaped)
+    elif case == "independent-digest-mismatch":
+        observed_digest = "0" * 64
+
+    parse_calls = []
+    original_parse = getattr(compatibility, "_parse_revision_metadata", None)
+    if original_parse is not None:
+        def counted_parse(*args, **kwargs):
+            parse_calls.append(True)
+            return original_parse(*args, **kwargs)
+
+        monkeypatch.setattr(compatibility, "_parse_revision_metadata", counted_parse)
+    register_worker, database_reads, registered = _compatibility_registration_probe(
+        lock,
+        "0043_complete_publication_recovery_liabilities",
+        monkeypatch,
+        digest=observed_digest,
+    )
+
+    with pytest.raises(PublicationWorkerCompatibilityError):
+        register_worker()
+
+    assert registered == []
+    assert database_reads == []
+    if case == "modified-down-revision":
+        assert parse_calls
+    else:
+        assert parse_calls == []
+
+
+def test_authenticated_migration_inventory_accepts_exact_0043_inventory(tmp_path, monkeypatch):
+    from salience.cycles import publication_recovery_compatibility as compatibility
+
+    lock, _, _, _ = _write_test_lock(tmp_path, monkeypatch)
+    parsed = []
+    original_parse = getattr(compatibility, "_parse_revision_metadata", None)
+    if original_parse is not None:
+        def counted_parse(*args, **kwargs):
+            parsed.append(True)
+            return original_parse(*args, **kwargs)
+
+        monkeypatch.setattr(compatibility, "_parse_revision_metadata", counted_parse)
+    register_worker, database_reads, registered = _compatibility_registration_probe(
+        lock, "0043_complete_publication_recovery_liabilities", monkeypatch
+    )
+
+    assert register_worker() == lock.pin
+
+    assert len(parsed) == len(MIGRATION_REVISION_PATHS)
+    assert database_reads == ["0043_complete_publication_recovery_liabilities"]
+    assert registered == [lock.pin]
+
+
+@pytest.mark.parametrize(
+    "case",
+    ("branch", "cycle", "ambiguous-head"),
+    ids=("branch", "cycle", "ambiguous-head"),
+)
+def test_authenticated_migration_graph_rejects_branch_cycle_or_ambiguous_head(
+    case, tmp_path, monkeypatch
+):
+    lock, _, _, _ = _write_test_lock(tmp_path, monkeypatch)
+    if case == "branch":
+        lock = _add_migration_source(
+            lock,
+            "0044_branch.py",
+            {"revision": "0044_branch", "down_revision": "0042_publication_recovery_holds"},
+        )
+    elif case == "cycle":
+        lock = _add_migration_source(
+            lock,
+            "0044_cycle_a.py",
+            {"revision": "0044_cycle_a", "down_revision": "0045_cycle_b"},
+        )
+        lock = _add_migration_source(
+            lock,
+            "0045_cycle_b.py",
+            {"revision": "0045_cycle_b", "down_revision": "0044_cycle_a"},
+        )
+    else:
+        lock = _add_migration_source(
+            lock,
+            "0099_second_root.py",
+            {"revision": "0099_second_root", "down_revision": None},
+        )
+    register_worker, database_reads, registered = _compatibility_registration_probe(
+        lock, "0043_complete_publication_recovery_liabilities", monkeypatch
+    )
+
+    with pytest.raises(PublicationWorkerCompatibilityError):
+        register_worker()
+
+    assert database_reads == []
+    assert registered == []
+
+
+def _synthetic_builder_inputs(tmp_path):
+    repo_root = tmp_path / "candidate-repository"
+    runtime_root = tmp_path / "runtime-root"
+    repo_root.mkdir()
+    runtime_root.mkdir()
+    source_data = {}
+    for source_name in SOURCE_PATHS:
+        data = (ROOT / source_name).read_bytes()
+        source_data[source_name] = data
+        target = repo_root / source_name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(data)
+
+    subprocess.run(["git", "init", "-q"], cwd=repo_root, check=True)
+    subprocess.run(["git", "config", "user.name", "Test Builder"], cwd=repo_root, check=True)
+    subprocess.run(["git", "config", "user.email", "builder@example.invalid"], cwd=repo_root, check=True)
+    subprocess.run(["git", "add", "."], cwd=repo_root, check=True)
+    subprocess.run(["git", "commit", "-q", "-m", "synthetic candidate"], cwd=repo_root, check=True)
+    application_commit = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=repo_root,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+
+    installed_files = []
+    for source_name, data in source_data.items():
+        if source_name == "scripts/launch-v4-publication-worker.py":
+            continue
+        installed_name = _installed_path(source_name)
+        target = runtime_root / installed_name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(data)
+        if source_name.startswith("src/"):
+            installed_files.append((installed_name, data))
+
+    dist_info = runtime_root / "salience-0.1.0.dist-info"
+    dist_info.mkdir()
+    record_path = dist_info / "RECORD"
+    rows = [
+        (name, "sha256=" + _record_digest(data), str(len(data)))
+        for name, data in installed_files
+    ]
+    record_relative = str(record_path.relative_to(runtime_root))
+    rows.append((record_relative, "", ""))
+    with record_path.open("w", encoding="utf-8", newline="") as stream:
+        csv.writer(stream, lineterminator="\n").writerows(rows)
+    record_data = record_path.read_bytes()
+
+    wheel_path = tmp_path / "salience-0.1.0-py3-none-any.whl"
+    with zipfile.ZipFile(wheel_path, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+        for name, data in installed_files:
+            archive.writestr(name, data)
+        archive.writestr(record_relative, record_data)
+    return repo_root, application_commit, wheel_path, runtime_root
+
+
+def test_publication_worker_launch_lock_builder_emits_canonical_lock_digest_and_identical_control_bundle(
+    tmp_path, monkeypatch
+):
+    builder = _lock_builder_module()
+    repo_root, application_commit, wheel_path, runtime_root = _synthetic_builder_inputs(tmp_path)
+    monkeypatch.setattr(builder, "REPOSITORY_ROOT", repo_root)
+    monkeypatch.setattr(builder, "TARGET_RUNTIME_ROOT", "/usr/local/lib/python3.13/site-packages")
+    monkeypatch.setattr(builder, "TARGET_INTERPRETER_PATH", sys.executable)
+    lock_path = tmp_path / "deployment/publication-worker-launch-lock.json"
+    independent_digest_path = tmp_path / "artifacts/publication-worker-launch-lock.sha256"
+    control_dir = tmp_path / "external-control"
+
+    lock = builder.build_publication_worker_launch_lock(
+        application_commit=application_commit,
+        wheel=wheel_path,
+        runtime_root=runtime_root,
+        lock_path=lock_path,
+        independent_digest_path=independent_digest_path,
+        control_dir=control_dir,
+    )
+
+    lock_bytes = lock_path.read_bytes()
+    expected_lock_bytes = (
+        json.dumps(asdict(lock), sort_keys=True, separators=(",", ":")) + "\n"
+    ).encode("utf-8")
+    expected_digest = _sha256(lock_bytes) + "\n"
+    assert lock_bytes == expected_lock_bytes
+    assert independent_digest_path.read_bytes() == expected_digest.encode("ascii")
+    assert (control_dir / "publication-worker-launch-lock.json").read_bytes() == lock_bytes
+    assert (control_dir / "launch-v4-publication-worker.py").read_bytes() == (
+        repo_root / "scripts/launch-v4-publication-worker.py"
+    ).read_bytes()
+    assert (control_dir / "publication-worker-launch-lock.sha256").read_bytes() == (
+        independent_digest_path.read_bytes()
+    )
 
 
 def test_launcher_binds_valid_floor_lock_to_fixed_interpreter_runtime_and_entrypoint(
@@ -654,7 +1087,7 @@ def test_docker_and_compose_worker_use_pinned_wheel_and_trusted_launcher():
     )
 
 
-def test_pre_0042_database_returns_no_floor_requirement(tmp_path, monkeypatch):
+def test_pre_0043_database_is_rejected_by_hard_floor(tmp_path, monkeypatch):
     from test_v4_publication_recovery_holds import (
         _create_database,
         _drop_database,
@@ -667,12 +1100,13 @@ def test_pre_0042_database_returns_no_floor_requirement(tmp_path, monkeypatch):
     try:
         before = _migrate(database, "upgrade", "0041_native_publication_sources")
         assert before.returncode == 0, before.stderr
-        assert require_publication_worker_compatibility(
-            database,
-            start_mode="current",
-            launch_lock=lock,
-            observed_launch_lock_sha256=_sha256(_lock_bytes(lock)),
-        ) is None
+        with pytest.raises(PublicationWorkerCompatibilityError, match="floor 0043"):
+            require_publication_worker_compatibility(
+                database,
+                start_mode="current",
+                launch_lock=lock,
+                observed_launch_lock_sha256=_sha256(_lock_bytes(lock)),
+            )
     finally:
         _drop_database(source, name)
 
@@ -779,21 +1213,19 @@ def test_migration_graph_rejects_branch_and_cycle_shapes():
             validate_graph(graph)
 
 
-def test_installed_migration_graph_resolves_inside_site_packages(tmp_path, monkeypatch):
+def test_authenticated_migration_graph_resolves_inside_site_packages(tmp_path, monkeypatch):
     from salience.cycles import publication_recovery_compatibility as compatibility
 
-    site_packages = tmp_path / "lib" / "python3.13" / "site-packages"
-    package_file = site_packages / "salience" / "cycles" / "publication_recovery_compatibility.py"
-    package_file.parent.mkdir(parents=True)
-    package_file.touch()
-    migration_versions = site_packages / "migrations" / "versions"
-    shutil.copytree(ROOT / "migrations" / "versions", migration_versions)
-    monkeypatch.setattr(compatibility, "__file__", str(package_file))
+    lock, _, runtime_root, _ = _write_test_lock(tmp_path, monkeypatch)
+    verified_source_files = compatibility._validate_lock_and_pin(
+        lock, _sha256(_lock_bytes(lock))
+    )
 
-    revisions, heads = compatibility._migration_graph()
+    revisions, heads = compatibility._migration_graph(verified_source_files)
 
-    assert "0042_publication_recovery_holds" in revisions
-    assert heads == {"0042_publication_recovery_holds"}
+    assert "0043_complete_publication_recovery_liabilities" in revisions
+    assert heads == {"0043_complete_publication_recovery_liabilities"}
+    assert (runtime_root / "migrations/versions/0043_complete_publication_recovery_liabilities.py").is_file()
 
 
 def test_inprocess_gate_wraps_malformed_rollback_environment_as_compatibility_error(

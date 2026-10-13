@@ -17,6 +17,7 @@ import json
 import os
 from pathlib import Path
 import re
+import stat
 import sys
 from typing import Literal, Mapping
 from uuid import UUID
@@ -47,6 +48,10 @@ PUBLICATION_CANCEL_HOLD_OPERATION_ENV = "SALIENCE_PUBLICATION_CANCEL_HOLD_OPERAT
 
 _REQUIRED_SOURCE_PATHS = frozenset(
     {
+        "alembic.ini",
+        "migrations/__init__.py",
+        "migrations/env.py",
+        "migrations/versions/__init__.py",
         "scripts/launch-v4-publication-worker.py",
         "src/salience/cycles/publication_recovery_compatibility.py",
         "src/salience/cycles/legacy_runtime.py",
@@ -58,8 +63,20 @@ _REQUIRED_SOURCE_PATHS = frozenset(
         "src/salience/workflows/persistence.py",
         "src/salience/publication/repository.py",
         "migrations/versions/0042_legacy_publication_recovery_holds.py",
+        "migrations/versions/0043_complete_publication_recovery_liabilities.py",
     }
 )
+_REQUIRED_MIGRATION_SUPPORT_PATHS = frozenset(
+    {
+        "alembic.ini",
+        "migrations/__init__.py",
+        "migrations/env.py",
+        "migrations/versions/__init__.py",
+    }
+)
+_MIGRATION_VERSIONS_PREFIX = "migrations/versions/"
+_MIGRATION_FLOOR_REVISION = "0043_complete_publication_recovery_liabilities"
+_MIGRATION_PREVIOUS_REVISION = "0042_publication_recovery_holds"
 _REQUIRED_IMPORT_MODULES = frozenset(
     {
         "salience.cycles.publication_recovery_compatibility",
@@ -162,8 +179,15 @@ def _launcher_file_path() -> Path:
 
 
 def _source_file_path(path: str, runtime_root: Path) -> Path:
+    if not isinstance(path, str) or not path or "\\" in path or "\0" in path:
+        raise PublicationWorkerCompatibilityError("source pin path is not repository-relative")
     relative = Path(path)
-    if relative.is_absolute() or ".." in relative.parts:
+    if (
+        relative.is_absolute()
+        or ".." in relative.parts
+        or "." in relative.parts
+        or relative.as_posix() != path
+    ):
         raise PublicationWorkerCompatibilityError("source pin path is not repository-relative")
     if path == "scripts/launch-v4-publication-worker.py":
         return _launcher_file_path()
@@ -190,7 +214,31 @@ def _observed_import_path(module: str) -> str:
 def _contained_file(path: Path, root: Path) -> Path:
     try:
         root = root.resolve(strict=True)
-        resolved = path.resolve(strict=True)
+        candidate = path.absolute()
+        relative = candidate.relative_to(root)
+    except OSError as error:
+        raise PublicationWorkerCompatibilityError(
+            f"required pinned file is unavailable: {path}"
+        ) from error
+    except ValueError as error:
+        raise PublicationWorkerCompatibilityError(
+            f"pinned file escapes runtime root: {path}"
+        ) from error
+    current = root
+    for component in relative.parts:
+        current = current / component
+        try:
+            if current.is_symlink():
+                raise PublicationWorkerCompatibilityError(
+                    f"pinned file uses a symlink path: {path}"
+                )
+        except OSError as error:
+            raise PublicationWorkerCompatibilityError(
+                f"required pinned file is unavailable: {path}"
+            ) from error
+    try:
+        file_stat = current.lstat()
+        resolved = current.resolve(strict=True)
     except OSError as error:
         raise PublicationWorkerCompatibilityError(
             f"required pinned file is unavailable: {path}"
@@ -201,9 +249,31 @@ def _contained_file(path: Path, root: Path) -> Path:
         raise PublicationWorkerCompatibilityError(
             f"pinned file escapes runtime root: {path}"
         ) from error
-    if not resolved.is_file():
+    if not stat.S_ISREG(file_stat.st_mode):
         raise PublicationWorkerCompatibilityError(f"pinned file is not regular: {path}")
     return resolved
+
+
+def _source_file_bytes(path: str, runtime_root: Path) -> bytes:
+    source_path = _source_file_path(path, runtime_root)
+    if path != "scripts/launch-v4-publication-worker.py":
+        source_path = _contained_file(source_path, runtime_root)
+    else:
+        try:
+            if source_path.is_symlink() or not stat.S_ISREG(source_path.lstat().st_mode):
+                raise PublicationWorkerCompatibilityError(
+                    "pinned launcher source is not a regular file"
+                )
+        except OSError as error:
+            raise PublicationWorkerCompatibilityError(
+                f"required pinned file is unavailable: {source_path}"
+            ) from error
+    try:
+        return source_path.read_bytes()
+    except OSError as error:
+        raise PublicationWorkerCompatibilityError(
+            f"required pinned file is unavailable: {source_path}"
+        ) from error
 
 
 def _git_blob_sha1(data: bytes) -> str:
@@ -366,24 +436,26 @@ def _validate_lock_and_pin(
         raise PublicationWorkerCompatibilityError("publication worker runtime root is not a directory")
 
     source_paths = [item.path for item in pin.source_files]
-    if len(source_paths) != len(set(source_paths)) or not _REQUIRED_SOURCE_PATHS <= set(source_paths):
+    if (
+        any(not isinstance(path, str) for path in source_paths)
+        or len(source_paths) != len(set(source_paths))
+        or not _REQUIRED_SOURCE_PATHS <= set(source_paths)
+    ):
         raise PublicationWorkerCompatibilityError("publication worker source manifest is incomplete")
     if not _HEX_64.fullmatch(pin.source_manifest_sha256):
         raise PublicationWorkerCompatibilityError("publication worker source manifest hash is malformed")
     if hashlib.sha256(_source_manifest_bytes(pin.source_files)).hexdigest() != pin.source_manifest_sha256:
         raise PublicationWorkerCompatibilityError("publication worker source manifest digest mismatch")
+    verified_source_files: dict[str, bytes] = {}
     for source_pin in pin.source_files:
+        if not isinstance(source_pin.path, str):
+            raise PublicationWorkerCompatibilityError("publication worker source path is malformed")
         if not _HEX_40.fullmatch(source_pin.git_blob) or not _HEX_64.fullmatch(source_pin.sha256):
             raise PublicationWorkerCompatibilityError("publication worker source pin hash is malformed")
-        source_path = _source_file_path(source_pin.path, runtime_root)
-        source_file = (
-            source_path.resolve(strict=True)
-            if source_pin.path == "scripts/launch-v4-publication-worker.py"
-            else _contained_file(source_path, runtime_root)
-        )
-        content = source_file.read_bytes()
-        if _sha256_file(source_file) != source_pin.sha256 or _git_blob_sha1(content) != source_pin.git_blob:
+        content = _source_file_bytes(source_pin.path, runtime_root)
+        if hashlib.sha256(content).hexdigest() != source_pin.sha256 or _git_blob_sha1(content) != source_pin.git_blob:
             raise PublicationWorkerCompatibilityError(f"publication worker source pin mismatch: {source_pin.path}")
+        verified_source_files[source_pin.path] = content
 
     import_modules = [item.module for item in pin.runtime_imports]
     if len(import_modules) != len(set(import_modules)) or not _REQUIRED_IMPORT_MODULES <= set(import_modules):
@@ -410,18 +482,192 @@ def _validate_lock_and_pin(
                 f"publication worker import hash mismatch: {import_pin.module}"
             )
     _validate_worker_entrypoints(launch_lock)
+    _validate_migration_inventory(launch_lock, verified_source_files)
+    return verified_source_files
+
+
+def _contained_directory(path: Path, root: Path) -> Path:
+    try:
+        root = root.resolve(strict=True)
+        relative = path.absolute().relative_to(root)
+    except OSError as error:
+        raise PublicationWorkerCompatibilityError(
+            f"required migration directory is unavailable: {path}"
+        ) from error
+    except ValueError as error:
+        raise PublicationWorkerCompatibilityError(
+            f"migration directory escapes runtime root: {path}"
+        ) from error
+    current = root
+    for component in relative.parts:
+        current = current / component
+        if current.is_symlink():
+            raise PublicationWorkerCompatibilityError(
+                f"migration directory uses a symlink path: {path}"
+            )
+    try:
+        resolved = current.resolve(strict=True)
+    except OSError as error:
+        raise PublicationWorkerCompatibilityError(
+            f"required migration directory is unavailable: {path}"
+        ) from error
+    try:
+        resolved.relative_to(root)
+    except ValueError as error:
+        raise PublicationWorkerCompatibilityError(
+            f"migration directory escapes runtime root: {path}"
+        ) from error
+    if not resolved.is_dir():
+        raise PublicationWorkerCompatibilityError(
+            f"migration path is not a directory: {path}"
+        )
+    return resolved
+
+
+def _validate_migration_inventory(
+    launch_lock: PublicationWorkerLaunchLock,
+    verified_source_files: Mapping[str, bytes],
+) -> tuple[str, ...]:
+    pin = launch_lock.pin
+    source_names = {item.path for item in pin.source_files}
+    if not _REQUIRED_MIGRATION_SUPPORT_PATHS <= source_names:
+        raise PublicationWorkerCompatibilityError(
+            "authenticated Alembic configuration inventory is incomplete"
+        )
+
+    expected_migration_files = {
+        name for name in source_names if name.startswith("migrations/")
+    }
+    runtime_root = Path(launch_lock.runtime_root).resolve(strict=True)
+    migrations_root = _contained_directory(runtime_root / "migrations", runtime_root)
+    actual_migration_files: set[str] = set()
+    for directory, dir_names, file_names in os.walk(migrations_root, followlinks=False):
+        directory_path = Path(directory)
+        for name in tuple(dir_names):
+            child = directory_path / name
+            if child.is_symlink():
+                raise PublicationWorkerCompatibilityError(
+                    f"migration inventory uses a symlink path: {child}"
+                )
+            if name == "__pycache__":
+                dir_names.remove(name)
+        for name in file_names:
+            child = directory_path / name
+            if child.is_symlink():
+                raise PublicationWorkerCompatibilityError(
+                    f"migration inventory uses a symlink path: {child}"
+                )
+            if name.endswith(".pyc"):
+                continue
+            try:
+                child_stat = child.lstat()
+                child_relative = child.relative_to(runtime_root).as_posix()
+            except OSError as error:
+                raise PublicationWorkerCompatibilityError(
+                    f"migration inventory file is unavailable: {child}"
+                ) from error
+            if not stat.S_ISREG(child_stat.st_mode):
+                raise PublicationWorkerCompatibilityError(
+                    f"migration inventory file is not regular: {child}"
+                )
+            actual_migration_files.add(child_relative)
+    if actual_migration_files != expected_migration_files:
+        raise PublicationWorkerCompatibilityError(
+            "authenticated migration/config inventory does not match runtime files"
+        )
+
+    expected_revision_files = {
+        name
+        for name in expected_migration_files
+        if (
+            name.startswith(_MIGRATION_VERSIONS_PREFIX)
+            and name.endswith(".py")
+            and Path(name).name != "__init__.py"
+        )
+    }
+    versions_root = _contained_directory(
+        runtime_root / "migrations" / "versions", runtime_root
+    )
+    actual_revision_files: set[str] = set()
+    for path in versions_root.iterdir():
+        if not path.name.endswith(".py") or path.name == "__init__.py":
+            continue
+        if path.is_symlink():
+            raise PublicationWorkerCompatibilityError(
+                f"migration revision path is a symlink: {path}"
+            )
+        try:
+            path_stat = path.lstat()
+        except OSError as error:
+            raise PublicationWorkerCompatibilityError(
+                f"migration revision file is unavailable: {path}"
+            ) from error
+        if not stat.S_ISREG(path_stat.st_mode):
+            raise PublicationWorkerCompatibilityError(
+                f"migration revision path is not a regular file: {path}"
+            )
+        actual_revision_files.add(path.relative_to(runtime_root).as_posix())
+    if actual_revision_files != expected_revision_files:
+        raise PublicationWorkerCompatibilityError(
+            "authenticated Alembic revision inventory does not match runtime files"
+        )
+
+    numbered_paths: dict[int, list[str]] = {}
+    for name in expected_revision_files:
+        filename = Path(name).name
+        match = re.match(r"^(\d{4})_.+\.py$", filename)
+        if match is None:
+            raise PublicationWorkerCompatibilityError(
+                f"authenticated migration revision filename is malformed: {name}"
+            )
+        numbered_paths.setdefault(int(match.group(1)), []).append(name)
+    if any(len(numbered_paths.get(number, ())) != 1 for number in range(1, 44)):
+        raise PublicationWorkerCompatibilityError(
+            "authenticated migration inventory must include one revision from 0001 through 0043"
+        )
+    if not expected_revision_files <= set(verified_source_files):
+        raise PublicationWorkerCompatibilityError(
+            "authenticated migration source bytes are unavailable"
+        )
+    return tuple(sorted(expected_revision_files))
 
 
 def _validate_migration_graph(
     revisions: Mapping[str, tuple[str, ...]],
 ) -> set[str]:
-    """Require the repository's migrations to form one unbranched lineage."""
-    if not revisions or "0042_publication_recovery_holds" not in revisions:
+    """Require one complete lineage with the exact 0042-to-0043 edge."""
+    if (
+        not revisions
+        or _MIGRATION_PREVIOUS_REVISION not in revisions
+        or _MIGRATION_FLOOR_REVISION not in revisions
+    ):
         raise PublicationWorkerCompatibilityError("trusted publication recovery migration is missing")
     if any(parent not in revisions for parents in revisions.values() for parent in parents):
         raise PublicationWorkerCompatibilityError("trusted Alembic migration graph has an unknown parent")
     if any(len(parents) > 1 for parents in revisions.values()):
         raise PublicationWorkerCompatibilityError("trusted Alembic migration graph is ambiguous")
+    if revisions[_MIGRATION_FLOOR_REVISION] != (_MIGRATION_PREVIOUS_REVISION,):
+        raise PublicationWorkerCompatibilityError(
+            "trusted publication recovery migrations do not form the exact 0042-to-0043 chain"
+        )
+
+    states: dict[str, int] = {}
+
+    def visit(revision: str) -> None:
+        state = states.get(revision, 0)
+        if state == 1:
+            raise PublicationWorkerCompatibilityError(
+                "trusted Alembic migration graph contains a cycle"
+            )
+        if state == 2:
+            return
+        states[revision] = 1
+        for parent in revisions[revision]:
+            visit(parent)
+        states[revision] = 2
+
+    for revision in revisions:
+        visit(revision)
 
     referenced = {parent for parents in revisions.values() for parent in parents}
     roots = {revision for revision, parents in revisions.items() if not parents}
@@ -444,65 +690,92 @@ def _validate_migration_graph(
     return heads
 
 
-def _migration_versions_path() -> Path:
-    module_path = Path(__file__).resolve()
-    candidates = {
-        module_path.parents[2] / "migrations" / "versions",
-        module_path.parents[3] / "migrations" / "versions",
-    }
-    matching = sorted(
-        path for path in candidates
-        if path.is_dir() and (path / "0042_legacy_publication_recovery_holds.py").is_file()
-    )
-    if len(matching) != 1:
-        raise PublicationWorkerCompatibilityError(
-            "trusted Alembic migration graph is unavailable or ambiguous"
-        )
-    return matching[0]
-
-
-def _migration_graph() -> tuple[dict[str, tuple[str, ...]], set[str]]:
-    root = _migration_versions_path()
-    revisions: dict[str, tuple[str, ...]] = {}
+def _parse_revision_metadata(path: str, content: bytes) -> tuple[str, tuple[str, ...]]:
+    """Read literal Alembic metadata from already authenticated source bytes."""
     try:
-        files = sorted(root.glob("*.py"))
-    except OSError as error:
-        raise PublicationWorkerCompatibilityError("trusted Alembic migration graph is unavailable") from error
-    for path in files:
-        try:
-            tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
-        except (OSError, SyntaxError, UnicodeError) as error:
-            raise PublicationWorkerCompatibilityError("trusted Alembic migration graph is invalid") from error
-        values = {}
-        declared = set()
-        for statement in tree.body:
-            if isinstance(statement, (ast.Assign, ast.AnnAssign)):
-                targets = statement.targets if isinstance(statement, ast.Assign) else [statement.target]
-                if any(isinstance(target, ast.Name) and target.id in {"revision", "down_revision"} for target in targets):
-                    name = next(target.id for target in targets if isinstance(target, ast.Name))
-                    declared.add(name)
-                    try:
-                        values[name] = ast.literal_eval(statement.value)
-                    except (ValueError, TypeError):
-                        raise PublicationWorkerCompatibilityError("trusted Alembic revision metadata is invalid") from None
-        revision = values.get("revision")
-        if revision is None:
-            continue
-        if not isinstance(revision, str) or revision in revisions:
-            raise PublicationWorkerCompatibilityError("trusted Alembic revisions are ambiguous")
-        if "down_revision" not in declared:
-            raise PublicationWorkerCompatibilityError("trusted Alembic parent revision is missing")
-        down_revision = values.get("down_revision")
-        if down_revision is None:
-            parents = ()
-        elif isinstance(down_revision, str):
-            parents = (down_revision,)
-        elif isinstance(down_revision, tuple):
-            parents = down_revision
+        text = content.decode("utf-8")
+        tree = ast.parse(text, filename=path)
+    except (SyntaxError, UnicodeError) as error:
+        raise PublicationWorkerCompatibilityError(
+            "trusted Alembic migration graph is invalid"
+        ) from error
+
+    expressions: dict[str, ast.expr] = {}
+    for statement in tree.body:
+        if isinstance(statement, ast.Assign):
+            targets = statement.targets
+            value = statement.value
+        elif isinstance(statement, ast.AnnAssign):
+            targets = [statement.target]
+            value = statement.value
         else:
-            raise PublicationWorkerCompatibilityError("trusted Alembic parent revision is invalid")
-        if any(not isinstance(parent, str) for parent in parents):
-            raise PublicationWorkerCompatibilityError("trusted Alembic parent revision is invalid")
+            continue
+        names = [
+            target.id
+            for target in targets
+            if isinstance(target, ast.Name)
+            and target.id in {"revision", "down_revision"}
+        ]
+        if not names:
+            continue
+        if value is None or len(names) != 1 or names[0] in expressions:
+            raise PublicationWorkerCompatibilityError(
+                "trusted Alembic revision metadata is ambiguous"
+            )
+        expressions[names[0]] = value
+
+    if set(expressions) != {"revision", "down_revision"}:
+        raise PublicationWorkerCompatibilityError(
+            "trusted Alembic revision metadata is incomplete"
+        )
+    try:
+        revision = ast.literal_eval(expressions["revision"])
+        down_revision = ast.literal_eval(expressions["down_revision"])
+    except (ValueError, TypeError):
+        raise PublicationWorkerCompatibilityError(
+            "trusted Alembic revision metadata is invalid"
+        ) from None
+    if not isinstance(revision, str) or not revision:
+        raise PublicationWorkerCompatibilityError(
+            "trusted Alembic revision identifier is invalid"
+        )
+    if down_revision is None:
+        parents: tuple[str, ...] = ()
+    elif isinstance(down_revision, str) and down_revision:
+        parents = (down_revision,)
+    elif (
+        isinstance(down_revision, tuple)
+        and len(down_revision) == 1
+        and isinstance(down_revision[0], str)
+        and down_revision[0]
+    ):
+        parents = (down_revision[0],)
+    else:
+        raise PublicationWorkerCompatibilityError(
+            "trusted Alembic parent revision is invalid"
+        )
+    return revision, parents
+
+
+def _migration_graph(
+    verified_source_files: Mapping[str, bytes],
+) -> tuple[dict[str, tuple[str, ...]], set[str]]:
+    revision_paths = sorted(
+        path
+        for path in verified_source_files
+        if (
+            path.startswith(_MIGRATION_VERSIONS_PREFIX)
+            and path.endswith(".py")
+            and Path(path).name != "__init__.py"
+        )
+    )
+    revisions: dict[str, tuple[str, ...]] = {}
+    for path in revision_paths:
+        revision, parents = _parse_revision_metadata(path, verified_source_files[path])
+        if revision in revisions:
+            raise PublicationWorkerCompatibilityError(
+                "trusted Alembic revisions are ambiguous"
+            )
         revisions[revision] = parents
     heads = _validate_migration_graph(revisions)
     return revisions, heads
@@ -570,27 +843,24 @@ def require_publication_worker_compatibility(
     observed_launch_lock_sha256: str,
     rollback_workspace_id: UUID | None = None,
     rollback_operation_ids: Mapping[str, UUID] | None = None,
-) -> PublicationWorkerPin | None:
-    """Require an authenticated exact pin whenever the database is at/after 0042."""
-    revision = _database_revision(database_url)
-    revisions, heads = _migration_graph()
-    if revision not in revisions:
-        raise PublicationWorkerCompatibilityError("database migration revision is unknown to this artifact")
-    floor_revision = "0042_publication_recovery_holds"
-    if _is_ancestor(floor_revision, revision, revisions):
-        floor_active = True
-    elif _is_ancestor(revision, floor_revision, revisions):
-        floor_active = False
-    else:
-        raise PublicationWorkerCompatibilityError("database migration revision is outside the trusted lineage")
-    if not floor_active:
-        return None
+) -> PublicationWorkerPin:
+    """Require an authenticated exact pin at schema 0043 or a qualified descendant."""
     if launch_lock is None:
         raise PublicationWorkerCompatibilityError("publication worker launch-lock configuration is required")
     workspace, operation_ids = _validate_start_mode(
         start_mode, rollback_workspace_id, rollback_operation_ids
     )
-    _validate_lock_and_pin(launch_lock, observed_launch_lock_sha256)
+    verified_source_files = _validate_lock_and_pin(
+        launch_lock, observed_launch_lock_sha256
+    )
+    revisions, _heads = _migration_graph(verified_source_files)
+    revision = _database_revision(database_url)
+    if revision not in revisions:
+        raise PublicationWorkerCompatibilityError("database migration revision is unknown to this artifact")
+    if not _is_ancestor(_MIGRATION_FLOOR_REVISION, revision, revisions):
+        raise PublicationWorkerCompatibilityError(
+            "database schema floor 0043 is not satisfied"
+        )
     if start_mode == "rollback-restart":
         try:
             from salience.cycles.publication_recovery import verify_publication_recovery_rollback
