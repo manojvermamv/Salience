@@ -514,11 +514,6 @@ async def test_direct_sql_recovery_hold_guards_race_and_populated_downgrade(monk
 
 @pytest_asyncio.fixture
 async def published_cancelled_recovery_case(monkeypatch, tmp_path):
-    from test_v4_legacy_publication import (
-        _hard_exit_publication_worker,
-        _publication_fixture,
-    )
-
     source = os.environ["TEST_DATABASE_URL"]
     name, database = _create_database(source, "recovery_helper_")
     monkeypatch.setenv("SALIENCE_DEPLOYMENT_MODE", "fixture")
@@ -527,26 +522,55 @@ async def published_cancelled_recovery_case(monkeypatch, tmp_path):
     try:
         upgraded = _migrate(database, "upgrade", "head")
         assert upgraded.returncode == 0, upgraded.stderr
-        fixture = await _publication_fixture(database)
-        submitted = fixture["bridge"].submit_publication(fixture["command"])
-        assert await _hard_exit_publication_worker(
-            fixture, tmp_path, after_acceptance=True
-        ) == 73
-        with psycopg.connect(database) as connection:
-            connection.execute(
-                """UPDATE v4_legacy_publication_fixture_progress
-                   SET state='published', polls=2, updated_at=clock_timestamp()
-                   WHERE operation_id=%s AND state IN ('accepted','processing')""",
-                (submitted["operation_id"],),
-            )
-        fixture["bridge"].close(
-            submitted["cycle_id"],
-            disposition="cancelled",
-            reason="Preserve accepted publication liability while reading its final remote state",
+        fixture, submitted = await _create_published_cancelled_recovery_operation(
+            database, tmp_path
         )
         yield fixture, submitted
     finally:
         _drop_database(source, name)
+
+
+async def _create_published_cancelled_recovery_operation(
+    database, tmp_path, *, reference_fixture=None
+):
+    from test_v4_legacy_publication import (
+        _hard_exit_publication_worker,
+        _publication_fixture,
+    )
+
+    if reference_fixture is None:
+        fixture = await _publication_fixture(database)
+    else:
+        import test_creative_release_gate_migration as release_gate
+
+        original_ready_package = release_gate._approved_ready_package
+
+        async def reuse_approved_ready_package(*, publication_proofs=True):
+            return reference_fixture["ready"]
+
+        release_gate._approved_ready_package = reuse_approved_ready_package
+        try:
+            fixture = await _publication_fixture(database)
+        finally:
+            release_gate._approved_ready_package = original_ready_package
+
+    submitted = fixture["bridge"].submit_publication(fixture["command"])
+    assert await _hard_exit_publication_worker(
+        fixture, tmp_path, after_acceptance=True
+    ) == 73
+    with psycopg.connect(database) as connection:
+        connection.execute(
+            """UPDATE v4_legacy_publication_fixture_progress
+               SET state='published', polls=2, updated_at=clock_timestamp()
+               WHERE operation_id=%s AND state IN ('accepted','processing')""",
+            (submitted["operation_id"],),
+        )
+    fixture["bridge"].close(
+        submitted["cycle_id"],
+        disposition="cancelled",
+        reason="Preserve accepted publication liability while reading its final remote state",
+    )
+    return fixture, submitted
 
 
 @pytest_asyncio.fixture
@@ -610,8 +634,9 @@ async def test_0043_v1_guard_accepts_expired_permit_receipt(
 
 
 @pytest_asyncio.fixture
-async def cancel_process_death_recovery_case(monkeypatch):
+async def cancel_process_death_recovery_case(monkeypatch, tmp_path):
     from test_v4_legacy_publication import _allow, _publication_fixture
+    from salience.cycles import publication_recovery as recovery
 
     source = os.environ["TEST_DATABASE_URL"]
     name, database = _create_database(source, "recovery_cancel_crash_")
@@ -622,6 +647,26 @@ async def cancel_process_death_recovery_case(monkeypatch):
         upgraded = _migrate(database, "upgrade", "head")
         assert upgraded.returncode == 0, upgraded.stderr
         fixture = await _publication_fixture(database)
+
+        _, expired = await _create_expired_operation_in_database(
+            database, fixture, monkeypatch, tmp_path
+        )
+        expired_operation_id = UUID(expired["operation_id"])
+        expired_hold = recovery.record_publication_recovery_hold(
+            database,
+            workspace_id=fixture["workspace_id"],
+            operation_id=expired_operation_id,
+            reason="expired_permit_receipt",
+        )
+        expired_snapshot = _liability_snapshot(database, expired_operation_id)
+        expired_evidence = _assert_stored_hold_evidence_matches(
+            database,
+            expired_operation_id,
+            expected_id=expired_hold.id,
+            expected_reason="expired_permit_receipt",
+            full_snapshot=expired_snapshot,
+        )
+
         submitted = fixture["bridge"].submit_publication(fixture["command"])
         _allow(
             database,
@@ -629,7 +674,14 @@ async def cancel_process_death_recovery_case(monkeypatch):
             fixture["actor_id"],
             ("legacy:publication:reconcile:account:" + fixture["account"].id,),
         )
-        yield fixture, submitted
+        yield (
+            fixture,
+            submitted,
+            expired_operation_id,
+            expired_hold,
+            expired_snapshot,
+            expired_evidence,
+        )
     finally:
         _drop_database(source, name)
 
@@ -705,6 +757,87 @@ def _recovery_hold_count(database, operation_id):
         ).fetchone()[0]
 
 
+def _projection_text(database, projection_sql, operation_id):
+    with psycopg.connect(database) as connection:
+        row = connection.execute(
+            f"SELECT projection.snapshot::text FROM ({projection_sql}) AS projection(snapshot)",
+            (operation_id,),
+        ).fetchone()
+    assert row is not None and row[0] is not None
+    return row[0]
+
+
+def _stored_hold_evidence(database, operation_id):
+    with psycopg.connect(database) as connection:
+        count = connection.execute(
+            f"SELECT count(*) FROM public.{TABLE} WHERE operation_id=%s",
+            (operation_id,),
+        ).fetchone()[0]
+        row = connection.execute(
+            f"""SELECT id, reason, liability_snapshot::text,
+                       liability_snapshot_version, liability_snapshot_v1::text,
+                       liability_fingerprint_v1,
+                       encode(public.digest(liability_snapshot_v1::text, 'sha256'), 'hex'),
+                       to_jsonb(hold)::text
+                FROM public.{TABLE} hold WHERE operation_id=%s""",
+            (operation_id,),
+        ).fetchone()
+    assert count == 1
+    assert row is not None
+    hold_id, reason, old_snapshot, version, v1_snapshot, fingerprint, computed, hold_row = row
+    return {
+        "id": str(hold_id),
+        "reason": reason,
+        "old_snapshot_bytes": old_snapshot.encode("utf-8"),
+        "version": version,
+        "v1_snapshot_bytes": v1_snapshot.encode("utf-8"),
+        "fingerprint": fingerprint,
+        "computed_fingerprint": computed,
+        "hold_row_bytes": hold_row.encode("utf-8"),
+    }
+
+
+def _assert_stored_hold_evidence_matches(
+    database, operation_id, *, expected_id, expected_reason, full_snapshot
+):
+    evidence = _stored_hold_evidence(database, operation_id)
+    assert evidence["id"] == str(expected_id)
+    assert evidence["reason"] == expected_reason
+    assert evidence["version"] == _V1_VERSION
+
+    full_snapshot_text = _projection_text(database, _SNAPSHOT_SQL, operation_id)
+    old_snapshot_text = _projection_text(
+        database, _RECOVERY_HOLD_SNAPSHOT_SQL, operation_id
+    )
+    assert evidence["v1_snapshot_bytes"] == full_snapshot_text.encode("utf-8")
+    assert evidence["old_snapshot_bytes"] == old_snapshot_text.encode("utf-8")
+
+    v1_snapshot = json.loads(evidence["v1_snapshot_bytes"])
+    old_snapshot = json.loads(evidence["old_snapshot_bytes"])
+    assert set(v1_snapshot) == set(_EXPECTED_V1_KEYS)
+    assert set(old_snapshot) == set(_EXPECTED_V1_KEYS) - _RECOVERY_HOLD_SNAPSHOT_EXCLUDED_KEYS
+    assert v1_snapshot == full_snapshot
+    assert old_snapshot == {
+        key: full_snapshot[key]
+        for key in old_snapshot
+    }
+
+    import hashlib
+
+    assert evidence["fingerprint"] == hashlib.sha256(
+        evidence["v1_snapshot_bytes"]
+    ).hexdigest()
+    assert evidence["computed_fingerprint"] == evidence["fingerprint"]
+    return evidence
+
+
+def _assert_complete_liabilities_unchanged(before, after):
+    assert set(before) == set(_EXPECTED_V1_KEYS)
+    assert set(after) == set(_EXPECTED_V1_KEYS)
+    assert after == before
+    _assert_named_liabilities_unchanged(before, after)
+
+
 @pytest.mark.asyncio
 async def test_hold_commit_then_process_death_replays_without_liability_change(
     monkeypatch, tmp_path
@@ -718,6 +851,7 @@ async def test_hold_commit_then_process_death_replays_without_liability_change(
         _hard_exit_publication_worker,
         _publication_fixture,
     )
+    from salience.cycles import publication_recovery as recovery
 
     source = os.environ["TEST_DATABASE_URL"]
     name, database = _create_database(source, "recovery_expired_receipt_")
@@ -727,7 +861,58 @@ async def test_hold_commit_then_process_death_replays_without_liability_change(
     try:
         upgraded = _migrate(database, "upgrade", "head")
         assert upgraded.returncode == 0, upgraded.stderr
-        fixture = await _publication_fixture(database)
+
+        cancelled_fixture, cancelled = await _create_published_cancelled_recovery_operation(
+            database, tmp_path
+        )
+        cancelled_operation_id = UUID(cancelled["operation_id"])
+        from salience.cycles.outbox import CycleOutbox
+        from salience.cycles.runtime import TemporalCycleTransport
+
+        cancelled_client = await Client.connect(os.environ["TEST_TEMPORAL_TARGET"])
+        cancelled_outbox = CycleOutbox(
+            database,
+            workspace_id=cancelled_fixture["workspace_id"],
+            delivery_lane="legacy",
+        )
+        assert await cancelled_outbox.dispatch_one(
+            TemporalCycleTransport(
+                cancelled_client, task_queue=cancelled_fixture["queue"]
+            )
+        ) is True
+        cancelled_hold = recovery.record_publication_recovery_hold(
+            database,
+            workspace_id=cancelled_fixture["workspace_id"],
+            operation_id=cancelled_operation_id,
+            reason="published_during_cancel",
+        )
+        cancelled_snapshot = _liability_snapshot(database, cancelled_operation_id)
+        cancelled_evidence = _assert_stored_hold_evidence_matches(
+            database,
+            cancelled_operation_id,
+            expected_id=cancelled_hold.id,
+            expected_reason="published_during_cancel",
+            full_snapshot=cancelled_snapshot,
+        )
+
+        import test_creative_release_gate_migration as release_gate
+
+        original_ready_package = release_gate._approved_ready_package
+
+        async def reuse_approved_ready_package(*, publication_proofs=True):
+            return cancelled_fixture["ready"]
+
+        monkeypatch.setattr(
+            release_gate, "_approved_ready_package", reuse_approved_ready_package
+        )
+        try:
+            fixture = await _publication_fixture(database)
+        finally:
+            monkeypatch.setattr(
+                release_gate, "_approved_ready_package", original_ready_package
+            )
+        assert fixture["workspace_id"] == cancelled_fixture["workspace_id"]
+        assert fixture["queue"] != cancelled_fixture["queue"]
         submitted = fixture["bridge"].submit_publication(fixture["command"])
         _allow(
             database,
@@ -801,11 +986,39 @@ async def test_hold_commit_then_process_death_replays_without_liability_change(
             ).fetchall()
 
         assert precommit_snapshot == after_process_death
-        _assert_named_liabilities_unchanged(precommit_snapshot, after_process_death)
+        _assert_complete_liabilities_unchanged(precommit_snapshot, after_process_death)
         assert hold_row_after_death["id"] == str(UUID(hold_row_after_death["id"]))
         assert _recovery_hold_count(database, operation_id) == 1
         assert post_death_timing[2], post_death_timing
         assert runtime_holds_after_death == []
+
+        expired_evidence = _assert_stored_hold_evidence_matches(
+            database,
+            operation_id,
+            expected_id=hold_row_after_death["id"],
+            expected_reason="expired_permit_receipt",
+            full_snapshot=precommit_snapshot,
+        )
+        verified_holds = recovery.verify_publication_recovery_rollback(
+            database,
+            workspace_id=fixture["workspace_id"],
+            operation_ids={
+                "expired_permit_receipt": UUID(operation_id),
+                "published_during_cancel": cancelled_operation_id,
+            },
+        )
+        assert (verified_holds[0].id, verified_holds[1].id) == (
+            UUID(hold_row_after_death["id"]),
+            cancelled_hold.id,
+        )
+        _assert_complete_liabilities_unchanged(
+            precommit_snapshot, _liability_snapshot(database, operation_id)
+        )
+        _assert_complete_liabilities_unchanged(
+            cancelled_snapshot, _liability_snapshot(database, cancelled_operation_id)
+        )
+        assert _stored_hold_evidence(database, operation_id) == expired_evidence
+        assert _stored_hold_evidence(database, cancelled_operation_id) == cancelled_evidence
 
         description = await handle.describe()
         assert description.status == WorkflowExecutionStatus.RUNNING
@@ -907,8 +1120,13 @@ async def test_hold_commit_then_process_death_replays_without_liability_change(
             ).fetchone()
 
         assert precommit_snapshot == after_process_death == after_retry
-        _assert_named_liabilities_unchanged(precommit_snapshot, after_retry)
+        _assert_complete_liabilities_unchanged(precommit_snapshot, after_retry)
         assert _recovery_hold_snapshot(database, operation_id) == hold_row_after_death
+        assert _stored_hold_evidence(database, operation_id) == expired_evidence
+        _assert_complete_liabilities_unchanged(
+            cancelled_snapshot, _liability_snapshot(database, cancelled_operation_id)
+        )
+        assert _stored_hold_evidence(database, cancelled_operation_id) == cancelled_evidence
         assert retry_timing[1] is True, retry_timing
         assert retry_timing[2] is None
         assert retry_timing[3] is None
@@ -1117,13 +1335,21 @@ async def test_concurrent_exact_hold_insert_returns_one_stable_hold(
         views = list(pool.map(lambda _: record(), range(2)))
 
     assert views[0] == views[1]
+    assert len({view.id for view in views}) == 1
     assert _recovery_hold_count(database, operation_id) == 1
     after = _liability_snapshot(database, operation_id)
-    _assert_named_liabilities_unchanged(before, after)
+    _assert_complete_liabilities_unchanged(before, after)
     hold_row = _recovery_hold_snapshot(database, operation_id)
     assert hold_row is not None
     assert hold_row["id"] == str(views[0].id)
     assert hold_row["reason"] == "published_during_cancel"
+    stored_evidence = _assert_stored_hold_evidence_matches(
+        database,
+        operation_id,
+        expected_id=views[0].id,
+        expected_reason="published_during_cancel",
+        full_snapshot=before,
+    )
     replay = record_publication_recovery_hold(
         database,
         workspace_id=fixture["workspace_id"],
@@ -1132,6 +1358,7 @@ async def test_concurrent_exact_hold_insert_returns_one_stable_hold(
     )
     assert replay == views[0]
     assert _recovery_hold_snapshot(database, operation_id) == hold_row
+    assert _stored_hold_evidence(database, operation_id) == stored_evidence
 
 
 @pytest.mark.asyncio
@@ -1160,14 +1387,22 @@ async def test_expired_permit_concurrent_exact_hold_insert_returns_one_stable_ho
         views = list(pool.map(lambda _: record(), range(2)))
 
     assert views[0] == views[1]
+    assert len({view.id for view in views}) == 1
     assert views[0].reason == "expired_permit_receipt"
     assert _recovery_hold_count(database, operation_id) == 1
     after = _liability_snapshot(database, operation_id)
-    _assert_named_liabilities_unchanged(before, after)
+    _assert_complete_liabilities_unchanged(before, after)
     hold_row = _recovery_hold_snapshot(database, operation_id)
     assert hold_row is not None
     assert hold_row["id"] == str(views[0].id)
     assert hold_row["reason"] == "expired_permit_receipt"
+    stored_evidence = _assert_stored_hold_evidence_matches(
+        database,
+        operation_id,
+        expected_id=views[0].id,
+        expected_reason="expired_permit_receipt",
+        full_snapshot=before,
+    )
 
     replay = record_publication_recovery_hold(
         database,
@@ -1178,6 +1413,7 @@ async def test_expired_permit_concurrent_exact_hold_insert_returns_one_stable_ho
     assert replay == views[0]
     assert _recovery_hold_count(database, operation_id) == 1
     assert _recovery_hold_snapshot(database, operation_id) == hold_row
+    assert _stored_hold_evidence(database, operation_id) == stored_evidence
 
 
 @pytest.mark.asyncio
@@ -1185,6 +1421,7 @@ async def test_cancel_hold_commit_then_process_death_replays_without_liability_c
     cancel_process_death_recovery_case, tmp_path
 ):
     from temporalio.client import Client, WorkflowExecutionStatus, WorkflowFailureError
+    from salience.cycles import publication_recovery as recovery
 
     from test_v4_legacy_publication import (
         _exception_chain,
@@ -1195,7 +1432,14 @@ async def test_cancel_hold_commit_then_process_death_replays_without_liability_c
     from salience.cycles.legacy_runtime import build_legacy_worker
     from salience.cycles.runtime import TemporalCycleTransport
 
-    fixture, submitted = cancel_process_death_recovery_case
+    (
+        fixture,
+        submitted,
+        expired_operation_id,
+        expired_hold,
+        expired_snapshot,
+        expired_evidence,
+    ) = cancel_process_death_recovery_case
     database = fixture["database"]
     operation_id = UUID(submitted["operation_id"])
     assert _recovery_hold_count(database, operation_id) == 0
@@ -1266,7 +1510,35 @@ async def test_cancel_hold_commit_then_process_death_replays_without_liability_c
     hold_id = hold_row_after_death["id"]
     assert hold_row_after_death["reason"] == "published_during_cancel"
     assert _recovery_hold_count(database, operation_id) == 1
-    _assert_named_liabilities_unchanged(before, after_process_death)
+    _assert_complete_liabilities_unchanged(before, after_process_death)
+
+    cancel_evidence = _assert_stored_hold_evidence_matches(
+        database,
+        operation_id,
+        expected_id=hold_id,
+        expected_reason="published_during_cancel",
+        full_snapshot=before,
+    )
+    verified_holds = recovery.verify_publication_recovery_rollback(
+        database,
+        workspace_id=fixture["workspace_id"],
+        operation_ids={
+            "expired_permit_receipt": expired_operation_id,
+            "published_during_cancel": operation_id,
+        },
+    )
+    assert (verified_holds[0].id, verified_holds[1].id) == (
+        expired_hold.id,
+        UUID(hold_id),
+    )
+    _assert_complete_liabilities_unchanged(
+        before, _liability_snapshot(database, operation_id)
+    )
+    _assert_complete_liabilities_unchanged(
+        expired_snapshot, _liability_snapshot(database, expired_operation_id)
+    )
+    assert _stored_hold_evidence(database, operation_id) == cancel_evidence
+    assert _stored_hold_evidence(database, expired_operation_id) == expired_evidence
 
     client = await Client.connect(os.environ["TEST_TEMPORAL_TARGET"])
     handle = client.get_workflow_handle("salience-v4-legacy-operation:" + str(operation_id))
@@ -1291,9 +1563,14 @@ async def test_cancel_hold_commit_then_process_death_replays_without_liability_c
     assert len(typed_failures) == 1
     assert typed_failures[0].details == ({"hold_id": hold_id},)
     after_retry = _liability_snapshot(database, operation_id)
-    _assert_named_liabilities_unchanged(before, after_retry)
+    _assert_complete_liabilities_unchanged(before, after_retry)
     assert _recovery_hold_count(database, operation_id) == 1
     assert _recovery_hold_snapshot(database, operation_id) == hold_row_after_death
+    assert _stored_hold_evidence(database, operation_id) == cancel_evidence
+    _assert_complete_liabilities_unchanged(
+        expired_snapshot, _liability_snapshot(database, expired_operation_id)
+    )
+    assert _stored_hold_evidence(database, expired_operation_id) == expired_evidence
     assert after_process_death == after_retry
 
 
@@ -1747,6 +2024,208 @@ async def _create_expired_operation_in_database(
             pytest.fail("publication permit did not expire before the bounded deadline")
         await asyncio.sleep(0.05)
     return fixture, submitted
+
+
+@pytest.mark.parametrize(
+    "collection",
+    (
+        "remote-publication-receipts",
+        "job-checkpoints",
+        "audit-events",
+        "provenance-records",
+    ),
+    ids=(
+        "remote-publication-receipts",
+        "job-checkpoints",
+        "audit-events",
+        "provenance-records",
+    ),
+)
+@pytest.mark.asyncio
+async def test_each_omitted_liability_collection_mutation_denies_recovery(
+    published_cancelled_recovery_case, monkeypatch, tmp_path, collection
+):
+    from salience.cycles import publication_recovery as recovery
+    from test_v4_publication_recovery_floor import (
+        _mutate_omitted_liability_collection,
+    )
+
+    fixture, cancelled = published_cancelled_recovery_case
+    database = fixture["database"]
+    workspace_id = fixture["workspace_id"]
+    cancelled_operation_id = UUID(cancelled["operation_id"])
+    from temporalio.client import Client
+    from salience.cycles.outbox import CycleOutbox
+    from salience.cycles.runtime import TemporalCycleTransport
+
+    client = await Client.connect(os.environ["TEST_TEMPORAL_TARGET"])
+    outbox = CycleOutbox(
+        database, workspace_id=workspace_id, delivery_lane="legacy"
+    )
+    assert await outbox.dispatch_one(
+        TemporalCycleTransport(client, task_queue=fixture["queue"])
+    ) is True
+    collection_key = {
+        "remote-publication-receipts": "remote_publication_receipts",
+        "job-checkpoints": "job_checkpoints",
+        "audit-events": "audit_events",
+        "provenance-records": "provenance_records",
+    }[collection]
+    restore_seed = None
+    if collection_key != "remote_publication_receipts":
+        before_seed = _liability_snapshot(database, cancelled_operation_id)
+        old_16_before_seed = _projection_text(
+            database, _RECOVERY_HOLD_SNAPSHOT_SQL, cancelled_operation_id
+        )
+        seed_id = uuid4()
+        restore_seed = _mutate_omitted_liability_collection(
+            database,
+            before_seed,
+            collection,
+            mutation="append",
+            target_id=seed_id,
+        )
+        seeded = _liability_snapshot(database, cancelled_operation_id)
+        assert seeded[collection_key] != before_seed[collection_key]
+        assert _projection_text(
+            database, _RECOVERY_HOLD_SNAPSHOT_SQL, cancelled_operation_id
+        ) == old_16_before_seed
+    else:
+        seed_id = None
+
+    try:
+        _, expired = await _create_expired_operation_in_database(
+            database, fixture, monkeypatch, tmp_path
+        )
+        expired_operation_id = UUID(expired["operation_id"])
+        expired_hold = recovery.record_publication_recovery_hold(
+            database,
+            workspace_id=workspace_id,
+            operation_id=expired_operation_id,
+            reason="expired_permit_receipt",
+        )
+        cancelled_hold = recovery.record_publication_recovery_hold(
+            database,
+            workspace_id=workspace_id,
+            operation_id=cancelled_operation_id,
+            reason="published_during_cancel",
+        )
+        baseline = _liability_snapshot(database, cancelled_operation_id)
+        expired_baseline = _liability_snapshot(database, expired_operation_id)
+        old_16_baseline_bytes = _projection_text(
+            database, _RECOVERY_HOLD_SNAPSHOT_SQL, cancelled_operation_id
+        ).encode("utf-8")
+        cancel_evidence = _assert_stored_hold_evidence_matches(
+            database,
+            cancelled_operation_id,
+            expected_id=cancelled_hold.id,
+            expected_reason="published_during_cancel",
+            full_snapshot=baseline,
+        )
+        expired_evidence = _assert_stored_hold_evidence_matches(
+            database,
+            expired_operation_id,
+            expected_id=expired_hold.id,
+            expected_reason="expired_permit_receipt",
+            full_snapshot=expired_baseline,
+        )
+        expected_ids = {
+            "expired_permit_receipt": expired_hold.id,
+            "published_during_cancel": cancelled_hold.id,
+        }
+        verified = recovery.verify_publication_recovery_rollback(
+            database,
+            workspace_id=workspace_id,
+            operation_ids={
+                "expired_permit_receipt": expired_operation_id,
+                "published_during_cancel": cancelled_operation_id,
+            },
+        )
+        assert (verified[0].id, verified[1].id) == (
+            expected_ids["expired_permit_receipt"],
+            expected_ids["published_during_cancel"],
+        )
+
+        mutations = (
+            ("append", None),
+        ) if collection_key == "remote_publication_receipts" else (
+            ("append", None),
+            ("update", seed_id),
+            ("delete", seed_id),
+        )
+        if collection_key == "remote_publication_receipts":
+            assert baseline[collection_key] == []
+
+        for mutation, target_id in mutations:
+            restore_mutation = _mutate_omitted_liability_collection(
+                database,
+                baseline,
+                collection,
+                mutation=mutation,
+                target_id=target_id,
+            )
+            try:
+                mutated = _liability_snapshot(database, cancelled_operation_id)
+                assert mutated[collection_key] != baseline[collection_key]
+                for key in _EXPECTED_V1_KEYS:
+                    if key != collection_key:
+                        assert mutated[key] == baseline[key], key
+                assert _projection_text(
+                    database, _RECOVERY_HOLD_SNAPSHOT_SQL, cancelled_operation_id
+                ).encode("utf-8") == old_16_baseline_bytes
+                assert _stored_hold_evidence(database, cancelled_operation_id) == cancel_evidence
+                assert _stored_hold_evidence(database, expired_operation_id) == expired_evidence
+
+                with pytest.raises(recovery.PublicationRecoveryConflictError):
+                    recovery.record_publication_recovery_hold(
+                        database,
+                        workspace_id=workspace_id,
+                        operation_id=cancelled_operation_id,
+                        reason="published_during_cancel",
+                    )
+                with pytest.raises(recovery.PublicationRecoveryConflictError):
+                    recovery.verify_publication_recovery_rollback(
+                        database,
+                        workspace_id=workspace_id,
+                        operation_ids={
+                            "expired_permit_receipt": expired_operation_id,
+                            "published_during_cancel": cancelled_operation_id,
+                        },
+                    )
+
+                assert _liability_snapshot(database, cancelled_operation_id) == mutated
+                assert _liability_snapshot(database, expired_operation_id) == expired_baseline
+                assert _stored_hold_evidence(database, cancelled_operation_id) == cancel_evidence
+                assert _stored_hold_evidence(database, expired_operation_id) == expired_evidence
+                assert _recovery_hold_count(database, cancelled_operation_id) == 1
+                assert _recovery_hold_count(database, expired_operation_id) == 1
+            finally:
+                restore_mutation()
+
+            _assert_complete_liabilities_unchanged(
+                baseline, _liability_snapshot(database, cancelled_operation_id)
+            )
+            _assert_complete_liabilities_unchanged(
+                expired_baseline, _liability_snapshot(database, expired_operation_id)
+            )
+            assert _stored_hold_evidence(database, cancelled_operation_id) == cancel_evidence
+            assert _stored_hold_evidence(database, expired_operation_id) == expired_evidence
+
+        verified_after_restore = recovery.verify_publication_recovery_rollback(
+            database,
+            workspace_id=workspace_id,
+            operation_ids={
+                "expired_permit_receipt": expired_operation_id,
+                "published_during_cancel": cancelled_operation_id,
+            },
+        )
+        assert (verified_after_restore[0].id, verified_after_restore[1].id) == (
+            expected_ids["expired_permit_receipt"],
+            expected_ids["published_during_cancel"],
+        )
+    finally:
+        if restore_seed is not None:
+            restore_seed()
 
 
 def _set_high_precision_output(database, operation_id):

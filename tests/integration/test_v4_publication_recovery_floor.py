@@ -3450,9 +3450,11 @@ async def _capture_candidate_external_state(
     return {**database, "histories": histories, "recorder_events": events}
 
 
-def _mutate_omitted_liability_collection(database_url, snapshot, collection):
+def _mutate_omitted_liability_collection(
+    database_url, snapshot, collection, *, mutation=None, target_id=None
+):
     import psycopg
-    from uuid import uuid4
+    from uuid import UUID, uuid4
 
     by_label = {
         "remote-publication-receipts": "remote_publication_receipts",
@@ -3462,15 +3464,55 @@ def _mutate_omitted_liability_collection(database_url, snapshot, collection):
     }
     assert collection in by_label
     operation = by_label[collection]
-    marker = "task4-omitted-collection-mutation-" + uuid4().hex
+    marker = "recovery-mutation-" + uuid4().hex
     job = snapshot["job"]
     attempt = snapshot["publication_attempt"]
     workspace_id = job["workspace_id"]
     job_id = job["id"]
-    inserted_id = uuid4()
+    inserted_id = uuid4() if target_id is None else UUID(str(target_id))
+    action = mutation
+    if action is None:
+        action = "append"
+    if action not in {"append", "update", "delete"}:
+        raise ValueError("mutation must be append, update, or delete")
+    if action in {"update", "delete"}:
+        assert target_id is not None, f"{action} requires a target row ID"
+        assert str(target_id) in {
+            str(row["id"]) for row in snapshot[operation]
+        }, f"target row must belong to the selected liability collection: {collection}"
+        if operation == "remote_publication_receipts":
+            raise ValueError("remote publication receipts are immutable")
+
     restore_values = None
     with psycopg.connect(database_url) as connection:
-        if operation == "remote_publication_receipts":
+        if action == "update":
+            column = {
+                "job_checkpoints": "checkpoint_payload",
+                "audit_events": "details",
+                "provenance_records": "lineage",
+            }[operation]
+            old_value = connection.execute(
+                f"SELECT {column} FROM {operation} WHERE id=%s", (target_id,)
+            ).fetchone()
+            assert old_value is not None
+            updated_value = {
+                "task4_mutation": marker,
+                "previous_value": old_value[0],
+            }
+            connection.execute(
+                f"UPDATE {operation} SET {column}=%s::jsonb WHERE id=%s",
+                (json.dumps(updated_value), target_id),
+            )
+            restore_values = ("update", operation, target_id, column, old_value[0])
+        elif action == "delete":
+            row = connection.execute(
+                f"SELECT to_jsonb(liability_row) FROM {operation} liability_row WHERE id=%s",
+                (target_id,),
+            ).fetchone()
+            assert row is not None
+            connection.execute(f"DELETE FROM {operation} WHERE id=%s", (target_id,))
+            restore_values = ("reinsert", operation, target_id, row[0])
+        elif operation == "remote_publication_receipts" and mutation is None:
             row = connection.execute(
                 "SELECT id, disclosure_projection FROM remote_publication_receipts "
                 "WHERE publication_attempt_id=%s ORDER BY id LIMIT 1",
@@ -3484,10 +3526,22 @@ def _mutate_omitted_liability_collection(database_url, snapshot, collection):
                     else {"task4_mutation": marker, "prior_value": old_value}
                 )
                 connection.execute(
+                    "ALTER TABLE public.remote_publication_receipts DISABLE TRIGGER USER"
+                )
+                connection.execute(
                     "UPDATE remote_publication_receipts SET disclosure_projection=%s::jsonb WHERE id=%s",
                     (json.dumps(new_value), row[0]),
                 )
-                restore_values = (operation, row[0], old_value)
+                connection.execute(
+                    "ALTER TABLE public.remote_publication_receipts ENABLE TRIGGER USER"
+                )
+                restore_values = (
+                    "remote_update",
+                    operation,
+                    row[0],
+                    "disclosure_projection",
+                    old_value,
+                )
             else:
                 connection.execute(
                     """INSERT INTO remote_publication_receipts
@@ -3502,7 +3556,22 @@ def _mutate_omitted_liability_collection(database_url, snapshot, collection):
                         json.dumps({"task4_mutation": marker}),
                     ),
                 )
-                restore_values = (operation, inserted_id, None)
+                restore_values = ("remote_append", operation, inserted_id)
+        elif operation == "remote_publication_receipts":
+            connection.execute(
+                """INSERT INTO remote_publication_receipts
+                   (id, publication_attempt_id, publisher_id, remote_id, state,
+                    safe_metadata_hash, disclosure_projection)
+                   VALUES(%s,%s,'task4-fixture',%s,'accepted',%s,%s::jsonb)""",
+                (
+                    inserted_id,
+                    attempt["id"],
+                    marker,
+                    _sha256(marker.encode()),
+                    json.dumps({"task4_mutation": marker}),
+                ),
+            )
+            restore_values = ("remote_append", operation, inserted_id)
         elif operation == "job_checkpoints":
             sequence = connection.execute(
                 "SELECT COALESCE(max(sequence_no),0)+1 FROM job_checkpoints WHERE job_id=%s",
@@ -3514,7 +3583,7 @@ def _mutate_omitted_liability_collection(database_url, snapshot, collection):
                    VALUES(%s,%s,%s,'task4-mutation',%s::jsonb,%s)""",
                 (inserted_id, job_id, sequence, json.dumps({"task4_mutation": marker}), marker),
             )
-            restore_values = (operation, inserted_id, None)
+            restore_values = ("append", operation, inserted_id)
         elif operation == "audit_events":
             connection.execute(
                 """INSERT INTO audit_events
@@ -3530,7 +3599,7 @@ def _mutate_omitted_liability_collection(database_url, snapshot, collection):
                     json.dumps({"task4_mutation": marker}),
                 ),
             )
-            restore_values = (operation, inserted_id, None)
+            restore_values = ("append", operation, inserted_id)
         else:
             connection.execute(
                 """INSERT INTO provenance_records
@@ -3538,24 +3607,40 @@ def _mutate_omitted_liability_collection(database_url, snapshot, collection):
                    VALUES(%s,%s,%s,'task4-mutation','fixture',%s::jsonb)""",
                 (inserted_id, workspace_id, job_id, json.dumps({"task4_mutation": marker})),
             )
-            restore_values = (operation, inserted_id, None)
+            restore_values = ("append", operation, inserted_id)
 
     def restore():
-        table_name = {
-            "remote_publication_receipts": "remote_publication_receipts",
-            "job_checkpoints": "job_checkpoints",
-            "audit_events": "audit_events",
-            "provenance_records": "provenance_records",
-        }[restore_values[0]]
+        action, table_name = restore_values[:2]
         with psycopg.connect(database_url) as connection:
-            if restore_values[2] is None:
+            if action in {"append", "remote_append"}:
+                if action == "remote_append":
+                    connection.execute(
+                        "ALTER TABLE public.remote_publication_receipts DISABLE TRIGGER USER"
+                    )
                 connection.execute(
-                    f"DELETE FROM {table_name} WHERE id=%s", (restore_values[1],)
+                    f"DELETE FROM {table_name} WHERE id=%s", (restore_values[2],)
                 )
+                if action == "remote_append":
+                    connection.execute(
+                        "ALTER TABLE public.remote_publication_receipts ENABLE TRIGGER USER"
+                    )
+            elif action in {"update", "remote_update"}:
+                if action == "remote_update":
+                    connection.execute(
+                        "ALTER TABLE public.remote_publication_receipts DISABLE TRIGGER USER"
+                    )
+                connection.execute(
+                    f"UPDATE {table_name} SET {restore_values[3]}=%s::jsonb WHERE id=%s",
+                    (json.dumps(restore_values[4]), restore_values[2]),
+                )
+                if action == "remote_update":
+                    connection.execute(
+                        "ALTER TABLE public.remote_publication_receipts ENABLE TRIGGER USER"
+                    )
             else:
                 connection.execute(
-                    "UPDATE remote_publication_receipts SET disclosure_projection=%s::jsonb WHERE id=%s",
-                    (json.dumps(restore_values[2]), restore_values[1]),
+                    f"INSERT INTO {table_name} SELECT * FROM jsonb_populate_record(NULL::public.{table_name}, %s::jsonb)",
+                    (json.dumps(restore_values[3]),),
                 )
 
     return restore
