@@ -520,6 +520,7 @@ def build_publication_worker_launch_lock(
     lock_path: Path,
     independent_digest_path: Path,
     control_dir: Path,
+    interpreter_source: Path | None = None,
 ) -> _compatibility.PublicationWorkerLaunchLock:
     """Validate a candidate install and write its canonical lock/control bundle."""
     repository_root = Path(REPOSITORY_ROOT).resolve(strict=True)
@@ -587,10 +588,23 @@ def build_publication_worker_launch_lock(
 
     launcher_bytes = tree[LAUNCHER_SOURCE_PATH]
     interpreter_path = Path(TARGET_INTERPRETER_PATH)
-    try:
-        interpreter_bytes = interpreter_path.read_bytes()
-    except OSError as error:
-        raise ValueError("target interpreter is unavailable") from error
+    if interpreter_source is None:
+        try:
+            interpreter_bytes = interpreter_path.read_bytes()
+        except OSError as error:
+            raise ValueError("target interpreter is unavailable") from error
+    else:
+        interpreter_source_path = Path(interpreter_source)
+        try:
+            interpreter_metadata = interpreter_source_path.lstat()
+            if (
+                not stat.S_ISREG(interpreter_metadata.st_mode)
+                or interpreter_source_path.is_symlink()
+            ):
+                raise ValueError("target interpreter source must be a regular file")
+            interpreter_bytes = interpreter_source_path.read_bytes()
+        except OSError as error:
+            raise ValueError("target interpreter source is unavailable") from error
     pin = _compatibility.PublicationWorkerPin(
         schema_version="salience.publication-worker-pin.v1",
         application_commit=application_commit,
@@ -645,6 +659,14 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--lock", required=True, type=Path)
     parser.add_argument("--independent-digest", required=True, type=Path)
     parser.add_argument("--control-dir", required=True, type=Path)
+    parser.add_argument(
+        "--interpreter-source",
+        type=Path,
+        help=(
+            "optional host path to the exact target-image interpreter bytes; "
+            "the lock retains the fixed in-container interpreter path"
+        ),
+    )
     arguments = parser.parse_args(argv)
     lock = build_publication_worker_launch_lock(
         application_commit=arguments.application_commit,
@@ -653,6 +675,7 @@ def main(argv: list[str] | None = None) -> int:
         lock_path=arguments.lock,
         independent_digest_path=arguments.independent_digest,
         control_dir=arguments.control_dir,
+        interpreter_source=arguments.interpreter_source,
     )
     print(lock.pin.source_manifest_sha256)
     return 0

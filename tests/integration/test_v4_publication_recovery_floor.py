@@ -1204,6 +1204,34 @@ def test_publication_worker_launch_lock_builder_emits_canonical_lock_digest_and_
     )
 
 
+def test_publication_worker_launch_lock_builder_pins_explicit_interpreter_source_without_changing_target_path(
+    tmp_path, monkeypatch
+):
+    builder = _lock_builder_module()
+    repo_root, application_commit, wheel_path, runtime_root = _synthetic_builder_inputs(tmp_path)
+    monkeypatch.setattr(builder, "REPOSITORY_ROOT", repo_root)
+    monkeypatch.setattr(builder, "TARGET_RUNTIME_ROOT", "/usr/local/lib/python3.13/site-packages")
+    monkeypatch.setattr(builder, "TARGET_INTERPRETER_PATH", "/usr/local/bin/python")
+    interpreter_source = tmp_path / "image-prefix/usr/local/bin/python"
+    interpreter_source.parent.mkdir(parents=True)
+    interpreter_bytes = b"exact target-image interpreter bytes\n"
+    interpreter_source.write_bytes(interpreter_bytes)
+    lock_path, digest_path, control_dir = _builder_output_paths(tmp_path)
+
+    lock = builder.build_publication_worker_launch_lock(
+        application_commit=application_commit,
+        wheel=wheel_path,
+        runtime_root=runtime_root,
+        lock_path=lock_path,
+        independent_digest_path=digest_path,
+        control_dir=control_dir,
+        interpreter_source=interpreter_source,
+    )
+
+    assert lock.interpreter_path == "/usr/local/bin/python"
+    assert lock.interpreter_sha256 == _sha256(interpreter_bytes)
+
+
 def _builder_output_paths(tmp_path):
     return (
         tmp_path / "deployment/publication-worker-launch-lock.json",
