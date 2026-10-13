@@ -486,6 +486,9 @@ def test_docker_and_compose_worker_use_pinned_wheel_and_trusted_launcher():
     compose = yaml.safe_load((ROOT / "compose.yaml").read_text())
     assert "ARG SALIENCE_WHEEL_FILE" in dockerfile
     assert "/opt/salience-artifacts/salience.whl" in dockerfile
+    pip_wheel_alias = "/opt/salience-artifacts/salience-0.1.0-py3-none-any.whl"
+    assert f"ln -s /opt/salience-artifacts/salience.whl {pip_wheel_alias}" in dockerfile
+    assert f"python -m pip install --no-cache-dir {pip_wheel_alias}" in dockerfile
     assert "pip install ." not in dockerfile
     command_line = next(line for line in dockerfile.splitlines() if line.startswith("CMD "))
     docker_command = json.loads(command_line.removeprefix("CMD "))
