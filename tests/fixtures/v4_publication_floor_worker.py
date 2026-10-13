@@ -16,6 +16,34 @@ CONTROL_LAUNCHER = "/run/salience-control/launch-v4-publication-worker.py"
 CONTROL_LOCK = "/run/salience-control/publication-worker-launch-lock.json"
 CONTROL_DIGEST = "/run/salience-control/publication-worker-launch-lock.sha256"
 NETWORK = "salience_default"
+_RUNTIME_MANIFEST_SCRIPT = r"""
+import hashlib, json, os, stat, sys
+from pathlib import Path
+root = Path(sys.argv[1])
+files = {}
+pyc_files = []
+for current, directories, names in os.walk(root, followlinks=False):
+    for name in (*directories, *names):
+        path = Path(current) / name
+        relative = path.relative_to(root).as_posix()
+        if path.is_symlink():
+            target = path.resolve(strict=False)
+            files[relative] = "symlink:" + os.readlink(path)
+            if path.name.endswith(".pyc") or target.suffix == ".pyc":
+                pyc_files.append(relative)
+        elif path.is_dir():
+            files[relative] = "directory"
+        else:
+            metadata = path.stat()
+            if not stat.S_ISREG(metadata.st_mode):
+                files[relative] = "non-regular"
+            else:
+                digest = hashlib.sha256(path.read_bytes()).hexdigest()
+                files[relative] = "sha256:" + digest
+            if path.name.endswith(".pyc"):
+                pyc_files.append(relative)
+print(json.dumps({"files": files, "pyc_files": sorted(pyc_files)}, sort_keys=True, separators=(",", ":")))
+"""
 
 
 @contextmanager
@@ -63,6 +91,65 @@ def image_id(image: str) -> str:
         env=_docker_environment(),
     )
     return result.stdout.strip()
+
+
+def image_runtime_manifest(image: str, runtime_root: str) -> dict[str, object]:
+    """Hash the installed runtime from an isolated, read-only image process."""
+    command = [
+        "docker",
+        "run",
+        "--rm",
+        "--read-only",
+        "--network",
+        "none",
+        "--entrypoint",
+        "/usr/local/bin/python",
+        image,
+        "-I",
+        "-B",
+        "-S",
+        "-c",
+        _RUNTIME_MANIFEST_SCRIPT,
+        runtime_root,
+    ]
+    with _without_shared_checkout():
+        result = subprocess.run(
+            command,
+            check=True,
+            capture_output=True,
+            text=True,
+            cwd=tempfile.gettempdir(),
+            env=_docker_environment(),
+            timeout=30,
+        )
+    return json.loads(result.stdout)
+
+
+def container_runtime_manifest(name: str, runtime_root: str) -> dict[str, object]:
+    """Hash the installed runtime inside the running read-only worker container."""
+    command = [
+        "docker",
+        "exec",
+        name,
+        "/usr/local/bin/python",
+        "-I",
+        "-B",
+        "-S",
+        "-c",
+        _RUNTIME_MANIFEST_SCRIPT,
+        runtime_root,
+    ]
+    with _without_shared_checkout():
+        result = subprocess.run(
+            command,
+            check=True,
+            capture_output=True,
+            text=True,
+            cwd=tempfile.gettempdir(),
+            env=_docker_environment(),
+            timeout=30,
+        )
+    return json.loads(result.stdout)
 
 
 def start_rollback_worker(
@@ -171,6 +258,7 @@ def inspect_worker(name: str) -> dict[str, object]:
         "image_id": inspected["Image"],
         "path": inspected["Path"],
         "args": inspected["Args"],
+        "read_only_rootfs": bool(inspected["HostConfig"].get("ReadonlyRootfs")),
         "state": inspected["State"]["Status"],
         "environment": environment,
         "mounts": [
