@@ -549,16 +549,22 @@ def build_legacy_worker(client, *, task_queue, outbox):
 async def main():
     require_fixture()
     from salience.cycles.publication_recovery_compatibility import (
+        PublicationWorkerCompatibilityError,
         require_publication_worker_compatibility_from_environment,
     )
 
-    database_url = os.environ.get("DATABASE_URL") or os.environ.get("TEST_DATABASE_URL")
+    test_database_url = os.environ.get("TEST_DATABASE_URL")
+    database_url = os.environ.get("DATABASE_URL") or test_database_url
     if not database_url:
         raise RuntimeError("publication worker DATABASE_URL is required")
+    if test_database_url != database_url:
+        raise PublicationWorkerCompatibilityError(
+            "legacy fixture TEST_DATABASE_URL must match the verified DATABASE_URL"
+        )
     require_publication_worker_compatibility_from_environment(database_url)
     client = await Client.connect(os.environ["TEST_TEMPORAL_TARGET"])
     queue = os.environ["V4_LEGACY_FIXTURE_QUEUE"]
-    outbox = CycleOutbox(os.environ["TEST_DATABASE_URL"],workspace_id=os.environ["V4_FIXTURE_WORKSPACE"],delivery_lane="legacy")
+    outbox = CycleOutbox(database_url,workspace_id=os.environ["V4_FIXTURE_WORKSPACE"],delivery_lane="legacy")
     async with build_legacy_worker(client,task_queue=queue,outbox=outbox):
         async with asyncio.TaskGroup() as group:
             stop = asyncio.Event()

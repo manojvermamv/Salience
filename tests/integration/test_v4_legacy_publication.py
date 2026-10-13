@@ -1101,9 +1101,13 @@ async def test_expired_receipt_hold_requires_current_reconcile_scope_and_never_r
         assert reason == "expired_permit_receipt"
         assert typed_failures[0].details == ({"hold_id": str(hold_id)},)
         current_snapshot = connection.execute(_SNAPSHOT_SQL, (operation_id,)).fetchone()[0]
-        assert before_recovery_snapshot == current_snapshot == hold_snapshot
-        from test_v4_publication_recovery_holds import _assert_publication_attempt_snapshot
+        assert before_recovery_snapshot == current_snapshot
+        from test_v4_publication_recovery_holds import (
+            _assert_publication_attempt_snapshot,
+            _assert_recovery_hold_snapshot_matches_full,
+        )
 
+        _assert_recovery_hold_snapshot_matches_full(current_snapshot, hold_snapshot)
         publication_attempt_id = connection.execute(
             "SELECT publication_attempt_id FROM v4_legacy_publication_recovery_holds WHERE operation_id=%s",
             (operation_id,),
@@ -1274,7 +1278,10 @@ async def test_expired_hold_insert_failure_preserves_activity_entry_liability(
         ).fetchone()
         after_retry = connection.execute(_SNAPSHOT_SQL, (operation_id,)).fetchone()[0]
     assert typed_failures[0].details == ({"hold_id": str(hold_id)},)
-    assert before == hold_snapshot == after_retry
+    assert before == after_retry
+    from test_v4_publication_recovery_holds import _assert_recovery_hold_snapshot_matches_full
+
+    _assert_recovery_hold_snapshot_matches_full(after_retry, hold_snapshot)
     _assert_publication_attempt_snapshot(hold_snapshot, publication_attempt_id)
 
 

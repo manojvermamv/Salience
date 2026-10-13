@@ -329,6 +329,12 @@ def main(argv: list[str] | None = None) -> int:
     database_url = os.environ.get("DATABASE_URL")
     if not database_url:
         raise LauncherError("DATABASE_URL is required for publication worker compatibility")
+    if arguments.worker_kind == "legacy-fixture":
+        test_database_url = os.environ.get("TEST_DATABASE_URL")
+        if not test_database_url or test_database_url != database_url:
+            raise LauncherError(
+                "legacy fixture TEST_DATABASE_URL must match the checked DATABASE_URL"
+            )
     try:
         raw_lock = CONTROL_LOCK_PATH.read_bytes()
         trusted_digest = CONTROL_LOCK_DIGEST_PATH.read_text(encoding="ascii").strip()

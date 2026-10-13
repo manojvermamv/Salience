@@ -233,6 +233,15 @@ SELECT full_snapshot.snapshot - ARRAY[
 ]::text[]
 FROM ({_SNAPSHOT_SQL}) AS full_snapshot(snapshot)
 """
+_RECOVERY_HOLD_SNAPSHOT_EXCLUDED_KEYS = frozenset(
+    {
+        "output",
+        "remote_publication_receipts",
+        "job_checkpoints",
+        "audit_events",
+        "provenance_records",
+    }
+)
 
 _INSERT_SQL = f"""INSERT INTO public.{TABLE} (
     id, operation_id, workspace_id, goal_id, intent_id, cycle_id, context_id, job_id,
@@ -579,6 +588,14 @@ def _assert_named_liabilities_unchanged(before, after):
     ):
         assert after[name] == before[name], name
     assert after["job"]["output_payload"] == before["job"]["output_payload"]
+
+
+def _assert_recovery_hold_snapshot_matches_full(full_snapshot, stored_snapshot):
+    assert set(stored_snapshot) == set(full_snapshot) - _RECOVERY_HOLD_SNAPSHOT_EXCLUDED_KEYS
+    assert stored_snapshot == {
+        key: full_snapshot[key]
+        for key in stored_snapshot
+    }
 
 
 def _recovery_hold_snapshot(database, operation_id):

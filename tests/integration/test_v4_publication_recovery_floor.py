@@ -363,7 +363,8 @@ def test_launcher_binds_valid_floor_lock_to_fixed_interpreter_runtime_and_entryp
     monkeypatch.setattr(launcher.subprocess, "run", lambda *args, **kwargs: type("Result", (), {"returncode": 0, "stderr": ""})())
     monkeypatch.setattr(launcher.os, "chdir", lambda path: working_directories.append(Path(path)))
     monkeypatch.setattr(launcher.os, "execve", capture_exec)
-    monkeypatch.setenv("DATABASE_URL", os.environ["TEST_DATABASE_URL"])
+    monkeypatch.setenv("DATABASE_URL", "postgresql://checked/deployable_a")
+    monkeypatch.setenv("TEST_DATABASE_URL", "postgresql://worker/unrelated_b")
     shadow = tmp_path / "shadow"
     (shadow / "salience" / "workflows").mkdir(parents=True)
     (shadow / "salience" / "workflows" / "worker.py").write_text("raise RuntimeError('shadow')")
@@ -381,6 +382,8 @@ def test_launcher_binds_valid_floor_lock_to_fixed_interpreter_runtime_and_entryp
     assert "PYTHONPATH" not in environments[0] and "PYTHONHOME" not in environments[0]
     assert environments[0]["SALIENCE_PUBLICATION_WORKER_START_MODE"] == "current"
     assert environments[0]["SALIENCE_PUBLICATION_WORKER_LAUNCH_LOCK_SHA256"] == digest
+    assert environments[0]["DATABASE_URL"] == "postgresql://checked/deployable_a"
+    assert environments[0]["TEST_DATABASE_URL"] == "postgresql://worker/unrelated_b"
     for arguments in (
         ["--mode", "current", "--worker-kind", "deployable", "--executable", "/a4/python"],
         ["--mode", "current", "--worker-kind", "deployable", "--module", "a4.worker"],
@@ -391,6 +394,51 @@ def test_launcher_binds_valid_floor_lock_to_fixed_interpreter_runtime_and_entryp
             launcher.main(arguments)
     assert len(executed) == 1
     assert lock.workers["deployable"].module == "salience.workflows.worker"
+
+
+@pytest.mark.parametrize("mode", ("current", "rollback-restart"))
+def test_launcher_denies_divergent_database_urls_before_legacy_fixture_start(
+    mode, tmp_path, monkeypatch
+):
+    launcher = _launcher_module()
+    lock, wheel_path, _, _ = _write_test_lock(tmp_path, monkeypatch)
+    _configure_launcher(launcher, tmp_path, lock, wheel_path, monkeypatch)
+    monkeypatch.setenv("DATABASE_URL", "postgresql://checked/verified_a")
+    monkeypatch.setenv("TEST_DATABASE_URL", "postgresql://worker/fixture_b")
+    preflights = []
+    worker_starts = []
+    monkeypatch.setattr(launcher.os, "chdir", lambda path: None)
+    monkeypatch.setattr(
+        launcher.subprocess,
+        "run",
+        lambda *args, **kwargs: (
+            preflights.append((args, kwargs))
+            or type("Result", (), {"returncode": 0, "stderr": ""})()
+        ),
+    )
+    monkeypatch.setattr(
+        launcher.os,
+        "execve",
+        lambda *args: worker_starts.append(args),
+    )
+
+    arguments = ["--mode", mode, "--worker-kind", "legacy-fixture"]
+    if mode == "rollback-restart":
+        arguments.extend(
+            [
+                "--workspace-id",
+                "95416086-6229-460e-8007-90a20873d1a2",
+                "--expired-hold-operation-id",
+                "4000f343-7f68-4e03-8574-65087f465132",
+                "--cancel-hold-operation-id",
+                "06b54014-c574-4c6d-9409-0daf78767071",
+            ]
+        )
+    with pytest.raises(launcher.LauncherError, match="DATABASE_URL"):
+        launcher.main(arguments)
+
+    assert preflights == []
+    assert worker_starts == []
 
 
 def test_launcher_rejects_candidate_selected_lock_and_modified_launcher(tmp_path, monkeypatch):
@@ -667,6 +715,49 @@ async def test_worker_entrypoints_fail_closed_before_temporal_connect_at_0042(
     with pytest.raises(PublicationWorkerCompatibilityError):
         await worker.run_worker()
     assert temporal_connects == []
+
+
+@pytest.mark.asyncio
+async def test_legacy_fixture_main_denies_divergent_database_urls_before_connect_or_outbox(
+    monkeypatch,
+):
+    from salience.cycles import legacy_runtime
+    from salience.cycles import publication_recovery_compatibility as compatibility
+
+    monkeypatch.setenv("DATABASE_URL", "postgresql://checked/verified_a")
+    monkeypatch.setenv("TEST_DATABASE_URL", "postgresql://worker/fixture_b")
+    monkeypatch.setenv("SALIENCE_DEPLOYMENT_MODE", "fixture")
+    monkeypatch.setenv("TEST_TEMPORAL_TARGET", "temporal.invalid:7233")
+    monkeypatch.setenv("V4_LEGACY_FIXTURE_QUEUE", "legacy-fixture")
+    monkeypatch.setenv("V4_FIXTURE_WORKSPACE", "95416086-6229-460e-8007-90a20873d1a2")
+    monkeypatch.setattr(legacy_runtime, "require_fixture", lambda: None)
+
+    gate_databases = []
+    temporal_connects = []
+    outbox_databases = []
+    monkeypatch.setattr(
+        compatibility,
+        "require_publication_worker_compatibility_from_environment",
+        lambda database_url: gate_databases.append(database_url),
+    )
+
+    async def fake_connect(*args, **kwargs):
+        temporal_connects.append((args, kwargs))
+        return object()
+
+    def fake_outbox(database_url, **kwargs):
+        outbox_databases.append(database_url)
+        raise RuntimeError("CycleOutbox construction reached before mismatch denial")
+
+    monkeypatch.setattr(legacy_runtime.Client, "connect", fake_connect)
+    monkeypatch.setattr(legacy_runtime, "CycleOutbox", fake_outbox)
+
+    with pytest.raises(PublicationWorkerCompatibilityError, match="DATABASE_URL"):
+        await legacy_runtime.main()
+
+    assert gate_databases == []
+    assert temporal_connects == []
+    assert outbox_databases == []
 
 
 def test_migration_graph_rejects_branch_and_cycle_shapes():
