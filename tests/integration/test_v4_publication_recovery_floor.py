@@ -2510,6 +2510,126 @@ def test_task8_candidate_loader_rejects_missing_fixture_and_mismatched_attestati
         )
 
 
+@pytest.mark.parametrize("target", ("primary", "legacy-null-v1"))
+def test_candidate_database_state_capture_uses_explicit_target_database(target, monkeypatch):
+    import psycopg
+    import test_v4_publication_recovery_holds as hold_helpers
+
+    operation_ids = {
+        "expired_permit_receipt": str(UUID(int=11 if target == "primary" else 21)),
+        "published_during_cancel": str(UUID(int=12 if target == "primary" else 22)),
+    }
+    hold_ids = {
+        reason: str(UUID(int=31 + index if target == "primary" else 41 + index))
+        for index, reason in enumerate(operation_ids)
+    }
+    workspace_id = str(UUID(int=51 if target == "primary" else 61))
+    database_url = (
+        "postgresql://127.0.0.1/"
+        + ("recovery_floor_active_0123456789ab" if target == "primary" else "recovery_floor_legacy_0123456789ab")
+    )
+    liabilities = {
+        reason: {"job": {"id": str(UUID(int=71 + index))}}
+        for index, reason in enumerate(operation_ids)
+    }
+    holds = {
+        reason: {
+            "id": hold_ids[reason],
+            "operation_id": operation_id,
+            "workspace_id": workspace_id,
+            "reason": reason,
+        }
+        for reason, operation_id in operation_ids.items()
+    }
+    fixture = {
+        "operation_ids": operation_ids,
+        "hold_ids": hold_ids,
+        "workspace_id": workspace_id,
+        "liability_snapshot_hashes": {
+            reason: _canonical_json_hash(snapshot)
+            for reason, snapshot in liabilities.items()
+        },
+        "hold_row_hashes": {
+            reason: _canonical_json_hash(snapshot)
+            for reason, snapshot in holds.items()
+        },
+    }
+    candidate = {
+        "database_target": target,
+        "database_url": database_url,
+        "fixture": fixture,
+    }
+    connected_targets = []
+    helper_targets = []
+
+    class _VersionCursor:
+        def fetchall(self):
+            return [("0043_complete_publication_recovery_liabilities",)]
+
+    class _Connection:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_exc):
+            return False
+
+        def execute(self, _statement):
+            return _VersionCursor()
+
+    def connect(selected_database_url):
+        connected_targets.append(selected_database_url)
+        return _Connection()
+
+    def liability_snapshot(selected_database_url, operation_id):
+        helper_targets.append(selected_database_url)
+        return liabilities[next(
+            reason for reason, value in operation_ids.items()
+            if value == str(operation_id)
+        )]
+
+    def recovery_hold_snapshot(selected_database_url, operation_id):
+        helper_targets.append(selected_database_url)
+        return holds[next(
+            reason for reason, value in operation_ids.items()
+            if value == str(operation_id)
+        )]
+
+    monkeypatch.setattr(psycopg, "connect", connect)
+    monkeypatch.setattr(hold_helpers, "_liability_snapshot", liability_snapshot)
+    monkeypatch.setattr(hold_helpers, "_recovery_hold_snapshot", recovery_hold_snapshot)
+
+    state = _capture_candidate_database_state(candidate, database_url=database_url)
+
+    assert connected_targets == [database_url]
+    assert helper_targets == [database_url] * 4
+    assert state == {"liabilities": liabilities, "holds": holds}
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("failure_stage", ("publication", "conditional-cases"))
+async def test_task8_progress_cleanup_runs_when_publication_or_case_fails(tmp_path, failure_stage):
+    progress_path = tmp_path / "worker-qualification-progress.json"
+
+    async def publish_progress():
+        progress_path.write_text("published", encoding="utf-8")
+        if failure_stage == "publication":
+            raise RuntimeError("injected producer failure")
+
+    async def run_conditional_cases():
+        assert progress_path.read_text(encoding="utf-8") == "published"
+        if failure_stage == "conditional-cases":
+            raise RuntimeError("injected conditional-case failure")
+
+    with pytest.raises(RuntimeError, match="injected"):
+        await _publish_task8_progress_and_run_cases(
+            progress_path,
+            publish_progress=publish_progress,
+            run_conditional_cases=run_conditional_cases,
+        )
+
+    assert not progress_path.exists()
+
+
 def test_candidate_rollback_denial_harness_calls_launcher_and_detects_side_effects():
     calls = []
     candidate = {
@@ -3263,23 +3383,39 @@ def _canonical_json_hash(value):
     return _sha256(encoded)
 
 
-def _capture_candidate_database_state(candidate, *, validate_metadata_baseline=True):
+async def _publish_task8_progress_and_run_cases(
+    progress_path, *, publish_progress, run_conditional_cases
+):
+    """Remove per-run progress before its disposable database fixtures tear down."""
+    try:
+        await publish_progress()
+        await run_conditional_cases()
+    finally:
+        Path(progress_path).unlink(missing_ok=True)
+
+
+def _capture_candidate_database_state(
+    candidate, *, database_url, validate_metadata_baseline=True
+):
     import psycopg
     from test_v4_publication_recovery_holds import (
         _liability_snapshot,
         _recovery_hold_snapshot,
     )
 
-    with psycopg.connect(legacy_candidate["database_url"]) as connection:
+    assert database_url == candidate["database_url"], (
+        "database snapshot target must match the explicitly selected candidate URL"
+    )
+    with psycopg.connect(database_url) as connection:
         head = connection.execute("SELECT version_num FROM alembic_version").fetchall()
         assert head == [("0043_complete_publication_recovery_liabilities",)]
     fixture = candidate["fixture"]
     liabilities = {
-        reason: _liability_snapshot(candidate["database_url"], operation_id)
+        reason: _liability_snapshot(database_url, operation_id)
         for reason, operation_id in fixture["operation_ids"].items()
     }
     holds = {
-        reason: _recovery_hold_snapshot(candidate["database_url"], operation_id)
+        reason: _recovery_hold_snapshot(database_url, operation_id)
         for reason, operation_id in fixture["operation_ids"].items()
     }
     assert all(row is not None for row in holds.values())
@@ -3298,9 +3434,13 @@ def _capture_candidate_database_state(candidate, *, validate_metadata_baseline=T
     return {"liabilities": liabilities, "holds": holds}
 
 
-async def _capture_candidate_external_state(candidate, *, validate_metadata_baseline=True):
+async def _capture_candidate_external_state(
+    candidate, *, database_url, validate_metadata_baseline=True
+):
     database = _capture_candidate_database_state(
-        candidate, validate_metadata_baseline=validate_metadata_baseline
+        candidate,
+        database_url=database_url,
+        validate_metadata_baseline=validate_metadata_baseline,
     )
     histories = await _candidate_history_fingerprints(candidate)
     expected_histories = candidate["fixture"]["history_fixture"]
@@ -3440,7 +3580,8 @@ def _mutate_omitted_liability_collection(database_url, snapshot, collection):
 async def test_rollback_restart_launcher_denies_omitted_collection_mutation_before_registration(collection):
     candidate = _task8_rollback_image_or_skip()
     _assert_candidate_image(candidate)
-    initial = await _capture_candidate_external_state(candidate)
+    database_url = candidate["database_url"]
+    initial = await _capture_candidate_external_state(candidate, database_url=database_url)
     mutated_reason = "published_during_cancel"
     restore = _mutate_omitted_liability_collection(
         candidate["database_url"],
@@ -3449,7 +3590,9 @@ async def test_rollback_restart_launcher_denies_omitted_collection_mutation_befo
     )
     try:
         mutated = await _capture_candidate_external_state(
-            candidate, validate_metadata_baseline=False
+            candidate,
+            database_url=database_url,
+            validate_metadata_baseline=False,
         )
         snapshot_key = {
             "remote-publication-receipts": "remote_publication_receipts",
@@ -3461,12 +3604,16 @@ async def test_rollback_restart_launcher_denies_omitted_collection_mutation_befo
         before_launcher = mutated
         result = _invoke_candidate_rollback_launcher(candidate)
         after_launcher = await _capture_candidate_external_state(
-            candidate, validate_metadata_baseline=False
+            candidate,
+            database_url=database_url,
+            validate_metadata_baseline=False,
         )
         _assert_candidate_launcher_denial_preserved_state(result, before_launcher, after_launcher)
     finally:
         restore()
-    restored = await _capture_candidate_external_state(candidate)
+    restored = await _capture_candidate_external_state(
+        candidate, database_url=database_url
+    )
     assert restored == initial
 
 
@@ -3481,16 +3628,24 @@ async def test_rollback_restart_launcher_denies_legacy_null_v1_before_registrati
     }
     target = str(UUID(fixture["legacy_null_operation_id"]))
     assert target in {str(UUID(value)) for value in fixture["operation_ids"].values()}
+    legacy_database_url = candidate["legacy_null_database_url"]
+    assert legacy_database_url != candidate["database_url"]
     legacy_candidate = {
         **candidate,
         "fixture": fixture,
-        "database_url": candidate["legacy_null_database_url"],
+        "database_url": legacy_database_url,
+        "database_target": "legacy-null-v1",
     }
-    state_before = await _capture_candidate_external_state(legacy_candidate)
-    database_before = _capture_candidate_database_state(legacy_candidate)
+    assert legacy_candidate["database_url"] == candidate["legacy_null_database_url"]
+    state_before = await _capture_candidate_external_state(
+        legacy_candidate, database_url=legacy_database_url
+    )
+    database_before = _capture_candidate_database_state(
+        legacy_candidate, database_url=legacy_database_url
+    )
     import psycopg
 
-    with psycopg.connect(candidate["database_url"]) as connection:
+    with psycopg.connect(legacy_database_url) as connection:
         null_v1 = connection.execute(
             "SELECT liability_snapshot_version, liability_snapshot_v1, "
             "liability_fingerprint_v1 FROM v4_legacy_publication_recovery_holds "
@@ -3498,17 +3653,31 @@ async def test_rollback_restart_launcher_denies_legacy_null_v1_before_registrati
             (target,),
         ).fetchone()
     assert null_v1 == (None, None, None)
-    result = _invoke_candidate_rollback_launcher(legacy_candidate)
-    state_after = await _capture_candidate_external_state(legacy_candidate)
+    launcher_targets = []
+
+    def invoke_legacy_target(**kwargs):
+        launcher_targets.append(kwargs["database_url"])
+        return _load_worker_harness().invoke_launcher(**kwargs)
+
+    result = _invoke_candidate_rollback_launcher(
+        legacy_candidate, invoke=invoke_legacy_target
+    )
+    assert launcher_targets == [legacy_database_url]
+    state_after = await _capture_candidate_external_state(
+        legacy_candidate, database_url=legacy_database_url
+    )
     _assert_candidate_launcher_denial_preserved_state(result, state_before, state_after)
-    assert _capture_candidate_database_state(legacy_candidate) == database_before
+    assert _capture_candidate_database_state(
+        legacy_candidate, database_url=legacy_database_url
+    ) == database_before
 
 
 @pytest.mark.asyncio
 async def test_candidate_read_only_worker_creates_no_pyc_and_preserves_runtime_root():
     candidate = _task8_rollback_image_or_skip()
     _assert_candidate_image(candidate)
-    before = await _capture_candidate_external_state(candidate)
+    database_url = candidate["database_url"]
+    before = await _capture_candidate_external_state(candidate, database_url=database_url)
     harness = _load_worker_harness()
     result = _qualify_candidate_read_only_worker(
         candidate,
@@ -3519,7 +3688,7 @@ async def test_candidate_read_only_worker_creates_no_pyc_and_preserves_runtime_r
         stop_worker=harness.stop_worker,
     )
     assert result["readonly_rootfs"] is True
-    after = await _capture_candidate_external_state(candidate)
+    after = await _capture_candidate_external_state(candidate, database_url=database_url)
     assert after == before
 
 
@@ -3689,7 +3858,7 @@ def test_inprocess_gate_wraps_malformed_rollback_environment_as_compatibility_er
 
 @pytest.mark.asyncio
 async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_passes(
-    active_0042_database, monkeypatch, tmp_path,
+    active_0042_database, monkeypatch, tmp_path, request,
 ):
     qualification_worker = ROOT / "tests/fixtures/v4_publication_floor_worker.py"
     assert qualification_worker.is_file(), "actual pinned-image fixture harness is required"
@@ -3832,6 +4001,8 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
     }
     progress_path = candidate_root / "worker-qualification-progress.json"
     final_evidence_path = candidate_root / "worker-qualification.json"
+    progress_path.unlink(missing_ok=True)
+    request.addfinalizer(lambda: progress_path.unlink(missing_ok=True))
     save_json(progress_path, base_evidence)
 
     ancestry = subprocess.run(
@@ -4445,38 +4616,49 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
         assert payload["run_id"] == run_id
         return payload["events"]
 
-    await worker_harness.write_qualification_progress(
-        candidate_root,
-        rollback_launch_fixture=primary_fixture,
-        legacy_null_v1_fixture=legacy_fixture,
-        persistent_fixture=True,
-        read_database_state=lambda: read_database_state(
-            database, primary_fixture["workspace_id"], primary_operation_ids
-        ),
-        read_legacy_database_state=read_legacy_database_state,
-        read_histories=read_history_fixture,
-        read_recorder_events=read_recorder_events,
-    )
-    candidate_for_conditional_cases = _task8_rollback_image_or_skip(
-        candidate_root=candidate_root,
-        environment={
-            "TEST_DATABASE_URL": database,
-            "TEST_LEGACY_NULL_DATABASE_URL": legacy_database,
-            "TEST_TEMPORAL_TARGET": temporal_target,
-        },
-    )
-    assert candidate_for_conditional_cases["image_id"] == expected_image_id
-    for collection in (
-        "remote-publication-receipts",
-        "job-checkpoints",
-        "audit-events",
-        "provenance-records",
-    ):
-        await test_rollback_restart_launcher_denies_omitted_collection_mutation_before_registration(
-            collection
+    async def publish_progress():
+        await worker_harness.write_qualification_progress(
+            candidate_root,
+            rollback_launch_fixture=primary_fixture,
+            legacy_null_v1_fixture=legacy_fixture,
+            persistent_fixture=True,
+            read_database_state=lambda: read_database_state(
+                database, primary_fixture["workspace_id"], primary_operation_ids
+            ),
+            read_legacy_database_state=read_legacy_database_state,
+            read_histories=read_history_fixture,
+            read_recorder_events=read_recorder_events,
         )
-    await test_rollback_restart_launcher_denies_legacy_null_v1_before_registration()
-    await test_candidate_read_only_worker_creates_no_pyc_and_preserves_runtime_root()
+
+    async def run_conditional_cases():
+        candidate_for_conditional_cases = _task8_rollback_image_or_skip(
+            candidate_root=candidate_root,
+            environment={
+                "TEST_DATABASE_URL": database,
+                "TEST_LEGACY_NULL_DATABASE_URL": legacy_database,
+                "TEST_TEMPORAL_TARGET": temporal_target,
+            },
+        )
+        assert candidate_for_conditional_cases["image_id"] == expected_image_id
+        assert candidate_for_conditional_cases["database_url"] == database
+        assert candidate_for_conditional_cases["legacy_null_database_url"] == legacy_database
+        for collection in (
+            "remote-publication-receipts",
+            "job-checkpoints",
+            "audit-events",
+            "provenance-records",
+        ):
+            await test_rollback_restart_launcher_denies_omitted_collection_mutation_before_registration(
+                collection
+            )
+        await test_rollback_restart_launcher_denies_legacy_null_v1_before_registration()
+        await test_candidate_read_only_worker_creates_no_pyc_and_preserves_runtime_root()
+
+    await _publish_task8_progress_and_run_cases(
+        progress_path,
+        publish_progress=publish_progress,
+        run_conditional_cases=run_conditional_cases,
+    )
 
     # The exact control bundle denies every candidate descriptor because the
     # lock bytes no longer match its deployment-owned digest. A separately
@@ -4738,4 +4920,3 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
     ) == second_views
 
     save_json(final_evidence_path, base_evidence)
-    progress_path.unlink(missing_ok=True)
