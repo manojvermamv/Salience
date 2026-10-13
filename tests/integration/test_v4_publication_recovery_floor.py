@@ -535,7 +535,7 @@ def _configure_launcher(launcher, tmp_path, lock, wheel_path, monkeypatch):
 
 
 @pytest.fixture
-def active_0042_database(tmp_path):
+def active_0042_database(tmp_path, request):
     from test_v4_publication_recovery_holds import (
         _create_database,
         _drop_database,
@@ -553,7 +553,13 @@ def active_0042_database(tmp_path):
     try:
         yield database
     finally:
-        _drop_database(source, name)
+        preserve_primary_qualification_database = (
+            os.environ.get("P1_TASK8_PERSIST_FIXTURES") == "1"
+            and request.node.originalname
+            == "test_floor_worker_executes_both_retained_reasons_and_second_verifier_passes"
+        )
+        if not preserve_primary_qualification_database:
+            _drop_database(source, name)
 
 
 def test_floor_gate_rejects_a4_unknown_unpinned_unrelated_and_pre_floor_before_start(
@@ -2592,6 +2598,252 @@ def test_task8_candidate_loader_validates_attestation_control_and_both_reason_me
     assert candidate["temporal_target"] == synthetic["environment"]["TEST_TEMPORAL_TARGET"]
 
 
+@pytest.mark.parametrize(
+    "inventory_case",
+    (
+        "exact-inventory",
+        "extra-file",
+        "missing-file",
+        "changed-file",
+        "symlink-path",
+        "independent-digest-mismatch",
+    ),
+    ids=(
+        "exact-inventory",
+        "extra-file",
+        "missing-file",
+        "changed-file",
+        "symlink-path",
+        "independent-digest-mismatch",
+    ),
+)
+def test_candidate_control_bundle_authenticates_full_0043_inventory(
+    active_0042_database, tmp_path, inventory_case
+):
+    assert inventory_case in {
+        "exact-inventory",
+        "extra-file",
+        "missing-file",
+        "changed-file",
+        "symlink-path",
+        "independent-digest-mismatch",
+    }
+    artifact_root = ROOT / "artifacts/v4-next-p1/agents/p1-publication-recovery-0043"
+    control_bundle = artifact_root / "control-bundle"
+    lock_path = ROOT / "deployment/v4/publication-worker-launch-lock.json"
+    digest_path = artifact_root / "publication-worker-launch-lock.sha256"
+    wheel_path = artifact_root / "salience.whl"
+    runtime_root = Path("/tmp/p1-publication-recovery-0043/site-packages")
+    assert control_bundle.is_dir()
+    assert runtime_root.is_dir()
+    lock_bytes = lock_path.read_bytes()
+    lock = json.loads(lock_bytes)
+    application_commit = lock["pin"]["application_commit"]
+    assert lock_bytes == (json.dumps(lock, sort_keys=True, separators=(",", ":")) + "\n").encode()
+    assert set(path.name for path in control_bundle.iterdir()) == {
+        "launch-v4-publication-worker.py",
+        "publication-worker-launch-lock.json",
+        "publication-worker-launch-lock.sha256",
+    }
+    for name, expected in (
+        ("launch-v4-publication-worker.py", ROOT / "scripts/launch-v4-publication-worker.py"),
+        ("publication-worker-launch-lock.json", lock_path),
+        ("publication-worker-launch-lock.sha256", digest_path),
+    ):
+        actual = control_bundle / name
+        assert actual.is_file() and not actual.is_symlink()
+        assert actual.read_bytes() == expected.read_bytes()
+    digest = _sha256(lock_bytes)
+    assert digest_path.read_text(encoding="ascii") == digest + "\n"
+
+    spec = importlib.util.spec_from_file_location(
+        "task8_publication_worker_lock_builder",
+        ROOT / "scripts/build_publication_worker_launch_lock.py",
+    )
+    assert spec is not None and spec.loader is not None
+    builder = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(builder)
+    tree = builder._tracked_tree(application_commit, ROOT)
+    expected_paths = set(tree)
+    source_pins = lock["pin"]["source_files"]
+    assert {entry["path"] for entry in source_pins} == expected_paths
+    assert [entry["path"] for entry in source_pins] == sorted(expected_paths)
+    for entry in source_pins:
+        content = tree[entry["path"]]
+        assert entry["git_blob"] == builder._git_blob_sha1(content)
+        assert entry["sha256"] == _sha256(content)
+    assert lock["pin"]["source_manifest_sha256"] == _canonical_json_hash(source_pins)
+    revisions = {
+        int(Path(path).name[:4])
+        for path in expected_paths
+        if path.startswith("migrations/versions/")
+        and re.fullmatch(r"\d{4}_.+\.py", Path(path).name)
+    }
+    assert revisions == set(range(1, 44))
+    builder._validate_installed_source_tree(tree, runtime_root)
+    expected_package = {
+        path.removeprefix("src/"): content
+        for path, content in tree.items()
+        if path.startswith("src/salience/")
+    }
+    record_relative, record_bytes = builder._validate_wheel_and_installed_record(
+        wheel_path, runtime_root, expected_package
+    )
+    assert str(Path(lock["runtime_root"]) / record_relative) == lock["pin"][
+        "distribution_record_path"
+    ]
+    assert _sha256(wheel_path.read_bytes()) == lock["pin"]["artifact_sha256"]
+    assert _sha256(record_bytes) == lock["pin"]["distribution_record_sha256"]
+    image_id = (artifact_root / "worker-image-id.txt").read_text(encoding="ascii").strip()
+
+    def invoke_case(name, *, candidate_lock=None, independent_digest=None, extra_mounts=()):
+        result = _load_worker_harness().invoke_launcher(
+            image=image_id,
+            database_url=active_0042_database,
+            control_bundle=control_bundle,
+            candidate_lock=candidate_lock,
+            independent_digest=independent_digest,
+            extra_mounts=extra_mounts,
+            argv=(
+                "--mode",
+                "rollback-restart",
+                "--worker-kind",
+                "legacy-fixture",
+                "--workspace-id",
+                "00000000-0000-0000-0000-000000000099",
+                "--expired-hold-operation-id",
+                "00000000-0000-0000-0000-000000000098",
+                "--cancel-hold-operation-id",
+                "00000000-0000-0000-0000-000000000097",
+            ),
+        )
+        diagnostic = (result.stdout + result.stderr).casefold()
+        assert result.returncode == 78, f"{name}: {diagnostic}"
+        assert "execve" not in diagnostic and "worker import" not in diagnostic
+        return diagnostic
+
+    exact_diagnostic = invoke_case("exact-inventory")
+    assert "both retained publication recovery holds failed verification" in exact_diagnostic
+
+    def runtime_copy(label):
+        root = tmp_path / label / "site-packages"
+        for relative, content in tree.items():
+            if relative.startswith("src/salience/"):
+                target = root / relative.removeprefix("src/")
+            elif relative.startswith("migrations/") or relative == "alembic.ini":
+                target = root / relative
+            else:
+                continue
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(content)
+        return root
+
+    extra_runtime = runtime_copy("extra-file")
+    (extra_runtime / "migrations/versions/9999_task8_untracked.py").write_text(
+        "revision = 'untracked'\n", encoding="utf-8"
+    )
+    with pytest.raises(ValueError, match="runtime inventory does not match"):
+        builder._validate_installed_source_tree(tree, extra_runtime)
+    extra_lock = json.loads(lock_bytes)
+    extra_lock["pin"]["source_files"].append(
+        {
+            "path": "migrations/versions/9999_task8_untracked.py",
+            "git_blob": "0" * 40,
+            "sha256": "0" * 64,
+        }
+    )
+    extra_lock["pin"]["source_files"].sort(key=lambda entry: entry["path"])
+    extra_lock["pin"]["source_manifest_sha256"] = _canonical_json_hash(
+        extra_lock["pin"]["source_files"]
+    )
+    extra_lock_path = tmp_path / "extra-file.lock.json"
+    extra_digest_path = tmp_path / "extra-file.lock.sha256"
+    extra_raw = (json.dumps(extra_lock, sort_keys=True, separators=(",", ":")) + "\n").encode()
+    extra_lock_path.write_bytes(extra_raw)
+    extra_digest_path.write_text(_sha256(extra_raw) + "\n", encoding="ascii")
+    extra_diagnostic = invoke_case(
+        "extra-file", candidate_lock=extra_lock_path, independent_digest=extra_digest_path
+    )
+    assert "source pin mismatch" in extra_diagnostic or "launch pin is invalid" in extra_diagnostic
+
+    missing_runtime = runtime_copy("missing-file")
+    (missing_runtime / "migrations/versions/0043_complete_publication_recovery_liabilities.py").unlink()
+    with pytest.raises(ValueError, match="runtime inventory does not match"):
+        builder._validate_installed_source_tree(tree, missing_runtime)
+    missing_lock = json.loads(lock_bytes)
+    missing_lock["pin"]["source_files"] = [
+        entry for entry in missing_lock["pin"]["source_files"]
+        if entry["path"] != "migrations/versions/0043_complete_publication_recovery_liabilities.py"
+    ]
+    missing_lock["pin"]["source_manifest_sha256"] = _canonical_json_hash(
+        missing_lock["pin"]["source_files"]
+    )
+    missing_lock_path = tmp_path / "missing-file.lock.json"
+    missing_digest_path = tmp_path / "missing-file.lock.sha256"
+    missing_raw = (json.dumps(missing_lock, sort_keys=True, separators=(",", ":")) + "\n").encode()
+    missing_lock_path.write_bytes(missing_raw)
+    missing_digest_path.write_text(_sha256(missing_raw) + "\n", encoding="ascii")
+    missing_diagnostic = invoke_case(
+        "missing-file", candidate_lock=missing_lock_path, independent_digest=missing_digest_path
+    )
+    assert (
+        "source manifest is incomplete" in missing_diagnostic
+        or "migration" in missing_diagnostic
+        or "floor 0043" in missing_diagnostic
+    )
+
+    changed_runtime = runtime_copy("changed-file")
+    changed_path = changed_runtime / "migrations/versions/0043_complete_publication_recovery_liabilities.py"
+    changed_path.write_bytes(changed_path.read_bytes() + b"\n# task8 mutation\n")
+    with pytest.raises(ValueError, match="differs from application_commit"):
+        builder._validate_installed_source_tree(tree, changed_runtime)
+    changed_lock = json.loads(lock_bytes)
+    changed_pin = next(
+        entry for entry in changed_lock["pin"]["source_files"]
+        if entry["path"] == "migrations/versions/0043_complete_publication_recovery_liabilities.py"
+    )
+    changed_pin["sha256"] = "f" * 64
+    changed_lock["pin"]["source_manifest_sha256"] = _canonical_json_hash(
+        changed_lock["pin"]["source_files"]
+    )
+    changed_lock_path = tmp_path / "changed-file.lock.json"
+    changed_digest_path = tmp_path / "changed-file.lock.sha256"
+    changed_raw = (json.dumps(changed_lock, sort_keys=True, separators=(",", ":")) + "\n").encode()
+    changed_lock_path.write_bytes(changed_raw)
+    changed_digest_path.write_text(_sha256(changed_raw) + "\n", encoding="ascii")
+    assert "source pin mismatch" in invoke_case(
+        "changed-file", candidate_lock=changed_lock_path, independent_digest=changed_digest_path
+    )
+
+    symlink_runtime = runtime_copy("symlink-path")
+    symlinked_revision = symlink_runtime / "migrations/versions/0043_complete_publication_recovery_liabilities.py"
+    symlinked_revision.unlink()
+    symlinked_revision.symlink_to("/tmp/task8-outside-authenticated-root.py")
+    with pytest.raises(ValueError, match="contains a symlink"):
+        builder._validate_installed_source_tree(tree, symlink_runtime)
+    overlay_versions = tmp_path / "symlink-overlay"
+    shutil.copytree(
+        symlink_runtime / "migrations/versions", overlay_versions, symlinks=True
+    )
+    escaped_source = tmp_path / "outside-authenticated-root.py"
+    escaped_source.write_text("# outside the authenticated runtime root\n", encoding="utf-8")
+    symlink_diagnostic = invoke_case(
+        "symlink-path",
+        extra_mounts=(
+            (overlay_versions, lock["runtime_root"] + "/migrations/versions"),
+            (escaped_source, "/tmp/task8-outside-authenticated-root.py"),
+        ),
+    )
+    assert "pinned file escapes authenticated runtime root" in symlink_diagnostic
+
+    bad_digest_path = tmp_path / "independent-digest-mismatch.sha256"
+    bad_digest_path.write_text("0" * 64 + "\n", encoding="ascii")
+    digest_diagnostic = invoke_case(
+        "independent-digest-mismatch", independent_digest=bad_digest_path
+    )
+    assert "independent trust root" in digest_diagnostic
+
+
 def test_task8_loader_never_falls_back_to_legacy_candidate_provenance(tmp_path, monkeypatch):
     monkeypatch.setattr(sys.modules[__name__], "ROOT", tmp_path)
     tracked_lock = tmp_path / "deployment/v4/publication-worker-launch-lock.json"
@@ -3794,6 +4046,37 @@ async def test_cross_container_adapter_recorder_observes_zero_operations_for_bot
     operation_ids = fixture["operation_ids"]
     task_queue = fixture["history_fixture"][reason]["task_queue"]
     workflow_id = fixture["history_fixture"][reason]["workflow_id"]
+
+    def activity_schedule_and_start_event_ids(events):
+        return {
+            "scheduled": [
+                event.event_id
+                for event in events
+                if event.HasField("activity_task_scheduled_event_attributes")
+            ],
+            "started": [
+                event.event_id
+                for event in events
+                if event.HasField("activity_task_started_event_attributes")
+            ],
+        }
+
+    client = await Client.connect(candidate["temporal_target"])
+    handle = client.get_workflow_handle(workflow_id)
+    history_before = await handle.fetch_history()
+    history_bytes_before = b"".join(
+        event.SerializeToString() for event in history_before.events
+    )
+    strict_history = fixture["history_fixture"][reason]
+    assert max(event.event_id for event in history_before.events) == strict_history[
+        "last_event_id"
+    ]
+    assert hashlib.sha256(history_bytes_before).hexdigest() == strict_history[
+        "history_sha256"
+    ], "rollback-restart did not consume the exact history bound by strict progress"
+    activity_events_before = activity_schedule_and_start_event_ids(
+        history_before.events
+    )
     worker_name = (
         "task7-adapter-rollback-restart-"
         + reason.replace("_", "-")
@@ -3823,8 +4106,6 @@ async def test_cross_container_adapter_recorder_observes_zero_operations_for_bot
         assert inspection["read_only_rootfs"] is True
         assert inspection["environment"]["SALIENCE_EFFECTS_ENABLED"] == "false"
 
-        client = await Client.connect(candidate["temporal_target"])
-        handle = client.get_workflow_handle(workflow_id)
         with pytest.raises(WorkflowFailureError) as failure:
             await asyncio.wait_for(handle.result(), timeout=45)
         typed_holds = [
@@ -3834,6 +4115,14 @@ async def test_cross_container_adapter_recorder_observes_zero_operations_for_bot
         ]
         assert len(typed_holds) == 1
         assert typed_holds[0].details == ({"hold_id": fixture["hold_ids"][reason]},)
+        history_after_run = await handle.fetch_history()
+        activity_events_after = activity_schedule_and_start_event_ids(
+            history_after_run.events
+        )
+        assert activity_events_after == activity_events_before, (
+            "rollback-restart scheduled or started an activity after the original "
+            "typed hold failure; the recorder window is not rollback-only"
+        )
     finally:
         stopped = worker_harness.stop_worker(worker_name)
         if launch is None:
@@ -3852,17 +4141,39 @@ async def test_cross_container_adapter_recorder_observes_zero_operations_for_bot
     )
     assert events_after == events_before
     _assert_no_adapter_operation_events(events_after)
+    history_bytes_after = b"".join(
+        event.SerializeToString() for event in history_after_run.events
+    )
+    return {
+        "reason": reason,
+        "workflow_id": workflow_id,
+        "run_id": (await handle.describe()).run_id,
+        "strict_pre_run_history_sha256": strict_history["history_sha256"],
+        "post_run_history_sha256": hashlib.sha256(history_bytes_after).hexdigest(),
+        "activity_schedule_and_start_event_ids_before": activity_events_before,
+        "activity_schedule_and_start_event_ids_after": activity_events_after,
+        "new_activity_schedule_or_start_events": 0,
+        "recorder_run_id": recorder_run_id,
+        "recorder_worker_id": recorder_worker_id,
+        "recorder_events_before": events_before,
+        "recorder_events_after": events_after,
+        "typed_hold": typed_holds[0].type,
+        "worker_container_id": launch["container_id"],
+        "worker_image_id": launch["image_id"],
+        "worker_exit_state": stopped["state"],
+    }
 
 
 async def _publish_task8_progress_and_run_cases(
     progress_path, *, publish_progress, run_conditional_cases
 ):
-    """Remove per-run progress before its disposable database fixtures tear down."""
+    """Keep strict progress only while its disposable targets remain available."""
     try:
         await publish_progress()
         await run_conditional_cases()
     finally:
-        Path(progress_path).unlink(missing_ok=True)
+        if os.environ.get("P1_TASK8_PERSIST_FIXTURES") != "1":
+            Path(progress_path).unlink(missing_ok=True)
 
 
 def _capture_candidate_database_state(
@@ -4118,6 +4429,107 @@ def _mutate_omitted_liability_collection(
 
 
 @pytest.mark.parametrize(
+    "mutation",
+    (
+        "artifact-digest-mismatch",
+        "lock-digest-mismatch",
+        "launcher-hash-mismatch",
+        "interpreter-hash-mismatch",
+        "distribution-record-mismatch",
+        "runtime-root-mismatch",
+    ),
+    ids=(
+        "artifact-digest-mismatch",
+        "lock-digest-mismatch",
+        "launcher-hash-mismatch",
+        "interpreter-hash-mismatch",
+        "distribution-record-mismatch",
+        "runtime-root-mismatch",
+    ),
+)
+def test_candidate_image_launcher_denies_pin_mutations_before_registration(
+    mutation, tmp_path
+):
+    candidate = _task8_rollback_image_or_skip()
+    _assert_candidate_image(candidate)
+    case_bundle = tmp_path / mutation
+    case_bundle.mkdir()
+    for name in (
+        "launch-v4-publication-worker.py",
+        "publication-worker-launch-lock.json",
+        "publication-worker-launch-lock.sha256",
+    ):
+        shutil.copyfile(candidate["control_bundle"] / name, case_bundle / name)
+    lock_path = case_bundle / "publication-worker-launch-lock.json"
+    digest_path = case_bundle / "publication-worker-launch-lock.sha256"
+    launcher_path = case_bundle / "launch-v4-publication-worker.py"
+    lock = json.loads(lock_path.read_bytes())
+    expected_diagnostics = {
+        "artifact-digest-mismatch": "retained publication worker wheel hash mismatch",
+        "lock-digest-mismatch": "launch-lock bytes do not match independent trust root",
+        "launcher-hash-mismatch": "publication worker launcher source hash mismatch",
+        "interpreter-hash-mismatch": "publication worker interpreter hash mismatch",
+        "distribution-record-mismatch": "installed distribution record digest mismatch",
+        "runtime-root-mismatch": "publication worker runtime root does not match the fixed root",
+    }
+    if mutation == "artifact-digest-mismatch":
+        lock["pin"]["artifact_sha256"] = "0" * 64
+    elif mutation == "lock-digest-mismatch":
+        lock["launcher_sha256"] = "f" * 64
+    elif mutation == "launcher-hash-mismatch":
+        launcher_path.write_bytes(launcher_path.read_bytes() + b"\n# task8 mutation\n")
+    elif mutation == "interpreter-hash-mismatch":
+        lock["interpreter_sha256"] = "0" * 64
+    elif mutation == "distribution-record-mismatch":
+        lock["pin"]["distribution_record_sha256"] = "0" * 64
+    elif mutation == "runtime-root-mismatch":
+        lock["runtime_root"] = "/tmp/task8-runtime-root"
+    else:
+        raise AssertionError(f"unknown pin mutation: {mutation}")
+
+    if mutation != "launcher-hash-mismatch":
+        lock_bytes = (json.dumps(lock, sort_keys=True, separators=(",", ":")) + "\n").encode()
+        lock_path.write_bytes(lock_bytes)
+        if mutation == "lock-digest-mismatch":
+            # Keep the independent digest fixed to prove the altered lock cannot
+            # authorize itself.
+            digest_path.write_text(
+                candidate["progress"]["launch_lock_sha256"] + "\n", encoding="ascii"
+            )
+        else:
+            digest_path.write_text(_sha256(lock_bytes) + "\n", encoding="ascii")
+
+    fixture = candidate["fixture"]
+    operation_ids = fixture["operation_ids"]
+    wrong_workspace = "00000000-0000-0000-0000-000000000096"
+    assert wrong_workspace != fixture["workspace_id"]
+    result = _load_worker_harness().invoke_launcher(
+        image=candidate["image_id"],
+        database_url=candidate["database_url"],
+        control_bundle=case_bundle,
+        argv=(
+            "--mode",
+            "rollback-restart",
+            "--worker-kind",
+            "legacy-fixture",
+            "--workspace-id",
+            wrong_workspace,
+            "--expired-hold-operation-id",
+            operation_ids["expired_permit_receipt"],
+            "--cancel-hold-operation-id",
+            operation_ids["published_during_cancel"],
+        ),
+    )
+    diagnostic = (result.stdout + result.stderr).casefold()
+    assert result.returncode == 78, diagnostic
+    assert expected_diagnostics[mutation] in diagnostic
+    assert "both retained publication recovery holds failed verification" not in diagnostic
+    assert "execve" not in diagnostic
+    assert "salience.workflows.worker" not in diagnostic
+    assert "salience.cycles.legacy_runtime" not in diagnostic
+
+
+@pytest.mark.parametrize(
     "collection",
     (
         "remote-publication-receipts",
@@ -4226,6 +4638,48 @@ async def test_rollback_restart_launcher_denies_legacy_null_v1_before_registrati
     assert _capture_candidate_database_state(
         legacy_candidate, database_url=legacy_database_url
     ) == database_before
+
+
+@pytest.mark.asyncio
+async def test_rollback_restart_launcher_verifies_both_holds_before_exec():
+    candidate = _task8_rollback_image_or_skip()
+    _assert_candidate_image(candidate)
+    before = await _capture_candidate_external_state(
+        candidate, database_url=candidate["database_url"]
+    )
+    fixture = candidate["fixture"]
+    operation_ids = fixture["operation_ids"]
+    from uuid import uuid4
+
+    wrong_workspace = str(uuid4())
+    assert wrong_workspace != fixture["workspace_id"]
+    argv = (
+        "--mode",
+        "rollback-restart",
+        "--worker-kind",
+        "legacy-fixture",
+        "--workspace-id",
+        wrong_workspace,
+        "--expired-hold-operation-id",
+        operation_ids["expired_permit_receipt"],
+        "--cancel-hold-operation-id",
+        operation_ids["published_during_cancel"],
+    )
+    result = _load_worker_harness().invoke_launcher(
+        image=candidate["image_id"],
+        database_url=candidate["database_url"],
+        control_bundle=candidate["control_bundle"],
+        argv=argv,
+    )
+    diagnostic = (result.stdout + result.stderr).casefold()
+    assert result.returncode == 78, diagnostic
+    assert "both retained publication recovery holds failed verification" in diagnostic
+    assert "worker import" not in diagnostic
+    assert "execve" not in diagnostic
+    after = await _capture_candidate_external_state(
+        candidate, database_url=candidate["database_url"]
+    )
+    assert after == before
 
 
 @pytest.mark.asyncio
@@ -4418,7 +4872,10 @@ def test_inprocess_gate_wraps_malformed_rollback_environment_as_compatibility_er
 async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_passes(
     active_0042_database, monkeypatch, tmp_path, request,
 ):
-    _task8_rollback_image_or_skip()
+    candidate_root = ROOT / "artifacts/v4-next-p1/agents/p1-publication-recovery-0043"
+    assert (candidate_root / "image-attestation.json").is_file()
+    assert (candidate_root / "worker-image-id.txt").is_file()
+    assert (candidate_root / "control-bundle").is_dir()
     qualification_worker = ROOT / "tests/fixtures/v4_publication_floor_worker.py"
     assert qualification_worker.is_file(), "actual pinned-image fixture harness is required"
 
@@ -4440,10 +4897,15 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
     )
     from test_v4_publication_recovery_holds import (
         _assert_named_liabilities_unchanged,
+        _drop_database,
+        _hold_values,
+        _INSERT_SQL,
         _liability_snapshot,
+        _migrate,
         _recovery_hold_count,
         _recovery_hold_snapshot,
     )
+    from psycopg import sql
     from salience.cycles.outbox import CycleOutbox
     from salience.cycles.publication_recovery import (
         record_publication_recovery_hold,
@@ -4451,6 +4913,8 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
     )
     from salience.cycles.runtime import TemporalCycleTransport
 
+    database_admin_url = os.environ["TEST_DATABASE_URL"]
+    persist_fixtures = os.environ.get("P1_TASK8_PERSIST_FIXTURES") == "1"
     database = active_0042_database
     monkeypatch.setenv("SALIENCE_DEPLOYMENT_MODE", "fixture")
     monkeypatch.setenv("SALIENCE_EFFECTS_ENABLED", "false")
@@ -4474,7 +4938,7 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
     attestation = json.loads(
         (candidate_root / "image-attestation.json").read_text(encoding="utf-8")
     )
-    image = attestation["image_ref"]
+    image_ref = attestation["image_ref"]
     expected_image_id = attestation["image_id"]
     trusted_digest = hashlib.sha256(tracked_lock_bytes).hexdigest()
     assert (control_bundle / "publication-worker-launch-lock.json").read_bytes() == tracked_lock_bytes
@@ -4485,13 +4949,15 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
         (control_bundle / "launch-v4-publication-worker.py").read_bytes()
     ).hexdigest() == tracked_lock["launcher_sha256"]
     assert attestation["application_commit"] == application_commit
-    assert image == f"salience-p1-floor-{candidate_suffix}-worker:latest"
+    assert image_ref == f"salience-p1-floor-{candidate_suffix}-worker:latest"
     assert tracked_lock["pin"]["artifact_sha256"] == attestation["wheel_sha256"]
     assert tracked_lock["pin"]["distribution_record_sha256"] == attestation["record_sha256"]
     assert attestation["record_ok"] is True
     assert attestation["pyc_files"] == []
     assert attestation["source_tree_loaded"] is False
-    runtime_manifest = worker_harness.image_runtime_manifest(image, attestation["runtime_root"])
+    runtime_manifest = worker_harness.image_runtime_manifest(
+        expected_image_id, attestation["runtime_root"]
+    )
     assert runtime_manifest["pyc_files"] == []
     assert _canonical_json_hash(runtime_manifest) == attestation["runtime_manifest_sha256"]
 
@@ -4523,7 +4989,7 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
         "application_ancestry": None,
         "wheel_build_command": attestation["wheel_build_command"],
         "compose_build_command": attestation["compose_build_command"],
-        "image_ref": image,
+        "image_ref": image_ref,
         "image_id": expected_image_id,
         "wheel_sha256": attestation["wheel_sha256"],
         "wheel_path": attestation["wheel_path"],
@@ -4547,6 +5013,7 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
         "hold_ids": {},
         "first_verifier": None,
         "second_verifier": None,
+        "third_verifier": None,
         "liability_snapshot_hashes": {},
         "hold_row_hashes": {},
         "projection_counts_before": {},
@@ -4561,7 +5028,8 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
     progress_path = candidate_root / "worker-qualification-progress.json"
     final_evidence_path = candidate_root / "worker-qualification.json"
     progress_path.unlink(missing_ok=True)
-    request.addfinalizer(lambda: progress_path.unlink(missing_ok=True))
+    if not persist_fixtures:
+        request.addfinalizer(lambda: progress_path.unlink(missing_ok=True))
     save_json(progress_path, base_evidence)
 
     ancestry = subprocess.run(
@@ -4703,6 +5171,129 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
     assert expired_hold_row["reason"] == "expired_permit_receipt"
     assert _recovery_hold_count(database, expired_operation_id) == 1
 
+    # Build the separate legacy database from this authentic primary state.
+    # Its NULL-v1 operation gets a distinct real Temporal history, while the
+    # expired operation remains a valid v1 companion after the 0042 round trip.
+    import test_creative_release_gate_migration as release_gate
+
+    original_ready_package = release_gate._approved_ready_package
+
+    async def reuse_cancelled_ready_package(*, publication_proofs=True):
+        return cancelled_fixture["ready"]
+
+    monkeypatch.setattr(
+        release_gate, "_approved_ready_package", reuse_cancelled_ready_package
+    )
+    try:
+        legacy_cancel_fixture = await _publication_fixture(database)
+    finally:
+        monkeypatch.setattr(
+            release_gate, "_approved_ready_package", original_ready_package
+        )
+    assert legacy_cancel_fixture["workspace_id"] == workspace_id
+    legacy_cancelled = legacy_cancel_fixture["bridge"].submit_publication(
+        legacy_cancel_fixture["command"]
+    )
+    legacy_null_operation_id = UUID(legacy_cancelled["operation_id"])
+    assert legacy_null_operation_id not in {expired_operation_id, cancelled_operation_id}
+    _allow(
+        database,
+        workspace_id,
+        legacy_cancel_fixture["actor_id"],
+        (
+            "legacy:publication:reconcile:account:"
+            + legacy_cancel_fixture["account"].id,
+        ),
+    )
+    with psycopg.connect(database) as connection:
+        updated = connection.execute(
+            """UPDATE v4_legacy_publication_fixture_progress
+               SET state='published', polls=2, updated_at=clock_timestamp()
+               WHERE operation_id=%s AND state IN ('accepted','processing')
+               RETURNING state""",
+            (str(legacy_null_operation_id),),
+        ).fetchone()
+    assert updated == ("published",)
+    legacy_cancel_fixture["bridge"].close(
+        legacy_cancelled["cycle_id"],
+        disposition="cancelled",
+        reason="Preserve accepted publication liability for the legacy NULL-v1 fixture",
+    )
+    legacy_client = await Client.connect(os.environ["TEST_TEMPORAL_TARGET"])
+    legacy_outbox = CycleOutbox(
+        database, workspace_id=workspace_id, delivery_lane="legacy"
+    )
+    assert await legacy_outbox.dispatch_one(
+        TemporalCycleTransport(
+            legacy_client, task_queue=legacy_cancel_fixture["queue"]
+        )
+    )
+    legacy_workflow_id = (
+        "salience-v4-legacy-operation:" + str(legacy_null_operation_id)
+    )
+    legacy_handle = legacy_client.get_workflow_handle(legacy_workflow_id)
+    async with asyncio.timeout(10):
+        while True:
+            legacy_history = await legacy_handle.fetch_history()
+            if any(
+                event.HasField("workflow_execution_signaled_event_attributes")
+                and event.workflow_execution_signaled_event_attributes.signal_name
+                == "request_cancellation"
+                for event in legacy_history.events
+            ):
+                break
+            assert (await legacy_handle.describe()).status == WorkflowExecutionStatus.RUNNING
+            await asyncio.sleep(0.05)
+
+    legacy_database_name = "recovery_floor_legacy_" + uuid4().hex[:12]
+    from urllib.parse import urlsplit, urlunsplit
+
+    legacy_database = urlunsplit(
+        urlsplit(database_admin_url)._replace(path="/" + legacy_database_name)
+    )
+    with psycopg.connect(database_admin_url, autocommit=True) as admin:
+        primary_name = urlsplit(database).path.lstrip("/")
+        admin.execute(
+            "SELECT pg_terminate_backend(pid) FROM pg_stat_activity "
+            "WHERE datname=%s AND pid<>pg_backend_pid()",
+            (primary_name,),
+        )
+        admin.execute(
+            sql.SQL("CREATE DATABASE {} WITH TEMPLATE {}").format(
+                sql.Identifier(legacy_database_name), sql.Identifier(primary_name)
+            )
+        )
+    request.addfinalizer(
+        lambda: _drop_database(database_admin_url, legacy_database_name)
+        if not persist_fixtures
+        else None
+    )
+    monkeypatch.setenv("TEST_LEGACY_NULL_DATABASE_URL", legacy_database)
+    with psycopg.connect(legacy_database) as connection:
+        connection.execute("DELETE FROM v4_legacy_publication_recovery_holds")
+    downgraded_legacy = _migrate(legacy_database, "downgrade", "0042_publication_recovery_holds")
+    assert downgraded_legacy.returncode == 0, downgraded_legacy.stderr
+    with psycopg.connect(legacy_database) as connection:
+        connection.execute(
+            _INSERT_SQL,
+            _hold_values(
+                connection,
+                legacy_null_operation_id,
+                reason="published_during_cancel",
+            ),
+        )
+    upgraded_legacy = _migrate(
+        legacy_database, "upgrade", "0043_complete_publication_recovery_liabilities"
+    )
+    assert upgraded_legacy.returncode == 0, upgraded_legacy.stderr
+    record_publication_recovery_hold(
+        legacy_database,
+        workspace_id=workspace_id,
+        operation_id=expired_operation_id,
+        reason="expired_permit_receipt",
+    )
+    monkeypatch.setenv("TEST_LEGACY_NULL_DATABASE_URL", legacy_database)
+
     operation_ids = {
         "expired_permit_receipt": expired_operation_id,
         "published_during_cancel": cancelled_operation_id,
@@ -4714,12 +5305,14 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
     first_views = verify_publication_recovery_rollback(
         database, workspace_id=workspace_id, operation_ids=operation_ids
     )
+    assert all(len(snapshot) == 21 for snapshot in before_snapshots.values())
     first_verifier = {
         "workspace_id": str(workspace_id),
         "reasons": ["expired_permit_receipt", "published_during_cancel"],
         "operation_ids": {key: str(value) for key, value in operation_ids.items()},
         "hold_ids": {"expired_permit_receipt": str(first_views[0].id), "published_during_cancel": str(first_views[1].id)},
         "verified": True,
+        "exit_code": 0,
     }
     assert first_verifier["hold_ids"] == expected_hold_ids
 
@@ -4771,7 +5364,7 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
     # no prior qualified-image worker is still running before restart.
     with worker_harness._without_shared_checkout():
         running = subprocess.run(
-            ["docker", "ps", "--filter", f"ancestor={image}", "--format", "{{.ID}} {{.Names}}"],
+            ["docker", "ps", "--filter", f"ancestor={expected_image_id}", "--format", "{{.ID}} {{.Names}}"],
             capture_output=True,
             text=True,
             check=True,
@@ -4797,7 +5390,7 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
         )
         name = "publication-floor-" + reason.replace("_", "-") + "-" + uuid4().hex[:10]
         launch = worker_harness.start_rollback_worker(
-            image=image,
+            image=expected_image_id,
             database_url=database,
             temporal_target=os.environ["TEST_TEMPORAL_TARGET"],
             workspace_id=str(workspace_id),
@@ -4908,6 +5501,7 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
         "expired_permit_receipt": _liability_snapshot(database, expired_operation_id),
         "published_during_cancel": _liability_snapshot(database, cancelled_operation_id),
     }
+    assert all(len(snapshot) == 21 for snapshot in after_snapshots.values())
     after_hold_rows = {
         "expired_permit_receipt": _recovery_hold_snapshot(database, expired_operation_id),
         "published_during_cancel": _recovery_hold_snapshot(database, cancelled_operation_id),
@@ -4961,6 +5555,7 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
             "published_during_cancel": str(second_views[1].id),
         },
         "verified": True,
+        "exit_code": 0,
     }
     assert second_verifier == first_verifier
     base_evidence["second_verifier"] = second_verifier
@@ -5072,7 +5667,7 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
     primary_fixture = {
         "schema_version": "salience.publication-floor-rollback-launch-fixture.v1",
         "application_commit": application_commit,
-        "image_ref": image,
+        "image_ref": image_ref,
         "image_id": expected_image_id,
         "launch_lock_sha256": trusted_digest,
         "disposable_targets": primary_targets,
@@ -5132,7 +5727,7 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
     legacy_fixture = {
         "schema_version": "salience.publication-floor-legacy-null-v1-fixture.v1",
         "application_commit": application_commit,
-        "image_ref": image,
+        "image_ref": image_ref,
         "image_id": expected_image_id,
         "launch_lock_sha256": trusted_digest,
         "disposable_targets": legacy_targets,
@@ -5189,6 +5784,124 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
             read_recorder_events=read_recorder_events,
         )
 
+    async def reset_terminal_history_for_recorder(reason):
+        from temporalio.api.common.v1 import WorkflowExecution
+        from temporalio.api.workflowservice.v1 import ResetWorkflowExecutionRequest
+
+        workflow_id = primary_fixture["history_fixture"][reason]["workflow_id"]
+        handle = client.get_workflow_handle(workflow_id)
+        description = await handle.describe()
+        assert description.status == WorkflowExecutionStatus.FAILED
+        history = await handle.fetch_history()
+        activity_name = {
+            "expired_permit_receipt": "salience.publication.submit_or_reconcile",
+            "published_during_cancel": "salience.publication.cancel",
+        }[reason]
+        scheduled_events = [
+            event
+            for event in history.events
+            if event.HasField("activity_task_scheduled_event_attributes")
+            and event.activity_task_scheduled_event_attributes.activity_type.name
+            == activity_name
+        ]
+        assert len(scheduled_events) == 1, (
+            f"expected exactly one original {activity_name} schedule for {reason}"
+        )
+        scheduled = scheduled_events[0]
+        failed_events = [
+            event
+            for event in history.events
+            if event.HasField("activity_task_failed_event_attributes")
+            and event.activity_task_failed_event_attributes.scheduled_event_id
+            == scheduled.event_id
+        ]
+        assert len(failed_events) == 1, (
+            f"original {activity_name} did not persist exactly one terminal failure"
+        )
+        activity_failure = failed_events[0].activity_task_failed_event_attributes.failure
+        assert activity_failure.HasField("application_failure_info")
+        assert (
+            activity_failure.application_failure_info.type
+            == "LegacyPublicationRecoveryHeld"
+        ), "reset source history does not contain the original typed hold receipt"
+        workflow_tasks_after_failure = [
+            event
+            for event in history.events
+            if event.event_id > failed_events[0].event_id
+            and event.HasField("workflow_task_completed_event_attributes")
+        ]
+        assert workflow_tasks_after_failure, (
+            "history has no completed workflow task handling the recorded hold failure"
+        )
+        reset_boundary = min(workflow_tasks_after_failure, key=lambda event: event.event_id)
+        terminal_failures_after_boundary = [
+            event
+            for event in history.events
+            if event.event_id > reset_boundary.event_id
+            and event.HasField("workflow_execution_failed_event_attributes")
+        ]
+        assert terminal_failures_after_boundary, (
+            "reset boundary must precede the original terminal workflow failure"
+        )
+
+        def activity_schedule_and_start_ids(events):
+            return {
+                "scheduled": [
+                    event.event_id
+                    for event in events
+                    if event.HasField("activity_task_scheduled_event_attributes")
+                ],
+                "started": [
+                    event.event_id
+                    for event in events
+                    if event.HasField("activity_task_started_event_attributes")
+                ],
+            }
+
+        original_activity_events = activity_schedule_and_start_ids(history.events)
+        reset_request = ResetWorkflowExecutionRequest(
+            namespace="default",
+            workflow_execution=WorkflowExecution(
+                workflow_id=workflow_id, run_id=description.run_id
+            ),
+            reason="Task 8 fresh rollback-restart recorder window",
+            # Replaying this task consumes the already-recorded ActivityTaskFailed
+            # hold receipt. Resetting before the activity schedule could execute
+            # publication.cancel a second time and invalidate the zero-operation
+            # rollback-restart measurement.
+            workflow_task_finish_event_id=reset_boundary.event_id,
+            request_id=str(uuid4()),
+            identity="p1-publication-recovery-task8",
+        )
+        await client.workflow_service.reset_workflow_execution(reset_request)
+        restarted = client.get_workflow_handle(workflow_id)
+        new_description = await restarted.describe()
+        assert new_description.run_id != description.run_id
+        assert new_description.status == WorkflowExecutionStatus.RUNNING
+        reset_history = await restarted.fetch_history()
+        reset_activity_events = activity_schedule_and_start_ids(reset_history.events)
+        assert reset_activity_events == original_activity_events, (
+            "Temporal reset scheduled or started an activity instead of replaying "
+            "only workflow-task handling after the recorded hold failure"
+        )
+        return restarted, {
+            "reason": reason,
+            "workflow_id": workflow_id,
+            "source_run_id": description.run_id,
+            "reset_run_id": new_description.run_id,
+            "activity_name": activity_name,
+            "activity_scheduled_event_id": scheduled.event_id,
+            "activity_failed_event_id": failed_events[0].event_id,
+            "activity_failure_type": activity_failure.application_failure_info.type,
+            "reset_workflow_task_completed_event_id": reset_boundary.event_id,
+            "terminal_workflow_failure_event_id": terminal_failures_after_boundary[0].event_id,
+            "activity_schedule_and_start_event_ids_before": original_activity_events,
+            "activity_schedule_and_start_event_ids_after_reset": reset_activity_events,
+            "reset_boundary_invariant": (
+                "first workflow-task completion after the original typed activity failure"
+            ),
+        }
+
     async def run_conditional_cases():
         candidate_for_conditional_cases = _task8_rollback_image_or_skip(
             candidate_root=candidate_root,
@@ -5212,7 +5925,40 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
             )
         await test_rollback_restart_launcher_denies_legacy_null_v1_before_registration()
         await test_candidate_read_only_worker_creates_no_pyc_and_preserves_runtime_root()
+        await test_rollback_restart_launcher_verifies_both_holds_before_exec()
+        test_cross_container_adapter_recorder_positive_control()
+        recorder_replay_evidence = []
+        for reason in ("expired_permit_receipt", "published_during_cancel"):
+            _restarted, reset_evidence = await reset_terminal_history_for_recorder(reason)
+            primary_fixture["history_fixture"] = await capture_history_fixture(
+                temporal_target, primary_operation_ids
+            )
+            legacy_fixture["history_fixture"] = await capture_history_fixture(
+                temporal_target, legacy_operation_ids
+            )
+            await publish_progress()
+            recorder_run_evidence = await test_cross_container_adapter_recorder_observes_zero_operations_for_both_holds(
+                reason
+            )
+            recorder_replay_evidence.append(
+                {"reset": reset_evidence, "recorder_run": recorder_run_evidence}
+            )
+            base_evidence["task7_recorder_replay_runs"] = recorder_replay_evidence
+            save_json(progress_path, base_evidence)
+        primary_fixture["history_fixture"] = await capture_history_fixture(
+            temporal_target, primary_operation_ids
+        )
+        legacy_fixture["history_fixture"] = await capture_history_fixture(
+            temporal_target, legacy_operation_ids
+        )
+        await publish_progress()
 
+    primary_fixture["history_fixture"] = await capture_history_fixture(
+        temporal_target, primary_operation_ids
+    )
+    legacy_fixture["history_fixture"] = await capture_history_fixture(
+        temporal_target, legacy_operation_ids
+    )
     await _publish_task8_progress_and_run_cases(
         progress_path,
         publish_progress=publish_progress,
@@ -5247,7 +5993,7 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
     def run_denial(name, candidate, *, candidate_trust_root=False, extra_mounts=(), argv=None):
         lock_path, candidate_digest_path = save_candidate_lock(name, candidate)
         result = worker_harness.invoke_launcher(
-            image=image,
+            image=expected_image_id,
             database_url=database,
             control_bundle=control_bundle,
             candidate_lock=lock_path,
@@ -5330,7 +6076,7 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
     self_lock_path, self_digest_path = save_candidate_lock("self-generated", self_generated)
     self_digest_mount = (self_digest_path, "/tmp/candidate-publication-worker-lock.sha256")
     self_result = worker_harness.invoke_launcher(
-        image=image,
+        image=expected_image_id,
         database_url=database,
         control_bundle=control_bundle,
         candidate_lock=self_lock_path,
@@ -5440,7 +6186,7 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
 
     wrong_workspace = uuid4()
     cross_workspace = worker_harness.invoke_launcher(
-        image=image,
+        image=expected_image_id,
         database_url=database,
         control_bundle=control_bundle,
         argv=(
@@ -5474,8 +6220,22 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
     assert base_evidence["liability_snapshot_hashes_after"] == base_evidence[
         "liability_snapshot_hashes"
     ]
-    assert verify_publication_recovery_rollback(
+    third_views = verify_publication_recovery_rollback(
         database, workspace_id=workspace_id, operation_ids=operation_ids
-    ) == second_views
+    )
+    assert third_views == second_views
+    third_verifier = {
+        "workspace_id": str(workspace_id),
+        "reasons": ["expired_permit_receipt", "published_during_cancel"],
+        "operation_ids": {key: str(value) for key, value in operation_ids.items()},
+        "hold_ids": {
+            "expired_permit_receipt": str(third_views[0].id),
+            "published_during_cancel": str(third_views[1].id),
+        },
+        "verified": True,
+        "exit_code": 0,
+    }
+    assert third_verifier == second_verifier
+    base_evidence["third_verifier"] = third_verifier
 
     save_json(final_evidence_path, base_evidence)
