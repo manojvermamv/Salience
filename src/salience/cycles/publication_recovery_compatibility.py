@@ -741,17 +741,31 @@ def _parse_revision_metadata(path: str, content: bytes) -> tuple[str, tuple[str,
     for node in ast.walk(tree):
         if (
             isinstance(node, ast.Name)
-            and isinstance(node.ctx, ast.Store)
+            and isinstance(node.ctx, (ast.Store, ast.Del))
             and node.id in {"revision", "down_revision"}
             and id(node) not in approved_targets
         ):
             raise PublicationWorkerCompatibilityError(
                 "trusted Alembic revision metadata contains an unsupported write"
             )
+        if isinstance(node, ast.Subscript) and isinstance(node.ctx, (ast.Store, ast.Del)):
+            try:
+                subscript_key = ast.literal_eval(node.slice)
+            except (ValueError, TypeError):
+                subscript_key = None
+            if subscript_key in {"revision", "down_revision"}:
+                raise PublicationWorkerCompatibilityError(
+                    "trusted Alembic revision metadata contains an unsupported write"
+                )
         if any(name in {"revision", "down_revision"} for name in assigned_binding_names(node)):
             raise PublicationWorkerCompatibilityError(
                 "trusted Alembic revision metadata contains an unsupported write"
             )
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
+            if node.func.id in {"globals", "exec", "eval"}:
+                raise PublicationWorkerCompatibilityError(
+                    "trusted Alembic revision metadata uses dynamic namespace mutation"
+                )
 
     if set(expressions) != {"revision", "down_revision"}:
         raise PublicationWorkerCompatibilityError(

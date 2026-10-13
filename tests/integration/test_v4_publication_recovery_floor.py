@@ -690,7 +690,9 @@ def test_authenticated_migration_graph_rejects_branch_cycle_or_ambiguous_head(
         "revision = '0043_floor'\ndown_revision = '0042_parent'\n"
         "def rewrite():\n    down_revision: str = dynamic_parent()\n",
         "revision = '0043_floor'\ndown_revision = '0042_parent'\n"
-        "revision = dynamic_revision()\n",
+        "if should_rewrite():\n    revision = dynamic_revision()\n",
+        "revision = '0043_floor'\ndown_revision = '0042_parent'\n"
+        "globals()['revision'] = dynamic_revision()\n",
     ),
     ids=(
         "literal-then-conditional-rewrite",
@@ -699,6 +701,7 @@ def test_authenticated_migration_graph_rejects_branch_cycle_or_ambiguous_head(
         "destructuring-rewrite",
         "nested-annotated-rewrite",
         "dynamic-rewrite",
+        "dynamic-global-rewrite",
     ),
 )
 def test_migration_revision_metadata_rejects_every_unsupported_write(source):
