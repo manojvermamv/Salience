@@ -112,7 +112,7 @@
       "evidence": "docs/v4/publication-recovery-hold-evidence.json",
       "source_lock_sha256": "62fa6a44498d891bcc8ff6911f243a65573174ff44b6985bdbdc26097fd10fe0",
       "scope": "Task 10 retained-wheel actual-image rehearsal in disposable effects-disabled local fixtures only; Task 11 review found floor/evidence gaps in `5cb5791`, making it unsupported as the rollback floor. The 0043 design is approved; implementation, requalification and final review remain open; production remains HELD.",
-      "evidence_sha256": "160d8bae1387b120c426b536389d99ae87dad66930bee595bd42ef66f0db979b",
+      "evidence_sha256": "66ae6190f2b1049c23b13eaee071a6e7d28dfa019933f2c6f1894fa3f0c8a803",
       "qualification_harness_commit": "14801007310232f59708566ca9a3eefb80bfea87",
       "task_8_focused_tests": 116,
       "focused_matrix_result": "PASS",
@@ -345,7 +345,7 @@
     },
     {
       "path": "docs/v4/publication-recovery-hold-evidence.json",
-      "sha256": "160d8bae1387b120c426b536389d99ae87dad66930bee595bd42ef66f0db979b",
+      "sha256": "66ae6190f2b1049c23b13eaee071a6e7d28dfa019933f2c6f1894fa3f0c8a803",
       "local_only": false
     }
   ],
@@ -481,7 +481,7 @@
     ],
     "latest_task_10_application_commit": "5cb57910c2c6dc2f6ea37da75640c5c947c8907b",
     "task_10_qualification_harness_commit": "14801007310232f59708566ca9a3eefb80bfea87",
-    "task_10_status": "PASS_LOCAL_FIXTURE_CANDIDATE; TASK_11_REVIEW_PENDING"
+    "task_10_status": "PASS_LOCAL_FIXTURE_CANDIDATE; TASK_11_REVIEW_COMPLETE_FINDINGS_FOUND; 5CB5791_UNSUPPORTED_AS_ROLLBACK_FLOOR"
   },
   "documentation_refresh": {
     "date": "2026-09-24",

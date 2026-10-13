@@ -1,7 +1,7 @@
 {
   "audited_at": "2026-10-13T05:20:50Z",
   "base_commit": "7878208e7a353f93bb70279ad0dd7f0760f93ec4",
-  "scope": "Active documentation and durable V4 ledgers reconcile Task 10 local retained-wheel publication-worker qualification at application candidate 5cb5791. The test-only harness/launch-lock commit is 1480100. The 614-test full non-live suite remains bound to 7878208; Task 11 review gates and production release remain pending/held. Historical A4, AgentTube reference-only, and 2653d2e parallel evidence retain their original scopes.",
+  "scope": "Active documentation and durable V4 ledgers reconcile Task 10 local retained-wheel publication-worker qualification at application candidate 5cb5791. Task 11 independent review completed with floor/evidence findings, so 5cb5791 is unsupported as the rollback floor. The approved 0043 repair still awaits implementation, requalification, final candidate review/meta-review, and exact-head checks. The 614-test full non-live suite remains bound to 7878208; production release remains HELD. Historical A4, AgentTube reference-only, and 2653d2e parallel evidence retain their original scopes.",
   "tracked_markdown_files": 88,
   "documentation_artifacts": 246,
   "summary": {
@@ -52,7 +52,7 @@
   ],
   "mermaid_source_blocks_preserved": 13,
   "item7_status": "COMPLETE_IMPLEMENTED_LOCAL_FIXTURE_QUALIFICATION; historical item7 scope preserved",
-  "independent_review": "Corrected-publication rereview and meta-review apply only to A4/d031172. Task 10 candidate 5cb5791 has not received independent review; Task 11 review remains pending.",
+  "independent_review": "Corrected-publication rereview and meta-review apply only to A4/d031172. The separate Task 11 independent review of Task 10 candidate 5cb5791 completed with floor/evidence findings, making that candidate unsupported as the rollback floor. Final review/meta-review of the repaired 0043 candidate remain open.",
   "next_queue_item": null,
   "production_effects_enabled": false,
   "RG0": "HELD",
@@ -66,7 +66,7 @@
     "preserved_documentation_artifacts": 165,
     "independent_reviewers": 3,
     "reviewed_p1_rows": 17,
-    "independent_review_scope": "No independent review is claimed for Task 10 candidate 5cb5791. Task 11 review/meta-review/final artifact checks remain pending. The corrected-publication rereview applies only to A4/d031172; production acceptance remains HELD.",
+    "independent_review_scope": "Task 11 independent review of Task 10 candidate 5cb5791 completed with floor/evidence findings, making that candidate unsupported as the rollback floor. Review/meta-review and final artifact checks for the repaired 0043 candidate remain open. The corrected-publication rereview applies only to A4/d031172; production acceptance remains HELD.",
     "tracked_markdown_files": 88,
     "active_project_markdown_files": 70,
     "active_integration_contracts": 1,
@@ -1369,7 +1369,7 @@
     {
       "path": "docs/v4/publication-recovery-hold-evidence.json",
       "disposition": "durable current Task 10 source-bound local publication recovery-hold evidence; production remains HELD",
-      "sha256": "160d8bae1387b120c426b536389d99ae87dad66930bee595bd42ef66f0db979b"
+      "sha256": "66ae6190f2b1049c23b13eaee071a6e7d28dfa019933f2c6f1894fa3f0c8a803"
     },
     {
       "path": "docs/v4/repository-enforcement-evidence.json",
@@ -1531,14 +1531,14 @@
   "application_source_preservation_basis": "Compared the Task 9 356-path evidence lock at application 7878208 with the Task 10 qualification checkout: 347 existing paths retain identical bytes, nine existing paths have updated hashes, and four source paths were added, for 360 locked paths. The current application artifact is pinned separately to 5cb5791; the test-only qualification harness is at 1480100. This is a content comparison and lock, not an independent code review.",
   "historical_a4_qualified_application_commit": "a4b2368cdb463939d093020224a5b5667392aee6",
   "current_publication_recovery_hold_evidence": "docs/v4/publication-recovery-hold-evidence.json",
-  "current_publication_recovery_hold_evidence_sha256": "160d8bae1387b120c426b536389d99ae87dad66930bee595bd42ef66f0db979b",
+  "current_publication_recovery_hold_evidence_sha256": "66ae6190f2b1049c23b13eaee071a6e7d28dfa019933f2c6f1894fa3f0c8a803",
   "task_10_candidate": {
     "application_commit": "5cb57910c2c6dc2f6ea37da75640c5c947c8907b",
     "qualification_harness_commit": "14801007310232f59708566ca9a3eefb80bfea87",
     "focused_matrix": "20 passed",
     "named_actual_image_rehearsal": "1 passed",
     "supported_floor": false,
-    "task_11_review_pending": true,
+    "task_11_review_pending": false,
     "production_effects_enabled": false,
     "fixture_publication_budget": 0
   },

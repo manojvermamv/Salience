@@ -829,7 +829,7 @@
     "focused_tests": 20,
     "full_non_live_tests": 614,
     "source_files": 360,
-    "status": "PASS_LOCAL_TASK_10_RETAINED_WHEEL_TWO_REASON_FIXTURE_CANDIDATE; TASK_11_REVIEW_PENDING; full 614-test non-live suite remains bound to 7878208; RG0/RG1 HELD",
+    "status": "PASS_LOCAL_TASK_10_RETAINED_WHEEL_TWO_REASON_FIXTURE_CANDIDATE; TASK_11_REVIEW_COMPLETE_FINDINGS_FOUND; 5CB5791_UNSUPPORTED_AS_ROLLBACK_FLOOR; full 614-test non-live suite remains bound to 7878208; RG0/RG1 HELD",
     "qualified_application_commit": "5cb57910c2c6dc2f6ea37da75640c5c947c8907b",
     "source_lock_sha256": "62fa6a44498d891bcc8ff6911f243a65573174ff44b6985bdbdc26097fd10fe0",
     "base_commit": "931840ddfc78314b93d306b8c130e9f39ed7ec4f",

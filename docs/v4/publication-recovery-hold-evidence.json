@@ -471,7 +471,7 @@
     }
   },
   "task_10_floor_qualification": {
-    "status": "PASS_LOCAL_FIXTURE_CANDIDATE; TASK_11_REVIEW_PENDING; PRODUCTION_RELEASE_HELD",
+    "status": "PASS_LOCAL_FIXTURE_CANDIDATE; TASK_11_REVIEW_COMPLETE_FINDINGS_FOUND; 5CB5791_UNSUPPORTED_AS_ROLLBACK_FLOOR; PRODUCTION_RELEASE_HELD",
     "plan_base_commit": "504cf18220fe445404a35d181f47491dc79304c8",
     "application_commit": "5cb57910c2c6dc2f6ea37da75640c5c947c8907b",
     "qualification_harness_and_lock_commit": "14801007310232f59708566ca9a3eefb80bfea87",
