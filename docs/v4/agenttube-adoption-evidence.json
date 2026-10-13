@@ -1,0 +1,98 @@
+{
+  "schema_version": 1,
+  "upstream": {
+    "url": "https://github.com/darkzOGx/youtube-automation-agent",
+    "branch_hint": "master",
+    "pin": "e26792ae00dc1ec2434faf32632896609396dfad",
+    "fetched_master_tip": "e26792ae00dc1ec2434faf32632896609396dfad",
+    "pin_reachable_from_master": true,
+    "tree": "3c6b1d6c4a636ba75ac743f4c6e7fe6a181aef45",
+    "commit": {
+      "author_date": "2026-10-01T18:30:26-05:00",
+      "author": "darkzOGx <haithemn8@gmail.com>"
+    },
+    "license": {
+      "path": "LICENSE",
+      "sha256": "0637d0e4accdfba32d1f8723892a882fe85057ea4860ec35bfcca578782e49a0"
+    }
+  },
+  "reports": [
+    {
+      "path": "docs/research/youtube-agent/architecture-audit.md",
+      "sha256": "23daa3962eda5f876be12f166966dc84fc06e9395d904992ff7672ed75564485"
+    },
+    {
+      "path": "docs/research/youtube-agent/ops-quality-audit.md",
+      "sha256": "6364f88a7acdb24e6e5f1449248a4b0c0e89c142441c8d460d255baa0eee28f8"
+    },
+    {
+      "path": "docs/research/youtube-agent/salience-gap-audit.md",
+      "sha256": "93c0822ca6ed4b965b699d8b28567ad51d537464783e3a482c9c621990fc331a"
+    },
+    {
+      "path": "docs/research/youtube-agent/orchestrator-synthesis.md",
+      "sha256": "8055a07720d022fdd469266c9e90ae69264b5b129f0f6c7cebfe7e359dea7a14"
+    }
+  ],
+  "upstream_verification": {
+    "evidence_class": "upstream_verification",
+    "checkout_commit": "e26792ae00dc1ec2434faf32632896609396dfad",
+    "npm_ci": "PASS",
+    "npm_ci_command": "npm ci --no-audit --no-fund",
+    "lint": "PASS",
+    "lint_command": "npm run lint",
+    "system_cases": {
+      "command": "npm test",
+      "passed": 47,
+      "total": 47,
+      "result": "PASS"
+    },
+    "effects": {
+      "setup_or_oauth_ran": false,
+      "live_provider_calls_ran": false,
+      "paid_generation_ran": false,
+      "real_publishing_calls_ran": false
+    }
+  },
+  "salience_evidence": {
+    "research_inspected_head": "e7a24a38ef920da3af071a51a288b859db9aaef1",
+    "historical_qualification": {
+      "evidence_class": "historical_salience_qualification",
+      "application_candidate": "7878208e7a353f93bb70279ad0dd7f0760f93ec4",
+      "focused_passed": 116,
+      "full_non_live_passed": 614,
+      "applies_only_to_application_candidate": true
+    },
+    "current_head": {
+      "evidence_class": "current_head_repository_verification",
+      "implementation_branch": "work/agenttube-reference-adoption-20261013",
+      "superproject_head_before_adoption_commit": "dc2fe1c497f5a4aca27e7960985c5b91b3bba21e",
+      "remote_feature_ref": "refs/heads/feat/archv4-p0-foundation",
+      "remote_feature_sha": "d0311725686d81b7b4747c2d6225986e5ea3a524",
+      "exact_head_ci": "NOT RUN",
+      "exact_head_review": "NOT RUN"
+    },
+    "evidence_classes": [
+      "upstream_verification",
+      "historical_salience_qualification",
+      "current_head_repository_verification",
+      "release_approval"
+    ]
+  },
+  "release_state": {
+    "production_effects_enabled": false,
+    "publication_budget": 0,
+    "rg0": "HELD",
+    "rg1": "HELD",
+    "phases": {
+      "P2": "GATED",
+      "P3": "GATED",
+      "P4": "GATED",
+      "P5": "GATED",
+      "P6": "DISABLED",
+      "P7": "GATED"
+    },
+    "main": "UNMERGED",
+    "release_approval": "NOT GRANTED"
+  }
+}

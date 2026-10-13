@@ -166,8 +166,19 @@ def markdown_structure_errors(path: Path, content: str) -> list[str]:
     return errors
 
 
+FROZEN_RESEARCH_REPORTS = {
+    "docs/research/youtube-agent/architecture-audit.md",
+    "docs/research/youtube-agent/ops-quality-audit.md",
+    "docs/research/youtube-agent/salience-gap-audit.md",
+    "docs/research/youtube-agent/orchestrator-synthesis.md",
+}
+FROZEN_RESEARCH_SOURCE_ROOT = "/tmp/youtube-automation-agent-research-20261012/"
+
+
 def link_errors(path: Path, content: str, root: Path) -> list[str]:
     errors = []
+    relative_path = path.relative_to(root).as_posix()
+    frozen_research_copy = relative_path in FROZEN_RESEARCH_REPORTS
     plain = re.sub(r"```.*?```", "", content, flags=re.S)
     targets = re.findall(r"\[[^\]\n]*\]\((<[^>]+>|[^)\n]+)\)", plain)
     targets += re.findall(r"^\[[^\]]+\]:\s*(\S+)", plain, flags=re.M)
@@ -177,6 +188,8 @@ def link_errors(path: Path, content: str, root: Path) -> list[str]:
             continue
         target = unquote(target)
         pathname, separator, fragment = target.partition("#")
+        if frozen_research_copy and pathname.startswith(FROZEN_RESEARCH_SOURCE_ROOT):
+            continue
         resolved = (root / pathname.lstrip("/")) if pathname.startswith("/") else (path.parent / pathname if pathname else path)
         if not resolved.exists():
             errors.append(f"broken link {path.relative_to(root)}: {target}")

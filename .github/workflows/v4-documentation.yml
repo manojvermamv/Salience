@@ -16,6 +16,8 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - name: Verify blueprint, evidence, archives and links
         run: |
+          python3 docs/v4/test_agenttube_reference.py
+          python3 docs/v4/verify_agenttube_reference.py
           python3 docs/v4/test_checks.py
           python3 docs/v4/check.py --self-test
 

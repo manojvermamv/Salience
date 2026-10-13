@@ -1,0 +1,4 @@
+[submodule "youtube-automation-agent"]
+	path = youtube-automation-agent
+	url = https://github.com/darkzOGx/youtube-automation-agent
+	branch = master
