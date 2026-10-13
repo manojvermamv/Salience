@@ -9,6 +9,7 @@ from pathlib import Path
 import re
 import subprocess
 import sys
+import time
 from threading import Barrier
 from urllib.parse import urlsplit, urlunsplit
 from uuid import UUID, uuid4
@@ -1692,7 +1693,6 @@ async def _create_expired_operation_in_database(
         _allow,
         _hard_exit_publication_worker,
         _publication_fixture,
-        _wait_for_publication_permit_expiry,
     )
 
     import test_creative_release_gate_migration as release_gate
@@ -1729,8 +1729,38 @@ async def _create_expired_operation_in_database(
         permit_ttl_seconds=5,
         operation_id=operation_id,
     ) == 73
-    await _wait_for_publication_permit_expiry(database, operation_id)
+    deadline = time.monotonic() + 15
+    while True:
+        with psycopg.connect(database) as connection:
+            expired = connection.execute(
+                """SELECT permit.expires_at<=clock_timestamp()
+                   FROM public.v4_dispatch_permits permit
+                   JOIN public.v4_permit_claims claim
+                     ON claim.current_permit_id=permit.id
+                   WHERE claim.operation_id=%s""",
+                (operation_id,),
+            ).fetchone()
+        assert expired is not None, "publication permit should remain inspectable"
+        if expired[0]:
+            break
+        if time.monotonic() >= deadline:
+            pytest.fail("publication permit did not expire before the bounded deadline")
+        await asyncio.sleep(0.05)
     return fixture, submitted
+
+
+def _set_high_precision_output(database, operation_id):
+    with psycopg.connect(database) as connection:
+        connection.execute("ALTER TABLE public.jobs DISABLE TRIGGER USER")
+        changed = connection.execute(
+            """UPDATE public.jobs job
+               SET output_payload='{"high_precision":0.1234567890123456789}'::jsonb
+               FROM public.v4_legacy_dispatches binding
+               WHERE binding.operation_id=%s AND binding.job_id=job.id""",
+            (operation_id,),
+        )
+        connection.execute("ALTER TABLE public.jobs ENABLE TRIGGER USER")
+    assert changed.rowcount == 1
 
 
 def test_v1_snapshot_has_exact_ordered_21_key_projection(
@@ -1757,7 +1787,9 @@ def test_v1_snapshot_has_exact_ordered_21_key_projection(
     with psycopg.connect(fixture["database"]) as connection:
         stored = connection.execute(
             f"""SELECT liability_snapshot, liability_snapshot_version,
-                       liability_snapshot_v1, liability_fingerprint_v1
+                       liability_snapshot_v1, liability_fingerprint_v1,
+                       liability_snapshot_v1::text,
+                       encode(public.digest(liability_snapshot_v1::text, 'sha256'), 'hex')
                 FROM public.{TABLE} WHERE id=%s""",
             (hold.id,),
         ).fetchone()
@@ -1771,10 +1803,7 @@ def test_v1_snapshot_has_exact_ordered_21_key_projection(
             "SELECT %s::jsonb::text, %s::jsonb::text",
             (Jsonb(stored[0]), Jsonb(old_projection)),
         ).fetchone()
-        canonical_fingerprint = connection.execute(
-            "SELECT encode(public.digest(%s::jsonb::text, 'sha256'), 'hex')",
-            (Jsonb(stored[2]),),
-        ).fetchone()[0]
+        canonical_fingerprint = stored[5]
         array_types = connection.execute(
             """SELECT jsonb_typeof(%s::jsonb->'remote_publication_receipts'),
                       jsonb_typeof(%s::jsonb->'publication_status_events'),
@@ -1919,16 +1948,29 @@ async def test_record_replay_verifier_share_atomic_v1_snapshot(
     assert await outbox.dispatch_one(
         TemporalCycleTransport(client, task_queue=fixture["queue"])
     )
+    _set_high_precision_output(database, cancelled_operation_id)
     before_cancelled = _liability_snapshot(database, cancelled_operation_id)
 
     original_connect = recovery.psycopg.connect
     observed_connections = []
     transaction_statuses = []
+    transaction_boundaries = []
+
+    def record_statement(statement, statements):
+        statement = str(statement)
+        statements.append(statement)
+        if re.match(
+            r"\s*(?:BEGIN|START\s+TRANSACTION|COMMIT|END|ROLLBACK|ABORT|"
+            r"SAVEPOINT|RELEASE|PREPARE\s+TRANSACTION)\b",
+            statement,
+            flags=re.IGNORECASE,
+        ):
+            transaction_boundaries.append(statement)
 
     class CursorObserver:
-        def __init__(self, cursor, statements):
+        def __init__(self, cursor, observer):
             self.cursor = cursor
-            self.statements = statements
+            self.observer = observer
 
         def __enter__(self):
             self.cursor.__enter__()
@@ -1938,7 +1980,7 @@ async def test_record_replay_verifier_share_atomic_v1_snapshot(
             return self.cursor.__exit__(*args)
 
         def execute(self, statement, *args, **kwargs):
-            self.statements.append(str(statement))
+            record_statement(statement, self.observer.statements)
             return self.cursor.execute(statement, *args, **kwargs)
 
         def __getattr__(self, name):
@@ -1950,6 +1992,9 @@ async def test_record_replay_verifier_share_atomic_v1_snapshot(
             self.statements = []
             self.context_entries = 0
             self.context_exits = 0
+            self.explicit_commit_calls = 0
+            self.explicit_rollback_calls = 0
+            self.transaction_context_calls = 0
 
         def __enter__(self):
             self.connection.__enter__()
@@ -1967,11 +2012,23 @@ async def test_record_replay_verifier_share_atomic_v1_snapshot(
                 )
 
         def execute(self, statement, *args, **kwargs):
-            self.statements.append(str(statement))
+            record_statement(statement, self.statements)
             return self.connection.execute(statement, *args, **kwargs)
 
         def cursor(self, *args, **kwargs):
-            return CursorObserver(self.connection.cursor(*args, **kwargs), self.statements)
+            return CursorObserver(self.connection.cursor(*args, **kwargs), self)
+
+        def commit(self):
+            self.explicit_commit_calls += 1
+            return self.connection.commit()
+
+        def rollback(self):
+            self.explicit_rollback_calls += 1
+            return self.connection.rollback()
+
+        def transaction(self, *args, **kwargs):
+            self.transaction_context_calls += 1
+            return self.connection.transaction(*args, **kwargs)
 
         def __getattr__(self, name):
             return getattr(self.connection, name)
@@ -2012,6 +2069,10 @@ async def test_record_replay_verifier_share_atomic_v1_snapshot(
     assert observed_connections[0].context_exits == 1
     assert len(transaction_statuses) == 1
     assert transaction_statuses[0][0].name == "INTRANS"
+    assert observed_connections[0].explicit_commit_calls == 0
+    assert observed_connections[0].explicit_rollback_calls == 0
+    assert observed_connections[0].transaction_context_calls == 0
+    assert transaction_boundaries == []
 
     cancelled_replay = recovery.record_publication_recovery_hold(
         database,
@@ -2023,6 +2084,7 @@ async def test_record_replay_verifier_share_atomic_v1_snapshot(
         database, fixture, monkeypatch, tmp_path
     )
     expired_operation_id = UUID(expired["operation_id"])
+    _set_high_precision_output(database, expired_operation_id)
     before_expired = _liability_snapshot(database, expired_operation_id)
     expired_hold = recovery.record_publication_recovery_hold(
         database,
@@ -2060,22 +2122,29 @@ async def test_record_replay_verifier_share_atomic_v1_snapshot(
     with psycopg.connect(database) as connection:
         rows = connection.execute(
             f"""SELECT operation_id, liability_snapshot, liability_snapshot_v1,
+                       liability_snapshot_v1::text,
+                       encode(public.digest(liability_snapshot_v1::text, 'sha256'), 'hex'),
                        liability_fingerprint_v1
                 FROM public.{TABLE}
                 WHERE operation_id = ANY(%s) ORDER BY reason""",
             ([cancelled_operation_id, expired_operation_id],),
         ).fetchall()
-        for operation_id, old_snapshot, v1_snapshot, fingerprint in rows:
+        for (
+            operation_id,
+            old_snapshot,
+            v1_snapshot,
+            v1_canonical_text,
+            database_fingerprint,
+            fingerprint,
+        ) in rows:
             assert old_snapshot == connection.execute(
                 _RECOVERY_HOLD_SNAPSHOT_SQL, (operation_id,)
             ).fetchone()[0]
             assert v1_snapshot == connection.execute(
                 _SNAPSHOT_SQL, (operation_id,)
             ).fetchone()[0]
-            assert fingerprint == connection.execute(
-                "SELECT encode(public.digest(%s::jsonb::text,'sha256'),'hex')",
-                (Jsonb(v1_snapshot),),
-            ).fetchone()[0]
+            assert "0.1234567890123456789" in v1_canonical_text
+            assert database_fingerprint == fingerprint
 
 
 @pytest.mark.asyncio

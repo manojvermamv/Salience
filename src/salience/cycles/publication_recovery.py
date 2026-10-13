@@ -9,7 +9,6 @@ from uuid import UUID
 
 import psycopg
 from psycopg.rows import dict_row
-from psycopg.types.json import Jsonb
 
 
 PublicationRecoveryReason = Literal[
@@ -299,7 +298,15 @@ _CANDIDATE_SQL = f"""WITH candidate AS (
           AND progress.state='published')
       )
 )
-SELECT candidate.* FROM candidate"""
+SELECT candidate.*,
+       candidate.liability_snapshot::text AS liability_snapshot_canonical_text,
+       encode(public.digest(candidate.liability_snapshot::text, 'sha256'), 'hex')
+           AS liability_fingerprint,
+       candidate.liability_snapshot_v1::text
+           AS liability_snapshot_v1_canonical_text,
+       encode(public.digest(candidate.liability_snapshot_v1::text, 'sha256'), 'hex')
+           AS liability_fingerprint_v1
+FROM candidate"""
 
 _REPLAY_FIELDS = (
     "operation_id",
@@ -321,9 +328,9 @@ _REPLAY_FIELDS = (
     "remote_state",
     "reason",
     "state",
-    "liability_snapshot",
+    "liability_snapshot_canonical_text",
     "liability_snapshot_version",
-    "liability_snapshot_v1",
+    "liability_snapshot_v1_canonical_text",
     "liability_fingerprint_v1",
 )
 
@@ -336,7 +343,11 @@ reason, state, liability_snapshot, created_at"""
 _HOLD_COLUMNS_V1 = (
     _HOLD_COLUMNS.removesuffix(", created_at")
     + ", liability_snapshot_version, liability_snapshot_v1, "
-    + "liability_fingerprint_v1, created_at"
+    + "liability_fingerprint_v1, "
+    + "liability_snapshot::text AS liability_snapshot_canonical_text, "
+    + "liability_snapshot_v1::text AS liability_snapshot_v1_canonical_text, "
+    + "encode(public.digest(liability_snapshot_v1::text, 'sha256'), 'hex') "
+    + "AS computed_liability_fingerprint_v1, created_at"
 )
 
 _ROLLBACK_REASON_ORDER: tuple[PublicationRecoveryReason, ...] = (
@@ -389,7 +400,7 @@ def _same_evidence(stored, candidate) -> bool:
     return all(stored[field] == candidate[field] for field in _REPLAY_FIELDS)
 
 
-def _validate_v1_evidence(connection, evidence) -> None:
+def _validate_v1_evidence(evidence, *, computed_fingerprint: str) -> None:
     snapshot = evidence["liability_snapshot_v1"]
     fingerprint = evidence["liability_fingerprint_v1"]
     if (
@@ -412,14 +423,7 @@ def _validate_v1_evidence(connection, evidence) -> None:
         raise PublicationRecoveryConflictError(
             "publication recovery v1 fingerprint must be lowercase SHA-256 hex"
         )
-    canonical_fingerprint = _fetchone(
-        connection,
-        """SELECT encode(
-                public.digest(%s::jsonb::text, 'sha256'), 'hex'
-            ) AS fingerprint""",
-        (Jsonb(snapshot),),
-    )["fingerprint"]
-    if fingerprint != canonical_fingerprint:
+    if fingerprint != computed_fingerprint:
         raise PublicationRecoveryConflictError(
             "publication recovery v1 fingerprint mismatch"
         )
@@ -481,7 +485,10 @@ def record_publication_recovery_hold(
                 "publication recovery operation already has a different hold binding"
             )
         if stored:
-            _validate_v1_evidence(connection, stored)
+            _validate_v1_evidence(
+                stored,
+                computed_fingerprint=stored["computed_liability_fingerprint_v1"],
+            )
 
         _lock_candidate_rows(connection, workspace_id, operation_id)
         candidate = _fetchone(
@@ -498,25 +505,10 @@ def record_publication_recovery_hold(
                 "original scoped publication evidence and recovery reason required"
             )
 
-        snapshot_parameter = Jsonb(candidate["liability_snapshot"])
-        snapshot_v1_parameter = Jsonb(candidate["liability_snapshot_v1"])
-        fingerprints = _fetchone(
-            connection,
-            """SELECT encode(
-                    public.digest(%s::jsonb::text, 'sha256'), 'hex'
-                ) AS liability_fingerprint,
-                encode(
-                    public.digest(%s::jsonb::text, 'sha256'), 'hex'
-                ) AS liability_fingerprint_v1""",
-            (snapshot_parameter, snapshot_v1_parameter),
+        _validate_v1_evidence(
+            candidate,
+            computed_fingerprint=candidate["liability_fingerprint_v1"],
         )
-        candidate["liability_fingerprint"] = fingerprints[
-            "liability_fingerprint"
-        ]
-        candidate["liability_fingerprint_v1"] = fingerprints[
-            "liability_fingerprint_v1"
-        ]
-        _validate_v1_evidence(connection, candidate)
 
         if stored:
             if not _same_evidence(stored, candidate):
@@ -526,8 +518,6 @@ def record_publication_recovery_hold(
             return _view(stored)
 
         insert_values = {field: candidate[field] for field in _REPLAY_FIELDS}
-        insert_values["liability_snapshot"] = snapshot_parameter
-        insert_values["liability_snapshot_v1"] = snapshot_v1_parameter
         inserted = _fetchone(
             connection,
             f"""INSERT INTO public.v4_legacy_publication_recovery_holds (
@@ -545,8 +535,10 @@ def record_publication_recovery_hold(
                     %(execution_deadline)s, %(permit_expires_at)s,
                     %(request_fingerprint)s, %(receipt_fingerprint)s,
                     %(liability_fingerprint)s, %(remote_id)s, %(remote_state)s,
-                    %(reason)s, %(state)s, %(liability_snapshot)s,
-                    %(liability_snapshot_version)s, %(liability_snapshot_v1)s,
+                    %(reason)s, %(state)s,
+                    %(liability_snapshot_canonical_text)s::jsonb,
+                    %(liability_snapshot_version)s,
+                    %(liability_snapshot_v1_canonical_text)s::jsonb,
                     %(liability_fingerprint_v1)s
                 ) ON CONFLICT (operation_id) DO NOTHING
                 RETURNING {_HOLD_COLUMNS_V1}""",
@@ -563,7 +555,10 @@ def record_publication_recovery_hold(
             (operation_id,),
         )
         if raced is not None:
-            _validate_v1_evidence(connection, raced)
+            _validate_v1_evidence(
+                raced,
+                computed_fingerprint=raced["computed_liability_fingerprint_v1"],
+            )
         if (
             raced is None
             or raced["workspace_id"] != workspace_id
@@ -620,7 +615,10 @@ def verify_publication_recovery_rollback(
                 raise PublicationRecoveryConflictError(
                     "both immutable publication recovery holds are required"
                 )
-            _validate_v1_evidence(connection, stored)
+            _validate_v1_evidence(
+                stored,
+                computed_fingerprint=stored["computed_liability_fingerprint_v1"],
+            )
 
             candidate = _fetchone(
                 connection,
@@ -632,25 +630,10 @@ def verify_publication_recovery_rollback(
                     "publication recovery evidence changed after the original hold"
                 )
 
-            candidate_snapshot = Jsonb(candidate["liability_snapshot"])
-            candidate_snapshot_v1 = Jsonb(candidate["liability_snapshot_v1"])
-            fingerprints = _fetchone(
-                connection,
-                """SELECT encode(
-                        public.digest(%s::jsonb::text, 'sha256'), 'hex'
-                    ) AS liability_fingerprint,
-                    encode(
-                        public.digest(%s::jsonb::text, 'sha256'), 'hex'
-                    ) AS liability_fingerprint_v1""",
-                (candidate_snapshot, candidate_snapshot_v1),
+            _validate_v1_evidence(
+                candidate,
+                computed_fingerprint=candidate["liability_fingerprint_v1"],
             )
-            candidate["liability_fingerprint"] = fingerprints[
-                "liability_fingerprint"
-            ]
-            candidate["liability_fingerprint_v1"] = fingerprints[
-                "liability_fingerprint_v1"
-            ]
-            _validate_v1_evidence(connection, candidate)
             if not _same_evidence(stored, candidate):
                 raise PublicationRecoveryConflictError(
                     "publication recovery evidence conflicts with the original hold"
