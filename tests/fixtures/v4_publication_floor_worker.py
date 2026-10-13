@@ -625,6 +625,59 @@ def start_rollback_worker(
     }
 
 
+def run_adapter_operation_positive_control(
+    container_name: str,
+    *,
+    recorder_fixture: Path,
+    receiver_url: str,
+    run_id: str,
+) -> subprocess.CompletedProcess[str]:
+    """Run the neutral protocol control inside an already-started worker container.
+
+    The recorder source is sent over stdin to a short-lived isolated Python
+    process. It is not mounted into or written under the authenticated runtime.
+    Operation evidence is read back separately from the receiver service.
+    """
+    recorder_fixture = Path(recorder_fixture)
+    metadata = recorder_fixture.lstat()
+    if recorder_fixture.is_symlink() or metadata.st_mode & 0o170000 != 0o100000:
+        raise ValueError("adapter-operation recorder fixture must be a regular file")
+    fixture_source = recorder_fixture.read_text(encoding="utf-8")
+    runner = (
+        "import asyncio, sys\n"
+        "source = sys.stdin.read()\n"
+        "namespace = {'__name__': 'v4_publication_adapter_operation_recorder', "
+        "'__file__': '<adapter-operation-recorder-fixture>'}\n"
+        "exec(compile(source, namespace['__file__'], 'exec'), namespace)\n"
+        "asyncio.run(namespace['run_positive_control']("
+        "base_url=sys.argv[1], run_id=sys.argv[2]))\n"
+    )
+    command = [
+        "docker",
+        "exec",
+        "-i",
+        container_name,
+        "/usr/local/bin/python",
+        "-I",
+        "-B",
+        "-c",
+        runner,
+        receiver_url,
+        run_id,
+    ]
+    with _without_shared_checkout():
+        return subprocess.run(
+            command,
+            input=fixture_source,
+            capture_output=True,
+            text=True,
+            cwd=tempfile.gettempdir(),
+            env=_docker_environment(),
+            timeout=30,
+            check=False,
+        )
+
+
 def inspect_worker(name: str) -> dict[str, object]:
     with _without_shared_checkout():
         result = subprocess.run(

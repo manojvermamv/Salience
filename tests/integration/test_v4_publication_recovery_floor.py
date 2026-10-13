@@ -3345,18 +3345,58 @@ def _assert_candidate_image(candidate, image_inspector=None):
 
 
 def _adapter_recorder_events(candidate):
+    return _read_adapter_recorder_events(
+        candidate["adapter_recorder_url"], candidate["adapter_recorder_run_id"]
+    )
+
+
+def _read_adapter_recorder_events(base_url, run_id):
     import urllib.request
 
-    url = (
-        candidate["adapter_recorder_url"]
-        + "/v1/runs/"
-        + candidate["adapter_recorder_run_id"]
-        + "/events"
-    )
+    url = base_url.rstrip("/") + "/v1/runs/" + run_id + "/events"
     with urllib.request.urlopen(url, timeout=5) as response:
         payload = json.loads(response.read())
-    assert payload["run_id"] == candidate["adapter_recorder_run_id"]
+    assert payload["run_id"] == run_id
     return payload["events"]
+
+
+def _assert_adapter_operation_events(events, *, run_id, operations):
+    expected_operations = tuple(operations)
+    assert len(events) == len(expected_operations)
+    worker_ids = set()
+    for sequence, (event, operation) in enumerate(
+        zip(events, expected_operations, strict=True), start=1
+    ):
+        assert set(event) == {
+            "schema",
+            "run_id",
+            "worker_id",
+            "sequence",
+            "operation",
+        }
+        assert event["schema"] == "salience.adapter-operation.v1"
+        assert event["run_id"] == run_id
+        assert str(UUID(event["worker_id"])) == event["worker_id"]
+        worker_ids.add(event["worker_id"])
+        assert event["sequence"] == sequence
+        assert event["operation"] == operation
+    assert len(worker_ids) == 1
+
+
+def _assert_no_adapter_operation_events(events):
+    assert events == [], f"adapter recorder observed {len(events)} operation(s)"
+
+
+def _load_adapter_operation_fixture(path, module_name):
+    path = Path(path)
+    if not path.is_file():
+        pytest.fail(f"required adapter-operation fixture is missing: {path.name}")
+    spec = importlib.util.spec_from_file_location(module_name, path)
+    if spec is None or spec.loader is None:
+        pytest.fail(f"adapter-operation fixture cannot be loaded: {path.name}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 async def _candidate_history_fingerprints(candidate):
@@ -3381,6 +3421,251 @@ async def _candidate_history_fingerprints(candidate):
 def _canonical_json_hash(value):
     encoded = (json.dumps(value, sort_keys=True, separators=(",", ":")) + "\n").encode()
     return _sha256(encoded)
+
+
+def test_adapter_operation_recorder_emits_protocol_events_and_zero_assertion_is_sensitive():
+    from threading import Thread
+    from uuid import uuid4
+
+    receiver = _load_adapter_operation_fixture(
+        ROOT / "tests/fixtures/v4_publication_adapter_operation_receiver.py",
+        "v4_publication_adapter_operation_receiver",
+    )
+    recorder = _load_adapter_operation_fixture(
+        ROOT / "tests/fixtures/v4_publication_adapter_operation_recorder.py",
+        "v4_publication_adapter_operation_recorder",
+    )
+    server = receiver.create_server("127.0.0.1", 0)
+    thread = Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    base_url = f"http://127.0.0.1:{server.server_port}"
+    run_id = str(uuid4())
+    operations = (
+        "capabilities",
+        "preflight",
+        "prepare_delivery",
+        "create_or_resume",
+        "submit",
+        "reconcile",
+        "status",
+        "cancel",
+        "verify_webhook",
+        "refresh_capabilities",
+    )
+    try:
+        asyncio.run(recorder.run_positive_control(base_url=base_url, run_id=run_id))
+        events = _read_adapter_recorder_events(base_url, run_id)
+        _assert_adapter_operation_events(events, run_id=run_id, operations=operations)
+
+        # This positive control deliberately wires adapter methods to the
+        # recorder. The same empty-store assertion used by held cases must
+        # reject that intentionally recorded operation set.
+        with pytest.raises(AssertionError, match="adapter recorder observed 10"):
+            _assert_no_adapter_operation_events(events)
+
+        sensitivity_run_id = str(uuid4())
+        asyncio.run(
+            recorder.run_single_operation(
+                base_url=base_url,
+                run_id=sensitivity_run_id,
+            )
+        )
+        sensitivity_events = _read_adapter_recorder_events(base_url, sensitivity_run_id)
+        _assert_adapter_operation_events(
+            sensitivity_events,
+            run_id=sensitivity_run_id,
+            operations=("preflight",),
+        )
+        with pytest.raises(AssertionError, match="adapter recorder observed 1"):
+            _assert_no_adapter_operation_events(sensitivity_events)
+
+        empty_run_id = str(uuid4())
+        empty_events = _read_adapter_recorder_events(base_url, empty_run_id)
+        assert empty_events == []
+        _assert_no_adapter_operation_events(empty_events)
+
+        # Receiver reads are sequence ordered even if independent workers post
+        # out of order. This pins the external-store contract separately from
+        # the recorder's sequential emission behavior.
+        from urllib.request import Request, urlopen
+
+        ordered_run_id = str(uuid4())
+        ordered_worker_id = str(uuid4())
+        for sequence in (2, 1):
+            event = {
+                "schema": "salience.adapter-operation.v1",
+                "run_id": ordered_run_id,
+                "worker_id": ordered_worker_id,
+                "sequence": sequence,
+                "operation": "preflight",
+            }
+            request = Request(
+                base_url + "/v1/adapter-events",
+                data=(json.dumps(event, sort_keys=True, separators=(",", ":")) + "\n").encode(),
+                headers={"Content-Type": "application/json"},
+                method="POST",
+            )
+            with urlopen(request, timeout=5) as response:
+                assert response.status == 202
+        ordered_events = _read_adapter_recorder_events(base_url, ordered_run_id)
+        assert [event["sequence"] for event in ordered_events] == [1, 2]
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=5)
+
+
+def test_cross_container_adapter_recorder_positive_control():
+    from uuid import uuid4
+
+    candidate = _task8_rollback_image_or_skip()
+    _assert_candidate_image(candidate)
+    worker_harness = _load_worker_harness()
+    run_id = str(uuid4())
+    _assert_no_adapter_operation_events(
+        _read_adapter_recorder_events(candidate["adapter_recorder_url"], run_id)
+    )
+    worker_id = "task7-adapter-positive-" + uuid4().hex[:12]
+    task_queue = "task7-adapter-positive-" + uuid4().hex
+    launch = None
+    try:
+        launch = worker_harness.start_rollback_worker(
+            image=candidate["image_id"],
+            database_url=candidate["database_url"],
+            temporal_target=candidate["temporal_target"],
+            workspace_id=candidate["fixture"]["workspace_id"],
+            expired_operation_id=candidate["fixture"]["operation_ids"][
+                "expired_permit_receipt"
+            ],
+            cancel_operation_id=candidate["fixture"]["operation_ids"][
+                "published_during_cancel"
+            ],
+            task_queue=task_queue,
+            control_bundle=candidate["control_bundle"],
+            name=worker_id,
+        )
+        inspection = worker_harness.inspect_worker(worker_id)
+        assert launch["image_id"] == candidate["image_id"]
+        assert inspection["image_id"] == candidate["image_id"]
+        assert inspection["state"] == "running"
+        assert inspection["read_only_rootfs"] is True
+        assert inspection["environment"]["SALIENCE_EFFECTS_ENABLED"] == "false"
+        result = worker_harness.run_adapter_operation_positive_control(
+            worker_id,
+            recorder_fixture=ROOT
+            / "tests/fixtures/v4_publication_adapter_operation_recorder.py",
+            receiver_url=candidate["adapter_recorder_url"],
+            run_id=run_id,
+        )
+        assert result.returncode == 0, result.stderr
+    finally:
+        stopped = worker_harness.stop_worker(worker_id)
+        if launch is None:
+            assert stopped["state"] in {"exited", "already-removed"}
+        else:
+            assert stopped["state"] == "exited"
+
+    operations = (
+        "capabilities",
+        "preflight",
+        "prepare_delivery",
+        "create_or_resume",
+        "submit",
+        "reconcile",
+        "status",
+        "cancel",
+        "verify_webhook",
+        "refresh_capabilities",
+    )
+    events = _read_adapter_recorder_events(candidate["adapter_recorder_url"], run_id)
+    _assert_adapter_operation_events(events, run_id=run_id, operations=operations)
+    with pytest.raises(AssertionError, match="adapter recorder observed 10"):
+        _assert_no_adapter_operation_events(events)
+
+
+@pytest.mark.parametrize(
+    "reason",
+    ("expired_permit_receipt", "published_during_cancel"),
+    ids=("expired-permit-receipt", "published-during-cancel"),
+)
+@pytest.mark.asyncio
+async def test_cross_container_adapter_recorder_observes_zero_operations_for_both_holds(
+    reason,
+):
+    import asyncio
+    from uuid import uuid4
+
+    from temporalio.client import Client, WorkflowFailureError
+    from test_v4_legacy_publication import _exception_chain
+
+    candidate = _task8_rollback_image_or_skip()
+    _assert_candidate_image(candidate)
+    database_url = candidate["database_url"]
+    before = _capture_candidate_database_state(
+        candidate, database_url=database_url
+    )
+    assert len(before["liabilities"][reason]) == 21
+    events_before = _read_adapter_recorder_events(
+        candidate["adapter_recorder_url"], candidate["adapter_recorder_run_id"]
+    )
+    assert events_before == []
+    _assert_no_adapter_operation_events(events_before)
+
+    worker_harness = _load_worker_harness()
+    fixture = candidate["fixture"]
+    operation_ids = fixture["operation_ids"]
+    task_queue = fixture["history_fixture"][reason]["task_queue"]
+    workflow_id = fixture["history_fixture"][reason]["workflow_id"]
+    worker_name = "task7-adapter-held-" + reason.replace("_", "-") + "-" + uuid4().hex[:8]
+    launch = None
+    try:
+        launch = worker_harness.start_rollback_worker(
+            image=candidate["image_id"],
+            database_url=database_url,
+            temporal_target=candidate["temporal_target"],
+            workspace_id=fixture["workspace_id"],
+            expired_operation_id=operation_ids["expired_permit_receipt"],
+            cancel_operation_id=operation_ids["published_during_cancel"],
+            task_queue=task_queue,
+            control_bundle=candidate["control_bundle"],
+            name=worker_name,
+        )
+        inspection = worker_harness.inspect_worker(worker_name)
+        assert launch["image_id"] == candidate["image_id"]
+        assert inspection["image_id"] == candidate["image_id"]
+        assert inspection["state"] == "running"
+        assert inspection["read_only_rootfs"] is True
+        assert inspection["environment"]["SALIENCE_EFFECTS_ENABLED"] == "false"
+
+        client = await Client.connect(candidate["temporal_target"])
+        handle = client.get_workflow_handle(workflow_id)
+        with pytest.raises(WorkflowFailureError) as failure:
+            await asyncio.wait_for(handle.result(), timeout=45)
+        typed_holds = [
+            error
+            for error in _exception_chain(failure.value)
+            if getattr(error, "type", None) == "LegacyPublicationRecoveryHeld"
+        ]
+        assert len(typed_holds) == 1
+        assert typed_holds[0].details == ({"hold_id": fixture["hold_ids"][reason]},)
+    finally:
+        stopped = worker_harness.stop_worker(worker_name)
+        if launch is None:
+            assert stopped["state"] in {"exited", "already-removed"}
+        else:
+            assert stopped["state"] == "exited"
+
+    after = _capture_candidate_database_state(
+        candidate, database_url=database_url
+    )
+    assert after == before
+    assert after["liabilities"][reason] == before["liabilities"][reason]
+    assert after["holds"] == before["holds"]
+    events_after = _read_adapter_recorder_events(
+        candidate["adapter_recorder_url"], candidate["adapter_recorder_run_id"]
+    )
+    assert events_after == events_before
+    _assert_no_adapter_operation_events(events_after)
 
 
 async def _publish_task8_progress_and_run_cases(
@@ -3947,6 +4232,7 @@ def test_inprocess_gate_wraps_malformed_rollback_environment_as_compatibility_er
 async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_passes(
     active_0042_database, monkeypatch, tmp_path, request,
 ):
+    _task8_rollback_image_or_skip()
     qualification_worker = ROOT / "tests/fixtures/v4_publication_floor_worker.py"
     assert qualification_worker.is_file(), "actual pinned-image fixture harness is required"
 
