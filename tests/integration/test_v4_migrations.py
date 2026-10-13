@@ -1,10 +1,13 @@
 import hashlib
+import json
 import os
 import re
 import shutil
 import subprocess
 import sys
 import time
+from contextlib import contextmanager
+from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlsplit, urlunsplit
 from uuid import uuid4
@@ -15,6 +18,11 @@ from psycopg.types.json import Jsonb
 
 
 _MIGRATION_ROOT = Path(__file__).parents[2]
+_TASK5_EVIDENCE = (
+    _MIGRATION_ROOT
+    / "artifacts/v4-next-p1/agents/p1-publication-recovery-0043/"
+    / "task5-installed-image-migration.json"
+)
 _REVISION_0041 = "0041_native_publication_sources"
 _REVISION_0042 = "0042_publication_recovery_holds"
 _REVISION_0043 = "0043_complete_publication_recovery_liabilities"
@@ -44,9 +52,152 @@ _V1_KEYS = (
 )
 
 
+def _run_cleanup_actions(actions):
+    """Run every cleanup action and report failures except exact absent-resource cases."""
+    outcomes = []
+    failures = []
+    absent_errors = {
+        "container stop": re.compile(
+            r"^Error response from daemon: No such container: [A-Za-z0-9_.-]+$"
+        ),
+        "network removal": re.compile(
+            r"^Error response from daemon: network [A-Za-z0-9_.-]+ not found\nexit status 1$"
+        ),
+        "worker image removal": re.compile(
+            r"^Error response from daemon: No such image: \S+$"
+        ),
+    }
+
+    for name, action in actions:
+        try:
+            result = action()
+        except FileNotFoundError as exc:
+            if name == "staged wheel removal":
+                outcomes.append({"name": name, "status": "already_absent"})
+                continue
+            error = f"{name}: {exc}"
+            outcomes.append({"name": name, "status": "failed", "error": str(exc)})
+            failures.append(error)
+            continue
+        except Exception as exc:
+            error = f"{name}: {exc}"
+            outcomes.append({"name": name, "status": "failed", "error": str(exc)})
+            failures.append(error)
+            continue
+
+        if not isinstance(result, subprocess.CompletedProcess):
+            outcomes.append({"name": name, "status": "success"})
+            continue
+
+        stdout = result.stdout or ""
+        stderr = result.stderr or ""
+        outcome = {
+            "name": name,
+            "status": "success" if result.returncode == 0 else "failed",
+            "argv": list(result.args) if isinstance(result.args, (list, tuple)) else result.args,
+            "exit_code": result.returncode,
+            "stdout": stdout,
+            "stderr": stderr,
+        }
+        if result.returncode != 0:
+            message = stderr.strip() or stdout.strip()
+            absent_pattern = absent_errors.get(name)
+            if (
+                result.returncode == 1
+                and absent_pattern is not None
+                and absent_pattern.fullmatch(message)
+            ):
+                outcome["status"] = "already_absent"
+            else:
+                failures.append(f"{name}: exit {result.returncode}: {message or 'no error output'}")
+        outcomes.append(outcome)
+
+    return outcomes, failures
+
+
+@contextmanager
+def _cleanup_scope(initial_actions, state):
+    actions = list(initial_actions)
+    summary = {}
+    try:
+        yield actions, summary
+    finally:
+        outcomes, failures = _run_cleanup_actions(reversed(actions))
+        summary["actions"] = outcomes
+        summary["failures"] = failures
+        if failures:
+            raise AssertionError("Task5 cleanup failures: " + "; ".join(failures))
+        state["cleaned"] = True
+
+
+def _remove_staged_wheel(stage):
+    shutil.rmtree(stage)
+
+
+def _atomic_write_task5_evidence(evidence):
+    _TASK5_EVIDENCE.parent.mkdir(parents=True, exist_ok=True)
+    temporary = _TASK5_EVIDENCE.with_name(
+        f".{_TASK5_EVIDENCE.name}.{uuid4().hex}.tmp"
+    )
+    try:
+        with temporary.open("x", encoding="utf-8") as output:
+            json.dump(evidence, output, indent=2, sort_keys=True)
+            output.write("\n")
+            output.flush()
+            os.fsync(output.fileno())
+        os.replace(temporary, _TASK5_EVIDENCE)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def _committed_source_revision():
+    revision = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=_MIGRATION_ROOT,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    assert revision.returncode == 0, revision.stdout + revision.stderr
+    status = subprocess.run(
+        ["git", "status", "--porcelain", "--untracked-files=no"],
+        cwd=_MIGRATION_ROOT,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    assert status.returncode == 0, status.stdout + status.stderr
+    assert not status.stdout.strip(), (
+        "Task5 evidence requires committed source; tracked changes remain: "
+        + status.stdout.strip()
+    )
+    return revision.stdout.strip()
+
+
+def _installed_wheel_digest(image_id):
+    retained_wheel = subprocess.run(
+        [
+            "docker",
+            "run",
+            "--rm",
+            image_id,
+            "python",
+            "-c",
+            "from hashlib import sha256; print(sha256(open('/opt/salience-artifacts/salience.whl', 'rb').read()).hexdigest())",
+        ],
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    assert retained_wheel.returncode == 0, retained_wheel.stdout + retained_wheel.stderr
+    return retained_wheel.stdout.strip()
+
+
 @pytest.fixture(scope="module")
 def task5_worker_image(tmp_path_factory):
     """Build the real wheel-only worker image from a temporary retained wheel."""
+    _TASK5_EVIDENCE.unlink(missing_ok=True)
+    source_commit = _committed_source_revision()
     if shutil.which("docker") is None:
         pytest.skip("Docker is required for the installed-image migration contract")
     docker_info = subprocess.run(
@@ -91,7 +242,31 @@ def task5_worker_image(tmp_path_factory):
     environment["SALIENCE_WHEEL_FILE"] = (stage / "salience.whl").relative_to(
         _MIGRATION_ROOT
     ).as_posix()
-    image_id = None
+    cleanup_state = {"cleaned": False}
+    # Actions are stored in reverse execution order for _cleanup_scope.
+    cleanup_actions = [
+        ("staged wheel removal", lambda: _remove_staged_wheel(stage)),
+        (
+            "worker image removal",
+            lambda: subprocess.run(
+                ["docker", "image", "rm", "--force", image_ref],
+                capture_output=True,
+                text=True,
+                timeout=30,
+            ),
+        ),
+        (
+            "Compose project teardown",
+            lambda: subprocess.run(
+                [*compose, "down", "--volumes", "--remove-orphans"],
+                cwd=_MIGRATION_ROOT,
+                env=environment,
+                capture_output=True,
+                text=True,
+                timeout=120,
+            ),
+        ),
+    ]
     try:
         image_build = subprocess.run(
             [*compose, "build", "worker"],
@@ -103,7 +278,7 @@ def task5_worker_image(tmp_path_factory):
         )
         assert image_build.returncode == 0, image_build.stdout + image_build.stderr
         image_result = subprocess.run(
-            ["docker", "image", "inspect", "--format", "{{.Id}}", image_ref],
+            ["docker", "image", "inspect", image_ref],
             cwd=_MIGRATION_ROOT,
             env=environment,
             capture_output=True,
@@ -111,28 +286,27 @@ def task5_worker_image(tmp_path_factory):
             timeout=30,
         )
         assert image_result.returncode == 0, image_result.stdout + image_result.stderr
-        image_id = image_result.stdout.strip()
+        image_metadata = json.loads(image_result.stdout)[0]
+        image_id = image_metadata["Id"]
         assert image_id.startswith("sha256:"), f"expected worker image ID, got {image_id!r}"
         yield {
+            "source_commit": source_commit,
             "image_id": image_id,
+            "image_digest": image_id,
+            "image_repo_digests": image_metadata.get("RepoDigests") or [],
             "wheel": wheels[0],
+            "retained_wheel_sha256": hashlib.sha256(
+                (stage / "salience.whl").read_bytes()
+            ).hexdigest(),
+            "cleanup_actions": cleanup_actions,
+            "cleanup_state": cleanup_state,
         }
     finally:
-        subprocess.run(
-            [*compose, "down", "--volumes", "--remove-orphans"],
-            cwd=_MIGRATION_ROOT,
-            env=environment,
-            capture_output=True,
-            text=True,
-            timeout=120,
-        )
-        subprocess.run(
-            ["docker", "image", "rm", "--force", image_ref],
-            capture_output=True,
-            text=True,
-            timeout=30,
-        )
-        shutil.rmtree(stage, ignore_errors=True)
+        if not cleanup_state["cleaned"]:
+            outcomes, failures = _run_cleanup_actions(reversed(cleanup_actions))
+            if failures:
+                raise AssertionError("Task5 image cleanup failures: " + "; ".join(failures))
+            cleanup_state["cleaned"] = True
 
 
 def test_installed_alembic_config_resolves_inside_runtime_root(task5_worker_image):
@@ -141,22 +315,8 @@ def test_installed_alembic_config_resolves_inside_runtime_root(task5_worker_imag
     image_id = task5_worker_image["image_id"]
     runtime_config = "/usr/local/lib/python3.13/site-packages/alembic.ini"
     wheel_digest = hashlib.sha256(task5_worker_image["wheel"].read_bytes()).hexdigest()
-    retained_wheel = subprocess.run(
-        [
-            "docker",
-            "run",
-            "--rm",
-            image_id,
-            "python",
-            "-c",
-            "from hashlib import sha256; print(sha256(open('/opt/salience-artifacts/salience.whl', 'rb').read()).hexdigest())",
-        ],
-        capture_output=True,
-        text=True,
-        timeout=30,
-    )
-    assert retained_wheel.returncode == 0, retained_wheel.stdout + retained_wheel.stderr
-    assert retained_wheel.stdout.strip() == wheel_digest
+    in_image_digest = _installed_wheel_digest(image_id)
+    assert in_image_digest == wheel_digest
 
     resolved_heads = subprocess.run(
         ["docker", "run", "--rm", image_id, "alembic", "-c", runtime_config, "heads"],
@@ -185,14 +345,14 @@ def test_installed_image_migrates_disposable_database_to_0043(task5_worker_image
     postgres_image = compose["services"]["postgres"]["image"]
     network = "salience-task5-db-" + uuid4().hex[:12]
     container = "salience-task5-postgres-" + uuid4().hex[:12]
-    test_password = "task5_ephemeral_password"
+    test_password = "task5_" + uuid4().hex
     database_name = None
     source = None
     runtime_role = None
-    network_created = False
-    container_started = False
-
-    try:
+    evidence = {}
+    with _cleanup_scope(
+        task5_worker_image["cleanup_actions"], task5_worker_image["cleanup_state"]
+    ) as (cleanup_actions, cleanup_summary):
         created_network = subprocess.run(
             ["docker", "network", "create", network],
             capture_output=True,
@@ -200,7 +360,36 @@ def test_installed_image_migrates_disposable_database_to_0043(task5_worker_image
             timeout=30,
         )
         assert created_network.returncode == 0, created_network.stdout + created_network.stderr
-        network_created = True
+        cleanup_actions.append(
+            (
+                "network removal",
+                lambda: subprocess.run(
+                    ["docker", "network", "rm", network],
+                    capture_output=True,
+                    text=True,
+                    timeout=30,
+                ),
+            )
+        )
+        network_info = subprocess.run(
+            ["docker", "network", "inspect", network],
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        assert network_info.returncode == 0, network_info.stdout + network_info.stderr
+        network_id = json.loads(network_info.stdout)[0]["Id"]
+
+        postgres_inspect = subprocess.run(
+            ["docker", "image", "inspect", postgres_image],
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        assert postgres_inspect.returncode == 0, (
+            postgres_inspect.stdout + postgres_inspect.stderr
+        )
+        postgres_metadata = json.loads(postgres_inspect.stdout)[0]
 
         started = subprocess.run(
             [
@@ -229,7 +418,17 @@ def test_installed_image_migrates_disposable_database_to_0043(task5_worker_image
             timeout=60,
         )
         assert started.returncode == 0, started.stdout + started.stderr
-        container_started = True
+        cleanup_actions.append(
+            (
+                "container stop",
+                lambda: subprocess.run(
+                    ["docker", "stop", container],
+                    capture_output=True,
+                    text=True,
+                    timeout=60,
+                ),
+            )
+        )
 
         ready_deadline = time.monotonic() + 90
         while True:
@@ -259,6 +458,7 @@ def test_installed_image_migrates_disposable_database_to_0043(task5_worker_image
         while True:
             try:
                 with psycopg.connect(source, connect_timeout=2) as connection:
+                    postgres_version = connection.execute("SELECT version()").fetchone()[0]
                     roles_before = [
                         row[0]
                         for row in connection.execute(
@@ -272,10 +472,28 @@ def test_installed_image_migrates_disposable_database_to_0043(task5_worker_image
                 time.sleep(0.25)
 
         database_name, database = _create_migration_database(source, "task5_disposable_")
+        cleanup_actions.append(
+            (
+                "disposable database and fixture role removal",
+                lambda source=source, database_name=database_name: _drop_migration_database(
+                    source, database_name, runtime_role
+                ),
+            )
+        )
         image_database_url = (
             "postgresql+asyncpg://salience:"
             f"{test_password}@task5-postgres:5432/{database_name}"
         )
+        command_argv = [
+            "alembic",
+            "-c",
+            "/usr/local/lib/python3.13/site-packages/alembic.ini",
+            "upgrade",
+            "head",
+        ]
+        in_image_wheel_sha256 = _installed_wheel_digest(task5_worker_image["image_id"])
+        assert in_image_wheel_sha256 == task5_worker_image["retained_wheel_sha256"]
+
         migrated = subprocess.run(
             [
                 "docker",
@@ -286,11 +504,7 @@ def test_installed_image_migrates_disposable_database_to_0043(task5_worker_image
                 "--env",
                 f"DATABASE_URL={image_database_url}",
                 task5_worker_image["image_id"],
-                "alembic",
-                "-c",
-                "/usr/local/lib/python3.13/site-packages/alembic.ini",
-                "upgrade",
-                "head",
+                *command_argv,
             ],
             capture_output=True,
             text=True,
@@ -342,23 +556,139 @@ def test_installed_image_migrates_disposable_database_to_0043(task5_worker_image
                 False,
             )
             _assert_0043_schema_and_guard(connection, runtime_role)
-    finally:
-        if source and database_name:
-            _drop_migration_database(source, database_name, runtime_role)
-        if container_started:
-            subprocess.run(
-                ["docker", "stop", container],
-                capture_output=True,
-                text=True,
-                timeout=60,
-            )
-        if network_created:
-            subprocess.run(
-                ["docker", "network", "rm", network],
-                capture_output=True,
-                text=True,
-                timeout=30,
-            )
+        evidence = {
+            "schema": "salience.task5-installed-image-migration",
+            "schema_version": 1,
+            "evidence_scope": "Task5 installed-image migration run qualification only",
+            "task8_candidate_lock_evidence": False,
+            "source_commit": task5_worker_image["source_commit"],
+            "worker_image": {
+                "id": task5_worker_image["image_id"],
+                "digest": task5_worker_image["image_digest"],
+                "digest_basis": "Docker content-addressed image ID",
+                "repo_digests": task5_worker_image["image_repo_digests"],
+            },
+            "wheel": {
+                "retained_sha256": task5_worker_image["retained_wheel_sha256"],
+                "in_image_path": "/opt/salience-artifacts/salience.whl",
+                "in_image_sha256": in_image_wheel_sha256,
+            },
+            "migration": {
+                "command_argv": command_argv,
+                "stdout": migrated.stdout,
+                "stderr": migrated.stderr,
+                "exit_code": migrated.returncode,
+                "final_revision": _REVISION_0043,
+                "database_url_environment_variable": "DATABASE_URL",
+            },
+            "disposable_postgres": {
+                "image_reference": postgres_image,
+                "image_id": postgres_metadata["Id"],
+                "image_repo_digests": postgres_metadata.get("RepoDigests") or [],
+                "server_version": postgres_version,
+                "network_name": network,
+                "network_id": network_id,
+                "container_name": container,
+                "database_name": database_name,
+                "boundary": (
+                    "newly-created database in a per-run PostgreSQL container on an "
+                    "isolated per-run Docker network; loopback-only published port"
+                ),
+                "disposable": True,
+            },
+            "safety": {
+                "production_database_used": False,
+                "production_credentials_used": False,
+                "worker_started": False,
+                "provider_effects_performed": False,
+                "external_effects_performed": False,
+                "effects_enabled": False,
+            },
+            "validity": {
+                "invalidated_by": [
+                    "a later source commit",
+                    "a later worker image build or image ID/digest change",
+                ]
+            },
+        }
+
+    evidence["generated_at_utc"] = (
+        datetime.now(timezone.utc).isoformat(timespec="microseconds").replace("+00:00", "Z")
+    )
+    evidence["cleanup"] = cleanup_summary["actions"]
+    assert cleanup_summary["failures"] == []
+    _atomic_write_task5_evidence(evidence)
+
+
+def test_cleanup_aggregates_failures_and_continues_after_each_action():
+    from subprocess import CompletedProcess
+
+    called = []
+
+    def failed_action():
+        called.append("network removal")
+        return CompletedProcess(["docker", "network", "rm", "broken"], 2, "", "daemon error")
+
+    def successful_action():
+        called.append("container stop")
+        return CompletedProcess(["docker", "stop", "container"], 0, "container\n", "")
+
+    results, failures = _run_cleanup_actions(
+        [("network removal", failed_action), ("container stop", successful_action)]
+    )
+
+    assert called == ["network removal", "container stop"]
+    assert [result["status"] for result in results] == ["failed", "success"]
+    assert failures == ["network removal: exit 2: daemon error"]
+
+
+@pytest.mark.parametrize(
+    ("name", "returncode", "stderr"),
+    [
+        (
+            "container stop",
+            1,
+            "Error response from daemon: No such container: task5-container\n",
+        ),
+        (
+            "network removal",
+            1,
+            "Error response from daemon: network task5-network not found\nexit status 1\n",
+        ),
+        (
+            "worker image removal",
+            1,
+            "Error response from daemon: No such image: salience-task5-worker:latest\n",
+        ),
+    ],
+)
+def test_cleanup_tolerates_only_documented_absent_container_or_network(
+    name, returncode, stderr
+):
+    from subprocess import CompletedProcess
+
+    result = CompletedProcess(["docker", "cleanup"], returncode, "", stderr)
+    outcomes, failures = _run_cleanup_actions([(name, lambda: result)])
+
+    assert outcomes[0]["status"] == "already_absent"
+    assert failures == []
+
+
+def test_cleanup_rejects_undocumented_absence_errors():
+    from subprocess import CompletedProcess
+
+    result = CompletedProcess(
+        ["docker", "stop", "task5-container"],
+        1,
+        "",
+        "Error response from daemon: container is still in use",
+    )
+    outcomes, failures = _run_cleanup_actions([("container stop", lambda: result)])
+
+    assert outcomes[0]["status"] == "failed"
+    assert failures == [
+        "container stop: exit 1: Error response from daemon: container is still in use"
+    ]
 
 
 def _create_migration_database(source, prefix):
