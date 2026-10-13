@@ -713,6 +713,10 @@ def test_authenticated_migration_graph_rejects_branch_cycle_or_ambiguous_head(
         "module.__dict__.update(**{'revision': dynamic_revision()})\n",
         "revision: dynamic_annotation() = '0043_floor'\n"
         "down_revision = '0042_parent'\n",
+        "revision = '0043_floor'\ndown_revision = '0042_parent'\n"
+        "def upgrade():\n    setattr(module, 'revision', dynamic_revision())\n",
+        "revision = '0043_floor'\ndown_revision = '0042_parent'\n"
+        "def upgrade():\n    globals().update(down_revision=dynamic_parent())\n",
     ),
     ids=(
         "literal-then-conditional-rewrite",
@@ -732,6 +736,8 @@ def test_authenticated_migration_graph_rejects_branch_cycle_or_ambiguous_head(
         "sys-modules-dict-update",
         "module-dict-expanded-update",
         "unsupported-annotated-top-level-metadata",
+        "function-setattr-metadata-rewrite",
+        "function-global-update-metadata-rewrite",
     ),
 )
 def test_migration_revision_metadata_rejects_every_unsupported_write(source):
@@ -739,6 +745,82 @@ def test_migration_revision_metadata_rejects_every_unsupported_write(source):
 
     with pytest.raises(PublicationWorkerCompatibilityError):
         compatibility._parse_revision_metadata("synthetic_revision.py", source.encode())
+
+
+@pytest.mark.parametrize(
+    "source",
+    (
+        "import builtins\n"
+        "revision = '0043_floor'\ndown_revision = '0042_parent'\n"
+        "def upgrade(*args: builtins.setattr(module, 'revision', dynamic_revision())):\n    pass\n",
+        "import builtins\n"
+        "revision = '0043_floor'\ndown_revision = '0042_parent'\n"
+        "def upgrade(**kwargs: builtins.setattr(module, 'down_revision', dynamic_parent())):\n    pass\n",
+        "import builtins\n"
+        "revision = '0043_floor'\ndown_revision = '0042_parent'\n"
+        "@builtins.setattr(module, 'revision', dynamic_revision())\n"
+        "def upgrade():\n    pass\n",
+        "revision = '0043_floor'\ndown_revision = '0042_parent'\n"
+        "def upgrade(value=dynamic_metadata()):\n    pass\n",
+        "revision = '0043_floor'\ndown_revision = '0042_parent'\n"
+        "def upgrade(*, value=dynamic_metadata()):\n    pass\n",
+        "import builtins\n"
+        "revision = '0043_floor'\ndown_revision = '0042_parent'\n"
+        "def upgrade() -> builtins.setattr(module, 'revision', dynamic_revision()):\n    pass\n",
+        "revision = '0043_floor'\ndown_revision = '0042_parent'\n"
+        "from untrusted_module import *\n",
+        "revision = '0043_floor'\ndown_revision = '0042_parent'\n"
+        "def upgrade[T]():\n    pass\n",
+    ),
+    ids=(
+        "vararg-call-annotation",
+        "kwarg-call-annotation",
+        "decorator-namespace-mutation",
+        "positional-default-mutation",
+        "keyword-default-mutation",
+        "return-call-annotation",
+        "wildcard-import",
+        "function-type-parameters",
+    ),
+)
+def test_migration_import_surface_rejects_executable_function_declarations(source):
+    from salience.cycles import publication_recovery_compatibility as compatibility
+
+    with pytest.raises(PublicationWorkerCompatibilityError):
+        compatibility._parse_revision_metadata("synthetic_revision.py", source.encode())
+
+
+def test_migration_import_surface_accepts_pure_dotted_and_generic_annotations():
+    from salience.cycles import publication_recovery_compatibility as compatibility
+
+    source = (
+        "import module\n"
+        "revision = '0043_floor'\ndown_revision = '0042_parent'\n"
+        "def upgrade(*args: tuple[str, module.Type | None], "
+        "**kwargs: dict[str, int]) -> module.Result:\n    pass\n"
+    )
+
+    assert compatibility._parse_revision_metadata("synthetic_revision.py", source.encode()) == (
+        "0043_floor",
+        ("0042_parent",),
+    )
+
+
+def test_every_current_numbered_migration_has_safe_import_surface():
+    from salience.cycles import publication_recovery_compatibility as compatibility
+
+    migration_dir = ROOT / "migrations/versions"
+    migration_paths = sorted(
+        path for path in migration_dir.glob("[0-9][0-9][0-9][0-9]_*.py")
+    )
+    assert [int(path.name[:4]) for path in migration_paths] == list(range(1, 44))
+
+    parsed = [
+        compatibility._parse_revision_metadata(path.relative_to(ROOT).as_posix(), path.read_bytes())
+        for path in migration_paths
+    ]
+
+    assert len({revision for revision, _parents in parsed}) == 43
 
 
 def _synthetic_builder_inputs(tmp_path, *, extra_migrations=()):

@@ -733,13 +733,21 @@ def _safe_migration_expression(node: ast.AST, safe_names: set[str]) -> bool:
 
 def _safe_migration_annotation(node: ast.AST) -> bool:
     if isinstance(node, ast.Constant):
-        return node.value is None
+        return node.value is None or isinstance(node.value, (str, bytes, int, float, bool))
     if isinstance(node, ast.Name):
-        return node.id in {"str", "bytes", "int", "float", "bool", "list", "dict", "tuple", "set"}
+        return isinstance(node.ctx, ast.Load)
+    if isinstance(node, ast.Attribute):
+        return isinstance(node.ctx, ast.Load) and _safe_migration_annotation(node.value)
     if isinstance(node, ast.Subscript):
-        return _safe_migration_annotation(node.value) and _safe_migration_annotation(node.slice)
+        return (
+            isinstance(node.ctx, ast.Load)
+            and _safe_migration_annotation(node.value)
+            and _safe_migration_annotation(node.slice)
+        )
     if isinstance(node, ast.Tuple):
-        return all(_safe_migration_annotation(item) for item in node.elts)
+        return isinstance(node.ctx, ast.Load) and all(
+            _safe_migration_annotation(item) for item in node.elts
+        )
     if isinstance(node, ast.BinOp) and isinstance(node.op, ast.BitOr):
         return _safe_migration_annotation(node.left) and _safe_migration_annotation(node.right)
     if isinstance(node, ast.Slice):
@@ -750,10 +758,11 @@ def _safe_migration_annotation(node: ast.AST) -> bool:
     return False
 
 
-def _validate_migration_module_statements(tree: ast.Module) -> None:
-    """Allow metadata declarations and normal migration definitions, not module behavior."""
+def _validate_migration_module_import_surface(tree: ast.Module) -> None:
+    """Allow only the module declarations needed to read trusted migration metadata."""
     safe_names: set[str] = set()
     metadata_names = {"revision", "down_revision"}
+    approved_metadata_targets: set[int] = set()
     for index, statement in enumerate(tree.body):
         if (
             index == 0
@@ -762,7 +771,13 @@ def _validate_migration_module_statements(tree: ast.Module) -> None:
             and isinstance(statement.value.value, str)
         ):
             continue
-        if isinstance(statement, (ast.Import, ast.ImportFrom)):
+        if isinstance(statement, ast.Import):
+            continue
+        if isinstance(statement, ast.ImportFrom):
+            if any(alias.name == "*" for alias in statement.names):
+                raise PublicationWorkerCompatibilityError(
+                    "trusted Alembic migration has an unsupported wildcard import"
+                )
             continue
         if isinstance(statement, (ast.Assign, ast.AnnAssign)):
             targets = statement.targets if isinstance(statement, ast.Assign) else [statement.target]
@@ -781,6 +796,7 @@ def _validate_migration_module_statements(tree: ast.Module) -> None:
                     raise PublicationWorkerCompatibilityError(
                         "trusted Alembic revision metadata must use one simple literal assignment"
                     )
+                approved_metadata_targets.update(id(target) for target in targets)
                 continue
             if isinstance(statement, ast.AnnAssign) and not _safe_migration_annotation(statement.annotation):
                 raise PublicationWorkerCompatibilityError(
@@ -793,21 +809,26 @@ def _validate_migration_module_statements(tree: ast.Module) -> None:
             safe_names.update(target_names)
             continue
         if isinstance(statement, (ast.FunctionDef, ast.AsyncFunctionDef)):
-            if statement.decorator_list or statement.args.defaults or any(
-                default is not None for default in statement.args.kw_defaults
+            arguments = [
+                *statement.args.posonlyargs,
+                *statement.args.args,
+                *statement.args.kwonlyargs,
+            ]
+            if statement.args.vararg is not None:
+                arguments.append(statement.args.vararg)
+            if statement.args.kwarg is not None:
+                arguments.append(statement.args.kwarg)
+            if (
+                statement.decorator_list
+                or statement.args.defaults
+                or any(default is not None for default in statement.args.kw_defaults)
+                or getattr(statement, "type_params", ())
             ):
                 raise PublicationWorkerCompatibilityError(
                     "trusted Alembic migration has unsafe module-level function behavior"
                 )
             annotations = [statement.returns]
-            annotations.extend(
-                argument.annotation
-                for argument in (
-                    *statement.args.posonlyargs,
-                    *statement.args.args,
-                    *statement.args.kwonlyargs,
-                )
-            )
+            annotations.extend(argument.annotation for argument in arguments)
             if any(
                 annotation is not None and not _safe_migration_annotation(annotation)
                 for annotation in annotations
@@ -819,39 +840,6 @@ def _validate_migration_module_statements(tree: ast.Module) -> None:
         raise PublicationWorkerCompatibilityError(
             "trusted Alembic migration has unsupported module-level behavior"
         )
-
-
-def _parse_revision_metadata(path: str, content: bytes) -> tuple[str, tuple[str, ...]]:
-    """Read literal Alembic metadata from already authenticated source bytes."""
-    try:
-        text = content.decode("utf-8")
-        tree = ast.parse(text, filename=path)
-    except (SyntaxError, UnicodeError) as error:
-        raise PublicationWorkerCompatibilityError(
-            "trusted Alembic migration graph is invalid"
-        ) from error
-
-    _validate_migration_module_statements(tree)
-    expressions: dict[str, ast.expr] = {}
-    approved_targets: set[int] = set()
-    for statement in tree.body:
-        if isinstance(statement, ast.Assign) and len(statement.targets) == 1:
-            target = statement.targets[0]
-            value = statement.value
-        elif isinstance(statement, ast.AnnAssign):
-            target = statement.target
-            value = statement.value
-        else:
-            continue
-        if not isinstance(target, ast.Name) or target.id not in {"revision", "down_revision"}:
-            continue
-        name = target.id
-        if value is None or name in expressions:
-            raise PublicationWorkerCompatibilityError(
-                "trusted Alembic revision metadata is ambiguous"
-            )
-        expressions[name] = value
-        approved_targets.add(id(target))
 
     def assigned_binding_names(node: ast.AST) -> tuple[str, ...]:
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
@@ -870,12 +858,66 @@ def _parse_revision_metadata(path: str, content: bytes) -> tuple[str, tuple[str,
             return (node.arg,)
         return ()
 
+    def metadata_key(node: ast.AST) -> bool:
+        try:
+            value = ast.literal_eval(node)
+        except (ValueError, TypeError):
+            return False
+        return value in metadata_names
+
+    def namespace_mapping(node: ast.AST) -> bool:
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
+            return node.func.id in {"globals", "locals", "vars"}
+        if isinstance(node, ast.Attribute) and node.attr == "__dict__":
+            return True
+        return False
+
+    def calls_write_metadata(node: ast.Call) -> bool:
+        function = node.func
+        if isinstance(function, ast.Name) and function.id in {"exec", "eval"}:
+            return True
+        if isinstance(function, (ast.Name, ast.Attribute)) and (
+            (isinstance(function, ast.Name) and function.id in {"setattr", "delattr"})
+            or (isinstance(function, ast.Attribute) and function.attr in {"setattr", "delattr"})
+        ):
+            if len(node.args) >= 2:
+                return metadata_key(node.args[1]) or namespace_mapping(node.args[0])
+            return False
+        if not isinstance(function, ast.Attribute):
+            return False
+        method = function.attr
+        mutating_methods = {
+            "update",
+            "setdefault",
+            "pop",
+            "clear",
+            "popitem",
+            "__setitem__",
+            "__delitem__",
+        }
+        if method not in mutating_methods:
+            return False
+        if namespace_mapping(function.value):
+            return True
+        if any(keyword.arg in metadata_names for keyword in node.keywords):
+            return True
+        if method in {"setdefault", "pop", "__setitem__", "__delitem__"} and (
+            node.args and metadata_key(node.args[0])
+        ):
+            return True
+        for argument in (*node.args, *(keyword.value for keyword in node.keywords)):
+            if isinstance(argument, ast.Dict) and any(
+                key is not None and metadata_key(key) for key in argument.keys
+            ):
+                return True
+        return False
+
     for node in ast.walk(tree):
         if (
             isinstance(node, ast.Name)
             and isinstance(node.ctx, (ast.Store, ast.Del))
-            and node.id in {"revision", "down_revision"}
-            and id(node) not in approved_targets
+            and node.id in metadata_names
+            and id(node) not in approved_metadata_targets
         ):
             raise PublicationWorkerCompatibilityError(
                 "trusted Alembic revision metadata contains an unsupported write"
@@ -885,55 +927,49 @@ def _parse_revision_metadata(path: str, content: bytes) -> tuple[str, tuple[str,
                 subscript_key = ast.literal_eval(node.slice)
             except (ValueError, TypeError):
                 subscript_key = None
-            if subscript_key in {"revision", "down_revision"}:
+            if subscript_key in metadata_names:
                 raise PublicationWorkerCompatibilityError(
                     "trusted Alembic revision metadata contains an unsupported write"
                 )
-        if any(name in {"revision", "down_revision"} for name in assigned_binding_names(node)):
+        if any(name in metadata_names for name in assigned_binding_names(node)):
             raise PublicationWorkerCompatibilityError(
                 "trusted Alembic revision metadata contains an unsupported write"
             )
-        if isinstance(node, ast.Call):
-            if isinstance(node.func, ast.Name) and node.func.id in {
-                "globals",
-                "locals",
-                "vars",
-                "exec",
-                "eval",
-                "setattr",
-                "delattr",
-            }:
-                raise PublicationWorkerCompatibilityError(
-                    "trusted Alembic revision metadata uses dynamic namespace mutation"
-                )
-            if isinstance(node.func, ast.Attribute):
-                if node.func.attr in {"update", "setdefault", "pop", "clear", "popitem", "__setitem__", "__delitem__"}:
-                    keyword_writes_metadata = any(
-                        keyword.arg in {"revision", "down_revision"}
-                        for keyword in node.keywords
-                    )
-                    positional_writes_metadata = False
-                    if node.args and node.func.attr in {"setdefault", "pop", "__setitem__", "__delitem__"}:
-                        try:
-                            key = ast.literal_eval(node.args[0])
-                        except (ValueError, TypeError):
-                            key = None
-                        positional_writes_metadata = key in {"revision", "down_revision"}
-                    mapping_writes_metadata = any(
-                        isinstance(argument, ast.Dict)
-                        and any(
-                            key is not None
-                            and isinstance(key, ast.Constant)
-                            and key.value in {"revision", "down_revision"}
-                            for key in argument.keys
-                        )
-                        for argument in (*node.args, *(keyword.value for keyword in node.keywords))
-                    )
-                    if keyword_writes_metadata or positional_writes_metadata or mapping_writes_metadata:
-                        raise PublicationWorkerCompatibilityError(
-                            "trusted Alembic revision metadata uses dynamic namespace mutation"
-                        )
+        if isinstance(node, ast.Call) and calls_write_metadata(node):
+            raise PublicationWorkerCompatibilityError(
+                "trusted Alembic revision metadata contains an unsupported namespace write"
+            )
 
+
+def _parse_revision_metadata(path: str, content: bytes) -> tuple[str, tuple[str, ...]]:
+    """Read literal Alembic metadata from already authenticated source bytes."""
+    try:
+        text = content.decode("utf-8")
+        tree = ast.parse(text, filename=path)
+    except (SyntaxError, UnicodeError) as error:
+        raise PublicationWorkerCompatibilityError(
+            "trusted Alembic migration graph is invalid"
+        ) from error
+
+    _validate_migration_module_import_surface(tree)
+    expressions: dict[str, ast.expr] = {}
+    for statement in tree.body:
+        if isinstance(statement, ast.Assign) and len(statement.targets) == 1:
+            target = statement.targets[0]
+            value = statement.value
+        elif isinstance(statement, ast.AnnAssign):
+            target = statement.target
+            value = statement.value
+        else:
+            continue
+        if not isinstance(target, ast.Name) or target.id not in {"revision", "down_revision"}:
+            continue
+        name = target.id
+        if value is None or name in expressions:
+            raise PublicationWorkerCompatibilityError(
+                "trusted Alembic revision metadata is ambiguous"
+            )
+        expressions[name] = value
     if set(expressions) != {"revision", "down_revision"}:
         raise PublicationWorkerCompatibilityError(
             "trusted Alembic revision metadata is incomplete"
