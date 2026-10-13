@@ -393,6 +393,7 @@ def _publish_output_bundle(outputs: list[tuple[Path, bytes]]) -> None:
 
     stage_directories: dict[Path, Path] = {}
     entries: list[dict[str, object]] = []
+    preserve_staging = False
     try:
         for target, _content in normalized_outputs:
             if target.parent not in stage_directories:
@@ -419,8 +420,26 @@ def _publish_output_bundle(outputs: list[tuple[Path, bytes]]) -> None:
                     "backup": backup,
                     "content": content,
                     "was_present": was_present,
+                    "mode": prior_mode,
                 }
             )
+
+        recovery_manifest = _canonical_json(
+            [
+                {
+                    "target": str(entry["target"]),
+                    "was_present": entry["was_present"],
+                    "mode": entry["mode"],
+                    "backup": str(entry["backup"]) if entry["backup"] is not None else None,
+                }
+                for entry in entries
+            ]
+        )
+        # Every stage directory carries the same map so the retained prior files
+        # remain usable even if the caller only recovers one output directory.
+        for stage_directory in stage_directories.values():
+            manifest_path = stage_directory / "recovery-manifest.json"
+            _write_staged_file(manifest_path, recovery_manifest, 0o600)
 
         # Confirm the published set is unchanged after staging and before the first rename.
         for target, _content in normalized_outputs:
@@ -455,17 +474,42 @@ def _publish_output_bundle(outputs: list[tuple[Path, bytes]]) -> None:
                 backup = entry["backup"]
                 try:
                     if backup is not None:
-                        os.replace(backup, target)
+                        restore_copy = backup.with_suffix(".restore")
+                        _write_staged_file(restore_copy, backup.read_bytes(), int(entry["mode"]))
+                        os.replace(restore_copy, target)
                     else:
                         target.unlink(missing_ok=True)
                 except OSError as rollback_error:
                     rollback_errors.append(rollback_error)
             if rollback_errors:
-                raise RuntimeError("launch-lock output publication failed and rollback was incomplete") from publish_error
+                preserve_staging = True
+                recovery_paths = list(stage_directories.values())
+                recovery_paths.extend(
+                    directory / "recovery-manifest.json"
+                    for directory in stage_directories.values()
+                )
+                recovery_paths.extend(
+                    Path(entry["backup"])
+                    for entry in entries
+                    if entry["backup"] is not None
+                )
+                recovery_paths.extend(
+                    path
+                    for directory in stage_directories.values()
+                    for path in directory.glob("*.restore")
+                )
+                rendered_paths = ", ".join(str(path) for path in recovery_paths)
+                rendered_errors = "; ".join(str(error) for error in rollback_errors)
+                raise RuntimeError(
+                    "launch-lock output publication failed; rollback was incomplete; "
+                    f"recovery artifacts preserved at: {rendered_paths}; "
+                    f"restore errors: {rendered_errors}"
+                ) from publish_error
             raise
     finally:
-        for stage_directory in stage_directories.values():
-            shutil.rmtree(stage_directory, ignore_errors=True)
+        if not preserve_staging:
+            for stage_directory in stage_directories.values():
+                shutil.rmtree(stage_directory, ignore_errors=True)
 
 
 def build_publication_worker_launch_lock(

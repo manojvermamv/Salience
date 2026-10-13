@@ -693,6 +693,26 @@ def test_authenticated_migration_graph_rejects_branch_cycle_or_ambiguous_head(
         "if should_rewrite():\n    revision = dynamic_revision()\n",
         "revision = '0043_floor'\ndown_revision = '0042_parent'\n"
         "globals()['revision'] = dynamic_revision()\n",
+        "revision = '0043_floor'\ndown_revision = '0042_parent'\n"
+        "locals().update(revision=dynamic_revision())\n",
+        "revision = '0043_floor'\ndown_revision = '0042_parent'\n"
+        "locals().update({'revision': dynamic_revision()})\n",
+        "revision = '0043_floor'\ndown_revision = '0042_parent'\n"
+        "globals().update(down_revision=dynamic_parent())\n",
+        "revision = '0043_floor'\ndown_revision = '0042_parent'\n"
+        "globals().update({'down_revision': dynamic_parent()})\n",
+        "revision = '0043_floor'\ndown_revision = '0042_parent'\n"
+        "setattr(module, 'revision', dynamic_revision())\n",
+        "revision = '0043_floor'\ndown_revision = '0042_parent'\n"
+        "import sys\nsetattr(sys.modules[__name__], 'down_revision', dynamic_parent())\n",
+        "revision = '0043_floor'\ndown_revision = '0042_parent'\n"
+        "module.__dict__.update(revision=dynamic_revision())\n",
+        "revision = '0043_floor'\ndown_revision = '0042_parent'\n"
+        "sys.modules[__name__].__dict__.update({'down_revision': dynamic_parent()})\n",
+        "revision = '0043_floor'\ndown_revision = '0042_parent'\n"
+        "module.__dict__.update(**{'revision': dynamic_revision()})\n",
+        "revision: dynamic_annotation() = '0043_floor'\n"
+        "down_revision = '0042_parent'\n",
     ),
     ids=(
         "literal-then-conditional-rewrite",
@@ -702,6 +722,16 @@ def test_authenticated_migration_graph_rejects_branch_cycle_or_ambiguous_head(
         "nested-annotated-rewrite",
         "dynamic-rewrite",
         "dynamic-global-rewrite",
+        "locals-keyword-update",
+        "locals-dict-update",
+        "globals-keyword-update",
+        "globals-dict-update",
+        "setattr-module-rewrite",
+        "setattr-sys-modules-rewrite",
+        "module-dict-update",
+        "sys-modules-dict-update",
+        "module-dict-expanded-update",
+        "unsupported-annotated-top-level-metadata",
     ),
 )
 def test_migration_revision_metadata_rejects_every_unsupported_write(source):
@@ -836,6 +866,23 @@ def _invoke_synthetic_builder(builder, tmp_path, application_commit, wheel_path,
     )
 
 
+def test_publication_worker_launch_lock_builder_accepts_valid_wheel_and_installed_record(
+    tmp_path, monkeypatch
+):
+    builder = _lock_builder_module()
+    repo_root, application_commit, wheel_path, runtime_root = _synthetic_builder_inputs(tmp_path)
+    monkeypatch.setattr(builder, "REPOSITORY_ROOT", repo_root)
+    monkeypatch.setattr(builder, "TARGET_RUNTIME_ROOT", "/usr/local/lib/python3.13/site-packages")
+    monkeypatch.setattr(builder, "TARGET_INTERPRETER_PATH", sys.executable)
+
+    lock = _invoke_synthetic_builder(
+        builder, tmp_path, application_commit, wheel_path, runtime_root
+    )
+
+    record_path = runtime_root / "salience-0.1.0.dist-info/RECORD"
+    assert lock.pin.distribution_record_sha256 == _sha256(record_path.read_bytes())
+
+
 def test_publication_worker_launch_lock_builder_accepts_real_synthetic_0044_descendant(
     tmp_path, monkeypatch
 ):
@@ -875,7 +922,8 @@ def test_publication_worker_launch_lock_builder_accepts_real_synthetic_0044_desc
         "runtime-inventory-mismatch",
         "wheel-source-mismatch",
         "wheel-record-mismatch",
-        "installed-record-mismatch",
+        "installed-record-wrong-hash",
+        "installed-record-wrong-size",
     ),
     ids=(
         "application-commit-head-mismatch",
@@ -883,7 +931,8 @@ def test_publication_worker_launch_lock_builder_accepts_real_synthetic_0044_desc
         "runtime-inventory-mismatch",
         "wheel-source-mismatch",
         "wheel-record-mismatch",
-        "installed-record-mismatch",
+        "installed-record-wrong-hash",
+        "installed-record-wrong-size",
     ),
 )
 def test_publication_worker_launch_lock_builder_rejects_untrusted_candidate_state(
@@ -928,9 +977,18 @@ def test_publication_worker_launch_lock_builder_rejects_untrusted_candidate_stat
                     data = stream.getvalue().encode()
                 target.writestr(name, data)
         replacement.replace(wheel_path)
-    else:
+    elif case in {"installed-record-wrong-hash", "installed-record-wrong-size"}:
         record_path = next(runtime_root.glob("*.dist-info/RECORD"))
-        record_path.write_bytes(record_path.read_bytes() + b"# changed installed RECORD\n")
+        rows = list(csv.reader(io.StringIO(record_path.read_text(encoding="utf-8"))))
+        package_row = next(row for row in rows if row[0] == "salience/cycles/publication_recovery_compatibility.py")
+        if case == "installed-record-wrong-hash":
+            digest = package_row[1]
+            package_row[1] = digest[:-1] + ("A" if digest[-1] != "A" else "B")
+        else:
+            package_row[2] = str(int(package_row[2]) + 1)
+        stream = io.StringIO(newline="")
+        csv.writer(stream, lineterminator="\n").writerows(rows)
+        record_path.write_text(stream.getvalue(), encoding="utf-8")
 
     lock_path, digest_path, control_dir = _builder_output_paths(tmp_path)
     with pytest.raises(ValueError):
@@ -991,6 +1049,66 @@ def test_publication_worker_launch_lock_builder_failure_preserves_published_bund
 
     assert len(replacements) >= 5
     assert {path: path.read_bytes() for path in outputs} == outputs
+
+
+def test_publication_worker_launch_lock_builder_preserves_recovery_bundle_on_restore_failure(
+    tmp_path, monkeypatch
+):
+    builder = _lock_builder_module()
+    repo_root, application_commit, wheel_path, runtime_root = _synthetic_builder_inputs(tmp_path)
+    monkeypatch.setattr(builder, "REPOSITORY_ROOT", repo_root)
+    monkeypatch.setattr(builder, "TARGET_RUNTIME_ROOT", "/usr/local/lib/python3.13/site-packages")
+    monkeypatch.setattr(builder, "TARGET_INTERPRETER_PATH", sys.executable)
+    lock_path, digest_path, control_dir = _builder_output_paths(tmp_path)
+    control_dir.mkdir(parents=True)
+    outputs = {
+        lock_path: b"old tracked lock\n",
+        digest_path: b"old independent digest\n",
+        control_dir / "publication-worker-launch-lock.json": b"old control lock\n",
+        control_dir / "publication-worker-launch-lock.sha256": b"old control digest\n",
+        control_dir / "launch-v4-publication-worker.py": b"old control launcher\n",
+    }
+    for path, content in outputs.items():
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(content)
+
+    original_replace = builder.os.replace
+    replacements = []
+
+    def fail_publish_and_restore(source, destination):
+        replacements.append((Path(source), Path(destination)))
+        if len(replacements) == 3:
+            raise OSError("injected publication failure")
+        if len(replacements) == 4:
+            raise OSError("injected restoration failure")
+        return original_replace(source, destination)
+
+    monkeypatch.setattr(builder.os, "replace", fail_publish_and_restore)
+    with pytest.raises(RuntimeError, match="recovery artifacts preserved") as failure:
+        builder.build_publication_worker_launch_lock(
+            application_commit=application_commit,
+            wheel=wheel_path,
+            runtime_root=runtime_root,
+            lock_path=lock_path,
+            independent_digest_path=digest_path,
+            control_dir=control_dir,
+        )
+
+    backups = list(tmp_path.rglob(".publication-worker-launch-lock-stage-*/output-*.prior"))
+    backup_by_index = {int(path.name.split("-")[1].split(".")[0]): path for path in backups}
+    assert set(backup_by_index) == set(range(len(outputs)))
+    assert [backup_by_index[index].read_bytes() for index in range(len(outputs))] == list(outputs.values())
+    assert all(str(path) in str(failure.value) for path in backups)
+    assert all(str(path.parent) in str(failure.value) for path in backups)
+    manifests = list(tmp_path.rglob(".publication-worker-launch-lock-stage-*/recovery-manifest.json"))
+    assert manifests
+    recovery_entries = json.loads(manifests[0].read_text(encoding="utf-8"))
+    assert {entry["target"] for entry in recovery_entries} == {str(path) for path in outputs}
+    assert all(
+        Path(entry["backup"]).read_bytes() == outputs[Path(entry["target"])]
+        for entry in recovery_entries
+    )
+    assert all(str(path) in str(failure.value) for path in manifests)
 
 
 def test_launcher_binds_valid_floor_lock_to_fixed_interpreter_runtime_and_entrypoint(
