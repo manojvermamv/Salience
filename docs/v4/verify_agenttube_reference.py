@@ -324,6 +324,27 @@ def validate_gitlink(root: Path, manifest: dict) -> list[str]:
             errors.append(f"initialized submodule HEAD could not be read: {result.stderr.strip() or result.returncode}")
         elif result.stdout.strip() != PIN:
             errors.append(f"initialized submodule HEAD must match gitlink pin {PIN}; found {result.stdout.strip()!r}")
+
+        symbolic_ref = _git(worktree, "symbolic-ref", "--quiet", "HEAD")
+        if symbolic_ref.returncode == 0:
+            errors.append(
+                f"initialized submodule must be detached at gitlink pin; HEAD names {symbolic_ref.stdout.strip()!r}"
+            )
+        elif symbolic_ref.returncode != 1:
+            errors.append(
+                "initialized submodule detached HEAD check failed: "
+                f"{symbolic_ref.stderr.strip() or symbolic_ref.returncode}"
+            )
+
+        status = _git(worktree, "status", "--porcelain", "--untracked-files=all")
+        if status.returncode != 0:
+            errors.append(
+                f"initialized submodule status check failed: {status.stderr.strip() or status.returncode}"
+            )
+        elif status.stdout:
+            errors.append(
+                f"initialized submodule worktree must be clean; git status found changes: {status.stdout!r}"
+            )
     return errors
 
 

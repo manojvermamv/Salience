@@ -10,6 +10,7 @@ import subprocess
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -134,7 +135,7 @@ def copy_reports(root: Path) -> None:
             destination.write_text("placeholder until the reviewed report is copied\n")
 
 
-def init_gitlink_repository(root: Path, *, initialized_head: str | None = None) -> dict:
+def init_gitlink_repository(root: Path) -> dict:
     root.mkdir(parents=True, exist_ok=True)
     subprocess.run(
         ["git", "-c", "init.defaultBranch=main", "init", str(root)],
@@ -162,17 +163,73 @@ def init_gitlink_repository(root: Path, *, initialized_head: str | None = None) 
         capture_output=True,
         text=True,
     )
-    if initialized_head is not None:
-        submodule = root / "youtube-automation-agent"
+    return manifest_fixture()
+
+
+def init_initialized_gitlink_repository(
+    root: Path, *, detached: bool = True
+) -> tuple[dict, str]:
+    manifest = init_gitlink_repository(root)
+    submodule = root / "youtube-automation-agent"
+    subprocess.run(
+        ["git", "-c", "init.defaultBranch=main", "init", str(submodule)],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    (submodule / "fixture.txt").write_text("temporary AgentTube fixture\n")
+    subprocess.run(
+        ["git", "-C", str(submodule), "add", "fixture.txt"],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    subprocess.run(
+        [
+            "git",
+            "-C",
+            str(submodule),
+            "-c",
+            "user.name=Salience fixture",
+            "-c",
+            "user.email=salience-fixture@example.invalid",
+            "commit",
+            "-m",
+            "temporary AgentTube fixture",
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    pin = subprocess.run(
+        ["git", "-C", str(submodule), "rev-parse", "HEAD"],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    subprocess.run(
+        [
+            "git",
+            "-C",
+            str(root),
+            "update-index",
+            "--add",
+            "--cacheinfo",
+            f"160000,{pin},youtube-automation-agent",
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    manifest["upstream"]["pin"] = pin
+    if detached:
         subprocess.run(
-            ["git", "-c", "init.defaultBranch=main", "init", str(submodule)],
+            ["git", "-C", str(submodule), "checkout", "--detach", pin],
             check=True,
             capture_output=True,
             text=True,
         )
-        # rev-parse reads a detached HEAD hash without requiring the object body.
-        (submodule / ".git" / "HEAD").write_text(f"{initialized_head}\n")
-    return manifest_fixture()
+    return manifest, pin
 
 
 def copy_workflows(root: Path) -> None:
@@ -275,7 +332,14 @@ class AgentTubeReferenceContracts(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary) / "valid"
             manifest = init_gitlink_repository(root)
-            self.assertEqual(self.verifier().validate_gitlink(root, manifest), [])
+            with mock.patch.object(
+                self.verifier(), "_git", wraps=self.verifier()._git
+            ) as git_spy:
+                self.assertEqual(self.verifier().validate_gitlink(root, manifest), [])
+            self.assertFalse(
+                any(call.args[1:2] == ("status",) for call in git_spy.call_args_list),
+                "an uninitialized submodule must not run git status",
+            )
 
             (root / ".gitmodules").write_text(
                 '[submodule "youtube-automation-agent"]\n'
@@ -289,11 +353,101 @@ class AgentTubeReferenceContracts(unittest.TestCase):
     def test_initialized_submodule_must_match_gitlink(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary) / "valid"
-            manifest = init_gitlink_repository(root, initialized_head=PIN)
-            self.assertEqual(self.verifier().validate_gitlink(root, manifest), [])
-            (root / "youtube-automation-agent" / ".git" / "HEAD").write_text("a" * 40 + "\n")
-            errors = self.verifier().validate_gitlink(root, manifest)
+            manifest, pin = init_initialized_gitlink_repository(root)
+            with mock.patch.object(self.verifier(), "PIN", pin):
+                self.assertEqual(self.verifier().validate_gitlink(root, manifest), [])
+                submodule = root / "youtube-automation-agent"
+                subprocess.run(
+                    [
+                        "git",
+                        "-C",
+                        str(submodule),
+                        "-c",
+                        "user.name=Salience fixture",
+                        "-c",
+                        "user.email=salience-fixture@example.invalid",
+                        "commit",
+                        "--allow-empty",
+                        "-m",
+                        "temporary second fixture commit",
+                    ],
+                    check=True,
+                    capture_output=True,
+                    text=True,
+                )
+                errors = self.verifier().validate_gitlink(root, manifest)
         self.assertTrue(any("head" in error.lower() or "initialized" in error.lower() for error in errors), errors)
+
+    def test_initialized_submodule_rejects_tracked_change(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / "valid"
+            manifest, pin = init_initialized_gitlink_repository(root)
+            with mock.patch.object(self.verifier(), "PIN", pin):
+                self.assertEqual(self.verifier().validate_gitlink(root, manifest), [])
+                (root / "youtube-automation-agent" / "fixture.txt").write_text(
+                    "changed temporary AgentTube fixture\n"
+                )
+                errors = self.verifier().validate_gitlink(root, manifest)
+        self.assertTrue(
+            any("clean" in error.lower() or "dirty" in error.lower() for error in errors),
+            errors,
+        )
+
+    def test_initialized_submodule_rejects_untracked_change(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / "valid"
+            manifest, pin = init_initialized_gitlink_repository(root)
+            with mock.patch.object(self.verifier(), "PIN", pin):
+                self.assertEqual(self.verifier().validate_gitlink(root, manifest), [])
+                (root / "youtube-automation-agent" / "untracked.txt").write_text(
+                    "temporary untracked fixture\n"
+                )
+                errors = self.verifier().validate_gitlink(root, manifest)
+        self.assertTrue(
+            any("clean" in error.lower() or "dirty" in error.lower() for error in errors),
+            errors,
+        )
+
+    def test_initialized_submodule_must_be_detached_at_gitlink(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / "valid"
+            manifest, pin = init_initialized_gitlink_repository(root, detached=False)
+            head = subprocess.run(
+                ["git", "-C", str(root / "youtube-automation-agent"), "rev-parse", "HEAD"],
+                check=True,
+                capture_output=True,
+                text=True,
+            ).stdout.strip()
+            self.assertEqual(head, pin)
+            with mock.patch.object(self.verifier(), "PIN", pin):
+                errors = self.verifier().validate_gitlink(root, manifest)
+        self.assertTrue(any("detached" in error.lower() for error in errors), errors)
+
+    def test_initialized_submodule_rejects_status_failure(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / "valid"
+            manifest, pin = init_initialized_gitlink_repository(root)
+            verifier = self.verifier()
+            original_git = verifier._git
+
+            def failing_status(checkout: Path, *arguments: str):
+                if arguments == ("status", "--porcelain", "--untracked-files=all"):
+                    return subprocess.CompletedProcess(
+                        args=["git", *arguments],
+                        returncode=128,
+                        stdout="",
+                        stderr="simulated status failure",
+                    )
+                return original_git(checkout, *arguments)
+
+            with mock.patch.object(verifier, "PIN", pin), mock.patch.object(
+                verifier, "_git", side_effect=failing_status
+            ):
+                errors = verifier.validate_gitlink(root, manifest)
+        self.assertTrue(
+            any("status" in error.lower() and "failed" in error.lower() for error in errors),
+            errors,
+        )
 
     def test_normal_ci_does_not_initialize_or_install_submodule(self):
         errors = self.verifier().validate_reference_boundary(ROOT)
