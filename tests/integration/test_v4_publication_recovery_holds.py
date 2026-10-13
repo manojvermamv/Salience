@@ -252,6 +252,17 @@ _INSERT_SQL = f"""INSERT INTO public.{TABLE} (
     %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s
 )"""
 
+_V1_VERSION = "salience.publication-liability.v1"
+_INSERT_V1_SQL = f"""INSERT INTO public.{TABLE} (
+    id, operation_id, workspace_id, goal_id, intent_id, cycle_id, context_id, job_id,
+    publication_attempt_id, permit_id, owner_id, execution_deadline, permit_expires_at,
+    request_fingerprint, receipt_fingerprint, liability_fingerprint, remote_id, remote_state,
+    reason, state, liability_snapshot, liability_snapshot_version, liability_snapshot_v1,
+    liability_fingerprint_v1
+) VALUES (
+    %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s
+)"""
+
 
 def _hold_values(connection, operation_id, *, reason="published_during_cancel", overrides=None):
     canonical = connection.execute(
@@ -332,6 +343,22 @@ def _hold_values(connection, operation_id, *, reason="published_during_cancel", 
     if overrides:
         values.update(overrides)
     return tuple(values[name] for name in names)
+
+
+def _hold_values_v1(connection, operation_id, *, reason="published_during_cancel", overrides=None):
+    """Build one valid 0043 insert from PostgreSQL's current canonical rows."""
+    values = list(_hold_values(connection, operation_id, reason=reason))
+    snapshot = connection.execute(_SNAPSHOT_SQL, (operation_id,)).fetchone()[0]
+    assert snapshot is not None and len(snapshot) == 21
+    fingerprint = connection.execute(
+        "SELECT encode(public.digest(%s::jsonb::text,'sha256'),'hex')",
+        (Jsonb(snapshot),),
+    ).fetchone()[0]
+    values.extend((_V1_VERSION, Jsonb(snapshot), fingerprint))
+    if overrides:
+        for index, value in overrides.items():
+            values[index] = value
+    return tuple(values)
 
 
 @pytest.mark.asyncio
