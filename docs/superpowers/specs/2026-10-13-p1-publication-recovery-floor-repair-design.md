@@ -1,7 +1,7 @@
 # P1 Publication Recovery Floor Repair Design
 
 **Date:** 2026-10-13
-**Status:** Draft implementation specification; integrated repair design approved; written-spec review pending.
+**Status:** Approved 0043 repair design; included in the 2026-10-13 specification-set review; implementation, exact-candidate requalification, final candidate review/meta-review, and exact-head checks remain open.
 
 ## Purpose and relationship to the earlier design
 

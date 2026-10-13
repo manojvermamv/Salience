@@ -1369,7 +1369,7 @@
     {
       "path": "docs/v4/publication-recovery-hold-evidence.json",
       "disposition": "durable current Task 10 source-bound local publication recovery-hold evidence; production remains HELD",
-      "sha256": "d21747aa4756e04fdee7a57b50f1381e692e7e4e97fbd91daa38599a4f5cd426"
+      "sha256": "160d8bae1387b120c426b536389d99ae87dad66930bee595bd42ef66f0db979b"
     },
     {
       "path": "docs/v4/repository-enforcement-evidence.json",
@@ -1423,12 +1423,12 @@
     }
   ],
   "qualified_application_commit": "5cb57910c2c6dc2f6ea37da75640c5c947c8907b",
-  "next_action": "Complete Task 11 independent review, meta-review, final artifact rerun and exact-head checks for the 5cb5791 local candidate; then continue production-wide revocation, general policy, routing/live schedule inventory, production recovery workers, R33/R34 and RG0/RG1 obligations. Keep production effects disabled, fixture publication budget zero, P2–P7 gated, P6 disabled and main unmerged.",
+  "next_action": "Implement the approved 0043 publication-recovery floor repair in a new candidate; complete exact-candidate requalification, final independent review/meta-review and exact-head checks before making any floor claim. Task 11 review found floor/evidence gaps in `5cb5791`, so it is unsupported as the floor. Then continue the remaining production-wide revocation, general policy, routing/live schedule inventory, recovery workers, R33/R34 and RG0/RG1 obligations within existing gates. Keep production effects disabled, fixture publication budget zero, P2–P7 gated, P6 disabled and main unmerged.",
   "parallel_agents_status": "PASS_IMPLEMENTED_LOCAL_PARALLEL_AGENT_FIXTURE_SCOPE",
   "parallel_qualified_application_commit": "2653d2ecb3f0d5bb8ea6560de274137dd6032a96",
   "legacy_intelligence_status": "PASS_LOCAL_LEGACY_INTELLIGENCE_AND_PUBLICATION_FIXTURE_STAGES; ORIGINAL_NATIVE_INTELLIGENCE_AND_PUBLICATION_SCHEDULES_QUALIFIED",
   "goal_status": "ACTIVE",
-  "independent_review_scope": "No independent review is claimed for Task 10 candidate 5cb5791. Task 11 review, meta-review, final artifact rerun and exact-head checks are pending. The corrected-publication rereview is scoped to A4/d031172 and does not review this candidate.",
+  "independent_review_scope": "Task 11 review found floor/evidence gaps in candidate `5cb5791`, which is unsupported as the rollback floor. The approved 0043 design awaits implementation, new-candidate requalification, final independent review/meta-review and exact-head checks. Corrected-publication rereview covers only application `a4b2368cdb463939d093020224a5b5667392aee6` with documentation/observed HEAD `d0311725686d81b7b4747c2d6225986e5ea3a524`; it does not cover `7878208` or `5cb5791`.",
   "tracked_markdown_paths": [
     ".agents/skills/archify/SKILL.md",
     ".agents/skills/archify/THIRD_PARTY_NOTICES.md",
@@ -1531,7 +1531,7 @@
   "application_source_preservation_basis": "Compared the Task 9 356-path evidence lock at application 7878208 with the Task 10 qualification checkout: 347 existing paths retain identical bytes, nine existing paths have updated hashes, and four source paths were added, for 360 locked paths. The current application artifact is pinned separately to 5cb5791; the test-only qualification harness is at 1480100. This is a content comparison and lock, not an independent code review.",
   "historical_a4_qualified_application_commit": "a4b2368cdb463939d093020224a5b5667392aee6",
   "current_publication_recovery_hold_evidence": "docs/v4/publication-recovery-hold-evidence.json",
-  "current_publication_recovery_hold_evidence_sha256": "d21747aa4756e04fdee7a57b50f1381e692e7e4e97fbd91daa38599a4f5cd426",
+  "current_publication_recovery_hold_evidence_sha256": "160d8bae1387b120c426b536389d99ae87dad66930bee595bd42ef66f0db979b",
   "task_10_candidate": {
     "application_commit": "5cb57910c2c6dc2f6ea37da75640c5c947c8907b",
     "qualification_harness_commit": "14801007310232f59708566ca9a3eefb80bfea87",
@@ -1553,6 +1553,6 @@
   "previous_full_non_live_tests": 614,
   "previous_full_non_live_application_commit": "7878208e7a353f93bb70279ad0dd7f0760f93ec4",
   "source_files": 360,
-  "corrected_head_rereview": "COMPLETE only for application a4b2368cdb463939d093020224a5b5667392aee6 with documentation/observed HEAD d0311725686d81b7b4747c2d6225986e5ea3a524; this review does not cover Task 10 candidate 5cb5791.",
+  "corrected_head_rereview": "COMPLETE only for application `a4b2368cdb463939d093020224a5b5667392aee6` with documentation/observed HEAD `d0311725686d81b7b4747c2d6225986e5ea3a524`; it does not cover `7878208` or `5cb5791`.",
   "documentation_tests": "PASS: 15 documentation tests; consolidated checker and self-test PASS (75 requirements, 2 source files, 360 evidence and inventory files, 93 Markdown, 4 HTML, 6 negative controls); all 4 shell contracts and 6 Mermaid diagrams passed; 6 modified JSON files parsed; pip check, compileall, 14 historical hash checks, 360-file application evidence-lock validation, and git diff --check passed."
 }

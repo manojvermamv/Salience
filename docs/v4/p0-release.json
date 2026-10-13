@@ -111,8 +111,8 @@
       "rollback_rehearsal_status": "PASS",
       "evidence": "docs/v4/publication-recovery-hold-evidence.json",
       "source_lock_sha256": "62fa6a44498d891bcc8ff6911f243a65573174ff44b6985bdbdc26097fd10fe0",
-      "scope": "Task 10 retained-wheel actual-image rehearsal in disposable effects-disabled local fixtures only; Task 11 review pending; production remains HELD.",
-      "evidence_sha256": "d21747aa4756e04fdee7a57b50f1381e692e7e4e97fbd91daa38599a4f5cd426",
+      "scope": "Task 10 retained-wheel actual-image rehearsal in disposable effects-disabled local fixtures only; Task 11 review found floor/evidence gaps in `5cb5791`, making it unsupported as the rollback floor. The 0043 design is approved; implementation, requalification and final review remain open; production remains HELD.",
+      "evidence_sha256": "160d8bae1387b120c426b536389d99ae87dad66930bee595bd42ef66f0db979b",
       "qualification_harness_commit": "14801007310232f59708566ca9a3eefb80bfea87",
       "task_8_focused_tests": 116,
       "focused_matrix_result": "PASS",
@@ -345,7 +345,7 @@
     },
     {
       "path": "docs/v4/publication-recovery-hold-evidence.json",
-      "sha256": "d21747aa4756e04fdee7a57b50f1381e692e7e4e97fbd91daa38599a4f5cd426",
+      "sha256": "160d8bae1387b120c426b536389d99ae87dad66930bee595bd42ef66f0db979b",
       "local_only": false
     }
   ],
@@ -465,8 +465,8 @@
       "5c"
     ],
     "next_queue_item": null,
-    "next_action": "Complete Task 11 independent review, meta-review, final artifact rerun and exact-head checks for the Task 10 candidate; then continue remaining production policy, routing/live schedule inventory, recovery/alerts and RG0/RG1 obligations. Keep production effects disabled, fixture budget zero, P2–P7 gated, P6 disabled and main unmerged.",
-    "independent_review": "Task 8 bounded evidence review passed; Task 10 actual-image local fixture qualification passed, but Task 11 independent review/meta-review/final artifact rerun/exact-head checks are pending. Corrected-publication rereview remains scoped to A4/d031172 and does not review 5cb5791.",
+    "next_action": "Implement the approved 0043 publication-recovery floor repair in a new candidate, then complete exact-candidate requalification, final independent review/meta-review and exact-head checks before making any floor claim. Task 11 review found floor/evidence gaps in `5cb5791`, which is unsupported as the rollback floor. Continue the still-held production policy, routing/live schedule, recovery/alerts and RG0/RG1 obligations only within their existing gates. Keep production effects disabled, fixture budget zero, P2–P7 gated, P6 disabled and main unmerged.",
+    "independent_review": "Task 8 bounded evidence review and Task 10 actual-image local fixture qualification remain historical scope. Task 11 review found floor/evidence gaps in candidate `5cb5791`, which is unsupported as the rollback floor. The approved 0043 design awaits implementation, new-candidate requalification, final independent review/meta-review and exact-head checks. Corrected-publication rereview covers only application `a4b2368cdb463939d093020224a5b5667392aee6` with documentation/observed HEAD `d0311725686d81b7b4747c2d6225986e5ea3a524`; it does not cover `7878208` or `5cb5791`. Production acceptance remains HELD.",
     "completed_implementation_tasks": [
       1,
       2,

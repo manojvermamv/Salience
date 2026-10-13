@@ -1203,14 +1203,14 @@
       "P2-P7": "GATED",
       "P6": "DISABLED",
       "main": "UNMERGED",
-      "task_11_independent_review": "PENDING",
-      "supported_floor_claim": "PENDING_TASK_11"
+      "task_11_independent_review": "COMPLETE_FINDINGS_FOUND",
+      "supported_floor_claim": "UNSUPPORTED_TASK_11_REVIEW_GAPS"
     },
     "known_limitations": [
       "This is disposable effects-disabled fixture evidence only; no production provider, account, schedule-routing, recovery-worker or alert claim is made.",
       "The full 614-test non-live suite is bound to 7878208 and was not rerun for 5cb5791.",
       "The fixture adapter does not expose a status counter and its submit counter is process-local; the actual image proof records zero new submit/status calls through the instrumented activity path and combines Temporal activity-history deltas, pinned worker logs/typed-hold frames, unchanged fixture progress, and byte-identical liabilities.",
-      "Task 11 independent review, meta-review, final artifact rerun and exact-head checks remain pending."
+      "Task 11 review found floor/evidence gaps in `5cb5791`, which is unsupported as the rollback floor. The approved 0043 repair design awaits implementation, new-candidate requalification, final independent review/meta-review and exact-head checks."
     ],
     "image_attestation": {
       "path": "artifacts/v4-next-p1/agents/task-10-floor-qualification/candidate-5cb5791/image-attestation.json",

@@ -1444,5 +1444,5 @@
     }
   ],
   "reviewed_at": "2026-10-13T05:20:50Z",
-  "review_scope": "Content lock for the checked application source at candidate 5cb57910c2c6dc2f6ea37da75640c5c947c8907b (360 checked files). This lock records exact bytes only and is not an independent code review. The corrected-publication rereview covered application a4b2368cdb463939d093020224a5b5667392aee6 with documentation/observed HEAD d0311725686d81b7b4747c2d6225986e5ea3a524; it does not cover this Task 10 candidate. Production effects are disabled; RG0/RG1 remain HELD."
+  "review_scope": "Content lock for the checked application source at Task 10 candidate `5cb57910c2c6dc2f6ea37da75640c5c947c8907b` (360 checked files); this lock records exact bytes only and is not an independent code review. The separate Task 11 review found floor/evidence gaps in `5cb5791`, which is unsupported as the rollback floor. Corrected-publication rereview covers only application `a4b2368cdb463939d093020224a5b5667392aee6` with documentation/observed HEAD `d0311725686d81b7b4747c2d6225986e5ea3a524`; it does not cover `7878208` or `5cb5791`. The 0043 design is approved; implementation, new-candidate requalification, final review/meta-review and exact-head checks remain open. Production effects are disabled; RG0/RG1 remain HELD."
 }

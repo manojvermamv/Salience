@@ -489,8 +489,8 @@
       "migration_rollback": "M1: stop revision persists across restart/rollback; renewed authority required to resume.",
       "gate": "RG1",
       "executed_verifier_cases": 76,
-      "local_verifier_status": "PASS for implemented no-effects local fixtures, including the Task 10 retained-wheel actual-image two-reason rehearsal (20 focused tests); Task 11 independent review remains pending and production acceptance remains HELD. The 614-test full suite remains bound to 7878208.",
-      "independent_review_status": "Task 10 candidate 5cb5791 has not received its independent review; Task 11 review/meta-review/final artifact checks remain pending. Earlier review artifacts apply only to their recorded scopes; production acceptance remains HELD.",
+      "local_verifier_status": "PASS for implemented no-effects local fixtures, including the Task 10 retained-wheel actual-image two-reason rehearsal (20 focused tests); Task 11 review found floor/evidence gaps, so candidate `5cb5791` is unsupported as the rollback floor. The 614-test full suite remains bound to `7878208`; no result transfers to a 0043 candidate. Production acceptance remains HELD.",
+      "independent_review_status": "Task 11 review found floor/evidence gaps in candidate `5cb5791`, which is unsupported as the rollback floor. The approved 0043 design awaits implementation, new-candidate requalification, final independent review/meta-review and exact-head checks. Corrected-publication rereview covers only application `a4b2368cdb463939d093020224a5b5667392aee6` with documentation/observed HEAD `d0311725686d81b7b4747c2d6225986e5ea3a524`; it does not cover `7878208` or `5cb5791`. Earlier review artifacts remain bound to their recorded scopes; production acceptance remains HELD.",
       "production_release_status": "HELD",
       "remaining_acceptance": "Production live schedule stop/cancellation/fencing, production-wide cross-service revocation, typed recovery workers and independently scoped remote reconciliation beyond the isolated fixture receipt-only hold.",
       "independent_review_evidence": [
@@ -575,8 +575,8 @@
       "migration_rollback": "M1: cases reference existing identities; terminal cases stay closed on rollback.",
       "gate": "RG1",
       "executed_verifier_cases": 81,
-      "local_verifier_status": "PASS for implemented no-effects local fixtures, including the Task 10 retained-wheel actual-image two-reason rehearsal (20 focused tests); Task 11 independent review remains pending and production acceptance remains HELD. The 614-test full suite remains bound to 7878208.",
-      "independent_review_status": "Task 10 candidate 5cb5791 has not received its independent review; Task 11 review/meta-review/final artifact checks remain pending. Earlier review artifacts apply only to their recorded scopes; production acceptance remains HELD.",
+      "local_verifier_status": "PASS for implemented no-effects local fixtures, including the Task 10 retained-wheel actual-image two-reason rehearsal (20 focused tests); Task 11 review found floor/evidence gaps, so candidate `5cb5791` is unsupported as the rollback floor. The 614-test full suite remains bound to `7878208`; no result transfers to a 0043 candidate. Production acceptance remains HELD.",
+      "independent_review_status": "Task 11 review found floor/evidence gaps in candidate `5cb5791`, which is unsupported as the rollback floor. The approved 0043 design awaits implementation, new-candidate requalification, final independent review/meta-review and exact-head checks. Corrected-publication rereview covers only application `a4b2368cdb463939d093020224a5b5667392aee6` with documentation/observed HEAD `d0311725686d81b7b4747c2d6225986e5ea3a524`; it does not cover `7878208` or `5cb5791`. Earlier review artifacts remain bound to their recorded scopes; production acceptance remains HELD.",
       "production_release_status": "HELD",
       "remaining_acceptance": "Production typed recovery state transitions, durable recovery worker and external failure delivery beyond the local publication receipt-only recovery hold.",
       "independent_review_evidence": [
@@ -898,7 +898,7 @@
     "source_files": 316,
     "status": "PASS independent implemented-fixture qualification; RG0/RG1 HELD"
   },
-  "qualified_application_commit_scope": "Task 10 local publication-worker floor candidate at 5cb5791; actual retained-wheel Docker image passed both hold reasons in disabled-effects fixtures. Task 11 independent review, meta-review, final artifact rerun and exact-head checks remain pending; this is not yet the supported floor. The 614-test full non-live run remains bound to 7878208.",
+  "qualified_application_commit_scope": "Task 10 local publication-worker floor candidate at `5cb5791`; its actual retained-wheel Docker image passed both hold reasons in disabled-effects fixtures. Task 11 review found floor/evidence gaps, so it is unsupported as the rollback floor. The approved 0043 design awaits implementation, new-candidate requalification, final independent review/meta-review and exact-head checks. The 614-test full non-live run remains bound to `7878208`; no result transfers to the new candidate.",
   "historical_parallel_qualification": {
     "evidence": "docs/v4/parallel-agents-evidence.json",
     "full_non_live_tests": 540,
@@ -907,7 +907,7 @@
     "status": "PASS root-reviewed bounded parallel-agent local extension; historical item7 independent review retained; RG0/RG1/RG5 HELD",
     "qualified_application_commit": "2653d2ecb3f0d5bb8ea6560de274137dd6032a96"
   },
-  "current_independent_review_scope": "No independent review is claimed for Task 10 candidate 5cb5791. Task 11 independent review, meta-review, final artifact rerun and exact-head checks are pending. The corrected-publication rereview is scoped to A4/d031172 and does not review this candidate.",
+  "current_independent_review_scope": "Task 11 review found floor/evidence gaps in candidate `5cb5791`, which is unsupported as the rollback floor. The corrected-publication rereview covers only application `a4b2368cdb463939d093020224a5b5667392aee6` with documentation/observed HEAD `d0311725686d81b7b4747c2d6225986e5ea3a524`; it does not cover `7878208` or `5cb5791`. The approved 0043 design awaits implementation, new-candidate requalification, final independent review/meta-review and exact-head checks.",
   "historical_legacy_intelligence_qualification": {
     "evidence": "docs/v4/legacy-dispatch-evidence.json",
     "full_non_live_tests": 556,
