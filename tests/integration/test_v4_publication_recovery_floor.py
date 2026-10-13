@@ -1793,6 +1793,17 @@ def test_current_mode_rejects_rollback_arguments_and_rollback_mode_always_verifi
 def test_docker_and_compose_worker_use_pinned_wheel_and_trusted_launcher():
     import yaml
 
+    dockerignore_lines = {
+        line.strip()
+        for line in (ROOT / ".dockerignore").read_text(encoding="utf-8").splitlines()
+        if line.strip() and not line.lstrip().startswith("#")
+    }
+    assert {".git", ".venv", "**/__pycache__", "**/*.py[cod]"} <= dockerignore_lines
+    assert not any(
+        line == "artifacts" or line.startswith("artifacts/") or line == "**/artifacts"
+        for line in dockerignore_lines
+    )
+
     dockerfile = (ROOT / "Dockerfile").read_text()
     compose = yaml.safe_load((ROOT / "compose.yaml").read_text())
     assert "ARG SALIENCE_WHEEL_FILE" in dockerfile
