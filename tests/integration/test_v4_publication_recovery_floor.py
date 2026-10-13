@@ -2230,7 +2230,6 @@ def _write_task8_candidate_metadata_fixture(candidate_root):
         "expired_permit_receipt": "00000000-0000-0000-0000-000000000004",
         "published_during_cancel": "00000000-0000-0000-0000-000000000005",
     }
-    hashes = {reason: "f" * 64 for reason in operation_ids}
     history_fixture = {
         reason: {
             "workflow_id": "salience-v4-legacy-operation:" + operation_ids[reason],
@@ -2240,68 +2239,171 @@ def _write_task8_candidate_metadata_fixture(candidate_root):
         }
         for reason in operation_ids
     }
+    legacy_operation_ids = {
+        "expired_permit_receipt": operation_ids["expired_permit_receipt"],
+        "published_during_cancel": "00000000-0000-0000-0000-000000000007",
+    }
+    legacy_hold_ids = {
+        "expired_permit_receipt": hold_ids["expired_permit_receipt"],
+        "published_during_cancel": "00000000-0000-0000-0000-000000000008",
+    }
+    legacy_history_fixture = {
+        reason: {
+            **history_fixture[reason],
+            **(
+                {
+                    "workflow_id": "salience-v4-legacy-operation:"
+                    + legacy_operation_ids[reason],
+                    "task_queue": "task8-fixture-legacy-null",
+                    "history_sha256": "8" * 64,
+                }
+                if reason == "published_during_cancel"
+                else {}
+            ),
+        }
+        for reason in operation_ids
+    }
+    primary_target = {
+        "database_name": "recovery_floor_active_0123456789ab",
+        "database_host": "127.0.0.1",
+        "database_port": 5432,
+        "temporal_target": "127.0.0.1:7233",
+        "adapter_recorder": {
+            "base_url": "http://127.0.0.1:8081",
+            "run_id": "00000000-0000-0000-0000-000000000006",
+        },
+        "fixture_lifetime": "task8-persistent",
+    }
+    legacy_target = {
+        **primary_target,
+        "database_name": "recovery_floor_legacy_0123456789ab",
+    }
+    hold_rows = {
+        reason: {
+            "id": hold_ids[reason],
+            "operation_id": operation_ids[reason],
+            "workspace_id": workspace_id,
+            "reason": reason,
+            "liability_snapshot_version": "salience.publication-liability.v1",
+        }
+        for reason in operation_ids
+    }
+    liabilities = {
+        reason: {"operation_id": operation_ids[reason], "fixture": "synthetic-no-effects"}
+        for reason in operation_ids
+    }
+    legacy_hold_rows = {
+        reason: {
+            "id": legacy_hold_ids[reason],
+            "operation_id": legacy_operation_ids[reason],
+            "workspace_id": workspace_id,
+            "reason": reason,
+            "liability_snapshot_version": (
+                None if reason == "published_during_cancel" else "salience.publication-liability.v1"
+            ),
+        }
+        for reason in operation_ids
+    }
+    legacy_liabilities = {
+        reason: {
+            "operation_id": legacy_operation_ids[reason],
+            "fixture": "synthetic-no-effects-legacy-null",
+        }
+        for reason in operation_ids
+    }
+    primary_state = {
+        "head": "0043_complete_publication_recovery_liabilities",
+        "workspace_id": workspace_id,
+        "holds": hold_rows,
+        "liabilities": liabilities,
+    }
+    legacy_state = {
+        "head": "0043_complete_publication_recovery_liabilities",
+        "workspace_id": workspace_id,
+        "holds": legacy_hold_rows,
+        "liabilities": legacy_liabilities,
+        "legacy_null_v1": {
+            "operation_id": legacy_operation_ids["published_during_cancel"],
+            "fields": [None, None, None],
+        },
+    }
+    hashes = {
+        "liability_snapshot_hashes": {
+            reason: _canonical_json_hash(liabilities[reason]) for reason in operation_ids
+        },
+        "hold_row_hashes": {
+            reason: _canonical_json_hash(hold_rows[reason]) for reason in operation_ids
+        },
+    }
+    legacy_hashes = {
+        "liability_snapshot_hashes": {
+            reason: _canonical_json_hash(legacy_liabilities[reason]) for reason in operation_ids
+        },
+        "hold_row_hashes": {
+            reason: _canonical_json_hash(legacy_hold_rows[reason]) for reason in operation_ids
+        },
+    }
     fixture = {
         "schema_version": "salience.publication-floor-rollback-launch-fixture.v1",
         "application_commit": app_commit,
         "image_ref": image_ref,
         "image_id": image_id,
         "launch_lock_sha256": lock_digest,
-        "disposable_targets": {
-            "database_name": "recovery_floor_active_0123456789ab",
-            "database_host": "127.0.0.1",
-            "database_port": 5432,
-            "temporal_target": "127.0.0.1:7233",
-            "adapter_recorder": {
-                "base_url": "http://127.0.0.1:8081",
-                "run_id": "00000000-0000-0000-0000-000000000006",
-            },
-        },
+        "disposable_targets": primary_target,
         "workspace_id": workspace_id,
         "operation_ids": operation_ids,
         "hold_ids": hold_ids,
         "history_fixture": history_fixture,
-        "liability_snapshot_hashes": hashes,
-        "hold_row_hashes": hashes,
+        **hashes,
     }
-    progress = {
-        "schema_version": "salience.publication-floor-qualification.v1",
+    legacy_fixture = {
+        "schema_version": "salience.publication-floor-legacy-null-v1-fixture.v1",
         "application_commit": app_commit,
         "image_ref": image_ref,
         "image_id": image_id,
         "launch_lock_sha256": lock_digest,
-        "launcher_sha256": lock["launcher_sha256"],
-        "interpreter": lock["interpreter_path"],
-        "interpreter_sha256": lock["interpreter_sha256"],
-        "wheel_sha256": lock["pin"]["artifact_sha256"],
-        "record_sha256": lock["pin"]["distribution_record_sha256"],
-        "source_manifest_sha256": lock["pin"]["source_manifest_sha256"],
-        "source_files": lock["pin"]["source_files"],
-        "runtime_imports": lock["pin"]["runtime_imports"],
-        "runtime_root": lock["runtime_root"],
-        "source_tree_loaded": False,
-        "effects_enabled": False,
-        "production_effects_enabled": False,
-        "fixture_publication_budget": 0,
-        "application_ancestry": {
-            "anchor": ANCHOR,
-            "candidate": app_commit,
-            "is_ancestor": True,
-        },
+        "disposable_targets": legacy_target,
         "workspace_id": workspace_id,
-        "operation_ids": operation_ids,
-        "hold_ids": hold_ids,
-        "rollback_launch_fixture": fixture,
+        "operation_ids": legacy_operation_ids,
+        "hold_ids": legacy_hold_ids,
+        "history_fixture": legacy_history_fixture,
+        "legacy_null_operation_id": legacy_operation_ids["published_during_cancel"],
+        **legacy_hashes,
     }
-    (candidate_root / "worker-qualification-progress.json").write_text(
-        json.dumps(progress, sort_keys=True) + "\n", encoding="utf-8"
+    manifest = {
+        "files": {"salience/workflows/worker.py": "sha256:" + "5" * 64},
+        "pyc_files": [],
+    }
+    manifest_digest = _canonical_json_hash(manifest)
+    attestation["runtime_manifest_sha256"] = manifest_digest
+    (candidate_root / "image-attestation.json").write_text(
+        json.dumps(attestation, sort_keys=True) + "\n", encoding="utf-8"
     )
+    (candidate_root / "worker-image-id.txt").write_text(image_id + "\n", encoding="ascii")
+
+    harness = _load_worker_harness()
+    producer_inputs = {
+        "rollback_launch_fixture": fixture,
+        "legacy_null_v1_fixture": legacy_fixture,
+        "persistent_fixture": True,
+        "read_database_state": lambda: primary_state,
+        "read_legacy_database_state": lambda: legacy_state,
+        "read_histories": lambda _target, histories: histories,
+        "read_recorder_events": lambda _url, _run_id: [],
+        "image_inspector": lambda _reference: image_id,
+        "runtime_manifest_reader": lambda _image, _runtime: manifest,
+    }
+    asyncio.run(harness.write_qualification_progress(candidate_root, **producer_inputs))
     return {
         "candidate_root": candidate_root,
         "environment": {
             "TEST_DATABASE_URL": "postgresql://127.0.0.1:5432/recovery_floor_active_0123456789ab",
+            "TEST_LEGACY_NULL_DATABASE_URL": "postgresql://127.0.0.1:5432/recovery_floor_legacy_0123456789ab",
             "TEST_TEMPORAL_TARGET": "127.0.0.1:7233",
         },
         "fixture": fixture,
+        "legacy_fixture": legacy_fixture,
+        "producer_inputs": producer_inputs,
         "lock": lock,
         "attestation": attestation,
     }
@@ -2320,13 +2422,78 @@ def test_task8_candidate_loader_validates_attestation_control_and_both_reason_me
     assert candidate["temporal_target"] == synthetic["environment"]["TEST_TEMPORAL_TARGET"]
 
 
-def test_task8_candidate_loader_skips_absent_fixture_but_rejects_mismatched_attestation(tmp_path):
+def test_task8_loader_never_falls_back_to_legacy_candidate_provenance(tmp_path, monkeypatch):
+    monkeypatch.setattr(sys.modules[__name__], "ROOT", tmp_path)
+    tracked_lock = tmp_path / "deployment/v4/publication-worker-launch-lock.json"
+    tracked_lock.parent.mkdir(parents=True)
+    tracked_lock.write_text(
+        json.dumps({"pin": {"application_commit": "a" * 40}}), encoding="utf-8"
+    )
+    legacy_root = (
+        tmp_path / "artifacts/v4-next-p1/agents/task-10-floor-qualification"
+        / "candidate-5cb5791"
+    )
+    legacy_root.mkdir(parents=True)
+    with pytest.raises(AssertionError, match="legacy Task 10 candidate provenance is rejected"):
+        _task8_rollback_image_or_skip(
+            candidate_root=legacy_root,
+            environment={},
+        )
+
+    with pytest.raises(pytest.skip.Exception, match="Task 8 candidate fixture metadata is absent"):
+        _task8_rollback_image_or_skip(environment={})
+
+
+def test_task8_qualification_progress_producer_round_trips_through_loader(tmp_path):
+    synthetic = _write_task8_candidate_metadata_fixture(tmp_path / "candidate")
+    harness = _load_worker_harness()
+    candidate = _task8_rollback_image_or_skip(
+        candidate_root=synthetic["candidate_root"],
+        environment=synthetic["environment"],
+    )
+    assert candidate["progress"]["runtime_manifest_sha256"]
+    assert set(candidate["progress"]) == harness.QUALIFICATION_PROGRESS_FIELDS
+    assert not tuple(synthetic["candidate_root"].glob(".worker-qualification-progress-*.tmp"))
+    assert candidate["legacy_null_fixture"]["legacy_null_operation_id"] != (
+        candidate["fixture"]["operation_ids"]["published_during_cancel"]
+    )
+
+
+@pytest.mark.parametrize(
+    "failure",
+    ("malformed-state", "stale-state", "ephemeral-target"),
+    ids=("malformed-readback", "stale-readback", "ephemeral-target"),
+)
+def test_task8_qualification_progress_producer_rejects_unqualified_state(tmp_path, failure):
+    synthetic = _write_task8_candidate_metadata_fixture(tmp_path / failure)
+    harness = _load_worker_harness()
+    inputs = synthetic["producer_inputs"]
+    if failure == "malformed-state":
+        inputs["read_database_state"] = lambda: {"head": "not-0043"}
+    elif failure == "stale-state":
+        actual = inputs["read_database_state"]()
+        actual["holds"]["expired_permit_receipt"]["id"] = "00000000-0000-0000-0000-000000000099"
+        inputs["read_database_state"] = lambda: actual
+    else:
+        inputs["rollback_launch_fixture"]["disposable_targets"]["fixture_lifetime"] = (
+            "function-scoped"
+        )
+    progress_path = synthetic["candidate_root"] / "worker-qualification-progress.json"
+    before = progress_path.read_bytes()
+    with pytest.raises((AssertionError, ValueError), match="persist|read back|0043|hold"):
+        asyncio.run(
+            harness.write_qualification_progress(synthetic["candidate_root"], **inputs)
+        )
+    assert progress_path.read_bytes() == before
+
+
+def test_task8_candidate_loader_rejects_missing_fixture_and_mismatched_attestation(tmp_path):
     incomplete = _write_task8_candidate_metadata_fixture(tmp_path / "incomplete")
     progress_path = incomplete["candidate_root"] / "worker-qualification-progress.json"
     progress = json.loads(progress_path.read_text(encoding="utf-8"))
     progress.pop("rollback_launch_fixture")
     progress_path.write_text(json.dumps(progress) + "\n", encoding="utf-8")
-    with pytest.raises(pytest.skip.Exception, match="both-reason rollback history fixture metadata is absent"):
+    with pytest.raises(AssertionError, match="progress schema fields must match exactly"):
         _task8_rollback_image_or_skip(
             candidate_root=incomplete["candidate_root"],
             environment=incomplete["environment"],
@@ -2415,6 +2582,11 @@ def test_candidate_read_only_harness_detects_mount_cache_and_manifest_failures()
         "temporal_target": "127.0.0.1:7233",
         "control_bundle": Path("/tmp/no-effects-control"),
         "runtime_root": "/usr/local/lib/python3.13/site-packages",
+        "progress": {
+            "runtime_manifest_sha256": _canonical_json_hash(
+                {"files": {"salience/worker.py": "a" * 64}, "pyc_files": []}
+            )
+        },
         "fixture": {
             "workspace_id": "00000000-0000-0000-0000-000000000001",
             "operation_ids": {
@@ -2551,28 +2723,32 @@ def _task8_rollback_image_or_skip(
 ):
     """Load the exact Task 8 image and persistent disposable rollback fixture.
 
-    Task 8 writes a ``rollback_launch_fixture`` object into its qualification
-    progress evidence. It contains target identity and the two operation/history
+    Task 8 writes the strict qualification progress schema under the fixed 0043
+    candidate root. It contains target identity and the two operation/history
     IDs, never a database URL or credential. Runtime environment URLs are
     accepted only when their database name, host, and port match those recorded
-    disposable targets.
-    Missing artifact metadata skips; malformed or mismatched metadata fails.
+    disposable targets. Missing artifact files skip; incomplete or mismatched
+    metadata fails closed.
     """
     import ipaddress
     import re
     from urllib.parse import urlsplit
 
     if candidate_root is None:
-        deployment_lock = json.loads(
-            (ROOT / "deployment/v4/publication-worker-launch-lock.json").read_bytes()
-        )
-        application_commit = deployment_lock["pin"]["application_commit"]
         candidate_root = (
-            ROOT
-            / "artifacts/v4-next-p1/agents/task-10-floor-qualification"
-            / f"candidate-{application_commit[:7]}"
+            ROOT / "artifacts/v4-next-p1/agents/p1-publication-recovery-0043"
         )
     candidate_root = Path(candidate_root)
+    legacy_candidate_root = (
+        ROOT / "artifacts/v4-next-p1/agents/task-10-floor-qualification"
+    )
+    resolved_candidate_root = candidate_root.resolve(strict=False)
+    resolved_legacy_root = legacy_candidate_root.resolve(strict=False)
+    if (
+        resolved_candidate_root == resolved_legacy_root
+        or resolved_legacy_root in resolved_candidate_root.parents
+    ):
+        raise AssertionError("legacy Task 10 candidate provenance is rejected")
     environment = os.environ if environment is None else environment
     control_bundle = candidate_root / "control-bundle"
     metadata_paths = [
@@ -2581,6 +2757,7 @@ def _task8_rollback_image_or_skip(
         control_bundle / "publication-worker-launch-lock.json",
         control_bundle / "publication-worker-launch-lock.sha256",
         candidate_root / "worker-qualification-progress.json",
+        candidate_root / "worker-image-id.txt",
     ]
     missing = [path for path in metadata_paths if not path.is_file()]
     if missing:
@@ -2679,6 +2856,7 @@ def _task8_rollback_image_or_skip(
         candidate_root / "worker-image-id.txt",
         ROOT / "artifacts/v4-next-p1/agents/p1-publication-recovery-0043/worker-image-id.txt",
     )
+    assert read_regular(image_id_paths[0]).decode("ascii").strip() == image_id
     for image_id_path in image_id_paths:
         if os.path.lexists(image_id_path):
             saved_image_id = read_regular(image_id_path).decode("ascii").strip()
@@ -2694,8 +2872,13 @@ def _task8_rollback_image_or_skip(
     assert attestation.get("pyc_files") == []
     assert attestation.get("source_tree_loaded") is False
     assert attestation.get("runtime_root") == lock.get("runtime_root")
+    assert re.fullmatch(
+        r"[0-9a-f]{64}", attestation.get("runtime_manifest_sha256", "")
+    )
 
     progress = read_json(candidate_root / "worker-qualification-progress.json")
+    progress_fields = _load_worker_harness().QUALIFICATION_PROGRESS_FIELDS
+    assert set(progress) == progress_fields, "Task 8 progress schema fields must match exactly"
     assert progress.get("schema_version") == "salience.publication-floor-qualification.v1"
     assert progress.get("launch_lock_sha256") == lock_digest
     assert progress.get("launcher_sha256") == lock["launcher_sha256"]
@@ -2706,9 +2889,10 @@ def _task8_rollback_image_or_skip(
     assert progress.get("source_manifest_sha256") == pin["source_manifest_sha256"]
     assert progress.get("source_files") == source_files
     assert progress.get("runtime_imports") == import_pins
+    assert progress.get("runtime_manifest_sha256") == attestation["runtime_manifest_sha256"]
     fixture = progress.get("rollback_launch_fixture")
-    if fixture is None:
-        pytest.skip("Task 8 both-reason rollback history fixture metadata is absent")
+    assert isinstance(fixture, dict), "Task 8 both-reason rollback history fixture metadata is required"
+    assert set(fixture) == _load_worker_harness()._ROLLBACK_FIXTURE_FIELDS
     assert fixture.get("schema_version") == "salience.publication-floor-rollback-launch-fixture.v1"
     for item in (progress, fixture):
         assert item.get("application_commit") == pin["application_commit"]
@@ -2740,6 +2924,7 @@ def _task8_rollback_image_or_skip(
     assert isinstance(histories, dict) and set(histories) == reasons
     for reason in reasons:
         history = histories[reason]
+        assert set(history) == {"workflow_id", "task_queue", "last_event_id", "history_sha256"}
         assert history.get("workflow_id") == (
             "salience-v4-legacy-operation:" + str(UUID(operation_ids[reason]))
         )
@@ -2753,6 +2938,14 @@ def _task8_rollback_image_or_skip(
 
     targets = fixture.get("disposable_targets")
     assert isinstance(targets, dict)
+    assert set(targets) == {
+        "database_name",
+        "database_host",
+        "database_port",
+        "temporal_target",
+        "adapter_recorder",
+        "fixture_lifetime",
+    }
     database_url = environment.get("TEST_DATABASE_URL")
     temporal_target = environment.get("TEST_TEMPORAL_TARGET")
     assert database_url, "TEST_DATABASE_URL must target the Task 8 disposable database"
@@ -2794,6 +2987,7 @@ def _task8_rollback_image_or_skip(
     require_disposable_host(temporal_parts.hostname)
     recorder = targets.get("adapter_recorder")
     assert isinstance(recorder, dict)
+    assert set(recorder) == {"base_url", "run_id"}
     recorder_url = urlsplit(recorder.get("base_url", ""))
     assert recorder_url.scheme == "http" and recorder_url.hostname
     require_disposable_host(recorder_url.hostname, allow_service_name=True)
@@ -2801,24 +2995,62 @@ def _task8_rollback_image_or_skip(
     assert recorder_url.username is None and recorder_url.password is None
     assert recorder_url.path in {"", "/"}
     assert not recorder_url.query and not recorder_url.fragment
+    assert targets.get("fixture_lifetime") == "task8-persistent"
 
-    legacy_fixture = None
+    legacy_fixture = progress.get("legacy_null_v1_fixture")
+    assert isinstance(legacy_fixture, dict)
+    assert set(legacy_fixture) == _load_worker_harness()._LEGACY_NULL_FIXTURE_FIELDS
+    assert legacy_fixture.get("schema_version") == "salience.publication-floor-legacy-null-v1-fixture.v1"
+    assert legacy_fixture.get("application_commit") == pin["application_commit"]
+    assert legacy_fixture.get("image_ref") == image_ref
+    assert legacy_fixture.get("image_id") == image_id
+    assert legacy_fixture.get("launch_lock_sha256") == lock_digest
+    legacy_operation_ids = legacy_fixture.get("operation_ids")
+    legacy_hold_ids = legacy_fixture.get("hold_ids")
+    assert isinstance(legacy_operation_ids, dict) and set(legacy_operation_ids) == reasons
+    assert isinstance(legacy_hold_ids, dict) and set(legacy_hold_ids) == reasons
+    assert len({str(UUID(value)) for value in legacy_operation_ids.values()}) == 2
+    assert len({str(UUID(value)) for value in legacy_hold_ids.values()}) == 2
+    legacy_null_operation_id = str(UUID(legacy_fixture["legacy_null_operation_id"]))
+    assert legacy_null_operation_id == str(
+        UUID(legacy_operation_ids["published_during_cancel"])
+    )
+    assert legacy_null_operation_id not in {str(UUID(value)) for value in operation_ids.values()}
+    legacy_histories = legacy_fixture.get("history_fixture")
+    assert isinstance(legacy_histories, dict) and set(legacy_histories) == reasons
+    for reason in reasons:
+        history = legacy_histories[reason]
+        assert set(history) == {"workflow_id", "task_queue", "last_event_id", "history_sha256"}
+        assert history.get("workflow_id") == (
+            "salience-v4-legacy-operation:" + str(UUID(legacy_operation_ids[reason]))
+        )
+        assert isinstance(history.get("task_queue"), str) and history["task_queue"]
+        assert isinstance(history.get("last_event_id"), int) and history["last_event_id"] > 0
+        assert re.fullmatch(r"[0-9a-f]{64}", history.get("history_sha256", ""))
+    for field in ("liability_snapshot_hashes", "hold_row_hashes"):
+        hashes = legacy_fixture.get(field)
+        assert isinstance(hashes, dict) and set(hashes) == reasons
+        assert all(re.fullmatch(r"[0-9a-f]{64}", value) for value in hashes.values())
+    legacy_targets = legacy_fixture.get("disposable_targets")
+    assert isinstance(legacy_targets, dict)
+    assert set(legacy_targets) == set(targets)
+    assert legacy_targets.get("database_name") != targets.get("database_name")
+    assert legacy_targets.get("fixture_lifetime") == "task8-persistent"
+    assert legacy_targets.get("temporal_target") == temporal_target
+    assert legacy_targets.get("adapter_recorder") == recorder
+    legacy_database_url = environment.get("TEST_LEGACY_NULL_DATABASE_URL")
+    assert legacy_database_url, "TEST_LEGACY_NULL_DATABASE_URL must target the legacy NULL-v1 fixture"
+    legacy_database_parts = urlsplit(legacy_database_url)
+    legacy_database_name = legacy_database_parts.path.lstrip("/")
+    assert legacy_database_parts.scheme in {"postgresql", "postgres"}
+    assert legacy_database_parts.hostname == legacy_targets.get("database_host")
+    assert (legacy_database_parts.port or 5432) == legacy_targets.get("database_port")
+    assert re.fullmatch(r"recovery_floor_legacy_[0-9a-f]{12}", legacy_database_name)
+    assert legacy_database_name == legacy_targets.get("database_name")
+    require_disposable_host(legacy_database_parts.hostname)
+    assert not legacy_database_parts.query and not legacy_database_parts.fragment
     if require_legacy_null:
-        legacy_fixture = progress.get("legacy_null_v1_fixture")
-        if legacy_fixture is None:
-            pytest.skip("Task 8 populated legacy NULL-v1 fixture metadata is absent")
-        assert legacy_fixture.get("schema_version") == "salience.publication-floor-legacy-null-v1-fixture.v1"
-        assert legacy_fixture.get("workspace_id") == workspace_id
-        assert legacy_fixture.get("operation_ids") == operation_ids
-        assert legacy_fixture.get("hold_ids") == hold_ids
-        assert legacy_fixture.get("history_fixture") == histories
-        null_operation_id = str(UUID(legacy_fixture["legacy_null_operation_id"]))
-        assert null_operation_id in {str(UUID(value)) for value in operation_ids.values()}
-        assert legacy_fixture.get("disposable_targets") == targets
-        for field in ("liability_snapshot_hashes", "hold_row_hashes"):
-            hashes = legacy_fixture.get(field)
-            assert isinstance(hashes, dict) and set(hashes) == reasons
-            assert all(re.fullmatch(r"[0-9a-f]{64}", value) for value in hashes.values())
+        assert legacy_fixture
 
     return {
         "candidate_root": candidate_root,
@@ -2835,6 +3067,7 @@ def _task8_rollback_image_or_skip(
         "temporal_target": temporal_target,
         "adapter_recorder_url": recorder_url.geturl().rstrip("/"),
         "adapter_recorder_run_id": recorder_run_id,
+        "legacy_null_database_url": legacy_database_url,
     }
 
 
@@ -2905,6 +3138,7 @@ def _qualify_candidate_read_only_worker(
 ):
     before = image_manifest(candidate["image_id"], candidate["runtime_root"])
     assert before["pyc_files"] == []
+    assert _canonical_json_hash(before) == candidate["progress"]["runtime_manifest_sha256"]
     fixture = candidate["fixture"]
     operation_ids = fixture["operation_ids"]
     from uuid import uuid4
@@ -2969,6 +3203,7 @@ def _qualify_candidate_read_only_worker(
         after = container_manifest(name, candidate["runtime_root"])
         assert after["pyc_files"] == []
         assert after["files"] == before["files"]
+        assert _canonical_json_hash(after) == candidate["progress"]["runtime_manifest_sha256"]
         return {
             "launch": launch,
             "inspection": inspection,
@@ -3035,7 +3270,7 @@ def _capture_candidate_database_state(candidate, *, validate_metadata_baseline=T
         _recovery_hold_snapshot,
     )
 
-    with psycopg.connect(candidate["database_url"]) as connection:
+    with psycopg.connect(legacy_candidate["database_url"]) as connection:
         head = connection.execute("SELECT version_num FROM alembic_version").fetchall()
         assert head == [("0043_complete_publication_recovery_liabilities",)]
     fixture = candidate["fixture"]
@@ -3246,7 +3481,11 @@ async def test_rollback_restart_launcher_denies_legacy_null_v1_before_registrati
     }
     target = str(UUID(fixture["legacy_null_operation_id"]))
     assert target in {str(UUID(value)) for value in fixture["operation_ids"].values()}
-    legacy_candidate = {**candidate, "fixture": fixture}
+    legacy_candidate = {
+        **candidate,
+        "fixture": fixture,
+        "database_url": candidate["legacy_null_database_url"],
+    }
     state_before = await _capture_candidate_external_state(legacy_candidate)
     database_before = _capture_candidate_database_state(legacy_candidate)
     import psycopg
@@ -3496,13 +3735,13 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
     worker_harness = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(worker_harness)
 
-    evidence_root = ROOT / "artifacts/v4-next-p1/agents/task-10-floor-qualification"
+    evidence_root = ROOT / "artifacts/v4-next-p1/agents/p1-publication-recovery-0043"
     tracked_lock_path = ROOT / "deployment/v4/publication-worker-launch-lock.json"
     tracked_lock_bytes = tracked_lock_path.read_bytes()
     tracked_lock = json.loads(tracked_lock_bytes)
     application_commit = tracked_lock["pin"]["application_commit"]
     candidate_suffix = application_commit[:7]
-    candidate_root = evidence_root / f"candidate-{candidate_suffix}"
+    candidate_root = evidence_root
     control_bundle = candidate_root / "control-bundle"
     attestation = json.loads(
         (candidate_root / "image-attestation.json").read_text(encoding="utf-8")
@@ -3524,6 +3763,9 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
     assert attestation["record_ok"] is True
     assert attestation["pyc_files"] == []
     assert attestation["source_tree_loaded"] is False
+    runtime_manifest = worker_harness.image_runtime_manifest(image, attestation["runtime_root"])
+    assert runtime_manifest["pyc_files"] == []
+    assert _canonical_json_hash(runtime_manifest) == attestation["runtime_manifest_sha256"]
 
     def canonical_bytes(value):
         return (json.dumps(value, sort_keys=True, separators=(",", ":")) + "\n").encode()
@@ -4003,6 +4245,239 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
     ]
     assert base_evidence["hold_row_hashes_after"] == base_evidence["hold_row_hashes"]
 
+    legacy_database = os.environ["TEST_LEGACY_NULL_DATABASE_URL"]
+    recorder_base_url = os.environ["TEST_ADAPTER_RECORDER_URL"]
+    recorder_run_id = str(UUID(os.environ["TEST_ADAPTER_RECORDER_RUN_ID"]))
+    temporal_target = os.environ["TEST_TEMPORAL_TARGET"]
+
+    def target_record(database_url):
+        from urllib.parse import urlsplit
+
+        parts = urlsplit(database_url)
+        assert parts.scheme in {"postgresql", "postgres"}
+        assert parts.hostname and parts.path.lstrip("/")
+        return {
+            "database_name": parts.path.lstrip("/"),
+            "database_host": parts.hostname,
+            "database_port": parts.port or 5432,
+            "temporal_target": temporal_target,
+            "adapter_recorder": {
+                "base_url": recorder_base_url,
+                "run_id": recorder_run_id,
+            },
+            "fixture_lifetime": "task8-persistent",
+        }
+
+    async def capture_history_fixture(target, operation_ids, task_queues=None):
+        client = await Client.connect(target)
+        history_fixture = {}
+        for reason, operation_id in operation_ids.items():
+            workflow_id = "salience-v4-legacy-operation:" + str(UUID(operation_id))
+            history = await client.get_workflow_handle(workflow_id).fetch_history()
+            events = history.events
+            start_event = next(
+                event for event in events
+                if event.HasField("workflow_execution_started_event_attributes")
+            )
+            task_queue = start_event.workflow_execution_started_event_attributes.task_queue.name
+            if task_queues is not None:
+                assert task_queue == task_queues[reason]
+            event_bytes = b"".join(event.SerializeToString() for event in events)
+            history_fixture[reason] = {
+                "workflow_id": workflow_id,
+                "task_queue": task_queue,
+                "last_event_id": max((event.event_id for event in events), default=0),
+                "history_sha256": hashlib.sha256(event_bytes).hexdigest(),
+            }
+        return history_fixture
+
+    def read_history_fixture(target, expected):
+        operation_ids_for_history = {
+            reason: metadata["workflow_id"].removeprefix(
+                "salience-v4-legacy-operation:"
+            )
+            for reason, metadata in expected.items()
+        }
+        task_queues = {reason: metadata["task_queue"] for reason, metadata in expected.items()}
+        return capture_history_fixture(target, operation_ids_for_history, task_queues)
+
+    def read_database_state(database_url, state_workspace_id, state_operation_ids):
+        with psycopg.connect(database_url) as connection:
+            head = connection.execute(
+                "SELECT version_num FROM alembic_version"
+            ).fetchall()
+        assert head == [("0043_complete_publication_recovery_liabilities",)]
+        holds = {
+            reason: _recovery_hold_snapshot(database_url, UUID(operation_id))
+            for reason, operation_id in state_operation_ids.items()
+        }
+        liabilities = {
+            reason: _liability_snapshot(database_url, UUID(operation_id))
+            for reason, operation_id in state_operation_ids.items()
+        }
+        assert all(row is not None for row in holds.values())
+        return {
+            "head": "0043_complete_publication_recovery_liabilities",
+            "workspace_id": str(UUID(state_workspace_id)),
+            "holds": holds,
+            "liabilities": liabilities,
+        }
+
+    primary_operation_ids = {
+        reason: str(operation_id) for reason, operation_id in operation_ids.items()
+    }
+    primary_hold_ids = {
+        reason: str(row["id"]) for reason, row in before_hold_rows.items()
+    }
+    primary_targets = target_record(database)
+    primary_histories = await capture_history_fixture(
+        temporal_target,
+        primary_operation_ids,
+        {
+            "expired_permit_receipt": expired_fixture["queue"],
+            "published_during_cancel": cancelled_fixture["queue"],
+        },
+    )
+    primary_state = read_database_state(database, workspace_id, primary_operation_ids)
+    primary_fixture = {
+        "schema_version": "salience.publication-floor-rollback-launch-fixture.v1",
+        "application_commit": application_commit,
+        "image_ref": image,
+        "image_id": expected_image_id,
+        "launch_lock_sha256": trusted_digest,
+        "disposable_targets": primary_targets,
+        "workspace_id": str(UUID(workspace_id)),
+        "operation_ids": primary_operation_ids,
+        "hold_ids": primary_hold_ids,
+        "history_fixture": primary_histories,
+        "liability_snapshot_hashes": {
+            reason: canonical_hash(primary_state["liabilities"][reason])
+            for reason in primary_operation_ids
+        },
+        "hold_row_hashes": {
+            reason: canonical_hash(primary_state["holds"][reason])
+            for reason in primary_operation_ids
+        },
+    }
+
+    with psycopg.connect(legacy_database) as connection:
+        legacy_head = connection.execute(
+            "SELECT version_num FROM alembic_version"
+        ).fetchall()
+        legacy_rows = connection.execute(
+            "SELECT to_jsonb(hold) FROM v4_legacy_publication_recovery_holds hold "
+            "ORDER BY reason"
+        ).fetchall()
+        assert len(legacy_rows) == 2
+        legacy_hold_rows = {row[0]["reason"]: row[0] for row in legacy_rows}
+        assert set(legacy_hold_rows) == {"expired_permit_receipt", "published_during_cancel"}
+        legacy_null_columns = connection.execute(
+            "SELECT liability_snapshot_version, liability_snapshot_v1, "
+            "liability_fingerprint_v1 FROM v4_legacy_publication_recovery_holds "
+            "WHERE operation_id=%s",
+            (legacy_hold_rows["published_during_cancel"]["operation_id"],),
+        ).fetchone()
+    assert legacy_head == [("0043_complete_publication_recovery_liabilities",)]
+    legacy_workspace_id = str(UUID(legacy_hold_rows["expired_permit_receipt"]["workspace_id"]))
+    assert all(
+        str(UUID(row["workspace_id"])) == legacy_workspace_id
+        for row in legacy_hold_rows.values()
+    )
+    assert legacy_null_columns == (None, None, None)
+    legacy_operation_ids = {
+        reason: str(UUID(row["operation_id"]))
+        for reason, row in legacy_hold_rows.items()
+    }
+    legacy_hold_ids = {
+        reason: str(UUID(row["id"])) for reason, row in legacy_hold_rows.items()
+    }
+    legacy_targets = target_record(legacy_database)
+    legacy_histories = await capture_history_fixture(
+        temporal_target, legacy_operation_ids
+    )
+    legacy_liabilities = {
+        reason: _liability_snapshot(legacy_database, UUID(operation_id))
+        for reason, operation_id in legacy_operation_ids.items()
+    }
+    legacy_fixture = {
+        "schema_version": "salience.publication-floor-legacy-null-v1-fixture.v1",
+        "application_commit": application_commit,
+        "image_ref": image,
+        "image_id": expected_image_id,
+        "launch_lock_sha256": trusted_digest,
+        "disposable_targets": legacy_targets,
+        "workspace_id": legacy_workspace_id,
+        "operation_ids": legacy_operation_ids,
+        "hold_ids": legacy_hold_ids,
+        "history_fixture": legacy_histories,
+        "liability_snapshot_hashes": {
+            reason: canonical_hash(legacy_liabilities[reason])
+            for reason in legacy_operation_ids
+        },
+        "hold_row_hashes": {
+            reason: canonical_hash(legacy_hold_rows[reason])
+            for reason in legacy_operation_ids
+        },
+        "legacy_null_operation_id": legacy_operation_ids["published_during_cancel"],
+    }
+
+    def read_legacy_database_state():
+        observed = read_database_state(legacy_database, legacy_workspace_id, legacy_operation_ids)
+        with psycopg.connect(legacy_database) as connection:
+            null_columns = connection.execute(
+                "SELECT liability_snapshot_version, liability_snapshot_v1, "
+                "liability_fingerprint_v1 FROM v4_legacy_publication_recovery_holds "
+                "WHERE operation_id=%s",
+                (legacy_operation_ids["published_during_cancel"],),
+            ).fetchone()
+        observed["legacy_null_v1"] = {
+            "operation_id": legacy_operation_ids["published_during_cancel"],
+            "fields": list(null_columns),
+        }
+        return observed
+
+    def read_recorder_events(base_url, run_id):
+        import urllib.request
+
+        url = base_url.rstrip("/") + f"/v1/runs/{run_id}/events"
+        with urllib.request.urlopen(url, timeout=5) as response:
+            payload = json.loads(response.read())
+        assert payload["run_id"] == run_id
+        return payload["events"]
+
+    await worker_harness.write_qualification_progress(
+        candidate_root,
+        rollback_launch_fixture=primary_fixture,
+        legacy_null_v1_fixture=legacy_fixture,
+        persistent_fixture=True,
+        read_database_state=lambda: read_database_state(
+            database, primary_fixture["workspace_id"], primary_operation_ids
+        ),
+        read_legacy_database_state=read_legacy_database_state,
+        read_histories=read_history_fixture,
+        read_recorder_events=read_recorder_events,
+    )
+    candidate_for_conditional_cases = _task8_rollback_image_or_skip(
+        candidate_root=candidate_root,
+        environment={
+            "TEST_DATABASE_URL": database,
+            "TEST_LEGACY_NULL_DATABASE_URL": legacy_database,
+            "TEST_TEMPORAL_TARGET": temporal_target,
+        },
+    )
+    assert candidate_for_conditional_cases["image_id"] == expected_image_id
+    for collection in (
+        "remote-publication-receipts",
+        "job-checkpoints",
+        "audit-events",
+        "provenance-records",
+    ):
+        await test_rollback_restart_launcher_denies_omitted_collection_mutation_before_registration(
+            collection
+        )
+    await test_rollback_restart_launcher_denies_legacy_null_v1_before_registration()
+    await test_candidate_read_only_worker_creates_no_pyc_and_preserves_runtime_root()
+
     # The exact control bundle denies every candidate descriptor because the
     # lock bytes no longer match its deployment-owned digest. A separately
     # supplied matching digest is mounted as an untrusted file but has no CLI
@@ -4263,4 +4738,4 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
     ) == second_views
 
     save_json(final_evidence_path, base_evidence)
-    save_json(progress_path, base_evidence)
+    progress_path.unlink(missing_ok=True)
