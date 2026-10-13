@@ -3825,6 +3825,8 @@ def test_authenticated_migration_graph_resolves_inside_site_packages(tmp_path, m
     verified_source_files = compatibility._validate_lock_and_pin(
         lock, _sha256(_lock_bytes(lock))
     )
+    assert set(MIGRATION_SUPPORT_PATHS).issubset(verified_source_files)
+    assert all((runtime_root / _installed_path(path)).is_file() for path in MIGRATION_SUPPORT_PATHS)
 
     revisions, heads = compatibility._migration_graph(verified_source_files)
 

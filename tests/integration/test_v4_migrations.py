@@ -1,5 +1,7 @@
+import hashlib
 import os
 import re
+import shutil
 import subprocess
 import sys
 import time
@@ -40,6 +42,323 @@ _V1_KEYS = (
     "audit_events",
     "provenance_records",
 )
+
+
+@pytest.fixture(scope="module")
+def task5_worker_image(tmp_path_factory):
+    """Build the real wheel-only worker image from a temporary retained wheel."""
+    if shutil.which("docker") is None:
+        pytest.skip("Docker is required for the installed-image migration contract")
+    docker_info = subprocess.run(
+        ["docker", "info"],
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    if docker_info.returncode != 0:
+        pytest.skip(f"Docker daemon is unavailable: {docker_info.stderr.strip()}")
+
+    build_dir = tmp_path_factory.mktemp("task5-wheel-build")
+    wheel_dir = build_dir / "wheel"
+    wheel_dir.mkdir()
+    wheel_build = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "pip",
+            "wheel",
+            "--no-deps",
+            "--wheel-dir",
+            str(wheel_dir),
+            str(_MIGRATION_ROOT),
+        ],
+        cwd=_MIGRATION_ROOT,
+        capture_output=True,
+        text=True,
+        timeout=300,
+    )
+    assert wheel_build.returncode == 0, wheel_build.stdout + wheel_build.stderr
+    wheels = list(wheel_dir.glob("salience-*.whl"))
+    assert len(wheels) == 1, f"expected one retained Salience wheel, got {wheels}"
+
+    stage = _MIGRATION_ROOT / f".task5-wheel-{uuid4().hex}"
+    stage.mkdir()
+    shutil.copy2(wheels[0], stage / "salience.whl")
+    project = "salience-task5-" + uuid4().hex[:12]
+    image_ref = f"{project}-worker:latest"
+    compose = ["docker", "compose", "-p", project, "--profile", "application"]
+    environment = os.environ.copy()
+    environment["SALIENCE_WHEEL_FILE"] = (stage / "salience.whl").relative_to(
+        _MIGRATION_ROOT
+    ).as_posix()
+    image_id = None
+    try:
+        image_build = subprocess.run(
+            [*compose, "build", "worker"],
+            cwd=_MIGRATION_ROOT,
+            env=environment,
+            capture_output=True,
+            text=True,
+            timeout=900,
+        )
+        assert image_build.returncode == 0, image_build.stdout + image_build.stderr
+        image_result = subprocess.run(
+            ["docker", "image", "inspect", "--format", "{{.Id}}", image_ref],
+            cwd=_MIGRATION_ROOT,
+            env=environment,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        assert image_result.returncode == 0, image_result.stdout + image_result.stderr
+        image_id = image_result.stdout.strip()
+        assert image_id.startswith("sha256:"), f"expected worker image ID, got {image_id!r}"
+        yield {
+            "image_id": image_id,
+            "wheel": wheels[0],
+        }
+    finally:
+        subprocess.run(
+            [*compose, "down", "--volumes", "--remove-orphans"],
+            cwd=_MIGRATION_ROOT,
+            env=environment,
+            capture_output=True,
+            text=True,
+            timeout=120,
+        )
+        subprocess.run(
+            ["docker", "image", "rm", "--force", image_ref],
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        shutil.rmtree(stage, ignore_errors=True)
+
+
+def test_installed_alembic_config_resolves_inside_runtime_root(task5_worker_image):
+    import yaml
+
+    image_id = task5_worker_image["image_id"]
+    runtime_config = "/usr/local/lib/python3.13/site-packages/alembic.ini"
+    wheel_digest = hashlib.sha256(task5_worker_image["wheel"].read_bytes()).hexdigest()
+    retained_wheel = subprocess.run(
+        [
+            "docker",
+            "run",
+            "--rm",
+            image_id,
+            "python",
+            "-c",
+            "from hashlib import sha256; print(sha256(open('/opt/salience-artifacts/salience.whl', 'rb').read()).hexdigest())",
+        ],
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    assert retained_wheel.returncode == 0, retained_wheel.stdout + retained_wheel.stderr
+    assert retained_wheel.stdout.strip() == wheel_digest
+
+    resolved_heads = subprocess.run(
+        ["docker", "run", "--rm", image_id, "alembic", "-c", runtime_config, "heads"],
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    assert resolved_heads.returncode == 0, resolved_heads.stdout + resolved_heads.stderr
+    assert _REVISION_0043 in resolved_heads.stdout
+    assert "(head)" in resolved_heads.stdout
+
+    compose = yaml.safe_load((_MIGRATION_ROOT / "compose.yaml").read_text(encoding="utf-8"))
+    assert compose["services"]["migrate"]["command"] == [
+        "alembic",
+        "-c",
+        runtime_config,
+        "upgrade",
+        "head",
+    ]
+
+
+def test_installed_image_migrates_disposable_database_to_0043(task5_worker_image):
+    import yaml
+
+    compose = yaml.safe_load((_MIGRATION_ROOT / "compose.yaml").read_text(encoding="utf-8"))
+    postgres_image = compose["services"]["postgres"]["image"]
+    network = "salience-task5-db-" + uuid4().hex[:12]
+    container = "salience-task5-postgres-" + uuid4().hex[:12]
+    test_password = "task5_ephemeral_password"
+    database_name = None
+    source = None
+    runtime_role = None
+    network_created = False
+    container_started = False
+
+    try:
+        created_network = subprocess.run(
+            ["docker", "network", "create", network],
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        assert created_network.returncode == 0, created_network.stdout + created_network.stderr
+        network_created = True
+
+        started = subprocess.run(
+            [
+                "docker",
+                "run",
+                "--detach",
+                "--rm",
+                "--name",
+                container,
+                "--network",
+                network,
+                "--network-alias",
+                "task5-postgres",
+                "--publish",
+                "127.0.0.1::5432",
+                "--env",
+                "POSTGRES_DB=postgres",
+                "--env",
+                "POSTGRES_USER=salience",
+                "--env",
+                f"POSTGRES_PASSWORD={test_password}",
+                postgres_image,
+            ],
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+        assert started.returncode == 0, started.stdout + started.stderr
+        container_started = True
+
+        ready_deadline = time.monotonic() + 90
+        while True:
+            ready = subprocess.run(
+                ["docker", "exec", container, "pg_isready", "-U", "salience", "-d", "postgres"],
+                capture_output=True,
+                text=True,
+                timeout=10,
+            )
+            if ready.returncode == 0:
+                break
+            if time.monotonic() >= ready_deadline:
+                raise AssertionError(f"disposable PostgreSQL did not become ready: {ready.stderr}")
+            time.sleep(0.25)
+
+        published_port = subprocess.run(
+            ["docker", "port", container, "5432/tcp"],
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        assert published_port.returncode == 0, published_port.stdout + published_port.stderr
+        port = published_port.stdout.strip().rsplit(":", 1)[-1]
+        source = f"postgresql://salience:{test_password}@127.0.0.1:{port}/postgres"
+
+        connection_deadline = time.monotonic() + 30
+        while True:
+            try:
+                with psycopg.connect(source, connect_timeout=2) as connection:
+                    roles_before = [
+                        row[0]
+                        for row in connection.execute(
+                            "SELECT rolname FROM pg_roles ORDER BY rolname"
+                        ).fetchall()
+                    ]
+                break
+            except psycopg.OperationalError:
+                if time.monotonic() >= connection_deadline:
+                    raise
+                time.sleep(0.25)
+
+        database_name, database = _create_migration_database(source, "task5_disposable_")
+        image_database_url = (
+            "postgresql+asyncpg://salience:"
+            f"{test_password}@task5-postgres:5432/{database_name}"
+        )
+        migrated = subprocess.run(
+            [
+                "docker",
+                "run",
+                "--rm",
+                "--network",
+                network,
+                "--env",
+                f"DATABASE_URL={image_database_url}",
+                task5_worker_image["image_id"],
+                "alembic",
+                "-c",
+                "/usr/local/lib/python3.13/site-packages/alembic.ini",
+                "upgrade",
+                "head",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=600,
+        )
+        assert migrated.returncode == 0, migrated.stdout + migrated.stderr
+
+        with psycopg.connect(database) as connection:
+            assert connection.execute(
+                "SELECT version_num FROM alembic_version"
+            ).fetchall() == [(_REVISION_0043,)]
+            assert _alembic_version_num_type(connection) == ("character varying", 64)
+            roles_after = [
+                row[0]
+                for row in connection.execute(
+                    "SELECT rolname FROM pg_roles ORDER BY rolname"
+                ).fetchall()
+            ]
+            assert roles_after == roles_before
+
+            nonempty_tables = []
+            for (table_name,) in connection.execute(
+                "SELECT tablename FROM pg_tables WHERE schemaname='public' "
+                "AND tablename <> 'alembic_version' ORDER BY tablename"
+            ).fetchall():
+                row_count = connection.execute(
+                    psycopg.sql.SQL("SELECT count(*) FROM {}").format(
+                        psycopg.sql.Identifier("public", table_name)
+                    )
+                ).fetchone()[0]
+                if row_count:
+                    nonempty_tables.append((table_name, row_count))
+            assert nonempty_tables == []
+
+        runtime_role = _fixture_role(database)
+        with psycopg.connect(database) as connection:
+            contract = _hold_contract(connection, runtime_role)
+            assert contract["public_privileges"] == 0
+            assert contract["role"] == (
+                False,
+                True,
+                False,
+                True,
+                True,
+                False,
+                False,
+                False,
+                False,
+                False,
+            )
+            _assert_0043_schema_and_guard(connection, runtime_role)
+    finally:
+        if source and database_name:
+            _drop_migration_database(source, database_name, runtime_role)
+        if container_started:
+            subprocess.run(
+                ["docker", "stop", container],
+                capture_output=True,
+                text=True,
+                timeout=60,
+            )
+        if network_created:
+            subprocess.run(
+                ["docker", "network", "rm", network],
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
 
 
 def _create_migration_database(source, prefix):

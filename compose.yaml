@@ -89,7 +89,7 @@ services:
       args:
         SALIENCE_WHEEL_FILE: ${SALIENCE_WHEEL_FILE:-artifacts/salience.whl}
     profiles: ["application"]
-    command: ["alembic", "upgrade", "head"]
+    command: ["alembic", "-c", "/usr/local/lib/python3.13/site-packages/alembic.ini", "upgrade", "head"]
     environment:
       CONTROL_PLANE_TOKEN: ${CONTROL_PLANE_TOKEN:-development-control-token}
       DATABASE_URL: postgresql+asyncpg://salience:salience@postgres:5432/salience
