@@ -99,6 +99,73 @@ def _source_manifest_sha256(source_files) -> str:
     return _sha256(encoded)
 
 
+def test_legacy_activity_retry_readiness_matches_exact_temporal_execution():
+    from temporalio.api.enums.v1 import PendingActivityState, TimeoutType
+
+    from test_v4_legacy_publication import _pending_activity_retry_ready
+
+    workflow_id = "salience-v4-legacy-operation:operation-1"
+    run_id = "run-1"
+    activity_id = "4"
+    activity_type = "salience.publication.submit_or_reconcile"
+
+    def description(
+        *,
+        observed_workflow_id=workflow_id,
+        observed_run_id=run_id,
+        observed_activity_id=activity_id,
+        observed_activity_type=activity_type,
+        attempt=2,
+        state=PendingActivityState.PENDING_ACTIVITY_STATE_SCHEDULED,
+        timeout_type=TimeoutType.TIMEOUT_TYPE_START_TO_CLOSE,
+    ):
+        pending = SimpleNamespace(
+            activity_id=observed_activity_id,
+            activity_type=SimpleNamespace(name=observed_activity_type),
+            attempt=attempt,
+            state=state,
+            last_failure=SimpleNamespace(
+                timeout_failure_info=SimpleNamespace(timeout_type=timeout_type)
+            ),
+        )
+        return SimpleNamespace(
+            id=observed_workflow_id,
+            run_id=observed_run_id,
+            raw_description=SimpleNamespace(pending_activities=[pending]),
+        )
+
+    expected = {
+        "workflow_id": workflow_id,
+        "run_id": run_id,
+        "activity_id": activity_id,
+        "activity_type": activity_type,
+        "attempt": 2,
+    }
+    assert _pending_activity_retry_ready(description(), **expected)
+    assert not _pending_activity_retry_ready(
+        description(observed_workflow_id="another-workflow"), **expected
+    )
+    assert not _pending_activity_retry_ready(
+        description(observed_run_id="another-run"), **expected
+    )
+    assert not _pending_activity_retry_ready(
+        description(observed_activity_id="another-activity"), **expected
+    )
+    assert not _pending_activity_retry_ready(
+        description(observed_activity_type="salience.publication.cancel"), **expected
+    )
+    assert not _pending_activity_retry_ready(description(attempt=1), **expected)
+    assert not _pending_activity_retry_ready(description(attempt=3), **expected)
+    assert not _pending_activity_retry_ready(
+        description(state=PendingActivityState.PENDING_ACTIVITY_STATE_STARTED),
+        **expected,
+    )
+    assert not _pending_activity_retry_ready(
+        description(timeout_type=TimeoutType.TIMEOUT_TYPE_SCHEDULE_TO_START),
+        **expected,
+    )
+
+
 def _lock_bytes(lock) -> bytes:
     return (json.dumps(asdict(lock), sort_keys=True, separators=(",", ":")) + "\n").encode()
 
@@ -4930,6 +4997,7 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
         _publication_fixture,
         _recovery_projection_counts,
         _wait_for_publication_permit_expiry,
+        _wait_for_activity_retry_ready,
     )
     from test_v4_publication_recovery_holds import (
         _assert_named_liabilities_unchanged,
@@ -5264,6 +5332,9 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
         tmp_path,
         after_acceptance=True,
         operation_id=str(legacy_null_operation_id),
+        diagnostic_path=(
+            candidate_root / "task8-legacy-acceptance-worker-attempt5.jsonl"
+        ),
     ) == 73
     with psycopg.connect(legacy_database) as connection:
         accepted_progress = connection.execute(
@@ -5272,6 +5343,48 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
             (str(legacy_null_operation_id),),
         ).fetchone()
     assert accepted_progress == (legacy_null_operation_id, "accepted")
+    legacy_workflow_id = (
+        "salience-v4-legacy-operation:" + str(legacy_null_operation_id)
+    )
+    legacy_client = await Client.connect(os.environ["TEST_TEMPORAL_TARGET"])
+    legacy_handle = legacy_client.get_workflow_handle(legacy_workflow_id)
+    legacy_description = await legacy_handle.describe()
+    assert legacy_description.status == WorkflowExecutionStatus.RUNNING
+    legacy_history = await legacy_handle.fetch_history()
+    submit_schedules = [
+        (event.event_id, event.activity_task_scheduled_event_attributes)
+        for event in legacy_history.events
+        if event.HasField("activity_task_scheduled_event_attributes")
+        and event.activity_task_scheduled_event_attributes.activity_type.name
+        == "salience.publication.submit_or_reconcile"
+    ]
+    assert len(submit_schedules) == 1, submit_schedules
+    accepted_retry_ready = await _wait_for_activity_retry_ready(
+        legacy_client,
+        workflow_id=legacy_workflow_id,
+        run_id=legacy_description.run_id,
+        activity_id=submit_schedules[0][1].activity_id,
+        activity_type="salience.publication.submit_or_reconcile",
+        attempt=2,
+        timeout_seconds=45,
+    )
+    save_json(
+        candidate_root / "task8-legacy-accepted-retry-readiness-attempt5.json",
+        {
+            "operation_id": str(legacy_null_operation_id),
+            "accepted_progress": {
+                "operation_id": str(accepted_progress[0]),
+                "state": accepted_progress[1],
+            },
+            "workflow_id": legacy_workflow_id,
+            "run_id": legacy_description.run_id,
+            "task_queue": legacy_cancel_fixture["queue"],
+            "activity_id": submit_schedules[0][1].activity_id,
+            "activity_type": "salience.publication.submit_or_reconcile",
+            "scheduled_event_id": submit_schedules[0][0],
+            "retry_readiness": accepted_retry_ready,
+        },
+    )
     _allow(
         legacy_database,
         workspace_id,
@@ -5343,6 +5456,9 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
         operation_id=str(legacy_null_operation_id),
         cancel_after_processing=True,
         cancel_ready_callback=close_legacy_after_processing_read,
+        diagnostic_path=(
+            candidate_root / "task8-legacy-cancel-worker-attempt5.jsonl"
+        ),
     )
     assert legacy_cancel_exit == 74, (
         f"legacy NULL-v1 cancel crash-after-commit worker exited {legacy_cancel_exit}; "

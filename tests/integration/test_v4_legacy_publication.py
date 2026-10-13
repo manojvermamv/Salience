@@ -236,6 +236,124 @@ def _exception_chain(error):
         current = getattr(current, "__cause__", None) or getattr(current, "__context__", None)
 
 
+def _pending_activity_retry_ready(
+    description,
+    *,
+    workflow_id,
+    run_id,
+    activity_id,
+    activity_type,
+    attempt,
+):
+    """Match one exact Temporal retry after its start-to-close timeout."""
+    from temporalio.api.enums.v1 import PendingActivityState, TimeoutType
+
+    if description.id != workflow_id or description.run_id != run_id:
+        return False
+    pending = [
+        item
+        for item in description.raw_description.pending_activities
+        if item.activity_id == activity_id
+        and item.activity_type.name == activity_type
+    ]
+    if len(pending) != 1:
+        return False
+    item = pending[0]
+    timeout_failure = getattr(item.last_failure, "timeout_failure_info", None)
+    return (
+        item.attempt == attempt
+        and item.state == PendingActivityState.PENDING_ACTIVITY_STATE_SCHEDULED
+        and timeout_failure is not None
+        and timeout_failure.timeout_type == TimeoutType.TIMEOUT_TYPE_START_TO_CLOSE
+    )
+
+
+async def _wait_for_activity_retry_ready(
+    client,
+    *,
+    workflow_id,
+    run_id,
+    activity_id,
+    activity_type,
+    attempt,
+    timeout_seconds=45,
+):
+    """Wait for one named activity retry to become schedulable, with diagnostics."""
+    from temporalio.api.enums.v1 import PendingActivityState, TimeoutType
+    from temporalio.client import WorkflowExecutionStatus
+
+    handle = client.get_workflow_handle(workflow_id, run_id=run_id)
+    deadline = asyncio.get_running_loop().time() + timeout_seconds
+    last_observation = None
+    try:
+        async with asyncio.timeout(timeout_seconds):
+            while True:
+                remaining = max(0.1, deadline - asyncio.get_running_loop().time())
+                description = await handle.describe(
+                    rpc_timeout=timedelta(seconds=min(2, remaining))
+                )
+                if description.id != workflow_id or description.run_id != run_id:
+                    raise AssertionError(
+                        "Temporal workflow execution changed while waiting for retry: "
+                        f"expected=({workflow_id}, {run_id}) "
+                        f"observed=({description.id}, {description.run_id})"
+                    )
+                candidates = [
+                    item
+                    for item in description.raw_description.pending_activities
+                    if item.activity_id == activity_id
+                    or item.activity_type.name == activity_type
+                ]
+                last_observation = [
+                    {
+                        "activity_id": item.activity_id,
+                        "activity_type": item.activity_type.name,
+                        "attempt": item.attempt,
+                        "state": PendingActivityState.Name(item.state),
+                        "last_failure": item.last_failure.message,
+                        "timeout_type": TimeoutType.Name(
+                            item.last_failure.timeout_failure_info.timeout_type
+                        ),
+                    }
+                    for item in candidates
+                ]
+                if _pending_activity_retry_ready(
+                    description,
+                    workflow_id=workflow_id,
+                    run_id=run_id,
+                    activity_id=activity_id,
+                    activity_type=activity_type,
+                    attempt=attempt,
+                ):
+                    return {
+                        "workflow_id": workflow_id,
+                        "run_id": run_id,
+                        "activity_id": activity_id,
+                        "activity_type": activity_type,
+                        "attempt": attempt,
+                        "state": "PENDING_ACTIVITY_STATE_SCHEDULED",
+                        "last_failure": last_observation,
+                    }
+                if description.status in {
+                    WorkflowExecutionStatus.COMPLETED,
+                    WorkflowExecutionStatus.FAILED,
+                    WorkflowExecutionStatus.CANCELED,
+                    WorkflowExecutionStatus.TERMINATED,
+                    WorkflowExecutionStatus.TIMED_OUT,
+                }:
+                    raise AssertionError(
+                        "Temporal workflow became terminal before the exact retry was ready: "
+                        f"status={description.status.name}, last_pending={last_observation}"
+                    )
+    except TimeoutError as error:
+        raise TimeoutError(
+            "Temporal retry readiness timed out for "
+            f"workflow={workflow_id} run={run_id} activity_id={activity_id} "
+            f"activity_type={activity_type} attempt={attempt}; "
+            f"last_pending={last_observation}"
+        ) from error
+
+
 def _recovery_projection_counts(database, operation_id):
     with psycopg.connect(database) as connection:
         job_id, attempt_id = connection.execute(
@@ -549,10 +667,29 @@ asyncio.run(main())
             if cancel_ready_callback is not None:
                 await cancel_ready_callback()
             cancel_release_path.write_text("release", encoding="utf-8")
-        except BaseException:
+        except BaseException as error:
             if process.returncode is None:
                 process.kill()
-            await process.communicate()
+            stdout, stderr = await process.communicate()
+            child_output = {
+                "event": "worker_processing_readiness_failure",
+                "error": type(error).__name__,
+                "message": str(error),
+                "return_code": process.returncode,
+                "stdout": stdout.decode(errors="replace").replace(
+                    fixture["database"], "<fixture-database-url>"
+                ),
+                "stderr": stderr.decode(errors="replace").replace(
+                    fixture["database"], "<fixture-database-url>"
+                ),
+            }
+            if diagnostic_path is not None:
+                with open(diagnostic_path, "a", encoding="utf-8") as log:
+                    log.write(json.dumps(child_output) + "\n")
+            print(
+                "publication worker child diagnostics: " + json.dumps(child_output),
+                file=sys.stderr,
+            )
             raise
     try:
         stdout, stderr = await asyncio.wait_for(
@@ -566,12 +703,28 @@ asyncio.run(main())
             with open(diagnostic_path, 'a', encoding='utf-8') as log:
                 log.write(json.dumps({
                     'event': 'worker_timeout',
-                    'stdout': stdout.decode(errors='replace'),
-                    'stderr': stderr.decode(errors='replace'),
-                }) + '\\n')
+                    'stdout': stdout.decode(errors='replace').replace(
+                        fixture['database'], '<fixture-database-url>'
+                    ),
+                    'stderr': stderr.decode(errors='replace').replace(
+                        fixture['database'], '<fixture-database-url>'
+                    ),
+                }) + '\n')
         if after_hold_commit:
             return code
         pytest.fail("publication worker did not exit at the requested receipt boundary")
+    if diagnostic_path is not None:
+        with open(diagnostic_path, "a", encoding="utf-8") as log:
+            log.write(json.dumps({
+                "event": "worker_process_exit",
+                "return_code": process.returncode,
+                "stdout": stdout.decode(errors="replace").replace(
+                    fixture["database"], "<fixture-database-url>"
+                ),
+                "stderr": stderr.decode(errors="replace").replace(
+                    fixture["database"], "<fixture-database-url>"
+                ),
+            }) + "\n")
     return process.returncode
 
 
