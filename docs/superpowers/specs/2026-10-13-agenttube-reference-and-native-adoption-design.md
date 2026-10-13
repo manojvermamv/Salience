@@ -1,10 +1,10 @@
 # AgentTube reference and native adoption design
 
-**Status:** Draft for review
+**Status:** Approved for bounded reference-adoption planning
 
 **Date:** 2026-10-13
 
-**Decision scope:** Preserve a pinned, reference-only upstream checkout and adopt selected product workflows through Salience's existing V4 contracts. This document does not authorize implementation or external effects.
+**Decision scope:** Preserve a pinned, reference-only upstream checkout and adopt selected product workflows through Salience's existing V4 contracts. User approval on 2026-10-13 releases planning for the first bounded submodule/evidence slice only; it does not authorize implementation of native P2–P7 behavior or external effects.
 
 ## Purpose and success
 
