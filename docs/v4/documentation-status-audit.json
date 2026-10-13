@@ -1369,7 +1369,7 @@
     {
       "path": "docs/v4/publication-recovery-hold-evidence.json",
       "disposition": "Task 10 historical holds plus exact Task 8 candidate artifact pins; production remains HELD",
-      "sha256": "6211d5bfa88f7787dd45a5ee4ce279014af8a6e139cd27e61b6aa4a90b23daf6"
+      "sha256": "86f2b4f063716ae729a4eefb69348a975961890503fb76b65f40a7ac9b2ff76c"
     },
     {
       "path": "docs/v4/repository-enforcement-evidence.json",
@@ -1428,7 +1428,7 @@
   "parallel_qualified_application_commit": "2653d2ecb3f0d5bb8ea6560de274137dd6032a96",
   "legacy_intelligence_status": "PASS_LOCAL_LEGACY_INTELLIGENCE_AND_PUBLICATION_FIXTURE_STAGES; ORIGINAL_NATIVE_INTELLIGENCE_AND_PUBLICATION_SCHEDULES_QUALIFIED",
   "goal_status": "ACTIVE",
-  "independent_review_scope": "Task 11 review found floor/evidence gaps in Task 10 candidate 5cb5791, making it unsupported as the rollback floor. The exact 0043 candidate at 6b2cdc2f68f3323edfaf9b92583b0a5cf0398eb4 and its artifact pins are recorded in .superpowers/sdd/2026-10-13-p1-publication-recovery-floor-repair/task-8-report.md; it remains outside all previous independent review scopes until corrected-publication final review/meta-review. The existing corrected-publication rereview covers only application a4b2368cdb463939d093020224a5b5667392aee6 with documentation/observed HEAD d0311725686d81b7b4747c2d6225986e5ea3a524; it does not cover 7878208, 5cb5791, or 6b2cdc2f68f3323edfaf9b92583b0a5cf0398eb4.",
+  "independent_review_scope": "Task 11 review found floor/evidence gaps in Task 10 candidate 5cb5791, making it unsupported as the rollback floor. The exact 0043 candidate at 9e4f2aa112353c46a69cdadba2d4699069a88d11 and its artifact pins are recorded in .superpowers/sdd/2026-10-13-p1-publication-recovery-floor-repair/task-8-report.md; it remains outside all previous independent review scopes until corrected-publication final review/meta-review. The existing corrected-publication rereview covers only application a4b2368cdb463939d093020224a5b5667392aee6 with documentation/observed HEAD d0311725686d81b7b4747c2d6225986e5ea3a524; it does not cover 7878208, 5cb5791, or 9e4f2aa112353c46a69cdadba2d4699069a88d11.",
   "tracked_markdown_paths": [
     ".agents/skills/archify/SKILL.md",
     ".agents/skills/archify/THIRD_PARTY_NOTICES.md",
@@ -1531,7 +1531,7 @@
   "application_source_preservation_basis": "Compared the Task 9 356-path evidence lock at application 7878208 with the Task 10 qualification checkout: 347 existing paths retain identical bytes, nine existing paths have updated hashes, and four source paths were added, for 360 locked paths. The current application artifact is pinned separately to 5cb5791; the test-only qualification harness is at 1480100. This is a content comparison and lock, not an independent code review.",
   "historical_a4_qualified_application_commit": "a4b2368cdb463939d093020224a5b5667392aee6",
   "current_publication_recovery_hold_evidence": "docs/v4/publication-recovery-hold-evidence.json",
-  "current_publication_recovery_hold_evidence_sha256": "6211d5bfa88f7787dd45a5ee4ce279014af8a6e139cd27e61b6aa4a90b23daf6",
+  "current_publication_recovery_hold_evidence_sha256": "86f2b4f063716ae729a4eefb69348a975961890503fb76b65f40a7ac9b2ff76c",
   "task_10_candidate": {
     "application_commit": "5cb57910c2c6dc2f6ea37da75640c5c947c8907b",
     "qualification_harness_commit": "14801007310232f59708566ca9a3eefb80bfea87",
@@ -1542,12 +1542,12 @@
     "production_effects_enabled": false,
     "fixture_publication_budget": 0
   },
-  "current_local_application_commit": "6b2cdc2f68f3323edfaf9b92583b0a5cf0398eb4",
+  "current_local_application_commit": "9e4f2aa112353c46a69cdadba2d4699069a88d11",
   "current_focused_tests": null,
   "current_full_non_live_tests": null,
   "current_full_non_live_application_commit": "7878208e7a353f93bb70279ad0dd7f0760f93ec4",
-  "current_full_non_live_status": "NOT RUN on 6b2cdc2; the 614-pass result remains bound to 7878208.",
-  "current_qualification_application": "6b2cdc2f68f3323edfaf9b92583b0a5cf0398eb4",
+  "current_full_non_live_status": "NOT RUN on 9e4f2aa; the 614-pass result remains bound to 7878208.",
+  "current_qualification_application": "9e4f2aa112353c46a69cdadba2d4699069a88d11",
   "focused_tests": 20,
   "full_non_live_tests": null,
   "previous_full_non_live_tests": 614,
@@ -1557,17 +1557,17 @@
   "documentation_tests": "PASS: 15 documentation tests; consolidated checker and self-test PASS (75 requirements, 2 source files, 360 evidence and inventory files, 93 Markdown, 4 HTML, 6 negative controls); all 4 shell contracts and 6 Mermaid diagrams passed; 6 modified JSON files parsed; pip check, compileall, 14 historical hash checks, 360-file application evidence-lock validation, and git diff --check passed.",
   "task_8_exact_candidate_artifact_build": {
     "status": "EXACT_CANDIDATE_ARTIFACT_BUILD_RECORDED",
-    "application_commit": "6b2cdc2f68f3323edfaf9b92583b0a5cf0398eb4",
-    "image_ref": "salience-p1-floor-6b2cdc2-worker:latest",
-    "image_id": "sha256:a87ae41599e97260155f39b733968fc3ed147649863cbc68a89599ec6082d134",
-    "wheel_sha256": "10953131660068fd4a82f2319f31921e9933088c5ab20cac72c8936834a0de8b",
-    "record_sha256": "8398448bdd111da2ea23741bae31bf2c243c6b99a7ba3461b0b82a40e9e98877",
+    "application_commit": "9e4f2aa112353c46a69cdadba2d4699069a88d11",
+    "image_ref": "salience-p1-floor-9e4f2aa-worker:latest",
+    "image_id": "sha256:5adc8425eb21e4abb33807db6ed57b2b0455037d93dff00bacdf66cb6bef9ad3",
+    "wheel_sha256": "b99b3a408c5f24af70b8596d4501273b275c8051a857b514e15c50b34146f4b4",
+    "record_sha256": "5ada5ff5d09e026d151f67870bad4caceab13669e4df7a0b9357d8f5e8aca418",
     "record_entry_count": 172,
-    "launch_lock_sha256": "10ef32f33b7051f4637edd27d20d0de77c8cc2b03e2002bf00c861f7284de07f",
+    "launch_lock_sha256": "42715543ab30f3f59644398fec1b5e1c88317c651e8a540218215d5bd10a25d8",
     "source_manifest_sha256": "cf3e0d3da75c92a45c94671ddaab6f764a1a5823f17a5fa8a2a508fbbc578820",
     "interpreter_sha256": "73b68fc2dac176af16098180a2c98a03ee9f1f1b02db25d42d44d782e79e2330",
     "runtime_root": "/usr/local/lib/python3.13/site-packages",
-    "runtime_manifest_sha256": "31b15dee3d49152c0910f6a798345e7e6f10f0f42179f992c937876234dbb99b",
+    "runtime_manifest_sha256": "226e390890a973293be98f8db388c7aa830f09a1e4da2a14cb48ee9a41507a5f",
     "runtime_file_count": 9151,
     "pyc_files": [],
     "dockerignore": [
@@ -1583,28 +1583,28 @@
       "tracked": false
     },
     "source_path_separation": {
-      "host_runtime_root": "/tmp/p1-publication-recovery-0043-candidate-6b2cdc2/runtime-prefix/usr/local/lib/python3.13/site-packages",
-      "host_interpreter_source": "/tmp/p1-publication-recovery-0043-candidate-6b2cdc2/runtime-prefix/usr/local/bin/python3.13",
+      "host_runtime_root": "/tmp/p1-publication-recovery-0043-candidate-9e4f2aa/runtime-prefix/usr/local/lib/python3.13/site-packages",
+      "host_interpreter_source": "/tmp/p1-publication-recovery-0043-candidate-9e4f2aa/runtime-prefix/usr/local/bin/python3.13",
       "locked_interpreter_path": "/usr/local/bin/python",
       "note": "Extracted runtime topology preserves installed RECORD resolution; interpreter source bytes come from this image while the authenticated in-container path remains fixed."
     },
     "artifact_build_result": "PASS",
-    "qualification_results": "Recorded separately in the referenced Task 8 report; this entry records artifact pins only."
+    "qualification_results": "Attempt 4 exposed a legacy fixture retry-readiness sequencing failure, preserved in the Task 8 report. The exact-candidate test harness now gates on the matching Temporal retry state; fresh qualification results remain pending."
   },
   "current_focused_status": "Task 8 candidate-specific results are recorded in .superpowers/sdd/2026-10-13-p1-publication-recovery-floor-repair/task-8-report.md; no Task 10 count is transferred.",
   "current_candidate_artifact_build": {
     "status": "EXACT_CANDIDATE_ARTIFACT_BUILD_RECORDED",
-    "application_commit": "6b2cdc2f68f3323edfaf9b92583b0a5cf0398eb4",
-    "image_ref": "salience-p1-floor-6b2cdc2-worker:latest",
-    "image_id": "sha256:a87ae41599e97260155f39b733968fc3ed147649863cbc68a89599ec6082d134",
-    "wheel_sha256": "10953131660068fd4a82f2319f31921e9933088c5ab20cac72c8936834a0de8b",
-    "record_sha256": "8398448bdd111da2ea23741bae31bf2c243c6b99a7ba3461b0b82a40e9e98877",
+    "application_commit": "9e4f2aa112353c46a69cdadba2d4699069a88d11",
+    "image_ref": "salience-p1-floor-9e4f2aa-worker:latest",
+    "image_id": "sha256:5adc8425eb21e4abb33807db6ed57b2b0455037d93dff00bacdf66cb6bef9ad3",
+    "wheel_sha256": "b99b3a408c5f24af70b8596d4501273b275c8051a857b514e15c50b34146f4b4",
+    "record_sha256": "5ada5ff5d09e026d151f67870bad4caceab13669e4df7a0b9357d8f5e8aca418",
     "record_entry_count": 172,
-    "launch_lock_sha256": "10ef32f33b7051f4637edd27d20d0de77c8cc2b03e2002bf00c861f7284de07f",
+    "launch_lock_sha256": "42715543ab30f3f59644398fec1b5e1c88317c651e8a540218215d5bd10a25d8",
     "source_manifest_sha256": "cf3e0d3da75c92a45c94671ddaab6f764a1a5823f17a5fa8a2a508fbbc578820",
     "interpreter_sha256": "73b68fc2dac176af16098180a2c98a03ee9f1f1b02db25d42d44d782e79e2330",
     "runtime_root": "/usr/local/lib/python3.13/site-packages",
-    "runtime_manifest_sha256": "31b15dee3d49152c0910f6a798345e7e6f10f0f42179f992c937876234dbb99b",
+    "runtime_manifest_sha256": "226e390890a973293be98f8db388c7aa830f09a1e4da2a14cb48ee9a41507a5f",
     "runtime_file_count": 9151,
     "pyc_files": [],
     "dockerignore": [
@@ -1620,12 +1620,12 @@
       "tracked": false
     },
     "source_path_separation": {
-      "host_runtime_root": "/tmp/p1-publication-recovery-0043-candidate-6b2cdc2/runtime-prefix/usr/local/lib/python3.13/site-packages",
-      "host_interpreter_source": "/tmp/p1-publication-recovery-0043-candidate-6b2cdc2/runtime-prefix/usr/local/bin/python3.13",
+      "host_runtime_root": "/tmp/p1-publication-recovery-0043-candidate-9e4f2aa/runtime-prefix/usr/local/lib/python3.13/site-packages",
+      "host_interpreter_source": "/tmp/p1-publication-recovery-0043-candidate-9e4f2aa/runtime-prefix/usr/local/bin/python3.13",
       "locked_interpreter_path": "/usr/local/bin/python",
       "note": "Extracted runtime topology preserves installed RECORD resolution; interpreter source bytes come from this image while the authenticated in-container path remains fixed."
     },
     "artifact_build_result": "PASS",
-    "qualification_results": "Recorded separately in the referenced Task 8 report; this entry records artifact pins only."
+    "qualification_results": "Attempt 4 exposed a legacy fixture retry-readiness sequencing failure, preserved in the Task 8 report. The exact-candidate test harness now gates on the matching Temporal retry state; fresh qualification results remain pending."
   }
 }

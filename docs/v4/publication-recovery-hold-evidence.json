@@ -1219,17 +1219,17 @@
   },
   "task_8_exact_candidate_artifact_build": {
     "status": "EXACT_CANDIDATE_ARTIFACT_BUILD_RECORDED",
-    "application_commit": "6b2cdc2f68f3323edfaf9b92583b0a5cf0398eb4",
-    "image_ref": "salience-p1-floor-6b2cdc2-worker:latest",
-    "image_id": "sha256:a87ae41599e97260155f39b733968fc3ed147649863cbc68a89599ec6082d134",
-    "wheel_sha256": "10953131660068fd4a82f2319f31921e9933088c5ab20cac72c8936834a0de8b",
-    "record_sha256": "8398448bdd111da2ea23741bae31bf2c243c6b99a7ba3461b0b82a40e9e98877",
+    "application_commit": "9e4f2aa112353c46a69cdadba2d4699069a88d11",
+    "image_ref": "salience-p1-floor-9e4f2aa-worker:latest",
+    "image_id": "sha256:5adc8425eb21e4abb33807db6ed57b2b0455037d93dff00bacdf66cb6bef9ad3",
+    "wheel_sha256": "b99b3a408c5f24af70b8596d4501273b275c8051a857b514e15c50b34146f4b4",
+    "record_sha256": "5ada5ff5d09e026d151f67870bad4caceab13669e4df7a0b9357d8f5e8aca418",
     "record_entry_count": 172,
-    "launch_lock_sha256": "10ef32f33b7051f4637edd27d20d0de77c8cc2b03e2002bf00c861f7284de07f",
+    "launch_lock_sha256": "42715543ab30f3f59644398fec1b5e1c88317c651e8a540218215d5bd10a25d8",
     "source_manifest_sha256": "cf3e0d3da75c92a45c94671ddaab6f764a1a5823f17a5fa8a2a508fbbc578820",
     "interpreter_sha256": "73b68fc2dac176af16098180a2c98a03ee9f1f1b02db25d42d44d782e79e2330",
     "runtime_root": "/usr/local/lib/python3.13/site-packages",
-    "runtime_manifest_sha256": "31b15dee3d49152c0910f6a798345e7e6f10f0f42179f992c937876234dbb99b",
+    "runtime_manifest_sha256": "226e390890a973293be98f8db388c7aa830f09a1e4da2a14cb48ee9a41507a5f",
     "runtime_file_count": 9151,
     "pyc_files": [],
     "dockerignore": [
@@ -1245,12 +1245,12 @@
       "tracked": false
     },
     "source_path_separation": {
-      "host_runtime_root": "/tmp/p1-publication-recovery-0043-candidate-6b2cdc2/runtime-prefix/usr/local/lib/python3.13/site-packages",
-      "host_interpreter_source": "/tmp/p1-publication-recovery-0043-candidate-6b2cdc2/runtime-prefix/usr/local/bin/python3.13",
+      "host_runtime_root": "/tmp/p1-publication-recovery-0043-candidate-9e4f2aa/runtime-prefix/usr/local/lib/python3.13/site-packages",
+      "host_interpreter_source": "/tmp/p1-publication-recovery-0043-candidate-9e4f2aa/runtime-prefix/usr/local/bin/python3.13",
       "locked_interpreter_path": "/usr/local/bin/python",
       "note": "Extracted runtime topology preserves installed RECORD resolution; interpreter source bytes come from this image while the authenticated in-container path remains fixed."
     },
     "artifact_build_result": "PASS",
-    "qualification_results": "Recorded separately in the referenced Task 8 report; this entry records artifact pins only."
+    "qualification_results": "Attempt 4 exposed a legacy fixture retry-readiness sequencing failure, preserved in the Task 8 report. The exact-candidate test harness now gates on the matching Temporal retry state; fresh qualification results remain pending."
   }
 }
