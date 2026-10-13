@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 import json
 import os
 from pathlib import Path
+import re
 import subprocess
 import sys
 from threading import Barrier
@@ -21,7 +22,31 @@ import pytest_asyncio
 
 ROOT = Path(__file__).parents[2]
 REVISION = "0042_publication_recovery_holds"
+REVISION_0043 = "0043_complete_publication_recovery_liabilities"
 TABLE = "v4_legacy_publication_recovery_holds"
+_EXPECTED_V1_KEYS = (
+    "dispatch",
+    "context",
+    "cycle",
+    "job",
+    "permit_claim",
+    "permit",
+    "fixture_receipt",
+    "fixture_progress",
+    "publication_request",
+    "publication_plan",
+    "publication_attempt",
+    "external_effect",
+    "budget_reservation",
+    "output",
+    "remote_publication_receipts",
+    "publication_status_events",
+    "cycle_events",
+    "cycle_outbox",
+    "job_checkpoints",
+    "audit_events",
+    "provenance_records",
+)
 
 
 def _create_database(source, prefix):
@@ -941,12 +966,15 @@ async def test_exact_hold_replay_returns_stable_id(published_cancelled_recovery_
     _assert_named_liabilities_unchanged(before, after)
     assert _recovery_hold_count(database, operation_id) == 1
     with psycopg.connect(database) as connection:
-        publication_attempt_id, stored_snapshot = connection.execute(
-            f"SELECT publication_attempt_id,liability_snapshot FROM public.{TABLE} WHERE operation_id=%s",
+        publication_attempt_id, stored_snapshot, stored_snapshot_v1 = connection.execute(
+            f"""SELECT publication_attempt_id, liability_snapshot,
+                       liability_snapshot_v1
+                FROM public.{TABLE} WHERE operation_id=%s""",
             (operation_id,),
         ).fetchone()
     _assert_publication_attempt_snapshot(stored_snapshot, publication_attempt_id)
-    assert stored_snapshot == before
+    _assert_recovery_hold_snapshot_matches_full(before, stored_snapshot)
+    assert stored_snapshot_v1 == before
     with psycopg.connect(database) as connection:
         assert load_publication_recovery_hold(
             connection,
@@ -1655,3 +1683,496 @@ async def test_rollback_verifier_requires_both_reasons_and_unchanged_liabilities
         "UPDATE public.publication_attempts SET reconciliation=%s WHERE id=%s",
         (Jsonb(publication_attempt_reconciliation), publication_attempt_id),
     )
+
+
+async def _create_expired_operation_in_database(
+    database, reference_fixture, monkeypatch, tmp_path
+):
+    from test_v4_legacy_publication import (
+        _allow,
+        _hard_exit_publication_worker,
+        _publication_fixture,
+        _wait_for_publication_permit_expiry,
+    )
+
+    import test_creative_release_gate_migration as release_gate
+
+    original_ready_package = release_gate._approved_ready_package
+
+    async def reuse_approved_ready_package(*, publication_proofs=True):
+        return reference_fixture["ready"]
+
+    monkeypatch.setattr(
+        release_gate, "_approved_ready_package", reuse_approved_ready_package
+    )
+    try:
+        fixture = await _publication_fixture(database)
+    finally:
+        monkeypatch.setattr(
+            release_gate, "_approved_ready_package", original_ready_package
+        )
+
+    assert fixture["workspace_id"] == reference_fixture["workspace_id"]
+    assert fixture["queue"] != reference_fixture["queue"]
+    submitted = fixture["bridge"].submit_publication(fixture["command"])
+    operation_id = submitted["operation_id"]
+    _allow(
+        database,
+        fixture["workspace_id"],
+        fixture["actor_id"],
+        ("legacy:publication:reconcile:account:" + fixture["account"].id,),
+    )
+    assert await _hard_exit_publication_worker(
+        fixture,
+        tmp_path,
+        after_acceptance=True,
+        permit_ttl_seconds=5,
+        operation_id=operation_id,
+    ) == 73
+    await _wait_for_publication_permit_expiry(database, operation_id)
+    return fixture, submitted
+
+
+def test_v1_snapshot_has_exact_ordered_21_key_projection(
+    published_cancelled_recovery_case,
+):
+    from salience.cycles import publication_recovery as recovery
+
+    fixture, submitted = published_cancelled_recovery_case
+    operation_id = UUID(submitted["operation_id"])
+    hold = recovery.record_publication_recovery_hold(
+        fixture["database"],
+        workspace_id=fixture["workspace_id"],
+        operation_id=operation_id,
+        reason="published_during_cancel",
+    )
+
+    projection = recovery._LIABILITY_SNAPSHOT_V1_SELECT
+    projection_keys = tuple(
+        re.findall(r"^\s*'([a-z_]+)'\s*,", projection, flags=re.MULTILINE)
+    )
+    assert projection_keys == _EXPECTED_V1_KEYS
+    assert tuple(recovery._LIABILITY_SNAPSHOT_V1_KEYS) == _EXPECTED_V1_KEYS
+
+    with psycopg.connect(fixture["database"]) as connection:
+        stored = connection.execute(
+            f"""SELECT liability_snapshot, liability_snapshot_version,
+                       liability_snapshot_v1, liability_fingerprint_v1
+                FROM public.{TABLE} WHERE id=%s""",
+            (hold.id,),
+        ).fetchone()
+        canonical = connection.execute(
+            _SNAPSHOT_SQL, (operation_id,)
+        ).fetchone()[0]
+        old_projection = connection.execute(
+            _RECOVERY_HOLD_SNAPSHOT_SQL, (operation_id,)
+        ).fetchone()[0]
+        projection_texts = connection.execute(
+            "SELECT %s::jsonb::text, %s::jsonb::text",
+            (Jsonb(stored[0]), Jsonb(old_projection)),
+        ).fetchone()
+        canonical_fingerprint = connection.execute(
+            "SELECT encode(public.digest(%s::jsonb::text, 'sha256'), 'hex')",
+            (Jsonb(stored[2]),),
+        ).fetchone()[0]
+        array_types = connection.execute(
+            """SELECT jsonb_typeof(%s::jsonb->'remote_publication_receipts'),
+                      jsonb_typeof(%s::jsonb->'publication_status_events'),
+                      jsonb_typeof(%s::jsonb->'cycle_events'),
+                      jsonb_typeof(%s::jsonb->'cycle_outbox'),
+                      jsonb_typeof(%s::jsonb->'job_checkpoints'),
+                      jsonb_typeof(%s::jsonb->'audit_events'),
+                      jsonb_typeof(%s::jsonb->'provenance_records')""",
+            (Jsonb(stored[2]),) * 7,
+        ).fetchone()
+
+    assert stored[1] == "salience.publication-liability.v1"
+    assert set(stored[2]) == set(_EXPECTED_V1_KEYS)
+    assert stored[2] == canonical
+    assert stored[2]["output"] is None
+    assert stored[2]["remote_publication_receipts"] == []
+    assert array_types == ("array",) * 7
+    assert stored[0] == old_projection
+    assert set(stored[0]) == set(_EXPECTED_V1_KEYS) - {
+        "output",
+        "remote_publication_receipts",
+        "job_checkpoints",
+        "audit_events",
+        "provenance_records",
+    }
+    assert stored[3] == canonical_fingerprint
+    assert projection_texts[0] == projection_texts[1]
+
+
+@pytest.mark.parametrize(
+    ("key", "relation", "alias", "filter_sql", "order_sql"),
+    [
+        (
+            "remote_publication_receipts",
+            "remote_publication_receipts",
+            "remote_receipt",
+            "remote_receipt.publication_attempt_id=publication_attempt_row.id",
+            "remote_receipt.created_at,remote_receipt.id",
+        ),
+        (
+            "publication_status_events",
+            "publication_status_events",
+            "status_event",
+            "status_event.publication_attempt_id=publication_attempt_row.id",
+            "status_event.sequence_no,status_event.id",
+        ),
+        (
+            "cycle_events",
+            "v4_cycle_events",
+            "cycle_event",
+            "cycle_event.cycle_id=cycle.id",
+            "cycle_event.created_at,cycle_event.id",
+        ),
+        (
+            "cycle_outbox",
+            "v4_cycle_outbox",
+            "outbox",
+            "outbox.cycle_id=cycle.id",
+            "outbox.sequence,outbox.id",
+        ),
+        (
+            "job_checkpoints",
+            "job_checkpoints",
+            "checkpoint",
+            "checkpoint.job_id=job.id",
+            "checkpoint.sequence_no,checkpoint.id",
+        ),
+        (
+            "audit_events",
+            "audit_events",
+            "audit_event",
+            "audit_event.job_id=job.id",
+            "audit_event.created_at,audit_event.sequence_no,audit_event.id",
+        ),
+        (
+            "provenance_records",
+            "provenance_records",
+            "provenance",
+            "provenance.job_id=job.id",
+            "provenance.created_at,provenance.id",
+        ),
+    ],
+    ids=[
+        "remote-publication-receipts",
+        "publication-status-events",
+        "cycle-events",
+        "cycle-outbox",
+        "job-checkpoints",
+        "audit-events",
+        "provenance-records",
+    ],
+)
+def test_v1_collection_filters_and_ordering_match_spec(
+    key, relation, alias, filter_sql, order_sql
+):
+    from salience.cycles import publication_recovery as recovery
+
+    app_projection = re.sub(
+        r"\s+", "", recovery._LIABILITY_SNAPSHOT_V1_SELECT
+    ).lower()
+    migration_source = (
+        ROOT / "migrations/versions/0043_complete_publication_recovery_liabilities.py"
+    ).read_text()
+    migration_projection_start = migration_source.index("SELECT jsonb_build_object(")
+    migration_projection_end = migration_source.index(
+        ") INTO expected_snapshot", migration_projection_start
+    )
+    migration_projection = re.sub(
+        r"\s+",
+        "",
+        migration_source[migration_projection_start:migration_projection_end],
+    ).lower()
+    expected = re.sub(
+        r"\s+",
+        "",
+        f"'{key}', COALESCE((SELECT jsonb_agg(to_jsonb({alias}) ORDER BY {order_sql}) "
+        f"FROM public.{relation} {alias} WHERE {filter_sql}), '[]'::jsonb)",
+    ).lower()
+    assert expected in app_projection
+    assert expected in migration_projection
+
+
+@pytest.mark.asyncio
+async def test_record_replay_verifier_share_atomic_v1_snapshot(
+    published_cancelled_recovery_case, monkeypatch, tmp_path
+):
+    from salience.cycles import publication_recovery as recovery
+
+    fixture, cancelled = published_cancelled_recovery_case
+    database = fixture["database"]
+    workspace_id = fixture["workspace_id"]
+    cancelled_operation_id = UUID(cancelled["operation_id"])
+    from temporalio.client import Client
+
+    from salience.cycles.outbox import CycleOutbox
+    from salience.cycles.runtime import TemporalCycleTransport
+
+    client = await Client.connect(os.environ["TEST_TEMPORAL_TARGET"])
+    outbox = CycleOutbox(
+        database, workspace_id=workspace_id, delivery_lane="legacy"
+    )
+    assert await outbox.dispatch_one(
+        TemporalCycleTransport(client, task_queue=fixture["queue"])
+    )
+    before_cancelled = _liability_snapshot(database, cancelled_operation_id)
+
+    original_connect = recovery.psycopg.connect
+    observed_connections = []
+    transaction_statuses = []
+
+    class CursorObserver:
+        def __init__(self, cursor, statements):
+            self.cursor = cursor
+            self.statements = statements
+
+        def __enter__(self):
+            self.cursor.__enter__()
+            return self
+
+        def __exit__(self, *args):
+            return self.cursor.__exit__(*args)
+
+        def execute(self, statement, *args, **kwargs):
+            self.statements.append(str(statement))
+            return self.cursor.execute(statement, *args, **kwargs)
+
+        def __getattr__(self, name):
+            return getattr(self.cursor, name)
+
+    class ConnectionObserver:
+        def __init__(self, connection):
+            self.connection = connection
+            self.statements = []
+            self.context_entries = 0
+            self.context_exits = 0
+
+        def __enter__(self):
+            self.connection.__enter__()
+            self.context_entries += 1
+            return self
+
+        def __exit__(self, *args):
+            before = self.connection.info.transaction_status
+            try:
+                return self.connection.__exit__(*args)
+            finally:
+                self.context_exits += 1
+                transaction_statuses.append(
+                    (before, self.connection.info.transaction_status)
+                )
+
+        def execute(self, statement, *args, **kwargs):
+            self.statements.append(str(statement))
+            return self.connection.execute(statement, *args, **kwargs)
+
+        def cursor(self, *args, **kwargs):
+            return CursorObserver(self.connection.cursor(*args, **kwargs), self.statements)
+
+        def __getattr__(self, name):
+            return getattr(self.connection, name)
+
+    def observed_connect(*args, **kwargs):
+        observer = ConnectionObserver(original_connect(*args, **kwargs))
+        observed_connections.append(observer)
+        return observer
+
+    monkeypatch.setattr(recovery.psycopg, "connect", observed_connect)
+    try:
+        cancelled_hold = recovery.record_publication_recovery_hold(
+            database,
+            workspace_id=workspace_id,
+            operation_id=cancelled_operation_id,
+            reason="published_during_cancel",
+        )
+    finally:
+        monkeypatch.setattr(recovery.psycopg, "connect", original_connect)
+
+    assert len(observed_connections) == 1
+    inserts = [
+        statement
+        for statement in observed_connections[0].statements
+        if re.match(r"\s*INSERT\b", statement, flags=re.IGNORECASE)
+    ]
+    assert len(inserts) == 1
+    assert all(
+        column in inserts[0]
+        for column in (
+            "liability_snapshot",
+            "liability_snapshot_version",
+            "liability_snapshot_v1",
+            "liability_fingerprint_v1",
+        )
+    )
+    assert observed_connections[0].context_entries == 1
+    assert observed_connections[0].context_exits == 1
+    assert len(transaction_statuses) == 1
+    assert transaction_statuses[0][0].name == "INTRANS"
+
+    cancelled_replay = recovery.record_publication_recovery_hold(
+        database,
+        workspace_id=workspace_id,
+        operation_id=cancelled_operation_id,
+        reason="published_during_cancel",
+    )
+    expired_fixture, expired = await _create_expired_operation_in_database(
+        database, fixture, monkeypatch, tmp_path
+    )
+    expired_operation_id = UUID(expired["operation_id"])
+    before_expired = _liability_snapshot(database, expired_operation_id)
+    expired_hold = recovery.record_publication_recovery_hold(
+        database,
+        workspace_id=workspace_id,
+        operation_id=expired_operation_id,
+        reason="expired_permit_receipt",
+    )
+    verified = recovery.verify_publication_recovery_rollback(
+        database,
+        workspace_id=workspace_id,
+        operation_ids={
+            "expired_permit_receipt": expired_operation_id,
+            "published_during_cancel": cancelled_operation_id,
+        },
+    )
+    with pytest.raises(recovery.PublicationRecoveryConflictError):
+        recovery.verify_publication_recovery_rollback(
+            database,
+            workspace_id=uuid4(),
+            operation_ids={
+                "expired_permit_receipt": expired_operation_id,
+                "published_during_cancel": cancelled_operation_id,
+            },
+        )
+
+    assert cancelled_replay.id == cancelled_hold.id
+    assert expired_fixture["workspace_id"] == workspace_id
+    assert expired_hold.reason == "expired_permit_receipt"
+    assert tuple(view.id for view in verified) == (
+        expired_hold.id,
+        cancelled_hold.id,
+    )
+    assert _liability_snapshot(database, cancelled_operation_id) == before_cancelled
+    assert _liability_snapshot(database, expired_operation_id) == before_expired
+    with psycopg.connect(database) as connection:
+        rows = connection.execute(
+            f"""SELECT operation_id, liability_snapshot, liability_snapshot_v1,
+                       liability_fingerprint_v1
+                FROM public.{TABLE}
+                WHERE operation_id = ANY(%s) ORDER BY reason""",
+            ([cancelled_operation_id, expired_operation_id],),
+        ).fetchall()
+        for operation_id, old_snapshot, v1_snapshot, fingerprint in rows:
+            assert old_snapshot == connection.execute(
+                _RECOVERY_HOLD_SNAPSHOT_SQL, (operation_id,)
+            ).fetchone()[0]
+            assert v1_snapshot == connection.execute(
+                _SNAPSHOT_SQL, (operation_id,)
+            ).fetchone()[0]
+            assert fingerprint == connection.execute(
+                "SELECT encode(public.digest(%s::jsonb::text,'sha256'),'hex')",
+                (Jsonb(v1_snapshot),),
+            ).fetchone()[0]
+
+
+@pytest.mark.asyncio
+async def test_legacy_null_v1_hold_is_inspectable_but_not_replayable_or_verifiable(
+    published_cancelled_recovery_case, monkeypatch, tmp_path
+):
+    from salience.cycles.publication_recovery import (
+        PublicationRecoveryConflictError,
+        load_publication_recovery_hold,
+        record_publication_recovery_hold,
+        verify_publication_recovery_rollback,
+    )
+
+    fixture, cancelled = published_cancelled_recovery_case
+    database = fixture["database"]
+    workspace_id = fixture["workspace_id"]
+    cancelled_operation_id = UUID(cancelled["operation_id"])
+    from temporalio.client import Client
+
+    from salience.cycles.outbox import CycleOutbox
+    from salience.cycles.runtime import TemporalCycleTransport
+
+    client = await Client.connect(os.environ["TEST_TEMPORAL_TARGET"])
+    outbox = CycleOutbox(
+        database, workspace_id=workspace_id, delivery_lane="legacy"
+    )
+    assert await outbox.dispatch_one(
+        TemporalCycleTransport(client, task_queue=fixture["queue"])
+    )
+    before_cancelled = _liability_snapshot(database, cancelled_operation_id)
+
+    downgraded = _migrate(database, "downgrade", REVISION)
+    assert downgraded.returncode == 0, downgraded.stderr
+    with psycopg.connect(database) as connection:
+        connection.execute(
+            _INSERT_SQL,
+            _hold_values(
+                connection,
+                cancelled_operation_id,
+                reason="published_during_cancel",
+            ),
+        )
+    upgraded = _migrate(database, "upgrade", REVISION_0043)
+    assert upgraded.returncode == 0, upgraded.stderr
+
+    with psycopg.connect(database) as connection:
+        legacy_columns = connection.execute(
+            f"""SELECT liability_snapshot_version, liability_snapshot_v1,
+                       liability_fingerprint_v1
+                FROM public.{TABLE} WHERE operation_id=%s""",
+            (cancelled_operation_id,),
+        ).fetchone()
+        inspected = load_publication_recovery_hold(
+            connection,
+            workspace_id=workspace_id,
+            operation_id=cancelled_operation_id,
+        )
+    assert legacy_columns == (None, None, None)
+    assert inspected is not None
+    assert inspected.reason == "published_during_cancel"
+
+    with pytest.raises(PublicationRecoveryConflictError):
+        record_publication_recovery_hold(
+            database,
+            workspace_id=workspace_id,
+            operation_id=cancelled_operation_id,
+            reason="published_during_cancel",
+        )
+
+    _, expired = await _create_expired_operation_in_database(
+        database, fixture, monkeypatch, tmp_path
+    )
+    expired_operation_id = UUID(expired["operation_id"])
+    before_expired = _liability_snapshot(database, expired_operation_id)
+    expired_hold = record_publication_recovery_hold(
+        database,
+        workspace_id=workspace_id,
+        operation_id=expired_operation_id,
+        reason="expired_permit_receipt",
+    )
+    with pytest.raises(PublicationRecoveryConflictError):
+        verify_publication_recovery_rollback(
+            database,
+            workspace_id=workspace_id,
+            operation_ids={
+                "expired_permit_receipt": expired_operation_id,
+                "published_during_cancel": cancelled_operation_id,
+            },
+        )
+
+    assert expired_hold.reason == "expired_permit_receipt"
+    assert _liability_snapshot(database, cancelled_operation_id) == before_cancelled
+    assert _liability_snapshot(database, expired_operation_id) == before_expired
+    with psycopg.connect(database) as connection:
+        assert connection.execute(
+            f"""SELECT liability_snapshot_version, liability_snapshot_v1,
+                       liability_fingerprint_v1
+                FROM public.{TABLE} WHERE operation_id=%s""",
+            (cancelled_operation_id,),
+        ).fetchone() == (None, None, None)

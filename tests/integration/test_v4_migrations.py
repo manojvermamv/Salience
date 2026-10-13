@@ -393,6 +393,34 @@ def _assert_0043_schema_and_guard(connection, role):
     assert "v4_guard_legacy_publication_recovery_hold_v1" in trigger
 
 
+def test_v1_snapshot_application_projection_matches_0043_guard():
+    from salience.cycles import publication_recovery
+
+    migration_source = (
+        _MIGRATION_ROOT
+        / "migrations/versions/0043_complete_publication_recovery_liabilities.py"
+    ).read_text()
+    projection_start = migration_source.index("SELECT jsonb_build_object(")
+    projection_end = migration_source.index(
+        ") INTO expected_snapshot", projection_start
+    )
+    migration_projection = migration_source[projection_start:projection_end]
+    application_projection = publication_recovery._LIABILITY_SNAPSHOT_V1_SELECT
+
+    application_keys = tuple(
+        re.findall(
+            r"^\s*'([a-z_]+)'\s*,",
+            application_projection,
+            flags=re.MULTILINE,
+        )
+    )
+    assert application_keys == _V1_KEYS
+    normalize = lambda value: re.sub(r"\s+", "", value).lower()
+    assert normalize(migration_projection + ")").removeprefix("select") == normalize(
+        application_projection
+    )
+
+
 async def _insert_fixture_hold_case(database, tmp_path, monkeypatch, *, legacy_row=False):
     before = _migration(database, "upgrade", _REVISION_0041)
     assert before.returncode == 0, before.stderr

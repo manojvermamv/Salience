@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 from datetime import datetime
 from collections.abc import Mapping
+import re
 from typing import Literal
 from uuid import UUID
 
@@ -71,6 +72,91 @@ _SNAPSHOT_SELECT = """jsonb_build_object(
                          ORDER BY outbox.sequence, outbox.id)
         FROM public.v4_cycle_outbox outbox
         WHERE outbox.cycle_id=cycle.id
+    ), '[]'::jsonb)
+)"""
+
+_LIABILITY_SNAPSHOT_V1_KEYS = (
+    "dispatch",
+    "context",
+    "cycle",
+    "job",
+    "permit_claim",
+    "permit",
+    "fixture_receipt",
+    "fixture_progress",
+    "publication_request",
+    "publication_plan",
+    "publication_attempt",
+    "external_effect",
+    "budget_reservation",
+    "output",
+    "remote_publication_receipts",
+    "publication_status_events",
+    "cycle_events",
+    "cycle_outbox",
+    "job_checkpoints",
+    "audit_events",
+    "provenance_records",
+)
+_LIABILITY_SNAPSHOT_V1_VERSION = "salience.publication-liability.v1"
+
+_LIABILITY_SNAPSHOT_V1_SELECT = """jsonb_build_object(
+    'dispatch', to_jsonb(binding),
+    'context', to_jsonb(context),
+    'cycle', to_jsonb(cycle),
+    'job', to_jsonb(job),
+    'permit_claim', to_jsonb(claim),
+    'permit', to_jsonb(permit),
+    'fixture_receipt', to_jsonb(receipt_row),
+    'fixture_progress', to_jsonb(progress),
+    'publication_request', to_jsonb(pub_request),
+    'publication_plan', to_jsonb(plan),
+    'publication_attempt', to_jsonb(publication_attempt_row.*),
+    'external_effect', COALESCE(to_jsonb(effect), 'null'::jsonb),
+    'budget_reservation', COALESCE(to_jsonb(reservation), 'null'::jsonb),
+    'output', to_jsonb(job.output_payload),
+    'remote_publication_receipts', COALESCE((
+      SELECT jsonb_agg(to_jsonb(remote_receipt)
+                       ORDER BY remote_receipt.created_at, remote_receipt.id)
+      FROM public.remote_publication_receipts remote_receipt
+      WHERE remote_receipt.publication_attempt_id=publication_attempt_row.id
+    ), '[]'::jsonb),
+    'publication_status_events', COALESCE((
+      SELECT jsonb_agg(to_jsonb(status_event)
+                       ORDER BY status_event.sequence_no, status_event.id)
+      FROM public.publication_status_events status_event
+      WHERE status_event.publication_attempt_id=publication_attempt_row.id
+    ), '[]'::jsonb),
+    'cycle_events', COALESCE((
+      SELECT jsonb_agg(to_jsonb(cycle_event)
+                       ORDER BY cycle_event.created_at, cycle_event.id)
+      FROM public.v4_cycle_events cycle_event
+      WHERE cycle_event.cycle_id=cycle.id
+    ), '[]'::jsonb),
+    'cycle_outbox', COALESCE((
+      SELECT jsonb_agg(to_jsonb(outbox)
+                       ORDER BY outbox.sequence, outbox.id)
+      FROM public.v4_cycle_outbox outbox
+      WHERE outbox.cycle_id=cycle.id
+    ), '[]'::jsonb),
+    'job_checkpoints', COALESCE((
+      SELECT jsonb_agg(to_jsonb(checkpoint)
+                       ORDER BY checkpoint.sequence_no, checkpoint.id)
+      FROM public.job_checkpoints checkpoint
+      WHERE checkpoint.job_id=job.id
+    ), '[]'::jsonb),
+    'audit_events', COALESCE((
+      SELECT jsonb_agg(to_jsonb(audit_event)
+                       ORDER BY audit_event.created_at,
+                                audit_event.sequence_no, audit_event.id)
+      FROM public.audit_events audit_event
+      WHERE audit_event.job_id=job.id
+    ), '[]'::jsonb),
+    'provenance_records', COALESCE((
+      SELECT jsonb_agg(to_jsonb(provenance)
+                       ORDER BY provenance.created_at, provenance.id)
+      FROM public.provenance_records provenance
+      WHERE provenance.job_id=job.id
     ), '[]'::jsonb)
 )"""
 
@@ -169,6 +255,9 @@ _CANDIDATE_SQL = f"""WITH candidate AS (
            progress.state AS remote_state,
            %s::text AS reason,
            'held'::text AS state,
+           '{_LIABILITY_SNAPSHOT_V1_VERSION}'::text
+               AS liability_snapshot_version,
+           {_LIABILITY_SNAPSHOT_V1_SELECT} AS liability_snapshot_v1,
            {_SNAPSHOT_SELECT} AS liability_snapshot
     {_EVIDENCE_FROM}
     WHERE binding.operation_id=%s
@@ -233,6 +322,9 @@ _REPLAY_FIELDS = (
     "reason",
     "state",
     "liability_snapshot",
+    "liability_snapshot_version",
+    "liability_snapshot_v1",
+    "liability_fingerprint_v1",
 )
 
 _HOLD_COLUMNS = """id, operation_id, workspace_id, goal_id, intent_id, cycle_id,
@@ -240,6 +332,12 @@ context_id, job_id, publication_attempt_id, permit_id, owner_id,
 execution_deadline, permit_expires_at, request_fingerprint,
 receipt_fingerprint, liability_fingerprint, remote_id, remote_state,
 reason, state, liability_snapshot, created_at"""
+
+_HOLD_COLUMNS_V1 = (
+    _HOLD_COLUMNS.removesuffix(", created_at")
+    + ", liability_snapshot_version, liability_snapshot_v1, "
+    + "liability_fingerprint_v1, created_at"
+)
 
 _ROLLBACK_REASON_ORDER: tuple[PublicationRecoveryReason, ...] = (
     "expired_permit_receipt",
@@ -291,6 +389,42 @@ def _same_evidence(stored, candidate) -> bool:
     return all(stored[field] == candidate[field] for field in _REPLAY_FIELDS)
 
 
+def _validate_v1_evidence(connection, evidence) -> None:
+    snapshot = evidence["liability_snapshot_v1"]
+    fingerprint = evidence["liability_fingerprint_v1"]
+    if (
+        evidence["liability_snapshot_version"] != _LIABILITY_SNAPSHOT_V1_VERSION
+        or snapshot is None
+        or fingerprint is None
+    ):
+        raise PublicationRecoveryConflictError(
+            "complete publication recovery v1 evidence required"
+        )
+    if not isinstance(snapshot, Mapping) or set(snapshot) != set(
+        _LIABILITY_SNAPSHOT_V1_KEYS
+    ):
+        raise PublicationRecoveryConflictError(
+            "publication recovery v1 snapshot must contain exactly 21 keys"
+        )
+    if not isinstance(fingerprint, str) or re.fullmatch(
+        r"[0-9a-f]{64}", fingerprint
+    ) is None:
+        raise PublicationRecoveryConflictError(
+            "publication recovery v1 fingerprint must be lowercase SHA-256 hex"
+        )
+    canonical_fingerprint = _fetchone(
+        connection,
+        """SELECT encode(
+                public.digest(%s::jsonb::text, 'sha256'), 'hex'
+            ) AS fingerprint""",
+        (Jsonb(snapshot),),
+    )["fingerprint"]
+    if fingerprint != canonical_fingerprint:
+        raise PublicationRecoveryConflictError(
+            "publication recovery v1 fingerprint mismatch"
+        )
+
+
 def _lock_candidate_rows(connection, workspace_id, operation_id):
     locked = _fetchone(
         connection,
@@ -335,7 +469,7 @@ def record_publication_recovery_hold(
         )
         stored = _fetchone(
             connection,
-            f"""SELECT {_HOLD_COLUMNS}
+            f"""SELECT {_HOLD_COLUMNS_V1}
                 FROM public.v4_legacy_publication_recovery_holds
                 WHERE operation_id=%s""",
             (operation_id,),
@@ -346,6 +480,8 @@ def record_publication_recovery_hold(
             raise PublicationRecoveryConflictError(
                 "publication recovery operation already has a different hold binding"
             )
+        if stored:
+            _validate_v1_evidence(connection, stored)
 
         _lock_candidate_rows(connection, workspace_id, operation_id)
         candidate = _fetchone(
@@ -363,13 +499,24 @@ def record_publication_recovery_hold(
             )
 
         snapshot_parameter = Jsonb(candidate["liability_snapshot"])
-        candidate["liability_fingerprint"] = _fetchone(
+        snapshot_v1_parameter = Jsonb(candidate["liability_snapshot_v1"])
+        fingerprints = _fetchone(
             connection,
             """SELECT encode(
                     public.digest(%s::jsonb::text, 'sha256'), 'hex'
-                ) AS fingerprint""",
-            (snapshot_parameter,),
-        )["fingerprint"]
+                ) AS liability_fingerprint,
+                encode(
+                    public.digest(%s::jsonb::text, 'sha256'), 'hex'
+                ) AS liability_fingerprint_v1""",
+            (snapshot_parameter, snapshot_v1_parameter),
+        )
+        candidate["liability_fingerprint"] = fingerprints[
+            "liability_fingerprint"
+        ]
+        candidate["liability_fingerprint_v1"] = fingerprints[
+            "liability_fingerprint_v1"
+        ]
+        _validate_v1_evidence(connection, candidate)
 
         if stored:
             if not _same_evidence(stored, candidate):
@@ -380,6 +527,7 @@ def record_publication_recovery_hold(
 
         insert_values = {field: candidate[field] for field in _REPLAY_FIELDS}
         insert_values["liability_snapshot"] = snapshot_parameter
+        insert_values["liability_snapshot_v1"] = snapshot_v1_parameter
         inserted = _fetchone(
             connection,
             f"""INSERT INTO public.v4_legacy_publication_recovery_holds (
@@ -387,7 +535,9 @@ def record_publication_recovery_hold(
                     context_id, job_id, publication_attempt_id, permit_id, owner_id,
                     execution_deadline, permit_expires_at, request_fingerprint,
                     receipt_fingerprint, liability_fingerprint, remote_id,
-                    remote_state, reason, state, liability_snapshot
+                    remote_state, reason, state, liability_snapshot,
+                    liability_snapshot_version, liability_snapshot_v1,
+                    liability_fingerprint_v1
                 ) VALUES (
                     %(operation_id)s, %(workspace_id)s, %(goal_id)s, %(intent_id)s,
                     %(cycle_id)s, %(context_id)s, %(job_id)s,
@@ -395,9 +545,11 @@ def record_publication_recovery_hold(
                     %(execution_deadline)s, %(permit_expires_at)s,
                     %(request_fingerprint)s, %(receipt_fingerprint)s,
                     %(liability_fingerprint)s, %(remote_id)s, %(remote_state)s,
-                    %(reason)s, %(state)s, %(liability_snapshot)s
+                    %(reason)s, %(state)s, %(liability_snapshot)s,
+                    %(liability_snapshot_version)s, %(liability_snapshot_v1)s,
+                    %(liability_fingerprint_v1)s
                 ) ON CONFLICT (operation_id) DO NOTHING
-                RETURNING {_HOLD_COLUMNS}""",
+                RETURNING {_HOLD_COLUMNS_V1}""",
             insert_values,
         )
         if inserted:
@@ -405,11 +557,13 @@ def record_publication_recovery_hold(
 
         raced = _fetchone(
             connection,
-            f"""SELECT {_HOLD_COLUMNS}
+            f"""SELECT {_HOLD_COLUMNS_V1}
                 FROM public.v4_legacy_publication_recovery_holds
                 WHERE operation_id=%s""",
             (operation_id,),
         )
+        if raced is not None:
+            _validate_v1_evidence(connection, raced)
         if (
             raced is None
             or raced["workspace_id"] != workspace_id
@@ -457,7 +611,7 @@ def verify_publication_recovery_rollback(
             operation_id = normalized_operation_ids[reason]
             stored = _fetchone(
                 connection,
-                f"""SELECT {_HOLD_COLUMNS}
+                f"""SELECT {_HOLD_COLUMNS_V1}
                     FROM public.v4_legacy_publication_recovery_holds
                     WHERE workspace_id=%s AND operation_id=%s""",
                 (workspace_id, operation_id),
@@ -466,6 +620,7 @@ def verify_publication_recovery_rollback(
                 raise PublicationRecoveryConflictError(
                     "both immutable publication recovery holds are required"
                 )
+            _validate_v1_evidence(connection, stored)
 
             candidate = _fetchone(
                 connection,
@@ -478,13 +633,24 @@ def verify_publication_recovery_rollback(
                 )
 
             candidate_snapshot = Jsonb(candidate["liability_snapshot"])
-            candidate["liability_fingerprint"] = _fetchone(
+            candidate_snapshot_v1 = Jsonb(candidate["liability_snapshot_v1"])
+            fingerprints = _fetchone(
                 connection,
                 """SELECT encode(
                         public.digest(%s::jsonb::text, 'sha256'), 'hex'
-                    ) AS fingerprint""",
-                (candidate_snapshot,),
-            )["fingerprint"]
+                    ) AS liability_fingerprint,
+                    encode(
+                        public.digest(%s::jsonb::text, 'sha256'), 'hex'
+                    ) AS liability_fingerprint_v1""",
+                (candidate_snapshot, candidate_snapshot_v1),
+            )
+            candidate["liability_fingerprint"] = fingerprints[
+                "liability_fingerprint"
+            ]
+            candidate["liability_fingerprint_v1"] = fingerprints[
+                "liability_fingerprint_v1"
+            ]
+            _validate_v1_evidence(connection, candidate)
             if not _same_evidence(stored, candidate):
                 raise PublicationRecoveryConflictError(
                     "publication recovery evidence conflicts with the original hold"
