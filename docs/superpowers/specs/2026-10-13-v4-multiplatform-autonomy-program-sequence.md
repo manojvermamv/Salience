@@ -29,6 +29,12 @@ Every slice preserves these invariants:
 - Parallel work is bounded, durable, scoped, and auditable. AgentTube remains a pinned reference only; there is no runtime, schema, credential, or dependency coupling.
 - The core stays provider-neutral, fallback is never silent, unsupported operations fail closed, and production/RG status is reported exactly as evidenced.
 
+### Immutable AgentTube reference
+
+The initialized `youtube-automation-agent/` worktree is immutable reference material. It must remain clean and detached at the exact superproject gitlink commit, with `git -C youtube-automation-agent status --porcelain` empty. Do not make local patches or commits, switch branches, rebase, generate files, install dependencies, or edit the worktree. The reference verifier is an acceptance gate and must fail for either a dirty initialized worktree or an initialized `HEAD` that does not exactly match the gitlink. If either condition is found, stop reference/adoption work and restore or reinitialize the checkout at the exact pin; do not preserve local changes as project work through a stash, commit, or patch.
+
+AgentTube is not a wholesale port target. Each candidate capability or implementation idea needs a recorded comparison showing that it is useful and materially better than Salience's current equivalent. Record one disposition: keep Salience, adapt concept, reimplement natively, or reject. Any selected work is reimplemented in Salience-owned source, contracts, and bounded acceptance tests after owning-phase approval; it must fit generic multi-platform contracts and existing safety gates, with provenance and licensing reviewed. “Port” never means copying or modifying upstream source, runtime, or schema. A future pin update requires review and changes only the superproject `.gitmodules` metadata and gitlink to an unmodified upstream commit. These reference rules do not change the phase sequence, entry conditions, or release gates.
+
 ## Sequence overview
 
 ```mermaid

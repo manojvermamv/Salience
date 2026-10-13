@@ -1,6 +1,6 @@
 # AgentTube reference and native adoption design
 
-**Status:** Bounded reference-only slice implemented; native adoption remains gated
+**Status:** Base bounded reference-only slice implemented; immutable-worktree verifier acceptance pending; native adoption remains gated
 
 **Date:** 2026-10-13
 
@@ -10,7 +10,7 @@
 
 Use the YouTube Automation Agent repository (also called AgentTube in the research reports) as a durable, inspectable product reference for onboarding, resumable content production, review, analytics, and experiments. Salience remains the runtime and system of record. Native adoption must fit the V4 governance, durable execution, recovery, publication, and evidence model rather than coupling Salience to the upstream application's runtime or database.
 
-The reference-only slice is complete: the pinned checkout, durable source evidence, and repository-boundary checks are present. Native adoption succeeds only when each selected workflow is mapped to authoritative V4 requirements and qualified by its phase-specific evidence. Salience does not install, import, start, or credential the upstream project, and no adoption step changes today's effect, release, or merge gates. The submodule, upstream test results, and generic adapter interfaces do not establish native feature readiness.
+The base reference-only slice is present: the pinned checkout, durable source evidence, and repository-boundary checks are present. The current verifier checks an initialized checkout's `HEAD` against the pin but does not yet reject a dirty initialized worktree; immutable-worktree verifier acceptance below remains open until that behavior is implemented and evidenced. Native adoption succeeds only when each selected workflow is mapped to authoritative V4 requirements and qualified by its phase-specific evidence. Salience does not install, import, start, or credential the upstream project, and no adoption step changes today's effect, release, or merge gates. The submodule, upstream test results, and generic adapter interfaces do not establish native feature readiness.
 
 ## Evidence boundary
 
@@ -31,7 +31,7 @@ The binding current-state constraints are:
 
 ## Selected approach and alternatives
 
-Keep the completed root-level, pinned reference submodule for source comparison, then implement selected product workflows natively against Salience's V4 contracts. This preserves upstream provenance without adding the upstream runtime to Salience's dependency or authority boundary. Adopt only the operator-facing behaviors that improve Salience; retain PostgreSQL, Temporal, outbox/inbox, scoped grants, typed recovery, rights, budgets, and release gates as the native foundation.
+Keep the completed root-level, pinned reference submodule only for comparison; the AgentTube application is not a wholesale port target. Consider an individual capability or implementation idea only when a recorded comparison with Salience's current equivalent shows it is useful and materially better for Salience. Any selected work is reimplemented natively against generic multi-platform contracts and existing V4 safety gates, preserving upstream provenance without adding its runtime to Salience's dependency or authority boundary. Retain PostgreSQL, Temporal, outbox/inbox, scoped grants, typed recovery, rights, budgets, and release gates as the native foundation.
 
 | Approach | Trade-off | Decision |
 | --- | --- | --- |
@@ -40,15 +40,32 @@ Keep the completed root-level, pinned reference submodule for source comparison,
 | Keep only written research, with no source reference | Avoids Git submodule mechanics, but loses an exact source snapshot and a simple reviewed-diff path for future comparisons. | Not selected. The pinned read-only reference is useful evidence when its boundary is enforced. |
 | Pinned reference submodule; implement selected behavior natively | Adds a small source-navigation/update obligation, while preserving provenance and a clean runtime boundary. | Selected. |
 
+### Comparison and adoption decisions
+
+AgentTube is an immutable reference, not a wholesale port target. Before adopting any capability or implementation idea, record the pinned upstream behavior and provenance, Salience's current equivalent, the specific gap, evidence for a useful and material improvement, fit with generic multi-platform contracts and existing safety gates, licensing review, and bounded acceptance tests. A difference or feature count alone is not evidence of improvement. Record one disposition for each candidate:
+
+| Disposition | Decision rule |
+| --- | --- |
+| Keep Salience | The current Salience equivalent meets the need, or the comparison does not establish a material improvement; make no adoption change. |
+| Adapt concept | A useful, materially better idea is supported, but its flow or framing should be reshaped for Salience; use the concept within Salience's generic multi-platform contracts and safety gates. |
+| Reimplement natively | A specific observable capability is useful and materially better; after owning-phase approval, implement its behavior in Salience-owned source, contracts, and bounded tests. |
+| Reject | Evidence does not show material value, or provenance, licensing, multi-platform fit, or safety-gate compatibility is unresolved or unacceptable; do not adopt it. |
+
+“Adapt concept” and “Reimplement natively” never authorize copying or modifying upstream source, runtime, or schema. Any selected work requires a provenance/licensing review and bounded acceptance tests for its approved scope; these decisions do not satisfy a phase gate or grant effect authority.
+
 ## Submodule contract
 
 The completed repository slice records `youtube-automation-agent/` at the Salience repository root with upstream URL `https://github.com/darkzOGx/youtube-automation-agent`, `branch = master` as an update hint only, and the superproject gitlink pinned at `e26792ae00dc1ec2434faf32632896609396dfad`. Builds and normal development never follow the branch head automatically. Future pin changes remain separate reviewed source changes.
+
+The initialized submodule worktree is an immutable reference: it must remain clean, detached at the exact commit recorded by the superproject gitlink, with `git -C youtube-automation-agent status --porcelain` empty. Do not apply local patches or commits, switch branches, rebase, generate files, install dependencies, or edit anything inside it. If the initialized worktree is dirty or its `HEAD` differs from the gitlink, stop reference comparison and adoption work, then restore or reinitialize it at the exact pinned upstream commit. Do not preserve local AgentTube changes as project work through a stash, commit, or patch.
+
+In this design, “port” means reimplementing selected observable behavior natively in Salience-owned source, contracts, and tests after the owning phase's design and acceptance are approved. It never means copying or modifying upstream source, runtime, or schema. AgentTube remains unchanged; the existing licensing and dependency review boundaries still apply.
 
 The path is reference material only. Salience source, packaging, container images, and deployment must not import from it, copy it into a runtime artifact, install its dependencies, start its server or scheduler, or pass it credentials. Normal Salience CI checks out and tests Salience without initializing the submodule or installing its package graph. If a future comparative benchmark is useful, run it as a separately pinned, disposable, non-live, manually or schedule-triggered job with no Salience or provider credentials; it cannot qualify a V4 gate.
 
 Do not adopt the upstream single-process runtime, SQLite or local-file persistence, cron or in-memory/process-local coordination, optional API authentication, credential model, database/schema, data, source code, or dependency graph. Native coordination and authority remain on the V4 PostgreSQL, Temporal, outbox/inbox, identity, and scoped-grant contracts. Any proposal to reuse upstream code or dependencies requires a separate concrete code-level proposal and license, dependency, security, and V4-boundary review before consideration; it does not inherit runtime or effect authority.
 
-An upstream update is a deliberate source change, not a routine dependency refresh. It requires a reviewed commit diff from the old pin to the proposed pin, refreshed architecture and operations research, updated capability and gap findings, license and dependency/security review, and a new reviewed gitlink commit. Keep the branch hint separate from the pin. No upstream release, tag, or README claim changes Salience's eligibility or active routing.
+An upstream update is a deliberate source change, not a routine dependency refresh. It requires a reviewed commit diff from the old pin to the proposed, unmodified upstream commit, refreshed architecture and operations research, updated capability and gap findings, license and dependency/security review, and a reviewed superproject change limited to `.gitmodules` metadata and the gitlink. The AgentTube worktree itself remains untouched. Never preserve local AgentTube changes through a stash, commit, or patch. Keep the branch hint separate from the pin. No upstream release, tag, or README claim changes Salience's eligibility or active routing.
 
 ## Native target architecture
 
@@ -132,10 +149,12 @@ The design is ready to move into separate implementation planning only when each
 14. Stop/revocation, review, and recovery retain audit history and unresolved liabilities; rollback never silently retries or discards an external effect.
 15. Migrations and rollback follow the existing additive V4 phase contracts, preserve historical identifiers and evidence, and never fabricate missing authority, provider outcomes, or analytics.
 16. Every release claim cites exact source, configuration, dependency, account/scope, command, result, and artifact identity; fixture, upstream, private/sandbox, and production evidence remain visibly distinct.
+17. When initialized, the reference worktree is clean, detached at the exact superproject gitlink commit, and has empty `git -C youtube-automation-agent status --porcelain` output. The repository verifier fails for a dirty initialized reference and for an initialized `HEAD` that does not exactly match the gitlink. On either failure, work stops until the checkout is restored or reinitialized at the exact pin; no local changes are retained as project work.
+18. Every considered capability or implementation idea has a recorded comparison with Salience's current equivalent and one disposition: keep Salience, adapt concept, reimplement natively, or reject. Adoption is limited to candidates shown useful and materially better; selected work fits generic multi-platform contracts and existing safety gates, has provenance/licensing review, and uses bounded acceptance tests after owning-phase approval. AgentTube as a whole is never a port target.
 
 ## Migration and rollback
 
-The completed reference submodule requires no Salience schema migration. A future pin update or removal changes only the superproject's `.gitmodules` and gitlink; reverting an update restores the prior reviewed pin. It does not change the application runtime or canonical records. Do not import AgentTube SQLite databases, credentials, media, or analytics as part of this adoption; any future data transfer requires a separate purpose, rights, schema mapping, and reconciliation design.
+The reference submodule requires no Salience schema migration. A future pin update changes only the reviewed superproject `.gitmodules` metadata and gitlink to an unmodified upstream commit; reverting an update restores the prior reviewed pin. It does not change the AgentTube worktree, application runtime, or canonical records. Do not import AgentTube SQLite databases, credentials, media, or analytics as part of this adoption; any future data transfer requires a separate purpose, rights, schema mapping, and reconciliation design.
 
 Native features use the existing P2–P7 migration boundaries. Add versioned sidecar records and readers, preserve old contracts, backfill only facts supported by source evidence, and mark unknown legacy provenance or authority explicitly. Use feature-level enablement only after the owning phase gate passes. For rollback, stop new work and dispatch, retain workflow histories, media manifests, review decisions, assignments, receipts, cases, and unsettled liabilities; keep compatible workers for already-started histories; rebuild projections from canonical records; and reconcile external operations before resuming. Do not use destructive schema downgrade or reset as routine rollback. Follow each phase's migration and rollback contract in the blueprint.
 
@@ -154,4 +173,4 @@ These tracked reports provide durable source provenance, while their hashes and 
 
 ## Exclusions
 
-The reference-only submodule/evidence/guard slice is complete, but this design does not implement native P2–P7 behavior, change application code, install or adopt upstream dependencies, create or run an AgentTube service, access accounts or credentials, perform live or paid provider calls, enable publishing or autonomous effects, qualify an adapter, close RG0/RG1, open P2–P7, enable P6, merge to `main`, or import upstream data. Those actions require their own implementation work and existing phase-specific approvals/evidence.
+This design does not implement native P2–P7 behavior, change application code, install or adopt upstream dependencies, edit or modify the AgentTube submodule, create or run an AgentTube service, access accounts or credentials, perform live or paid provider calls, enable publishing or autonomous effects, qualify an adapter, close RG0/RG1, open P2–P7, enable P6, merge to `main`, or import upstream data. Those actions require their own implementation work and existing phase-specific approvals/evidence.
