@@ -398,41 +398,144 @@ async def test_actual_temporal_schedule_pause_and_rollback_watermark(policy, mon
 
 
 @pytest.mark.asyncio
-async def test_real_legacy_worker_exit_after_start_preserves_unknown_without_new_run(legacy,tmp_path):
-    import asyncio,subprocess,sys
+async def test_real_legacy_worker_exit_after_start_preserves_unknown_without_new_run(legacy):
+    import asyncio
+    import hashlib
+    import importlib.util
+    import json
+    import subprocess
+    from pathlib import Path
+
     from temporalio.client import Client
 
     bridge, command, service, database = legacy
-    result=bridge.submit(command)
-    env=os.environ|{"TEST_DATABASE_URL":database,"V4_FIXTURE_WORKSPACE":str(service.workspace_id),"V4_LEGACY_FIXTURE_QUEUE":bridge.task_queue,"SALIENCE_DEPLOYMENT_MODE":"fixture","SALIENCE_EFFECTS_ENABLED":"false"}
-    script="tests/fixtures/legacy_dispatch_process.py"
-    with (tmp_path/"crash.log").open("w") as log:
-        first=subprocess.Popen([sys.executable,script],env=env|{"LEGACY_FIXTURE_CRASH_AFTER_START":"1"},stdout=log,stderr=subprocess.STDOUT)
-        try:
-            assert await asyncio.to_thread(first.wait,20)==137
-        finally:
-            if first.poll() is None:
-                first.kill();await asyncio.to_thread(first.wait)
-    client=await Client.connect(env["TEST_TEMPORAL_TARGET"])
-    handle=client.get_workflow_handle("salience-v4-legacy-operation:"+result["operation_id"])
-    original=(await handle.describe()).run_id
-    with (tmp_path/"restart.log").open("w") as log:
-        second=subprocess.Popen([sys.executable,script],env=env,stdout=log,stderr=subprocess.STDOUT)
-        try:
-            async with asyncio.timeout(20):
-                while bridge.inspect(result["job_id"])["dispatch_state"] != "unknown":
-                    await asyncio.sleep(.05)
-            assert (await handle.describe()).run_id == original
-            with psycopg.connect(database) as connection:
-                assert connection.execute("SELECT count(*) FROM v4_permit_claims WHERE cycle_id=%s",(result["cycle_id"],)).fetchone()[0]==1
-                assert connection.execute("SELECT count(*) FROM jobs WHERE id=%s",(result["job_id"],)).fetchone()[0]==1
-                assert connection.execute("SELECT count(*) FROM v4_cycle_events WHERE cycle_id=%s AND kind='fixture_adapter_accepted'",(result["cycle_id"],)).fetchone()[0]==0
-        finally:
-            second.terminate()
-            try:
-                await asyncio.to_thread(second.wait,5)
-            except subprocess.TimeoutExpired:
-                second.kill();await asyncio.to_thread(second.wait)
-            from temporalio.client import WorkflowExecutionStatus
-            if (await handle.describe()).status == WorkflowExecutionStatus.RUNNING:
-                await handle.terminate(reason="End disposable legacy hard-exit fixture")
+    result = bridge.submit(command)
+    root = Path(__file__).resolve().parents[2]
+    candidate_root = root / "artifacts/v4-next-p1/agents/p1-publication-recovery-0043"
+    attestation = json.loads((candidate_root / "image-attestation.json").read_text())
+    control_bundle = candidate_root / "control-bundle"
+    tracked_lock = (root / "deployment/v4/publication-worker-launch-lock.json").read_bytes()
+    trusted_digest = hashlib.sha256(tracked_lock).hexdigest()
+    assert attestation["image_id"]
+    assert attestation["image_ref"]
+    assert attestation["application_commit"] == json.loads(tracked_lock)["pin"]["application_commit"]
+    assert (control_bundle / "publication-worker-launch-lock.json").read_bytes() == tracked_lock
+    assert (control_bundle / "publication-worker-launch-lock.sha256").read_text().strip() == trusted_digest
+
+    harness_path = root / "tests/fixtures/v4_publication_floor_worker.py"
+    spec = importlib.util.spec_from_file_location("v4_publication_floor_worker", harness_path)
+    assert spec is not None and spec.loader is not None
+    harness = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(harness)
+    harness_image_id = harness.image_id(attestation["image_ref"])
+    assert harness_image_id == attestation["image_id"]
+    crash_fixture = root / "tests/fixtures/legacy_dispatch_process.py"
+    temporal_target = os.environ["TEST_TEMPORAL_TARGET"]
+
+    def start_worker(name, *, crash_after_start=False):
+        return harness.start_current_legacy_worker(
+            image=attestation["image_ref"],
+            database_url=database,
+            temporal_target=temporal_target,
+            workspace_id=str(service.workspace_id),
+            task_queue=bridge.task_queue,
+            control_bundle=control_bundle,
+            name=name,
+            crash_fixture=crash_fixture if crash_after_start else None,
+        )
+
+    first_name = "legacy-hard-exit-" + uuid4().hex[:12]
+    first_exit = None
+    try:
+        first = start_worker(first_name, crash_after_start=True)
+        assert first["image_id"] == harness.image_id(attestation["image_ref"]) == harness_image_id
+        first_inspect = harness.inspect_worker(first_name)
+        assert first_inspect["image_id"] == harness_image_id
+        assert first_inspect["path"] == "/usr/local/bin/python"
+        assert first_inspect["read_only_rootfs"] is True
+        first_argv = json.loads(first["launcher_argv"])
+        assert first_argv == [
+            "/usr/local/bin/python",
+            "-I",
+            "-B",
+            "-S",
+            "-c",
+            harness._LEGACY_DISPATCH_CRASH_LAUNCH_SHIM,
+            "/run/salience-control/launch-v4-publication-worker.py",
+            "--mode",
+            "current",
+            "--worker-kind",
+            "legacy-fixture",
+        ]
+        assert first_inspect["args"] == first_argv[1:]
+        first_mounts = {mount["destination"]: mount for mount in first_inspect["mounts"]}
+        assert set(first_mounts) == {
+            "/run/salience-control/launch-v4-publication-worker.py",
+            "/run/salience-control/publication-worker-launch-lock.json",
+            "/run/salience-control/publication-worker-launch-lock.sha256",
+            "/run/salience-control/legacy-dispatch-crash-fixture.py",
+        }
+        assert all(not mount["read_write"] for mount in first_mounts.values())
+        first_wait = await asyncio.to_thread(
+            subprocess.run,
+            ["docker", "wait", first_name],
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=20,
+        )
+        first_exit = int(first_wait.stdout.strip())
+    finally:
+        first_logs = harness.stop_worker(first_name)
+    assert first_logs["state"] == "exited"
+    assert first_exit == 137, first_logs["logs"]
+
+    client = await Client.connect(temporal_target)
+    handle = client.get_workflow_handle(
+        "salience-v4-legacy-operation:" + result["operation_id"]
+    )
+    original = (await handle.describe()).run_id
+
+    second_name = "legacy-restart-" + uuid4().hex[:12]
+    try:
+        second = start_worker(second_name)
+        assert second["image_id"] == harness_image_id
+        second_inspect = harness.inspect_worker(second_name)
+        assert second_inspect["image_id"] == harness_image_id
+        assert second_inspect["path"] == "/usr/local/bin/python"
+        assert second_inspect["read_only_rootfs"] is True
+        assert second_inspect["args"] == [
+            "-I",
+            "-B",
+            "-S",
+            "/run/salience-control/launch-v4-publication-worker.py",
+            "--mode",
+            "current",
+            "--worker-kind",
+            "legacy-fixture",
+        ]
+        async with asyncio.timeout(20):
+            while (await asyncio.to_thread(bridge.inspect, result["job_id"]))[
+                "dispatch_state"
+            ] != "unknown":
+                await asyncio.sleep(.05)
+        assert (await handle.describe()).run_id == original
+        with psycopg.connect(database) as connection:
+            assert connection.execute(
+                "SELECT count(*) FROM v4_permit_claims WHERE cycle_id=%s",
+                (result["cycle_id"],),
+            ).fetchone()[0] == 1
+            assert connection.execute(
+                "SELECT count(*) FROM jobs WHERE id=%s", (result["job_id"],)
+            ).fetchone()[0] == 1
+            assert connection.execute(
+                "SELECT count(*) FROM v4_cycle_events WHERE cycle_id=%s AND kind='fixture_adapter_accepted'",
+                (result["cycle_id"],),
+            ).fetchone()[0] == 0
+    finally:
+        second_logs = harness.stop_worker(second_name)
+        assert second_logs["state"] in {"exited", "already-removed"}
+        from temporalio.client import WorkflowExecutionStatus
+
+        if (await handle.describe()).status == WorkflowExecutionStatus.RUNNING:
+            await handle.terminate(reason="End disposable legacy hard-exit fixture")

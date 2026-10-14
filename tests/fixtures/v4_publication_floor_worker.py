@@ -182,6 +182,38 @@ os.execve = execve_with_adapter_recorder
 sys.argv = [launcher_path, *launcher_args]
 runpy.run_path(launcher_path, run_name="__main__")
 """
+_LEGACY_DISPATCH_CRASH_WORKER_BOOTSTRAP = r"""import importlib.util, os, runpy, sys
+runtime_root, module, *module_args = sys.argv[1:]
+sys.path.insert(0, runtime_root)
+fixture_path = os.environ["TASK8_LEGACY_DISPATCH_CRASH_FIXTURE"]
+spec = importlib.util.spec_from_file_location(
+    "legacy_dispatch_crash_fixture", fixture_path
+)
+if spec is None or spec.loader is None:
+    raise RuntimeError("legacy dispatch crash fixture cannot be loaded")
+fixture = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(fixture)
+fixture.install_crash_after_start_hook()
+sys.argv = [module, *module_args]
+runpy.run_module(module, run_name="__main__", alter_sys=True)
+"""
+_LEGACY_DISPATCH_CRASH_LAUNCH_SHIM = f"""import os, runpy, sys
+launcher_path, *launcher_args = sys.argv[1:]
+original_execve = os.execve
+worker_bootstrap = {json.dumps(_LEGACY_DISPATCH_CRASH_WORKER_BOOTSTRAP)}
+def execve_with_legacy_dispatch_crash_fixture(path, argv, environment):
+    argv = list(argv)
+    if (
+        len(argv) > 5
+        and argv[1:5] == ["-I", "-B", "-S", "-c"]
+        and "runtime_root, module, *module_args = sys.argv[1:]" in argv[5]
+    ):
+        argv[5] = worker_bootstrap
+    return original_execve(path, argv, environment)
+os.execve = execve_with_legacy_dispatch_crash_fixture
+sys.argv = [launcher_path, *launcher_args]
+runpy.run_path(launcher_path, run_name="__main__")
+"""
 
 
 @contextmanager
@@ -621,21 +653,42 @@ def start_rollback_worker(
     database_url: str,
     temporal_target: str,
     workspace_id: str,
-    expired_operation_id: str,
-    cancel_operation_id: str,
+    expired_operation_id: str | None,
+    cancel_operation_id: str | None,
     task_queue: str,
     control_bundle: Path,
     name: str,
+    mode: str = "rollback-restart",
     adapter_recorder_url: str | None = None,
     adapter_recorder_run_id: str | None = None,
     adapter_recorder_worker_id: str | None = None,
+    crash_fixture: Path | None = None,
 ) -> dict[str, str]:
     """Start the real image through its authenticated external launcher.
 
     When an operation receiver is provided, a test-only bootstrap wraps the
     runtime's actual PublicationActivities adapters after launcher verification
-    and before worker setup. It does not modify the authenticated runtime files.
+    and before worker setup. A separate optional fixture mount installs the
+    legacy dispatch hard-exit hook after verification without changing runtime
+    files or launcher/control paths.
     """
+    if mode not in {"current", "rollback-restart"}:
+        raise ValueError("candidate worker mode must be current or rollback-restart")
+    if mode == "rollback-restart" and (
+        not expired_operation_id or not cancel_operation_id
+    ):
+        raise ValueError("rollback-restart requires both retained operation IDs")
+    if mode == "current" and (expired_operation_id is not None or cancel_operation_id is not None):
+        raise ValueError("current mode rejects rollback operation IDs")
+    if crash_fixture is not None and (mode != "current" or adapter_recorder_url is not None):
+        raise ValueError("legacy dispatch crash injection is limited to current-mode fixture workers")
+
+    crash_fixture_target = "/run/salience-control/legacy-dispatch-crash-fixture.py"
+    if crash_fixture is not None:
+        metadata = Path(crash_fixture).lstat()
+        if Path(crash_fixture).is_symlink() or metadata.st_mode & 0o170000 != 0o100000:
+            raise ValueError("legacy dispatch crash fixture must be a regular file")
+
     recorder_target = (
         adapter_recorder_url is not None,
         adapter_recorder_run_id is not None,
@@ -702,6 +755,17 @@ def start_rollback_worker(
         "--mount",
         _mount(control_bundle / "publication-worker-launch-lock.sha256", CONTROL_DIGEST),
     ]
+    if crash_fixture is not None:
+        command.extend(
+            (
+                "--env",
+                "LEGACY_FIXTURE_CRASH_AFTER_START=1",
+                "--env",
+                f"TASK8_LEGACY_DISPATCH_CRASH_FIXTURE={crash_fixture_target}",
+                "--mount",
+                _mount(Path(crash_fixture), crash_fixture_target),
+            )
+        )
     if recorder_fixture is not None:
         command.extend(
             (
@@ -718,19 +782,30 @@ def start_rollback_worker(
             )
         )
 
-    launcher_argv = [
-        "--mode",
-        "rollback-restart",
-        "--worker-kind",
-        "legacy-fixture",
-        "--workspace-id",
-        workspace_id,
-        "--expired-hold-operation-id",
-        expired_operation_id,
-        "--cancel-hold-operation-id",
-        cancel_operation_id,
-    ]
-    if recorder_fixture is None:
+    launcher_argv = ["--mode", mode, "--worker-kind", "legacy-fixture"]
+    if mode == "rollback-restart":
+        launcher_argv.extend(
+            (
+                "--workspace-id",
+                workspace_id,
+                "--expired-hold-operation-id",
+                str(expired_operation_id),
+                "--cancel-hold-operation-id",
+                str(cancel_operation_id),
+            )
+        )
+    if crash_fixture is not None:
+        container_argv = [
+            "/usr/local/bin/python",
+            "-I",
+            "-B",
+            "-S",
+            "-c",
+            _LEGACY_DISPATCH_CRASH_LAUNCH_SHIM,
+            CONTROL_LAUNCHER,
+            *launcher_argv,
+        ]
+    elif recorder_fixture is None:
         container_argv = [
             "/usr/local/bin/python",
             "-I",
@@ -768,6 +843,33 @@ def start_rollback_worker(
         "image_id": image_id(image),
         "launcher_argv": json.dumps(container_argv, separators=(",", ":")),
     }
+
+
+def start_current_legacy_worker(
+    *,
+    image: str,
+    database_url: str,
+    temporal_target: str,
+    workspace_id: str,
+    task_queue: str,
+    control_bundle: Path,
+    name: str,
+    crash_fixture: Path | None = None,
+) -> dict[str, str]:
+    """Start current-mode legacy fixture work through the Task 4 launcher harness."""
+    return start_rollback_worker(
+        image=image,
+        database_url=database_url,
+        temporal_target=temporal_target,
+        workspace_id=workspace_id,
+        expired_operation_id=None,
+        cancel_operation_id=None,
+        task_queue=task_queue,
+        control_bundle=control_bundle,
+        name=name,
+        mode="current",
+        crash_fixture=crash_fixture,
+    )
 
 
 def run_adapter_operation_positive_control(
