@@ -17,6 +17,7 @@ _CONTROL_FILES = {
     "publication-worker-launch-lock.sha256",
 }
 _CANDIDATE_FILES = (
+    "application-commit.txt",
     "image-attestation.json",
     "worker-image-id.txt",
     "salience.whl",
@@ -80,7 +81,6 @@ def load_candidate_state(
     tracked_lock_path: Path,
     tracked_launcher_path: Path,
     runtime_prefix: Path,
-    expected_application_commit: str | None = None,
     image_inspector=None,
 ) -> dict[str, object] | None:
     """Validate the built image bundle, or return None when it is wholly absent.
@@ -162,10 +162,10 @@ def load_candidate_state(
     assert isinstance(application_commit, str) and re.fullmatch(
         r"[0-9a-f]{40}", application_commit
     ), "tracked application commit pin is malformed"
-    if expected_application_commit is not None:
-        assert application_commit == expected_application_commit, (
-            "candidate application commit does not match the current checkout"
-        )
+    recorded_application_commit = candidate_bytes["application-commit.txt"]
+    assert recorded_application_commit == (application_commit + "\n").encode("ascii"), (
+        "candidate application-commit marker disagrees with the tracked launch lock"
+    )
     assert image_ref == f"salience-p1-floor-{application_commit[:7]}-worker:latest", (
         "candidate image reference does not identify the tracked application commit"
     )

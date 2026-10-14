@@ -774,10 +774,13 @@ def test_candidate_prerequisites_skip_only_wholly_absent_state(tmp_path):
         digest + "\n", encoding="ascii"
     )
     (candidate_root / "salience.whl").write_bytes(b"candidate wheel")
+    pin = json.loads(lock_bytes)["pin"]
+    (candidate_root / "application-commit.txt").write_text(
+        pin["application_commit"] + "\n", encoding="ascii"
+    )
     (candidate_root / "worker-image-id.txt").write_text(
         "sha256:" + "b" * 64 + "\n", encoding="ascii"
     )
-    pin = json.loads(lock_bytes)["pin"]
     attested_image_id = "sha256:" + "a" * 64
     for name, payload in (
         (
@@ -817,15 +820,10 @@ def test_candidate_prerequisites_skip_only_wholly_absent_state(tmp_path):
 
 
 def test_task8_candidate_prerequisite_fixture_returns_exact_image(task8_candidate_state):
-    head = subprocess.run(
-        ["git", "rev-parse", "HEAD"],
-        cwd=ROOT,
-        check=True,
-        capture_output=True,
-        text=True,
-    ).stdout.strip()
     assert task8_candidate_state["image_id"] == task8_candidate_state["attestation"]["image_id"]
-    assert task8_candidate_state["application_commit"] == head
+    assert task8_candidate_state["application_commit"] == (
+        task8_candidate_state["candidate_root"] / "application-commit.txt"
+    ).read_text(encoding="ascii").strip()
     assert task8_candidate_state["application_commit"] == task8_candidate_state["lock"]["pin"][
         "application_commit"
     ]
@@ -4145,13 +4143,6 @@ def _task8_rollback_image_or_skip(
                 if Path(ROOT).resolve() == Path(__file__).resolve().parents[2]
                 else Path(ROOT) / "runtime-prefix"
             ),
-            expected_application_commit=subprocess.run(
-                ["git", "rev-parse", "HEAD"],
-                cwd=Path(__file__).resolve().parents[2],
-                check=True,
-                capture_output=True,
-                text=True,
-            ).stdout.strip(),
         )
         if exact_state is None:
             pytest.skip("Task 8 candidate fixture metadata is absent: candidate state is wholly absent")

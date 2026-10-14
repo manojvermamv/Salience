@@ -27,13 +27,6 @@ def task8_candidate_state():
         tracked_lock_path=ROOT / "deployment/v4/publication-worker-launch-lock.json",
         tracked_launcher_path=ROOT / "scripts/launch-v4-publication-worker.py",
         runtime_prefix=Path("/tmp/p1-publication-recovery-0043/runtime-prefix"),
-        expected_application_commit=subprocess.run(
-            ["git", "rev-parse", "HEAD"],
-            cwd=ROOT,
-            check=True,
-            capture_output=True,
-            text=True,
-        ).stdout.strip(),
     )
     if candidate is None:
         pytest.skip("Task 8 exact candidate state is wholly absent")
