@@ -3336,8 +3336,15 @@ def test_candidate_database_state_capture_uses_explicit_target_database(target, 
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("failure_stage", ("publication", "conditional-cases"))
-async def test_task8_progress_cleanup_runs_when_publication_or_case_fails(tmp_path, failure_stage):
+@pytest.mark.parametrize(
+    ("persist_progress", "expected_to_exist"),
+    ((False, False), (True, True)),
+)
+async def test_task8_progress_cleanup_uses_explicit_persistence_policy(
+    tmp_path, monkeypatch, failure_stage, persist_progress, expected_to_exist
+):
     progress_path = tmp_path / "worker-qualification-progress.json"
+    monkeypatch.setenv("P1_TASK8_PERSIST_FIXTURES", "1")
 
     async def publish_progress():
         progress_path.write_text("published", encoding="utf-8")
@@ -3354,9 +3361,10 @@ async def test_task8_progress_cleanup_runs_when_publication_or_case_fails(tmp_pa
             progress_path,
             publish_progress=publish_progress,
             run_conditional_cases=run_conditional_cases,
+            persist_progress=persist_progress,
         )
 
-    assert not progress_path.exists()
+    assert progress_path.exists() is expected_to_exist
 
 
 def test_candidate_rollback_denial_harness_calls_launcher_and_detects_side_effects():
@@ -4523,14 +4531,14 @@ async def test_cross_container_adapter_recorder_observes_zero_operations_for_bot
 
 
 async def _publish_task8_progress_and_run_cases(
-    progress_path, *, publish_progress, run_conditional_cases
+    progress_path, *, publish_progress, run_conditional_cases, persist_progress=False
 ):
     """Keep strict progress only while its disposable targets remain available."""
     try:
         await publish_progress()
         await run_conditional_cases()
     finally:
-        if os.environ.get("P1_TASK8_PERSIST_FIXTURES") != "1":
+        if not persist_progress:
             Path(progress_path).unlink(missing_ok=True)
 
 
@@ -7373,6 +7381,7 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
         progress_path,
         publish_progress=publish_progress,
         run_conditional_cases=run_conditional_cases,
+        persist_progress=persist_fixtures,
     )
 
     # The exact control bundle denies every candidate descriptor because the
