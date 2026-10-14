@@ -1,7 +1,7 @@
 # P1 Publication Recovery Floor Repair Design
 
 **Date:** 2026-10-13
-**Status:** Approved 0043 repair design; included in the 2026-10-13 specification-set review; implementation, exact-candidate requalification, final candidate review/meta-review, and exact-head checks remain open.
+**Status:** Approved 0043 repair design; implemented and locally exact-artifact qualified at application commit `386d4bc7cc5acb794858d3c3c14400a0659a83ef`; final corrected-publication review, GPT-5.6 meta-review, feature-branch push, and exact-head CI remain controller-owned gates.
 
 ## Purpose and relationship to the earlier design
 
