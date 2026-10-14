@@ -1030,6 +1030,8 @@ def invoke_launcher(
     candidate_lock: Path | None = None,
     independent_digest: Path | None = None,
     extra_mounts: tuple[tuple[Path, str], ...] = (),
+    extra_environment: dict[str, str] | None = None,
+    workdir: str | None = None,
     argv: tuple[str, ...],
 ) -> subprocess.CompletedProcess[str]:
     """Run the external launcher as a short-lived denial probe."""
@@ -1046,13 +1048,21 @@ def invoke_launcher(
         f"DATABASE_URL={database_url}",
         "--env",
         f"TEST_DATABASE_URL={database_url}",
-        "--mount",
-        _mount(control_bundle / "launch-v4-publication-worker.py", CONTROL_LAUNCHER),
-        "--mount",
-        _mount(lock_path, CONTROL_LOCK),
-        "--mount",
-        _mount(digest_path, CONTROL_DIGEST),
     ]
+    if workdir is not None:
+        command.extend(("--workdir", workdir))
+    for key, value in (extra_environment or {}).items():
+        command.extend(("--env", f"{key}={value}"))
+    command.extend(
+        [
+            "--mount",
+            _mount(control_bundle / "launch-v4-publication-worker.py", CONTROL_LAUNCHER),
+            "--mount",
+            _mount(lock_path, CONTROL_LOCK),
+            "--mount",
+            _mount(digest_path, CONTROL_DIGEST),
+        ]
+    )
     for source, target in extra_mounts:
         command.extend(("--mount", _mount(source, target)))
     command.extend(

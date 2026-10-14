@@ -568,7 +568,9 @@ async def test_actual_temporal_schedule_pause_and_rollback_watermark(policy, mon
 
 
 @pytest.mark.asyncio
-async def test_real_legacy_worker_exit_after_start_preserves_unknown_without_new_run(legacy):
+async def test_real_legacy_worker_exit_after_start_preserves_unknown_without_new_run(
+    request, task8_candidate_state
+):
     import asyncio
     import hashlib
     import importlib.util
@@ -578,12 +580,14 @@ async def test_real_legacy_worker_exit_after_start_preserves_unknown_without_new
 
     from temporalio.client import Client
 
-    bridge, command, service, database = legacy
+    # Load the database-backed legacy fixture only after the shared exact-image
+    # prerequisite gate has passed.
+    bridge, command, service, database = request.getfixturevalue("legacy")
     result = bridge.submit(command)
     root = Path(__file__).resolve().parents[2]
-    candidate_root = root / "artifacts/v4-next-p1/agents/p1-publication-recovery-0043"
-    attestation = json.loads((candidate_root / "image-attestation.json").read_text())
-    control_bundle = candidate_root / "control-bundle"
+    candidate_root = task8_candidate_state["candidate_root"]
+    attestation = task8_candidate_state["attestation"]
+    control_bundle = task8_candidate_state["control_bundle"]
     tracked_lock = (root / "deployment/v4/publication-worker-launch-lock.json").read_bytes()
     trusted_digest = hashlib.sha256(tracked_lock).hexdigest()
     assert attestation["image_id"]

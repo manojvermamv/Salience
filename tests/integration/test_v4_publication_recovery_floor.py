@@ -615,23 +615,30 @@ def _require_task8_monolithic_prerequisites(*, candidate_root, environment):
     from urllib.parse import urlsplit
 
     candidate_root = Path(candidate_root)
+    artifacts = [
+        relative
+        for relative in _TASK8_MONOLITHIC_ARTIFACTS
+        if (candidate_root / relative).is_file()
+    ]
     missing_artifacts = [
         relative
         for relative in _TASK8_MONOLITHIC_ARTIFACTS
         if not (candidate_root / relative).is_file()
     ]
+    if not artifacts:
+        pytest.skip("Task 8 candidate state is wholly absent")
+    if missing_artifacts:
+        raise AssertionError(
+            "partial Task 8 candidate state: " + ", ".join(missing_artifacts)
+        )
     missing_recorder = [
         name
         for name in ("TEST_ADAPTER_RECORDER_URL", "TEST_ADAPTER_RECORDER_RUN_ID")
         if not environment.get(name)
     ]
-    if missing_artifacts or missing_recorder:
-        missing = [
-            *missing_artifacts,
-            *missing_recorder,
-        ]
+    if missing_recorder:
         pytest.skip(
-            "Task 8 exact-artifact prerequisites are absent: " + ", ".join(missing)
+            "Task 8 recorder prerequisites are absent: " + ", ".join(missing_recorder)
         )
 
     recorder_url = urlsplit(environment["TEST_ADAPTER_RECORDER_URL"])
@@ -656,7 +663,7 @@ def _task8_monolithic_setup(*, candidate_root, environment, database_factory):
 
 
 @pytest.fixture
-def task8_monolithic_database(request):
+def task8_monolithic_database(request, task8_candidate_state):
     database, _ = _task8_monolithic_setup(
         candidate_root=ROOT / "artifacts/v4-next-p1/agents/p1-publication-recovery-0043",
         environment=os.environ,
@@ -685,6 +692,20 @@ def test_task8_monolithic_gate_skips_without_recorder_before_database_setup(tmp_
     assert database_setup_calls == []
 
 
+def test_task8_monolithic_gate_fails_partial_candidate_before_database_setup(tmp_path):
+    candidate_root = tmp_path / "candidate"
+    candidate_root.mkdir()
+    (candidate_root / _TASK8_MONOLITHIC_ARTIFACTS[0]).write_bytes(b"partial")
+    database_setup_calls = []
+    with pytest.raises(AssertionError, match="partial Task 8 candidate state"):
+        _task8_monolithic_setup(
+            candidate_root=candidate_root,
+            environment={"TEST_ADAPTER_RECORDER_URL": "http://127.0.0.1:8081"},
+            database_factory=lambda: database_setup_calls.append("created"),
+        )
+    assert database_setup_calls == []
+
+
 def test_task8_monolithic_gate_runs_with_candidate_and_recorder_prerequisites(tmp_path):
     candidate_root = tmp_path / "candidate"
     _write_task8_monolithic_candidate_artifacts(candidate_root)
@@ -703,6 +724,126 @@ def test_task8_monolithic_gate_runs_with_candidate_and_recorder_prerequisites(tm
     assert prerequisites["candidate_root"] == candidate_root
     assert prerequisites["recorder_base_url"] == "http://127.0.0.1:8081"
     assert prerequisites["recorder_run_id"] == environment["TEST_ADAPTER_RECORDER_RUN_ID"]
+
+
+def test_candidate_prerequisites_skip_only_wholly_absent_state(tmp_path):
+    spec = importlib.util.spec_from_file_location(
+        "v4_publication_candidate_prerequisites",
+        ROOT / "tests/fixtures/v4_publication_candidate_prerequisites.py",
+    )
+    assert spec is not None and spec.loader is not None
+    prerequisites = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(prerequisites)
+
+    candidate_root = tmp_path / "absent-candidate"
+    runtime_prefix = tmp_path / "absent-runtime"
+    inputs = {
+        "candidate_root": candidate_root,
+        "tracked_lock_path": ROOT / "deployment/v4/publication-worker-launch-lock.json",
+        "tracked_launcher_path": ROOT / "scripts/launch-v4-publication-worker.py",
+        "runtime_prefix": runtime_prefix,
+    }
+    assert prerequisites.load_candidate_state(**inputs) is None
+
+    symlink_root = tmp_path / "symlink-candidate"
+    symlink_root.symlink_to(tmp_path / "absent-target", target_is_directory=True)
+    with pytest.raises(AssertionError, match="candidate root must not be a symlink"):
+        prerequisites.load_candidate_state(**{**inputs, "candidate_root": symlink_root})
+
+    candidate_root.mkdir()
+    (candidate_root / "worker-image-id.txt").write_text(
+        "sha256:" + "a" * 64 + "\n", encoding="ascii"
+    )
+    with pytest.raises(AssertionError, match="partial Task 8 candidate state"):
+        prerequisites.load_candidate_state(**inputs)
+
+    candidate_root = tmp_path / "mismatched-candidate"
+    control_bundle = candidate_root / "control-bundle"
+    control_bundle.mkdir(parents=True)
+    lock_path = ROOT / "deployment/v4/publication-worker-launch-lock.json"
+    launcher_path = ROOT / "scripts/launch-v4-publication-worker.py"
+    lock_bytes = lock_path.read_bytes()
+    launcher_bytes = launcher_path.read_bytes()
+    (control_bundle / "launch-v4-publication-worker.py").write_bytes(launcher_bytes)
+    (control_bundle / "publication-worker-launch-lock.json").write_bytes(lock_bytes)
+    digest = _sha256(lock_bytes)
+    (control_bundle / "publication-worker-launch-lock.sha256").write_text(
+        digest + "\n", encoding="ascii"
+    )
+    (candidate_root / "publication-worker-launch-lock.sha256").write_text(
+        digest + "\n", encoding="ascii"
+    )
+    (candidate_root / "salience.whl").write_bytes(b"candidate wheel")
+    (candidate_root / "worker-image-id.txt").write_text(
+        "sha256:" + "b" * 64 + "\n", encoding="ascii"
+    )
+    pin = json.loads(lock_bytes)["pin"]
+    attested_image_id = "sha256:" + "a" * 64
+    for name, payload in (
+        (
+            "image-attestation.json",
+            {
+                "application_commit": pin["application_commit"],
+                "image_id": attested_image_id,
+                "image_ref": "salience-worker:test",
+                "runtime_manifest_sha256": "0" * 64,
+                "runtime_root": "/usr/local/lib/python3.13/site-packages",
+            },
+        ),
+        (
+            "worker-qualification-progress.json",
+            {
+                "application_commit": pin["application_commit"],
+                "image_id": attested_image_id,
+                "launch_lock_sha256": digest,
+                "runtime_manifest_sha256": "0" * 64,
+                "runtime_root": "/usr/local/lib/python3.13/site-packages",
+            },
+        ),
+    ):
+        (candidate_root / name).write_text(
+            json.dumps(payload) + "\n", encoding="utf-8"
+        )
+    inputs["candidate_root"] = candidate_root
+    inputs["runtime_prefix"] = tmp_path / "runtime-prefix"
+    (inputs["runtime_prefix"] / "usr/local/lib/python3.13/site-packages").mkdir(
+        parents=True
+    )
+    with pytest.raises(AssertionError, match="image ID disagrees"):
+        prerequisites.load_candidate_state(
+            **inputs,
+            image_inspector=lambda _image_ref: attested_image_id,
+        )
+
+
+def test_task8_candidate_prerequisite_fixture_returns_exact_image(task8_candidate_state):
+    head = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    assert task8_candidate_state["image_id"] == task8_candidate_state["attestation"]["image_id"]
+    assert task8_candidate_state["application_commit"] == head
+    assert task8_candidate_state["application_commit"] == task8_candidate_state["lock"]["pin"][
+        "application_commit"
+    ]
+    assert task8_candidate_state["runtime_manifest_sha256"] == task8_candidate_state[
+        "attestation"
+    ]["runtime_manifest_sha256"]
+
+
+def test_non_live_ci_preserves_full_suite_with_recorded_runtime_budget():
+    workflow = (ROOT / ".github/workflows/v4-documentation.yml").read_text(
+        encoding="utf-8"
+    )
+    regression_job = workflow.split("  p0-regression:", 1)[1]
+    assert re.search(r"(?m)^    timeout-minutes: 45$", regression_job)
+    assert (
+        "python -m pytest -p no:cacheprovider tests/contracts tests/unit tests/integration "
+        "tests/e2e tests/evals -m 'not live' -q -rs"
+    ) in regression_job
 
 
 @pytest.fixture
@@ -731,6 +872,31 @@ def active_0042_database(tmp_path, request):
         )
         if not preserve_primary_qualification_database:
             _drop_database(source, name)
+
+
+@pytest.fixture
+def task8_empty_0042_database(task8_candidate_state):
+    from test_v4_publication_recovery_holds import (
+        REVISION,
+        TABLE,
+        _create_database,
+        _drop_database,
+        _migrate,
+    )
+
+    source = os.environ["TEST_DATABASE_URL"]
+    name, database = _create_database(source, "recovery_floor_empty_0042_")
+    try:
+        upgraded = _migrate(database, "upgrade", REVISION)
+        assert upgraded.returncode == 0, upgraded.stderr
+        with __import__("psycopg").connect(database) as connection:
+            assert connection.execute("SELECT version_num FROM alembic_version").fetchone()[0] == REVISION
+            assert connection.execute(
+                f"SELECT count(*) FROM public.{TABLE}"
+            ).fetchone()[0] == 0
+        yield database
+    finally:
+        _drop_database(source, name)
 
 
 def test_floor_gate_rejects_a4_unknown_unpinned_unrelated_and_pre_floor_before_start(
@@ -2797,44 +2963,15 @@ def test_task8_candidate_loader_validates_attestation_control_and_both_reason_me
     assert candidate["temporal_target"] == synthetic["environment"]["TEST_TEMPORAL_TARGET"]
 
 
-@pytest.mark.parametrize(
-    "inventory_case",
-    (
-        "exact-inventory",
-        "extra-file",
-        "missing-file",
-        "changed-file",
-        "symlink-path",
-        "independent-digest-mismatch",
-    ),
-    ids=(
-        "exact-inventory",
-        "extra-file",
-        "missing-file",
-        "changed-file",
-        "symlink-path",
-        "independent-digest-mismatch",
-    ),
-)
 def test_candidate_control_bundle_authenticates_full_0043_inventory(
-    active_0042_database, tmp_path, inventory_case
+    task8_candidate_state, task8_candidate_database, tmp_path
 ):
-    assert inventory_case in {
-        "exact-inventory",
-        "extra-file",
-        "missing-file",
-        "changed-file",
-        "symlink-path",
-        "independent-digest-mismatch",
-    }
-    artifact_root = ROOT / "artifacts/v4-next-p1/agents/p1-publication-recovery-0043"
-    control_bundle = artifact_root / "control-bundle"
+    artifact_root = task8_candidate_state["candidate_root"]
+    control_bundle = task8_candidate_state["control_bundle"]
     lock_path = ROOT / "deployment/v4/publication-worker-launch-lock.json"
     digest_path = artifact_root / "publication-worker-launch-lock.sha256"
     wheel_path = artifact_root / "salience.whl"
-    runtime_root = Path(
-        "/tmp/p1-publication-recovery-0043/runtime-prefix/usr/local/lib/python3.13/site-packages"
-    )
+    runtime_root = task8_candidate_state["runtime_path"]
     assert control_bundle.is_dir()
     assert runtime_root.is_dir()
     lock_bytes = lock_path.read_bytes()
@@ -2895,16 +3032,26 @@ def test_candidate_control_bundle_authenticates_full_0043_inventory(
     ]
     assert _sha256(wheel_path.read_bytes()) == lock["pin"]["artifact_sha256"]
     assert _sha256(record_bytes) == lock["pin"]["distribution_record_sha256"]
-    image_id = (artifact_root / "worker-image-id.txt").read_text(encoding="ascii").strip()
+    image_id = task8_candidate_state["image_id"]
 
-    def invoke_case(name, *, candidate_lock=None, independent_digest=None, extra_mounts=()):
+    def invoke_case(
+        name,
+        *,
+        candidate_lock=None,
+        independent_digest=None,
+        extra_mounts=(),
+        extra_environment=None,
+        workdir=None,
+    ):
         result = _load_worker_harness().invoke_launcher(
             image=image_id,
-            database_url=active_0042_database,
+            database_url=task8_candidate_database,
             control_bundle=control_bundle,
             candidate_lock=candidate_lock,
             independent_digest=independent_digest,
             extra_mounts=extra_mounts,
+            extra_environment=extra_environment,
+            workdir=workdir,
             argv=(
                 "--mode",
                 "rollback-restart",
@@ -2940,15 +3087,30 @@ def test_candidate_control_bundle_authenticates_full_0043_inventory(
         return root
 
     extra_runtime = runtime_copy("extra-file")
-    (extra_runtime / "migrations/versions/9999_task8_untracked.py").write_text(
-        "revision = 'untracked'\n", encoding="utf-8"
+    (extra_runtime / "migrations/versions/0044_task8_valid_descendant.py").write_text(
+        "revision = '0044_task8_valid_descendant'\n"
+        "down_revision = '0043_complete_publication_recovery_liabilities'\n"
+        "branch_labels = None\n"
+        "depends_on = None\n",
+        encoding="utf-8",
     )
     with pytest.raises(ValueError, match="runtime inventory does not match"):
         builder._validate_installed_source_tree(tree, extra_runtime)
+    extra_physical_diagnostic = invoke_case(
+        "physical extra valid descendant",
+        extra_mounts=(
+            (
+                extra_runtime / "migrations/versions",
+                lock["runtime_root"] + "/migrations/versions",
+            ),
+        ),
+    )
+    assert "authenticated alembic revision inventory does not match runtime files" in extra_physical_diagnostic
+
     extra_lock = json.loads(lock_bytes)
     extra_lock["pin"]["source_files"].append(
         {
-            "path": "migrations/versions/9999_task8_untracked.py",
+            "path": "migrations/versions/0044_task8_valid_descendant.py",
             "git_blob": "0" * 40,
             "sha256": "0" * 64,
         }
@@ -2971,6 +3133,20 @@ def test_candidate_control_bundle_authenticates_full_0043_inventory(
     (missing_runtime / "migrations/versions/0043_complete_publication_recovery_liabilities.py").unlink()
     with pytest.raises(ValueError, match="runtime inventory does not match"):
         builder._validate_installed_source_tree(tree, missing_runtime)
+    missing_physical_diagnostic = invoke_case(
+        "physical missing revision",
+        extra_mounts=(
+            (
+                missing_runtime / "migrations/versions",
+                lock["runtime_root"] + "/migrations/versions",
+            ),
+        ),
+    )
+    assert (
+        "publication worker source pin mismatch" in missing_physical_diagnostic
+        or "migration" in missing_physical_diagnostic
+    )
+
     missing_lock = json.loads(lock_bytes)
     missing_lock["pin"]["source_files"] = [
         entry for entry in missing_lock["pin"]["source_files"]
@@ -2998,6 +3174,40 @@ def test_candidate_control_bundle_authenticates_full_0043_inventory(
     changed_path.write_bytes(changed_path.read_bytes() + b"\n# task8 mutation\n")
     with pytest.raises(ValueError, match="differs from application_commit"):
         builder._validate_installed_source_tree(tree, changed_runtime)
+    changed_physical_diagnostic = invoke_case(
+        "physical changed migration bytes",
+        extra_mounts=(
+            (
+                changed_runtime / "migrations/versions",
+                lock["runtime_root"] + "/migrations/versions",
+            ),
+        ),
+    )
+    assert "publication worker source pin mismatch" in changed_physical_diagnostic
+
+    changed_down_revision_runtime = runtime_copy("changed-down-revision")
+    changed_down_revision_path = (
+        changed_down_revision_runtime
+        / "migrations/versions/0043_complete_publication_recovery_liabilities.py"
+    )
+    changed_down_revision = changed_down_revision_path.read_text(encoding="utf-8").replace(
+        'down_revision = "0042_publication_recovery_holds"',
+        'down_revision = "0041_native_publication_sources"',
+        1,
+    )
+    assert changed_down_revision != changed_down_revision_path.read_text(encoding="utf-8")
+    changed_down_revision_path.write_text(changed_down_revision, encoding="utf-8")
+    changed_down_revision_diagnostic = invoke_case(
+        "physical changed down_revision bytes",
+        extra_mounts=(
+            (
+                changed_down_revision_runtime / "migrations/versions",
+                lock["runtime_root"] + "/migrations/versions",
+            ),
+        ),
+    )
+    assert "publication worker source pin mismatch" in changed_down_revision_diagnostic
+
     changed_lock = json.loads(lock_bytes)
     changed_pin = next(
         entry for entry in changed_lock["pin"]["source_files"]
@@ -3043,6 +3253,220 @@ def test_candidate_control_bundle_authenticates_full_0043_inventory(
         "independent-digest-mismatch", independent_digest=bad_digest_path
     )
     assert "independent trust root" in digest_diagnostic
+
+
+def test_exact_candidate_image_denies_real_empty_0042_before_registration(
+    task8_candidate_state, task8_empty_0042_database
+):
+    harness = _load_worker_harness()
+    fixture_workspace = "00000000-0000-0000-0000-000000000099"
+    result = harness.invoke_launcher(
+        image=task8_candidate_state["image_id"],
+        database_url=task8_empty_0042_database,
+        control_bundle=task8_candidate_state["control_bundle"],
+        argv=(
+            "--mode",
+            "rollback-restart",
+            "--worker-kind",
+            "legacy-fixture",
+            "--workspace-id",
+            fixture_workspace,
+            "--expired-hold-operation-id",
+            "00000000-0000-0000-0000-000000000098",
+            "--cancel-hold-operation-id",
+            "00000000-0000-0000-0000-000000000097",
+        ),
+    )
+    diagnostic = (result.stdout + result.stderr).casefold()
+    assert result.returncode == 78, diagnostic
+    assert "database schema floor 0043 is not satisfied" in diagnostic
+    assert "execve" not in diagnostic and "worker import" not in diagnostic
+
+
+@pytest.mark.parametrize("hostile_surface", ["pythonpath", "pythonhome", "cwd-shadow"])
+def test_exact_candidate_image_ignores_hostile_python_environment_and_cwd(
+    task8_candidate_state, task8_candidate_database, tmp_path, hostile_surface
+):
+    harness = _load_worker_harness()
+    hostile_root = tmp_path / hostile_surface
+    hostile_root.mkdir()
+    marker = "TASK8_HOSTILE_IMPORT_EXECUTED_" + hostile_surface.upper().replace("-", "_")
+    (hostile_root / "sitecustomize.py").write_text(
+        f"print({marker!r})\n", encoding="utf-8"
+    )
+    shadow_package = hostile_root / "salience" / "cycles"
+    shadow_package.mkdir(parents=True)
+    (hostile_root / "salience" / "__init__.py").write_text(
+        f"print({marker!r})\n", encoding="utf-8"
+    )
+    (shadow_package / "__init__.py").write_text(
+        f"print({marker!r})\n", encoding="utf-8"
+    )
+    (shadow_package / "publication_recovery_compatibility.py").write_text(
+        f"print({marker!r})\n", encoding="utf-8"
+    )
+
+    extra_environment = {}
+    workdir = None
+    if hostile_surface == "pythonpath":
+        extra_environment["PYTHONPATH"] = "/tmp/task8-hostile-pythonpath"
+        container_hostile_root = "/tmp/task8-hostile-pythonpath"
+    elif hostile_surface == "pythonhome":
+        extra_environment["PYTHONHOME"] = "/tmp/task8-hostile-pythonhome"
+        container_hostile_root = "/tmp/task8-hostile-pythonhome"
+    else:
+        container_hostile_root = "/tmp/task8-hostile-cwd"
+        workdir = container_hostile_root
+
+    result = harness.invoke_launcher(
+        image=task8_candidate_state["image_id"],
+        database_url=task8_candidate_database,
+        control_bundle=task8_candidate_state["control_bundle"],
+        extra_mounts=((hostile_root, container_hostile_root),),
+        extra_environment=extra_environment,
+        workdir=workdir,
+        argv=(
+            "--mode",
+            "rollback-restart",
+            "--worker-kind",
+            "legacy-fixture",
+            "--workspace-id",
+            "00000000-0000-0000-0000-000000000099",
+            "--expired-hold-operation-id",
+            "00000000-0000-0000-0000-000000000098",
+            "--cancel-hold-operation-id",
+            "00000000-0000-0000-0000-000000000097",
+        ),
+    )
+    diagnostic = (result.stdout + result.stderr).casefold()
+    assert result.returncode == 78, diagnostic
+    assert "both retained publication recovery holds failed verification" in diagnostic
+    assert marker.casefold() not in diagnostic
+
+
+def test_exact_candidate_image_rejects_valid_malicious_pyc_with_positive_control(
+    task8_candidate_state, task8_candidate_database, tmp_path
+):
+    import importlib._bootstrap_external
+    import importlib.util
+    import shutil
+    import struct
+
+    candidate = task8_candidate_state
+    harness = _load_worker_harness()
+    source_relative = "salience/cycles/publication_recovery_compatibility.py"
+    source_in_image = Path(candidate["runtime_root"]) / source_relative
+    metadata_probe = (
+        "import importlib.util,json,pathlib,sys;"
+        f"p=pathlib.Path({str(source_in_image)!r});s=p.stat();"
+        "print(json.dumps({'mtime':int(s.st_mtime),'size':s.st_size,"
+        "'magic':importlib.util.MAGIC_NUMBER.hex(),"
+        "'cache':pathlib.Path(importlib.util.cache_from_source(str(p))).name}))"
+    )
+    metadata = subprocess.run(
+        [
+            "docker",
+            "run",
+            "--rm",
+            "--read-only",
+            "--network=none",
+            candidate["image_id"],
+            "/usr/local/bin/python",
+            "-I",
+            "-B",
+            "-S",
+            "-c",
+            metadata_probe,
+        ],
+        capture_output=True,
+        text=True,
+        env=harness._docker_environment(),
+        timeout=30,
+        check=False,
+    )
+    assert metadata.returncode == 0, metadata.stderr
+    target = json.loads(metadata.stdout.strip().splitlines()[-1])
+    assert target["magic"] == importlib.util.MAGIC_NUMBER.hex()
+
+    overlay = tmp_path / "malicious-runtime"
+    cycles_source = candidate["runtime_path"] / "salience/cycles"
+    cycles_overlay = overlay / "salience/cycles"
+    shutil.copytree(
+        cycles_source,
+        cycles_overlay,
+        ignore=shutil.ignore_patterns("__pycache__"),
+    )
+    cache_dir = cycles_overlay / "__pycache__"
+    cache_dir.mkdir()
+    marker = "TASK8_VALID_MALICIOUS_PYC_EXECUTED"
+    code = compile(f"print({marker!r})\n", str(source_in_image), "exec")
+    pyc = importlib._bootstrap_external._code_to_timestamp_pyc(
+        code, target["mtime"], target["size"]
+    )
+    assert pyc[:4].hex() == target["magic"]
+    assert struct.unpack("<I", pyc[4:8])[0] == 0
+    (cache_dir / target["cache"]).write_bytes(pyc)
+
+    mount = (
+        cycles_overlay,
+        candidate["runtime_root"] + "/salience/cycles",
+    )
+    positive_probe = (
+        "import importlib.util,sys;"
+        f"p={str(source_in_image)!r};"
+        "spec=importlib.util.spec_from_file_location("
+        "'salience.cycles.publication_recovery_compatibility',p);"
+        "module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)"
+    )
+    positive = subprocess.run(
+        [
+            "docker",
+            "run",
+            "--rm",
+            "--read-only",
+            "--network=none",
+            "--mount",
+            harness._mount(*mount),
+            candidate["image_id"],
+            "/usr/local/bin/python",
+            "-I",
+            "-B",
+            "-S",
+            "-c",
+            positive_probe,
+        ],
+        capture_output=True,
+        text=True,
+        env=harness._docker_environment(),
+        timeout=30,
+        check=False,
+    )
+    assert positive.returncode == 0, positive.stderr
+    assert marker in positive.stdout
+
+    denial = harness.invoke_launcher(
+        image=candidate["image_id"],
+        database_url=task8_candidate_database,
+        control_bundle=candidate["control_bundle"],
+        extra_mounts=(mount,),
+        argv=(
+            "--mode",
+            "rollback-restart",
+            "--worker-kind",
+            "legacy-fixture",
+            "--workspace-id",
+            "00000000-0000-0000-0000-000000000099",
+            "--expired-hold-operation-id",
+            "00000000-0000-0000-0000-000000000098",
+            "--cancel-hold-operation-id",
+            "00000000-0000-0000-0000-000000000097",
+        ),
+    )
+    diagnostic = (denial.stdout + denial.stderr).casefold()
+    assert denial.returncode == 78, diagnostic
+    assert "authenticated runtime root contains a .pyc entry" in diagnostic
+    assert marker.casefold() not in diagnostic
+    assert "execve" not in diagnostic and "worker import" not in diagnostic
 
 
 def test_task8_loader_never_falls_back_to_legacy_candidate_provenance(tmp_path, monkeypatch):
@@ -3687,18 +4111,55 @@ def _task8_rollback_image_or_skip(
     candidate root. It contains target identity and the two operation/history
     IDs, never a database URL or credential. Runtime environment URLs are
     accepted only when their database name, host, and port match those recorded
-    disposable targets. Missing artifact files skip; incomplete or mismatched
-    metadata fails closed.
+    disposable targets. A wholly absent image bundle skips; partial or
+    mismatched image state fails closed. Persisted-fixture selectors also skip
+    when qualification progress has not been produced or has been archived.
     """
     import ipaddress
     import re
     from urllib.parse import urlsplit
 
+    uses_default_candidate = candidate_root is None
     if candidate_root is None:
         candidate_root = (
             ROOT / "artifacts/v4-next-p1/agents/p1-publication-recovery-0043"
         )
     candidate_root = Path(candidate_root)
+    if uses_default_candidate:
+        prerequisites_path = (
+            Path(__file__).resolve().parents[2]
+            / "tests/fixtures/v4_publication_candidate_prerequisites.py"
+        )
+        prerequisites_spec = importlib.util.spec_from_file_location(
+            "v4_publication_candidate_prerequisites", prerequisites_path
+        )
+        assert prerequisites_spec is not None and prerequisites_spec.loader is not None
+        prerequisites_module = importlib.util.module_from_spec(prerequisites_spec)
+        prerequisites_spec.loader.exec_module(prerequisites_module)
+        exact_state = prerequisites_module.load_candidate_state(
+            candidate_root=candidate_root,
+            tracked_lock_path=ROOT / "deployment/v4/publication-worker-launch-lock.json",
+            tracked_launcher_path=ROOT / "scripts/launch-v4-publication-worker.py",
+            runtime_prefix=(
+                Path("/tmp/p1-publication-recovery-0043/runtime-prefix")
+                if Path(ROOT).resolve() == Path(__file__).resolve().parents[2]
+                else Path(ROOT) / "runtime-prefix"
+            ),
+            expected_application_commit=subprocess.run(
+                ["git", "rev-parse", "HEAD"],
+                cwd=Path(__file__).resolve().parents[2],
+                check=True,
+                capture_output=True,
+                text=True,
+            ).stdout.strip(),
+        )
+        if exact_state is None:
+            pytest.skip("Task 8 candidate fixture metadata is absent: candidate state is wholly absent")
+        progress_path = candidate_root / "worker-qualification-progress.json"
+        if not progress_path.exists() and not progress_path.is_symlink():
+            pytest.skip(
+                "Task 8 persistent qualification progress is absent; exact image state remains available"
+            )
     legacy_candidate_root = (
         ROOT / "artifacts/v4-next-p1/agents/task-10-floor-qualification"
     )
@@ -3722,7 +4183,9 @@ def _task8_rollback_image_or_skip(
     missing = [path for path in metadata_paths if not path.is_file()]
     if missing:
         relative = [str(path.relative_to(candidate_root)) for path in missing]
-        pytest.skip("Task 8 candidate fixture metadata is absent: " + ", ".join(relative))
+        raise AssertionError(
+            "partial Task 8 candidate fixture metadata: " + ", ".join(relative)
+        )
     assert not candidate_root.is_symlink(), "candidate root must not be a symlink"
     assert not control_bundle.is_symlink(), "candidate control bundle must not be a symlink"
     assert {path.name for path in control_bundle.iterdir()} == {
@@ -4449,11 +4912,12 @@ def test_cross_container_adapter_recorder_positive_control():
 async def test_cross_container_adapter_recorder_observes_zero_operations_for_both_holds(
     reason,
 ):
-    """Observe only the verified rollback-restart of already-held histories.
+    """Observe the actual pending hold activity retry through a fresh receiver.
 
-    The initial current-mode execution creates each retained hold. This test
-    uses a fresh receiver run after that execution has drained, then instruments
-    the actual rollback worker before it registers its activities.
+    The initial current-mode execution creates each retained hold and dies
+    before Temporal receives the activity result. Resetting before the original
+    activity schedule forces that pending activity to execute again through the
+    exact candidate image while the independent receiver records adapter calls.
     """
     import asyncio
     from uuid import uuid4
@@ -4555,10 +5019,33 @@ async def test_cross_container_adapter_recorder_observes_zero_operations_for_bot
         activity_events_after = activity_schedule_and_start_event_ids(
             history_after_run.events
         )
-        assert activity_events_after == activity_events_before, (
-            "rollback-restart scheduled or started an activity after the original "
-            "typed hold failure; the recorder window is not rollback-only"
+        new_schedule_ids = set(activity_events_after["scheduled"]) - set(
+            activity_events_before["scheduled"]
         )
+        new_start_ids = set(activity_events_after["started"]) - set(
+            activity_events_before["started"]
+        )
+        assert len(new_schedule_ids) == 1
+        assert len(new_start_ids) == 1
+        schedules_by_id = {
+            event.event_id: event.activity_task_scheduled_event_attributes.activity_type.name
+            for event in history_after_run.events
+            if event.HasField("activity_task_scheduled_event_attributes")
+        }
+        new_starts = [
+            event
+            for event in history_after_run.events
+            if event.event_id in new_start_ids
+            and event.HasField("activity_task_started_event_attributes")
+        ]
+        assert len(new_starts) == 1
+        expected_activity_type = {
+            "expired_permit_receipt": "salience.publication.submit_or_reconcile",
+            "published_during_cancel": "salience.publication.cancel",
+        }[reason]
+        assert schedules_by_id[
+            new_starts[0].activity_task_started_event_attributes.scheduled_event_id
+        ] == expected_activity_type
     finally:
         stopped = worker_harness.stop_worker(worker_name)
         worker_log = str(stopped.get("logs", "")).replace(
@@ -4593,6 +5080,7 @@ async def test_cross_container_adapter_recorder_observes_zero_operations_for_bot
         "post_run_history_sha256": _temporal_history_sha256(history_after_run.events),
         "activity_schedule_and_start_event_ids_before": activity_events_before,
         "activity_schedule_and_start_event_ids_after": activity_events_after,
+        "restarted_activity_type": expected_activity_type,
         "database_state_before": before,
         "database_state_after": after,
         "database_state_unchanged": after == before,
@@ -4619,7 +5107,8 @@ async def test_cross_container_adapter_recorder_observes_zero_operations_for_bot
         "post_run_history_sha256": _temporal_history_sha256(history_after_run.events),
         "activity_schedule_and_start_event_ids_before": activity_events_before,
         "activity_schedule_and_start_event_ids_after": activity_events_after,
-        "new_activity_schedule_or_start_events": 0,
+        "restarted_activity_type": expected_activity_type,
+        "new_activity_schedule_or_start_events": len(new_schedule_ids) + len(new_start_ids),
         "recorder_run_id": recorder_run_id,
         "recorder_worker_id": recorder_worker_id,
         "recorder_events_before": events_before,
@@ -7321,16 +7810,16 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
             activity_failure.application_failure_info.type
             == "LegacyPublicationRecoveryHeld"
         ), "reset source history does not contain the original typed hold receipt"
-        workflow_tasks_after_failure = [
+        workflow_tasks_before_activity = [
             event
             for event in history.events
-            if event.event_id > failed_events[0].event_id
+            if event.event_id < scheduled.event_id
             and event.HasField("workflow_task_completed_event_attributes")
         ]
-        assert workflow_tasks_after_failure, (
-            "history has no completed workflow task handling the recorded hold failure"
+        assert workflow_tasks_before_activity, (
+            "history has no completed workflow task before the pending hold activity"
         )
-        reset_boundary = min(workflow_tasks_after_failure, key=lambda event: event.event_id)
+        reset_boundary = max(workflow_tasks_before_activity, key=lambda event: event.event_id)
         terminal_failures_after_boundary = [
             event
             for event in history.events
@@ -7361,11 +7850,10 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
             workflow_execution=WorkflowExecution(
                 workflow_id=workflow_id, run_id=description.run_id
             ),
-            reason="Task 8 fresh rollback-restart recorder window",
-            # Replaying this task consumes the already-recorded ActivityTaskFailed
-            # hold receipt. Resetting before the activity schedule could execute
-            # publication.cancel a second time and invalidate the zero-operation
-            # rollback-restart measurement.
+            reason="Task 8 actual pending hold activity retry recorder window",
+            # Reset before the reason-specific activity schedule so Temporal
+            # schedules and starts the original pending activity again. The
+            # committed hold must be replayed before the adapter seam.
             workflow_task_finish_event_id=reset_boundary.event_id,
             request_id=str(uuid4()),
             identity="p1-publication-recovery-task8",
@@ -7377,9 +7865,16 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
         assert new_description.status == WorkflowExecutionStatus.RUNNING
         reset_history = await restarted.fetch_history()
         reset_activity_events = activity_schedule_and_start_ids(reset_history.events)
-        assert reset_activity_events == original_activity_events, (
-            "Temporal reset scheduled or started an activity instead of replaying "
-            "only workflow-task handling after the recorded hold failure"
+        assert set(reset_activity_events["scheduled"]) <= set(
+            original_activity_events["scheduled"]
+        ), "reset unexpectedly scheduled an activity before the worker retry window"
+        assert set(reset_activity_events["started"]) <= set(
+            original_activity_events["started"]
+        ), "reset unexpectedly started an activity before the worker retry window"
+        assert reset_boundary.event_id < scheduled.event_id
+        assert failed_events[0].event_id > scheduled.event_id
+        assert terminal_failures_after_boundary, (
+            "reset boundary must precede the original terminal workflow failure"
         )
         return restarted, {
             "reason": reason,
@@ -7395,7 +7890,7 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
             "activity_schedule_and_start_event_ids_before": original_activity_events,
             "activity_schedule_and_start_event_ids_after_reset": reset_activity_events,
             "reset_boundary_invariant": (
-                "first workflow-task completion after the original typed activity failure"
+                "last workflow-task completion before the original pending hold activity schedule"
             ),
         }
 
