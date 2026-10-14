@@ -7370,6 +7370,8 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
                 "-I",
                 "-B",
                 "-S",
+                "-c",
+                worker_harness._ADAPTER_RECORDER_LAUNCH_SHIM,
                 "/run/salience-control/launch-v4-publication-worker.py",
                 "--mode",
                 "rollback-restart",
