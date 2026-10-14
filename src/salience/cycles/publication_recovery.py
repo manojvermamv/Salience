@@ -450,6 +450,66 @@ def _lock_candidate_rows(connection, workspace_id, operation_id):
             )
 
 
+def replay_existing_publication_recovery_hold(
+    database_url: str,
+    *,
+    workspace_id: UUID,
+    operation_id: UUID,
+    reason: PublicationRecoveryReason,
+) -> PublicationRecoveryHoldView | None:
+    """Return an exact existing hold without creating one when it is absent."""
+    if reason not in ("expired_permit_receipt", "published_during_cancel"):
+        raise ValueError("known publication recovery reason required")
+    workspace_id = UUID(str(workspace_id))
+    operation_id = UUID(str(operation_id))
+
+    with psycopg.connect(
+        database_url, row_factory=dict_row, connect_timeout=3
+    ) as connection:
+        connection.execute("SET LOCAL statement_timeout='3s'")
+        connection.execute(
+            "SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))",
+            ("publication-recovery-hold:" + str(operation_id),),
+        )
+        stored = _fetchone(
+            connection,
+            f"""SELECT {_HOLD_COLUMNS_V1}
+                FROM public.v4_legacy_publication_recovery_holds
+                WHERE operation_id=%s""",
+            (operation_id,),
+        )
+        if stored is None:
+            return None
+        if stored["workspace_id"] != workspace_id or stored["reason"] != reason:
+            raise PublicationRecoveryConflictError(
+                "publication recovery operation already has a different hold binding"
+            )
+        _validate_v1_evidence(
+            stored,
+            computed_fingerprint=stored["computed_liability_fingerprint_v1"],
+        )
+
+        _lock_candidate_rows(connection, workspace_id, operation_id)
+        candidate = _fetchone(
+            connection,
+            _CANDIDATE_SQL,
+            (reason, operation_id, workspace_id, reason, reason),
+        )
+        if candidate is None:
+            raise PublicationRecoveryConflictError(
+                "publication recovery evidence changed after the original hold"
+            )
+        _validate_v1_evidence(
+            candidate,
+            computed_fingerprint=candidate["liability_fingerprint_v1"],
+        )
+        if not _same_evidence(stored, candidate):
+            raise PublicationRecoveryConflictError(
+                "publication recovery evidence conflicts with the original hold"
+            )
+        return _view(stored)
+
+
 def record_publication_recovery_hold(
     database_url: str,
     *,

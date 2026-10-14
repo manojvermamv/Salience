@@ -248,6 +248,7 @@ class GuardedPublicationActivities(PublicationActivities):
         if activity.info().activity_type!='salience.publication.cancel':
             decision=publication_decision(current,budget_status='reserved')
             if not decision.allowed:raise PermissionError('current native publication authorization required')
+        return binding
 
     @activity.defn(name='salience.publication.request')
     async def request(self,request:PublicationWorkflowRequest)->dict[str,Any]:
@@ -319,12 +320,31 @@ class GuardedPublicationActivities(PublicationActivities):
         if payload is None:
             return await super().cancel(payload)
 
-        await self._guard(payload)
+        binding = await self._guard(payload)
         remote_id = payload.get("remote_id")
         if not isinstance(remote_id, str):
             return await super().cancel(payload)
 
         request = PublicationRequest.model_validate(payload["request"])
+        from salience.cycles.publication_recovery import (
+            replay_existing_publication_recovery_hold,
+        )
+
+        hold = await asyncio.to_thread(
+            replay_existing_publication_recovery_hold,
+            self.outbox.database_url,
+            workspace_id=self.outbox.workspace_id,
+            operation_id=binding["operation_id"],
+            reason="published_during_cancel",
+        )
+        if hold is not None:
+            raise ApplicationError(
+                "published publication readback during cancellation requires typed execution recovery",
+                {"hold_id": str(hold.id)},
+                type="LegacyPublicationRecoveryHeld",
+                non_retryable=True,
+            )
+
         receipt = await self._adapter_for(request).cancel(remote_id)
         if receipt is None:
             raise RuntimeError("durable publication cancellation readback is pending")
@@ -333,10 +353,8 @@ class GuardedPublicationActivities(PublicationActivities):
 
         run = await self._run()
         if receipt.state == "published":
-            from salience.cycles.legacy_runtime import binding_for_job
             from salience.cycles.publication_recovery import record_publication_recovery_hold
 
-            binding = await asyncio.to_thread(binding_for_job, self.outbox, run.job_id)
             hold = await asyncio.to_thread(
                 record_publication_recovery_hold,
                 self.outbox.database_url,

@@ -1157,6 +1157,7 @@ async def test_hold_commit_then_process_death_replays_without_liability_change(
 async def test_exact_hold_replay_returns_stable_id(published_cancelled_recovery_case):
     from salience.cycles.publication_recovery import (
         load_publication_recovery_hold,
+        replay_existing_publication_recovery_hold,
         record_publication_recovery_hold,
     )
 
@@ -1164,6 +1165,13 @@ async def test_exact_hold_replay_returns_stable_id(published_cancelled_recovery_
     database = fixture["database"]
     operation_id = UUID(submitted["operation_id"])
     before = _liability_snapshot(database, operation_id)
+    assert _recovery_hold_count(database, operation_id) == 0
+    assert replay_existing_publication_recovery_hold(
+        database,
+        workspace_id=fixture["workspace_id"],
+        operation_id=operation_id,
+        reason="published_during_cancel",
+    ) is None
     assert _recovery_hold_count(database, operation_id) == 0
 
     first = record_publication_recovery_hold(
@@ -1178,8 +1186,15 @@ async def test_exact_hold_replay_returns_stable_id(published_cancelled_recovery_
         operation_id=operation_id,
         reason="published_during_cancel",
     )
+    existing_replay = replay_existing_publication_recovery_hold(
+        database,
+        workspace_id=fixture["workspace_id"],
+        operation_id=operation_id,
+        reason="published_during_cancel",
+    )
 
     assert replay == first
+    assert existing_replay == first
     assert replay.id is not None
     after = _liability_snapshot(database, operation_id)
     _assert_named_liabilities_unchanged(before, after)
@@ -1205,6 +1220,114 @@ async def test_exact_hold_replay_returns_stable_id(published_cancelled_recovery_
             workspace_id=uuid4(),
             operation_id=operation_id,
         ) is None
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("evidence_state", ["legacy", "incomplete", "changed"])
+async def test_cancel_activity_rejects_unreplayable_hold_before_adapter(
+    published_cancelled_recovery_case, monkeypatch, evidence_state
+):
+    from types import SimpleNamespace
+
+    from salience.cycles.legacy_publication import native_publication_request
+    from salience.cycles.legacy_publication_runtime import GuardedPublicationActivities
+    from salience.cycles.legacy_runtime import binding_for_job
+    from salience.cycles.outbox import CycleOutbox
+    from salience.cycles.publication_recovery import (
+        PublicationRecoveryConflictError,
+        record_publication_recovery_hold,
+    )
+    from salience.publication.contracts import PublicationRequest
+    from salience.workflows.publication import _workflow_request_payload
+
+    fixture, submitted = published_cancelled_recovery_case
+    database = fixture["database"]
+    operation_id = UUID(submitted["operation_id"])
+
+    if evidence_state == "legacy":
+        downgraded = _migrate(database, "downgrade", REVISION)
+        assert downgraded.returncode == 0, downgraded.stderr
+        with psycopg.connect(database) as connection:
+            connection.execute(
+                _INSERT_SQL,
+                _hold_values(
+                    connection,
+                    operation_id,
+                    reason="published_during_cancel",
+                ),
+            )
+        upgraded = _migrate(database, "upgrade", REVISION_0043)
+        assert upgraded.returncode == 0, upgraded.stderr
+        expected = "complete.*v1 evidence"
+    else:
+        record_publication_recovery_hold(
+            database,
+            workspace_id=fixture["workspace_id"],
+            operation_id=operation_id,
+            reason="published_during_cancel",
+        )
+        if evidence_state == "incomplete":
+            with psycopg.connect(database) as connection:
+                connection.execute(
+                    f"""ALTER TABLE public.{TABLE}
+                        DROP CONSTRAINT ck_v4_legacy_publication_recovery_holds_v1_snapshot_keys,
+                        DROP CONSTRAINT ck_v4_legacy_publication_recovery_holds_v1_fingerprint"""
+                )
+                connection.execute(
+                    f"ALTER TABLE public.{TABLE} DISABLE TRIGGER USER"
+                )
+                connection.execute(
+                    f"""UPDATE public.{TABLE}
+                        SET liability_snapshot_v1=liability_snapshot_v1-'audit_events'
+                        WHERE operation_id=%s""",
+                    (operation_id,),
+                )
+            expected = "exactly 21 keys"
+        else:
+            with psycopg.connect(database) as connection:
+                changed = connection.execute(
+                    """UPDATE v4_legacy_publication_fixture_progress
+                       SET polls=polls+1,updated_at=clock_timestamp()
+                       WHERE operation_id=%s""",
+                    (operation_id,),
+                )
+                assert changed.rowcount == 1
+            expected = "conflicts with the original hold"
+
+    outbox = CycleOutbox(
+        database, workspace_id=fixture["workspace_id"], delivery_lane="legacy"
+    )
+    binding = binding_for_job(outbox, submitted["job_id"])
+    workflow_request = native_publication_request(binding)
+    with psycopg.connect(database) as connection:
+        request_json = connection.execute(
+            "SELECT request FROM v4_legacy_publication_fixture_receipts WHERE operation_id=%s",
+            (operation_id,),
+        ).fetchone()[0]
+    request = PublicationRequest.model_validate(request_json)
+    activities = GuardedPublicationActivities(SimpleNamespace(), outbox)
+
+    async def guard(_payload):
+        return binding
+
+    monkeypatch.setattr(activities, "_guard", guard)
+    adapter_calls = []
+
+    def adapter_for(_request):
+        adapter_calls.append("called")
+        raise AssertionError("invalid hold evidence crossed the cancellation adapter seam")
+
+    monkeypatch.setattr(activities, "_adapter_for", adapter_for)
+    payload = {
+        "request": request.model_dump(mode="json"),
+        "workflow_request": _workflow_request_payload(workflow_request),
+        "publication_request_id": str(request.id),
+        "remote_id": "fixture-v4-publication:" + str(operation_id),
+    }
+
+    with pytest.raises(PublicationRecoveryConflictError, match=expected):
+        await activities.cancel(payload)
+    assert adapter_calls == []
 
 
 @pytest.mark.asyncio
@@ -1418,7 +1541,7 @@ async def test_expired_permit_concurrent_exact_hold_insert_returns_one_stable_ho
 
 @pytest.mark.asyncio
 async def test_cancel_hold_commit_then_process_death_replays_without_liability_change(
-    cancel_process_death_recovery_case, tmp_path
+    cancel_process_death_recovery_case, monkeypatch, tmp_path
 ):
     from temporalio.client import Client, WorkflowExecutionStatus, WorkflowFailureError
     from salience.cycles import publication_recovery as recovery
@@ -1429,6 +1552,7 @@ async def test_cancel_hold_commit_then_process_death_replays_without_liability_c
     )
 
     from salience.cycles.outbox import CycleOutbox
+    from salience.cycles.legacy_publication_runtime import DurableLegacyFixturePublisher
     from salience.cycles.legacy_runtime import build_legacy_worker
     from salience.cycles.runtime import TemporalCycleTransport
 
@@ -1543,6 +1667,14 @@ async def test_cancel_hold_commit_then_process_death_replays_without_liability_c
     client = await Client.connect(os.environ["TEST_TEMPORAL_TARGET"])
     handle = client.get_workflow_handle("salience-v4-legacy-operation:" + str(operation_id))
     assert (await handle.describe()).status == WorkflowExecutionStatus.RUNNING
+    original_cancel = DurableLegacyFixturePublisher.cancel
+    adapter_cancel_attempts = []
+
+    async def track_cancel(adapter, remote_id):
+        adapter_cancel_attempts.append(remote_id)
+        return await original_cancel(adapter, remote_id)
+
+    monkeypatch.setattr(DurableLegacyFixturePublisher, "cancel", track_cancel)
     outbox = CycleOutbox(
         database, workspace_id=fixture["workspace_id"], delivery_lane="legacy"
     )
@@ -1562,6 +1694,9 @@ async def test_cancel_hold_commit_then_process_death_replays_without_liability_c
     ]
     assert len(typed_failures) == 1
     assert typed_failures[0].details == ({"hold_id": hold_id},)
+    assert adapter_cancel_attempts == [], (
+        "a pending cancel activity replay crossed the adapter seam after the hold committed"
+    )
     after_retry = _liability_snapshot(database, operation_id)
     _assert_complete_liabilities_unchanged(before, after_retry)
     assert _recovery_hold_count(database, operation_id) == 1
@@ -2184,6 +2319,13 @@ async def test_each_omitted_liability_collection_mutation_denies_recovery(
                         reason="published_during_cancel",
                     )
                 with pytest.raises(recovery.PublicationRecoveryConflictError):
+                    recovery.replay_existing_publication_recovery_hold(
+                        database,
+                        workspace_id=workspace_id,
+                        operation_id=cancelled_operation_id,
+                        reason="published_during_cancel",
+                    )
+                with pytest.raises(recovery.PublicationRecoveryConflictError):
                     recovery.verify_publication_recovery_rollback(
                         database,
                         workspace_id=workspace_id,
@@ -2633,6 +2775,7 @@ async def test_legacy_null_v1_hold_is_inspectable_but_not_replayable_or_verifiab
     from salience.cycles.publication_recovery import (
         PublicationRecoveryConflictError,
         load_publication_recovery_hold,
+        replay_existing_publication_recovery_hold,
         record_publication_recovery_hold,
         verify_publication_recovery_rollback,
     )
@@ -2685,6 +2828,13 @@ async def test_legacy_null_v1_hold_is_inspectable_but_not_replayable_or_verifiab
     assert inspected is not None
     assert inspected.reason == "published_during_cancel"
 
+    with pytest.raises(PublicationRecoveryConflictError, match="complete.*v1 evidence"):
+        replay_existing_publication_recovery_hold(
+            database,
+            workspace_id=workspace_id,
+            operation_id=cancelled_operation_id,
+            reason="published_during_cancel",
+        )
     with pytest.raises(PublicationRecoveryConflictError):
         record_publication_recovery_hold(
             database,
