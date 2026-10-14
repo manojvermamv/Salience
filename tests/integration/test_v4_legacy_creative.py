@@ -287,14 +287,18 @@ async def test_creative_activity_rechecks_stage_before_writer_after_admission(cr
         finally:release.set()
 
 
-def test_creative_migration_empty_exact_restore_and_populated_refusal(creative):
+def test_creative_migration_empty_exact_restore_and_populated_refusal(legacy):
     import subprocess,sys
     from urllib.parse import urlsplit,urlunsplit
-    bridge,command,_,database,*_=creative
+    from test_v4_legacy_dispatch import _seed_legacy_stage_for_migration_refusal
+    _,_,_,database=legacy
     name='legacy_creative_migration_'+uuid4().hex
+    refusal_name='legacy_creative_refusal_'+uuid4().hex
     fresh=urlunsplit(urlsplit(database)._replace(path='/'+name))
+    refusal=urlunsplit(urlsplit(database)._replace(path='/'+refusal_name))
     with psycopg.connect(database,autocommit=True) as admin:
         admin.execute(psycopg.sql.SQL('CREATE DATABASE {}').format(psycopg.sql.Identifier(name)))
+        admin.execute(psycopg.sql.SQL('CREATE DATABASE {}').format(psycopg.sql.Identifier(refusal_name)))
         try:
             def migrate(db,direction,target):return subprocess.run([sys.executable,'-m','alembic','-x','database_url='+db,direction,target],capture_output=True,text=True)
             def guard():
@@ -305,15 +309,18 @@ def test_creative_migration_empty_exact_restore_and_populated_refusal(creative):
             assert guard()!=original
             assert migrate(fresh,'downgrade','0038_legacy_dummy_stage').returncode == 0
             assert guard()==original
-            with psycopg.connect(database) as connection:
-                head_revision=connection.execute('SELECT version_num FROM alembic_version').fetchone()[0]
-            submitted=bridge.submit_creative(command)
-            result=migrate(database,'downgrade','0038_legacy_dummy_stage')
+            assert migrate(refusal,'upgrade','head').returncode == 0
+            assert migrate(refusal,'downgrade','0042_publication_recovery_holds').returncode == 0
+            submitted=_seed_legacy_stage_for_migration_refusal(refusal,stage='creative')
+            result=migrate(refusal,'downgrade','0038_legacy_dummy_stage')
             assert result.returncode != 0 and 'preserve original legacy creative history' in result.stderr
-            with psycopg.connect(database) as connection:
-                assert connection.execute('SELECT version_num FROM alembic_version').fetchone()[0] == head_revision
+            with psycopg.connect(refusal) as connection:
+                assert connection.execute('SELECT version_num FROM alembic_version').fetchone()[0] == '0042_publication_recovery_holds'
                 assert connection.execute('SELECT stage FROM v4_legacy_dispatches WHERE job_id=%s',(submitted['job_id'],)).fetchone()[0] == 'creative'
-        finally:admin.execute(psycopg.sql.SQL('DROP DATABASE {} WITH (FORCE)').format(psycopg.sql.Identifier(name)))
+                assert connection.execute('SELECT count(*) FROM v4_legacy_dispatches').fetchone()[0] == 1
+        finally:
+            admin.execute(psycopg.sql.SQL('DROP DATABASE {} WITH (FORCE)').format(psycopg.sql.Identifier(refusal_name)))
+            admin.execute(psycopg.sql.SQL('DROP DATABASE {} WITH (FORCE)').format(psycopg.sql.Identifier(name)))
 
 
 @pytest.mark.asyncio

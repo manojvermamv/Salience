@@ -229,14 +229,18 @@ async def test_forged_dummy_workflow_payload_cannot_send_or_crash_worker(dummy):
             assert connection.execute("SELECT count(*) FROM external_effects WHERE job_id=%s",(submitted["job_id"],)).fetchone()[0] == 0
 
 
-def test_dummy_migration_empty_restore_and_populated_stage_preservation(dummy):
+def test_dummy_migration_empty_restore_and_populated_stage_preservation(legacy):
     import subprocess,sys
     from urllib.parse import urlsplit,urlunsplit
-    bridge,command,_,database=dummy
+    from test_v4_legacy_dispatch import _seed_legacy_stage_for_migration_refusal
+    _,_,_,database=legacy
     name="legacy_stage_migration_"+uuid4().hex
+    refusal_name="legacy_stage_refusal_"+uuid4().hex
     fresh=urlunsplit(urlsplit(database)._replace(path="/"+name))
+    refusal=urlunsplit(urlsplit(database)._replace(path="/"+refusal_name))
     with psycopg.connect(database,autocommit=True) as admin:
         admin.execute(psycopg.sql.SQL("CREATE DATABASE {}").format(psycopg.sql.Identifier(name)))
+        admin.execute(psycopg.sql.SQL("CREATE DATABASE {}").format(psycopg.sql.Identifier(refusal_name)))
         try:
             def migrate(db,direction,target):
                 return subprocess.run([sys.executable,"-m","alembic","-x","database_url="+db,direction,target],capture_output=True,text=True)
@@ -250,13 +254,15 @@ def test_dummy_migration_empty_restore_and_populated_stage_preservation(dummy):
             assert migrate(fresh,"downgrade","0037_native_schedule_sources").returncode == 0
             assert guard() == original
             assert migrate(fresh,"upgrade","head").returncode == 0
-            with psycopg.connect(database) as connection:
-                head_revision=connection.execute("SELECT version_num FROM alembic_version").fetchone()[0]
-            submitted=bridge.submit_dummy(command)
-            result=migrate(database,"downgrade","0037_native_schedule_sources")
-            assert result.returncode != 0 and any(reason in result.stderr for reason in ("preserve original legacy stage history", "preserve original legacy creative history"))
-            with psycopg.connect(database) as connection:
-                assert connection.execute("SELECT version_num FROM alembic_version").fetchone()[0] == head_revision
+            assert migrate(refusal,"upgrade","head").returncode == 0
+            assert migrate(refusal,"downgrade","0042_publication_recovery_holds").returncode == 0
+            submitted=_seed_legacy_stage_for_migration_refusal(refusal,stage="dummy")
+            result=migrate(refusal,"downgrade","0037_native_schedule_sources")
+            assert result.returncode != 0 and "preserve original legacy stage history" in result.stderr
+            with psycopg.connect(refusal) as connection:
+                assert connection.execute("SELECT version_num FROM alembic_version").fetchone()[0] == "0042_publication_recovery_holds"
                 assert connection.execute("SELECT stage FROM v4_legacy_dispatches WHERE job_id=%s",(submitted["job_id"],)).fetchone()[0] == "dummy"
+                assert connection.execute("SELECT count(*) FROM v4_legacy_dispatches").fetchone()[0] == 1
         finally:
+            admin.execute(psycopg.sql.SQL("DROP DATABASE {} WITH (FORCE)").format(psycopg.sql.Identifier(refusal_name)))
             admin.execute(psycopg.sql.SQL("DROP DATABASE {} WITH (FORCE)").format(psycopg.sql.Identifier(name)))

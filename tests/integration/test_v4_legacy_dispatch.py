@@ -30,6 +30,176 @@ def legacy(policy, monkeypatch):
     return bridge, command, service, database
 
 
+def _seed_legacy_stage_for_migration_refusal(database, *, stage):
+    """Create one canonical legacy stage row in an otherwise empty 0042 DB."""
+    from datetime import datetime, timedelta, timezone
+    from uuid import uuid4
+
+    from psycopg.types.json import Jsonb
+
+    from salience.cycles.admission import CycleAdmission
+    from salience.cycles.contracts import (
+        CadencePolicy,
+        CycleRequest,
+        GoalSpec,
+        GoalSpecV2,
+    )
+    from salience.cycles.legacy_dispatch import (
+        LegacyCreativeCommand,
+        LegacyDispatch,
+        LegacyDummyCommand,
+    )
+    from test_v4_cycle_admission import approved_goal
+
+    if stage not in {"creative", "dummy"}:
+        raise ValueError("migration refusal fixture requires creative or dummy stage")
+
+    workspace_id, subject_id, program_id = uuid4(), uuid4(), uuid4()
+    scopes = (
+        "goals:write",
+        "goals:approve",
+        "cycles:write",
+        "cycles:review",
+        "cycles:permit",
+        "cycles:read",
+        "cycles:stop",
+        "legacy:" + stage,
+    )
+    with psycopg.connect(database) as connection:
+        head = connection.execute("SELECT version_num FROM alembic_version").fetchone()[0]
+        assert head == "0042_publication_recovery_holds"
+        connection.execute(
+            "INSERT INTO workspaces(id,slug,display_name) VALUES(%s,%s,'Migration fixture')",
+            (workspace_id, str(workspace_id)),
+        )
+        connection.execute(
+            "INSERT INTO identity_subjects(id,workspace_id,issuer,subject,expires_at) "
+            "VALUES(%s,%s,'https://fixture.invalid',%s,now()+interval '1 hour')",
+            (subject_id, workspace_id, str(subject_id)),
+        )
+        for scope in scopes:
+            connection.execute(
+                "INSERT INTO permission_grants(workspace_id,principal_type,principal_id,scope,effect,constraints,expires_at) "
+                "VALUES(%s,'identity',%s,%s,'allow','{}',now()+interval '1 hour')",
+                (workspace_id, str(subject_id), scope),
+            )
+        connection.execute(
+            "INSERT INTO content_programs(id,workspace_id,slug,name,niche) "
+            "VALUES(%s,%s,%s,'Migration fixture','Fixture')",
+            (program_id, workspace_id, str(program_id)),
+        )
+
+    service = CycleAdmission(
+        database, workspace_id=workspace_id, subject_id=subject_id
+    )
+    now = datetime.now(timezone.utc).replace(microsecond=0)
+    anchor = now - timedelta(minutes=10)
+    legacy_spec = GoalSpec(
+        objective="Isolated migration guard fixture",
+        metric_versions=("fixture-quality@1",),
+        audience="internal",
+        account_refs=("fixture-account",),
+        brand_scope="fixture-brand",
+        source_policy="fixture-only",
+        horizon_end=now + timedelta(days=1),
+    )
+    spec = GoalSpecV2(
+        **(
+            legacy_spec.model_dump()
+            | {
+                "schema_version": "GoalSpec.local.v2",
+                "content_program_id": program_id,
+                "cadence_seconds": None,
+                "account_refs": ("fixture-account",),
+                "channel_refs": ("fixture-channel",),
+                "content_scope": "fixture-only",
+                "policy_refs": ("fixture-policy@1",),
+                "retention_policy": "fixture-retention@1",
+                "cadence": CadencePolicy(anchor=anchor),
+            }
+        )
+    )
+    goal_id = approved_goal(service, spec)
+    command_request = CycleRequest(
+        origin="manual",
+        idempotency_key="migration-refusal-" + stage,
+        expected_revision=1,
+        slot_time=anchor + timedelta(minutes=10),
+    )
+    bridge = LegacyDispatch(
+        database,
+        workspace_id=workspace_id,
+        subject_id=subject_id,
+        task_queue="salience-v4-local-legacy-" + str(uuid4()),
+    )
+    if stage == "dummy":
+        submitted = bridge.submit_dummy(
+            LegacyDummyCommand(goal_id=goal_id, request=command_request)
+        )
+    else:
+        topic_id, package_id, brief_id = uuid4(), uuid4(), uuid4()
+        with psycopg.connect(database) as connection:
+            connection.execute(
+                "INSERT INTO topic_opportunities(id,workspace_id,content_program_id,fingerprint,topic,score,explanation) "
+                "VALUES(%s,%s,%s,%s,'Fixture topic',1,'Migration guard fixture')",
+                (topic_id, workspace_id, program_id, str(topic_id)),
+            )
+            connection.execute(
+                "INSERT INTO strategic_packages(id,workspace_id,content_program_id,topic_opportunity_id,diversity_fingerprint,package) "
+                "VALUES(%s,%s,%s,%s,%s,%s)",
+                (
+                    package_id,
+                    workspace_id,
+                    program_id,
+                    topic_id,
+                    str(package_id),
+                    Jsonb({"fixture": "migration-guard"}),
+                ),
+            )
+            connection.execute(
+                "INSERT INTO content_brief_versions(id,workspace_id,content_program_id,brief_key,version,topic_opportunity_id,strategic_package_id,content) "
+                "VALUES(%s,%s,%s,'migration-guard',1,%s,%s,%s)",
+                (
+                    brief_id,
+                    workspace_id,
+                    program_id,
+                    topic_id,
+                    package_id,
+                    Jsonb({"fixture": "migration-guard"}),
+                ),
+            )
+        submitted = bridge.submit_creative(
+            LegacyCreativeCommand(
+                goal_id=goal_id,
+                request=command_request,
+                brief_id=brief_id,
+                max_variants=1,
+            )
+        )
+
+    with psycopg.connect(database) as connection:
+        rows = connection.execute(
+            "SELECT binding.stage,job.job_type,job.state,job.dry_run "
+            "FROM v4_legacy_dispatches binding JOIN jobs job ON job.id=binding.job_id "
+            "WHERE binding.operation_id=%s",
+            (submitted["operation_id"],),
+        ).fetchall()
+        unrelated_history = {
+            table: connection.execute(f"SELECT count(*) FROM {table}").fetchone()[0]
+            for table in (
+                "job_schedules",
+                "v4_native_publication_schedule_sources",
+                "v4_native_publication_schedule_progress",
+                "v4_legacy_publication_schedule_plans",
+                "v4_legacy_publication_recovery_holds",
+            )
+        }
+    expected_job = "creative_production" if stage == "creative" else "durable_dummy"
+    assert rows == [(stage, expected_job, "queued", True)]
+    assert unrelated_history == {table: 0 for table in unrelated_history}
+    return submitted
+
+
 def test_legacy_submit_commits_one_canonical_job_and_start_under_concurrent_replay(legacy):
     bridge, command, service, database = legacy
     with ThreadPoolExecutor(max_workers=3) as pool:

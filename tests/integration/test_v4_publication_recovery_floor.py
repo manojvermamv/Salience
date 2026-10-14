@@ -602,6 +602,109 @@ def _configure_launcher(launcher, tmp_path, lock, wheel_path, monkeypatch):
     return lock_path, digest_path, launcher_path, digest
 
 
+_TASK8_MONOLITHIC_ARTIFACTS = (
+    "image-attestation.json",
+    "worker-image-id.txt",
+    "control-bundle/launch-v4-publication-worker.py",
+    "control-bundle/publication-worker-launch-lock.json",
+    "control-bundle/publication-worker-launch-lock.sha256",
+)
+
+
+def _require_task8_monolithic_prerequisites(*, candidate_root, environment):
+    from urllib.parse import urlsplit
+
+    candidate_root = Path(candidate_root)
+    missing_artifacts = [
+        relative
+        for relative in _TASK8_MONOLITHIC_ARTIFACTS
+        if not (candidate_root / relative).is_file()
+    ]
+    missing_recorder = [
+        name
+        for name in ("TEST_ADAPTER_RECORDER_URL", "TEST_ADAPTER_RECORDER_RUN_ID")
+        if not environment.get(name)
+    ]
+    if missing_artifacts or missing_recorder:
+        missing = [
+            *missing_artifacts,
+            *missing_recorder,
+        ]
+        pytest.skip(
+            "Task 8 exact-artifact prerequisites are absent: " + ", ".join(missing)
+        )
+
+    recorder_url = urlsplit(environment["TEST_ADAPTER_RECORDER_URL"])
+    assert recorder_url.scheme == "http" and recorder_url.hostname
+    assert recorder_url.username is None and recorder_url.password is None
+    assert recorder_url.path in {"", "/"}
+    assert not recorder_url.query and not recorder_url.fragment
+    recorder_run_id = str(UUID(environment["TEST_ADAPTER_RECORDER_RUN_ID"]))
+    return {
+        "candidate_root": candidate_root,
+        "recorder_base_url": recorder_url.geturl().rstrip("/"),
+        "recorder_run_id": recorder_run_id,
+    }
+
+
+def _task8_monolithic_setup(*, candidate_root, environment, database_factory):
+    prerequisites = _require_task8_monolithic_prerequisites(
+        candidate_root=candidate_root,
+        environment=environment,
+    )
+    return database_factory(), prerequisites
+
+
+@pytest.fixture
+def task8_monolithic_database(request):
+    database, _ = _task8_monolithic_setup(
+        candidate_root=ROOT / "artifacts/v4-next-p1/agents/p1-publication-recovery-0043",
+        environment=os.environ,
+        database_factory=lambda: request.getfixturevalue("active_0042_database"),
+    )
+    return database
+
+
+def _write_task8_monolithic_candidate_artifacts(candidate_root):
+    for relative in _TASK8_MONOLITHIC_ARTIFACTS:
+        path = Path(candidate_root) / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(b"fixture candidate prerequisite\n")
+
+
+def test_task8_monolithic_gate_skips_without_recorder_before_database_setup(tmp_path):
+    candidate_root = tmp_path / "candidate"
+    _write_task8_monolithic_candidate_artifacts(candidate_root)
+    database_setup_calls = []
+    with pytest.raises(pytest.skip.Exception, match="TEST_ADAPTER_RECORDER_URL"):
+        _task8_monolithic_setup(
+            candidate_root=candidate_root,
+            environment={"TEST_ADAPTER_RECORDER_RUN_ID": "00000000-0000-0000-0000-000000000001"},
+            database_factory=lambda: database_setup_calls.append("created"),
+        )
+    assert database_setup_calls == []
+
+
+def test_task8_monolithic_gate_runs_with_candidate_and_recorder_prerequisites(tmp_path):
+    candidate_root = tmp_path / "candidate"
+    _write_task8_monolithic_candidate_artifacts(candidate_root)
+    environment = {
+        "TEST_ADAPTER_RECORDER_URL": "http://127.0.0.1:8081",
+        "TEST_ADAPTER_RECORDER_RUN_ID": "00000000-0000-0000-0000-000000000001",
+    }
+    database_setup_calls = []
+    database, prerequisites = _task8_monolithic_setup(
+        candidate_root=candidate_root,
+        environment=environment,
+        database_factory=lambda: database_setup_calls.append("created") or "candidate-db",
+    )
+    assert database == "candidate-db"
+    assert database_setup_calls == ["created"]
+    assert prerequisites["candidate_root"] == candidate_root
+    assert prerequisites["recorder_base_url"] == "http://127.0.0.1:8081"
+    assert prerequisites["recorder_run_id"] == environment["TEST_ADAPTER_RECORDER_RUN_ID"]
+
+
 @pytest.fixture
 def active_0042_database(tmp_path, request):
     from test_v4_publication_recovery_holds import (
@@ -5241,7 +5344,7 @@ def test_inprocess_gate_wraps_malformed_rollback_environment_as_compatibility_er
 
 @pytest.mark.asyncio
 async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_passes(
-    active_0042_database, monkeypatch, tmp_path, request,
+    task8_monolithic_database, monkeypatch, tmp_path, request,
 ):
     candidate_root = ROOT / "artifacts/v4-next-p1/agents/p1-publication-recovery-0043"
     assert (candidate_root / "image-attestation.json").is_file()
@@ -5289,7 +5392,7 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
 
     database_admin_url = os.environ["TEST_DATABASE_URL"]
     persist_fixtures = os.environ.get("P1_TASK8_PERSIST_FIXTURES") == "1"
-    database = active_0042_database
+    database = task8_monolithic_database
     monkeypatch.setenv("SALIENCE_DEPLOYMENT_MODE", "fixture")
     monkeypatch.setenv("SALIENCE_EFFECTS_ENABLED", "false")
     monkeypatch.setenv("TEST_DATABASE_URL", database)
