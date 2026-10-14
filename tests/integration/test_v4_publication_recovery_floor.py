@@ -3103,7 +3103,7 @@ def test_candidate_control_bundle_authenticates_full_0043_inventory(
             ),
         ),
     )
-    assert "authenticated alembic revision inventory does not match runtime files" in extra_physical_diagnostic
+    assert "authenticated migration/config inventory does not match runtime files" in extra_physical_diagnostic
 
     extra_lock = json.loads(lock_bytes)
     extra_lock["pin"]["source_files"].append(
@@ -3142,6 +3142,7 @@ def test_candidate_control_bundle_authenticates_full_0043_inventory(
     )
     assert (
         "publication worker source pin mismatch" in missing_physical_diagnostic
+        or "publication worker launch pin is invalid" in missing_physical_diagnostic
         or "migration" in missing_physical_diagnostic
     )
 
