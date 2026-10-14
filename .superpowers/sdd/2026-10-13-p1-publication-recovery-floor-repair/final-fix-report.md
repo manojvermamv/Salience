@@ -402,3 +402,78 @@ reports 9,151 entries and zero `.pyc`. Audit log SHA256 is
 `220f2d19d39c042b2feb73440b27a4bb91861a075e2b5fc382f9d87aa6a45453`. The full
 non-live suite, final audit hash/inventory refresh, and consolidated docs checks
 are still outstanding.
+
+
+### Final exact-candidate suite and cleanup
+
+The Compose restart-recovery control initially exposed a harness defect: the
+fixture mounted the global `artifacts/salience.whl`, whose bytes did not match
+the frozen successor candidate. The exact-worker gate correctly denied startup
+with `retained publication worker wheel hash mismatch`; the archived full-run
+attempt has **1 failed, 795 passed, 17 skipped** and log SHA256
+`0a2352d6a1e05244208d7ae97199002cd87f08771932d90a97f4430fb0b4869e`. The
+harness now passes the exact candidate wheel and lock into Compose. The retained
+Compose recovery test then passed **1 test in 88.19s**, exit 0; log SHA256
+`e7eae0123edd77c395199598edc7ae289526bd4f5890f169b971a75bfff3b8ad`.
+
+After the harness fix, the complete non-live command was run once from fresh
+state and passed **796 passed, 17 skipped, 3 warnings in 1576.95s**, exit 0:
+
+```sh
+SALIENCE_DEPLOYMENT_MODE=fixture .venv/bin/python -m pytest -p no:cacheprovider tests/contracts tests/unit tests/integration tests/e2e tests/evals -m 'not live' -q -rs
+```
+
+The full log is `/tmp/p1-publication-recovery-successor-182c4e4/attempt-6/full-run-final/run.log`, SHA256
+`9948122a8b2749f33ac20a5c26b60dfd072519bbd24c07a584d0896fc45fd27d`; command
+and exit record are beside it. Sixteen Task 8 persistence tests skipped because
+the canonical progress marker was intentionally absent after readback-qualified
+cleanup; one recorder-only test skipped because its environment variables were
+not present. The three warnings are existing Alembic `path_separator`
+deprecations.
+
+The final candidate invalidation audit passed at HEAD `874e1c715303110ea941df4e8284ab2d8876321e` with progress absent. All 211 source-lock rows match at the application commit, observed HEAD, and worktree: path-set SHA256
+`14bddb59e1d7ad1f3d4fceb6b20e7ae0748848a93e89dc470a7af7b325dc88fe`, content-manifest SHA256
+`58f27973abc9b3d34fa9f2eea1738c914659ff84f5151f64fdc493acca1c3005`. Exact
+candidate loader verification passed for application `182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f`, image `sha256:c880a41e4a20f1322ad579b0b8d3f8b5ae14fcdf13635458d33cdc8c747e09a0`, wheel SHA256 `425b7122f6431459a15bc4fe7bbdd169692b152356a0f36c6895e3fd452e3d04`, lock SHA256 `1c8ac4ff92e589e27dc0af2c6dd0bc69c4295435df5a318174a2c77f3b1f2c9c`, installed RECORD SHA256 `f3fbd4bd43c25786969016b1d0c806c9591b5aea07dcd4753b87a3980dc1b74b`, runtime manifest SHA256 `3d58423ee9119db38c9a670c726c83692bef126d402e69f2a9ad98e05377b644`, 9,151 runtime entries, and zero `.pyc`. The final audit output is preserved at `attempt-6/candidate-invalidation-audit-final-current.log` (SHA256 `bc9f59dee850d6e82df0c2fa8614faf4cef9da19046d147564c092a9e42fbbf5`).
+
+Cleanup removed only the three inactive test images created by the final run
+and the seven exact private BuildKit cache records after confirming no
+containers referenced the images. The successor image `c880a41` and wheel
+`425b7122` remain byte-identical. All eight active service container IDs and
+seven active volume names remained unchanged; no active service image,
+container, or volume was removed. After cleanup, `/tmp` had 891 MiB free, root
+had 9.2 GiB free, and 2.3 GiB RAM was available. Full before/after snapshots
+and cleanup readback are in `attempt-6/full-run-final/`.
+
+
+### Post-handoff candidate invalidation audit
+
+After updating the active handoffs, R18/R32 verifier prose, and successor evidence, the candidate invalidation audit passed again at `HEAD=4850e8d6ceb3a150b8d0cd23ff02a3c61e6f799a`. All 211 source rows match at application commit and the 9ecd7e9 test harness commit; the exact candidate loader passed with image `sha256:c880a41e4a20f1322ad579b0b8d3f8b5ae14fcdf13635458d33cdc8c747e09a0`, wheel `425b7122f6431459a15bc4fe7bbdd169692b152356a0f36c6895e3fd452e3d04`, runtime manifest `3d58423ee9119db38c9a670c726c83692bef126d402e69f2a9ad98e05377b644`, 9,151 runtime entries, and zero `.pyc`. Output is `/tmp/p1-publication-recovery-successor-182c4e4/attempt-6/candidate-invalidation-after-docs.log`, SHA256 `6cf617f53485317d5f9c618849e2ce25537558036ae6a6813971005d88bf246a`. Consolidated documentation and repository checks remain the final local gate.
+
+### Documentation-ledger correction before final checks
+
+The first consolidated docs check correctly failed closed: the active 386d4bc content lock no longer matched the repaired source/test harness, and changing the historical Task 10 evidence in place would violate its existing P0 digest. I refreshed `docs/v4/evidence-lock.json` for the 182c4e4 successor and archived the complete superseded 386d4bc file/hash list inside it. I restored the historical `publication-recovery-hold-evidence.json` to its P0-pinned bytes and placed the new exact successor evidence in `docs/v4/publication-recovery-hold-successor-evidence.json`; current progress, matrix, and audit pointers now identify the successor addendum. The first check logs and diffs are retained under `/tmp/p1-publication-recovery-successor-182c4e4/attempt-6/docs-gates/`.
+
+### Final consolidated documentation and repository checks
+
+The final documentation gate passed after refreshing the active successor lock,
+restoring the original P0-pinned evidence bytes, and completing the 100-path
+Markdown inventory. `python3 docs/v4/test_checks.py` passed 15 tests;
+`python3 docs/v4/check.py --self-test` passed 6 negative controls; and
+`python3 docs/v4/check.py` passed 75 requirements with 366 current evidence
+files, 360 inventory files, 97 Markdown pages checked, and 4 HTML pages.
+All four repository shell contracts passed. Mermaid 12.0.0 rendered all six
+diagrams. `pip check`, compileall, JSON parsing, the explicit historical/hash/
+lock/R18-R32 consistency check, and `git diff --check` all passed. The exact
+logs and diagram results are preserved under
+`/tmp/p1-publication-recovery-successor-182c4e4/attempt-6/docs-gates/`; the
+diagram results SHA256 is
+`6a04203cacd481c7c9e2000bd83834a2ac1ad0cb0ab4d4db433ba6aa557502ba`. The
+consistency check confirms 100 tracked Markdown paths, 259 audit artifacts,
+all non-null audit hashes, the original P0 evidence digest, the 366-file active
+lock plus preserved 365/360 historical lock counts, and unchanged R18/R32
+case counts and HELD states.
+
+### Final audit refresh and post-refresh verification
+
+The audit refresh now covers the complete 100-path tracked Markdown inventory and all 259 artifact rows; 258 byte hashes match and the audit's intentional self-hash remains null. The six current handoff digests match their files, the original P0 evidence remains byte-identical, and active plus historical lock counts remain 366/365/360. R18 and R32 remain at 76 and 81 executed cases with production status HELD. After reconciling those values, `python3 docs/v4/test_checks.py` passed 15 tests, `python3 docs/v4/check.py --self-test` passed six negative controls, `python3 docs/v4/check.py` passed 75 requirements, five current/historical JSON documents parsed, and `git diff --check` passed. Exact final reconciliation logs are under `/tmp/p1-publication-recovery-successor-182c4e4/attempt-6/docs-gates/`: `final_reconciled_docs_tests.log`, `final_reconciled_docs_self_test.log`, `final_reconciled_docs_check.log`, `final_reconciled_consistency.log`, and `final_reconciled_diff_check.log`.

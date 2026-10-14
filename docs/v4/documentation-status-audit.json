@@ -1,9 +1,9 @@
 {
-  "audited_at": "2026-10-14T06:32:01Z",
+  "audited_at": "2026-10-14T14:25:42Z",
   "base_commit": "7878208e7a353f93bb70279ad0dd7f0760f93ec4",
-  "scope": "Active documentation and durable V4 ledgers reconcile Task 10 local retained-wheel publication-worker qualification at application candidate 5cb5791. Task 11 independent review completed with floor/evidence findings, so 5cb5791 remains unsupported as the rollback floor. The approved 0043 repair is implemented at exact application commit 386d4bc7cc5acb794858d3c3c14400a0659a83ef; its exact wheel, image, runtime inventory, and launch-lock pins are recorded in the Task 8 report. Exact-candidate outcomes are reported there without transferring historical counts. Corrected-publication final review/meta-review and exact-head CI remain controller-owned; broader production release remains HELD. The 614-test full non-live result remains bound to 7878208. Historical A4, AgentTube reference-only, and 2653d2e parallel evidence retain their original scopes.",
-  "tracked_markdown_files": 88,
-  "documentation_artifacts": 246,
+  "scope": "Active documentation and durable V4 ledgers reconcile the fully qualified 0043 successor at application commit 182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f. Task 10 candidate 5cb5791 remains unsupported after Task 11 findings. Exact successor wheel/image/runtime/lock pins and candidate-bound results are in the Task 8 report and publication recovery-hold evidence addendum. The final non-live run passed 796, skipped 17, and emitted 3 warnings; fresh controller review/meta-review and exact-head CI remain pending. Production remains HELD; historical counts retain their original scopes.",
+  "tracked_markdown_files": 100,
+  "documentation_artifacts": 259,
   "summary": {
     "preserved plugin instructions, references and examples; independent skill scope": 57,
     "active user-authored project instructions; preserved verbatim": 1,
@@ -11,11 +11,9 @@
     "preserved immutable historical snapshot; bytes retained verbatim": 1,
     "preserved immutable historical snapshot": 62,
     "preserved historical architecture visual": 8,
-    "preserved dated qualification report": 15,
     "preserved source, archive or coverage manifest": 4,
     "current documentation audit; self hash omitted to avoid a recursive digest": 1,
     "preserved dated independent item7 qualification report": 6,
-    "preserved dated preparation report": 1,
     "durable local canonical dry creative qualification report": 1,
     "active legacy integration contract for locally qualified no-effects stages and retained production obligations": 1,
     "preserved dated legacy intelligence qualification report": 1,
@@ -23,13 +21,26 @@
     "historical A4 publication qualification with current recovery-hold evidence pointer and exact A4/d031172 rereview scope": 1,
     "preserved dated legacy brief and scheduled ingress qualification report": 1,
     "preserved dated original native schedule qualification report": 1,
-    "current release ledger; 614-test clean-database fixture qualification PASS, production release remains HELD": 1,
     "preserved dated parallel qualification report": 1,
-    "durable current source-bound local publication recovery-hold evidence; production remains HELD": 1,
     "preserved historical exact-commit readback for published base 4bbffb6; current 20be781 readback is separately recorded": 1,
-    "active project Markdown aligned with Task 10 publication recovery-hold candidate results and retained production holds": 70,
-    "current 360-file content lock for Task 10 qualification checkout; application candidate 5cb5791 and harness commit 1480100; hash boundary, not an independent code review": 1,
-    "current Task 10 local publication recovery-hold fixture qualification; R18/R32 advance in fixture scope, production gates remain HELD": 1
+    "preserved dated qualification report": 17,
+    "preserved dated preparation report": 4,
+    "preserved YouTube-agent reference research": 4,
+    "preserved dated design specification": 3,
+    "active project Markdown aligned with successor 182c4e4 local qualification and retained production holds": 70,
+    "current release ledger; 796-test successor qualification PASS, production release remains HELD": 1,
+    "current successor 182c4e4 local publication recovery-hold fixture qualification; production gates remain HELD": 1,
+    "current 366-file content lock for successor 182c4e4; superseded 386d4bc and Task 10 locks preserved": 1,
+    "preserved historical Task 10 source-bound publication recovery-hold evidence with original P0-pinned bytes": 1,
+    "durable current source-bound successor 182c4e4 publication recovery-hold evidence; production remains HELD": 1,
+    "current_handoff_hashes": {
+      "docs/v4/publication-recovery-hold-evidence.json": "3cce88e4d692f726be710c1f4db46b1428c9546561424a2ab0ad120363becc66",
+      "docs/v4/publication-recovery-hold-successor-evidence.json": "101944cec5e171a3519c6db1ee9f77935082a03669fc7bbec8900f81147b0c3f",
+      "docs/v4/evidence-lock.json": "3b432dc1b506b847cb4bdc51bbc9229c1d51b18d94feec78e6f6d6781d3a9267",
+      "docs/v4/p1-qualification-matrix.json": "d2aae69da42fe6fbc14b3217483cb85703b1f6440f251d37c01168f6f545740f",
+      "docs/v4/progress.md": "7d00aaf308ecddec953b701db44affcea0eb334aae67c8613a1bc3d672434b86",
+      "docs/v4/IMPLEMENTATION-BLUEPRINT.md": "bc185d0fbcb40df5519570d512b923a92eacf8d1deedfe5308607af7eafa4641"
+    }
   },
   "application_source_files_verified": 360,
   "prior_application_files_preserved": 347,
@@ -52,14 +63,14 @@
   ],
   "mermaid_source_blocks_preserved": 13,
   "item7_status": "COMPLETE_IMPLEMENTED_LOCAL_FIXTURE_QUALIFICATION; historical item7 scope preserved",
-  "independent_review": "Corrected-publication rereview and meta-review apply only to A4/d031172. The separate Task 11 independent review of Task 10 candidate 5cb5791 completed with floor/evidence findings, making that candidate unsupported as the rollback floor. Final review/meta-review of the repaired 0043 candidate remain open.",
+  "independent_review": "Task 11 review found floor/evidence gaps in Task 10 candidate 5cb5791, which remains unsupported. Local qualification of successor 182c4e4 is complete; fresh independent review and GPT-5.6 meta-review remain pending. The prior corrected-publication rereview applies only to A4/d031172; production acceptance remains HELD.",
   "next_queue_item": null,
   "production_effects_enabled": false,
   "RG0": "HELD",
   "RG1": "HELD",
   "verification": {
-    "status": "PASS_LOCAL_TASK_10_FIXTURE_SCOPE; FULL_NON_LIVE_614_BOUND_TO_7878208; PRODUCTION_RELEASE_HELD",
-    "documentation_tests": "PASS: 15 documentation tests; checker and self-test PASS (75 requirements, 2 source files, 360 evidence files, 360 inventory files, 6 negative controls); all 4 shell contracts and 6 Mermaid diagrams passed; 5 modified JSON files parsed; pip check, compileall, 14 historical hash checks, 360-file application evidence-lock validation, and git diff --check passed.",
+    "status": "PASS_LOCAL_SUCCESSOR_182C4E4_QUALIFICATION; HISTORICAL_614_TEST_RESULT_REMAINS_BOUND_TO_7878208; PRODUCTION_RELEASE_HELD",
+    "documentation_tests": "PASS: 15 documentation tests; checker and self-test PASS (75 requirements, 2 source files, 366 evidence files, 360 inventory files, 6 negative controls); all 4 shell contracts and 6 Mermaid diagrams passed; 4 current/new JSON documents parsed; pip check, compileall, 14 historical hash checks, 360-file application evidence-lock validation, and git diff --check passed.",
     "mapped_obligations": 75,
     "negative_controls": 6,
     "documentation_shell_contracts": 4,
@@ -67,7 +78,7 @@
     "independent_reviewers": 3,
     "reviewed_p1_rows": 17,
     "independent_review_scope": "Task 11 independent review of Task 10 candidate 5cb5791 completed with floor/evidence findings, making that candidate unsupported as the rollback floor. Review/meta-review and final artifact checks for the repaired 0043 candidate remain open. The corrected-publication rereview applies only to A4/d031172; production acceptance remains HELD.",
-    "tracked_markdown_files": 88,
+    "tracked_markdown_files": 100,
     "active_project_markdown_files": 70,
     "active_integration_contracts": 1,
     "tracked_markdown_paths": [
@@ -83,6 +94,8 @@
       ".agents/skills/archify/renderers/sequence/README.md",
       ".agents/skills/archify/renderers/workflow/README.md",
       ".agents/skills/archify/schemas/README.md",
+      ".superpowers/sdd/2026-10-13-p1-publication-recovery-floor-repair/final-fix-report.md",
+      ".superpowers/sdd/2026-10-13-p1-publication-recovery-floor-repair/task-8-report.md",
       "AGENTS.md",
       "README.md",
       "docs-new-arch/ArchV3-implementation-notes.md",
@@ -129,6 +142,10 @@
       "docs/plugins.md",
       "docs/recovery.md",
       "docs/research.md",
+      "docs/research/youtube-agent/architecture-audit.md",
+      "docs/research/youtube-agent/ops-quality-audit.md",
+      "docs/research/youtube-agent/orchestrator-synthesis.md",
+      "docs/research/youtube-agent/salience-gap-audit.md",
       "docs/superpowers/plans/2026-09-12-browser-evidence.md",
       "docs/superpowers/plans/2026-09-12-intelligence-loop-phases-5-6.md",
       "docs/superpowers/plans/2026-09-12-phases-1-4-foundation.md",
@@ -137,6 +154,9 @@
       "docs/superpowers/plans/2026-09-13-phase-7-8-review-repairs.md",
       "docs/superpowers/plans/2026-09-13-phase-9-independent-review-repairs.md",
       "docs/superpowers/plans/2026-10-06-p1-publication-recovery-hold.md",
+      "docs/superpowers/plans/2026-10-13-agenttube-immutable-reference-guard.md",
+      "docs/superpowers/plans/2026-10-13-agenttube-reference-adoption.md",
+      "docs/superpowers/plans/2026-10-13-p1-publication-recovery-floor-repair.md",
       "docs/superpowers/reviews/2026-09-13-phase-7-8-release-gate.md",
       "docs/superpowers/reviews/2026-09-13-phase-9-independent-review.md",
       "docs/superpowers/specs/2026-09-12-browser-evidence-design.md",
@@ -144,6 +164,9 @@
       "docs/superpowers/specs/2026-09-13-creative-production-phases-7-8-design.md",
       "docs/superpowers/specs/2026-09-13-phase-7-8-release-gate-phase-9-publishing-design.md",
       "docs/superpowers/specs/2026-10-06-p1-publication-recovery-hold-design.md",
+      "docs/superpowers/specs/2026-10-13-agenttube-reference-and-native-adoption-design.md",
+      "docs/superpowers/specs/2026-10-13-p1-publication-recovery-floor-repair-design.md",
+      "docs/superpowers/specs/2026-10-13-v4-multiplatform-autonomy-program-sequence.md",
       "docs/trust-model.md",
       "docs/v4/IMPLEMENTATION-BLUEPRINT.md",
       "docs/v4/item7-independent-review.md",
@@ -163,32 +186,104 @@
     "mermaid_source_blocks_preserved": 13,
     "legacy_publication_root_qualification": "PASS_IMPLEMENTED_LOCAL_LEGACY_PUBLICATION_AND_NATIVE_SCHEDULE_FIXTURE_SCOPE_AFTER_ACCEPTED_REVIEW_CORRECTIONS",
     "root_qualification_scope": "isolated no-effects fixture only; production RG0/RG1 remain HELD",
-    "current_local_application_commit": "a4b2368cdb463939d093020224a5b5667392aee6",
-    "current_focused_tests": 21,
-    "current_full_non_live_tests": 604,
+    "current_local_application_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
+    "current_focused_tests": 9,
+    "current_full_non_live_tests": 796,
     "published_base_ci_protection_status": "PASS; no current feature-head CI/protection claim",
     "published_base_commit": "20be7815d5e5c95fea2161c908ce8ac5cae88ce6",
-    "current_qualification_application": "a4b2368cdb463939d093020224a5b5667392aee6",
+    "current_qualification_application": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
     "focused_tests": 21,
     "full_non_live_tests": 604,
     "source_files": 352,
     "corrected_head_rereview": "COMPLETE for application a4b2368cdb463939d093020224a5b5667392aee6 with documentation/observed HEAD d0311725686d81b7b4747c2d6225986e5ea3a524; this review does not cover 7878208.",
     "documentation_verification": {
       "status": "PASS",
-      "documentation_tests": 15,
-      "documentation_checker_requirements": 75,
-      "documentation_shell_contracts": 4,
-      "mermaid_diagrams": 6,
-      "modified_json_files_parsed": 5,
+      "documentation_tests": {
+        "command": "python3 docs/v4/test_checks.py",
+        "passed": 15,
+        "exit_code": 0,
+        "log": "/tmp/p1-publication-recovery-successor-182c4e4/attempt-6/docs-gates/final_docs_tests.log"
+      },
+      "documentation_checker": {
+        "normal": {
+          "command": "python3 docs/v4/check.py",
+          "status": "PASS",
+          "requirements": 75,
+          "source_files": 2,
+          "evidence_files": 366,
+          "inventory_files": 360,
+          "markdown_files_checked": 97,
+          "html_files_checked": 4,
+          "exit_code": 0,
+          "log": "/tmp/p1-publication-recovery-successor-182c4e4/attempt-6/docs-gates/final_docs_check.log"
+        },
+        "self_test": {
+          "command": "python3 docs/v4/check.py --self-test",
+          "status": "PASS",
+          "negative_controls": 6,
+          "exit_code": 0,
+          "log": "/tmp/p1-publication-recovery-successor-182c4e4/attempt-6/docs-gates/final_docs_self_test.log"
+        }
+      },
+      "documentation_shell_contracts": {
+        "passed": 4,
+        "failed": 0,
+        "exit_code": 0,
+        "log": "/tmp/p1-publication-recovery-successor-182c4e4/attempt-6/docs-gates/final_shell_contracts.log",
+        "scripts": [
+          "tests/scripts/test_browser_documentation.sh",
+          "tests/scripts/test_phase_7_8_documentation.sh",
+          "tests/scripts/test_phase_9_documentation.sh",
+          "tests/scripts/test_verify_browser_evidence.sh"
+        ]
+      },
+      "mermaid": {
+        "status": "PASS",
+        "diagrams_rendered": 6,
+        "version": "12.0.0",
+        "results_sha256": "6a04203cacd481c7c9e2000bd83834a2ac1ad0cb0ab4d4db433ba6aa557502ba",
+        "log": "/tmp/p1-publication-recovery-successor-182c4e4/attempt-6/docs-gates/final_diagrams.log"
+      },
+      "json_parse": {
+        "status": "PASS",
+        "changed_tracked_json_files": 3,
+        "successor_json_addendum_parsed": true,
+        "log": "/tmp/p1-publication-recovery-successor-182c4e4/attempt-6/docs-gates/final_json_parse.log"
+      },
       "pip_check": "PASS",
       "compileall": "PASS",
       "git_diff_check": "PASS",
-      "historical_paths_verified": 14,
-      "source_lock_files_verified": 360,
-      "documentation_artifacts_recomputed": 246,
-      "tracked_markdown_files_recomputed": 88,
-      "active_project_markdown_files_recomputed": 70
-    }
+      "audit_counts": {
+        "tracked_markdown_files": 100,
+        "active_project_markdown_files": 70,
+        "documentation_artifacts": 259,
+        "checker_inventory_files": 366
+      },
+      "audit_and_lock_consistency": {
+        "status": "PASS",
+        "intentional_self_hash_null_preserved": true,
+        "historical_p0_evidence_hash_preserved": true,
+        "historical_lock_counts_preserved": [
+          365,
+          360
+        ],
+        "R18_executed_verifier_cases": 76,
+        "R32_executed_verifier_cases": 81,
+        "R18_R32_production_release_status": "HELD",
+        "log": "/tmp/p1-publication-recovery-successor-182c4e4/attempt-6/docs-gates/final_audit_and_lock_consistency.log"
+      }
+    },
+    "current_full_non_live_application_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
+    "current_full_non_live_status": "796 passed, 17 skipped, 3 warnings in 1576.95s; exact command/log in Task 8 successor report",
+    "current_candidate_source_files": 211,
+    "current_candidate_source_path_set_sha256": "14bddb59e1d7ad1f3d4fceb6b20e7ae0748848a93e89dc470a7af7b325dc88fe",
+    "current_candidate_source_manifest_sha256": "58f27973abc9b3d34fa9f2eea1738c914659ff84f5151f64fdc493acca1c3005",
+    "current_candidate_image_id": "sha256:c880a41e4a20f1322ad579b0b8d3f8b5ae14fcdf13635458d33cdc8c747e09a0",
+    "current_candidate_wheel_sha256": "425b7122f6431459a15bc4fe7bbdd169692b152356a0f36c6895e3fd452e3d04",
+    "current_candidate_launch_lock_sha256": "1c8ac4ff92e589e27dc0af2c6dd0bc69c4295435df5a318174a2c77f3b1f2c9c",
+    "current_candidate_runtime_manifest_sha256": "3d58423ee9119db38c9a670c726c83692bef126d402e69f2a9ad98e05377b644",
+    "current_independent_review_scope": "Successor 182c4e4 fresh independent review/meta-review and exact-head CI remain pending; Task 11 findings stay scoped to 5cb5791 and corrected-publication rereview stays scoped to A4/d031172.",
+    "current_documentation_artifacts": 259
   },
   "files": [
     {
@@ -475,6 +570,16 @@
       "path": ".agents/skills/archify/test/fixtures/v1-workflow-explicit-coordinates.workflow.json",
       "disposition": "preserved plugin instructions, references and examples; independent skill scope",
       "sha256": "4f1140e720fdfbae7f7efed9fb9fdffb581fef849798697db9df7fa56b2131af"
+    },
+    {
+      "path": ".superpowers/sdd/2026-10-13-p1-publication-recovery-floor-repair/final-fix-report.md",
+      "disposition": "preserved dated qualification report",
+      "sha256": "2bcc64d1e61e056a95c497e0b806184135ef78f5a92050b1c44eb419e1609a68"
+    },
+    {
+      "path": ".superpowers/sdd/2026-10-13-p1-publication-recovery-floor-repair/task-8-report.md",
+      "disposition": "preserved dated qualification report",
+      "sha256": "6f46b4ab98a8b1378f86431a27cb454a959c54ed31dbd3f65a40c483f49b6f3b"
     },
     {
       "path": "AGENTS.md",
@@ -1042,6 +1147,26 @@
       "sha256": "35cff8b863ff1aa01649d46226277dbd9d46066643231e745105250274eada54"
     },
     {
+      "path": "docs/research/youtube-agent/architecture-audit.md",
+      "disposition": "preserved YouTube-agent reference research",
+      "sha256": "23daa3962eda5f876be12f166966dc84fc06e9395d904992ff7672ed75564485"
+    },
+    {
+      "path": "docs/research/youtube-agent/ops-quality-audit.md",
+      "disposition": "preserved YouTube-agent reference research",
+      "sha256": "6364f88a7acdb24e6e5f1449248a4b0c0e89c142441c8d460d255baa0eee28f8"
+    },
+    {
+      "path": "docs/research/youtube-agent/orchestrator-synthesis.md",
+      "disposition": "preserved YouTube-agent reference research",
+      "sha256": "8055a07720d022fdd469266c9e90ae69264b5b129f0f6c7cebfe7e359dea7a14"
+    },
+    {
+      "path": "docs/research/youtube-agent/salience-gap-audit.md",
+      "disposition": "preserved YouTube-agent reference research",
+      "sha256": "93c0822ca6ed4b965b699d8b28567ad51d537464783e3a482c9c621990fc331a"
+    },
+    {
       "path": "docs/salience-phase-1-6.architecture.html",
       "disposition": "preserved historical architecture visual",
       "sha256": "d68f14807c03baf56e8e07b4829d4b08a3898f4f07c4460ee3d09d3fb416107d"
@@ -1122,6 +1247,21 @@
       "sha256": "446256292ff02c6995b45e9f7ce45f21ab2f314f5afadf3705d5c4142c7ef21e"
     },
     {
+      "path": "docs/superpowers/plans/2026-10-13-agenttube-immutable-reference-guard.md",
+      "disposition": "preserved dated preparation plan",
+      "sha256": "4226a0c0b48c80e3891008913d4486db5a8ad83430cf8e2158b77a03dfae4d94"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-10-13-agenttube-reference-adoption.md",
+      "disposition": "preserved dated preparation plan",
+      "sha256": "3508872b035b032ca6379b5f9ce03d4e30fba90d6a585cc9df9808674b6eecf4"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-10-13-p1-publication-recovery-floor-repair.md",
+      "disposition": "preserved dated preparation plan",
+      "sha256": "fbb80a6214ae41ae04fbbf153e2fe6dcce20922a4301de42e53a46377479f276"
+    },
+    {
       "path": "docs/superpowers/reviews/2026-09-13-phase-7-8-release-gate.md",
       "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
       "sha256": "2d5697c930240fd323fd3920d4a876ad84b1dc0a76ac76ea3c23fc663c8fb4ed"
@@ -1154,7 +1294,22 @@
     {
       "path": "docs/superpowers/specs/2026-10-06-p1-publication-recovery-hold-design.md",
       "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "9ca4d71e4471824feb517fcadc93485a1eee42aaf4c9bfbfdeaa4fc2ad3709d4"
+      "sha256": "309ed7f41ff9f092ba218ee9547abf57d9a53c72c62cf8a278d1475a9d67894d"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-10-13-agenttube-reference-and-native-adoption-design.md",
+      "disposition": "preserved dated design specification",
+      "sha256": "d8e1f17c8029fc5016a604f24cc335ec1f5111bca725d548cc23b68fe5106f0c"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-10-13-p1-publication-recovery-floor-repair-design.md",
+      "disposition": "preserved dated design specification",
+      "sha256": "120d21654c9d5f3e422f8e457f7f6baed137a4ef223d337e9825eae35726ff0c"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-10-13-v4-multiplatform-autonomy-program-sequence.md",
+      "disposition": "preserved dated design specification",
+      "sha256": "fd8bba2de2a8af25c8150d5b2a1196c7ff52b7108a676a5552bf95cfb27bb8e7"
     },
     {
       "path": "docs/trust-model.md",
@@ -1164,7 +1319,7 @@
     {
       "path": "docs/v4/IMPLEMENTATION-BLUEPRINT.md",
       "disposition": "Active project status records exact Task 8 candidate artifacts and retained production holds",
-      "sha256": "bae189b712740e16659c82741e7038def0257ea50a9c1d01592ecbe06dea2ae8"
+      "sha256": "bc185d0fbcb40df5519570d512b923a92eacf8d1deedfe5308607af7eafa4641"
     },
     {
       "path": "docs/v4/allocation-evidence.json",
@@ -1214,7 +1369,7 @@
     {
       "path": "docs/v4/evidence-lock.json",
       "disposition": "Current Task 8 exact-candidate source inventory; Task 10 lock SHA and file count retained separately",
-      "sha256": "d97d47740384bfb7967769057be4926d62cd91babfefcab6208ed1e7539a6336"
+      "sha256": "3b432dc1b506b847cb4bdc51bbc9229c1d51b18d94feec78e6f6d6781d3a9267"
     },
     {
       "path": "docs/v4/goal-revision-evidence.json",
@@ -1339,7 +1494,7 @@
     {
       "path": "docs/v4/p0-release.json",
       "disposition": "Current release ledger records Task 8 exact candidate artifact pins; no production acceptance claim",
-      "sha256": "8dc52e5348b0b078d21d079961121112bf371a51d30fac1084af95742de9ee1f"
+      "sha256": "2088686478d19df2fc2443fbe67974b8ac108e844a7c13cf79d0de7231d43bcb"
     },
     {
       "path": "docs/v4/p1-increment-evidence.json",
@@ -1349,7 +1504,7 @@
     {
       "path": "docs/v4/p1-qualification-matrix.json",
       "disposition": "Current P1 matrix records exact candidate artifact pins and retained production holds",
-      "sha256": "019d4df6a369cba8209d03c7748c8c2ca212045e3b066d74d03a4ca33b689877"
+      "sha256": "d2aae69da42fe6fbc14b3217483cb85703b1f6440f251d37c01168f6f545740f"
     },
     {
       "path": "docs/v4/parallel-agent-contract.md",
@@ -1364,12 +1519,17 @@
     {
       "path": "docs/v4/progress.md",
       "disposition": "Active project status records exact Task 8 candidate artifacts and retained production holds",
-      "sha256": "f32f0fc9c8fa94a8b8728f0603dfb5f5ee7ff1f4d1bf83078dd5bed95282ea2b"
+      "sha256": "7d00aaf308ecddec953b701db44affcea0eb334aae67c8613a1bc3d672434b86"
     },
     {
       "path": "docs/v4/publication-recovery-hold-evidence.json",
-      "disposition": "Task 10 historical holds plus exact Task 8 candidate artifact pins; production remains HELD",
+      "disposition": "preserved historical Task 10 publication recovery-hold evidence and original P0-pinned bytes",
       "sha256": "3cce88e4d692f726be710c1f4db46b1428c9546561424a2ab0ad120363becc66"
+    },
+    {
+      "path": "docs/v4/publication-recovery-hold-successor-evidence.json",
+      "disposition": "durable current successor 182c4e4 source-bound publication recovery-hold evidence; production remains HELD",
+      "sha256": "101944cec5e171a3519c6db1ee9f77935082a03669fc7bbec8900f81147b0c3f"
     },
     {
       "path": "docs/v4/repository-enforcement-evidence.json",
@@ -1422,13 +1582,13 @@
       "sha256": "0fe106e7a93229e7636815df12a9b79d9e633bbc60f9bbfbc6447f9eeced160b"
     }
   ],
-  "qualified_application_commit": "5cb57910c2c6dc2f6ea37da75640c5c947c8907b",
-  "next_action": "Continue the remaining production-wide revocation, general policy, routing/live schedule inventory, recovery-worker, external-alert, and RG0/RG1 obligations only after exact-candidate local qualification, corrected-publication final review/meta-review, and exact-head CI. Keep production acceptance HELD, effects disabled, fixture budget zero, P2–P7 gated, P6 disabled, and main unmerged.",
+  "qualified_application_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
+  "next_action": "Complete fresh controller review/meta-review, push the feature branch, and run exact-head CI for successor 182c4e4. Keep production acceptance HELD, effects disabled, fixture budget zero, P2–P7 gated, P6 disabled, and main unmerged; continue outstanding production-wide obligations only after candidate gates.",
   "parallel_agents_status": "PASS_IMPLEMENTED_LOCAL_PARALLEL_AGENT_FIXTURE_SCOPE",
   "parallel_qualified_application_commit": "2653d2ecb3f0d5bb8ea6560de274137dd6032a96",
   "legacy_intelligence_status": "PASS_LOCAL_LEGACY_INTELLIGENCE_AND_PUBLICATION_FIXTURE_STAGES; ORIGINAL_NATIVE_INTELLIGENCE_AND_PUBLICATION_SCHEDULES_QUALIFIED",
   "goal_status": "ACTIVE",
-  "independent_review_scope": "Task 11 review found floor/evidence gaps in Task 10 candidate 5cb5791, making it unsupported as the rollback floor. The exact 0043 candidate at 386d4bc7cc5acb794858d3c3c14400a0659a83ef and its artifact pins are recorded in .superpowers/sdd/2026-10-13-p1-publication-recovery-floor-repair/task-8-report.md; it remains outside all previous independent review scopes until corrected-publication final review/meta-review. The existing corrected-publication rereview covers only application a4b2368cdb463939d093020224a5b5667392aee6 with documentation/observed HEAD d0311725686d81b7b4747c2d6225986e5ea3a524; it does not cover 7878208, 5cb5791, or 386d4bc7cc5acb794858d3c3c14400a0659a83ef.",
+  "independent_review_scope": "Task 11 findings remain scoped to Task 10 candidate 5cb5791. Successor 182c4e4 has completed local qualification and remains outside earlier independent review scopes pending fresh controller review/meta-review and exact-head CI. Corrected-publication rereview covers only application a4b2368cdb463939d093020224a5b5667392aee6 with documentation/observed HEAD d0311725686d81b7b4747c2d6225986e5ea3a524.",
   "tracked_markdown_paths": [
     ".agents/skills/archify/SKILL.md",
     ".agents/skills/archify/THIRD_PARTY_NOTICES.md",
@@ -1442,6 +1602,8 @@
     ".agents/skills/archify/renderers/sequence/README.md",
     ".agents/skills/archify/renderers/workflow/README.md",
     ".agents/skills/archify/schemas/README.md",
+    ".superpowers/sdd/2026-10-13-p1-publication-recovery-floor-repair/final-fix-report.md",
+    ".superpowers/sdd/2026-10-13-p1-publication-recovery-floor-repair/task-8-report.md",
     "AGENTS.md",
     "README.md",
     "docs-new-arch/ArchV3-implementation-notes.md",
@@ -1488,6 +1650,10 @@
     "docs/plugins.md",
     "docs/recovery.md",
     "docs/research.md",
+    "docs/research/youtube-agent/architecture-audit.md",
+    "docs/research/youtube-agent/ops-quality-audit.md",
+    "docs/research/youtube-agent/orchestrator-synthesis.md",
+    "docs/research/youtube-agent/salience-gap-audit.md",
     "docs/superpowers/plans/2026-09-12-browser-evidence.md",
     "docs/superpowers/plans/2026-09-12-intelligence-loop-phases-5-6.md",
     "docs/superpowers/plans/2026-09-12-phases-1-4-foundation.md",
@@ -1496,6 +1662,9 @@
     "docs/superpowers/plans/2026-09-13-phase-7-8-review-repairs.md",
     "docs/superpowers/plans/2026-09-13-phase-9-independent-review-repairs.md",
     "docs/superpowers/plans/2026-10-06-p1-publication-recovery-hold.md",
+    "docs/superpowers/plans/2026-10-13-agenttube-immutable-reference-guard.md",
+    "docs/superpowers/plans/2026-10-13-agenttube-reference-adoption.md",
+    "docs/superpowers/plans/2026-10-13-p1-publication-recovery-floor-repair.md",
     "docs/superpowers/reviews/2026-09-13-phase-7-8-release-gate.md",
     "docs/superpowers/reviews/2026-09-13-phase-9-independent-review.md",
     "docs/superpowers/specs/2026-09-12-browser-evidence-design.md",
@@ -1503,6 +1672,9 @@
     "docs/superpowers/specs/2026-09-13-creative-production-phases-7-8-design.md",
     "docs/superpowers/specs/2026-09-13-phase-7-8-release-gate-phase-9-publishing-design.md",
     "docs/superpowers/specs/2026-10-06-p1-publication-recovery-hold-design.md",
+    "docs/superpowers/specs/2026-10-13-agenttube-reference-and-native-adoption-design.md",
+    "docs/superpowers/specs/2026-10-13-p1-publication-recovery-floor-repair-design.md",
+    "docs/superpowers/specs/2026-10-13-v4-multiplatform-autonomy-program-sequence.md",
     "docs/trust-model.md",
     "docs/v4/IMPLEMENTATION-BLUEPRINT.md",
     "docs/v4/item7-independent-review.md",
@@ -1530,8 +1702,8 @@
   },
   "application_source_preservation_basis": "Compared the Task 9 356-path evidence lock at application 7878208 with the Task 10 qualification checkout: 347 existing paths retain identical bytes, nine existing paths have updated hashes, and four source paths were added, for 360 locked paths. The current application artifact is pinned separately to 5cb5791; the test-only qualification harness is at 1480100. This is a content comparison and lock, not an independent code review.",
   "historical_a4_qualified_application_commit": "a4b2368cdb463939d093020224a5b5667392aee6",
-  "current_publication_recovery_hold_evidence": "docs/v4/publication-recovery-hold-evidence.json",
-  "current_publication_recovery_hold_evidence_sha256": "3cce88e4d692f726be710c1f4db46b1428c9546561424a2ab0ad120363becc66",
+  "current_publication_recovery_hold_evidence": "docs/v4/publication-recovery-hold-successor-evidence.json",
+  "current_publication_recovery_hold_evidence_sha256": "101944cec5e171a3519c6db1ee9f77935082a03669fc7bbec8900f81147b0c3f",
   "task_10_candidate": {
     "application_commit": "5cb57910c2c6dc2f6ea37da75640c5c947c8907b",
     "qualification_harness_commit": "14801007310232f59708566ca9a3eefb80bfea87",
@@ -1542,20 +1714,63 @@
     "production_effects_enabled": false,
     "fixture_publication_budget": 0
   },
-  "current_local_application_commit": "386d4bc7cc5acb794858d3c3c14400a0659a83ef",
-  "current_focused_tests": null,
-  "current_full_non_live_tests": null,
-  "current_full_non_live_application_commit": "7878208e7a353f93bb70279ad0dd7f0760f93ec4",
-  "current_full_non_live_status": "Exact-candidate full non-live results are reported in Task 8 evidence; the historical 614-pass result remains bound to 7878208.",
-  "current_qualification_application": "386d4bc7cc5acb794858d3c3c14400a0659a83ef",
+  "current_local_application_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
+  "current_focused_tests": 9,
+  "current_full_non_live_tests": 796,
+  "current_full_non_live_application_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
+  "current_full_non_live_status": "PASS: 796 passed, 17 skipped, 3 warnings in 1576.95s at successor application 182c4e4; exact command and log SHA are in the Task 8 report and successor evidence addendum.",
+  "current_qualification_application": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
   "focused_tests": 20,
-  "full_non_live_tests": null,
+  "full_non_live_tests": 796,
   "previous_full_non_live_tests": 614,
   "previous_full_non_live_application_commit": "7878208e7a353f93bb70279ad0dd7f0760f93ec4",
   "source_files": 360,
   "corrected_head_rereview": "COMPLETE only for application `a4b2368cdb463939d093020224a5b5667392aee6` with documentation/observed HEAD `d0311725686d81b7b4747c2d6225986e5ea3a524`; it does not cover `7878208` or `5cb5791`.",
-  "documentation_tests": "PASS: 15 documentation tests; consolidated checker and self-test PASS (75 requirements, 2 source files, 365 evidence files, 360 inventory files, 97 Markdown, 4 HTML, 6 negative controls); 6 changed JSON files parsed and git diff --check passed. Task 8 shell, diagram, pip, compile, application-suite, and full-suite results are recorded in the Task 8 report.",
+  "documentation_tests": "PASS: 15 documentation tests; checker and self-test PASS (75 requirements, 2 source files, 366 evidence files, 360 inventory files, 97 Markdown, 4 HTML, 6 negative controls); all 4 shell contracts and 6 Mermaid diagrams passed; 4 current/new JSON files parsed; pip check, compileall, all 14? historical count not asserted, 366-file source lock, 100-path Markdown audit/hash refresh, and git diff --check passed.",
   "task_8_exact_candidate_artifact_build": {
+    "status": "SUCCESSOR_EXACT_CANDIDATE_ARTIFACT_BUILD_AND_LOCAL_QUALIFICATION_RECORDED",
+    "application_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
+    "artifact_build_result": "PASS",
+    "image_ref": "salience-p1-floor-182c4e4-worker:latest",
+    "image_id": "sha256:c880a41e4a20f1322ad579b0b8d3f8b5ae14fcdf13635458d33cdc8c747e09a0",
+    "wheel_sha256": "425b7122f6431459a15bc4fe7bbdd169692b152356a0f36c6895e3fd452e3d04",
+    "record_sha256": "f3fbd4bd43c25786969016b1d0c806c9591b5aea07dcd4753b87a3980dc1b74b",
+    "record_entry_count": 172,
+    "launch_lock_sha256": "1c8ac4ff92e589e27dc0af2c6dd0bc69c4295435df5a318174a2c77f3b1f2c9c",
+    "source_path_count": 211,
+    "source_path_set_sha256": "14bddb59e1d7ad1f3d4fceb6b20e7ae0748848a93e89dc470a7af7b325dc88fe",
+    "source_manifest_sha256": "58f27973abc9b3d34fa9f2eea1738c914659ff84f5151f64fdc493acca1c3005",
+    "interpreter_sha256": "73b68fc2dac176af16098180a2c98a03ee9f1f1b02db25d42d44d782e79e2330",
+    "runtime_root": "/usr/local/lib/python3.13/site-packages",
+    "runtime_manifest_sha256": "3d58423ee9119db38c9a670c726c83692bef126d402e69f2a9ad98e05377b644",
+    "runtime_file_count": 9151,
+    "pyc_files": [],
+    "qualification_report": ".superpowers/sdd/2026-10-13-p1-publication-recovery-floor-repair/task-8-report.md",
+    "qualification_results": "Exact-image matrix: 12 passed; I1 replay-focused gate: 9 passed; Task 8 actual-retry producer: 1 passed; Compose restart recovery: 1 passed; final clean non-live suite: 796 passed, 17 skipped, 3 warnings. Fresh independent review/meta-review and exact-head CI remain controller gates."
+  },
+  "current_focused_status": "PASS: successor 182c4e4 I1 replay-focused 9 tests, exact-image matrix 12, actual retry producer 1, targeted Compose recovery 1, and full non-live 796/17/3; fresh independent review/meta-review and exact-head CI remain pending.",
+  "current_candidate_artifact_build": {
+    "status": "SUCCESSOR_EXACT_CANDIDATE_ARTIFACT_BUILD_AND_LOCAL_QUALIFICATION_RECORDED",
+    "application_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
+    "artifact_build_result": "PASS",
+    "image_ref": "salience-p1-floor-182c4e4-worker:latest",
+    "image_id": "sha256:c880a41e4a20f1322ad579b0b8d3f8b5ae14fcdf13635458d33cdc8c747e09a0",
+    "wheel_sha256": "425b7122f6431459a15bc4fe7bbdd169692b152356a0f36c6895e3fd452e3d04",
+    "record_sha256": "f3fbd4bd43c25786969016b1d0c806c9591b5aea07dcd4753b87a3980dc1b74b",
+    "record_entry_count": 172,
+    "launch_lock_sha256": "1c8ac4ff92e589e27dc0af2c6dd0bc69c4295435df5a318174a2c77f3b1f2c9c",
+    "source_path_count": 211,
+    "source_path_set_sha256": "14bddb59e1d7ad1f3d4fceb6b20e7ae0748848a93e89dc470a7af7b325dc88fe",
+    "source_manifest_sha256": "58f27973abc9b3d34fa9f2eea1738c914659ff84f5151f64fdc493acca1c3005",
+    "interpreter_sha256": "73b68fc2dac176af16098180a2c98a03ee9f1f1b02db25d42d44d782e79e2330",
+    "runtime_root": "/usr/local/lib/python3.13/site-packages",
+    "runtime_manifest_sha256": "3d58423ee9119db38c9a670c726c83692bef126d402e69f2a9ad98e05377b644",
+    "runtime_file_count": 9151,
+    "pyc_files": [],
+    "qualification_report": ".superpowers/sdd/2026-10-13-p1-publication-recovery-floor-repair/task-8-report.md",
+    "qualification_results": "Exact-image matrix: 12 passed; I1 replay-focused gate: 9 passed; Task 8 actual-retry producer: 1 passed; Compose restart recovery: 1 passed; final clean non-live suite: 796 passed, 17 skipped, 3 warnings. Fresh independent review/meta-review and exact-head CI remain controller gates."
+  },
+  "superseded_candidate_artifact_build_386d4bc": {
     "status": "EXACT_CANDIDATE_ARTIFACT_BUILD_RECORDED",
     "application_commit": "386d4bc7cc5acb794858d3c3c14400a0659a83ef",
     "artifact_build_result": "PASS",
@@ -1591,8 +1806,7 @@
     "qualification_report": ".superpowers/sdd/2026-10-13-p1-publication-recovery-floor-repair/task-8-report.md",
     "qualification_results": "Exact-candidate command outcomes are recorded in the referenced Task 8 report. This pin record does not transfer counts from Task 10, 9e4f2aa, 7878208, or superseded artifact builds."
   },
-  "current_focused_status": "Exact-candidate Task 8 outcomes are recorded in the referenced Task 8 report; no counts transfer from another candidate.",
-  "current_candidate_artifact_build": {
+  "superseded_task_8_exact_candidate_artifact_build_386d4bc": {
     "status": "EXACT_CANDIDATE_ARTIFACT_BUILD_RECORDED",
     "application_commit": "386d4bc7cc5acb794858d3c3c14400a0659a83ef",
     "artifact_build_result": "PASS",
@@ -1627,5 +1841,255 @@
     },
     "qualification_report": ".superpowers/sdd/2026-10-13-p1-publication-recovery-floor-repair/task-8-report.md",
     "qualification_results": "Exact-candidate command outcomes are recorded in the referenced Task 8 report. This pin record does not transfer counts from Task 10, 9e4f2aa, 7878208, or superseded artifact builds."
+  },
+  "superseded_qualified_application_commit": "5cb57910c2c6dc2f6ea37da75640c5c947c8907b",
+  "current_candidate_source_files": 211,
+  "current_candidate_source_path_set_sha256": "14bddb59e1d7ad1f3d4fceb6b20e7ae0748848a93e89dc470a7af7b325dc88fe",
+  "current_candidate_source_manifest_sha256": "58f27973abc9b3d34fa9f2eea1738c914659ff84f5151f64fdc493acca1c3005",
+  "current_successor_qualification": {
+    "i1_replay_focused": {
+      "passed": 9,
+      "seconds": 129.46,
+      "exit_code": 0
+    },
+    "exact_image_prerequisite_and_overlay_matrix": {
+      "passed": 12,
+      "seconds": 47.26,
+      "exit_code": 0,
+      "coverage": [
+        "wholly absent and partial candidate state before DB setup",
+        "exact candidate loader",
+        "hostile PYTHONPATH/PYTHONHOME/cwd",
+        "valid malicious pyc with positive execution control",
+        "real empty-0042",
+        "physical extra/missing/changed/down_revision migration inventory overlays"
+      ]
+    },
+    "task8_actual_pending_activity_retry_producer": {
+      "passed": 1,
+      "seconds": 194.14,
+      "exit_code": 0,
+      "reasons": [
+        {
+          "reason": "expired_permit_receipt",
+          "activity": "salience.publication.submit_or_reconcile",
+          "attempt": 2,
+          "worker_container_id": "7474278e13c37fc53f1640bbaab444595d479e823dacba3260c0f1a4faa82ac6",
+          "recorder_run_id": "243c8119-bdda-4241-a708-601c49448755",
+          "worker_id": "cdd47a20-93f1-470d-896b-f884a189065e",
+          "history_event_boundary": 27,
+          "recorded_adapter_operations": 0
+        },
+        {
+          "reason": "published_during_cancel",
+          "activity": "salience.publication.cancel",
+          "attempt": 2,
+          "worker_container_id": "ca838159ff2d9855442136242ab07c820635d52935b5d810d83d95fa6228de00",
+          "recorder_run_id": "e66bea22-9a8f-48b9-8d00-82f2e731c4c4",
+          "worker_id": "8c88c87b-8d2f-4163-953e-adbc36102723",
+          "history_event_boundary": 44,
+          "recorded_adapter_operations": 0
+        }
+      ],
+      "readback_sha256": "722723b7d6d18d9e37ec84d0945a7486ea9d3fd2e06018ce1dac482bcc29edc4"
+    },
+    "compose_restart_recovery": {
+      "passed": 1,
+      "seconds": 88.19,
+      "exit_code": 0,
+      "log_sha256": "e7eae0123edd77c395199598edc7ae289526bd4f5890f169b971a75bfff3b8ad"
+    },
+    "full_non_live": {
+      "command": "SALIENCE_DEPLOYMENT_MODE=fixture .venv/bin/python -m pytest -p no:cacheprovider tests/contracts tests/unit tests/integration tests/e2e tests/evals -m 'not live' -q -rs",
+      "application_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
+      "passed": 796,
+      "skipped": 17,
+      "failed": 0,
+      "warnings": 3,
+      "seconds": 1576.95,
+      "exit_code": 0,
+      "log_path": "/tmp/p1-publication-recovery-successor-182c4e4/attempt-6/full-run-final/run.log",
+      "log_sha256": "9948122a8b2749f33ac20a5c26b60dfd072519bbd24c07a584d0896fc45fd27d"
+    },
+    "failed_diagnostic_run": {
+      "result": "The exact-image fail-closed gate correctly rejected a stale global wheel in the test harness; harness fix pinned exact candidate wheel/lock before the successful rerun.",
+      "passed": 795,
+      "skipped": 17,
+      "failed": 1,
+      "log_sha256": "0a2352d6a1e05244208d7ae97199002cd87f08771932d90a97f4430fb0b4869e"
+    },
+    "candidate_invalidation_audit": {
+      "status": "PASS",
+      "all_source_rows_match": 211,
+      "path_set_sha256": "14bddb59e1d7ad1f3d4fceb6b20e7ae0748848a93e89dc470a7af7b325dc88fe",
+      "source_manifest_sha256": "58f27973abc9b3d34fa9f2eea1738c914659ff84f5151f64fdc493acca1c3005",
+      "runtime_entries": 9151,
+      "pyc_entries": 0,
+      "log_sha256": "6cf617f53485317d5f9c618849e2ce25537558036ae6a6813971005d88bf246a"
+    },
+    "post_run_cleanup": {
+      "status": "PASS",
+      "removed_only_inactive_test_images_and_seven_private_build_cache_records": true,
+      "candidate_image_preserved": true,
+      "active_service_containers_and_volumes_unchanged": true,
+      "tmp_free_mib": 891,
+      "root_free_gib": 9.2,
+      "available_ram_gib": 2.3
+    }
+  },
+  "superseded_verification_snapshot_before_successor": {
+    "status": "PASS_LOCAL_SUCCESSOR_182C4E4_QUALIFICATION; HISTORICAL_614_TEST_RESULT_REMAINS_BOUND_TO_7878208; PRODUCTION_RELEASE_HELD",
+    "documentation_tests": "PASS: 15 documentation tests; checker and self-test PASS (75 requirements, 2 source files, 360 evidence files, 360 inventory files, 6 negative controls); all 4 shell contracts and 6 Mermaid diagrams passed; 5 modified JSON files parsed; pip check, compileall, 14 historical hash checks, 360-file application evidence-lock validation, and git diff --check passed.",
+    "mapped_obligations": 75,
+    "negative_controls": 6,
+    "documentation_shell_contracts": 4,
+    "preserved_documentation_artifacts": 165,
+    "independent_reviewers": 3,
+    "reviewed_p1_rows": 17,
+    "independent_review_scope": "Task 11 independent review of Task 10 candidate 5cb5791 completed with floor/evidence findings, making that candidate unsupported as the rollback floor. Review/meta-review and final artifact checks for the repaired 0043 candidate remain open. The corrected-publication rereview applies only to A4/d031172; production acceptance remains HELD.",
+    "tracked_markdown_files": 100,
+    "active_project_markdown_files": 70,
+    "active_integration_contracts": 1,
+    "tracked_markdown_paths": [
+      ".agents/skills/archify/SKILL.md",
+      ".agents/skills/archify/THIRD_PARTY_NOTICES.md",
+      ".agents/skills/archify/brand-marks/README.md",
+      ".agents/skills/archify/references/authoring-contract.md",
+      ".agents/skills/archify/references/brand-marks.md",
+      ".agents/skills/archify/references/delivery-contract.md",
+      ".agents/skills/archify/references/viewer-runtime.md",
+      ".agents/skills/archify/renderers/dataflow/README.md",
+      ".agents/skills/archify/renderers/lifecycle/README.md",
+      ".agents/skills/archify/renderers/sequence/README.md",
+      ".agents/skills/archify/renderers/workflow/README.md",
+      ".agents/skills/archify/schemas/README.md",
+      ".superpowers/sdd/2026-10-13-p1-publication-recovery-floor-repair/final-fix-report.md",
+      ".superpowers/sdd/2026-10-13-p1-publication-recovery-floor-repair/task-8-report.md",
+      "AGENTS.md",
+      "README.md",
+      "docs-new-arch/ArchV3-implementation-notes.md",
+      "docs-new-arch/ArchV4-implementation-notes.md",
+      "docs-new-arch/README.md",
+      "docs/README.md",
+      "docs/adr/0001-durable-runtime.md",
+      "docs/adr/0002-object-storage.md",
+      "docs/adr/0003-api-persistence-and-contracts.md",
+      "docs/adr/0004-governance-secrets-and-protocols.md",
+      "docs/adr/0005-mcp-a2a-and-browser-sdk-adoption.md",
+      "docs/adr/0006-governed-publishing.md",
+      "docs/agents.md",
+      "docs/api.md",
+      "docs/architecture.md",
+      "docs/archive/2026-09-22/README.md",
+      "docs/bootstrap.md",
+      "docs/compatibility.md",
+      "docs/contracts/adapter-contracts.md",
+      "docs/core/00_BUILD_AGENT_PROMPT.md",
+      "docs/core/01_PRODUCT_CONTEXT_AND_INTENT.md",
+      "docs/core/02_REFERENCE_RESEARCH.md",
+      "docs/core/03_TARGET_ARCHITECTURE.md",
+      "docs/core/04_BROWSER_APP_AND_RESEARCH_CONTROL.md",
+      "docs/core/05_IMPLEMENTATION_PLAN.md",
+      "docs/core/06_ACCEPTANCE_TESTS_AND_GUARDRAILS.md",
+      "docs/core/07_REUSE_EXTENSION_AND_FUTURE_PROOFING.md",
+      "docs/core/08_LEAD_AGENT_AND_CREATIVE_TOOL_RUNTIME.md",
+      "docs/core/09_CALLABLE_AGENTS_AND_ENGINEERING_METHOD.md",
+      "docs/core/README.md",
+      "docs/database.md",
+      "docs/dependencies.md",
+      "docs/deployment.md",
+      "docs/governance.md",
+      "docs/implementation-progress.md",
+      "docs/limitations.md",
+      "docs/local-development.md",
+      "docs/mcp-a2a.md",
+      "docs/memory.md",
+      "docs/model-execution.md",
+      "docs/model-gateway.md",
+      "docs/phase-7-handoff.md",
+      "docs/phase-9-handoff.md",
+      "docs/plugins.md",
+      "docs/recovery.md",
+      "docs/research.md",
+      "docs/research/youtube-agent/architecture-audit.md",
+      "docs/research/youtube-agent/ops-quality-audit.md",
+      "docs/research/youtube-agent/orchestrator-synthesis.md",
+      "docs/research/youtube-agent/salience-gap-audit.md",
+      "docs/superpowers/plans/2026-09-12-browser-evidence.md",
+      "docs/superpowers/plans/2026-09-12-intelligence-loop-phases-5-6.md",
+      "docs/superpowers/plans/2026-09-12-phases-1-4-foundation.md",
+      "docs/superpowers/plans/2026-09-13-creative-production-phases-7-8.md",
+      "docs/superpowers/plans/2026-09-13-phase-7-8-release-gate-phase-9-publishing.md",
+      "docs/superpowers/plans/2026-09-13-phase-7-8-review-repairs.md",
+      "docs/superpowers/plans/2026-09-13-phase-9-independent-review-repairs.md",
+      "docs/superpowers/plans/2026-10-06-p1-publication-recovery-hold.md",
+      "docs/superpowers/plans/2026-10-13-agenttube-immutable-reference-guard.md",
+      "docs/superpowers/plans/2026-10-13-agenttube-reference-adoption.md",
+      "docs/superpowers/plans/2026-10-13-p1-publication-recovery-floor-repair.md",
+      "docs/superpowers/reviews/2026-09-13-phase-7-8-release-gate.md",
+      "docs/superpowers/reviews/2026-09-13-phase-9-independent-review.md",
+      "docs/superpowers/specs/2026-09-12-browser-evidence-design.md",
+      "docs/superpowers/specs/2026-09-12-intelligence-loop-phases-5-6-design.md",
+      "docs/superpowers/specs/2026-09-13-creative-production-phases-7-8-design.md",
+      "docs/superpowers/specs/2026-09-13-phase-7-8-release-gate-phase-9-publishing-design.md",
+      "docs/superpowers/specs/2026-10-06-p1-publication-recovery-hold-design.md",
+      "docs/superpowers/specs/2026-10-13-agenttube-reference-and-native-adoption-design.md",
+      "docs/superpowers/specs/2026-10-13-p1-publication-recovery-floor-repair-design.md",
+      "docs/superpowers/specs/2026-10-13-v4-multiplatform-autonomy-program-sequence.md",
+      "docs/trust-model.md",
+      "docs/v4/IMPLEMENTATION-BLUEPRINT.md",
+      "docs/v4/item7-independent-review.md",
+      "docs/v4/legacy-dispatch-contract.md",
+      "docs/v4/parallel-agent-contract.md",
+      "docs/v4/progress.md",
+      "docs/v4/validation.md",
+      "docs/verification.md",
+      "docs/workflows.md",
+      "prompts/Build Creative Production Loop — Phases 7–8 End-to-End.md",
+      "prompts/Build Phase 10 — Multi-Platform Production Publishing, Analytics, Attribution & Experiments.md",
+      "prompts/Build Phases 1–4 End-to-End.md",
+      "prompts/Build Real Intelligence Loop — Pre-Phase 5 + Phases 5–6 End-to-End.md",
+      "prompts/Complete Phase 7–8 Release Gate, Then Build Phase 9 Governed Publishing.md",
+      "prompts/Install and Verify Browser Evidence on Linux EC2.md"
+    ],
+    "mermaid_source_blocks_preserved": 13,
+    "legacy_publication_root_qualification": "PASS_IMPLEMENTED_LOCAL_LEGACY_PUBLICATION_AND_NATIVE_SCHEDULE_FIXTURE_SCOPE_AFTER_ACCEPTED_REVIEW_CORRECTIONS",
+    "root_qualification_scope": "isolated no-effects fixture only; production RG0/RG1 remain HELD",
+    "current_local_application_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
+    "current_focused_tests": 9,
+    "current_full_non_live_tests": 796,
+    "published_base_ci_protection_status": "PASS; no current feature-head CI/protection claim",
+    "published_base_commit": "20be7815d5e5c95fea2161c908ce8ac5cae88ce6",
+    "current_qualification_application": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
+    "focused_tests": 21,
+    "full_non_live_tests": 604,
+    "source_files": 352,
+    "corrected_head_rereview": "COMPLETE for application a4b2368cdb463939d093020224a5b5667392aee6 with documentation/observed HEAD d0311725686d81b7b4747c2d6225986e5ea3a524; this review does not cover 7878208.",
+    "documentation_verification": {
+      "status": "PENDING_FINAL_CONSOLIDATED_CHECKS",
+      "documentation_artifacts_recomputed": 259,
+      "tracked_markdown_files_recomputed": 100,
+      "active_project_markdown_files_recomputed": 70,
+      "all_non_null_file_hashes_recomputed": true,
+      "intentional_audit_self_hash_null": true
+    },
+    "current_full_non_live_application_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
+    "current_full_non_live_status": "796 passed, 17 skipped, 3 warnings in 1576.95s; exact command/log in Task 8 successor report",
+    "current_candidate_source_files": 211,
+    "current_candidate_source_path_set_sha256": "14bddb59e1d7ad1f3d4fceb6b20e7ae0748848a93e89dc470a7af7b325dc88fe",
+    "current_candidate_source_manifest_sha256": "58f27973abc9b3d34fa9f2eea1738c914659ff84f5151f64fdc493acca1c3005",
+    "current_candidate_image_id": "sha256:c880a41e4a20f1322ad579b0b8d3f8b5ae14fcdf13635458d33cdc8c747e09a0",
+    "current_candidate_wheel_sha256": "425b7122f6431459a15bc4fe7bbdd169692b152356a0f36c6895e3fd452e3d04",
+    "current_candidate_launch_lock_sha256": "1c8ac4ff92e589e27dc0af2c6dd0bc69c4295435df5a318174a2c77f3b1f2c9c",
+    "current_candidate_runtime_manifest_sha256": "3d58423ee9119db38c9a670c726c83692bef126d402e69f2a9ad98e05377b644",
+    "current_independent_review_scope": "Successor 182c4e4 fresh independent review/meta-review and exact-head CI remain pending; Task 11 findings stay scoped to 5cb5791 and corrected-publication rereview stays scoped to A4/d031172."
+  },
+  "current_handoff_hashes": {
+    "docs/v4/publication-recovery-hold-evidence.json": "3cce88e4d692f726be710c1f4db46b1428c9546561424a2ab0ad120363becc66",
+    "docs/v4/publication-recovery-hold-successor-evidence.json": "101944cec5e171a3519c6db1ee9f77935082a03669fc7bbec8900f81147b0c3f",
+    "docs/v4/evidence-lock.json": "3b432dc1b506b847cb4bdc51bbc9229c1d51b18d94feec78e6f6d6781d3a9267",
+    "docs/v4/p1-qualification-matrix.json": "d2aae69da42fe6fbc14b3217483cb85703b1f6440f251d37c01168f6f545740f",
+    "docs/v4/progress.md": "7d00aaf308ecddec953b701db44affcea0eb334aae67c8613a1bc3d672434b86",
+    "docs/v4/IMPLEMENTATION-BLUEPRINT.md": "bc185d0fbcb40df5519570d512b923a92eacf8d1deedfe5308607af7eafa4641"
   }
 }

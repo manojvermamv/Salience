@@ -356,3 +356,60 @@ wheel, image, runtime manifest, 9,151 installed files and zero `.pyc` checks
 passed. Loader/audit output SHA256 is
 `220f2d19d39c042b2feb73440b27a4bb91861a075e2b5fc382f9d87aa6a45453`. The
 consolidated full non-live suite and final docs checks remain pending.
+
+
+### Successor candidate final rerun and cleanup
+
+The final recovery Compose test first failed closed because its fixture used
+the unrelated global `artifacts/salience.whl` rather than the pinned candidate
+wheel. Attempt 2 is preserved at
+`/tmp/p1-publication-recovery-successor-182c4e4/attempt-6/full-run-attempt-2/run.log`
+(SHA256 `0a2352d6a1e05244208d7ae97199002cd87f08771932d90a97f4430fb0b4869e`);
+that run ended with 1 failure, 795 passes, and 17 skips. Commit `4850e8d`
+corrected the test harness to inject and mount the exact candidate wheel and
+lock. The targeted Compose recovery test passed **1 passed in 88.19s**, exit 0
+(log SHA256 `e7eae0123edd77c395199598edc7ae289526bd4f5890f169b971a75bfff3b8ad`).
+
+The final clean-state non-live command passed **796 passed, 17 skipped, 3
+warnings in 1576.95s**, exit 0. Command:
+`SALIENCE_DEPLOYMENT_MODE=fixture .venv/bin/python -m pytest -p no:cacheprovider tests/contracts tests/unit tests/integration tests/e2e tests/evals -m 'not live' -q -rs`.
+The archived log is
+`/tmp/p1-publication-recovery-successor-182c4e4/attempt-6/full-run-final/run.log`
+(SHA256 `9948122a8b2749f33ac20a5c26b60dfd072519bbd24c07a584d0896fc45fd27d`),
+with command, exit status, and resource snapshots in the same directory. Sixteen
+Task 8 progress-dependent cases skipped after intentional state cleanup; one
+recorder case skipped without recorder environment variables. Three existing
+Alembic path-separator deprecation warnings were reported.
+
+Post-run candidate cleanup removed only inactive images created by this
+recovery test and seven private BuildKit cache records. No containers referenced
+the removed images. The exact successor image `sha256:c880a41e4a20f1322ad579b0b8d3f8b5ae14fcdf13635458d33cdc8c747e09a0`, wheel
+`425b7122f6431459a15bc4fe7bbdd169692b152356a0f36c6895e3fd452e3d04`, all
+active service container IDs, and all active volume names remained unchanged.
+Post-cleanup `/tmp` had 891 MiB free, root had 9.2 GiB free, and 2.3 GiB RAM
+was available. Machine snapshots are under
+`attempt-6/full-run-final/after-cleanup.*`. The final candidate invalidation
+audit passed with progress absent and all 211 locked source rows matching at
+application commit, HEAD, and worktree; its output is
+`attempt-6/candidate-invalidation-audit-final-current.log` (SHA256
+`bc9f59dee850d6e82df0c2fa8614faf4cef9da19046d147564c092a9e42fbbf5`).
+
+### Final consolidated documentation and repository checks
+
+The final documentation gate passed after refreshing the active successor lock,
+restoring the original P0-pinned evidence bytes, and completing the 100-path
+Markdown inventory. `python3 docs/v4/test_checks.py` passed 15 tests;
+`python3 docs/v4/check.py --self-test` passed 6 negative controls; and
+`python3 docs/v4/check.py` passed 75 requirements with 366 current evidence
+files, 360 inventory files, 97 Markdown pages checked, and 4 HTML pages.
+All four repository shell contracts passed. Mermaid 12.0.0 rendered all six
+diagrams. `pip check`, compileall, JSON parsing, the explicit historical/hash/
+lock/R18-R32 consistency check, and `git diff --check` all passed. The exact
+logs and diagram results are preserved under
+`/tmp/p1-publication-recovery-successor-182c4e4/attempt-6/docs-gates/`; the
+diagram results SHA256 is
+`6a04203cacd481c7c9e2000bd83834a2ac1ad0cb0ab4d4db433ba6aa557502ba`. The
+consistency check confirms 100 tracked Markdown paths, 259 audit artifacts,
+all non-null audit hashes, the original P0 evidence digest, the 366-file active
+lock plus preserved 365/360 historical lock counts, and unchanged R18/R32
+case counts and HELD states.

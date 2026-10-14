@@ -1,0 +1,233 @@
+{
+  "schema_version": 1,
+  "recorded_at": "2026-10-14T14:12:37Z",
+  "status": "PASS_LOCAL_SUCCESSOR_QUALIFICATION; FRESH_REVIEW_AND_EXACT_HEAD_CI_PENDING; PRODUCTION_RELEASE_HELD",
+  "application": {
+    "candidate_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
+    "branch": "work/v4-p1-publication-recovery",
+    "effects_enabled": false,
+    "deployment_mode": "fixture",
+    "fixture_publication_budget": 0,
+    "exact_candidate_pin_record": "candidate_artifact_pins"
+  },
+  "successor_candidate_2026_10_14": {
+    "status": "LOCAL_QUALIFICATION_COMPLETE; CONTROLLER_REVIEW_AND_EXACT_HEAD_CI_PENDING; PRODUCTION_RELEASE_HELD",
+    "recorded_at": "2026-10-14T14:12:37Z",
+    "application_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
+    "observed_head_at_final_candidate_audit": "4850e8d6ceb3a150b8d0cd23ff02a3c61e6f799a",
+    "candidate_artifact_pins": {
+      "status": "SUCCESSOR_EXACT_CANDIDATE_ARTIFACT_BUILD_AND_LOCAL_QUALIFICATION_RECORDED",
+      "application_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
+      "artifact_build_result": "PASS",
+      "image_ref": "salience-p1-floor-182c4e4-worker:latest",
+      "image_id": "sha256:c880a41e4a20f1322ad579b0b8d3f8b5ae14fcdf13635458d33cdc8c747e09a0",
+      "wheel_sha256": "425b7122f6431459a15bc4fe7bbdd169692b152356a0f36c6895e3fd452e3d04",
+      "record_sha256": "f3fbd4bd43c25786969016b1d0c806c9591b5aea07dcd4753b87a3980dc1b74b",
+      "record_entry_count": 172,
+      "launch_lock_sha256": "1c8ac4ff92e589e27dc0af2c6dd0bc69c4295435df5a318174a2c77f3b1f2c9c",
+      "source_path_count": 211,
+      "source_path_set_sha256": "14bddb59e1d7ad1f3d4fceb6b20e7ae0748848a93e89dc470a7af7b325dc88fe",
+      "source_manifest_sha256": "58f27973abc9b3d34fa9f2eea1738c914659ff84f5151f64fdc493acca1c3005",
+      "interpreter_sha256": "73b68fc2dac176af16098180a2c98a03ee9f1f1b02db25d42d44d782e79e2330",
+      "runtime_root": "/usr/local/lib/python3.13/site-packages",
+      "runtime_manifest_sha256": "3d58423ee9119db38c9a670c726c83692bef126d402e69f2a9ad98e05377b644",
+      "runtime_file_count": 9151,
+      "pyc_files": [],
+      "qualification_report": ".superpowers/sdd/2026-10-13-p1-publication-recovery-floor-repair/task-8-report.md",
+      "qualification_results": "Exact-image matrix: 12 passed; I1 replay-focused gate: 9 passed; Task 8 actual-retry producer: 1 passed; Compose restart recovery: 1 passed; final clean non-live suite: 796 passed, 17 skipped, 3 warnings. Fresh independent review/meta-review and exact-head CI remain controller gates."
+    },
+    "qualification": {
+      "i1_replay_focused": {
+        "passed": 9,
+        "seconds": 129.46,
+        "exit_code": 0
+      },
+      "exact_image_prerequisite_and_overlay_matrix": {
+        "passed": 12,
+        "seconds": 47.26,
+        "exit_code": 0,
+        "coverage": [
+          "wholly absent and partial candidate state before DB setup",
+          "exact candidate loader",
+          "hostile PYTHONPATH/PYTHONHOME/cwd",
+          "valid malicious pyc with positive execution control",
+          "real empty-0042",
+          "physical extra/missing/changed/down_revision migration inventory overlays"
+        ]
+      },
+      "task8_actual_pending_activity_retry_producer": {
+        "passed": 1,
+        "seconds": 194.14,
+        "exit_code": 0,
+        "reasons": [
+          {
+            "reason": "expired_permit_receipt",
+            "activity": "salience.publication.submit_or_reconcile",
+            "attempt": 2,
+            "worker_container_id": "7474278e13c37fc53f1640bbaab444595d479e823dacba3260c0f1a4faa82ac6",
+            "recorder_run_id": "243c8119-bdda-4241-a708-601c49448755",
+            "worker_id": "cdd47a20-93f1-470d-896b-f884a189065e",
+            "history_event_boundary": 27,
+            "recorded_adapter_operations": 0
+          },
+          {
+            "reason": "published_during_cancel",
+            "activity": "salience.publication.cancel",
+            "attempt": 2,
+            "worker_container_id": "ca838159ff2d9855442136242ab07c820635d52935b5d810d83d95fa6228de00",
+            "recorder_run_id": "e66bea22-9a8f-48b9-8d00-82f2e731c4c4",
+            "worker_id": "8c88c87b-8d2f-4163-953e-adbc36102723",
+            "history_event_boundary": 44,
+            "recorded_adapter_operations": 0
+          }
+        ],
+        "readback_sha256": "722723b7d6d18d9e37ec84d0945a7486ea9d3fd2e06018ce1dac482bcc29edc4"
+      },
+      "compose_restart_recovery": {
+        "passed": 1,
+        "seconds": 88.19,
+        "exit_code": 0,
+        "log_sha256": "e7eae0123edd77c395199598edc7ae289526bd4f5890f169b971a75bfff3b8ad"
+      },
+      "full_non_live": {
+        "command": "SALIENCE_DEPLOYMENT_MODE=fixture .venv/bin/python -m pytest -p no:cacheprovider tests/contracts tests/unit tests/integration tests/e2e tests/evals -m 'not live' -q -rs",
+        "application_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
+        "passed": 796,
+        "skipped": 17,
+        "failed": 0,
+        "warnings": 3,
+        "seconds": 1576.95,
+        "exit_code": 0,
+        "log_path": "/tmp/p1-publication-recovery-successor-182c4e4/attempt-6/full-run-final/run.log",
+        "log_sha256": "9948122a8b2749f33ac20a5c26b60dfd072519bbd24c07a584d0896fc45fd27d"
+      },
+      "failed_diagnostic_run": {
+        "result": "The exact-image fail-closed gate correctly rejected a stale global wheel in the test harness; harness fix pinned exact candidate wheel/lock before the successful rerun.",
+        "passed": 795,
+        "skipped": 17,
+        "failed": 1,
+        "log_sha256": "0a2352d6a1e05244208d7ae97199002cd87f08771932d90a97f4430fb0b4869e"
+      },
+      "candidate_invalidation_audit": {
+        "status": "PASS",
+        "all_source_rows_match": 211,
+        "path_set_sha256": "14bddb59e1d7ad1f3d4fceb6b20e7ae0748848a93e89dc470a7af7b325dc88fe",
+        "source_manifest_sha256": "58f27973abc9b3d34fa9f2eea1738c914659ff84f5151f64fdc493acca1c3005",
+        "runtime_entries": 9151,
+        "pyc_entries": 0,
+        "log_sha256": "6cf617f53485317d5f9c618849e2ce25537558036ae6a6813971005d88bf246a"
+      },
+      "post_run_cleanup": {
+        "status": "PASS",
+        "removed_only_inactive_test_images_and_seven_private_build_cache_records": true,
+        "candidate_image_preserved": true,
+        "active_service_containers_and_volumes_unchanged": true,
+        "tmp_free_mib": 891,
+        "root_free_gib": 9.2,
+        "available_ram_gib": 2.3
+      }
+    },
+    "release_boundaries": {
+      "production_effects_enabled": false,
+      "fixture_publication_budget": 0,
+      "RG0": "HELD",
+      "RG1": "HELD",
+      "P2-P7": "GATED",
+      "P6": "DISABLED",
+      "main": "UNMERGED",
+      "fresh_independent_review": "PENDING",
+      "GPT-5.6_meta_review": "PENDING",
+      "exact_head_CI": "PENDING"
+    }
+  },
+  "release_boundaries": {
+    "production_effects_enabled": false,
+    "fixture_publication_budget": 0,
+    "RG0": "HELD",
+    "RG1": "HELD",
+    "P2-P7": "GATED",
+    "P6": "DISABLED",
+    "main": "UNMERGED",
+    "fresh_independent_review": "PENDING",
+    "GPT-5.6_meta_review": "PENDING",
+    "exact_head_CI": "PENDING"
+  },
+  "evidence_report": ".superpowers/sdd/2026-10-13-p1-publication-recovery-floor-repair/task-8-report.md",
+  "documentation_verification": {
+    "status": "PASS",
+    "documentation_tests": {
+      "command": "python3 docs/v4/test_checks.py",
+      "passed": 15,
+      "exit_code": 0,
+      "log": "/tmp/p1-publication-recovery-successor-182c4e4/attempt-6/docs-gates/final_docs_tests.log"
+    },
+    "documentation_checker": {
+      "normal": {
+        "command": "python3 docs/v4/check.py",
+        "status": "PASS",
+        "requirements": 75,
+        "source_files": 2,
+        "evidence_files": 366,
+        "inventory_files": 360,
+        "markdown_files_checked": 97,
+        "html_files_checked": 4,
+        "exit_code": 0,
+        "log": "/tmp/p1-publication-recovery-successor-182c4e4/attempt-6/docs-gates/final_docs_check.log"
+      },
+      "self_test": {
+        "command": "python3 docs/v4/check.py --self-test",
+        "status": "PASS",
+        "negative_controls": 6,
+        "exit_code": 0,
+        "log": "/tmp/p1-publication-recovery-successor-182c4e4/attempt-6/docs-gates/final_docs_self_test.log"
+      }
+    },
+    "documentation_shell_contracts": {
+      "passed": 4,
+      "failed": 0,
+      "exit_code": 0,
+      "log": "/tmp/p1-publication-recovery-successor-182c4e4/attempt-6/docs-gates/final_shell_contracts.log",
+      "scripts": [
+        "tests/scripts/test_browser_documentation.sh",
+        "tests/scripts/test_phase_7_8_documentation.sh",
+        "tests/scripts/test_phase_9_documentation.sh",
+        "tests/scripts/test_verify_browser_evidence.sh"
+      ]
+    },
+    "mermaid": {
+      "status": "PASS",
+      "diagrams_rendered": 6,
+      "version": "12.0.0",
+      "results_sha256": "6a04203cacd481c7c9e2000bd83834a2ac1ad0cb0ab4d4db433ba6aa557502ba",
+      "log": "/tmp/p1-publication-recovery-successor-182c4e4/attempt-6/docs-gates/final_diagrams.log"
+    },
+    "json_parse": {
+      "status": "PASS",
+      "changed_tracked_json_files": 3,
+      "successor_json_addendum_parsed": true,
+      "log": "/tmp/p1-publication-recovery-successor-182c4e4/attempt-6/docs-gates/final_json_parse.log"
+    },
+    "pip_check": "PASS",
+    "compileall": "PASS",
+    "git_diff_check": "PASS",
+    "audit_counts": {
+      "tracked_markdown_files": 100,
+      "active_project_markdown_files": 70,
+      "documentation_artifacts": 259,
+      "checker_inventory_files": 366
+    },
+    "audit_and_lock_consistency": {
+      "status": "PASS",
+      "intentional_self_hash_null_preserved": true,
+      "historical_p0_evidence_hash_preserved": true,
+      "historical_lock_counts_preserved": [
+        365,
+        360
+      ],
+      "R18_executed_verifier_cases": 76,
+      "R32_executed_verifier_cases": 81,
+      "R18_R32_production_release_status": "HELD",
+      "log": "/tmp/p1-publication-recovery-successor-182c4e4/attempt-6/docs-gates/final_audit_and_lock_consistency.log"
+    }
+  }
+}
