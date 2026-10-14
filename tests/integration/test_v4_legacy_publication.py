@@ -407,8 +407,11 @@ async def _hard_exit_publication_worker(
     expire_after_first_submit=False, activity_log_path=None,
     activity_timing_path=None, operation_id=None, diagnostic_path=None,
     timeout_seconds=25, cancel_after_processing=False,
-    cancel_ready_callback=None,
+    cancel_ready_callback=None, cancel_hold_ready_callback=None,
+    submit_ready_callback=None,
 ):
+    if submit_ready_callback is not None and (operation_id is None or cancel_after_processing):
+        raise ValueError("submit-entry fixture barrier requires an operation-scoped publication run")
     worker_script = tmp_path / ("publication_worker_" + str(uuid4()) + ".py")
     worker_script.write_text(
         """import asyncio, json, os
@@ -470,6 +473,15 @@ if os.environ.get('PUB_CRASH_AFTER_HOLD_COMMIT') == 'true':
 original_cancel = DurableLegacyFixturePublisher.cancel
 async def track_cancel(self, remote_id):
     diagnostic('cancel_started', remote_id=remote_id)
+    ready_path = os.environ.get('PUB_CANCEL_HOLD_READY')
+    release_path = os.environ.get('PUB_CANCEL_HOLD_RELEASE')
+    if ready_path and release_path:
+        if os.environ.get('SALIENCE_DEPLOYMENT_MODE') != 'fixture' or os.environ.get('SALIENCE_EFFECTS_ENABLED') != 'false':
+            raise PermissionError('cancel hold fixture barrier requires explicit no-effects fixture mode')
+        Path(ready_path).write_text('ready', encoding='utf-8')
+        async with asyncio.timeout(20):
+            while not os.path.exists(release_path):
+                await asyncio.sleep(.02)
     receipt = await original_cancel(self, remote_id)
     diagnostic('cancel_returned', state=receipt.state if receipt is not None else None)
     return receipt
@@ -570,6 +582,29 @@ async def main():
     diagnostic('outbox_before_dispatch', rows=[list(row) for row in outbox_before])
     original = DurableLegacyFixturePublisher.submit
     async def crash_submit(self, request, lease):
+        ready_path = os.environ.get('PUB_SUBMIT_READY')
+        release_path = os.environ.get('PUB_SUBMIT_RELEASE')
+        if ready_path and release_path:
+            info = activity.info()
+            expected_workflow_id = 'salience-v4-legacy-operation:' + os.environ['PUB_OPERATION_ID']
+            if (
+                os.environ.get('SALIENCE_DEPLOYMENT_MODE') != 'fixture'
+                or os.environ.get('SALIENCE_EFFECTS_ENABLED') != 'false'
+                or info.workflow_id != expected_workflow_id
+            ):
+                raise PermissionError('submit-entry barrier requires the exact no-effects fixture operation')
+            ready_context = {
+                'workflow_id': info.workflow_id,
+                'workflow_run_id': info.workflow_run_id,
+                'activity_id': info.activity_id,
+                'request_id': str(request.id),
+            }
+            Path(ready_path).write_text(json.dumps(ready_context), encoding='utf-8')
+            diagnostic('submit_entry_ready', **ready_context)
+            async with asyncio.timeout(20):
+                while not os.path.exists(release_path):
+                    await asyncio.sleep(.02)
+            diagnostic('submit_entry_released', **ready_context)
         diagnostic('submit_started')
         if os.environ['PUB_CRASH_MODE'] == 'before':
             os._exit(72)
@@ -643,17 +678,29 @@ asyncio.run(main())
         child_environment["PUB_OPERATION_ID"] = str(operation_id)
     if diagnostic_path is not None:
         child_environment["PUB_DIAGNOSTIC_LOG"] = str(diagnostic_path)
+    submit_ready_path = tmp_path / ("publication_submit_ready_" + str(uuid4()) + ".json")
+    submit_release_path = tmp_path / ("publication_submit_release_" + str(uuid4()) + ".txt")
+    if submit_ready_callback is not None:
+        child_environment["PUB_SUBMIT_READY"] = str(submit_ready_path)
+        child_environment["PUB_SUBMIT_RELEASE"] = str(submit_release_path)
     cancel_ready_path = tmp_path / ("publication_cancel_ready_" + str(uuid4()) + ".txt")
     cancel_release_path = tmp_path / ("publication_cancel_release_" + str(uuid4()) + ".txt")
+    cancel_hold_ready_path = tmp_path / ("publication_cancel_hold_ready_" + str(uuid4()) + ".txt")
+    cancel_hold_release_path = tmp_path / ("publication_cancel_hold_release_" + str(uuid4()) + ".txt")
     if cancel_after_processing:
         child_environment["PUB_CANCEL_READY"] = str(cancel_ready_path)
         child_environment["PUB_CANCEL_RELEASE"] = str(cancel_release_path)
+    if cancel_hold_ready_callback is not None:
+        if not cancel_after_processing:
+            raise ValueError("cancel hold fixture barrier requires cancel-after-processing mode")
+        child_environment["PUB_CANCEL_HOLD_READY"] = str(cancel_hold_ready_path)
+        child_environment["PUB_CANCEL_HOLD_RELEASE"] = str(cancel_hold_release_path)
     process = await asyncio.create_subprocess_exec(
         sys.executable,
         str(worker_script),
         env=child_environment,
-        stdout=subprocess.PIPE if diagnostic_path is not None else subprocess.DEVNULL,
-        stderr=subprocess.PIPE if diagnostic_path is not None else subprocess.DEVNULL,
+        stdout=subprocess.PIPE if diagnostic_path is not None or cancel_after_processing or submit_ready_callback is not None else subprocess.DEVNULL,
+        stderr=subprocess.PIPE if diagnostic_path is not None or cancel_after_processing or submit_ready_callback is not None else subprocess.DEVNULL,
     )
     if cancel_after_processing:
         try:
@@ -667,6 +714,17 @@ asyncio.run(main())
             if cancel_ready_callback is not None:
                 await cancel_ready_callback()
             cancel_release_path.write_text("release", encoding="utf-8")
+            if cancel_hold_ready_callback is not None:
+                async with asyncio.timeout(20):
+                    while not cancel_hold_ready_path.exists():
+                        if process.returncode is not None:
+                            raise RuntimeError(
+                                "publication worker exited before cancel activity entry: "
+                                f"{process.returncode}"
+                            )
+                        await asyncio.sleep(.05)
+                await cancel_hold_ready_callback()
+                cancel_hold_release_path.write_text("release", encoding="utf-8")
         except BaseException as error:
             if process.returncode is None:
                 process.kill()
@@ -676,6 +734,51 @@ asyncio.run(main())
                 "error": type(error).__name__,
                 "message": str(error),
                 "return_code": process.returncode,
+                "stdout": stdout.decode(errors="replace").replace(
+                    fixture["database"], "<fixture-database-url>"
+                ),
+                "stderr": stderr.decode(errors="replace").replace(
+                    fixture["database"], "<fixture-database-url>"
+                ),
+            }
+            if diagnostic_path is not None:
+                with open(diagnostic_path, "a", encoding="utf-8") as log:
+                    log.write(json.dumps(child_output) + "\n")
+            print(
+                "publication worker child diagnostics: " + json.dumps(child_output),
+                file=sys.stderr,
+            )
+            raise
+    if submit_ready_callback is not None:
+        try:
+            async with asyncio.timeout(20):
+                while not submit_ready_path.exists():
+                    if process.returncode is not None:
+                        raise RuntimeError(
+                            "publication worker exited before exact submit-entry barrier: "
+                            f"{process.returncode}"
+                        )
+                    await asyncio.sleep(.05)
+            submit_context = json.loads(submit_ready_path.read_text(encoding="utf-8"))
+            expected_workflow_id = "salience-v4-legacy-operation:" + str(operation_id)
+            if submit_context.get("workflow_id") != expected_workflow_id:
+                raise RuntimeError("publication worker reached the wrong submit workflow")
+            await submit_ready_callback(submit_context)
+            submit_release_path.write_text("release", encoding="utf-8")
+        except BaseException as error:
+            if process.returncode is None:
+                process.kill()
+            stdout, stderr = await process.communicate()
+            child_output = {
+                "event": "worker_submit_readiness_failure",
+                "error": type(error).__name__,
+                "message": str(error),
+                "return_code": process.returncode,
+                "submit_context": (
+                    json.loads(submit_ready_path.read_text(encoding="utf-8"))
+                    if submit_ready_path.exists()
+                    else None
+                ),
                 "stdout": stdout.decode(errors="replace").replace(
                     fixture["database"], "<fixture-database-url>"
                 ),

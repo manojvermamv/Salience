@@ -2530,22 +2530,6 @@ def _write_task8_candidate_metadata_fixture(candidate_root):
         "expired_permit_receipt": hold_ids["expired_permit_receipt"],
         "published_during_cancel": "00000000-0000-0000-0000-000000000008",
     }
-    legacy_history_fixture = {
-        reason: {
-            **history_fixture[reason],
-            **(
-                {
-                    "workflow_id": "salience-v4-legacy-operation:"
-                    + legacy_operation_ids[reason],
-                    "task_queue": "task8-fixture-legacy-null",
-                    "history_sha256": "8" * 64,
-                }
-                if reason == "published_during_cancel"
-                else {}
-            ),
-        }
-        for reason in operation_ids
-    }
     primary_target = {
         "database_name": "recovery_floor_active_0123456789ab",
         "database_host": "127.0.0.1",
@@ -2649,7 +2633,12 @@ def _write_task8_candidate_metadata_fixture(candidate_root):
         "workspace_id": workspace_id,
         "operation_ids": legacy_operation_ids,
         "hold_ids": legacy_hold_ids,
-        "history_fixture": legacy_history_fixture,
+        "execution_mode": {
+            "mode": "preflight_only",
+            "denial_stage": "before_worker_registration",
+            "worker_started": False,
+            "outbox_dispatched": False,
+        },
         "legacy_null_operation_id": legacy_operation_ids["published_during_cancel"],
         **legacy_hashes,
     }
@@ -3039,6 +3028,215 @@ def test_task8_candidate_loader_rejects_missing_fixture_and_mismatched_attestati
             candidate_root=mismatched["candidate_root"],
             environment=mismatched["environment"],
         )
+
+
+def test_task8_producer_requires_primary_histories_and_legacy_preflight_mode(tmp_path):
+    for fixture_name, mutation in (
+        ("rollback_launch_fixture", "omit-primary-history"),
+        ("legacy_null_v1_fixture", "claim-legacy-history"),
+    ):
+        synthetic = _write_task8_candidate_metadata_fixture(
+            tmp_path / mutation
+        )
+        fixture = synthetic["producer_inputs"][fixture_name]
+        if mutation == "omit-primary-history":
+            fixture.pop("history_fixture")
+        else:
+            fixture["history_fixture"] = {
+                "published_during_cancel": {
+                    "workflow_id": "salience-v4-legacy-operation:"
+                    + fixture["legacy_null_operation_id"],
+                    "task_queue": "forbidden-legacy-replay",
+                    "last_event_id": 1,
+                    "history_sha256": "9" * 64,
+                }
+            }
+        progress_path = synthetic["candidate_root"] / "worker-qualification-progress.json"
+        before = progress_path.read_bytes()
+        with pytest.raises(AssertionError):
+            asyncio.run(
+                _load_worker_harness().write_qualification_progress(
+                    synthetic["candidate_root"],
+                    **synthetic["producer_inputs"],
+                )
+            )
+        assert progress_path.read_bytes() == before
+
+
+def test_task8_loader_rejects_legacy_fixture_that_claims_temporal_history(tmp_path):
+    synthetic = _write_task8_candidate_metadata_fixture(tmp_path / "legacy-history")
+    progress_path = synthetic["candidate_root"] / "worker-qualification-progress.json"
+    progress = json.loads(progress_path.read_text(encoding="utf-8"))
+    legacy_fixture = progress["legacy_null_v1_fixture"]
+    legacy_fixture["history_fixture"] = {
+        "published_during_cancel": {
+            "workflow_id": "salience-v4-legacy-operation:"
+            + legacy_fixture["legacy_null_operation_id"],
+            "task_queue": "forbidden-legacy-replay",
+            "last_event_id": 1,
+            "history_sha256": "9" * 64,
+        }
+    }
+    progress_path.write_text(json.dumps(progress) + "\n", encoding="utf-8")
+    with pytest.raises(AssertionError):
+        _task8_rollback_image_or_skip(
+            candidate_root=synthetic["candidate_root"],
+            environment=synthetic["environment"],
+        )
+
+
+def test_task8_loader_rejects_primary_fixture_that_omits_temporal_histories(tmp_path):
+    synthetic = _write_task8_candidate_metadata_fixture(tmp_path / "primary-history")
+    progress_path = synthetic["candidate_root"] / "worker-qualification-progress.json"
+    progress = json.loads(progress_path.read_text(encoding="utf-8"))
+    progress["rollback_launch_fixture"].pop("history_fixture")
+    progress_path.write_text(json.dumps(progress) + "\n", encoding="utf-8")
+    with pytest.raises(AssertionError):
+        _task8_rollback_image_or_skip(
+            candidate_root=synthetic["candidate_root"],
+            environment=synthetic["environment"],
+        )
+
+
+def test_task8_recorder_container_exclusion_requires_exact_identity_and_command():
+    harness = _load_worker_harness()
+    image_id = "sha256:" + "d" * 64
+    recorder = {
+        "Image": image_id,
+        "Name": "/task8-adapter-recorder-5988d97-5697a3ff",
+        "Config": {
+            "Entrypoint": ["/usr/local/bin/python"],
+            "Cmd": [
+                "-I",
+                "-B",
+                "-S",
+                "/run/v4-publication-adapter-operation-receiver.py",
+                "--host",
+                "0.0.0.0",
+                "--port",
+                "8081",
+            ],
+            "Labels": {
+                "com.docker.compose.project": "salience-p1-publication-recovery-0043",
+                "com.docker.compose.service": "worker",
+            },
+        },
+    }
+    assert harness.is_task8_adapter_recorder_container(
+        recorder, expected_image_id=image_id
+    )
+
+    lookalikes = []
+    wrong_name = json.loads(json.dumps(recorder))
+    wrong_name["Name"] = "/renamed-adapter-recorder-5988d97-5697a3ff"
+    lookalikes.append(wrong_name)
+    wrong_project = json.loads(json.dumps(recorder))
+    wrong_project["Config"]["Labels"]["com.docker.compose.project"] = "other-project"
+    lookalikes.append(wrong_project)
+    wrong_service = json.loads(json.dumps(recorder))
+    wrong_service["Config"]["Labels"]["com.docker.compose.service"] = "worker-recorder"
+    lookalikes.append(wrong_service)
+    partial_command = json.loads(json.dumps(recorder))
+    partial_command["Config"]["Cmd"] = recorder["Config"]["Cmd"][:-2]
+    lookalikes.append(partial_command)
+    candidate_worker = json.loads(json.dumps(recorder))
+    candidate_worker["Config"]["Cmd"] = [
+        "-I",
+        "-B",
+        "-S",
+        "-c",
+        "runpy.run_path('/run/salience-control/launch-v4-publication-worker.py')",
+    ]
+    lookalikes.append(candidate_worker)
+    other_image = json.loads(json.dumps(recorder))
+    other_image["Image"] = "sha256:" + "e" * 64
+    lookalikes.append(other_image)
+
+    assert all(
+        not harness.is_task8_adapter_recorder_container(
+            lookalike, expected_image_id=image_id
+        )
+        for lookalike in lookalikes
+    )
+
+
+def test_task8_temporal_history_hash_is_deterministic_and_sensitive_to_event_changes():
+    from temporalio.api.common.v1 import Memo
+    from temporalio.api.history.v1 import (
+        HistoryEvent,
+        WorkflowExecutionStartedEventAttributes,
+    )
+
+    def event_with_memo_fields(keys, *, event_id=1):
+        memo = Memo()
+        for key, value in keys:
+            memo.fields[key].data = value.encode()
+        return HistoryEvent(
+            event_id=event_id,
+            workflow_execution_started_event_attributes=(
+                WorkflowExecutionStartedEventAttributes(memo=memo)
+            ),
+        )
+
+    forward = event_with_memo_fields((('zeta', 'last'), ('alpha', 'first')))
+    reverse = event_with_memo_fields((('alpha', 'first'), ('zeta', 'last')))
+    assert _temporal_history_sha256([forward]) == _temporal_history_sha256([reverse])
+
+    changed_event = event_with_memo_fields(
+        (('alpha', 'first'), ('zeta', 'last')), event_id=2
+    )
+    assert _temporal_history_sha256([forward]) != _temporal_history_sha256([changed_event])
+
+
+def test_task8_external_history_exception_requires_exact_legacy_preflight_role():
+    preflight_mode = {
+        "mode": "preflight_only",
+        "denial_stage": "before_worker_registration",
+        "worker_started": False,
+        "outbox_dispatched": False,
+    }
+    primary_histories = {
+        "expired_permit_receipt": {"workflow_id": "required-primary-history"},
+        "published_during_cancel": {"workflow_id": "required-primary-history"},
+    }
+    assert _task8_external_history_metadata(
+        {
+            "database_target": "primary",
+            "fixture": {"history_fixture": primary_histories},
+        }
+    ) == primary_histories
+
+    for history_fixture in (None, {}):
+        fixture = {"execution_mode": preflight_mode}
+        if history_fixture is not None:
+            fixture["history_fixture"] = history_fixture
+        assert _task8_external_history_metadata(
+            {"database_target": "legacy-null-v1", "fixture": fixture}
+        ) is None
+
+    invalid_candidates = (
+        {
+            "database_target": "legacy-null-v1",
+            "fixture": {"history_fixture": {}},
+        },
+        {
+            "database_target": "legacy-null-v1",
+            "fixture": {"execution_mode": {**preflight_mode, "worker_started": True}},
+        },
+        {
+            "database_target": "legacy-null-v1",
+            "fixture": {
+                "execution_mode": preflight_mode,
+                "history_fixture": {"published_during_cancel": {"workflow_id": "replay"}},
+            },
+        },
+        {"database_target": "primary", "fixture": {"execution_mode": preflight_mode}},
+        {"fixture": {"execution_mode": preflight_mode}},
+        {"database_target": "primary", "fixture": {}},
+    )
+    for candidate in invalid_candidates:
+        with pytest.raises(AssertionError):
+            _task8_external_history_metadata(candidate)
 
 
 @pytest.mark.parametrize("target", ("primary", "legacy-null-v1"))
@@ -3662,17 +3860,15 @@ def _task8_rollback_image_or_skip(
         UUID(legacy_operation_ids["published_during_cancel"])
     )
     assert legacy_null_operation_id not in {str(UUID(value)) for value in operation_ids.values()}
-    legacy_histories = legacy_fixture.get("history_fixture")
-    assert isinstance(legacy_histories, dict) and set(legacy_histories) == reasons
-    for reason in reasons:
-        history = legacy_histories[reason]
-        assert set(history) == {"workflow_id", "task_queue", "last_event_id", "history_sha256"}
-        assert history.get("workflow_id") == (
-            "salience-v4-legacy-operation:" + str(UUID(legacy_operation_ids[reason]))
-        )
-        assert isinstance(history.get("task_queue"), str) and history["task_queue"]
-        assert isinstance(history.get("last_event_id"), int) and history["last_event_id"] > 0
-        assert re.fullmatch(r"[0-9a-f]{64}", history.get("history_sha256", ""))
+    assert legacy_fixture.get("execution_mode") == {
+        "mode": "preflight_only",
+        "denial_stage": "before_worker_registration",
+        "worker_started": False,
+        "outbox_dispatched": False,
+    }
+    assert "history_fixture" not in legacy_fixture, (
+        "legacy NULL-v1 preflight evidence must not claim Temporal replay metadata"
+    )
     for field in ("liability_snapshot_hashes", "hold_row_hashes"):
         hashes = legacy_fixture.get(field)
         assert isinstance(hashes, dict) and set(hashes) == reasons
@@ -3933,15 +4129,39 @@ async def _candidate_history_fingerprints(candidate):
     for reason, metadata in candidate["fixture"]["history_fixture"].items():
         handle = client.get_workflow_handle(metadata["workflow_id"])
         history = await handle.fetch_history()
-        event_bytes = b"".join(event.SerializeToString() for event in history.events)
         last_event_id = max((event.event_id for event in history.events), default=0)
         result[reason] = {
             "workflow_id": metadata["workflow_id"],
             "task_queue": metadata["task_queue"],
             "last_event_id": last_event_id,
-            "history_sha256": _sha256(event_bytes),
+            "history_sha256": _temporal_history_sha256(history.events),
         }
     return result
+
+
+def _temporal_history_sha256(events):
+    """Fingerprint history independent of protobuf map insertion order."""
+    return _sha256(
+        b"".join(event.SerializeToString(deterministic=True) for event in events)
+    )
+
+
+def _task8_external_history_metadata(candidate):
+    fixture = candidate["fixture"]
+    histories = fixture.get("history_fixture")
+    if candidate.get("database_target") == "legacy-null-v1":
+        assert fixture.get("execution_mode") == {
+            "mode": "preflight_only",
+            "denial_stage": "before_worker_registration",
+            "worker_started": False,
+            "outbox_dispatched": False,
+        }
+        assert histories is None or histories == {}
+        return None
+    assert isinstance(histories, dict)
+    assert set(histories) == {"expired_permit_receipt", "published_during_cancel"}
+    assert all(isinstance(history, dict) for history in histories.values())
+    return histories
 
 
 def _canonical_json_hash(value):
@@ -4168,14 +4388,11 @@ async def test_cross_container_adapter_recorder_observes_zero_operations_for_bot
     client = await Client.connect(candidate["temporal_target"])
     handle = client.get_workflow_handle(workflow_id)
     history_before = await handle.fetch_history()
-    history_bytes_before = b"".join(
-        event.SerializeToString() for event in history_before.events
-    )
     strict_history = fixture["history_fixture"][reason]
     assert max(event.event_id for event in history_before.events) == strict_history[
         "last_event_id"
     ]
-    assert hashlib.sha256(history_bytes_before).hexdigest() == strict_history[
+    assert _temporal_history_sha256(history_before.events) == strict_history[
         "history_sha256"
     ], "rollback-restart did not consume the exact history bound by strict progress"
     activity_events_before = activity_schedule_and_start_event_ids(
@@ -4188,6 +4405,10 @@ async def test_cross_container_adapter_recorder_observes_zero_operations_for_bot
         + uuid4().hex[:8]
     )
     launch = None
+    stopped = None
+    worker_log_path = candidate["candidate_root"] / (
+        f"task7-adapter-rollback-restart-{reason}-{recorder_run_id}.log"
+    )
     try:
         launch = worker_harness.start_rollback_worker(
             image=candidate["image_id"],
@@ -4229,31 +4450,62 @@ async def test_cross_container_adapter_recorder_observes_zero_operations_for_bot
         )
     finally:
         stopped = worker_harness.stop_worker(worker_name)
+        worker_log = str(stopped.get("logs", "")).replace(
+            database_url, "<redacted-database-url>"
+        )
+        worker_log_path.write_text(worker_log, encoding="utf-8")
         if launch is None:
             assert stopped["state"] in {"exited", "already-removed"}
         else:
             assert stopped["state"] == "exited"
 
     after = _capture_candidate_database_state(
-        candidate, database_url=database_url
+        candidate, database_url=database_url, validate_metadata_baseline=False
     )
-    assert after == before
-    assert after["liabilities"][reason] == before["liabilities"][reason]
-    assert after["holds"] == before["holds"]
     events_after = _read_adapter_recorder_events(
         candidate["adapter_recorder_url"], recorder_run_id
     )
-    assert events_after == events_before
-    _assert_no_adapter_operation_events(events_after)
-    history_bytes_after = b"".join(
-        event.SerializeToString() for event in history_after_run.events
-    )
-    return {
+    recorder_evidence = {
+        "schema_version": "salience.task7-adapter-recorder-replay.v1",
         "reason": reason,
         "workflow_id": workflow_id,
         "run_id": (await handle.describe()).run_id,
+        "recorder_run_id": recorder_run_id,
+        "recorder_worker_id": recorder_worker_id,
+        "worker_container_name": worker_name,
+        "worker_container_id": launch["container_id"] if launch else None,
+        "worker_image_id": launch["image_id"] if launch else None,
+        "worker_exit_state": stopped.get("state") if stopped else None,
+        "worker_log_path": str(worker_log_path.relative_to(candidate["candidate_root"])),
+        "worker_log_sha256": _sha256(worker_log.encode()),
+        "strict_pre_run_history": strict_history,
+        "post_run_history_sha256": _temporal_history_sha256(history_after_run.events),
+        "activity_schedule_and_start_event_ids_before": activity_events_before,
+        "activity_schedule_and_start_event_ids_after": activity_events_after,
+        "database_state_before": before,
+        "database_state_after": after,
+        "database_state_unchanged": after == before,
+        "recorder_events_before": events_before,
+        "recorder_events_after": events_after,
+    }
+    evidence_path = candidate["candidate_root"] / (
+        f"task7-adapter-recorder-replay-{reason}-{recorder_run_id}.json"
+    )
+    evidence_path.write_text(
+        json.dumps(recorder_evidence, sort_keys=True, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    assert after == before, recorder_evidence
+    assert after["liabilities"][reason] == before["liabilities"][reason]
+    assert after["holds"] == before["holds"]
+    assert events_after == events_before
+    _assert_no_adapter_operation_events(events_after)
+    return {
+        "reason": reason,
+        "workflow_id": workflow_id,
+        "run_id": recorder_evidence["run_id"],
         "strict_pre_run_history_sha256": strict_history["history_sha256"],
-        "post_run_history_sha256": hashlib.sha256(history_bytes_after).hexdigest(),
+        "post_run_history_sha256": _temporal_history_sha256(history_after_run.events),
         "activity_schedule_and_start_event_ids_before": activity_events_before,
         "activity_schedule_and_start_event_ids_after": activity_events_after,
         "new_activity_schedule_or_start_events": 0,
@@ -4265,6 +4517,8 @@ async def test_cross_container_adapter_recorder_observes_zero_operations_for_bot
         "worker_container_id": launch["container_id"],
         "worker_image_id": launch["image_id"],
         "worker_exit_state": stopped["state"],
+        "worker_log_path": str(worker_log_path.relative_to(candidate["candidate_root"])),
+        "evidence_path": str(evidence_path.relative_to(candidate["candidate_root"])),
     }
 
 
@@ -4328,9 +4582,12 @@ async def _capture_candidate_external_state(
         database_url=database_url,
         validate_metadata_baseline=validate_metadata_baseline,
     )
-    histories = await _candidate_history_fingerprints(candidate)
-    expected_histories = candidate["fixture"]["history_fixture"]
-    assert histories == expected_histories
+    expected_histories = _task8_external_history_metadata(candidate)
+    if expected_histories is None:
+        histories = {}
+    else:
+        histories = await _candidate_history_fingerprints(candidate)
+        assert histories == expected_histories
     events = _adapter_recorder_events(candidate)
     assert events == []
     return {**database, "histories": histories, "recorder_events": events}
@@ -4990,6 +5247,7 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
 
     import psycopg
     from temporalio.client import Client, WorkflowExecutionStatus, WorkflowFailureError
+    from temporalio.api.enums.v1 import PendingActivityState
 
     from test_v4_legacy_publication import (
         _allow,
@@ -5002,6 +5260,7 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
     )
     from test_v4_publication_recovery_holds import (
         _assert_named_liabilities_unchanged,
+        _create_database,
         _drop_database,
         _hold_values,
         _INSERT_SQL,
@@ -5010,8 +5269,8 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
         _recovery_hold_count,
         _recovery_hold_snapshot,
     )
-    from psycopg import sql
-    from salience.cycles.outbox import CycleOutbox
+    from psycopg.rows import dict_row
+    from salience.cycles.outbox import CycleOutbox, enqueue_cycle_message
     from salience.cycles.publication_recovery import (
         record_publication_recovery_hold,
         verify_publication_recovery_rollback,
@@ -5076,6 +5335,41 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(value, sort_keys=True, indent=2) + "\n", encoding="utf-8")
 
+    def read_cycle_runtime_database_state(cycle_id):
+        from psycopg.rows import dict_row
+
+        with psycopg.connect(database, row_factory=dict_row) as connection:
+            cycle = connection.execute(
+                "SELECT id::text AS id,state,closed_at::text AS closed_at "
+                "FROM v4_cycles WHERE id=%s",
+                (cycle_id,),
+            ).fetchone()
+            outbox_rows = connection.execute(
+                """SELECT message.id::text AS id,message.kind,message.sequence,message.state,
+                          message.attempts,receipt.state AS receipt_state
+                   FROM v4_cycle_outbox message
+                   LEFT JOIN v4_cycle_inbox receipt ON receipt.message_id=message.id
+                   WHERE message.cycle_id=%s ORDER BY message.sequence""",
+                (cycle_id,),
+            ).fetchall()
+            cycle_events = connection.execute(
+                """SELECT to_jsonb(event) AS event FROM v4_cycle_events event
+                   WHERE event.cycle_id=%s ORDER BY event.id""",
+                (cycle_id,),
+            ).fetchall()
+            runtime_holds = connection.execute(
+                "SELECT to_jsonb(hold) AS hold FROM v4_runtime_holds hold "
+                "WHERE hold.cycle_id=%s",
+                (cycle_id,),
+            ).fetchall()
+        assert cycle is not None
+        return {
+            "cycle": dict(cycle),
+            "outbox_rows": [dict(row) for row in outbox_rows],
+            "cycle_events": [row["event"] for row in cycle_events],
+            "runtime_holds": [row["hold"] for row in runtime_holds],
+        }
+
     def safe_text(value):
         return value.replace(database, "<redacted-database-url>")
 
@@ -5125,6 +5419,7 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
         "projection_counts_after": {},
         "worker_runs": [],
         "denials": {},
+        "fixture_terminal_boundaries": {},
         "effects_enabled": False,
         "production_effects_enabled": False,
         "fixture_publication_budget": 0,
@@ -5166,6 +5461,7 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
         cancelled_fixture["actor_id"],
         ("legacy:publication:reconcile:account:" + cancelled_fixture["account"].id,),
     )
+    terminal_boundary_snapshots = {}
 
     async def close_after_processing_read():
         with psycopg.connect(database) as connection:
@@ -5201,22 +5497,121 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
                     == "request_cancellation"
                     for event in history.events
                 ):
-                    return
+                    break
                 description = await handle.describe()
                 assert description.status == WorkflowExecutionStatus.RUNNING
                 await asyncio.sleep(0.05)
+        local_cycle_handle = client.get_workflow_handle(
+            "salience-v4-local:" + str(cancelled["cycle_id"])
+        )
+        local_cycle_result = await asyncio.wait_for(local_cycle_handle.result(), timeout=10)
+        assert local_cycle_result == {
+            "cycle_id": str(cancelled["cycle_id"]),
+            "state": "recorded",
+        }
+        local_cycle_description = await local_cycle_handle.describe()
+        assert local_cycle_description.status == WorkflowExecutionStatus.COMPLETED
+        local_cycle_history = await local_cycle_handle.fetch_history()
+        cancelled_cycle_state = read_cycle_runtime_database_state(
+            cancelled["cycle_id"]
+        )
+        assert cancelled_cycle_state["cycle"]["state"] == "closed"
+        assert cancelled_cycle_state["cycle"]["closed_at"] is not None
+        assert [
+            (row["kind"], row["state"], row["attempts"], row["receipt_state"])
+            for row in cancelled_cycle_state["outbox_rows"]
+        ] == [
+            ("start", "delivered", 1, "recorded"),
+            ("close", "delivered", 1, "recorded"),
+        ]
+        assert all(row["state"] == "delivered" for row in cancelled_cycle_state["outbox_rows"])
+        assert cancelled_cycle_state["runtime_holds"] == []
+        base_evidence["fixture_terminal_boundaries"]["published_during_cancel"] = {
+            "cycle_id": str(cancelled["cycle_id"]),
+            "local_workflow_id": "salience-v4-local:" + str(cancelled["cycle_id"]),
+            "local_workflow_status": local_cycle_description.status.name,
+            "local_workflow_run_id": local_cycle_description.run_id,
+            "local_workflow_history_last_event_id": max(
+                event.event_id for event in local_cycle_history.events
+            ),
+            "local_workflow_history_sha256": _temporal_history_sha256(
+                local_cycle_history.events
+            ),
+            "database_state_sha256": canonical_hash(cancelled_cycle_state),
+            "cycle_events_sha256": canonical_hash(cancelled_cycle_state["cycle_events"]),
+            "outbox_rows": cancelled_cycle_state["outbox_rows"],
+            "outbox_row_count": len(cancelled_cycle_state["outbox_rows"]),
+            "pending_outbox_rows": 0,
+        }
+        save_json(progress_path, base_evidence)
+
+    async def capture_cancel_pre_hold_snapshot():
+        pre_hold_snapshot = _liability_snapshot(database, cancelled_operation_id)
+        status_events = pre_hold_snapshot["publication_status_events"]
+        assert len(status_events) == 2, status_events
+        processing_events = [
+            event
+            for event in status_events
+            if event["state"] == "processing" and event["source"] == "webhook"
+        ]
+        assert len(processing_events) == 1, status_events
+        assert processing_events[0]["publication_attempt_id"] == (
+            pre_hold_snapshot["publication_attempt"]["id"]
+        )
+        assert str(pre_hold_snapshot["cycle"]["operation_id"]) == str(
+            cancelled_operation_id
+        )
+        cycle_state = read_cycle_runtime_database_state(cancelled["cycle_id"])
+        boundary = base_evidence["fixture_terminal_boundaries"][
+            "published_during_cancel"
+        ]
+        assert canonical_hash(cycle_state) == boundary["database_state_sha256"]
+        assert canonical_hash(cycle_state["cycle_events"]) == boundary[
+            "cycle_events_sha256"
+        ]
+        terminal_boundary_snapshots["published_during_cancel"] = pre_hold_snapshot
+        boundary["pre_hold_status_event_id"] = processing_events[0]["id"]
+        boundary["pre_hold_status_event_publication_attempt_id"] = processing_events[0][
+            "publication_attempt_id"
+        ]
+        boundary["liability_snapshot_sha256"] = canonical_hash(pre_hold_snapshot)
+        save_json(progress_path, base_evidence)
 
     cancel_precommit_path = tmp_path / "cancel-hold-precommit-liabilities.json"
-    cancel_exit = await _hard_exit_publication_worker(
-        cancelled_fixture,
-        tmp_path,
-        after_acceptance=False,
-        after_hold_commit=True,
-        precommit_snapshot_path=cancel_precommit_path,
-        operation_id=str(cancelled_operation_id),
-        cancel_after_processing=True,
-        cancel_ready_callback=close_after_processing_read,
-    )
+    cancel_worker_diagnostic_path = tmp_path / "cancel-hold-worker-diagnostics.jsonl"
+    try:
+        cancel_exit = await _hard_exit_publication_worker(
+            cancelled_fixture,
+            tmp_path,
+            after_acceptance=False,
+            after_hold_commit=True,
+            precommit_snapshot_path=cancel_precommit_path,
+            operation_id=str(cancelled_operation_id),
+            cancel_after_processing=True,
+            cancel_ready_callback=close_after_processing_read,
+            cancel_hold_ready_callback=capture_cancel_pre_hold_snapshot,
+            diagnostic_path=cancel_worker_diagnostic_path,
+        )
+    finally:
+        if cancel_worker_diagnostic_path.is_file():
+            diagnostic_archive = candidate_root / (
+                f"task8-cancel-worker-diagnostics-{candidate_suffix}-{uuid4().hex[:8]}.jsonl"
+            )
+            diagnostic_archive.write_text(
+                safe_text(cancel_worker_diagnostic_path.read_text(encoding="utf-8")),
+                encoding="utf-8",
+            )
+            base_evidence["fixture_terminal_boundaries"][
+                "published_during_cancel"
+            ]["setup_worker_log_path"] = str(
+                diagnostic_archive.relative_to(candidate_root)
+            )
+            base_evidence["fixture_terminal_boundaries"][
+                "published_during_cancel"
+            ]["setup_worker_log_sha256"] = hashlib.sha256(
+                diagnostic_archive.read_bytes()
+            ).hexdigest()
+            save_json(progress_path, base_evidence)
     assert cancel_exit == 74, (
         f"cancel crash-after-commit worker exited {cancel_exit}; "
         f"diagnostics={safe_text(cancel_precommit_path.read_text()) if cancel_precommit_path.exists() else 'missing'}"
@@ -5224,6 +5619,10 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
     assert cancel_precommit_path.is_file()
     cancel_before = json.loads(cancel_precommit_path.read_text(encoding="utf-8"))
     cancel_after_hold = _liability_snapshot(database, cancelled_operation_id)
+    _assert_named_liabilities_unchanged(
+        terminal_boundary_snapshots["published_during_cancel"],
+        cancel_before,
+    )
     _assert_named_liabilities_unchanged(cancel_before, cancel_after_hold)
     cancelled_hold_row = _recovery_hold_snapshot(database, cancelled_operation_id)
     assert cancelled_hold_row is not None
@@ -5254,15 +5653,519 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
     )
     expired = expired_fixture["bridge"].submit_publication(expired_fixture["command"])
     expired_operation_id = UUID(expired["operation_id"])
-    assert await _hard_exit_publication_worker(
+    expired_local_cycle_id = str(expired["cycle_id"])
+    expired_local_workflow_id = "salience-v4-local:" + expired_local_cycle_id
+    client = await Client.connect(os.environ["TEST_TEMPORAL_TARGET"])
+    expired_local_handle = client.get_workflow_handle(expired_local_workflow_id)
+    expired_quiescence = {}
+
+    async def wait_for_publication_submit_task_state(submit_context):
+        history = None
+        expected_workflow_id = (
+            "salience-v4-legacy-operation:" + str(expired_operation_id)
+        )
+        history_handle = client.get_workflow_handle(
+            expected_workflow_id,
+            run_id=submit_context["workflow_run_id"],
+        )
+        try:
+            async with asyncio.timeout(10):
+                while True:
+                    description = await history_handle.describe()
+                    if (
+                        description.id != expected_workflow_id
+                        or description.run_id != submit_context["workflow_run_id"]
+                    ):
+                        raise AssertionError("submit activity workflow/run changed at the fixture barrier")
+                    pending = [
+                        item
+                        for item in description.raw_description.pending_activities
+                        if item.activity_id == submit_context["activity_id"]
+                        and item.activity_type.name
+                        == "salience.publication.submit_or_reconcile"
+                    ]
+                    if (
+                        len(pending) == 1
+                        and pending[0].attempt == 1
+                        and pending[0].state == PendingActivityState.PENDING_ACTIVITY_STATE_STARTED
+                    ):
+                        history = await history_handle.fetch_history()
+                        scheduled_ids = [
+                            event.event_id
+                            for event in history.events
+                            if event.HasField("activity_task_scheduled_event_attributes")
+                            and event.activity_task_scheduled_event_attributes.activity_id
+                            == submit_context["activity_id"]
+                            and event.activity_task_scheduled_event_attributes.activity_type.name
+                            == "salience.publication.submit_or_reconcile"
+                        ]
+                        started_ids = [
+                            event.event_id
+                            for event in history.events
+                            if event.HasField("activity_task_started_event_attributes")
+                            and event.activity_task_started_event_attributes.scheduled_event_id
+                            in scheduled_ids
+                        ]
+                        assert len(scheduled_ids) == 1
+                        return {
+                            "activity_id": pending[0].activity_id,
+                            "activity_type": pending[0].activity_type.name,
+                            "attempt": pending[0].attempt,
+                            "pending_state": PendingActivityState.Name(pending[0].state),
+                            "scheduled_event_ids": scheduled_ids,
+                            "started_event_ids": started_ids,
+                        }
+        except TimeoutError as error:
+            observed = [] if history is None else [event.event_id for event in history.events]
+            raise TimeoutError(
+                "submit-entry activity did not reach exact started state: "
+                f"workflow={expected_workflow_id} "
+                f"run={submit_context['workflow_run_id']} "
+                f"activity={submit_context['activity_id']} observed_event_ids={observed}"
+            ) from error
+
+    async def close_expired_runtime_before_acceptance(submit_context):
+        assert submit_context["workflow_id"] == (
+            "salience-v4-legacy-operation:" + str(expired_operation_id)
+        )
+        expired_local_before = await expired_local_handle.describe()
+        assert expired_local_before.status == WorkflowExecutionStatus.RUNNING
+        expired_local_history_before = await expired_local_handle.fetch_history()
+        assert not any(
+            event.HasField("activity_task_scheduled_event_attributes")
+            and event.activity_task_scheduled_event_attributes.activity_type.name
+            == "salience.v4.fixture_runtime_hold"
+            for event in expired_local_history_before.events
+        )
+        expired_cycle_state_before = read_cycle_runtime_database_state(
+            expired_local_cycle_id
+        )
+        assert expired_cycle_state_before["cycle"]["state"] == "runnable"
+        assert expired_cycle_state_before["cycle"]["closed_at"] is None
+        assert expired_cycle_state_before["runtime_holds"] == []
+        assert len(expired_cycle_state_before["outbox_rows"]) == 1
+        assert expired_cycle_state_before["outbox_rows"][0]["kind"] == "start"
+        assert expired_cycle_state_before["outbox_rows"][0]["state"] == "delivered"
+        assert expired_cycle_state_before["outbox_rows"][0]["receipt_state"] == "recorded"
+        submit_state_before_close = await wait_for_publication_submit_task_state(
+            submit_context
+        )
+
+        close_payload = {
+            "disposition": "cancelled",
+            "operation_id": str(expired_operation_id),
+        }
+        with psycopg.connect(database, row_factory=dict_row) as connection:
+            start_binding = connection.execute(
+                """SELECT message.workspace_id,message.subject_id,message.goal_id,
+                          message.intent_id,message.cycle_id,message.traceparent,
+                          cycle.operation_id,cycle.state
+                   FROM v4_cycle_outbox message
+                   JOIN v4_cycles cycle ON cycle.id=message.cycle_id
+                   WHERE message.cycle_id=%s AND message.kind='start'
+                     AND message.sequence=1""",
+                (expired_local_cycle_id,),
+            ).fetchone()
+            assert start_binding is not None
+            assert str(start_binding["operation_id"]) == str(expired_operation_id)
+            assert start_binding["state"] == "runnable"
+            enqueue_cycle_message(
+                connection,
+                workspace_id=start_binding["workspace_id"],
+                subject_id=start_binding["subject_id"],
+                goal_id=start_binding["goal_id"],
+                intent_id=start_binding["intent_id"],
+                cycle_id=start_binding["cycle_id"],
+                kind="close",
+                payload=close_payload,
+                traceparent=start_binding["traceparent"],
+            )
+            close_binding = connection.execute(
+                """SELECT id::text AS id,workspace_id,subject_id,goal_id,intent_id,
+                          cycle_id::text AS cycle_id,sequence,kind,payload,traceparent
+                   FROM v4_cycle_outbox
+                   WHERE cycle_id=%s AND kind='close' AND sequence=2""",
+                (expired_local_cycle_id,),
+            ).fetchone()
+            assert close_binding is not None
+            assert close_binding["payload"] == close_payload
+            assert close_binding["sequence"] == 2
+            pending_workspace_rows = connection.execute(
+                """SELECT id::text AS id,cycle_id::text AS cycle_id,kind,state
+                   FROM v4_cycle_outbox
+                   WHERE workspace_id=%s AND state!='delivered'""",
+                (start_binding["workspace_id"],),
+            ).fetchall()
+        assert len(pending_workspace_rows) == 1
+        assert pending_workspace_rows[0]["id"] == close_binding["id"]
+        assert pending_workspace_rows[0]["cycle_id"] == expired_local_cycle_id
+
+        close_outbox = CycleOutbox(
+            database,
+            workspace_id=workspace_id,
+            delivery_lane="legacy",
+        )
+        dispatched = await close_outbox.dispatch_one(
+            TemporalCycleTransport(client, task_queue=expired_fixture["queue"])
+        )
+        assert dispatched is True
+        expired_local_result = await asyncio.wait_for(
+            expired_local_handle.result(), timeout=10
+        )
+        expired_local_after = await expired_local_handle.describe()
+        assert expired_local_result == {
+            "cycle_id": expired_local_cycle_id,
+            "state": "recorded",
+        }
+        assert expired_local_after.status == WorkflowExecutionStatus.COMPLETED
+        expired_local_history_after = await expired_local_handle.fetch_history()
+        assert expired_local_history_after.events[-1].HasField(
+            "workflow_execution_completed_event_attributes"
+        )
+        original_local_build_ids = {
+            event.workflow_task_completed_event_attributes.worker_version.build_id
+            for event in expired_local_history_before.events
+            if event.HasField("workflow_task_completed_event_attributes")
+            and event.workflow_task_completed_event_attributes.worker_version.build_id
+        }
+        assert len(original_local_build_ids) == 1
+        close_worker_build_ids = {
+            event.workflow_task_completed_event_attributes.worker_version.build_id
+            for event in expired_local_history_after.events
+            if event.HasField("workflow_task_completed_event_attributes")
+            and event.event_id
+            > max(item.event_id for item in expired_local_history_before.events)
+            and event.workflow_task_completed_event_attributes.worker_version.build_id
+        }
+        assert close_worker_build_ids == original_local_build_ids
+
+        close_signal_events = [
+            event
+            for event in expired_local_history_after.events
+            if event.HasField("workflow_execution_signaled_event_attributes")
+            and event.workflow_execution_signaled_event_attributes.signal_name == "deliver"
+            and json.loads(
+                event.workflow_execution_signaled_event_attributes.input.payloads[0].data
+            ).get("message_id")
+            == close_binding["id"]
+            and json.loads(
+                event.workflow_execution_signaled_event_attributes.input.payloads[0].data
+            ).get("kind")
+            == "close"
+        ]
+        assert len(close_signal_events) == 1
+        close_activity_scheduled_events = []
+        for event in expired_local_history_after.events:
+            if not event.HasField("activity_task_scheduled_event_attributes"):
+                continue
+            attributes = event.activity_task_scheduled_event_attributes
+            if attributes.activity_type.name != "salience.v4.fixture_consume":
+                continue
+            payloads = attributes.input.payloads
+            if payloads and json.loads(payloads[0].data).get("message_id") == close_binding["id"]:
+                close_activity_scheduled_events.append(event)
+        assert len(close_activity_scheduled_events) == 1
+        close_activity_scheduled = close_activity_scheduled_events[0]
+        close_activity_completed_events = [
+            event
+            for event in expired_local_history_after.events
+            if event.HasField("activity_task_completed_event_attributes")
+            and event.activity_task_completed_event_attributes.scheduled_event_id
+            == close_activity_scheduled.event_id
+        ]
+        assert len(close_activity_completed_events) == 1
+        workflow_completed_event = expired_local_history_after.events[-1]
+        assert (
+            close_signal_events[0].event_id
+            < close_activity_scheduled.event_id
+            < close_activity_completed_events[0].event_id
+            < workflow_completed_event.event_id
+        )
+
+        with psycopg.connect(database, row_factory=dict_row) as connection:
+            close_receipt = connection.execute(
+                """SELECT message.id::text AS id,message.kind,message.sequence,
+                          message.state,message.attempts,message.payload,
+                          receipt.state AS receipt_state
+                   FROM v4_cycle_outbox message
+                   JOIN v4_cycle_inbox receipt ON receipt.message_id=message.id
+                   WHERE message.id=%s AND message.cycle_id=%s""",
+                (close_binding["id"], expired_local_cycle_id),
+            ).fetchone()
+            accepted_receipt_before_release = connection.execute(
+                """SELECT count(*) AS row_count FROM v4_legacy_publication_fixture_receipts
+                   WHERE operation_id=%s""",
+                (expired_operation_id,),
+            ).fetchone()["row_count"]
+        assert close_receipt is not None
+        assert close_receipt["id"] == close_binding["id"]
+        assert close_receipt["kind"] == "close"
+        assert close_receipt["sequence"] == 2
+        assert close_receipt["state"] == "delivered"
+        assert close_receipt["attempts"] == 1
+        assert close_receipt["payload"] == close_payload
+        assert close_receipt["receipt_state"] == "recorded"
+        assert accepted_receipt_before_release == 0, (
+            "close receipt and local Temporal completion must precede publication acceptance"
+        )
+
+        expired_cycle_state_after = read_cycle_runtime_database_state(
+            expired_local_cycle_id
+        )
+        assert expired_cycle_state_after["cycle"] == expired_cycle_state_before["cycle"]
+        assert expired_cycle_state_after["runtime_holds"] == []
+        assert [
+            (row["kind"], row["state"], row["attempts"], row["receipt_state"])
+            for row in expired_cycle_state_after["outbox_rows"]
+        ] == [
+            ("start", "delivered", 1, "recorded"),
+            ("close", "delivered", 1, "recorded"),
+        ]
+        prior_event_ids = {
+            event["id"] for event in expired_cycle_state_before["cycle_events"]
+        }
+        close_events = [
+            event
+            for event in expired_cycle_state_after["cycle_events"]
+            if event["id"] not in prior_event_ids
+        ]
+        assert len(close_events) == 1
+        assert close_events[0]["kind"] == "fixture_consumed"
+        assert close_events[0]["payload"]["message_id"] == close_binding["id"]
+        assert close_events[0]["payload"]["state"] == "recorded"
+        assert all(
+            row["state"] == "delivered" and row["receipt_state"] == "recorded"
+            for row in expired_cycle_state_after["outbox_rows"]
+        ), "expired fixture has pending runtime work that could append a later cycle event"
+        submit_state_during_close = await wait_for_publication_submit_task_state(
+            submit_context
+        )
+        assert submit_state_during_close == submit_state_before_close
+        expired_quiescence.update(
+            {
+                "submit_context": submit_context,
+                "local_workflow_before": expired_local_before,
+                "local_history_before": expired_local_history_before,
+                "cycle_state_before": expired_cycle_state_before,
+                "local_result": expired_local_result,
+                "local_workflow_after": expired_local_after,
+                "local_history_after_close": expired_local_history_after,
+                "cycle_state_after_close": expired_cycle_state_after,
+                "close_payload": close_payload,
+                "close_binding": dict(close_binding),
+                "close_receipt": dict(close_receipt),
+                "close_signal_event": close_signal_events[0],
+                "close_activity_scheduled_event": close_activity_scheduled,
+                "close_activity_completed_event": close_activity_completed_events[0],
+                "workflow_completed_event": workflow_completed_event,
+                "close_worker_build_ids": close_worker_build_ids,
+                "publication_submit_state_before": submit_state_before_close,
+                "publication_submit_state_during": submit_state_during_close,
+                "accepted_receipt_absent_before_release": True,
+            }
+        )
+
+    expired_worker_diagnostic_path = (
+        tmp_path / "expired-permit-worker-diagnostics.jsonl"
+    )
+    expired_worker_exit = await _hard_exit_publication_worker(
         expired_fixture,
         tmp_path,
         after_acceptance=True,
         permit_ttl_seconds=5,
         operation_id=str(expired_operation_id),
-    ) == 73
+        diagnostic_path=expired_worker_diagnostic_path,
+        submit_ready_callback=close_expired_runtime_before_acceptance,
+    )
+    assert expired_worker_diagnostic_path.is_file()
+    expired_worker_events = [
+        json.loads(line)
+        for line in expired_worker_diagnostic_path.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    worker_event_names = [event.get("event") for event in expired_worker_events]
+    assert worker_event_names.index("submit_entry_ready") < worker_event_names.index(
+        "submit_entry_released"
+    ) < worker_event_names.index("submit_started") < worker_event_names.index(
+        "submit_returned"
+    )
+    submit_returned_event = next(
+        event for event in expired_worker_events if event.get("event") == "submit_returned"
+    )
+    assert submit_returned_event["state"] == "accepted"
+    worker_process_exit_event = next(
+        event for event in expired_worker_events if event.get("event") == "worker_process_exit"
+    )
+    assert worker_process_exit_event["return_code"] == 73
+    assert expired_worker_exit == 73
     await _wait_for_publication_permit_expiry(database, str(expired_operation_id))
+
+    expired_local_history_final = await expired_local_handle.fetch_history()
+    expired_local_after_worker_exit = await expired_local_handle.describe()
+    assert expired_local_after_worker_exit.status == WorkflowExecutionStatus.COMPLETED
+    assert _temporal_history_sha256(expired_local_history_final.events) == (
+        _temporal_history_sha256(expired_quiescence["local_history_after_close"].events)
+    )
+    assert max(event.event_id for event in expired_local_history_final.events) == max(
+        event.event_id for event in expired_quiescence["local_history_after_close"].events
+    )
+    submit_context = expired_quiescence["submit_context"]
+    publication_handle_after = client.get_workflow_handle(
+        submit_context["workflow_id"], run_id=submit_context["workflow_run_id"]
+    )
+    publication_description_after = await publication_handle_after.describe()
+    publication_history_after = await publication_handle_after.fetch_history()
+    publication_submit_schedule_ids_after = [
+        event.event_id
+        for event in publication_history_after.events
+        if event.HasField("activity_task_scheduled_event_attributes")
+        and event.activity_task_scheduled_event_attributes.activity_id
+        == submit_context["activity_id"]
+        and event.activity_task_scheduled_event_attributes.activity_type.name
+        == "salience.publication.submit_or_reconcile"
+    ]
+    publication_submit_started_ids_after = [
+        event.event_id
+        for event in publication_history_after.events
+        if event.HasField("activity_task_started_event_attributes")
+        and event.activity_task_started_event_attributes.scheduled_event_id
+        in publication_submit_schedule_ids_after
+    ]
+    assert publication_submit_schedule_ids_after == expired_quiescence[
+        "publication_submit_state_during"
+    ]["scheduled_event_ids"]
+    assert publication_submit_started_ids_after == expired_quiescence[
+        "publication_submit_state_during"
+    ]["started_event_ids"]
+    pending_submit_activities_after = [
+        item
+        for item in publication_description_after.raw_description.pending_activities
+        if item.activity_id == submit_context["activity_id"]
+        and item.activity_type.name == "salience.publication.submit_or_reconcile"
+    ]
+    assert not any(
+        item.attempt > 1
+        and item.state == PendingActivityState.PENDING_ACTIVITY_STATE_STARTED
+        for item in pending_submit_activities_after
+    ), "a publication retry attempt started after the worker's accepted result was lost"
+    publication_submit_state_after = {
+        "scheduled_event_ids": publication_submit_schedule_ids_after,
+        "started_event_ids": publication_submit_started_ids_after,
+        "pending": [
+            {
+                "activity_id": item.activity_id,
+                "activity_type": item.activity_type.name,
+                "attempt": item.attempt,
+                "state": PendingActivityState.Name(item.state),
+            }
+            for item in pending_submit_activities_after
+        ],
+    }
+    expired_cycle_state_after_worker_exit = read_cycle_runtime_database_state(
+        expired_local_cycle_id
+    )
+    assert expired_cycle_state_after_worker_exit == expired_quiescence[
+        "cycle_state_after_close"
+    ], "runtime actor changed cycle evidence after the quiescent close boundary"
+    with psycopg.connect(database, row_factory=dict_row) as connection:
+        accepted_receipt = connection.execute(
+            """SELECT receipt.receipt->>'state' AS receipt_state,
+                      progress.state AS progress_state,
+                      receipt.idempotency_key,receipt.remote_id
+               FROM v4_legacy_publication_fixture_receipts receipt
+               JOIN v4_legacy_publication_fixture_progress progress USING(operation_id)
+               WHERE receipt.operation_id=%s""",
+            (expired_operation_id,),
+        ).fetchone()
+    assert accepted_receipt is not None
+    assert accepted_receipt["receipt_state"] == "accepted"
+    assert accepted_receipt["progress_state"] == "accepted"
+    assert accepted_receipt["remote_id"] == (
+        "fixture-v4-publication:" + str(expired_operation_id)
+    )
+    expired_terminal_boundary = _liability_snapshot(database, expired_operation_id)
+    terminal_boundary_snapshots["expired_permit_receipt"] = expired_terminal_boundary
+    diagnostic_archive = candidate_root / (
+        f"task8-expired-worker-diagnostics-{candidate_suffix}-{uuid4().hex[:8]}.jsonl"
+    )
+    diagnostic_archive.write_text(
+        safe_text(expired_worker_diagnostic_path.read_text(encoding="utf-8")),
+        encoding="utf-8",
+    )
+    base_evidence["expired_worker_diagnostics"] = {
+        "exit_code": expired_worker_exit,
+        "path": str(diagnostic_archive.relative_to(candidate_root)),
+        "sha256": hashlib.sha256(diagnostic_archive.read_bytes()).hexdigest(),
+        "events": expired_worker_events,
+    }
+    expired_cycle_state_after = expired_quiescence["cycle_state_after_close"]
+    expired_local_history_after = expired_quiescence["local_history_after_close"]
+    expired_local_after = expired_quiescence["local_workflow_after"]
+    expired_local_result = expired_quiescence["local_result"]
+    close_binding = expired_quiescence["close_binding"]
+    close_payload = expired_quiescence["close_payload"]
+    close_receipt = expired_quiescence["close_receipt"]
+    close_signal_events = [expired_quiescence["close_signal_event"]]
+    close_activity_scheduled = expired_quiescence["close_activity_scheduled_event"]
+    close_activity_completed_events = [
+        expired_quiescence["close_activity_completed_event"]
+    ]
+    close_worker_build_ids = expired_quiescence["close_worker_build_ids"]
+    publication_submit_state_before = expired_quiescence[
+        "publication_submit_state_before"
+    ]
+    publication_submit_state_during = expired_quiescence[
+        "publication_submit_state_during"
+    ]
+    expired_local_history_before = expired_quiescence["local_history_before"]
+    expired_cycle_state_before = expired_quiescence["cycle_state_before"]
+    base_evidence["fixture_terminal_boundaries"]["expired_permit_receipt"] = {
+        "cycle_id": expired_local_cycle_id,
+        "local_workflow_id": expired_local_workflow_id,
+        "local_workflow_status": expired_local_after.status.name,
+        "local_workflow_run_id": expired_local_after.run_id,
+        "local_workflow_history_last_event_id": max(
+            event.event_id for event in expired_local_history_after.events
+        ),
+        "local_workflow_history_sha256": _temporal_history_sha256(
+            expired_local_history_after.events
+        ),
+        "local_workflow_result": expired_local_result,
+        "database_state_sha256": canonical_hash(expired_cycle_state_after),
+        "cycle_events_sha256": canonical_hash(expired_cycle_state_after["cycle_events"]),
+        "outbox_rows": expired_cycle_state_after["outbox_rows"],
+        "outbox_row_count": len(expired_cycle_state_after["outbox_rows"]),
+        "pending_outbox_rows": 0,
+        "fixture_quiescence_close": {
+            "message_id": close_binding["id"],
+            "sequence": close_binding["sequence"],
+            "kind": close_binding["kind"],
+            "payload": close_binding["payload"],
+            "delivery": "CycleOutbox.dispatch_one/TemporalCycleTransport/LocalCycleActivities.consume",
+            "receipt_state": close_receipt["receipt_state"],
+            "governed_cycle_state": expired_cycle_state_after["cycle"]["state"],
+            "runtime_worker_stopped_before_hold_snapshot": True,
+            "signal_event_id": close_signal_events[0].event_id,
+            "consume_activity_scheduled_event_id": close_activity_scheduled.event_id,
+            "consume_activity_completed_event_id": close_activity_completed_events[0].event_id,
+            "worker_build_ids": sorted(close_worker_build_ids),
+            "publication_submit_state_before_close": publication_submit_state_before,
+            "publication_submit_state_after_close": publication_submit_state_during,
+            "publication_submit_state_after_worker_exit": publication_submit_state_after,
+            "submit_context": expired_quiescence["submit_context"],
+            "accepted_receipt_absent_before_release": expired_quiescence[
+                "accepted_receipt_absent_before_release"
+            ],
+            "accepted_receipt_state_after_release": accepted_receipt["receipt_state"],
+            "worker_process_exit_code_after_acceptance": worker_process_exit_event["return_code"],
+        },
+        "liability_snapshot_sha256": canonical_hash(expired_terminal_boundary),
+    }
+    save_json(progress_path, base_evidence)
     expired_before_hold = _liability_snapshot(database, expired_operation_id)
+    _assert_named_liabilities_unchanged(
+        terminal_boundary_snapshots["expired_permit_receipt"], expired_before_hold
+    )
     expired_hold = record_publication_recovery_hold(
         database,
         workspace_id=workspace_id,
@@ -5276,250 +6179,278 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
     assert expired_hold_row["reason"] == "expired_permit_receipt"
     assert _recovery_hold_count(database, expired_operation_id) == 1
 
-    # Build the separate legacy database from this authentic primary state.
-    # The legacy-only operation and its NULL-v1 hold stay in this disposable
-    # clone, so the primary verifier is bound only to its two retained holds.
-    legacy_database_name = "recovery_floor_legacy_" + uuid4().hex[:12]
-    from urllib.parse import urlsplit, urlunsplit
-
-    legacy_database = urlunsplit(
-        urlsplit(database_admin_url)._replace(path="/" + legacy_database_name)
+    # Build the legacy preflight database at the schema floor that first
+    # allowed these rows. Its liabilities are database fixtures only: neither
+    # operation is delivered to an outbox worker or assigned Temporal history.
+    legacy_database_name, legacy_database = _create_database(
+        database_admin_url, "recovery_floor_legacy_"
     )
-    with psycopg.connect(database_admin_url, autocommit=True) as admin:
-        primary_name = urlsplit(database).path.lstrip("/")
-        admin.execute(
-            "SELECT pg_terminate_backend(pid) FROM pg_stat_activity "
-            "WHERE datname=%s AND pid<>pg_backend_pid()",
-            (primary_name,),
-        )
-        admin.execute(
-            sql.SQL("CREATE DATABASE {} WITH TEMPLATE {}").format(
-                sql.Identifier(legacy_database_name), sql.Identifier(primary_name)
-            )
-        )
     request.addfinalizer(
         lambda: _drop_database(database_admin_url, legacy_database_name)
         if not persist_fixtures
         else None
     )
+    legacy_0042 = _migrate(
+        legacy_database, "upgrade", "0042_publication_recovery_holds"
+    )
+    assert legacy_0042.returncode == 0, legacy_0042.stderr
+    with psycopg.connect(legacy_database) as connection:
+        assert connection.execute(
+            "SELECT version_num FROM alembic_version"
+        ).fetchone()[0] == "0042_publication_recovery_holds"
     monkeypatch.setenv("TEST_LEGACY_NULL_DATABASE_URL", legacy_database)
 
     import test_creative_release_gate_migration as release_gate
 
+    monkeypatch.setenv("TEST_DATABASE_URL", legacy_database)
+    try:
+        legacy_null_fixture = await _publication_fixture(legacy_database)
+    finally:
+        monkeypatch.setenv("TEST_DATABASE_URL", database)
     original_ready_package = release_gate._approved_ready_package
 
-    async def reuse_cancelled_ready_package(*, publication_proofs=True):
-        return cancelled_fixture["ready"]
+    async def reuse_legacy_ready_package(*, publication_proofs=True):
+        return legacy_null_fixture["ready"]
 
     monkeypatch.setattr(
-        release_gate, "_approved_ready_package", reuse_cancelled_ready_package
+        release_gate, "_approved_ready_package", reuse_legacy_ready_package
     )
     monkeypatch.setenv("TEST_DATABASE_URL", legacy_database)
     try:
-        legacy_cancel_fixture = await _publication_fixture(legacy_database)
+        legacy_companion_fixture = await _publication_fixture(legacy_database)
     finally:
         monkeypatch.setenv("TEST_DATABASE_URL", database)
         monkeypatch.setattr(
             release_gate, "_approved_ready_package", original_ready_package
         )
-    assert legacy_cancel_fixture["workspace_id"] == workspace_id
-    legacy_cancelled = legacy_cancel_fixture["bridge"].submit_publication(
-        legacy_cancel_fixture["command"]
+    assert (
+        legacy_companion_fixture["workspace_id"]
+        == legacy_null_fixture["workspace_id"]
     )
-    legacy_null_operation_id = UUID(legacy_cancelled["operation_id"])
+    legacy_null_submitted = legacy_null_fixture["bridge"].submit_publication(
+        legacy_null_fixture["command"]
+    )
+    legacy_companion_submitted = legacy_companion_fixture["bridge"].submit_publication(
+        legacy_companion_fixture["command"]
+    )
+    legacy_null_operation_id = UUID(legacy_null_submitted["operation_id"])
+    legacy_companion_operation_id = UUID(legacy_companion_submitted["operation_id"])
     assert legacy_null_operation_id not in {expired_operation_id, cancelled_operation_id}
-    assert await _hard_exit_publication_worker(
-        legacy_cancel_fixture,
-        tmp_path,
-        after_acceptance=True,
-        permit_ttl_seconds=60,
-        operation_id=str(legacy_null_operation_id),
-        diagnostic_path=(
-            candidate_root
-            / f"task8-legacy-acceptance-worker-{candidate_suffix}.jsonl"
-        ),
-    ) == 73
-    with psycopg.connect(legacy_database) as connection:
-        accepted_progress = connection.execute(
-            "SELECT operation_id,state FROM v4_legacy_publication_fixture_progress "
-            "WHERE operation_id=%s",
-            (str(legacy_null_operation_id),),
-        ).fetchone()
-    assert accepted_progress == (legacy_null_operation_id, "accepted")
-    legacy_workflow_id = (
-        "salience-v4-legacy-operation:" + str(legacy_null_operation_id)
-    )
-    legacy_client = await Client.connect(os.environ["TEST_TEMPORAL_TARGET"])
-    legacy_handle = legacy_client.get_workflow_handle(legacy_workflow_id)
-    legacy_description = await legacy_handle.describe()
-    assert legacy_description.status == WorkflowExecutionStatus.RUNNING
-    legacy_history = await legacy_handle.fetch_history()
-    submit_schedules = [
-        (event.event_id, event.activity_task_scheduled_event_attributes)
-        for event in legacy_history.events
-        if event.HasField("activity_task_scheduled_event_attributes")
-        and event.activity_task_scheduled_event_attributes.activity_type.name
-        == "salience.publication.submit_or_reconcile"
-    ]
-    assert len(submit_schedules) == 1, submit_schedules
-    submit_schedule = submit_schedules[0][1]
-    submit_start_to_close_seconds = submit_schedule.start_to_close_timeout.seconds
-    with psycopg.connect(legacy_database) as connection:
-        legacy_permit_ttl_seconds = connection.execute(
-            """SELECT (permit.request->>'ttl_seconds')::integer
-               FROM v4_dispatch_permits permit
-               JOIN v4_permit_claims claim
-                 ON claim.current_permit_id=permit.id
-               WHERE claim.operation_id=%s""",
-            (str(legacy_null_operation_id),),
-        ).fetchone()[0]
-    assert submit_start_to_close_seconds == 30
-    assert 30 == submit_start_to_close_seconds
-    assert not 30 > submit_start_to_close_seconds, (
-        "the prior 30-second fixture permit equals the retry boundary and cannot outlive it"
-    )
-    assert legacy_permit_ttl_seconds > submit_start_to_close_seconds, (
-        "legacy cancellation permit must outlive the submit retry boundary: "
-        f"permit_ttl={legacy_permit_ttl_seconds}s, "
-        f"submit_start_to_close={submit_start_to_close_seconds}s"
-    )
-    assert legacy_permit_ttl_seconds == 60
-    accepted_retry_ready = await _wait_for_activity_retry_ready(
-        legacy_client,
-        workflow_id=legacy_workflow_id,
-        run_id=legacy_description.run_id,
-        activity_id=submit_schedule.activity_id,
-        activity_type="salience.publication.submit_or_reconcile",
-        attempt=2,
-        timeout_seconds=45,
-    )
-    save_json(
-        candidate_root
-        / f"task8-legacy-accepted-retry-readiness-{candidate_suffix}.json",
-        {
-            "operation_id": str(legacy_null_operation_id),
-            "accepted_progress": {
-                "operation_id": str(accepted_progress[0]),
-                "state": accepted_progress[1],
-            },
-            "workflow_id": legacy_workflow_id,
-            "run_id": legacy_description.run_id,
-            "task_queue": legacy_cancel_fixture["queue"],
-            "activity_id": submit_schedule.activity_id,
-            "activity_type": "salience.publication.submit_or_reconcile",
-            "scheduled_event_id": submit_schedules[0][0],
-            "start_to_close_timeout_seconds": submit_start_to_close_seconds,
-            "permit_ttl_seconds": legacy_permit_ttl_seconds,
-            "retry_readiness": accepted_retry_ready,
-        },
-    )
-    _allow(
-        legacy_database,
-        workspace_id,
-        legacy_cancel_fixture["actor_id"],
-        (
-            "legacy:publication:reconcile:account:"
-            + legacy_cancel_fixture["account"].id,
-        ),
-    )
-    async def close_legacy_after_processing_read():
-        with psycopg.connect(legacy_database) as connection:
-            processing_progress = connection.execute(
-                "SELECT operation_id,state FROM v4_legacy_publication_fixture_progress "
-                "WHERE operation_id=%s",
-                (str(legacy_null_operation_id),),
+    assert legacy_companion_operation_id not in {
+        legacy_null_operation_id,
+        expired_operation_id,
+        cancelled_operation_id,
+    }
+
+    from psycopg.rows import dict_row
+    from psycopg.types.json import Jsonb
+    from salience.cycles.governance import CycleGovernance, PermitRequest
+    from salience.publication.contracts import RemotePublicationReceipt
+    from salience.publication.providers import FixturePublisherAdapter
+    from salience.publication.repository import PublicationRepository
+
+    async def seed_preflight_liability_graph(
+        fixture, submitted, *, permit_ttl_seconds
+    ):
+        operation_id = UUID(submitted["operation_id"])
+        with psycopg.connect(legacy_database, row_factory=dict_row) as connection:
+            binding = connection.execute(
+                """SELECT binding.*, intent.goal_revision
+                   FROM v4_legacy_dispatches binding
+                   JOIN v4_cycle_intents intent ON intent.id=binding.intent_id
+                   WHERE binding.operation_id=%s""",
+                (str(operation_id),),
             ).fetchone()
-        assert processing_progress == (legacy_null_operation_id, "processing")
+        assert binding is not None
+
+        from salience.cycles.legacy_publication import native_publication_request
+
+        workflow_request = native_publication_request(binding)
+        repository = PublicationRepository(legacy_database)
+        persisted_request = await repository.create_request(
+            ready_package_id=workflow_request.ready_package_id,
+            workspace_id=workflow_request.workspace_id,
+            content_program_id=workflow_request.content_program_id,
+            publisher_account_id=workflow_request.publisher_account_id,
+            publication_approval_request_id=(
+                workflow_request.publication_approval_request_id
+            ),
+            idempotency_key=workflow_request.idempotency_key,
+            platform=workflow_request.platform,
+            destination=workflow_request.destination,
+            locale=workflow_request.locale,
+            territory=workflow_request.territory,
+            visibility=workflow_request.visibility,
+            capability_profile_version=workflow_request.capability_profile_version,
+        )
+        publication_request = await repository.load_request(persisted_request.id)
+        plan = await repository.create_plan(
+            publication_request_id=publication_request.id,
+            version=1,
+            publisher_id=publication_request.publisher_id or "fixture-publisher",
+            publisher_version=FixturePublisherAdapter().capabilities.version,
+            external_effect_id=None,
+            trace_id=None,
+            span_id=None,
+        )
+        attempt = await repository.create_attempt(
+            publication_plan_id=plan.id,
+            attempt_number=1,
+            idempotency_key=publication_request.idempotency_key + ":attempt:1",
+        )
+
+        request_payload = publication_request.model_dump(mode="json")
+        remote_id = "fixture-v4-publication:" + str(operation_id)
+        safe_metadata_hash = hashlib.sha256(
+            json.dumps(request_payload, sort_keys=True).encode("utf-8")
+        ).hexdigest()
+        fixture_receipt = RemotePublicationReceipt(
+            id="fixture-v4-receipt:" + str(operation_id),
+            publication_attempt_id=publication_request.id,
+            publisher_id="fixture-publisher",
+            remote_id=remote_id,
+            state="accepted",
+            safe_metadata_hash=safe_metadata_hash,
+            remote_url="https://fixture.invalid/publications/" + str(operation_id),
+        )
         with psycopg.connect(legacy_database) as connection:
-            updated = connection.execute(
-                """UPDATE v4_legacy_publication_fixture_progress
-                   SET state='published', polls=2, updated_at=clock_timestamp()
-                   WHERE operation_id=%s AND state='processing'
-                   RETURNING state""",
-                (str(legacy_null_operation_id),),
-            ).fetchone()
-        assert updated == ("published",)
-        legacy_cancel_fixture["bridge"].close(
-            legacy_cancelled["cycle_id"],
-            disposition="cancelled",
-            reason="Preserve accepted publication liability for the legacy NULL-v1 fixture",
-        )
-        legacy_client = await Client.connect(os.environ["TEST_TEMPORAL_TARGET"])
-        legacy_outbox = CycleOutbox(
-            legacy_database, workspace_id=workspace_id, delivery_lane="legacy"
-        )
-        assert await legacy_outbox.dispatch_one(
-            TemporalCycleTransport(
-                legacy_client, task_queue=legacy_cancel_fixture["queue"]
+            request_fingerprint = connection.execute(
+                "SELECT encode(digest(%s::jsonb::text,'sha256'),'hex')",
+                (Jsonb(request_payload),),
+            ).fetchone()[0]
+            connection.execute(
+                """INSERT INTO v4_legacy_publication_fixture_receipts
+                   (operation_id,workspace_id,idempotency_key,fingerprint,remote_id,
+                    request,receipt)
+                   VALUES(%s,%s,%s,%s,%s,%s,%s)""",
+                (
+                    operation_id,
+                    fixture["workspace_id"],
+                    "v4-legacy:" + str(operation_id),
+                    request_fingerprint,
+                    remote_id,
+                    Jsonb(request_payload),
+                    Jsonb(fixture_receipt.model_dump(mode="json")),
+                ),
             )
-        )
-        legacy_workflow_id = (
-            "salience-v4-legacy-operation:" + str(legacy_null_operation_id)
-        )
-        legacy_handle = legacy_client.get_workflow_handle(legacy_workflow_id)
-        async with asyncio.timeout(10):
-            while True:
-                legacy_history = await legacy_handle.fetch_history()
-                if any(
-                    event.HasField("workflow_execution_signaled_event_attributes")
-                    and event.workflow_execution_signaled_event_attributes.signal_name
-                    == "request_cancellation"
-                    for event in legacy_history.events
-                ):
-                    break
-                assert (
-                    await legacy_handle.describe()
-                ).status == WorkflowExecutionStatus.RUNNING
-                await asyncio.sleep(0.05)
+            connection.execute(
+                """INSERT INTO v4_legacy_publication_fixture_progress
+                   (operation_id,state) VALUES(%s,'accepted')""",
+                (operation_id,),
+            )
 
-    legacy_cancel_precommit_path = (
-        tmp_path / "legacy-null-hold-precommit-liabilities.json"
+        await repository.record_remote_receipt(
+            publication_attempt_id=attempt.id,
+            publisher_id=fixture_receipt.publisher_id,
+            remote_id=fixture_receipt.remote_id,
+            state=fixture_receipt.state,
+            safe_metadata_hash=fixture_receipt.safe_metadata_hash,
+            remote_url=fixture_receipt.remote_url,
+        )
+        await repository.record_status_event(
+            publication_attempt_id=attempt.id,
+            state="accepted",
+            source="submission",
+            safe_payload_hash=safe_metadata_hash,
+        )
+
+        governance = CycleGovernance(
+            legacy_database,
+            workspace_id=fixture["workspace_id"],
+            subject_id=fixture["actor_id"],
+        )
+        permit_request = PermitRequest(
+            context_id=binding["context_id"],
+            operation_id=operation_id,
+            expected_goal_revision=binding["goal_revision"],
+            account_ref="fixture-account",
+            purpose="fixture_execution",
+            effect="fixture.noop",
+            artifact_sha256=hashlib.sha256(
+                ("task8-preflight:" + str(operation_id)).encode("utf-8")
+            ).hexdigest(),
+            ttl_seconds=permit_ttl_seconds,
+        )
+        issued = governance.issue_permit(
+            binding["cycle_id"],
+            permit_request,
+            idempotency_key="task8-preflight-permit:" + str(operation_id),
+        )
+        claimed = governance.claim_permit(issued["permit_id"])
+        assert claimed["dispatch_allowed"] is True
+        with psycopg.connect(legacy_database) as connection:
+            started_job = connection.execute(
+                """UPDATE jobs SET state='running',
+                          started_at=COALESCE(started_at,clock_timestamp())
+                   WHERE id=%s AND state='queued' RETURNING id""",
+                (binding["job_id"],),
+            ).fetchone()
+        assert started_job == (binding["job_id"],)
+        return {
+            "operation_id": operation_id,
+            "permit_id": UUID(issued["permit_id"]),
+            "publication_request_id": UUID(publication_request.id),
+            "publication_attempt_id": UUID(attempt.id),
+        }
+
+    legacy_null_graph = await seed_preflight_liability_graph(
+        legacy_null_fixture, legacy_null_submitted, permit_ttl_seconds=60
     )
-    legacy_cancel_exit = await _hard_exit_publication_worker(
-        legacy_cancel_fixture,
-        tmp_path,
-        after_acceptance=False,
-        after_hold_commit=True,
-        precommit_snapshot_path=legacy_cancel_precommit_path,
-        operation_id=str(legacy_null_operation_id),
-        cancel_after_processing=True,
-        cancel_ready_callback=close_legacy_after_processing_read,
-        diagnostic_path=(
-            candidate_root
-            / f"task8-legacy-cancel-worker-{candidate_suffix}.jsonl"
+    legacy_companion_graph = await seed_preflight_liability_graph(
+        legacy_companion_fixture,
+        legacy_companion_submitted,
+        permit_ttl_seconds=1,
+    )
+    assert legacy_null_graph["operation_id"] == legacy_null_operation_id
+    assert legacy_companion_graph["operation_id"] == legacy_companion_operation_id
+    with psycopg.connect(legacy_database) as connection:
+        seeded_receipt = connection.execute(
+            """SELECT receipt_row.operation_id, progress.state,
+                      receipt_row.idempotency_key, receipt_row.remote_id,
+                      receipt_row.receipt->>'state'
+               FROM v4_legacy_publication_fixture_receipts receipt_row
+               JOIN v4_legacy_publication_fixture_progress progress USING(operation_id)
+               WHERE receipt_row.operation_id=%s""",
+            (legacy_null_operation_id,),
+        ).fetchone()
+    assert seeded_receipt == (
+        legacy_null_operation_id,
+        "accepted",
+        "v4-legacy:" + str(legacy_null_operation_id),
+        "fixture-v4-publication:" + str(legacy_null_operation_id),
+        "accepted",
+    )
+
+    with psycopg.connect(legacy_database) as connection:
+        published_progress = connection.execute(
+            """UPDATE v4_legacy_publication_fixture_progress
+               SET state='published', polls=2, updated_at=clock_timestamp()
+               WHERE operation_id=%s AND state='accepted'
+               RETURNING operation_id,state""",
+            (legacy_null_operation_id,),
+        ).fetchone()
+    assert published_progress == (legacy_null_operation_id, "published")
+    legacy_null_fixture["bridge"].close(
+        legacy_null_submitted["cycle_id"],
+        disposition="cancelled",
+        reason=(
+            "Preserve accepted publication liability for the legacy NULL-v1 preflight fixture"
         ),
     )
-    assert legacy_cancel_exit == 74, (
-        f"legacy NULL-v1 cancel crash-after-commit worker exited {legacy_cancel_exit}; "
-        "diagnostics="
-        + (
-            safe_text(legacy_cancel_precommit_path.read_text())
-            if legacy_cancel_precommit_path.exists()
-            else "missing"
-        )
+    await _wait_for_publication_permit_expiry(
+        legacy_database, str(legacy_companion_operation_id)
     )
-    assert legacy_cancel_precommit_path.is_file()
-    legacy_cancel_before = json.loads(
-        legacy_cancel_precommit_path.read_text(encoding="utf-8")
-    )
-    legacy_cancel_after_hold = _liability_snapshot(
-        legacy_database, legacy_null_operation_id
-    )
-    _assert_named_liabilities_unchanged(
-        legacy_cancel_before, legacy_cancel_after_hold
-    )
-    legacy_cancel_hold_row = _recovery_hold_snapshot(
-        legacy_database, legacy_null_operation_id
-    )
-    assert legacy_cancel_hold_row is not None
-    assert legacy_cancel_hold_row["reason"] == "published_during_cancel"
-    assert _recovery_hold_count(legacy_database, legacy_null_operation_id) == 1
 
+    legacy_cancel_before = _liability_snapshot(
+        legacy_database, legacy_null_operation_id
+    )
+    legacy_companion_before_hold = _liability_snapshot(
+        legacy_database, legacy_companion_operation_id
+    )
     with psycopg.connect(legacy_database) as connection:
-        connection.execute("DELETE FROM v4_legacy_publication_recovery_holds")
-    downgraded_legacy = _migrate(legacy_database, "downgrade", "0042_publication_recovery_holds")
-    assert downgraded_legacy.returncode == 0, downgraded_legacy.stderr
-    with psycopg.connect(legacy_database) as connection:
+        assert connection.execute(
+            "SELECT version_num FROM alembic_version"
+        ).fetchone()[0] == "0042_publication_recovery_holds"
         connection.execute(
             _INSERT_SQL,
             _hold_values(
@@ -5528,16 +6459,113 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
                 reason="published_during_cancel",
             ),
         )
+        legacy_0042_hold_row = connection.execute(
+            "SELECT to_jsonb(hold) FROM v4_legacy_publication_recovery_holds hold "
+            "WHERE operation_id=%s",
+            (legacy_null_operation_id,),
+        ).fetchone()[0]
+    assert legacy_0042_hold_row["reason"] == "published_during_cancel"
+    assert _recovery_hold_count(legacy_database, legacy_null_operation_id) == 1
+    _assert_named_liabilities_unchanged(
+        legacy_cancel_before,
+        _liability_snapshot(legacy_database, legacy_null_operation_id),
+    )
+    assert _recovery_hold_count(legacy_database, legacy_companion_operation_id) == 0
+
     upgraded_legacy = _migrate(
         legacy_database, "upgrade", "0043_complete_publication_recovery_liabilities"
     )
     assert upgraded_legacy.returncode == 0, upgraded_legacy.stderr
-    record_publication_recovery_hold(
+    with psycopg.connect(legacy_database) as connection:
+        assert connection.execute(
+            "SELECT version_num FROM alembic_version"
+        ).fetchone()[0] == "0043_complete_publication_recovery_liabilities"
+        upgraded_null_hold = connection.execute(
+            "SELECT to_jsonb(hold) FROM v4_legacy_publication_recovery_holds hold "
+            "WHERE operation_id=%s",
+            (legacy_null_operation_id,),
+        ).fetchone()[0]
+        assert {
+            key: upgraded_null_hold[key] for key in legacy_0042_hold_row
+        } == legacy_0042_hold_row
+        assert (
+            upgraded_null_hold["liability_snapshot_version"],
+            upgraded_null_hold["liability_snapshot_v1"],
+            upgraded_null_hold["liability_fingerprint_v1"],
+        ) == (None, None, None)
+        with pytest.raises(psycopg.Error, match="immutable"), connection.transaction():
+            connection.execute(
+                "DELETE FROM v4_legacy_publication_recovery_holds "
+                "WHERE operation_id=%s",
+                (legacy_null_operation_id,),
+            )
+        after_rejected_delete = connection.execute(
+            "SELECT to_jsonb(hold) FROM v4_legacy_publication_recovery_holds hold "
+            "WHERE operation_id=%s",
+            (legacy_null_operation_id,),
+        ).fetchone()[0]
+        assert after_rejected_delete == upgraded_null_hold
+    _assert_named_liabilities_unchanged(
+        legacy_cancel_before,
+        _liability_snapshot(legacy_database, legacy_null_operation_id),
+    )
+
+    legacy_v1_companion = record_publication_recovery_hold(
         legacy_database,
-        workspace_id=workspace_id,
-        operation_id=expired_operation_id,
+        workspace_id=legacy_companion_fixture["workspace_id"],
+        operation_id=legacy_companion_operation_id,
         reason="expired_permit_receipt",
     )
+    legacy_companion_after_hold = _liability_snapshot(
+        legacy_database, legacy_companion_operation_id
+    )
+    _assert_named_liabilities_unchanged(
+        legacy_companion_before_hold, legacy_companion_after_hold
+    )
+    legacy_companion_row = _recovery_hold_snapshot(
+        legacy_database, legacy_companion_operation_id
+    )
+    assert legacy_companion_row is not None
+    assert legacy_companion_row["id"] == str(legacy_v1_companion.id)
+    assert legacy_companion_row["operation_id"] == str(
+        legacy_companion_operation_id
+    )
+    assert legacy_companion_row["reason"] == "expired_permit_receipt"
+    assert legacy_companion_row["liability_snapshot_version"] == (
+        "salience.publication-liability.v1"
+    )
+    assert len(legacy_companion_row["liability_snapshot_v1"]) == 21
+    assert _recovery_hold_count(legacy_database, legacy_companion_operation_id) == 1
+    with psycopg.connect(legacy_database) as connection:
+        legacy_hold_counts = connection.execute(
+            """SELECT count(*),
+                      count(*) FILTER (WHERE liability_snapshot_version IS NULL),
+                      count(*) FILTER (WHERE liability_snapshot_version IS NOT NULL)
+               FROM v4_legacy_publication_recovery_holds"""
+        ).fetchone()
+    assert legacy_hold_counts == (2, 1, 1)
+    with psycopg.connect(legacy_database) as connection:
+        legacy_outbox_rows = connection.execute(
+            """SELECT message.kind,message.state,message.attempts
+               FROM v4_cycle_outbox message
+               JOIN v4_cycles cycle ON cycle.id=message.cycle_id
+               WHERE cycle.operation_id=ANY(%s)
+               ORDER BY message.kind,message.sequence""",
+            ([legacy_null_operation_id, legacy_companion_operation_id],),
+        ).fetchall()
+        legacy_inbox_count = connection.execute(
+            """SELECT count(*)
+               FROM v4_cycle_inbox inbox
+               JOIN v4_cycles cycle ON cycle.id=inbox.cycle_id
+               WHERE cycle.operation_id=ANY(%s)""",
+            ([legacy_null_operation_id, legacy_companion_operation_id],),
+        ).fetchone()[0]
+    assert legacy_outbox_rows == [
+        ("close", "pending", 0),
+        ("start", "pending", 0),
+        ("start", "pending", 0),
+    ]
+    assert legacy_inbox_count == 0
     monkeypatch.setenv("TEST_LEGACY_NULL_DATABASE_URL", legacy_database)
 
     operation_ids = {
@@ -5547,6 +6575,10 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
     expected_hold_ids = {
         "expired_permit_receipt": str(expired_hold.id),
         "published_during_cancel": cancelled_hold_row["id"],
+    }
+    before_snapshots = {
+        "expired_permit_receipt": expired_after_hold,
+        "published_during_cancel": cancel_after_hold,
     }
     first_views = verify_publication_recovery_rollback(
         database, workspace_id=workspace_id, operation_ids=operation_ids
@@ -5562,10 +6594,6 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
     }
     assert first_verifier["hold_ids"] == expected_hold_ids
 
-    before_snapshots = {
-        "expired_permit_receipt": expired_after_hold,
-        "published_during_cancel": cancel_after_hold,
-    }
     expected_projection_counts = {
         reason: {
             "remote_receipts": len(snapshot["remote_publication_receipts"] or []),
@@ -5609,17 +6637,80 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
     # Both setup workers hard-exited at their intended boundaries. Confirm that
     # no prior qualified-image worker is still running before restart.
     with worker_harness._without_shared_checkout():
-        running = subprocess.run(
-            ["docker", "ps", "--filter", f"ancestor={expected_image_id}", "--format", "{{.ID}} {{.Names}}"],
+        listed = subprocess.run(
+            ["docker", "ps", "--filter", f"ancestor={expected_image_id}", "--format", "{{.ID}}"],
             capture_output=True,
             text=True,
             check=True,
             cwd=tmp_path,
             env=worker_harness._docker_environment(),
             timeout=15,
-        ).stdout.splitlines()
-    assert running == [], running
+        )
+        image_container_ids = listed.stdout.splitlines()
+        image_containers = []
+        for container_id in image_container_ids:
+            inspected = subprocess.run(
+                ["docker", "inspect", container_id],
+                capture_output=True,
+                text=True,
+                check=True,
+                cwd=tmp_path,
+                env=worker_harness._docker_environment(),
+                timeout=15,
+            )
+            image_containers.append(json.loads(inspected.stdout)[0])
+    classified_containers = []
+    for container in image_containers:
+        config = container.get("Config") or {}
+        labels = config.get("Labels") or {}
+        is_recorder = worker_harness.is_task8_adapter_recorder_container(
+            container, expected_image_id=expected_image_id
+        )
+        classified_containers.append(
+            {
+                "container_id": container["Id"],
+                "container_name": container["Name"].lstrip("/"),
+                "image_id": container["Image"],
+                "recorder_role": is_recorder,
+                "entrypoint": config.get("Entrypoint"),
+                "command": config.get("Cmd"),
+                "compose_project": labels.get("com.docker.compose.project"),
+                "compose_service": labels.get("com.docker.compose.service"),
+            }
+        )
+    recorder_containers = [
+        container for container in classified_containers if container["recorder_role"]
+    ]
+    running = [
+        container for container in classified_containers if not container["recorder_role"]
+    ]
+    recorder_role_evidence = {
+        "schema_version": "salience.task8-recorder-role-exclusion.v1",
+        "application_commit": application_commit,
+        "image_ref": image_ref,
+        "image_id": expected_image_id,
+        "docker_ps_command": [
+            "docker",
+            "ps",
+            "--filter",
+            f"ancestor={expected_image_id}",
+            "--format",
+            "{{.ID}}",
+        ],
+        "candidate_image_running_containers": classified_containers,
+        "recorder_container_ids": [item["container_id"] for item in recorder_containers],
+        "other_running_candidate_image_containers": running,
+        "worker_guard_passed": len(recorder_containers) == 1 and running == [],
+    }
+    save_json(
+        candidate_root / f"task8-recorder-role-exclusion-{candidate_suffix}.json",
+        recorder_role_evidence,
+    )
+    base_evidence["recorder_role_exclusion"] = recorder_role_evidence
     base_evidence["known_running_image_workers_before_restart"] = running
+    save_json(progress_path, base_evidence)
+    assert len(recorder_containers) == 1, recorder_role_evidence
+    assert running == [], recorder_role_evidence
 
     client = await Client.connect(os.environ["TEST_TEMPORAL_TARGET"])
     worker_cases = (
@@ -5664,10 +6755,21 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
             run_evidence["container_inspection"] = inspected
             assert inspected["image_id"] == expected_image_id
             assert inspected["path"] == "/usr/local/bin/python"
-            assert inspected["args"][:3] == [
+            assert inspected["args"] == [
+                "-I",
+                "-B",
+                "-S",
                 "/run/salience-control/launch-v4-publication-worker.py",
                 "--mode",
                 "rollback-restart",
+                "--worker-kind",
+                "legacy-fixture",
+                "--workspace-id",
+                str(workspace_id),
+                "--expired-hold-operation-id",
+                str(expired_operation_id),
+                "--cancel-hold-operation-id",
+                str(cancelled_operation_id),
             ]
             assert inspected["state"] == "running"
             assert inspected["environment"]["SALIENCE_DEPLOYMENT_MODE"] == "fixture"
@@ -5853,12 +6955,11 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
             task_queue = start_event.workflow_execution_started_event_attributes.task_queue.name
             if task_queues is not None:
                 assert task_queue == task_queues[reason]
-            event_bytes = b"".join(event.SerializeToString() for event in events)
             history_fixture[reason] = {
                 "workflow_id": workflow_id,
                 "task_queue": task_queue,
                 "last_event_id": max((event.event_id for event in events), default=0),
-                "history_sha256": hashlib.sha256(event_bytes).hexdigest(),
+                "history_sha256": _temporal_history_sha256(events),
             }
         return history_fixture
 
@@ -5870,7 +6971,19 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
             for reason, metadata in expected.items()
         }
         task_queues = {reason: metadata["task_queue"] for reason, metadata in expected.items()}
-        return capture_history_fixture(target, operation_ids_for_history, task_queues)
+        observed = capture_history_fixture(target, operation_ids_for_history, task_queues)
+
+        async def record_and_return():
+            observed_histories = await observed
+            if observed_histories != expected:
+                save_json(
+                    candidate_root
+                    / f"task8-history-readback-mismatch-{candidate_suffix}.json",
+                    {"expected": expected, "observed": observed_histories},
+                )
+            return observed_histories
+
+        return record_and_return()
 
     def read_database_state(database_url, state_workspace_id, state_operation_ids):
         with psycopg.connect(database_url) as connection:
@@ -5900,6 +7013,8 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
     primary_hold_ids = {
         reason: str(row["id"]) for reason, row in before_hold_rows.items()
     }
+    primary_workspace_id = str(workspace_id)
+    assert UUID(primary_workspace_id) == workspace_id
     primary_targets = target_record(database)
     primary_histories = await capture_history_fixture(
         temporal_target,
@@ -5909,7 +7024,7 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
             "published_during_cancel": cancelled_fixture["queue"],
         },
     )
-    primary_state = read_database_state(database, workspace_id, primary_operation_ids)
+    primary_state = read_database_state(database, primary_workspace_id, primary_operation_ids)
     primary_fixture = {
         "schema_version": "salience.publication-floor-rollback-launch-fixture.v1",
         "application_commit": application_commit,
@@ -5917,7 +7032,7 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
         "image_id": expected_image_id,
         "launch_lock_sha256": trusted_digest,
         "disposable_targets": primary_targets,
-        "workspace_id": str(UUID(workspace_id)),
+        "workspace_id": primary_workspace_id,
         "operation_ids": primary_operation_ids,
         "hold_ids": primary_hold_ids,
         "history_fixture": primary_histories,
@@ -5963,9 +7078,6 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
         reason: str(UUID(row["id"])) for reason, row in legacy_hold_rows.items()
     }
     legacy_targets = target_record(legacy_database)
-    legacy_histories = await capture_history_fixture(
-        temporal_target, legacy_operation_ids
-    )
     legacy_liabilities = {
         reason: _liability_snapshot(legacy_database, UUID(operation_id))
         for reason, operation_id in legacy_operation_ids.items()
@@ -5980,7 +7092,12 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
         "workspace_id": legacy_workspace_id,
         "operation_ids": legacy_operation_ids,
         "hold_ids": legacy_hold_ids,
-        "history_fixture": legacy_histories,
+        "execution_mode": {
+            "mode": "preflight_only",
+            "denial_stage": "before_worker_registration",
+            "worker_started": False,
+            "outbox_dispatched": False,
+        },
         "liability_snapshot_hashes": {
             reason: canonical_hash(legacy_liabilities[reason])
             for reason in legacy_operation_ids
@@ -6001,6 +7118,27 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
                 "WHERE operation_id=%s",
                 (legacy_operation_ids["published_during_cancel"],),
             ).fetchone()
+            outbox_rows = connection.execute(
+                """SELECT message.kind,message.state,message.attempts
+                   FROM v4_cycle_outbox message
+                   JOIN v4_cycles cycle ON cycle.id=message.cycle_id
+                   WHERE cycle.operation_id=ANY(%s)
+                   ORDER BY message.kind,message.sequence""",
+                ([UUID(operation_id) for operation_id in legacy_operation_ids.values()],),
+            ).fetchall()
+            inbox_count = connection.execute(
+                """SELECT count(*)
+                   FROM v4_cycle_inbox inbox
+                   JOIN v4_cycles cycle ON cycle.id=inbox.cycle_id
+                   WHERE cycle.operation_id=ANY(%s)""",
+                ([UUID(operation_id) for operation_id in legacy_operation_ids.values()],),
+            ).fetchone()[0]
+        assert outbox_rows == [
+            ("close", "pending", 0),
+            ("start", "pending", 0),
+            ("start", "pending", 0),
+        ]
+        assert inbox_count == 0
         observed["legacy_null_v1"] = {
             "operation_id": legacy_operation_ids["published_during_cancel"],
             "fields": list(null_columns),
@@ -6148,6 +7286,37 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
             ),
         }
 
+    async def assert_quiescent_runtime_boundary(reason):
+        boundary = base_evidence["fixture_terminal_boundaries"][reason]
+        workflow_id = boundary["local_workflow_id"]
+        runtime_handle = client.get_workflow_handle(workflow_id)
+        runtime_description = await runtime_handle.describe()
+        expected_status = {
+            "expired_permit_receipt": WorkflowExecutionStatus.COMPLETED,
+            "published_during_cancel": WorkflowExecutionStatus.COMPLETED,
+        }[reason]
+        assert runtime_description.status == expected_status, (
+            f"{reason} local runtime is not quiescent: {runtime_description.status}"
+        )
+        runtime_history = await runtime_handle.fetch_history()
+        assert max(event.event_id for event in runtime_history.events) == boundary[
+            "local_workflow_history_last_event_id"
+        ]
+        assert _temporal_history_sha256(runtime_history.events) == boundary[
+            "local_workflow_history_sha256"
+        ], "a local runtime actor appended history after its terminal boundary"
+        database_state = read_cycle_runtime_database_state(boundary["cycle_id"])
+        assert canonical_hash(database_state) == boundary["database_state_sha256"]
+        assert canonical_hash(database_state["cycle_events"]) == boundary[
+            "cycle_events_sha256"
+        ], "a local runtime actor appended a cycle event after the hold snapshot"
+        assert database_state["runtime_holds"] == []
+        assert all(
+            row["state"] == "delivered" and row["receipt_state"] == "recorded"
+            for row in database_state["outbox_rows"]
+        ), "a pending runtime outbox could append a cycle event during replay"
+        assert len(database_state["outbox_rows"]) == boundary["outbox_row_count"]
+
     async def run_conditional_cases():
         candidate_for_conditional_cases = _task8_rollback_image_or_skip(
             candidate_root=candidate_root,
@@ -6175,17 +7344,16 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
         test_cross_container_adapter_recorder_positive_control()
         recorder_replay_evidence = []
         for reason in ("expired_permit_receipt", "published_during_cancel"):
+            await assert_quiescent_runtime_boundary(reason)
             _restarted, reset_evidence = await reset_terminal_history_for_recorder(reason)
             primary_fixture["history_fixture"] = await capture_history_fixture(
                 temporal_target, primary_operation_ids
-            )
-            legacy_fixture["history_fixture"] = await capture_history_fixture(
-                temporal_target, legacy_operation_ids
             )
             await publish_progress()
             recorder_run_evidence = await test_cross_container_adapter_recorder_observes_zero_operations_for_both_holds(
                 reason
             )
+            await assert_quiescent_runtime_boundary(reason)
             recorder_replay_evidence.append(
                 {"reset": reset_evidence, "recorder_run": recorder_run_evidence}
             )
@@ -6194,16 +7362,10 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
         primary_fixture["history_fixture"] = await capture_history_fixture(
             temporal_target, primary_operation_ids
         )
-        legacy_fixture["history_fixture"] = await capture_history_fixture(
-            temporal_target, legacy_operation_ids
-        )
         await publish_progress()
 
     primary_fixture["history_fixture"] = await capture_history_fixture(
         temporal_target, primary_operation_ids
-    )
-    legacy_fixture["history_fixture"] = await capture_history_fixture(
-        temporal_target, legacy_operation_ids
     )
     await _publish_task8_progress_and_run_cases(
         progress_path,
@@ -6359,8 +7521,58 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
     # and observed module paths before it can exec a worker.
     a4_checkout = Path("/tmp/salience-f3-retained-039ddf39cb9b846c205f352e083293fbec6f9fc5")
     a4_src = a4_checkout / "src"
-    a4_module = a4_src / "salience/workflows/publication.py"
+    a4_checkout_head = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=a4_checkout,
+        capture_output=True,
+        text=True,
+        check=True,
+        timeout=10,
+    ).stdout.strip()
+    a4_checkout_status = subprocess.run(
+        ["git", "status", "--porcelain"],
+        cwd=a4_checkout,
+        capture_output=True,
+        text=True,
+        check=True,
+        timeout=10,
+    ).stdout
+    assert a4_checkout_head == PREFLOOR
+    assert a4_checkout_status == ""
+    a4_source_pin_path = "src/salience/cycles/legacy_publication_runtime.py"
+    a4_module = a4_src / "salience/cycles/legacy_publication_runtime.py"
     assert a4_module.is_file()
+    a4_source_pin = next(
+        item for item in tracked_lock["pin"]["source_files"]
+        if item["path"] == a4_source_pin_path
+    )
+    a4_runtime_import_pin = next(
+        item for item in tracked_lock["pin"]["runtime_imports"]
+        if item["module"] == "salience.cycles.legacy_publication_runtime"
+    )
+    a4_module_bytes = a4_module.read_bytes()
+    assert hashlib.sha256(a4_module_bytes).hexdigest() != a4_source_pin["sha256"]
+    assert _git_blob(a4_module_bytes) != a4_source_pin["git_blob"]
+    assert a4_runtime_import_pin["wheel_path"] == "salience/cycles/legacy_publication_runtime.py"
+    assert a4_runtime_import_pin["sha256"] == a4_source_pin["sha256"]
+    extracted_runtime = (
+        Path("/tmp/p1-publication-recovery-0043/runtime-prefix")
+        / tracked_lock["runtime_root"].lstrip("/")
+    )
+    record_path = Path(tracked_lock["pin"]["distribution_record_path"])
+    record_relative_path = record_path.relative_to(Path(tracked_lock["runtime_root"]))
+    record_file = extracted_runtime / record_relative_path
+    record_bytes = record_file.read_bytes()
+    assert hashlib.sha256(record_bytes).hexdigest() == tracked_lock["pin"][
+        "distribution_record_sha256"
+    ]
+    with record_file.open(newline="", encoding="utf-8") as record_stream:
+        record_entries = {row[0]: row for row in csv.reader(record_stream)}
+    a4_record_entry = record_entries[a4_runtime_import_pin["wheel_path"]]
+    installed_module = extracted_runtime / a4_runtime_import_pin["wheel_path"]
+    installed_module_bytes = installed_module.read_bytes()
+    assert a4_record_entry[1] == "sha256=" + _record_digest(installed_module_bytes)
+    assert a4_record_entry[2] == str(len(installed_module_bytes))
     a4_interpreter = Path("/home/admin/Salience/.venv/bin/python")
     assert a4_interpreter.is_file()
     a4_overlay = tmp_path / "a4-runtime-overlay"
@@ -6390,20 +7602,35 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
     }
 
     a4_runtime_lock = json.loads(tracked_lock_bytes)
-    a4_runtime_lock["runtime_root"] = "/app"
+    assert a4_runtime_lock["runtime_root"] == attestation["runtime_root"]
+    a4_runtime_target = str(
+        Path(a4_runtime_lock["runtime_root"])
+        / a4_source_pin_path.removeprefix("src/")
+    )
     result, candidate_lock_path, candidate_digest_path = run_denial(
-        "a4-runtime-root",
+        "a4-runtime-source",
         a4_runtime_lock,
         candidate_trust_root=True,
-        extra_mounts=((a4_overlay, "/app"),),
+        extra_mounts=((a4_module, a4_runtime_target),),
     )
     error_text = safe_text(result.stdout + result.stderr)
     assert result.returncode == 78
     assert "publication worker source pin mismatch" in error_text
-    base_evidence["denials"]["a4_runtime_root"] = {
-        "path": "/app",
+    base_evidence["denials"]["a4_runtime_source"] = {
+        "a4_source_commit": a4_checkout_head,
+        "a4_checkout_clean": True,
+        "source_pin_path": a4_source_pin_path,
+        "a4_source_sha256": hashlib.sha256(a4_module_bytes).hexdigest(),
+        "a4_source_git_blob": _git_blob(a4_module_bytes),
+        "candidate_source_sha256": a4_source_pin["sha256"],
+        "candidate_source_git_blob": a4_source_pin["git_blob"],
+        "source_path": str(a4_module),
+        "in_container_path": a4_runtime_target,
+        "runtime_root": a4_runtime_lock["runtime_root"],
         "exit_code": result.returncode,
         "diagnostic": error_text.strip(),
+        "source_pin_check_reached": True,
+        "worker_import_or_registration_reached": False,
         "worker_exec_reached": False,
     }
 

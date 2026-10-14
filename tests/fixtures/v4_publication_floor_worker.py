@@ -23,6 +23,18 @@ CONTROL_LOCK = "/run/salience-control/publication-worker-launch-lock.json"
 CONTROL_DIGEST = "/run/salience-control/publication-worker-launch-lock.sha256"
 ADAPTER_RECORDER_FIXTURE = "/run/task7-adapter-operation-recorder.py"
 NETWORK = "salience_default"
+TASK8_RECORDER_NAME_PREFIX = "task8-adapter-recorder-"
+TASK8_RECORDER_PROJECT = "salience-p1-publication-recovery-0043"
+TASK8_RECORDER_COMMAND = (
+"-I",
+"-B",
+"-S",
+    "/run/v4-publication-adapter-operation-receiver.py",
+    "--host",
+    "0.0.0.0",
+    "--port",
+    "8081",
+)
 QUALIFICATION_PROGRESS_FIELDS = frozenset(
     {
         "schema_version",
@@ -79,7 +91,7 @@ _LEGACY_NULL_FIXTURE_FIELDS = frozenset(
         "workspace_id",
         "operation_ids",
         "hold_ids",
-        "history_fixture",
+        "execution_mode",
         "liability_snapshot_hashes",
         "hold_row_hashes",
         "legacy_null_operation_id",
@@ -114,6 +126,28 @@ for current, directories, names in os.walk(root, followlinks=False):
                 pyc_files.append(relative)
 print(json.dumps({"files": files, "pyc_files": sorted(pyc_files)}, sort_keys=True, separators=(",", ":")))
 """
+
+
+def is_task8_adapter_recorder_container(
+    container: dict[str, object], *, expected_image_id: str
+) -> bool:
+    """Recognize only the Task 8 receiver, never a candidate-image worker."""
+    name = str(container.get("Name", "")).lstrip("/")
+    config = container.get("Config")
+    if not isinstance(config, dict):
+        return False
+    labels = config.get("Labels")
+    if not isinstance(labels, dict):
+        return False
+    return (
+        container.get("Image") == expected_image_id
+        and name.startswith(TASK8_RECORDER_NAME_PREFIX)
+        and bool(name.removeprefix(TASK8_RECORDER_NAME_PREFIX))
+        and labels.get("com.docker.compose.project") == TASK8_RECORDER_PROJECT
+        and labels.get("com.docker.compose.service") == "worker"
+        and config.get("Entrypoint") == ["/usr/local/bin/python"]
+        and config.get("Cmd") == list(TASK8_RECORDER_COMMAND)
+    )
 _ADAPTER_RECORDER_WORKER_BOOTSTRAP = r"""import importlib.util, os, sys
 runtime_root = sys.argv[1]
 sys.path.insert(0, runtime_root)
@@ -383,7 +417,15 @@ async def write_qualification_progress(
         assert fixture["operation_ids"] == {
             reason: str(UUID(value)) for reason, value in fixture["operation_ids"].items()
         }
-        _validate_history_fixture(fixture["history_fixture"], fixture["operation_ids"])
+        if fixture is rollback_launch_fixture:
+            _validate_history_fixture(fixture["history_fixture"], fixture["operation_ids"])
+        else:
+            assert fixture["execution_mode"] == {
+                "mode": "preflight_only",
+                "denial_stage": "before_worker_registration",
+                "worker_started": False,
+                "outbox_dispatched": False,
+            }
         _require_fixture_target(fixture["disposable_targets"])
 
     assert rollback_launch_fixture["disposable_targets"]["database_name"] != (
@@ -430,13 +472,6 @@ async def write_qualification_progress(
     if inspect.isawaitable(ordinary_history_readback):
         ordinary_history_readback = await ordinary_history_readback
     assert ordinary_history_readback == rollback_launch_fixture["history_fixture"]
-    legacy_history_readback = read_histories(
-        legacy_null_v1_fixture["disposable_targets"]["temporal_target"],
-        legacy_null_v1_fixture["history_fixture"],
-    )
-    if inspect.isawaitable(legacy_history_readback):
-        legacy_history_readback = await legacy_history_readback
-    assert legacy_history_readback == legacy_null_v1_fixture["history_fixture"]
     recorder = rollback_launch_fixture["disposable_targets"]["adapter_recorder"]
     assert read_recorder_events(recorder["base_url"], recorder["run_id"]) == []
 
