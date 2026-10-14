@@ -4828,7 +4828,9 @@ def test_candidate_image_launcher_denies_pin_mutations_before_registration(
     expected_diagnostics = {
         "artifact-digest-mismatch": "retained publication worker wheel hash mismatch",
         "lock-digest-mismatch": "launch-lock bytes do not match independent trust root",
-        "launcher-hash-mismatch": "publication worker launcher source hash mismatch",
+        "launcher-hash-mismatch": (
+            "publication worker source pin mismatch: scripts/launch-v4-publication-worker.py"
+        ),
         "interpreter-hash-mismatch": "publication worker interpreter hash mismatch",
         "distribution-record-mismatch": "installed distribution record digest mismatch",
         "runtime-root-mismatch": "publication worker runtime root does not match the fixed root",
