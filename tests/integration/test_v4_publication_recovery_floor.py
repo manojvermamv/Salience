@@ -7322,7 +7322,8 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
     for reason, task_queue, operation_id in worker_cases:
         workflow_id = "salience-v4-legacy-operation:" + str(operation_id)
         handle = client.get_workflow_handle(workflow_id)
-        assert (await handle.describe()).status == WorkflowExecutionStatus.RUNNING
+        workflow_before_restart = await handle.describe()
+        assert workflow_before_restart.status == WorkflowExecutionStatus.RUNNING
         history_before_restart = await handle.fetch_history()
         event_id_before_restart = max(
             (event.event_id for event in history_before_restart.events), default=0
@@ -7334,6 +7335,31 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
             recorder_base_url, recorder_run_id
         )
         assert recorder_events_before == []
+        attempt_record_path = candidate_root / f"task8-worker-retry-attempt-{reason}.json"
+        attempt_record = {
+            "schema_version": "salience.task8-worker-retry-attempt.v1",
+            "application_commit": application_commit,
+            "image_id": expected_image_id,
+            "reason": reason,
+            "task_queue": task_queue,
+            "operation_id": str(operation_id),
+            "hold_id": expected_hold_ids[reason],
+            "workflow_id": workflow_id,
+            "workflow_run_id": workflow_before_restart.run_id,
+            "history_event_id_before_restart": event_id_before_restart,
+            "history_sha256_before_restart": hashlib.sha256(
+                b"".join(
+                    event.SerializeToString(deterministic=True)
+                    for event in history_before_restart.events
+                )
+            ).hexdigest(),
+            "container_name": name,
+            "recorder_run_id": recorder_run_id,
+            "recorder_worker_id": recorder_worker_id,
+            "recorder_events_before": recorder_events_before,
+            "phase": "ready-to-launch",
+        }
+        save_json(attempt_record_path, attempt_record)
         launch = worker_harness.start_rollback_worker(
             image=expected_image_id,
             database_url=database,
@@ -7394,6 +7420,7 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
                 "/run/salience-control/launch-v4-publication-worker.py": False,
                 "/run/salience-control/publication-worker-launch-lock.json": False,
                 "/run/salience-control/publication-worker-launch-lock.sha256": False,
+                "/run/task7-adapter-operation-recorder.py": False,
             }
             with pytest.raises(WorkflowFailureError) as failure:
                 await asyncio.wait_for(handle.result(), timeout=45)
@@ -7453,6 +7480,19 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
                 "logs_path": str(logs_path.relative_to(evidence_root)),
                 "logs_exit_code": stopped.get("logs_exit_code"),
             }
+            attempt_record.update(
+                {
+                    "container_id": launch["container_id"],
+                    "container_inspection": run_evidence.get("container_inspection"),
+                    "recorder_readback": run_evidence["adapter_operation_recorder"],
+                    "worker_log_sha256": hashlib.sha256(
+                        logs_path.read_bytes()
+                    ).hexdigest(),
+                    "stop": run_evidence["stop"],
+                    "phase": "worker-stopped-and-recorder-read-back",
+                }
+            )
+            save_json(attempt_record_path, attempt_record)
         assert run_evidence["stop"]["state"] == "exited"
         expected_hold_frame = {
             "expired_permit_receipt": "in submit_or_reconcile",

@@ -125,3 +125,90 @@ wheel `425b7122f6431459a15bc4fe7bbdd169692b152356a0f36c6895e3fd452e3d04`,
 and runtime manifest `3d58423ee9119db38c9a670c726c83692bef126d402e69f2a9ad98e05377b644`.
 This harness-only correction leaves the proven candidate invalidation ruling
 unchanged; the actual retry producer and all final checks must still be rerun.
+
+## Attempt 3 readback and exact mount correction
+
+The argv correction passed in the next actual-image run. Attempt 3 then exited 1
+in 34.21 seconds at the adjacent mount assertion: the real container had the
+three fixed control mounts plus the read-only recorder fixture mount
+`/run/task7-adapter-operation-recorder.py`. The assertion expected only the
+three control mounts. RED is preserved in
+`/tmp/p1-publication-recovery-successor-182c4e4/attempt-3/task8-producer.log`
+(exit 1; SHA256
+`3e95b85aaf1ff20aae207eb2b6c6c461bfff644d8ea8a04b5703cc1453f99e7b`). The
+worker was stopped by the test's `finally` path before `handle.result()`; this
+attempt did not reach or establish either actual retry recorder result.
+
+The archived strict progress SHA256 is
+`c234b17c50581749b3a96557a22f3672b9a8a9eac65d9542a07920cca4c77200`. Primary
+fixture database `recovery_floor_active_3bf3a996b8b9` was at 0043 with two
+holds; both persisted hold rows and complete liability snapshots matched the
+progress hashes. Legacy database `recovery_floor_legacy_19963e283fd9` was also
+at 0043 with two holds; its outbox readback showed three pending messages with
+zero attempts and no receipts. The DB readback is
+`failed-state-readback-databases.json` (SHA256
+`fc00c18616ddc9a17978b9c18f152dffa93ec5168e848889b3a39ac208a813bb`).
+
+The histories ended at event 27 and 44 before the attempted worker start. Their
+only subsequent events were natural workflow timeouts, at events 28 and 45;
+there were no activity-start events after the pre-retry boundaries. The exact
+workflow/run IDs, full deterministic history event bytes, and hashes are in
+`failed-state-readback-histories.json` (SHA256
+`5c8db2cd1be51bc41b1e4db7c3c815361dd00817a8c403170fa5323b36ce5875`). The
+worker log was empty. The receiver's qualification run was empty, but the old
+test did not persist its generated per-worker recorder run IDs before the mount
+assertion failed, so no per-worker zero-operation claim is made from this
+attempt.
+
+Cleanup verified the receiver was the sole live container from image
+`sha256:c880a41e4a20f1322ad579b0b8d3f8b5ae14fcdf13635458d33cdc8c747e09a0`,
+then removed only container
+`51b343a5fa84b1bd06485bd9db78f746a66aa0bca1446d348826d5e2981c05be`, dropped
+only the two exact attempt-3 fixture databases above after pre-drop readback,
+and archived then removed canonical progress. The progress archive remains in
+`attempt-3/worker-qualification-progress.failed.json`; cleanup JSON SHA256 is
+`eeb730b1a9471574ae0088c3cf49581e071074e3fb961e2a5f3cf3aaa63fa76c`.
+
+The next test-only correction adds the recorder fixture to the exact read-only
+mount assertion and writes a small per-reason attempt record before worker
+launch, including the workflow boundary and generated recorder IDs. The
+`finally` path updates it with container inspection, stop result, worker-log
+hash, and receiver readback. This ensures a future harness failure still leaves
+the recorder run ID needed for an independent readback.
+
+### Candidate invalidation recheck after the argv correction
+
+The ruling still does not require a wheel/image rebuild. The approved
+application-commit pin remains `182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f`; it is
+an explicit frozen application identity and is not inferred from later `HEAD`.
+The new changes since that pin are tests and reports, including the argv and
+mount assertions; no application source, migration, Alembic, Docker input,
+launcher, bootstrap, or lock contract changed. A fresh audit against the
+current `HEAD=e49131da50d792556b30d36dc88be4ae41145f9a` and the live worktree
+reconstructed all 211 tracked source rows from the lock. The path-set digest
+remains `14bddb59e1d7ad1f3d4fceb6b20e7ae0748848a93e89dc470a7af7b325dc88fe` and
+the canonical source manifest remains
+`58f27973abc9b3d34fa9f2eea1738c914659ff84f5151f64fdc493acca1c3005`; source
+rows matched byte-for-byte for the pinned application commit, current `HEAD`,
+and current worktree. The lock points to the same wheel SHA256
+`425b7122f6431459a15bc4fe7bbdd169692b152356a0f36c6895e3fd452e3d04`, while the
+candidate loader again passed Docker image inspection and all installed-runtime
+checks with progress absent: image `sha256:c880a41e4a20f1322ad579b0b8d3f8b5ae14fcdf13635458d33cdc8c747e09a0`, runtime
+manifest `3d58423ee9119db38c9a670c726c83692bef126d402e69f2a9ad98e05377b644`,
+9,151 entries, zero `.pyc`. The exact audit script and output are
+`attempt-3/candidate-invalidation-audit-current.py` and `.log` (exit 0). No
+candidate rebuild is required for the test-only mount/evidence correction; the
+Task 8 producer and affected final checks still must be rerun.
+
+The exact mount expectation and per-worker prelaunch evidence are now in the
+test harness. The two focused launch-shim tests passed after the correction:
+`test_start_rollback_worker_installs_recorder_on_the_actual_adapter_path` and
+`test_adapter_recorder_launch_shim_wraps_authenticated_launcher_exec` (**2
+passed, 152 deselected, 0.15s**, exit 0), captured in
+`attempt-3/post-mount-fix-focused.log` and `.exit`. The changed integration test
+also passed `.venv/bin/python -m py_compile`; `git diff --check` passed. One
+initial focused invocation while correcting the test failed during collection
+from an indentation error and is retained as
+`attempt-3/argv-and-mount-focused-green.log` (exit 4); the test source was
+corrected before this passing invocation. The exact-image mount assertion and
+actual retry-recorder assertions remain pending the next fresh producer run.

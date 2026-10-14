@@ -114,3 +114,51 @@ candidate loader passed with progress absent. The test-only correction does not
 change wheel/image inputs. A fresh exact-candidate Task 8 producer and the
 consolidated qualification remain required; final status will be appended here
 with the resulting IDs, hashes, test counts, and cleanup evidence.
+
+### Attempt 3 failure and cleanup
+
+The next fresh producer run passed the corrected recorder-shim argv check but
+failed 34.21 seconds later because the actual worker container includes a fourth
+read-only mount for `/run/task7-adapter-operation-recorder.py`. The test stopped
+the worker in its `finally` path before waiting for `handle.result()`. The exact
+log exited 1 and is retained at
+`/tmp/p1-publication-recovery-successor-182c4e4/attempt-3/task8-producer.log`.
+This attempt therefore did not reach either actual pending-activity retry
+recorder result.
+
+Primary database `recovery_floor_active_3bf3a996b8b9` retained both candidate
+holds, and both hold-row and complete liability hashes matched strict progress.
+The legacy fixture database was `recovery_floor_legacy_19963e283fd9`; its
+readback retained two rows and showed three pending outbox messages with zero
+attempts and no receipts. The primary and legacy fixture databases were dropped
+only after readback. The canonical progress was archived at
+`attempt-3/worker-qualification-progress.failed.json` (SHA256
+`c234b17c50581749b3a96557a22f3672b9a8a9eac65d9542a07920cca4c77200`) and then
+removed. Cleanup evidence is `attempt-3/cleanup-attempt3.json` (SHA256
+`eeb730b1a9471574ae0088c3cf49581e071074e3fb961e2a5f3cf3aaa63fa76c`).
+
+The primary Temporal histories ended before worker retry at events 27 and 44;
+they gained only natural workflow-timeout events 28 and 45, with no new
+activity-start event. Full history event bytes and IDs are preserved in
+`attempt-3/failed-state-readback-histories.json`. The worker log was empty. The
+pre-fix test did not persist the generated per-worker recorder IDs before the
+mount assertion, so this attempt makes no per-worker recorder result claim.
+
+The assertion is being corrected to include the fourth read-only mount. The
+producer will also persist each per-worker recorder ID, workflow boundary, and
+container name before launch, then update that attempt record during cleanup.
+The 182c4e4 candidate remains valid: the pinned source path set and all 211
+canonical content rows matched at the application commit, current `HEAD`, and
+worktree; the wheel, exact image, and installed runtime loader passed. These
+changes are test/report-only and do not trigger a candidate rebuild.
+
+The test harness correction is now applied and the two focused recorder shim
+tests pass (**2 passed, 152 deselected, 0.15s**, exit 0); output is retained in
+`attempt-3/post-mount-fix-focused.log` and `.exit`. The changed integration test
+passed `.venv/bin/python -m py_compile`, and `git diff --check` passed. An
+initial focused invocation during the edit failed at collection due to an
+indentation error (`attempt-3/argv-and-mount-focused-green.log`, exit 4); the
+source was corrected before the passing invocation. The next fresh exact-image
+producer still needs to pass the four-mount assertion and record both actual
+pending-activity retry recorder results before successor qualification can be
+claimed.
