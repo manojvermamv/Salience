@@ -4,193 +4,334 @@ Salience is a self-hostable, provider-neutral content operating system built aro
 
 ## Current status and evidence
 
-The current Task 10 application candidate is `5cb57910c2c6dc2f6ea37da75640c5c947c8907b`, with the artifact-qualification harness and tracked launch lock at `14801007310232f59708566ca9a3eefb80bfea87`. Its retained-wheel, effects-disabled fixture rehearsal passed for both publication hold reasons; the 20-test focused matrix and a separate named image rehearsal passed. Task 11's independent review, meta-review, final artifact rerun and exact-head checks remain pending, so this is not yet the supported floor. The last full non-live suite passed **614 tests** on earlier candidate `7878208e7a353f93bb70279ad0dd7f0760f93ec4`; that result has not been rerun on `5cb5791`. See the [current publication recovery-hold evidence](docs/v4/publication-recovery-hold-evidence.json).
+The frozen application/artifact candidate is `182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f`; its final clean non-live run passed **796**, skipped **17**, and emitted **3 warnings**. Candidate-bound image, wheel, runtime, inventory and launch-lock pins are in the [successor evidence addendum](docs/v4/publication-recovery-hold-successor-evidence.json) and [Task 8 report](.superpowers/sdd/2026-10-13-p1-publication-recovery-floor-repair/task-8-report.md). Task 10 candidate `5cb5791` remains unsupported as the rollback floor; the earlier 614-test result remains bound to `7878208`.
 
-The corrected-publication rereview returned `NO_FINDINGS_WITHIN_REVIEWED_FIXTURE_CORRECTION_SCOPE` for application `a4b2368cdb463939d093020224a5b5667392aee6`, with documentation and observed HEAD `d0311725686d81b7b4747c2d6225986e5ea3a524`; its meta-review returned `ACCEPT`. That review covers only its A4 correction scope and does not review the current Task 10 candidate.
+The reviewed and pushed feature checkpoint is `6f5edc77edbfe189e46de4254c2fdb21c5652bce`. GPT-6.1 reviewed 59 commits / 38 changed files and found **0 Critical / 0 Important / 1 nonblocking Minor**; GPT-5.6 meta-review accepted that assessment. [Actions run 38592066455](https://github.com/manojvermamv/Salience/actions/runs/38592066455) passed both required jobs, `verify` and `p0-regression`, with **787 passed / 26 expected skips / 3 warnings**. That hosted result is separate from the local `182c4e4` qualification. Formal PR approval is **NOT RUN**; `main` (`8e50d68efbf2bec2aabfb2fe3226e01635de2adb`) remains unmerged. This documentation refresh creates a later docs-only head; its own required CI must be verified after push.
+
+The corrected-publication rereview returned `NO_FINDINGS_WITHIN_REVIEWED_FIXTURE_CORRECTION_SCOPE` for application `a4b2368cdb463939d093020224a5b5667392aee6`, with documentation and observed HEAD `d0311725686d81b7b4747c2d6225986e5ea3a524`; its meta-review returned `ACCEPT`. That review covers only its A4 correction scope and does not review candidate `182c4e4` or qualify production routing/effects.
 
 **Historical publication qualification:** `a4b2368cdb463939d093020224a5b5667392aee6` passed **21 focused / 604 full non-live tests**, with **352 source hashes**, for the original legacy intelligence, selected-brief, no-send dummy, dry-creative, governed-publication stages and both original native schedule conversions. It used isolated fixtures, a zero publication budget and disabled effects. See the [historical application evidence](docs/v4/legacy-publication-evidence.json).
 
 **Historical published checkpoint and CI:** `a2e73c7242d67388e8cd3be4361283cd8e6c081a` was the published feature/documentation checkpoint. [CI run 37346137016](https://github.com/manojvermamv/Salience/actions/runs/37346137016) passed `verify` and `p0-regression` for that checkpoint; `p0-regression` reported **604 passed** and **three warnings**. This is not a CI result for `7878208`.
 
-The parallel-agent extension remains a separately scoped fixture result at `2653d2ecb3f0d5bb8ea6560de274137dd6032a96`. Current fixture evidence advances R18/R32 hold and ownership coverage only. Production effects remain disabled; production-wide revocation, general policy, production routing and live schedule inventory, production recovery workers, R33/R34, RG0/RG1, and P2–P7 remain open or held. `main` remains unmerged and formal PR approval remains NOT RUN.
+The parallel-agent extension is a separate fixture qualification at `2653d2ecb3f0d5bb8ea6560de274137dd6032a96` (**45 focused / 540 full non-live PASS**, 325 source hashes); RG5 and production scaling/live models remain held. Production effects remain disabled, fixture publication budget is zero, RG0/full RG1 are **HELD**, P2–P7 remain gated, and optional P6 is disabled. `main` remains unmerged and formal PR approval remains NOT RUN.
 
 | Area | Current evidence | Production status |
 | --- | --- | --- |
-| Task 1–10 publication recovery candidate | The `5cb5791` pinned image passed both-reason local fixture recovery; Task 10 focused matrix: 20 passed | Task 11 review remains pending; effects disabled; RG0 and RG1 are **HELD** |
+| Frozen 0043 application candidate | `182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f`; 796 passed / 17 skipped / 3 warnings in the final clean non-live run | Candidate-scoped local fixture qualification; effects disabled; RG0 and full RG1 are **HELD** |
+| Reviewed and pushed feature head | `6f5edc77edbfe189e46de4254c2fdb21c5652bce`; GPT-6.1 0/0/1 Minor, GPT-5.6 meta-review accepted; Actions run 38592066455 passed both required jobs (787/26/3) | Formal PR approval **NOT RUN**; `main` is unmerged; later docs-only head needs its own post-push CI readback |
 | Historical original legacy stages and native schedules | Locally qualified at application `a4b2368` within the dated 21/604/352 fixture evidence | No live provider or production schedule routing qualification |
 | Later phases | P2–P7 gated/planned; optional P6 disabled | Not released |
 | Main branch | `8e50d68efbf2bec2aabfb2fe3226e01635de2adb` | Unmerged; formal independent PR approval remains NOT RUN |
 
-Local green status below means implemented and qualified in a fixture scope. It does not mean production-ready. Production effects remain disabled, RG0/RG1 remain held, and production is not fully integrated or released.
+Green status means implemented and qualified in local fixture scope; it does not mean production-ready. Production effects remain disabled, RG0/full RG1 remain held, and production is not fully integrated or released.
 
 ## V4 target architecture
 
-This overview shows the complete target and the status of each area. The arrows into held or planned areas show intended architecture; they do not assert that external effects or later phases are enabled.
+The two diagrams use one status key: green solid is implemented and qualified in local fixtures; amber marks held or disabled boundaries; blue dashed is planned target flow that is not wired or enabled; gray is reference-only. Local test qualification does not establish production readiness.
 
-An approved creative decision is immutable: a changed governed decision creates a new distribution and ready-package version. `ReadyToPublishPackage@v1` is the only valid Phase-9 publishing input; V4 additionally requires the current account-bound request and G3 permit.
+An approved creative decision is immutable: a changed governed decision creates a new distribution and ready-package version. `ReadyToPublishPackage@v1` is the only valid Phase-9 publishing input; V4 also requires the current account-bound request and G3 permit.
 
 ```mermaid
 flowchart TB
-  subgraph ingress["People and ingress"]
-    direction LR
-    PEOPLE["Operators and program owners"]
-    SIGNED["Signed API, SDK, and CLI"]
-    SCHEDULES["Native schedules"]
-    PEOPLE --> SIGNED
+  subgraph legend["Status legend"]
+    LGREEN["Implemented / qualified in local fixture scope"]
+    LAMBER["Held / disabled boundary"]
+    LBLUE["Planned target flow; not wired or enabled"]
+    LGRAY["Reference-only"]
   end
 
-  subgraph localPath["LOCAL: fixture-qualified implementation only; not production-ready"]
-    GOVERN["P0/P1 governance and admission<br/>Production gates held"]
-    STATE["PostgreSQL canonical state<br/>Transactional outbox and inbox"]
-    DISPATCH["Ordered dispatcher<br/>Token-fenced delivery"]
-    TEMPORAL["Temporal workflows<br/>Compatible workers"]
-    RESEARCH["Research and evidence"]
-    BRIEFS["Selected briefs"]
-    CREATIVE["Creative production"]
-    PUBLICATION["Governed publication<br/>Zero-budget fixture"]
-  end
-  subgraph parallelLane["SEPARATE local callable-agent fixture lane"]
-    PARALLEL_COMMAND["Separate signed fixture command"]
-    AGENTS["Bounded parallel AI agents<br/>Separately qualified extension"]
-    PARALLEL_COMMAND --> AGENTS
-  end
-  EFFECTS["External providers and effects<br/>PRODUCTION HELD; effects disabled"]
-  OBSERVATION["Observation and outcomes<br/>PLANNED / GATED"]
-  LEARNING["Learning proposals<br/>PLANNED / GATED"]
-  RELEASE["Strategy and capability release<br/>PLANNED / GATED"]
-  TRAINING["Optional training<br/>OPTIONAL; P6 disabled"]
-  OPS["Operations, restore, and rollout<br/>PRODUCTION HELD"]
+  subgraph runtime["SALIENCE RUNTIME BOUNDARY"]
+    subgraph fixture["CURRENT LOCAL FIXTURE LANE — no production effects"]
+      PEOPLE["Operator or program owner"]
+      SCHEDULES["Separately qualified local schedule"]
+      SIGNED["Signed fixture API / SDK / CLI"]
+      GOVERN["Scope, current grants, stop revision,<br/>baseline, policy and admission"]
+      BIND["Immutable goal, intent, cycle,<br/>context and operation binding"]
+      STORE["PostgreSQL transaction:<br/>canonical state + outbox / inbox"]
+      DISPATCH["Ordered token-fenced dispatcher"]
+      TEMPORAL["Temporal control workflow<br/>and compatible worker"]
+      SELECT["Dispatch exactly ONE stage<br/>from the immutable binding"]
+      INTEL["Original intelligence / selected-brief variant"]
+      DUMMY["No-send dummy stage"]
+      CREATIVE["Dry creative stage"]
+      NO_PACKAGE["No media asset or ready package"]
+      READY["Separately supplied exact<br/>ReadyToPublishPackage@v1"]
+      PUB["Governed publication stage:<br/>account + approval + budget bindings"]
+      FIXTURE_PUBLISHER["Internal fixture publisher<br/>zero budget; effects disabled"]
+      EXPIRED["Retry / submit readback:<br/>accepted or processing receipt + expired permit"]
+      CANCELLED["Cancellation readback:<br/>fixture receipt is already published"]
+      HOLD["Immutable 0042 / 0043 hold row<br/>21-key v1 liability snapshot + SHA-256 fingerprint"]
+      TYPED_HOLD["Non-retryable LegacyPublicationRecoveryHeld<br/>no business-success projection;<br/>typed recovery required; no automatic resume"]
+    end
 
+    subgraph parallel["SEPARATE PARALLEL-AGENT FIXTURE LANE"]
+      TEAM_COMMAND["Separate signed agent-team<br/>API / SDK / CLI entry"]
+      TEAM_WORKER["Dedicated parallel-agent worker"]
+      CLAIMS["Shared PostgreSQL claims"]
+      CHILDREN["Bounded read-only children<br/>16 tasks / team; concurrency 8 / team,<br/>16 / workspace; 300-second deadline; zero spend"]
+      LINEAGE["Canonical parent / child lineage"]
+      DIRECT["Direct fixture callable entry"]
+      RUNNER["LeadContentAgent / TeamRunner"]
+      DIRECT_CHILDREN["Bounded independent child calls"]
+      TEAM_EVIDENCE["Separate qualification at 2653d2e:<br/>45 focused / 540 full non-live PASS<br/>RG5 and production scaling remain held"]
+    end
+
+    subgraph target["FUTURE TARGET — P2–P7 gated / planned"]
+      EFFECT_GATE["Production effects gate closed<br/>RG0 and full RG1 HELD"]
+      CONTENT["Target content stages"]
+      DERIVATIVES["Immutable platform derivatives<br/>account-scoped package versions"]
+      YOUTUBE["YouTube private adapter exists;<br/>disabled / unverified;<br/>transfer, processing, readback and<br/>independent live qualification pending"]
+      INSTAGRAM["Instagram official API publisher<br/>and analytics adapters planned"]
+      LINKEDIN["LinkedIn official API publisher<br/>and analytics adapters planned"]
+      OPTIONAL_PLATFORMS["TikTok / future providers<br/>optional extension candidates"]
+      READ_ANALYTICS["Separate read-only provider<br/>analytics adapters — P3 / RG3 gated"]
+      METRICS["Raw + normalized observations;<br/>versioned metric mappings and cursors"]
+      ATTRIBUTION["Deterministic outcomes, attribution<br/>and correction lineage"]
+      PROPOSAL["Advisory LearningProposal@v1<br/>no control authority"]
+      EXPERIMENT["Gated experiment assignment<br/>and exposure — P4 / RG4"]
+      POLICY["Independent cadence and<br/>control policy boundary"]
+      RELEASE["Audited strategy / capability<br/>release — P5 / RG5"]
+      TRAINING["Optional P6 training<br/>disabled"]
+      OPS["Production operations, restore<br/>and rollout remain held"]
+    end
+  end
+
+  subgraph reference["OUTSIDE SALIENCE RUNTIME"]
+    AGENTTUBE["AgentTube pinned source-inspection reference only<br/>No Salience runtime, dependency, schema or wholesale port.<br/>Native reimplementation requires comparison, provenance / license review,<br/>owning-phase approval and P1 / RG0 / RG1 gates."]
+  end
+
+  PEOPLE --> SIGNED
   SIGNED --> GOVERN
-  SIGNED -.-> PARALLEL_COMMAND
   SCHEDULES --> GOVERN
-  GOVERN --> STATE
-  STATE --> DISPATCH
+  GOVERN --> BIND
+  BIND --> STORE
+  STORE --> DISPATCH
   DISPATCH --> TEMPORAL
-  TEMPORAL --> RESEARCH
-  RESEARCH --> BRIEFS
-  BRIEFS --> CREATIVE
-  CREATIVE --> PUBLICATION
-  PUBLICATION -.-> EFFECTS
-  EFFECTS -.-> OBSERVATION
-  OBSERVATION -.-> LEARNING
-  LEARNING -.-> RELEASE
-  RELEASE -.-> TRAINING
-  STATE -.-> OPS
-  TEMPORAL -.-> OPS
-  EFFECTS -.-> OPS
-
-  classDef local fill:#e4f3e7,stroke:#347a46,color:#173b20
-  classDef held fill:#ffe8d8,stroke:#b45b18,color:#572b0c
-  classDef planned fill:#e6efff,stroke:#3b67a0,color:#193354
-  classDef optional fill:#eee8f5,stroke:#71518f,color:#362247
-  class GOVERN,STATE,DISPATCH,TEMPORAL,RESEARCH,BRIEFS,CREATIVE,PUBLICATION,AGENTS,PARALLEL_COMMAND local
-  class EFFECTS,OPS held
-  class OBSERVATION,LEARNING,RELEASE planned
-  class TRAINING optional
-```
-
-P0/P1 controls govern signed commands and schedule ticks before work is admitted. PostgreSQL commits canonical identities, context, allocation, admission, and outbox records together. The target overview groups product phases; it does not mean one legacy execution automatically traverses every stage. The bounded parallel-agent extension has its own signed fixture command and worker lane, separate from the original legacy intelligence workflow. In the target system, provider outcomes feed observation, learning proposals, and controlled strategy or capability release. Those later phases, real provider effects, and production operations remain gated.
-
-## Locally qualified governed execution path
-
-The following path describes the local implementation boundary. Each admitted operation selects exactly one legacy stage from its immutable binding. Stage activities recheck current authority; the internal fixture adapters cannot send externally.
-
-```mermaid
-flowchart TB
-  subgraph ingress["Signed and scheduled ingress"]
-    direction LR
-    CMD["Signed command or native schedule tick<br/>LOCAL fixture-qualified"]
-    AUTH["Authenticate subject; check current scoped grant,<br/>stop revision, baseline, and policy"]
-    ADMIT["Admit under current scope and limits"]
-    ID["Bind goal, intent, cycle, context,<br/>and operation identity"]
-    CMD --> AUTH --> ADMIT --> ID
-  end
-
-  subgraph durable["Atomic state and ordered delivery"]
-    direction LR
-    COMMIT["Atomic PostgreSQL commit:<br/>allocation, admission, context, and outbox"]
-    DB["Canonical PostgreSQL state<br/>Transactional outbox and inbox"]
-    DISPATCH["Ordered token-fenced dispatcher"]
-    COMMIT --> DB --> DISPATCH
-  end
-
-  subgraph runtime["Canonical Temporal control workflow"]
-    CTRL["Compatible control workflow<br/>Replay, Continue-As-New,<br/>and finite execution wait"]
-    CONSUME["Consume activity"]
-    RECEIPT["Durable inbox receipt committed"]
-    PERMIT["Issue and claim fixture permit"]
-    STAGECHECK["Recheck current permit, policy, and bound stage;<br/>account, approval, and rights as applicable"]
-    SELECT["Dispatch exactly ONE stage selected<br/>by the immutable admitted binding"]
-    CTRL --> CONSUME --> RECEIPT --> PERMIT --> STAGECHECK --> SELECT
-  end
-
-  subgraph stages["Alternative bound legacy workflows: one per admission"]
-    direction TB
-    INTEL["Original intelligence workflow"]
-    BRIEF["Selected-opportunity intelligence variant/output:<br/>selected brief"]
-    DUMMY["No-send dummy workflow"]
-    CREATIVE["Dry creative workflow"]
-    NO_PACKAGE["No media asset or ready package"]
-    PUB["Governed publication workflow:<br/>exact package, account, approval, and budget"]
-    INTEL --> BRIEF
-    CREATIVE --> NO_PACKAGE
-  end
-  READY["Separately supplied exact ready package;<br/>not produced by dry creative"]
-  CASEWAIT["Separate opt-in FixtureWaitDriver and wait workflow<br/>review/case deadlines; existing cycle, context, and operation"]
-
-  subgraph parallelLane["Separate local callable-agent lane"]
-    TEAM_COMMAND["Separate signed fixture API, SDK, or CLI command"]
-    TEAM_WORKER["Dedicated parallel-agent worker boundary"]
-    FANOUT["Bounded parallel agents<br/>separately fixture-qualified"]
-    TEAM_COMMAND --> TEAM_WORKER --> FANOUT
-  end
-
-  FIXTURE["Internal fixture/mock boundary<br/>zero budget; effects disabled"]
-  EXTERNAL["External provider boundary<br/>PRODUCTION HELD"]
-  RECORDS["Immutable receipts; liability and reservation;<br/>cases and notifications; reconciliation and archive"]
-  TRACE["Trace, audit, and provenance link identities<br/>across ingress, state, workflow, and stage results"]
-  OPS["Rollback keeps patched histories on compatible workers<br/>LOCAL fixture restart only; production routing and restore HELD"]
-
-  ID --> COMMIT
-  DISPATCH --> CTRL
+  TEMPORAL --> SELECT
   SELECT --> INTEL
   SELECT --> DUMMY
   SELECT --> CREATIVE
+  CREATIVE --> NO_PACKAGE
   SELECT --> PUB
   READY --> PUB
-  PUB --> FIXTURE
-  FIXTURE -.-> EXTERNAL
-  EXTERNAL -.-> RECORDS
-  CASEWAIT --> RECORDS
+  PUB --> FIXTURE_PUBLISHER
+  FIXTURE_PUBLISHER -->|"expired-permit recovery receipt"| EXPIRED
+  FIXTURE_PUBLISHER -->|"cancel readback is published"| CANCELLED
+  EXPIRED --> HOLD
+  CANCELLED --> HOLD
+  HOLD --> TYPED_HOLD
+  TEAM_COMMAND --> TEAM_WORKER
+  TEAM_WORKER --> CLAIMS
+  CLAIMS --> CHILDREN
+  CHILDREN --> LINEAGE
+  DIRECT --> RUNNER
+  RUNNER --> DIRECT_CHILDREN
+  DIRECT_CHILDREN --> LINEAGE
+  CLAIMS --> TEAM_EVIDENCE
+  EFFECT_GATE -.-> CONTENT
+  CONTENT -.-> DERIVATIVES
+  DERIVATIVES -.-> YOUTUBE
+  DERIVATIVES -.-> INSTAGRAM
+  DERIVATIVES -.-> LINKEDIN
+  DERIVATIVES -.-> OPTIONAL_PLATFORMS
+  YOUTUBE -.-> READ_ANALYTICS
+  INSTAGRAM -.-> READ_ANALYTICS
+  LINKEDIN -.-> READ_ANALYTICS
+  OPTIONAL_PLATFORMS -.-> READ_ANALYTICS
+  READ_ANALYTICS -.-> METRICS
+  METRICS -.-> ATTRIBUTION
+  ATTRIBUTION -.-> PROPOSAL
+  PROPOSAL -.-> EXPERIMENT
+  POLICY -.-> EXPERIMENT
+  EXPERIMENT -.-> RELEASE
+  POLICY -.-> RELEASE
+  RELEASE -.-> TRAINING
+
+  classDef local fill:#e4f3e7,stroke:#347a46,color:#173b20
+  classDef held fill:#ffe8d8,stroke:#b45b18,color:#572b0c
+  classDef planned fill:#e6efff,stroke:#3b67a0,color:#193354,stroke-dasharray:5 5
+  classDef reference fill:#eeeeee,stroke:#777777,color:#333333
+  classDef legend fill:#ffffff,stroke:#777777,color:#222222
+  class PEOPLE,SCHEDULES,SIGNED,GOVERN,BIND,STORE,DISPATCH,TEMPORAL,SELECT,INTEL,DUMMY,CREATIVE,NO_PACKAGE,READY,PUB,FIXTURE_PUBLISHER,EXPIRED,CANCELLED,TEAM_COMMAND,TEAM_WORKER,CLAIMS,CHILDREN,LINEAGE,DIRECT,RUNNER,DIRECT_CHILDREN,TEAM_EVIDENCE local
+  class HOLD,TYPED_HOLD,EFFECT_GATE,YOUTUBE,TRAINING,OPS held
+  class CONTENT,DERIVATIVES,INSTAGRAM,LINKEDIN,OPTIONAL_PLATFORMS,READ_ANALYTICS,METRICS,ATTRIBUTION,PROPOSAL,EXPERIMENT,POLICY,RELEASE planned
+  class AGENTTUBE reference
+  class LGREEN,LAMBER,LBLUE,LGRAY legend
+  linkStyle 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27 stroke:#347a46,stroke-width:2px
+  linkStyle 28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45 stroke:#3b67a0,stroke-width:2px,stroke-dasharray:5 5
+```
+
+The solid local path shows admission, immutable identity binding, atomic PostgreSQL state/outbox/inbox writes, ordered delivery, Temporal control and one selected legacy stage. Intelligence/selected brief, no-send dummy, dry creative and governed publication are alternatives; dry creative ends with no package, while publication receives a separate exact ready package and its own account, approval and budget bindings. A fixture receipt that meets either recovery-hold condition produces an immutable liability hold and typed non-retryable result without a success projection. Production recovery workers, live readback, alerts and external-effect recovery remain held.
+
+The parallel-agent lane has a separate signed ingress and worker/claim path. Direct `LeadContentAgent`/`TeamRunner` fixture calls have their own in-process entry; both paths can record scoped parent/child lineage, and neither is a child of the original intelligence workflow. Its 2653d2e evidence remains a separate fixture qualification. AgentTube is shown outside the runtime with no execution or dataflow edge.
+
+The blue dashed rail is target intent only. Each platform adapter is independently gated; YouTube is disabled and unverified, while Instagram and LinkedIn adapters are planned and TikTok/future providers are optional candidates. Read-only analytics feed raw/normalized observations, deterministic outcomes and attribution/correction lineage, then advisory learning proposals and gated experiment exposure. An independent policy boundary controls any later audited release; a learning proposal cannot start a cycle or change a production default.
+
+## Locally qualified governed execution path
+
+This execution view expands the current no-effects fixture path and its publication-recovery exception. The diagrams use the shared legend above: green solid is implemented and qualified in local fixtures; amber marks held or disabled boundaries; blue dashed is planned target flow that is not wired or enabled; gray is reference-only. Local test qualification does not establish production readiness.
+
+```mermaid
+flowchart TB
+  subgraph legend["Status legend"]
+    LGREEN["Implemented / qualified in local fixture scope"]
+    LAMBER["Held / disabled boundary"]
+    LBLUE["Planned target flow; not wired or enabled"]
+    LGRAY["Reference-only"]
+  end
+
+  subgraph current["CURRENT LOCAL EXECUTION — fixture scope only"]
+    subgraph ingress["Signed and scheduled ingress"]
+      CMD["Signed fixture command or qualified local schedule tick"]
+      AUTH["Authenticate subject; check current scoped grants,<br/>stop revision, baseline and policy"]
+      ADMIT["Admit under current scope and limits"]
+      BIND["Bind immutable goal, intent, cycle,<br/>context and operation identity"]
+    end
+
+    subgraph durable["Atomic state and ordered delivery"]
+      COMMIT["Atomic PostgreSQL commit:<br/>allocation, admission, context and outbox"]
+      DB["Canonical PostgreSQL state<br/>transactional outbox and inbox"]
+      DISPATCH["Ordered token-fenced dispatcher"]
+    end
+
+    subgraph temporal["Canonical Temporal control workflow"]
+      CTRL["Compatible control workflow<br/>replay, Continue-As-New and finite execution wait"]
+      CONSUME["Consume activity"]
+      RECEIPT["Durable inbox receipt committed"]
+      PERMIT["Issue and claim fixture permit"]
+      STAGECHECK["Recheck current authority, permit, policy,<br/>account, approval, rights and bound stage"]
+      SELECT["Dispatch exactly ONE stage selected<br/>by the immutable admitted binding"]
+    end
+
+    subgraph stages["Alternative stage branches — one admission per branch"]
+      INTEL["Original intelligence workflow"]
+      BRIEF["Selected-opportunity variant<br/>produces selected brief"]
+      DUMMY["No-send dummy workflow"]
+      CREATIVE["Dry creative workflow"]
+      NO_PACKAGE["No media asset or ready package"]
+      PUB["Governed publication workflow<br/>exact package + account + approval + budget bindings"]
+      READY["Separately supplied exact<br/>ReadyToPublishPackage@v1"]
+    end
+
+    CASEWAIT["Separate opt-in FixtureWaitDriver / wait workflow<br/>review and case deadlines retain cycle, context and operation"]
+    FIXTURE["Internal fixture publisher / mock boundary<br/>zero publication budget; effects disabled"]
+    RECORDS["Canonical receipts, liabilities and reservations;<br/>cases, notifications, reconciliation and archive"]
+    TRACE["Trace, audit and provenance link identities<br/>across ingress, state, workflow and stage result"]
+  end
+
+  subgraph holds["FIRST-CLASS PUBLICATION RECOVERY HOLD OUTCOMES"]
+    EXPIRED["Retry / submit readback:<br/>accepted or processing fixture receipt<br/>and original permit is expired"]
+    CANCELLED["Cancellation readback:<br/>fixture operation is already published"]
+    HOLD_EXPIRED["Immutable 0042 / 0043 hold row:<br/>expired_permit_receipt<br/>21-key v1 liability snapshot + SHA-256 fingerprint"]
+    HOLD_CANCELLED["Immutable 0042 / 0043 hold row:<br/>published_during_cancel<br/>21-key v1 liability snapshot + SHA-256 fingerprint"]
+    TYPED_HOLD["Non-retryable LegacyPublicationRecoveryHeld<br/>retained identity and liabilities;<br/>no business-success projection; no automatic resume"]
+    VERIFY["Fixture restart / verifier only:<br/>both exact reason rows required;<br/>unchanged evidence bytes"]
+    PROD_RECOVERY["Production recovery workers, remote readback,<br/>alerts and external-effect recovery HELD"]
+  end
+
+  subgraph team["SEPARATE PARALLEL-AGENT LANE — not a legacy workflow child"]
+    TEAM_COMMAND["Separate signed fixture API / SDK / CLI command"]
+    TEAM_WORKER["Dedicated parallel-agent worker"]
+    TEAM_CLAIMS["Shared PostgreSQL worker claims"]
+    TEAM_CHILDREN["Bounded read-only children<br/>16 tasks / team; 8 concurrent / team;<br/>16 / workspace; 300-second deadline; zero fixture spend"]
+    TEAM_LINEAGE["Canonical scoped parent / child lineage"]
+    DIRECT["Direct in-process fixture entry"]
+    RUNNER["LeadContentAgent / TeamRunner"]
+    DIRECT_CHILDREN["Bounded independent child calls"]
+    TEAM_EVIDENCE["Separate 2653d2e fixture qualification<br/>45 focused / 540 full non-live PASS<br/>RG5 / production scaling / live models held"]
+  end
+
+  subgraph target["TARGET-ONLY RAIL — not used by current fixtures"]
+    TARGET_PACKAGE["Future approved publication package"]
+    YOUTUBE["YouTube private adapter exists;<br/>disabled / unverified; processing and readback pending"]
+    INSTAGRAM["Instagram official API publisher<br/>and analytics adapters planned"]
+    LINKEDIN["LinkedIn official API publisher<br/>and analytics adapters planned"]
+    FUTURE["TikTok / future platform candidates<br/>optional; independently gated"]
+    ANALYTICS["Separate provider read-only analytics contract<br/>full observation-to-release loop is in overview"]
+  end
+
+  REFERENCE["AgentTube reference-only boundary is shown in the overview;<br/>no runtime adapter or execution edge"]
+
+  CMD --> AUTH
+  AUTH --> ADMIT
+  ADMIT --> BIND
+  BIND --> COMMIT
+  COMMIT --> DB
+  DB --> DISPATCH
+  DISPATCH --> CTRL
+  CTRL --> CONSUME
+  CONSUME --> RECEIPT
+  RECEIPT --> PERMIT
+  PERMIT --> STAGECHECK
+  STAGECHECK --> SELECT
+  SELECT --> INTEL
+  INTEL --> BRIEF
+  SELECT --> DUMMY
+  SELECT --> CREATIVE
+  CREATIVE --> NO_PACKAGE
+  SELECT --> PUB
+  READY --> PUB
   BRIEF --> RECORDS
   DUMMY --> RECORDS
   NO_PACKAGE --> RECORDS
   PUB --> RECORDS
+  PUB --> FIXTURE
+  FIXTURE -->|"expired-permit retry / submit readback"| EXPIRED
+  FIXTURE -->|"cancel sees published fixture receipt"| CANCELLED
+  EXPIRED --> HOLD_EXPIRED
+  CANCELLED --> HOLD_CANCELLED
+  HOLD_EXPIRED --> TYPED_HOLD
+  HOLD_CANCELLED --> TYPED_HOLD
+  HOLD_EXPIRED --> VERIFY
+  HOLD_CANCELLED --> VERIFY
+  CASEWAIT --> RECORDS
   RECORDS --> DB
-  PUB -.-> TRACE
-  CTRL -.-> TRACE
-  CTRL -.-> OPS
+  PUB --> TRACE
+  CTRL --> TRACE
+  RECORDS --> TRACE
+  TEAM_COMMAND --> TEAM_WORKER
+  TEAM_WORKER --> TEAM_CLAIMS
+  TEAM_CLAIMS --> TEAM_CHILDREN
+  TEAM_CHILDREN --> TEAM_LINEAGE
+  DIRECT --> RUNNER
+  RUNNER --> DIRECT_CHILDREN
+  DIRECT_CHILDREN --> TEAM_LINEAGE
+  TEAM_CLAIMS --> TEAM_EVIDENCE
+  TARGET_PACKAGE -.-> YOUTUBE
+  TARGET_PACKAGE -.-> INSTAGRAM
+  TARGET_PACKAGE -.-> LINKEDIN
+  TARGET_PACKAGE -.-> FUTURE
+  YOUTUBE -.-> ANALYTICS
+  INSTAGRAM -.-> ANALYTICS
+  LINKEDIN -.-> ANALYTICS
+  FUTURE -.-> ANALYTICS
 
   classDef local fill:#e4f3e7,stroke:#347a46,color:#173b20
   classDef held fill:#ffe8d8,stroke:#b45b18,color:#572b0c
-  classDef planned fill:#e6efff,stroke:#3b67a0,color:#193354
-  classDef optional fill:#eee8f5,stroke:#71518f,color:#362247
-  class CMD,AUTH,ADMIT,ID,COMMIT,DB,DISPATCH,CTRL,CONSUME,RECEIPT,PERMIT,STAGECHECK,SELECT,INTEL,BRIEF,DUMMY,CREATIVE,NO_PACKAGE,READY,CASEWAIT,PUB,TEAM_COMMAND,TEAM_WORKER,FANOUT,FIXTURE,RECORDS,TRACE local
-  class EXTERNAL,OPS held
+  classDef planned fill:#e6efff,stroke:#3b67a0,color:#193354,stroke-dasharray:5 5
+  classDef reference fill:#eeeeee,stroke:#777777,color:#333333
+  classDef legend fill:#ffffff,stroke:#777777,color:#222222
+  class CMD,AUTH,ADMIT,BIND,COMMIT,DB,DISPATCH,CTRL,CONSUME,RECEIPT,PERMIT,STAGECHECK,SELECT,INTEL,BRIEF,DUMMY,CREATIVE,NO_PACKAGE,PUB,READY,CASEWAIT,FIXTURE,RECORDS,TRACE,TEAM_COMMAND,TEAM_WORKER,TEAM_CLAIMS,TEAM_CHILDREN,TEAM_LINEAGE,DIRECT,RUNNER,DIRECT_CHILDREN,TEAM_EVIDENCE local
+  class EXPIRED,CANCELLED,HOLD_EXPIRED,HOLD_CANCELLED,TYPED_HOLD,PROD_RECOVERY,YOUTUBE held
+  class TARGET_PACKAGE,INSTAGRAM,LINKEDIN,FUTURE,ANALYTICS planned
+  class REFERENCE reference
+  class LGREEN,LAMBER,LBLUE,LGRAY legend
+  linkStyle 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44 stroke:#347a46,stroke-width:2px
+  linkStyle 45,46,47,48,49,50,51,52 stroke:#3b67a0,stroke-width:2px,stroke-dasharray:5 5
 ```
 
-The shared delivery order is dispatcher, compatible canonical control workflow, consume activity, then durable inbox receipt. After the receipt is recorded, the control activity issues and claims the fixture permit; current policy and the immutable stage binding are checked before the adapter dispatches the one selected legacy workflow. Replay, Continue-As-New, and the finite execution wait belong to the canonical control workflow. Review and case deadlines use the separately registered `SalienceLocalWaitWorkflow`, started by the opt-in `FixtureWaitDriver` when fixture automatic waits are enabled; its due activity preserves the existing cycle, context, and operation identity. The dispatcher-to-consume path does not start that driver.
+The execution order is command/tick, current subject and grant plus stop/baseline/policy checks, admission and immutable bindings, atomic allocation/admission/context/outbox commit, canonical state, ordered dispatcher, compatible Temporal workflow, consume and durable inbox receipt, fixture permit, current authority/policy/stage checks, then exactly one stage. The stage branches are alternatives. Intelligence can produce a selected brief; dummy sends nothing; dry creative ends without a ready package; publication consumes a separately supplied exact ready package. The opt-in wait driver is separate from dispatcher-to-consume delivery.
 
-The stage branches are alternatives with separate admissions, not a serial chain. The intelligence workflow supports the selected-opportunity variant that produces a selected brief. The dry-creative fixture produces no ready package. Governed publication consumes a separately supplied exact ready package and its own account, approval, and budget bindings. The bounded parallel-agent extension is a separate signed fixture command and worker lane; no edge claims the original legacy intelligence workflow invokes it. Stage receipts, liabilities, reservations, cases, notifications, reconciliation, archive, trace, audit, and provenance remain linked to canonical state.
-
-Patched workflow histories require compatible workers through rollback. Local fixture rollback and restart evidence does not qualify production worker routing, coordinated restore, or external-effect recovery. The held provider boundary remains closed until the required production gates pass.
+The two local exception paths are `expired_permit_receipt` with an accepted/processing fixture receipt and expired permit, and `published_during_cancel` with a published fixture readback. Each writes its immutable 0042/0043 hold row with the full 21-key v1 liability snapshot and SHA-256 fingerprint, then raises non-retryable `LegacyPublicationRecoveryHeld`. Both preserve identity/liabilities and produce no business-success projection or automatic resume. Local restart/verifier rehearsal requires both exact reason rows and unchanged evidence bytes. Production worker routing, remote readback, alerts and external-effect recovery remain held. The separate parallel-agent paths use shared scoped parent/child concepts but do not branch from legacy intelligence. Dashed package-to-platform and analytics edges are target-only; fixture receipts do not flow into live analytics. AgentTube remains reference-only as shown above.
 
 ## What is and is not production-ready
 
-The local results qualify specific no-effects fixtures. They do not qualify live providers, real production accounts, nonzero publication budgets, production schedule inventory or routing, production-wide recovery and alert delivery, later-phase records, or a full RG1 release. The application and CI evidence answer separate questions: `a4b2368…` is the historical source-bound qualification; `a2e73c7…` is the published feature/documentation checkpoint; run `37346137016` is the exact-head GitHub CI readback for that checkpoint. The corrected-publication rereview covers only application `a4b2368` with documentation/observed HEAD `d031172`; it does not review Task 10 candidate `5cb5791`. No CI or PR approval is claimed for `5cb5791`.
+The local results qualify specific no-effects fixtures. They do not qualify live providers, real production accounts, nonzero publication budgets, production schedule inventory or routing, production-wide recovery and alert delivery, later-phase records, or a full RG1 release. The application and repository checks answer separate questions: application `182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f` has the candidate-bound local 796/17/3 result; reviewed and pushed branch head `6f5edc77edbfe189e46de4254c2fdb21c5652bce` has the accepted GPT-6.1/GPT-5.6 review chain and successful required Actions run 38592066455 (hosted 787/26/3). Those are different commits and result scopes. Formal PR approval is **NOT RUN**; `main` is unmerged. This README refresh creates a later docs-only head whose exact-head required CI must be checked after push.
 
-Production effects remain disabled. RG0 and RG1 are **HELD**. P2–P7 remain gated/planned, optional P6 remains disabled, and `main` remains at `8e50d68efbf2bec2aabfb2fe3226e01635de2adb` without this feature merged. Production is not fully integrated or released.
+Historical records remain tied to their original scopes: `a4b2368` is the original 21/604/352 local qualification; `a2e73c7` and run `37346137016` are an earlier published checkpoint and its CI; the corrected-publication rereview is limited to application `a4b2368` and documentation/observed HEAD `d031172`; and Task 10 candidate `5cb5791` is unsupported as the rollback floor. None substitutes for the current candidate or exact branch-head evidence.
+
+Production effects remain disabled, fixture publication budget is zero, and RG0/full RG1 are **HELD**. P2–P7 remain gated, optional P6 remains disabled, and `main` remains at `8e50d68efbf2bec2aabfb2fe3226e01635de2adb` without this feature merged. Production is not fully integrated or released.
 
 ## Authoritative V4 documents
 

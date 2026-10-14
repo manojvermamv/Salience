@@ -1,5 +1,7 @@
 # P1 Publication Recovery Hold Implementation Plan
 
+**Historical scope:** This dated plan preserves its original task scope; its unchecked boxes and checkpoint are not current progress. Use [V4 progress](../../v4/progress.md#current-state) and [the V4 blueprint](../../v4/IMPLEMENTATION-BLUEPRINT.md#current-execution) for the active handoff.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Correct parallel-team parent status, add one durable non-resumable publication recovery hold, and qualify the first pinned hold-aware rollback floor without allowing older workers to mutate retained liabilities.

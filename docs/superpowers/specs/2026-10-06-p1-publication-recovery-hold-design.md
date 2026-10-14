@@ -1,5 +1,7 @@
 # P1 Publication Recovery Hold and Parallel Status Correction Design
 
+**Historical scope:** This dated design preserves its original scope and evidence; its checkpoint is not current project status. Use [V4 progress](../../v4/progress.md#current-state) and [the V4 blueprint](../../v4/IMPLEMENTATION-BLUEPRINT.md#current-execution) for the active handoff.
+
 **Approved:** 2026-10-06
 
 **Rollback-floor amendment approved in chat:** 2026-10-06
