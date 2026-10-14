@@ -5332,9 +5332,11 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
         legacy_cancel_fixture,
         tmp_path,
         after_acceptance=True,
+        permit_ttl_seconds=120,
         operation_id=str(legacy_null_operation_id),
         diagnostic_path=(
-            candidate_root / "task8-legacy-acceptance-worker-attempt5.jsonl"
+            candidate_root
+            / f"task8-legacy-acceptance-worker-{candidate_suffix}.jsonl"
         ),
     ) == 73
     with psycopg.connect(legacy_database) as connection:
@@ -5360,17 +5362,36 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
         == "salience.publication.submit_or_reconcile"
     ]
     assert len(submit_schedules) == 1, submit_schedules
+    submit_schedule = submit_schedules[0][1]
+    submit_start_to_close_seconds = submit_schedule.start_to_close_timeout.seconds
+    with psycopg.connect(legacy_database) as connection:
+        legacy_permit_ttl_seconds = connection.execute(
+            """SELECT (permit.request->>'ttl_seconds')::integer
+               FROM v4_dispatch_permits permit
+               JOIN v4_permit_claims claim
+                 ON claim.current_permit_id=permit.id
+               WHERE claim.operation_id=%s""",
+            (str(legacy_null_operation_id),),
+        ).fetchone()[0]
+    assert submit_start_to_close_seconds == 30
+    assert legacy_permit_ttl_seconds == 120
+    assert legacy_permit_ttl_seconds > submit_start_to_close_seconds, (
+        "legacy cancellation permit must outlive the submit retry boundary: "
+        f"permit_ttl={legacy_permit_ttl_seconds}s, "
+        f"submit_start_to_close={submit_start_to_close_seconds}s"
+    )
     accepted_retry_ready = await _wait_for_activity_retry_ready(
         legacy_client,
         workflow_id=legacy_workflow_id,
         run_id=legacy_description.run_id,
-        activity_id=submit_schedules[0][1].activity_id,
+        activity_id=submit_schedule.activity_id,
         activity_type="salience.publication.submit_or_reconcile",
         attempt=2,
         timeout_seconds=45,
     )
     save_json(
-        candidate_root / "task8-legacy-accepted-retry-readiness-attempt5.json",
+        candidate_root
+        / f"task8-legacy-accepted-retry-readiness-{candidate_suffix}.json",
         {
             "operation_id": str(legacy_null_operation_id),
             "accepted_progress": {
@@ -5380,9 +5401,11 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
             "workflow_id": legacy_workflow_id,
             "run_id": legacy_description.run_id,
             "task_queue": legacy_cancel_fixture["queue"],
-            "activity_id": submit_schedules[0][1].activity_id,
+            "activity_id": submit_schedule.activity_id,
             "activity_type": "salience.publication.submit_or_reconcile",
             "scheduled_event_id": submit_schedules[0][0],
+            "start_to_close_timeout_seconds": submit_start_to_close_seconds,
+            "permit_ttl_seconds": legacy_permit_ttl_seconds,
             "retry_readiness": accepted_retry_ready,
         },
     )
@@ -5458,7 +5481,8 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
         cancel_after_processing=True,
         cancel_ready_callback=close_legacy_after_processing_read,
         diagnostic_path=(
-            candidate_root / "task8-legacy-cancel-worker-attempt5.jsonl"
+            candidate_root
+            / f"task8-legacy-cancel-worker-{candidate_suffix}.jsonl"
         ),
     )
     assert legacy_cancel_exit == 74, (
