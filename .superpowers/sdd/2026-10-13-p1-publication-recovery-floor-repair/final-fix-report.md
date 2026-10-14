@@ -212,3 +212,98 @@ from an indentation error and is retained as
 `attempt-3/argv-and-mount-focused-green.log` (exit 4); the test source was
 corrected before this passing invocation. The exact-image mount assertion and
 actual retry-recorder assertions remain pending the next fresh producer run.
+
+### Attempt 4 actual retry recorder evidence and workflow-replay correction
+
+The first attempt-4 detached shell ended before pytest wrote an exit record; it
+is excluded. Its log contains only Compose health checks, no strict progress or
+candidate worker was created, and the receiver remained empty. The monitored
+foreground producer then used exact image
+`sha256:c880a41e4a20f1322ad579b0b8d3f8b5ae14fcdf13635458d33cdc8c747e09a0` and
+fresh receiver `baf9d9416c24bcdb87e5e4b406851cbb5e1c57ecab8442153862e9efd46a0245`
+(run `0cd02a35-70e5-4642-8b4b-5c09c83f4118`). The corrected four-mount check
+passed and both actual pending activity retries ran through the exact image:
+
+- `expired_permit_receipt`: worker
+  `4a2dd2be7bb4b7d5d42c9f8358d2649de27533c9326aaf0824eaba16967836b9`,
+  pre-retry history boundary event 27, recorder run
+  `b35eeae0-52fa-4e5f-b3b9-1a64585d8dd7`, worker ID
+  `b65dd9f3-3ec3-4d7e-9cb9-4593f52849a5`; event count 0 and typed hold
+  `LegacyPublicationRecoveryHeld` in `submit_or_reconcile`.
+- `published_during_cancel`: worker
+  `410d98092f3ec3faf70d527caabfeb57e04845ff1e37f077091fd76d2db2f580`,
+  pre-retry history boundary event 44, recorder run
+  `5437d952-8b0b-4dbe-9fc6-8eb112ba914c`, worker ID
+  `c9f6e918-23b4-4ff9-9517-0ce277809a17`; event count 0 and typed hold
+  `LegacyPublicationRecoveryHeld` in `cancel`.
+
+Both worker logs show activity attempt 2, the exact expected typed hold
+diagnostic, and zero operations from each independent per-worker recorder. The
+prelaunch/stop/readback records are
+`task8-worker-retry-attempt-expired_permit_receipt.json` and
+`task8-worker-retry-attempt-published_during_cancel.json` in the candidate
+evidence directory. Primary and separate legacy database readbacks matched
+their strict hold and liability hashes; the serialized histories and recorder
+readback are preserved in
+`/tmp/p1-publication-recovery-successor-182c4e4/attempt-4/failed-state-readback.json`
+(SHA256 `95f03bc06daeb306a4a540c5fea25dffb2351399ecf9bde941c3f2482967676f`).
+
+The producer later exited 1 after 159.77 seconds in the separate post-failure
+workflow replay check. RED was `assert len(new_schedule_ids) == 1`, which saw
+zero. The reset helper intentionally resets at the first workflow-task
+completion after the durable activity failure; replay therefore consumes the
+recorded hold result and adds no activity schedule or start. The following
+cross-container test incorrectly expected a second activity execution even
+though the first exact-image worker above already exercised both pending
+activity retries. I corrected that later replay check to assert no added
+schedule/start events, retain the exact original target activity schedule and
+start, require the typed hold result, and keep the database and recorder empty.
+This preserves the stronger separation between an actual pending activity
+retry and workflow replay after its recorded non-retryable failure.
+
+The corrected exact-image replay cases are GREEN: **2 passed, 152 deselected,
+15.81s**, exit 0, in
+`/tmp/p1-publication-recovery-successor-182c4e4/attempt-4/replay-focused-green.log`
+(SHA256 `59f4ca7ccdc27b5348e32b3bdc36d026b59e93b787e3b16df6b60ef0a9d8faea`).
+They preserve the original activity event sets, confirm unchanged complete
+liabilities, and read back empty recorder runs. Their exact evidence JSON files
+are the `e7b4961c...` expired case and `491e9fcc...` cancellation case in the
+candidate evidence directory. This focused GREEN validates the correction;
+the complete producer still requires a fresh run from new disposable targets.
+
+Attempt-4 exact targets remain preserved pending readback-qualified cleanup:
+primary `recovery_floor_active_3f8cbb474778`, legacy
+`recovery_floor_legacy_50db37943b9c`, and receiver
+`baf9d9416c24bcdb87e5e4b406851cbb5e1c57ecab8442153862e9efd46a0245`. No other
+candidate-image container is running. The correction changes tests only; the
+frozen application commit, pinned source rows, wheel, installed runtime, image,
+and launch-lock contract are unchanged, so no candidate rebuild is required.
+
+### Attempt 4 cleanup and post-cleanup candidate audit
+
+The attempt-4 readback initially recorded pre-refresh progress SHA
+`a2c1b8a164299e23c10c233985f51077bdd0c7156ddd874b6132eb77d65c8aa5`; the
+producer's final progress refresh subsequently updated the canonical file to
+SHA `b948eb9110f76f9ea05831cd36770fe22ab8c871cac5be8be7ebda6c5c68e436`. I
+retained the first readback and reran the full database, Temporal history,
+recorder, and worker-attempt readback against the refreshed bytes. The current
+readback passed and is `attempt-4/failed-state-readback-precleanup-current.json`
+(SHA256 `bbd5c4815659bf22d7f3eb22e02cd8f93c1aa96bc24a6ffcdd58d665fcdaa7d8`).
+It verifies both exact hold-row hashes, complete 21-key liability snapshot
+hashes, expected migration head, both per-worker recorder event counts zero,
+and empty shared receiver run.
+
+Readback-qualified cleanup removed only attempt-4 receiver
+`baf9d9416c24bcdb87e5e4b406851cbb5e1c57ecab8442153862e9efd46a0245` and dropped
+only `recovery_floor_active_3f8cbb474778` (17,585,843 bytes) and
+`recovery_floor_legacy_50db37943b9c` (17,143,475 bytes). The exact refreshed
+progress bytes are preserved at
+`attempt-4/worker-qualification-progress.failed-after-replay.json` with SHA
+`b948eb9110f76f9ea05831cd36770fe22ab8c871cac5be8be7ebda6c5c68e436`; the
+canonical progress file was then removed. Cleanup command exit was 0 and the
+machine-readable record is `attempt-4/cleanup-attempt4.json`. The successor
+image itself was preserved.
+
+The post-cleanup invalidation audit passed at `HEAD=767cdcd8945133107429722c21929bcd7635f1ee` with progress absent. The pinned application commit, `HEAD`, and worktree each reconstructed all 211 source-lock rows byte-for-byte: path-set SHA `14bddb59e1d7ad1f3d4fceb6b20e7ae0748848a93e89dc470a7af7b325dc88fe`, content manifest SHA `58f27973abc9b3d34fa9f2eea1738c914659ff84f5151f64fdc493acca1c3005`. Candidate loader passed for image `sha256:c880a41e4a20f1322ad579b0b8d3f8b5ae14fcdf13635458d33cdc8c747e09a0`, wheel SHA `425b7122f6431459a15bc4fe7bbdd169692b152356a0f36c6895e3fd452e3d04`, runtime manifest SHA `3d58423ee9119db38c9a670c726c83692bef126d402e69f2a9ad98e05377b644`, 9,151 installed entries, and zero `.pyc`. This confirms the changed test and reports do not invalidate or require rebuilding the frozen candidate. Audit log and exit are `attempt-4/candidate-invalidation-audit-after-cleanup.log` and `.exit`.
+
+A fresh full Task 8 producer run is still required after the replay assertion correction; no producer pass or final qualification is claimed yet.

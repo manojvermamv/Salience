@@ -162,3 +162,66 @@ source was corrected before the passing invocation. The next fresh exact-image
 producer still needs to pass the four-mount assertion and record both actual
 pending-activity retry recorder results before successor qualification can be
 claimed.
+
+### Attempt 4 actual retry results and replay correction
+
+Attempt 4 used application commit `182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f`
+and exact image `sha256:c880a41e4a20f1322ad579b0b8d3f8b5ae14fcdf13635458d33cdc8c747e09a0`.
+The first detached wrapper died before writing an exit record and is excluded.
+The monitored foreground producer passed the exact mount check and executed
+both actual pending activity retries. `expired_permit_receipt` ran in worker
+`4a2dd2be7bb4b7d5d42c9f8358d2649de27533c9326aaf0824eaba16967836b9`, Temporal
+run `b35eeae0-52fa-4e5f-b3b9-1a64585d8dd7`, activity attempt 2; it returned
+`LegacyPublicationRecoveryHeld` in `submit_or_reconcile`. The independent
+per-worker recorder observed zero operations. `published_during_cancel` ran in
+worker `410d98092f3ec3faf70d527caabfeb57e04845ff1e37f077091fd76d2db2f580`,
+Temporal run `5437d952-8b0b-4dbe-9fc6-8eb112ba914c`, activity attempt 2; it
+returned `LegacyPublicationRecoveryHeld` in `cancel`, with zero operations in
+its independent recorder. Their pre-retry history boundaries were events 27
+and 44. Full worker and database readback is preserved in
+`/tmp/p1-publication-recovery-successor-182c4e4/attempt-4/failed-state-readback.json`
+(SHA256 `95f03bc06daeb306a4a540c5fea25dffb2351399ecf9bde941c3f2482967676f`),
+including both unchanged 21-key liability snapshots and empty shared receiver
+run `0cd02a35-70e5-4642-8b4b-5c09c83f4118`.
+
+The producer then exited 1 after 159.77 seconds in a separate cross-container
+workflow replay assertion, where the harness expected one additional activity
+schedule and observed zero. This was a harness error: the workflow reset occurs
+after Temporal has persisted the original typed activity failure, so replay
+consumes that result and must not reschedule the failed non-retryable activity.
+The test now asserts no new schedule/start while confirming exactly one
+original schedule and start for the expected target activity. Exact-image
+focused replay is GREEN (**2 passed, 152 deselected, 15.81s**), with output at
+`/tmp/p1-publication-recovery-successor-182c4e4/attempt-4/replay-focused-green.log`
+(SHA256 `59f4ca7ccdc27b5348e32b3bdc36d026b59e93b787e3b16df6b60ef0a9d8faea`).
+The failed producer log is retained with SHA256
+`9777df3dd8d0cb776d2975ae9b463b0f1c2a083674bdb8b7d23a7234dd3000a6`.
+
+Attempt 4's exact disposable receiver and primary/legacy databases remain
+pending readback-qualified cleanup. The full producer must be rerun from fresh
+targets after cleanup; no Task 8 producer pass is claimed yet.
+
+The refreshed attempt-4 progress was re-read before cleanup because the first
+full state readback preceded the final progress refresh. The retained readbacks
+therefore include the earlier digest (`a2c1…`) and the current digest
+`b948eb9110f76f9ea05831cd36770fe22ab8c871cac5be8be7ebda6c5c68e436`; the
+current full readback passed and is
+`attempt-4/failed-state-readback-precleanup-current.json` (SHA256
+`bbd5c4815659bf22d7f3eb22e02cd8f93c1aa96bc24a6ffcdd58d665fcdaa7d8`). Cleanup
+archived the exact refreshed progress, removed only receiver
+`baf9d9416c24bcdb87e5e4b406851cbb5e1c57ecab8442153862e9efd46a0245`, dropped
+only primary `recovery_floor_active_3f8cbb474778` (17,585,843 bytes) and legacy
+`recovery_floor_legacy_50db37943b9c` (17,143,475 bytes), then removed the
+canonical progress file. It did not remove the successor image. Cleanup passed
+(exit 0); machine-readable evidence is `attempt-4/cleanup-attempt4.json` (SHA256
+`9fe9ecfd3b002de992e3bafc4e7bbf1b95b6dacfdbafb1db6bd2cacbf6c7ef26`).
+
+The post-cleanup candidate audit also passed with progress absent. The pinned
+application commit, current HEAD, and worktree all match all 211 locked source
+rows; the path-set digest is
+`14bddb59e1d7ad1f3d4fceb6b20e7ae0748848a93e89dc470a7af7b325dc88fe`, and the
+manifest digest is
+`58f27973abc9b3d34fa9f2eea1738c914659ff84f5151f64fdc493acca1c3005`. The exact
+image, wheel, installed runtime manifest, and zero-`.pyc` checks passed; audit
+log SHA256 is `f874a8a758ad068137eb9303d9bbde14b941cd975a4e5620b5d9abf52887f004`.
+A fresh full producer run remains necessary before Task 8 can be claimed green.
