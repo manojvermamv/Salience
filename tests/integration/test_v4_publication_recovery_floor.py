@@ -5332,7 +5332,7 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
         legacy_cancel_fixture,
         tmp_path,
         after_acceptance=True,
-        permit_ttl_seconds=120,
+        permit_ttl_seconds=60,
         operation_id=str(legacy_null_operation_id),
         diagnostic_path=(
             candidate_root
@@ -5374,12 +5374,16 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
             (str(legacy_null_operation_id),),
         ).fetchone()[0]
     assert submit_start_to_close_seconds == 30
-    assert legacy_permit_ttl_seconds == 120
+    assert 30 == submit_start_to_close_seconds
+    assert not 30 > submit_start_to_close_seconds, (
+        "the prior 30-second fixture permit equals the retry boundary and cannot outlive it"
+    )
     assert legacy_permit_ttl_seconds > submit_start_to_close_seconds, (
         "legacy cancellation permit must outlive the submit retry boundary: "
         f"permit_ttl={legacy_permit_ttl_seconds}s, "
         f"submit_start_to_close={submit_start_to_close_seconds}s"
     )
+    assert legacy_permit_ttl_seconds == 60
     accepted_retry_ready = await _wait_for_activity_retry_ready(
         legacy_client,
         workflow_id=legacy_workflow_id,
