@@ -1219,17 +1219,18 @@
   },
   "task_8_exact_candidate_artifact_build": {
     "status": "EXACT_CANDIDATE_ARTIFACT_BUILD_RECORDED",
-    "application_commit": "b38b2b281fc4a9316da15fcdb94a6eabe6ef75a5",
-    "image_ref": "salience-p1-floor-b38b2b2-worker:latest",
-    "image_id": "sha256:3626debf3c2c486f7b0bcd56802106d1a939e180f259544232f58ecd8f470b5c",
-    "wheel_sha256": "da0a6a27096ca0c53a720170f0ea16e6645f59bea24280e13447fef7e4a87b53",
-    "record_sha256": "1a0af6e2c186a791b2a6644a8740b908d71fb3f81afaef1d065275822cfa0a03",
+    "application_commit": "386d4bc7cc5acb794858d3c3c14400a0659a83ef",
+    "artifact_build_result": "PASS",
+    "image_ref": "salience-p1-floor-386d4bc-worker:latest",
+    "image_id": "sha256:46d252a4abdbbebdf81cf02782c4b7668ff5ffe5221f823a6e55e272436301a7",
+    "wheel_sha256": "da88befdc0ff607839fcdb9c2d7b8fa7f32b2b80eda7965a653dfd3bc3107f16",
+    "record_sha256": "be343894b0b561f17cc825caf96927e4dbb08e5e0a42cbfebe7bb50f64e073f3",
     "record_entry_count": 172,
-    "launch_lock_sha256": "fe0d41ee3ef204c500151ef8a443e7ecb2d4e279cbccbecee52b9c3e5b07e99e",
+    "launch_lock_sha256": "0139f60fd82dbb6a57719db8739edf1cc786a94032e24b93e75d5a59eb050302",
     "source_manifest_sha256": "cf3e0d3da75c92a45c94671ddaab6f764a1a5823f17a5fa8a2a508fbbc578820",
     "interpreter_sha256": "73b68fc2dac176af16098180a2c98a03ee9f1f1b02db25d42d44d782e79e2330",
     "runtime_root": "/usr/local/lib/python3.13/site-packages",
-    "runtime_manifest_sha256": "0cfceaf0a714297ab684f5fbcd20c2bed5636b28010ed4c6ee8297de30df625b",
+    "runtime_manifest_sha256": "eda06374310c4882f8e61e8ee9fc21c8e208fc598724d81fca6b03b1772147d1",
     "runtime_file_count": 9151,
     "pyc_files": [],
     "dockerignore": [
@@ -1238,19 +1239,18 @@
       "**/__pycache__",
       "**/*.py[cod]"
     ],
-    "qualification_report": ".superpowers/sdd/2026-10-13-p1-publication-recovery-floor-repair/task-8-report.md",
+    "source_path_separation": {
+      "host_interpreter_source": "/tmp/p1-publication-recovery-0043/image-interpreter-386d4bc/python3.13",
+      "host_runtime_root": "/tmp/p1-publication-recovery-0043/runtime-prefix/usr/local/lib/python3.13/site-packages",
+      "locked_interpreter_path": "/usr/local/bin/python",
+      "note": "The topology-preserving extraction keeps the installed RECORD target resolvable; the lock authenticates interpreter bytes from this exact image while retaining the fixed in-container path."
+    },
     "m1_digest_correction": {
       "path": "artifacts/v4-next-p1/agents/p1-publication-recovery-0043/m1-report-digest-correction.json",
       "sha256": "f11f93c3090fc6571590e6484cc2e9076649dec7f5a8d9609a1d5ef8e8d4e062",
       "tracked": false
     },
-    "source_path_separation": {
-      "host_interpreter_source": "/tmp/p1-publication-recovery-0043/image-interpreter-b38b2b2/python3.13",
-      "host_runtime_root": "/tmp/p1-publication-recovery-0043/runtime-prefix/usr/local/lib/python3.13/site-packages",
-      "locked_interpreter_path": "/usr/local/bin/python",
-      "note": "The topology-preserving extraction keeps the installed RECORD target resolvable; the lock authenticates interpreter bytes from this exact image while retaining the fixed in-container path."
-    },
-    "artifact_build_result": "PASS",
-    "qualification_results": "Exact-candidate command outcomes are recorded in the referenced Task 8 report. This pin record does not transfer counts from Task 10, 9e4f2aa, 7878208, or the superseded 43fc94e build."
+    "qualification_report": ".superpowers/sdd/2026-10-13-p1-publication-recovery-floor-repair/task-8-report.md",
+    "qualification_results": "Exact-candidate command outcomes are recorded in the referenced Task 8 report. This pin record does not transfer counts from Task 10, 9e4f2aa, 7878208, or superseded artifact builds."
   }
 }
