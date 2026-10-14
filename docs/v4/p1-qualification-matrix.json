@@ -898,7 +898,7 @@
     "source_files": 316,
     "status": "PASS independent implemented-fixture qualification; RG0/RG1 HELD"
   },
-  "qualified_application_commit_scope": "Task 10 local fixture results remain historical at 5cb5791; Task 11 found floor/evidence gaps, so that candidate is unsupported as the rollback floor. The exact 0043 candidate at cad1817c36badd8fb6eed5f5ffb3f0d6537bd8e2 has a built and authenticated wheel/image/lock recorded in .superpowers/sdd/2026-10-13-p1-publication-recovery-floor-repair/task-8-report.md. Its candidate-specific qualification results are reported there; no counts transfer from 5cb5791 or 7878208. Final independent review/meta-review and exact-head CI remain required; production acceptance, RG0/full RG1 remain HELD and P2–P7 gated.",
+  "qualified_application_commit_scope": "Task 10 local fixture results remain historical at 5cb5791; Task 11 found floor/evidence gaps, so that candidate is unsupported as the rollback floor. The exact 0043 candidate at 5988d9780c17543a07862b648caa8cbef6465b88 has a built and authenticated wheel/image/lock recorded in .superpowers/sdd/2026-10-13-p1-publication-recovery-floor-repair/task-8-report.md. Its candidate-specific qualification results are reported there; no counts transfer from 5cb5791 or 7878208. Final independent review/meta-review and exact-head CI remain required; production acceptance, RG0/full RG1 remain HELD and P2–P7 gated.",
   "historical_parallel_qualification": {
     "evidence": "docs/v4/parallel-agents-evidence.json",
     "full_non_live_tests": 540,
@@ -907,7 +907,7 @@
     "status": "PASS root-reviewed bounded parallel-agent local extension; historical item7 independent review retained; RG0/RG1/RG5 HELD",
     "qualified_application_commit": "2653d2ecb3f0d5bb8ea6560de274137dd6032a96"
   },
-  "current_independent_review_scope": "Task 11 review found floor/evidence gaps in candidate 5cb5791, which is unsupported as the rollback floor. The exact 0043 candidate at cad1817c36badd8fb6eed5f5ffb3f0d6537bd8e2 and its artifact build are recorded in .superpowers/sdd/2026-10-13-p1-publication-recovery-floor-repair/task-8-report.md; it remains outside all prior independent review scopes until the corrected-publication rereview and meta-review. The corrected-publication rereview already completed covers only application a4b2368cdb463939d093020224a5b5667392aee6 with documentation/observed HEAD d0311725686d81b7b4747c2d6225986e5ea3a524; it does not cover 7878208, 5cb5791, or cad1817c36badd8fb6eed5f5ffb3f0d6537bd8e2.",
+  "current_independent_review_scope": "Task 11 review found floor/evidence gaps in candidate 5cb5791, which is unsupported as the rollback floor. The exact 0043 candidate at 5988d9780c17543a07862b648caa8cbef6465b88 and its artifact build are recorded in .superpowers/sdd/2026-10-13-p1-publication-recovery-floor-repair/task-8-report.md; it remains outside all prior independent review scopes until the corrected-publication rereview and meta-review. The corrected-publication rereview already completed covers only application a4b2368cdb463939d093020224a5b5667392aee6 with documentation/observed HEAD d0311725686d81b7b4747c2d6225986e5ea3a524; it does not cover 7878208, 5cb5791, or 5988d9780c17543a07862b648caa8cbef6465b88.",
   "historical_legacy_intelligence_qualification": {
     "evidence": "docs/v4/legacy-dispatch-evidence.json",
     "full_non_live_tests": 556,
@@ -1120,17 +1120,17 @@
   },
   "task_8_exact_candidate_artifact_build": {
     "status": "EXACT_CANDIDATE_ARTIFACT_BUILD_RECORDED",
-    "application_commit": "cad1817c36badd8fb6eed5f5ffb3f0d6537bd8e2",
-    "image_ref": "salience-p1-floor-cad1817-worker:latest",
-    "image_id": "sha256:b3543729acfb8da6763f2e0752730f0fced7cb5263193aaef9a483e8b87ec0fe",
-    "wheel_sha256": "0edc2a527648fc7d7ed805d3580db23d8e875a67c8e57514d884370b3f2e01ed",
-    "record_sha256": "479a876856209738b855687773174cef9d29809d30f9c70a80b5c6bfdafb97b7",
+    "application_commit": "5988d9780c17543a07862b648caa8cbef6465b88",
+    "image_ref": "salience-p1-floor-5988d97-worker:latest",
+    "image_id": "sha256:cc33b56b5d0b4c4ab45d584c1bd4231bf8eacb018bb843c8064d92871b7dc18c",
+    "wheel_sha256": "79940d0f1f8e7cb70714254eea8da7afec1a2b013fca36a9cf967043f7480e85",
+    "record_sha256": "fdacd5a0767d3885a8c26d14f7b3b29948f0e9410f2ab2b48b71b65a6f77de05",
     "record_entry_count": 172,
-    "launch_lock_sha256": "14595aa9c59f26b88a29ef5b1dbcadd4aece894353ae4396994586726e1c2c02",
+    "launch_lock_sha256": "ed8b369d028e9c38af97a08bd9f4e1f2ad49c9811d4fb75fc617e2db04d2b024",
     "source_manifest_sha256": "cf3e0d3da75c92a45c94671ddaab6f764a1a5823f17a5fa8a2a508fbbc578820",
     "interpreter_sha256": "73b68fc2dac176af16098180a2c98a03ee9f1f1b02db25d42d44d782e79e2330",
     "runtime_root": "/usr/local/lib/python3.13/site-packages",
-    "runtime_manifest_sha256": "d6ca332d500a2b0ad07c4272929f7afc8af63f23a994450b7157176f8b989f70",
+    "runtime_manifest_sha256": "fa9157a645dc176b2a248084aeb4f6632dedae3547e38b09afea81df0325efaa",
     "runtime_file_count": 9151,
     "pyc_files": [],
     "dockerignore": [
