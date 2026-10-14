@@ -337,3 +337,68 @@ for the hostile-source controls, verified clean and detached before use, then
 removed after dependent qualification with the final worktree list checked.
 No tracked test behavior was changed to suppress the missing prerequisite.
 Attempt 6 must use fresh targets before Task 8 can be claimed green.
+
+### Attempt 6 Task 8 producer GREEN and disposable-state cleanup
+
+With the exact clean detached PREFLOOR worktree restored, the fresh attempt-6
+full Task 8 producer passed (**1 passed in 194.14s**, exit 0). Exact log SHA256
+is `929f6de5bf5bf9b6f3b0e42cd48c3e9fae240200c795b5cf91a8b5edaceb1b2a`. The
+producer completed both actual exact-image activity retries and embedded A4
+hostile-source controls. `expired_permit_receipt` produced the expected typed
+hold on `submit_or_reconcile` attempt 2 with independent recorder run
+`243c8119-bdda-4241-a708-601c49448755`, worker ID
+`cdd47a20-93f1-470d-896b-f884a189065e`, event boundary 27, and zero operations.
+`published_during_cancel` produced the expected typed hold on `cancel` attempt 2
+with recorder run `e66bea22-9a8f-48b9-8d00-82f2e731c4c4`, worker ID
+`8c88c87b-8d2f-4163-953e-adbc36102723`, event boundary 44, and zero operations.
+The final readback SHA256 is
+`722723b7d6d18d9e37ec84d0945a7486ea9d3fd2e06018ce1dac482bcc29edc4`; it checks
+both exact DB hold hashes, complete 21-key liability hashes, histories, empty
+worker recorders, and empty shared receiver run `a9ad25f3-3cd9-4e43-af75-92bb22760d4f`.
+
+Progress SHA256 `2ad3f53d70362a14b6f880e3274dae346a686714098225fd1a72b23b89811f8a`
+was archived. Cleanup removed only receiver
+`0f670640cc9e98ee888e3289a22a34bebaf821bbe8bf6b00e073111bca8cec53`, primary
+DB `recovery_floor_active_d5b1b7603b46`, and legacy DB
+`recovery_floor_legacy_6c14b37c98cd`; measured sizes were 17,585,843 and
+17,143,475 bytes. It removed canonical progress and preserved the exact image.
+Cleanup exit 0 is recorded in `attempt-6/cleanup-attempt6.json` (SHA256
+`b89c803ad39c24548260716108a53c36cd5f0c4f1af80c79f90748c1df614d7e`).
+
+The detached pre-floor checkout remains in place until standalone exact-image
+hostile-startup and physical migration inventory overlays complete. Its
+verified clean/detached identity and initial worktree list are in
+`attempt-5/prefloor-worktree-verification.json`. After dependent checks I will
+remove it and verify only the original `arch` and active recovery worktrees
+remain. Full non-live and consolidated gates remain pending.
+
+### Standalone exact-image matrix, PREFLOOR worktree removal, and candidate audit
+
+The retained standalone exact-image/prerequisite command passed **12 tests in
+47.26s**, exit 0; the command and output are
+`attempt-6/exact-image-matrix.command.txt` and `.log` (log SHA256
+`7e62dfdc422898c90de1ba658a06e432f6ac4e5493e66a2285364bf34ce0d317`). It
+covers absent/partial prerequisite gate behavior, exact candidate loader,
+real empty-0042 denial, `PYTHONPATH`/`PYTHONHOME`/cwd hostile overlays, valid
+malicious `.pyc` with a positive execution control, and exact-image physical
+extra/missing/changed/down-revision migration inventory overlays.
+
+The exact detached PREFLOOR worktree at
+`/tmp/salience-f3-retained-039ddf39cb9b846c205f352e083293fbec6f9fc5` was used
+only for the passing full Task 8 producer's existing A4 hostile-source control,
+then removed with `git worktree remove`. The remaining worktree list has only
+`/home/admin/Salience` on `arch` and this recovery worktree at
+`3ae005f673c1688041a5bc1c4c2bd1a13f8fcbd6`; recorded output SHA256 is
+`192105008205ea3fe8f64183f54323234b8c92f39c588d2e275111d2f5c37647`.
+
+The final-pre-suite candidate invalidation audit passed with progress absent.
+All 211 source rows match at the pinned application commit, current HEAD, and
+worktree; path-set digest is
+`14bddb59e1d7ad1f3d4fceb6b20e7ae0748848a93e89dc470a7af7b325dc88fe`, content
+manifest digest is
+`58f27973abc9b3d34fa9f2eea1738c914659ff84f5151f64fdc493acca1c3005`. The
+successor wheel/image/runtime remain the pinned identities; runtime verification
+reports 9,151 entries and zero `.pyc`. Audit log SHA256 is
+`220f2d19d39c042b2feb73440b27a4bb91861a075e2b5fc382f9d87aa6a45453`. The full
+non-live suite, final audit hash/inventory refresh, and consolidated docs checks
+are still outstanding.

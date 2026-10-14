@@ -275,3 +275,84 @@ detached state, and clean status, retain it only through dependent hostile-sourc
 qualification, then remove it and verify the worktree list contains only the
 original `arch` and active recovery worktrees. A new producer run from fresh
 DB, Temporal, and receiver targets remains required; attempt 5 is not a pass.
+
+### Attempt 6 full Task 8 producer pass and cleanup
+
+After the controller-approved exact PREFLOOR checkout was restored and verified
+at `039ddf39cb9b846c205f352e083293fbec6f9fc5` (detached, clean), a fresh exact
+candidate producer passed: **1 passed in 194.14s**, exit 0. The command was
+`P1_TASK8_PERSIST_FIXTURES=1 TEST_ADAPTER_RECORDER_URL=http://172.20.0.4:8081 TEST_ADAPTER_RECORDER_RUN_ID=a9ad25f3-3cd9-4e43-af75-92bb22760d4f .venv/bin/python -m pytest -p no:cacheprovider -q -rs tests/integration/test_v4_publication_recovery_floor.py::test_floor_worker_executes_both_retained_reasons_and_second_verifier_passes`.
+The complete output is
+`/tmp/p1-publication-recovery-successor-182c4e4/attempt-6/task8-producer.log`
+(SHA256 `929f6de5bf5bf9b6f3b0e42cd48c3e9fae240200c795b5cf91a8b5edaceb1b2a`).
+This run also completed the embedded hostile A4 source/runtime denial controls
+using the restored exact pre-floor checkout. It reached both actual exact-image
+pending retries, not only post-failure workflow replay:
+
+- `expired_permit_receipt` activity `salience.publication.submit_or_reconcile`,
+  attempt 2, worker container
+  `7474278e13c37fc53f1640bbaab444595d479e823dacba3260c0f1a4faa82ac6`, recorder
+  run `243c8119-bdda-4241-a708-601c49448755`, worker ID
+  `cdd47a20-93f1-470d-896b-f884a189065e`, history boundary event 27.
+- `published_during_cancel` activity `salience.publication.cancel`, attempt 2,
+  worker container
+  `ca838159ff2d9855442136242ab07c820635d52935b5d810d83d95fa6228de00`, recorder
+  run `e66bea22-9a8f-48b9-8d00-82f2e731c4c4`, worker ID
+  `8c88c87b-8d2f-4163-953e-adbc36102723`, history boundary event 44.
+
+Both returned the expected `LegacyPublicationRecoveryHeld` failure on the
+correct activity, with zero calls in their independent per-worker recorders.
+Full post-pass DB, history, progress, and receiver readback passed and is
+`attempt-6/failed-state-readback.json` (SHA256
+`722723b7d6d18d9e37ec84d0945a7486ea9d3fd2e06018ce1dac482bcc29edc4`). It
+checks primary `recovery_floor_active_d5b1b7603b46` and legacy
+`recovery_floor_legacy_6c14b37c98cd` at migration head
+`0043_complete_publication_recovery_liabilities`, two exact hold rows each, all
+21 liability keys for each hold with matching hashes, both failed Temporal
+histories, both empty worker-recorder runs, and empty shared receiver run
+`a9ad25f3-3cd9-4e43-af75-92bb22760d4f`.
+
+Progress bytes SHA256 `2ad3f53d70362a14b6f880e3274dae346a686714098225fd1a72b23b89811f8a`
+were preserved in
+`attempt-6/worker-qualification-progress.task8-attempt6.json` before cleanup.
+Readback-qualified cleanup removed only receiver
+`0f670640cc9e98ee888e3289a22a34bebaf821bbe8bf6b00e073111bca8cec53`, primary
+DB `recovery_floor_active_d5b1b7603b46` (17,585,843 bytes), and legacy DB
+`recovery_floor_legacy_6c14b37c98cd` (17,143,475 bytes), then removed canonical
+progress. Cleanup exited 0 with machine record
+`attempt-6/cleanup-attempt6.json` (SHA256
+`b89c803ad39c24548260716108a53c36cd5f0c4f1af80c79f90748c1df614d7e`). The exact image was preserved. The PREFLOOR checkout
+remains available until the standalone exact-image hostile/migration matrix
+finishes; after all dependent checks it will be removed and the global worktree
+list verified to contain only `arch` and this recovery worktree.
+
+The standalone exact-image qualification matrix passed twice; the retained
+captured invocation is
+`attempt-6/run-exact-image-matrix.sh`, exit 0, **12 passed in 47.26s**.
+`attempt-6/exact-image-matrix.log` has SHA256
+`7e62dfdc422898c90de1ba658a06e432f6ac4e5493e66a2285364bf34ce0d317`. It
+covers wholly absent and partial candidate-state behavior before database
+setup, exact image-loader state, real empty-0042 denial, hostile `PYTHONPATH`,
+`PYTHONHOME`, and cwd, a valid malicious `.pyc` positive/negative control, plus
+the exact image's physical extra, missing, changed, and changed-`down_revision`
+migration inventory overlays.
+
+After the Task 8 producer and all dependent hostile-source controls passed, I
+removed the exact clean detached pre-floor worktree with `git worktree remove`.
+The final recorded worktree list has exactly the original `arch` worktree and
+this active recovery worktree; it is preserved at
+`attempt-6/worktrees-after-prefloor-removal.txt` (SHA256
+`192105008205ea3fe8f64183f54323234b8c92f39c588d2e275111d2f5c37647`). No
+extra worktree or candidate container remains.
+
+The final-pre-suite candidate invalidation audit passed after progress cleanup
+at `HEAD=3ae005f673c1688041a5bc1c4c2bd1a13f8fcbd6`. The pinned application
+commit, current HEAD, and worktree each matched all 211 launch-lock source
+rows. Path set SHA256 is
+`14bddb59e1d7ad1f3d4fceb6b20e7ae0748848a93e89dc470a7af7b325dc88fe`; source
+manifest SHA256 is
+`58f27973abc9b3d34fa9f2eea1738c914659ff84f5151f64fdc493acca1c3005`. Exact
+wheel, image, runtime manifest, 9,151 installed files and zero `.pyc` checks
+passed. Loader/audit output SHA256 is
+`220f2d19d39c042b2feb73440b27a4bb91861a075e2b5fc382f9d87aa6a45453`. The
+consolidated full non-live suite and final docs checks remain pending.
