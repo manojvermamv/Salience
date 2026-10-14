@@ -1219,17 +1219,17 @@
   },
   "task_8_exact_candidate_artifact_build": {
     "status": "EXACT_CANDIDATE_ARTIFACT_BUILD_RECORDED",
-    "application_commit": "cfebcd0321e8bbe5d562b9aec6ba65ef3efb02e1",
-    "image_ref": "salience-p1-floor-cfebcd0-worker:latest",
-    "image_id": "sha256:d8359ad4e41e55309665e179e07f111c84d20de96c81df01b363e823ac022a46",
-    "wheel_sha256": "6693247212b088d5da840c68d29dd9b003d8a41c7ae6a2e4ecd9dd078d195a7e",
-    "record_sha256": "1b1a4837f3954e0bd2a5c667a57826edb8f11efc8cdcd893c3e8593344a6764b",
+    "application_commit": "b38b2b281fc4a9316da15fcdb94a6eabe6ef75a5",
+    "image_ref": "salience-p1-floor-b38b2b2-worker:latest",
+    "image_id": "sha256:3626debf3c2c486f7b0bcd56802106d1a939e180f259544232f58ecd8f470b5c",
+    "wheel_sha256": "da0a6a27096ca0c53a720170f0ea16e6645f59bea24280e13447fef7e4a87b53",
+    "record_sha256": "1a0af6e2c186a791b2a6644a8740b908d71fb3f81afaef1d065275822cfa0a03",
     "record_entry_count": 172,
-    "launch_lock_sha256": "1ea2473121c897ac96c6a86ddeee1a91c0b7c41fdd5866cd180953873bde32bb",
+    "launch_lock_sha256": "fe0d41ee3ef204c500151ef8a443e7ecb2d4e279cbccbecee52b9c3e5b07e99e",
     "source_manifest_sha256": "cf3e0d3da75c92a45c94671ddaab6f764a1a5823f17a5fa8a2a508fbbc578820",
     "interpreter_sha256": "73b68fc2dac176af16098180a2c98a03ee9f1f1b02db25d42d44d782e79e2330",
     "runtime_root": "/usr/local/lib/python3.13/site-packages",
-    "runtime_manifest_sha256": "30f016c68f20a6d14485b3b74a0c710c05a85fdd23c80afb16f38d7fe40ed2e5",
+    "runtime_manifest_sha256": "0cfceaf0a714297ab684f5fbcd20c2bed5636b28010ed4c6ee8297de30df625b",
     "runtime_file_count": 9151,
     "pyc_files": [],
     "dockerignore": [
@@ -1245,7 +1245,7 @@
       "tracked": false
     },
     "source_path_separation": {
-      "host_interpreter_source": "/tmp/p1-publication-recovery-0043/image-interpreter-cfebcd0/python3.13",
+      "host_interpreter_source": "/tmp/p1-publication-recovery-0043/image-interpreter-b38b2b2/python3.13",
       "host_runtime_root": "/tmp/p1-publication-recovery-0043/runtime-prefix/usr/local/lib/python3.13/site-packages",
       "locked_interpreter_path": "/usr/local/bin/python",
       "note": "The topology-preserving extraction keeps the installed RECORD target resolvable; the lock authenticates interpreter bytes from this exact image while retaining the fixed in-container path."
