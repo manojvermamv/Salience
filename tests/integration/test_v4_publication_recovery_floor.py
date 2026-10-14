@@ -2418,6 +2418,12 @@ def test_publication_activities_recorder_installer_observes_the_real_adapter_loo
         ROOT / "tests/fixtures/v4_publication_adapter_operation_recorder.py",
         "v4_publication_adapter_operation_recorder_for_worker_installer",
     )
+
+    class FixtureAdapterWithDiagnostics(recorder._NeutralProbeAdapter):
+        @property
+        def submit_count(self):
+            return 7
+
     server = receiver.create_server("127.0.0.1", 0)
     thread = Thread(target=server.serve_forever, daemon=True)
     thread.start()
@@ -2432,7 +2438,7 @@ def test_publication_activities_recorder_installer_observes_the_real_adapter_loo
         )
         activities = PublicationActivities(
             SimpleNamespace(
-                provider=recorder._NeutralProbeAdapter(),
+                provider=FixtureAdapterWithDiagnostics(),
                 publisher_adapters={},
             )
         )
@@ -2440,6 +2446,7 @@ def test_publication_activities_recorder_installer_observes_the_real_adapter_loo
             SimpleNamespace(publisher_id="operation-probe")
         )
         asyncio.run(adapter.preflight(object()))
+        assert activities._state.provider.submit_count == 7
         events = _read_adapter_recorder_events(
             f"http://127.0.0.1:{server.server_port}", run_id
         )
@@ -7307,6 +7314,7 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
     assert running == [], recorder_role_evidence
 
     client = await Client.connect(os.environ["TEST_TEMPORAL_TARGET"])
+    recorder_base_url = os.environ["TEST_ADAPTER_RECORDER_URL"].rstrip("/")
     worker_cases = (
         ("expired_permit_receipt", expired_fixture["queue"], expired_operation_id),
         ("published_during_cancel", cancelled_fixture["queue"], cancelled_operation_id),
@@ -7320,6 +7328,12 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
             (event.event_id for event in history_before_restart.events), default=0
         )
         name = "publication-floor-" + reason.replace("_", "-") + "-" + uuid4().hex[:10]
+        recorder_run_id = str(uuid4())
+        recorder_worker_id = str(uuid4())
+        recorder_events_before = _read_adapter_recorder_events(
+            recorder_base_url, recorder_run_id
+        )
+        assert recorder_events_before == []
         launch = worker_harness.start_rollback_worker(
             image=expected_image_id,
             database_url=database,
@@ -7330,6 +7344,9 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
             task_queue=task_queue,
             control_bundle=control_bundle,
             name=name,
+            adapter_recorder_url=recorder_base_url,
+            adapter_recorder_run_id=recorder_run_id,
+            adapter_recorder_worker_id=recorder_worker_id,
         )
         run_evidence = {
             "reason": reason,
@@ -7418,6 +7435,17 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
             logs_path = candidate_root / f"{reason}-worker.log"
             worker_log_text = safe_text(str(stopped.get("logs", "")))
             logs_path.write_text(worker_log_text, encoding="utf-8")
+            recorder_events_after = _read_adapter_recorder_events(
+                recorder_base_url, recorder_run_id
+            )
+            run_evidence["adapter_operation_recorder"] = {
+                "run_id": recorder_run_id,
+                "worker_id": recorder_worker_id,
+                "events_before": recorder_events_before,
+                "events_after": recorder_events_after,
+                "observed_operation_count": len(recorder_events_after),
+                "zero_operations": recorder_events_after == recorder_events_before == [],
+            }
             run_evidence["stop"] = {
                 "state": stopped.get("state"),
                 "logs_path": str(logs_path.relative_to(evidence_root)),
@@ -7436,6 +7464,7 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
         assert expected_hold_frame in worker_log_text
         assert expected_hold_diagnostic in worker_log_text
         assert "salience.publication.await" not in worker_log_text
+        assert run_evidence["adapter_operation_recorder"]["zero_operations"] is True
         base_evidence["worker_runs"].append(run_evidence)
         save_json(progress_path, base_evidence)
 
@@ -7463,11 +7492,13 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
             item for item in base_evidence["worker_runs"] if item["reason"] == reason
         )
         run_evidence["provider_call_instrumentation"] = {
-            "provider_submit_calls": 0,
-            "provider_status_calls": 0,
-            "adapter_counter_availability": {
-                "submit_count": "process-local; not exported by the fixture worker",
-                "status_count": "not exposed by the fixture adapter",
+            "neutral_adapter_operation_recorder": {
+                "run_id": run_evidence["adapter_operation_recorder"]["run_id"],
+                "worker_id": run_evidence["adapter_operation_recorder"]["worker_id"],
+                "events_before": run_evidence["adapter_operation_recorder"]["events_before"],
+                "events_after": run_evidence["adapter_operation_recorder"]["events_after"],
+                "observed_operation_count": run_evidence["adapter_operation_recorder"]["observed_operation_count"],
+                "zero_operations": run_evidence["adapter_operation_recorder"]["zero_operations"],
             },
             "restarted_activity_types": run_evidence["restarted_activity_types"],
             "typed_hold_frame": {
@@ -7479,7 +7510,7 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
             ).hexdigest(),
             "fixture_progress_before": fixture_progress_before,
             "fixture_progress_after": fixture_progress_after,
-            "basis": "The pinned image history shows only the reason-specific guarded activity; its logged typed-hold branch exits before provider submit/status paths, and the fixture progress plus full liabilities are unchanged.",
+            "basis": "A fresh independent receiver was started before this exact pending activity retry; its readback contains zero protocol operations, and the fixture progress plus full liabilities are unchanged.",
         }
 
     base_evidence["projection_counts_after"] = projection_counts_after
@@ -7802,16 +7833,16 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
             activity_failure.application_failure_info.type
             == "LegacyPublicationRecoveryHeld"
         ), "reset source history does not contain the original typed hold receipt"
-        workflow_tasks_before_activity = [
+        workflow_tasks_after_failure = [
             event
             for event in history.events
-            if event.event_id < scheduled.event_id
+            if event.event_id > failed_events[0].event_id
             and event.HasField("workflow_task_completed_event_attributes")
         ]
-        assert workflow_tasks_before_activity, (
-            "history has no completed workflow task before the pending hold activity"
+        assert workflow_tasks_after_failure, (
+            "history has no completed workflow task handling the recorded hold failure"
         )
-        reset_boundary = max(workflow_tasks_before_activity, key=lambda event: event.event_id)
+        reset_boundary = min(workflow_tasks_after_failure, key=lambda event: event.event_id)
         terminal_failures_after_boundary = [
             event
             for event in history.events
@@ -7842,10 +7873,10 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
             workflow_execution=WorkflowExecution(
                 workflow_id=workflow_id, run_id=description.run_id
             ),
-            reason="Task 8 actual pending hold activity retry recorder window",
-            # Reset before the reason-specific activity schedule so Temporal
-            # schedules and starts the original pending activity again. The
-            # committed hold must be replayed before the adapter seam.
+            reason="Task 8 workflow replay after the recorded hold activity failure",
+            # This separate control replays the workflow task that consumes the
+            # already-recorded non-retryable hold failure. The actual pending
+            # activity retries are observed by the first rollback worker above.
             workflow_task_finish_event_id=reset_boundary.event_id,
             request_id=str(uuid4()),
             identity="p1-publication-recovery-task8",
@@ -7857,14 +7888,10 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
         assert new_description.status == WorkflowExecutionStatus.RUNNING
         reset_history = await restarted.fetch_history()
         reset_activity_events = activity_schedule_and_start_ids(reset_history.events)
-        assert set(reset_activity_events["scheduled"]) <= set(
-            original_activity_events["scheduled"]
-        ), "reset unexpectedly scheduled an activity before the worker retry window"
-        assert set(reset_activity_events["started"]) <= set(
-            original_activity_events["started"]
-        ), "reset unexpectedly started an activity before the worker retry window"
-        assert reset_boundary.event_id < scheduled.event_id
-        assert failed_events[0].event_id > scheduled.event_id
+        assert reset_activity_events == original_activity_events, (
+            "workflow replay unexpectedly scheduled or started a new activity"
+        )
+        assert reset_boundary.event_id > failed_events[0].event_id
         assert terminal_failures_after_boundary, (
             "reset boundary must precede the original terminal workflow failure"
         )
@@ -7882,7 +7909,7 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
             "activity_schedule_and_start_event_ids_before": original_activity_events,
             "activity_schedule_and_start_event_ids_after_reset": reset_activity_events,
             "reset_boundary_invariant": (
-                "last workflow-task completion before the original pending hold activity schedule"
+                "first workflow-task completion after the original typed hold activity failure"
             ),
         }
 

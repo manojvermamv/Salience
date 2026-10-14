@@ -123,6 +123,10 @@ class RecordingPublisherAdapter:
             )
         self._event_sink = event_sink
 
+    def __getattr__(self, name: str):
+        """Keep adapter-specific diagnostic and fixture helpers reachable."""
+        return getattr(self._adapter, name)
+
     def _record(self, operation: str) -> None:
         self._event_sink.record(operation)
 
