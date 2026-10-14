@@ -1,46 +1,68 @@
 {
-  "audited_at": "2026-10-14T14:25:42Z",
+  "audited_at": "2026-10-14T17:39:39Z",
   "base_commit": "7878208e7a353f93bb70279ad0dd7f0760f93ec4",
-  "scope": "Active documentation and durable V4 ledgers reconcile the fully qualified 0043 successor at application commit 182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f. Task 10 candidate 5cb5791 remains unsupported after Task 11 findings. Exact successor wheel/image/runtime/lock pins and candidate-bound results are in the Task 8 report and publication recovery-hold evidence addendum. The final non-live run passed 796, skipped 17, and emitted 3 warnings; fresh controller review/meta-review and exact-head CI remain pending. Production remains HELD; historical counts retain their original scopes.",
+  "scope": "Active documentation and durable V4 ledgers record the locally qualified 0043 successor at application commit 182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f. The branch-level GPT-6.1 review, accepted GPT-5.6 meta-review, push, and exact-head Actions run 38592066455 passed on 6f5edc77edbfe189e46de4254c2fdb21c5652bce; hosted summary is 787 passed / 26 expected skips / 3 warnings. The separate local application result remains 796 passed / 17 skipped / 3 warnings, bound only to 182c4e4. This later documentation-only refresh requires its own exact-head CI after push. Production remains HELD; historical counts retain their original scopes.",
   "tracked_markdown_files": 100,
   "documentation_artifacts": 259,
   "summary": {
+    "current_handoff_hashes": {
+      "docs/v4/publication-recovery-hold-evidence.json": "3cce88e4d692f726be710c1f4db46b1428c9546561424a2ab0ad120363becc66",
+      "docs/v4/publication-recovery-hold-successor-evidence.json": "9a8ffd1e15891409df977a4bd72b68eb068108ce66edf5fd5fb90e836def9911",
+      "docs/v4/evidence-lock.json": "3b432dc1b506b847cb4bdc51bbc9229c1d51b18d94feec78e6f6d6781d3a9267",
+      "docs/v4/p1-qualification-matrix.json": "0cc83700a3d0b2fdc31392cb0af172c2f41a6507a847f099f4cf310638d85dfb",
+      "docs/v4/progress.md": "c9f240eac1e675f58f6d3375eec3b7340e2f91a811420c78db4eb9cb9ba9a88e",
+      "docs/v4/IMPLEMENTATION-BLUEPRINT.md": "62e538b89b35ac5c8782df183610ddecc59c296d8d2aef5ecd20791802c3d4be",
+      "docs/v4/p0-release.json": "3d1ad7bf1c483b1c0ab09739d89f8fc28b06b48e110bf37eb1b7c048e932c0d0",
+      "docs/v4/repository-enforcement-evidence.json": "1791bb5009118af6d019d066daef04dd6a6af480509f81e0fa52e11cbaa63229"
+    },
+    "tracked_markdown_disposition_counts": {
+      "tracked_markdown_paths": 100,
+      "update_now_paths": 71,
+      "non_update_paths_preserved": 29,
+      "historical_immutable": 16,
+      "generated_vendor": 12,
+      "already_current": 1,
+      "dispositions": {
+        "preserved plugin instructions, references and examples; independent skill scope": 12,
+        "preserved dated qualification report": 2,
+        "active user-authored project instructions; preserved verbatim": 1,
+        "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained": 71,
+        "preserved original design source or historical diagram": 2,
+        "preserved immutable historical snapshot; bytes retained verbatim": 1,
+        "preserved YouTube-agent reference research": 4,
+        "preserved dated preparation plan": 3,
+        "preserved dated design specification": 3,
+        "preserved dated independent item7 qualification report": 1
+      }
+    },
     "preserved plugin instructions, references and examples; independent skill scope": 57,
+    "preserved dated qualification report": 17,
     "active user-authored project instructions; preserved verbatim": 1,
+    "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained": 71,
     "preserved original design source or historical diagram": 7,
     "preserved immutable historical snapshot; bytes retained verbatim": 1,
     "preserved immutable historical snapshot": 62,
+    "preserved YouTube-agent reference research": 4,
     "preserved historical architecture visual": 8,
+    "preserved dated preparation plan": 3,
+    "preserved dated design specification": 3,
     "preserved source, archive or coverage manifest": 4,
     "current documentation audit; self hash omitted to avoid a recursive digest": 1,
+    "Current Task 8 exact-candidate source inventory; Task 10 lock SHA and file count retained separately": 1,
     "preserved dated independent item7 qualification report": 6,
+    "preserved dated preparation report": 1,
     "durable local canonical dry creative qualification report": 1,
-    "active legacy integration contract for locally qualified no-effects stages and retained production obligations": 1,
     "preserved dated legacy intelligence qualification report": 1,
     "preserved dated canonical no-send dummy qualification report": 1,
     "historical A4 publication qualification with current recovery-hold evidence pointer and exact A4/d031172 rereview scope": 1,
     "preserved dated legacy brief and scheduled ingress qualification report": 1,
     "preserved dated original native schedule qualification report": 1,
+    "Current release ledger records Task 8 exact candidate artifact pins; no production acceptance claim": 1,
+    "Current P1 matrix records exact candidate artifact pins and retained production holds": 1,
     "preserved dated parallel qualification report": 1,
-    "preserved historical exact-commit readback for published base 4bbffb6; current 20be781 readback is separately recorded": 1,
-    "preserved dated qualification report": 17,
-    "preserved dated preparation report": 4,
-    "preserved YouTube-agent reference research": 4,
-    "preserved dated design specification": 3,
-    "active project Markdown aligned with successor 182c4e4 local qualification and retained production holds": 70,
-    "current release ledger; 796-test successor qualification PASS, production release remains HELD": 1,
-    "current successor 182c4e4 local publication recovery-hold fixture qualification; production gates remain HELD": 1,
-    "current 366-file content lock for successor 182c4e4; superseded 386d4bc and Task 10 locks preserved": 1,
-    "preserved historical Task 10 source-bound publication recovery-hold evidence with original P0-pinned bytes": 1,
-    "durable current source-bound successor 182c4e4 publication recovery-hold evidence; production remains HELD": 1,
-    "current_handoff_hashes": {
-      "docs/v4/publication-recovery-hold-evidence.json": "3cce88e4d692f726be710c1f4db46b1428c9546561424a2ab0ad120363becc66",
-      "docs/v4/publication-recovery-hold-successor-evidence.json": "101944cec5e171a3519c6db1ee9f77935082a03669fc7bbec8900f81147b0c3f",
-      "docs/v4/evidence-lock.json": "3b432dc1b506b847cb4bdc51bbc9229c1d51b18d94feec78e6f6d6781d3a9267",
-      "docs/v4/p1-qualification-matrix.json": "d2aae69da42fe6fbc14b3217483cb85703b1f6440f251d37c01168f6f545740f",
-      "docs/v4/progress.md": "7d00aaf308ecddec953b701db44affcea0eb334aae67c8613a1bc3d672434b86",
-      "docs/v4/IMPLEMENTATION-BLUEPRINT.md": "bc185d0fbcb40df5519570d512b923a92eacf8d1deedfe5308607af7eafa4641"
-    }
+    "preserved historical Task 10 publication recovery-hold evidence and original P0-pinned bytes": 1,
+    "durable current successor 182c4e4 source-bound publication recovery-hold evidence; production remains HELD": 1,
+    "preserved historical exact-commit readback for published base 4bbffb6; current 20be781 readback is separately recorded": 1
   },
   "application_source_files_verified": 360,
   "prior_application_files_preserved": 347,
@@ -63,23 +85,23 @@
   ],
   "mermaid_source_blocks_preserved": 13,
   "item7_status": "COMPLETE_IMPLEMENTED_LOCAL_FIXTURE_QUALIFICATION; historical item7 scope preserved",
-  "independent_review": "Task 11 review found floor/evidence gaps in Task 10 candidate 5cb5791, which remains unsupported. Local qualification of successor 182c4e4 is complete; fresh independent review and GPT-5.6 meta-review remain pending. The prior corrected-publication rereview applies only to A4/d031172; production acceptance remains HELD.",
+  "independent_review": "GPT-6.1 reviewed pushed feature head 6f5edc77edbfe189e46de4254c2fdb21c5652bce across 59 commits / 38 changed files and found 0 Critical / 0 Important / 1 explicitly nonblocking Minor. GPT-5.6 accepted the assessment and approved the unchanged push. Actions run 38592066455 passed both required jobs on that exact head (hosted 787 passed / 26 expected skips / 3 warnings). Application-local results remain bound to 182c4e4. This docs-only refresh needs its own post-push exact-head CI; historical review scopes and production holds remain unchanged.",
   "next_queue_item": null,
   "production_effects_enabled": false,
   "RG0": "HELD",
   "RG1": "HELD",
   "verification": {
-    "status": "PASS_LOCAL_SUCCESSOR_182C4E4_QUALIFICATION; HISTORICAL_614_TEST_RESULT_REMAINS_BOUND_TO_7878208; PRODUCTION_RELEASE_HELD",
-    "documentation_tests": "PASS: 15 documentation tests; checker and self-test PASS (75 requirements, 2 source files, 366 evidence files, 360 inventory files, 6 negative controls); all 4 shell contracts and 6 Mermaid diagrams passed; 4 current/new JSON documents parsed; pip check, compileall, 14 historical hash checks, 360-file application evidence-lock validation, and git diff --check passed.",
+    "status": "PASS_LOCAL_SUCCESSOR_182C4E4_QUALIFICATION; 6F5EDC7_BRANCH_REVIEW_META_REVIEW_AND_CI_PASS; DOCS_ONLY_HEAD_CI_REQUIRED; PRODUCTION_RELEASE_HELD",
+    "documentation_tests": "PASS for 15 documentation tests, checker/self-test (75 requirements, 2 source files, 366 evidence files, 360 inventory files, 97 Markdown, 4 HTML, 6 negative controls), all 4 shell contracts, 6 blueprint Mermaid diagrams and 2 README Mermaid diagrams; 5 changed JSON documents parsed. AgentTube tests/verifier pass on a clean tracked checkout; the direct task worktree run reports an ignored historical artifact false positive, recorded explicitly. 71 updated and 29 unchanged Markdown paths are inventoried; final hash/link consistency and git diff checks are recorded in this Task 2 audit.",
     "mapped_obligations": 75,
     "negative_controls": 6,
     "documentation_shell_contracts": 4,
     "preserved_documentation_artifacts": 165,
     "independent_reviewers": 3,
     "reviewed_p1_rows": 17,
-    "independent_review_scope": "Task 11 independent review of Task 10 candidate 5cb5791 completed with floor/evidence findings, making that candidate unsupported as the rollback floor. Review/meta-review and final artifact checks for the repaired 0043 candidate remain open. The corrected-publication rereview applies only to A4/d031172; production acceptance remains HELD.",
+    "independent_review_scope": "Current whole-branch review/meta-review and exact-head CI are complete for pushed head 6f5edc77edbfe189e46de4254c2fdb21c5652bce (GPT-6.1: 0 Critical / 0 Important / 1 nonblocking Minor; GPT-5.6: ACCEPT; Actions run 38592066455: both required jobs pass). These results do not change the application-bound 182c4e4 test counts or production acceptance. The later docs-only refresh requires its own post-push exact-head CI. Task 11 findings stay scoped to 5cb5791, and corrected-publication rereview stays scoped to A4/d031172.",
     "tracked_markdown_files": 100,
-    "active_project_markdown_files": 70,
+    "active_project_markdown_files": 71,
     "active_integration_contracts": 1,
     "tracked_markdown_paths": [
       ".agents/skills/archify/SKILL.md",
@@ -189,7 +211,7 @@
     "current_local_application_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
     "current_focused_tests": 9,
     "current_full_non_live_tests": 796,
-    "published_base_ci_protection_status": "PASS; no current feature-head CI/protection claim",
+    "published_base_ci_protection_status": "PASS for published base 20be781; separate current feature-head readback is PASS at 6f5edc7, and the later docs-only head requires its own CI.",
     "published_base_commit": "20be7815d5e5c95fea2161c908ce8ac5cae88ce6",
     "current_qualification_application": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
     "focused_tests": 21,
@@ -197,12 +219,11 @@
     "source_files": 352,
     "corrected_head_rereview": "COMPLETE for application a4b2368cdb463939d093020224a5b5667392aee6 with documentation/observed HEAD d0311725686d81b7b4747c2d6225986e5ea3a524; this review does not cover 7878208.",
     "documentation_verification": {
-      "status": "PASS",
+      "status": "PASS_WITH_LOCAL_IGNORED_ARTIFACT_EXCEPTION",
       "documentation_tests": {
         "command": "python3 docs/v4/test_checks.py",
         "passed": 15,
-        "exit_code": 0,
-        "log": "/tmp/p1-publication-recovery-successor-182c4e4/attempt-6/docs-gates/final_docs_tests.log"
+        "exit_code": 0
       },
       "documentation_checker": {
         "normal": {
@@ -214,48 +235,36 @@
           "inventory_files": 360,
           "markdown_files_checked": 97,
           "html_files_checked": 4,
-          "exit_code": 0,
-          "log": "/tmp/p1-publication-recovery-successor-182c4e4/attempt-6/docs-gates/final_docs_check.log"
+          "exit_code": 0
         },
         "self_test": {
           "command": "python3 docs/v4/check.py --self-test",
           "status": "PASS",
           "negative_controls": 6,
-          "exit_code": 0,
-          "log": "/tmp/p1-publication-recovery-successor-182c4e4/attempt-6/docs-gates/final_docs_self_test.log"
+          "exit_code": 0
         }
       },
       "documentation_shell_contracts": {
         "passed": 4,
         "failed": 0,
-        "exit_code": 0,
-        "log": "/tmp/p1-publication-recovery-successor-182c4e4/attempt-6/docs-gates/final_shell_contracts.log",
-        "scripts": [
-          "tests/scripts/test_browser_documentation.sh",
-          "tests/scripts/test_phase_7_8_documentation.sh",
-          "tests/scripts/test_phase_9_documentation.sh",
-          "tests/scripts/test_verify_browser_evidence.sh"
-        ]
+        "exit_code": 0
       },
       "mermaid": {
         "status": "PASS",
         "diagrams_rendered": 6,
         "version": "12.0.0",
-        "results_sha256": "6a04203cacd481c7c9e2000bd83834a2ac1ad0cb0ab4d4db433ba6aa557502ba",
-        "log": "/tmp/p1-publication-recovery-successor-182c4e4/attempt-6/docs-gates/final_diagrams.log"
+        "results_sha256": "6a04203cacd481c7c9e2000bd83834a2ac1ad0cb0ab4d4db433ba6aa557502ba"
       },
       "json_parse": {
         "status": "PASS",
-        "changed_tracked_json_files": 3,
-        "successor_json_addendum_parsed": true,
-        "log": "/tmp/p1-publication-recovery-successor-182c4e4/attempt-6/docs-gates/final_json_parse.log"
+        "changed_tracked_json_files": 5
       },
-      "pip_check": "PASS",
-      "compileall": "PASS",
+      "pip_check": "Prior candidate run PASS; not rerun for docs-only refresh.",
+      "compileall": "Prior candidate run PASS; not rerun for docs-only refresh.",
       "git_diff_check": "PASS",
       "audit_counts": {
         "tracked_markdown_files": 100,
-        "active_project_markdown_files": 70,
+        "active_project_markdown_files": 71,
         "documentation_artifacts": 259,
         "checker_inventory_files": 366
       },
@@ -270,7 +279,38 @@
         "R18_executed_verifier_cases": 76,
         "R32_executed_verifier_cases": 81,
         "R18_R32_production_release_status": "HELD",
-        "log": "/tmp/p1-publication-recovery-successor-182c4e4/attempt-6/docs-gates/final_audit_and_lock_consistency.log"
+        "update_now_markdown_paths": 71,
+        "non_update_markdown_paths_preserved": 29,
+        "all_non_self_inventory_hashes_recomputed": true,
+        "current_handoff_hashes_refreshed": true
+      },
+      "agenttube_reference_boundary": {
+        "status": "PASS_IN_CLEAN_TRACKED_CHECKOUT; DIRECT_TASK_WORKTREE_RUN_FLAGS_IGNORED_ARCHIVED_ARTIFACT",
+        "direct_task_worktree": {
+          "test_command": "python3 docs/v4/test_agenttube_reference.py",
+          "test_status": "FAIL: 2 of 17 tests; 15 passed",
+          "verifier_command": "python3 docs/v4/verify_agenttube_reference.py",
+          "verifier_status": "FAIL",
+          "cause": "The verifier recursively scans ignored artifacts/ and flags a historical audit snapshot that mentions AgentTube in its status prose.",
+          "artifact_path": "artifacts/v4-next-p1/agents/p1-publication-recovery-0043/task8-cfebcd0-docs-before-final-pin-update/documentation-status-audit.json",
+          "artifact_modified": false
+        },
+        "clean_tracked_checkout": {
+          "test_command": "/tmp/salience-v4-p1-recovery-20261006/.venv/bin/python docs/v4/test_agenttube_reference.py",
+          "tests_passed": 17,
+          "test_status": "PASS",
+          "verifier_command": "/tmp/salience-v4-p1-recovery-20261006/.venv/bin/python docs/v4/verify_agenttube_reference.py",
+          "verifier_status": "PASS",
+          "worktree_head": "2779edc14d92f81bcc5beb7e8f86b9f626bf8ad7"
+        }
+      },
+      "readme_mermaid": {
+        "status": "PASS",
+        "diagrams_rendered": 2,
+        "version": "12.0.0",
+        "results_sha256": "35b748c9a67e47e8d2d6bfc9c87ceb77f67e18b0e7161a7a994e453b3a27f3dd",
+        "output": "/tmp/salience-v4-p1-readme-task2-render",
+        "visual_inspection": "PASS; both diagrams rendered and evidence links are dashed/labeled as documentation only."
       }
     },
     "current_full_non_live_application_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
@@ -282,7 +322,7 @@
     "current_candidate_wheel_sha256": "425b7122f6431459a15bc4fe7bbdd169692b152356a0f36c6895e3fd452e3d04",
     "current_candidate_launch_lock_sha256": "1c8ac4ff92e589e27dc0af2c6dd0bc69c4295435df5a318174a2c77f3b1f2c9c",
     "current_candidate_runtime_manifest_sha256": "3d58423ee9119db38c9a670c726c83692bef126d402e69f2a9ad98e05377b644",
-    "current_independent_review_scope": "Successor 182c4e4 fresh independent review/meta-review and exact-head CI remain pending; Task 11 findings stay scoped to 5cb5791 and corrected-publication rereview stays scoped to A4/d031172.",
+    "current_independent_review_scope": "Current whole-branch review/meta-review and exact-head CI are complete for pushed head 6f5edc77edbfe189e46de4254c2fdb21c5652bce (GPT-6.1: 0 Critical / 0 Important / 1 nonblocking Minor; GPT-5.6: ACCEPT; Actions run 38592066455: both required jobs pass). These results do not change the application-bound 182c4e4 test counts or production acceptance. The later docs-only refresh requires its own post-push exact-head CI. Task 11 findings stay scoped to 5cb5791, and corrected-publication rereview stays scoped to A4/d031172.",
     "current_documentation_artifacts": 259
   },
   "files": [
@@ -588,8 +628,8 @@
     },
     {
       "path": "README.md",
-      "disposition": "active project Markdown aligned with Task 10 publication recovery-hold candidate results and retained production holds",
-      "sha256": "6b53b228b7a82a9d3c645ad5f41312cb164695ab7de8d2a8b72c1fb3756acfd6"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "3f066bd0388be520d42f09d6d201776c92ed10c714b3bdbd0dd081dbbc7d186e"
     },
     {
       "path": "docs-new-arch/ArchCurrent.mermaid",
@@ -628,58 +668,58 @@
     },
     {
       "path": "docs-new-arch/README.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "4547ad5d160941ea5b9723fe0167fe6aa19bb6077f36d375d4bb26190260c493"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "bae52f5f32c00e3ca53f7da2dd48eaa0db5329c84e1f5826de78a2791772dc9f"
     },
     {
       "path": "docs/README.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "8b3a9131e4affc768b6c810ccd93bb270f3a38741a613986c428ce1fcb868c68"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "5aeaa03d07b90abe619e51976a72861197d3c808eed1a8ba5955c09c7e72ef40"
     },
     {
       "path": "docs/adr/0001-durable-runtime.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "f29a411d110a13b70cfa4843c3d7dbecd0e44609ad37649e2dd8469d52b70a0d"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "45b80c8aa0c54b57130c53b84a4aa6e359816ac298fa2d92a702faf8fc20f07e"
     },
     {
       "path": "docs/adr/0002-object-storage.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "140c2bb3a1ad9e1a3817ba674e0ed4524ff585be8d93b739b22d8561144edb75"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "ed5776e6af156a3029027b29e1ea626c349401edc4ffffa8d5308474c9d05604"
     },
     {
       "path": "docs/adr/0003-api-persistence-and-contracts.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "3e542747777dc63d78d9e2747b4b078fa11ddb6c108ec4c437b17a19e8f6f5c2"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "5c92b8d942dda0d7eea15d6f6086f98f97e3ed20cdf7571c7e4d0cf20f445de6"
     },
     {
       "path": "docs/adr/0004-governance-secrets-and-protocols.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "d72fcb1e8aff2e85e551d20a4008d51fa8add8ded818bfdd07d07eca7845d4a1"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "ea646993715d4fe26b55a2d161d8df4ebc6d9d2dd5161e2603c768e53f105a48"
     },
     {
       "path": "docs/adr/0005-mcp-a2a-and-browser-sdk-adoption.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "14a1c01fa6a5d26d878d6be1e13e580375c16606ac88dde0bb9f01c7ee9fc76b"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "4759e94e373289311c987cb52edd32b00a10a875b7ab920bc060670fbc9c1d43"
     },
     {
       "path": "docs/adr/0006-governed-publishing.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "53c04388bc53d731a860cea198a3227b8ce571b97f9fe3edbcf96f924b414acd"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "2ffd75e09151365f53f7080fd57b00b6d742f25537b45fe0866bd2195b71f713"
     },
     {
       "path": "docs/agents.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "4e2b6309ecd5faf32e3118ddf3824bc58e3225367346f21fd80309412cf8bc15"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "475925db59db9e4d6bfbb359dda57e8c1248dbdb527db255370d141c03bf7125"
     },
     {
       "path": "docs/api.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "ef2fe6d08dfd2e45e2733f239d4931d0db0e6fe7349af8104cf2d61b4fa402ab"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "0d55c63c67ee84b2edb1fb5dfdf76afe15aba2e71190aa3611e8c4ae560907c2"
     },
     {
       "path": "docs/architecture.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "dafd82f8c73e3d43e6b5bfd1dde39b0f83a505aeb5675f831d0458551b5bdf53"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "a7dc8d8f5c27f023bdc1064a91f91daadc9828ad0addc5e27b37ac3f2cfd46b4"
     },
     {
       "path": "docs/archive/2026-09-22/README.md",
@@ -998,153 +1038,153 @@
     },
     {
       "path": "docs/bootstrap.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "18ca9c8ae9749b78163489c8c351483564d8cb891f1be5c784af91bb3db830d2"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "0d272075f524ade0a55b50a56a16936eb03220e4bacd75f60393ea462f52ce61"
     },
     {
       "path": "docs/compatibility.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "cda8240346ff1bd77bceb0be18a1f87a0d3bad99bc52e9424d15850aa6417d09"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "492e88c292af028c11c55e42b9463e4967c3250a70b3cdb2d0ccde2bea657adb"
     },
     {
       "path": "docs/contracts/adapter-contracts.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "f20bded6d85611a5d52d437c6776f2767278a84e9d8dc78583ddd167ce400eca"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "8da92cb1c787573be8f0e709bfa32aa04b403fbcec33f171fe559d99db3fd302"
     },
     {
       "path": "docs/core/00_BUILD_AGENT_PROMPT.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "5ac7307307c1d896a15c755c85806902798f0605ad54575edc621e62ff6169dd"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "3fc7941ce612f521cdc153425cbdbd613358869d6a6abf2f055d44e1e9cf1cba"
     },
     {
       "path": "docs/core/01_PRODUCT_CONTEXT_AND_INTENT.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "f7a6d8bfa11bb17af391e57f3befe8c645088ab62a9a01cffbfd40573fc42182"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "a50944e6368d3d3a20c650275553675af8fd959e5b869af5ddae90fcc7c6b05f"
     },
     {
       "path": "docs/core/02_REFERENCE_RESEARCH.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "45f9a821f8a41f3dc4da83a4cf6b6ccdcdbbcb177b41246a10b76d36627b1633"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "d2be8feda6f5fbd4804ce1e7e01dcad1453b7262df8898e754e417572c8ccbf9"
     },
     {
       "path": "docs/core/03_TARGET_ARCHITECTURE.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "6daa3e56ce15ad89f83fe58f5ad4b12959fbcc9c540ab1166749030aa466e367"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "ab2e7d16ef67435fd1ed351dabe09142f295edb431b5b41ed226522f53a00378"
     },
     {
       "path": "docs/core/04_BROWSER_APP_AND_RESEARCH_CONTROL.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "f21070ce398b739cea83c90b90775b4160057b99c9418a9c38d16adf962bfebb"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "54e69de25f5326f6de2aa079b4e7f6cb337cc5715bec2629e9c0699487137c30"
     },
     {
       "path": "docs/core/05_IMPLEMENTATION_PLAN.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "01cb1691e9ee1ad58cceb2369615a110491d690b70212f4ae64363372e3029e3"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "e89fdd85c0d802374b8a1e67a41ed8ff20ba0a5b9a6b0d33d8358f9be36718cb"
     },
     {
       "path": "docs/core/06_ACCEPTANCE_TESTS_AND_GUARDRAILS.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "999b8dd05db54ffc1d4c569fb6fffb8e7bdc5f3d764f41ebc226b2399cae88a8"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "6ac887e7258b366eae68bcd4c4524b57d0b19b3acd5a94563a67f1e34496e8e0"
     },
     {
       "path": "docs/core/07_REUSE_EXTENSION_AND_FUTURE_PROOFING.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "891f94edc685c415995e899551bb03eb037921c67a2795e4fc263b6dbdf3aaea"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "a4448853f4a3a4830faa64625150e281486823c5b38d262a5d15f24fb9c6d64e"
     },
     {
       "path": "docs/core/08_LEAD_AGENT_AND_CREATIVE_TOOL_RUNTIME.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "dce0151669f0d4363ee359a1b0df086b6ee8ffe4e82c07de186ed1cda06a2c4e"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "9224db9889f871729424ca570ee23c4b4715fc7410899d1e4cb3fd3d94538c67"
     },
     {
       "path": "docs/core/09_CALLABLE_AGENTS_AND_ENGINEERING_METHOD.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "107f6cb5ef157b03d3415ab382ec70b2b0be124de0db58de9a85a4c3d7ad1947"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "6eb539f5e7105f017cd4202c7571570eb1ea0f912d8384bb1f0a09de705e86a7"
     },
     {
       "path": "docs/core/README.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "59be9899471a07dc40d7f9809212ad49fa183983e79b5a449f23603fb4368f51"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "0dbbce2165ab53ba320202c583eaa97ef67971c5411d4ea2a2fef5d8e43045c7"
     },
     {
       "path": "docs/database.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "e13389d6d104a1d524e13b9e7acba2f8e5f45889a449c3d5f9ba1f28ec5eaf5f"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "ae816ebc7ce53dc8c9e80d8766b9900f45b52cea20a983f1c04b3786ebb84153"
     },
     {
       "path": "docs/dependencies.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "62027bc545ca7f0eff70741905e911f38876285681766fc600b3394f1bd4eb9b"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "762268eee8946866fd437b21027527373ff924a3de030f00d3bb821c38e37166"
     },
     {
       "path": "docs/deployment.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "ea2af05d895dec487ec3d9dc9f10a3705c3729b2be34416ee2077d9294eb6b1f"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "1c3e0686624df9b2b72a0d8f55b0247c8d8c44f1d8c8929ae4ed286cd681d69a"
     },
     {
       "path": "docs/governance.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "1058c24c1d388c2808ba2143a7e53ef6bf383c843b4837063aca6ebaf44832d5"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "001097734cca9757d4ccfc22039f6815dec1b24c40a43c39460567e48291458f"
     },
     {
       "path": "docs/implementation-progress.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "8fade2777170e18f3ef95f89a3b56fd6869476783fe0c466ed3946425d14e35a"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "1129993aaab20b5f127af83b61e845b7a2a5b8b67788df298b557facb22c4191"
     },
     {
       "path": "docs/limitations.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "0df448ff631c3f24071656634726fc4ca2eeaeb7915e80deffee8b7e5e296199"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "4a02b07eb29c8c8937f3592318ba8608586f8fe722f82f5bc7c1731286479f50"
     },
     {
       "path": "docs/local-development.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "ff3b80042f61f65a7c1db15bb3f713169f9ddc6d1a6deb76e669a6168560d15f"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "a7ab041edea247a91073c28e2781f42dd0e44cbcfd050bd3525f3d62c0646801"
     },
     {
       "path": "docs/mcp-a2a.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "ef72ff39486606ae0baf5d5f8cb06025ab8a9007a4366de1432ad9fd67b293ce"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "04965f3c7954bc92dfe498ed754a94794fc249f76d8f5c3805111451a34f3e5b"
     },
     {
       "path": "docs/memory.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "8d977aa1060ec02cdedca71fbca6b624782992c26af4e3398214f855457a5f29"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "7929ad3ac8391a72ff43d357f82388ff1c61b5415cf819c2ec6258fbfe7cfc33"
     },
     {
       "path": "docs/model-execution.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "f698ab5b4bcb5a52cd198269ec70e111e9876a3a1d304afd3f63f36a9e1fb3dd"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "00bbc35117d6ba10dd1d97655e850640282e698f7a5c1421a9cac29235d494ab"
     },
     {
       "path": "docs/model-gateway.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "877644b49155e1d9fda996c4349018cda7a749f5fbb6018e33e9bb0e63afdf25"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "28a952d2b3fb75ca53febf5c3f1e8495a85e3ef4d47563a6d715e719c627d922"
     },
     {
       "path": "docs/phase-7-handoff.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "417fb97cb31d11ebd58111932c7b5cb3d85f69c4b2fbb0965014dbec1d01949f"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "aafc003f673daec17987f11eb7ac777e2ff5b3532670e4f7acc5a52803702772"
     },
     {
       "path": "docs/phase-9-handoff.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "8e00ff28617f2e290f5da7cd8ee3dc494f42f49532215906e414e5905fb18615"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "339fac8570a67815ccfb768dd6d0a03b2001d1529b1e90cb4c26ed3a3fcdf9ad"
     },
     {
       "path": "docs/plugins.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "177ce557188c4816ed04ac95f8c5e4e428324cd31426ed75e20d597c01f2725b"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "5eda3b009f6c14653fdc42ea83276d8e9c8284ed86890fab78710dddabaf0f34"
     },
     {
       "path": "docs/recovery.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "72a55b063b38d084db3a1366d31987f8eedf3531aee3ba3c1aac954f9093c1b5"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "03e8134c79365bf66ab375229457fc322cc37ff38d794b45c48bf10bc0e74ea2"
     },
     {
       "path": "docs/research.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "35cff8b863ff1aa01649d46226277dbd9d46066643231e745105250274eada54"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "b9e6fffd86360640e0137640d0efdd0ab982eb89786a60ba613ba28d5344fbf4"
     },
     {
       "path": "docs/research/youtube-agent/architecture-audit.md",
@@ -1208,43 +1248,43 @@
     },
     {
       "path": "docs/superpowers/plans/2026-09-12-browser-evidence.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "48700e39677cf5c2e81db2d61fa143d2f0123b1020036f957e79cbfb7c6c8898"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "379e8a91f6c5bdf86e626b85b65183a9c6eab44295c6c810890d064992047a1e"
     },
     {
       "path": "docs/superpowers/plans/2026-09-12-intelligence-loop-phases-5-6.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "be80ce90ace5b0f3e7327c33be93c63e77fcd7fd6693b34c6ffe9cedf05a2a2d"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "7c9ff324f68a28a73a31d927117a9fc24e89f393fdc032fa05661a66c650116e"
     },
     {
       "path": "docs/superpowers/plans/2026-09-12-phases-1-4-foundation.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "dc297b164eb1b8d648eb818f963d9dfb17f6d6ae580fcd4bff63be1b882e859e"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "c458aef124dbb8cdfeb637d89856710f0ac73e30c14665639f67ac40d72a1e7c"
     },
     {
       "path": "docs/superpowers/plans/2026-09-13-creative-production-phases-7-8.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "095127885cd4ad2cc12f80f061356bb87fdb3fde384a18c45e1b727a3a43bc4b"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "d7d5322cb4f6df5c73bf47dab67c27627a682239d38abe073f35341372397d82"
     },
     {
       "path": "docs/superpowers/plans/2026-09-13-phase-7-8-release-gate-phase-9-publishing.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "76aa4a55c0b28d1058c0438080d5a120e5b5c385c7742a19d6f1c78ecdf58d03"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "6ecc4343cf22586451099c463f746464e61f0f51518050d48fbbc5363af2ec23"
     },
     {
       "path": "docs/superpowers/plans/2026-09-13-phase-7-8-review-repairs.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "01f1b373ddb00430e24f7e219fb7b33e2a6728d9c9dffe01eca3a0f989f90cb8"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "096cd3e808a5cb8baebd26306a488a392be439791fe94c0bfc6295286d455ca2"
     },
     {
       "path": "docs/superpowers/plans/2026-09-13-phase-9-independent-review-repairs.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "9734f35756fb521f0f0ffaeaca6083e52bd447f0672fcf99cf3d35000fd4d073"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "8b0586343504d8d461e735d3c177c533373cf35c706a649396f36dffda656e88"
     },
     {
       "path": "docs/superpowers/plans/2026-10-06-p1-publication-recovery-hold.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "446256292ff02c6995b45e9f7ce45f21ab2f314f5afadf3705d5c4142c7ef21e"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "48684cfbb088ed4c2015a3b7e76e68bdce6cc3ce85184334a33619c7a59bb001"
     },
     {
       "path": "docs/superpowers/plans/2026-10-13-agenttube-immutable-reference-guard.md",
@@ -1263,38 +1303,38 @@
     },
     {
       "path": "docs/superpowers/reviews/2026-09-13-phase-7-8-release-gate.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "2d5697c930240fd323fd3920d4a876ad84b1dc0a76ac76ea3c23fc663c8fb4ed"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "a285b5420c677c3a35e23306b72b3ecf44b0877b03a1832511dd0a1e74396408"
     },
     {
       "path": "docs/superpowers/reviews/2026-09-13-phase-9-independent-review.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "71bc1a44489f91341ad12ca6a79006c00ee8dd8ee3976c85a73c6349a0e9e397"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "36bbd9319a1286b817685daffbc752017f41b7ef65752fe675b6223ffdaeec0c"
     },
     {
       "path": "docs/superpowers/specs/2026-09-12-browser-evidence-design.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "05941eab32589d3bef92cad53ce99ab46c4f93d9afc1dfacce39b277c7b972a0"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "49eede3f517b83f2e2ff7584717436e668f847a4af5cbbc6639b5a5dfc45e8df"
     },
     {
       "path": "docs/superpowers/specs/2026-09-12-intelligence-loop-phases-5-6-design.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "ef5f87c96dca9d5cf4450876230507447c35891e035aed5d6663183f684a2be3"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "07754380584a9df1ba52d57ee9dc90e32f5207064979d72b98dcb54d1b87ad35"
     },
     {
       "path": "docs/superpowers/specs/2026-09-13-creative-production-phases-7-8-design.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "ff6f896ab6fcf920ab7e0a95b7ff99361072befcb164c72ddeed4de61f9b0487"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "e0f0406a1fe058b71bee31034b77fa183e406f8658468ea118889909ee710ff5"
     },
     {
       "path": "docs/superpowers/specs/2026-09-13-phase-7-8-release-gate-phase-9-publishing-design.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "c566a8ab9f9c2f96776582bb1d50ca62eb2696f0340287cf63c3150869364b53"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "3295c2f0e18ef307694c2600639810e1d5cdf802ec624f6030876267b6592c95"
     },
     {
       "path": "docs/superpowers/specs/2026-10-06-p1-publication-recovery-hold-design.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "309ed7f41ff9f092ba218ee9547abf57d9a53c72c62cf8a278d1475a9d67894d"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "ff961144c58b22fbcbfe624dfd17909377d8aa4b25d04ca14e3ae4947aa2d26d"
     },
     {
       "path": "docs/superpowers/specs/2026-10-13-agenttube-reference-and-native-adoption-design.md",
@@ -1313,13 +1353,13 @@
     },
     {
       "path": "docs/trust-model.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "621f309bf9ae5015e6b3cc8c885cd1388b9900f0576e51c02634d979b2390f92"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "664d74e61f43bd12b5f87f04c828a492f484c6fec2dc42f015f6e5ee3049e550"
     },
     {
       "path": "docs/v4/IMPLEMENTATION-BLUEPRINT.md",
-      "disposition": "Active project status records exact Task 8 candidate artifacts and retained production holds",
-      "sha256": "bc185d0fbcb40df5519570d512b923a92eacf8d1deedfe5308607af7eafa4641"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "62e538b89b35ac5c8782df183610ddecc59c296d8d2aef5ecd20791802c3d4be"
     },
     {
       "path": "docs/v4/allocation-evidence.json",
@@ -1458,8 +1498,8 @@
     },
     {
       "path": "docs/v4/legacy-dispatch-contract.md",
-      "disposition": "active legacy integration contract for locally qualified no-effects stages and retained production obligations",
-      "sha256": "dc41a9f2692293368e1ee4e6a32681feff69c29d032166619d3ba912c14c9e03"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "a57b3588de14ffbd5dbfe1b4a5a33ca5244dbd42844fb096a41d892b48c75395"
     },
     {
       "path": "docs/v4/legacy-dispatch-evidence.json",
@@ -1494,7 +1534,7 @@
     {
       "path": "docs/v4/p0-release.json",
       "disposition": "Current release ledger records Task 8 exact candidate artifact pins; no production acceptance claim",
-      "sha256": "2088686478d19df2fc2443fbe67974b8ac108e844a7c13cf79d0de7231d43bcb"
+      "sha256": "3d1ad7bf1c483b1c0ab09739d89f8fc28b06b48e110bf37eb1b7c048e932c0d0"
     },
     {
       "path": "docs/v4/p1-increment-evidence.json",
@@ -1504,12 +1544,12 @@
     {
       "path": "docs/v4/p1-qualification-matrix.json",
       "disposition": "Current P1 matrix records exact candidate artifact pins and retained production holds",
-      "sha256": "d2aae69da42fe6fbc14b3217483cb85703b1f6440f251d37c01168f6f545740f"
+      "sha256": "0cc83700a3d0b2fdc31392cb0af172c2f41a6507a847f099f4cf310638d85dfb"
     },
     {
       "path": "docs/v4/parallel-agent-contract.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "3f8c0b74c9864135209876b8f8a5aa926e1f8c749d3e1f932a9d2da3010ed389"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "9daa5c45a4493dc693ca3bde3bf327b4a24bf84e611ea2a0843caa26a3209c10"
     },
     {
       "path": "docs/v4/parallel-agents-evidence.json",
@@ -1518,8 +1558,8 @@
     },
     {
       "path": "docs/v4/progress.md",
-      "disposition": "Active project status records exact Task 8 candidate artifacts and retained production holds",
-      "sha256": "7d00aaf308ecddec953b701db44affcea0eb334aae67c8613a1bc3d672434b86"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "c9f240eac1e675f58f6d3375eec3b7340e2f91a811420c78db4eb9cb9ba9a88e"
     },
     {
       "path": "docs/v4/publication-recovery-hold-evidence.json",
@@ -1529,66 +1569,66 @@
     {
       "path": "docs/v4/publication-recovery-hold-successor-evidence.json",
       "disposition": "durable current successor 182c4e4 source-bound publication recovery-hold evidence; production remains HELD",
-      "sha256": "101944cec5e171a3519c6db1ee9f77935082a03669fc7bbec8900f81147b0c3f"
+      "sha256": "9a8ffd1e15891409df977a4bd72b68eb068108ce66edf5fd5fb90e836def9911"
     },
     {
       "path": "docs/v4/repository-enforcement-evidence.json",
       "disposition": "preserved historical exact-commit readback for published base 4bbffb6; current 20be781 readback is separately recorded",
-      "sha256": "89ba61981b9d5062b16ecdf6d1ef4e992e3130e63a7aa1ca8383c180116f40a7"
+      "sha256": "1791bb5009118af6d019d066daef04dd6a6af480509f81e0fa52e11cbaa63229"
     },
     {
       "path": "docs/v4/validation.md",
-      "disposition": "active project Markdown aligned with Task 10 publication recovery-hold candidate results and retained production holds",
-      "sha256": "35cf28dd411392113831903585d854ed9b920b987af8d9df5f5e5a50c539d45c"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "e0aef97aa367e8cbbfdbaaf2c0daa3ac46394d351cb8a2e458d08d2a0090d6fb"
     },
     {
       "path": "docs/verification.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "5e1ce79dca1178c05c0dbe36b640228880e30c18f37535b662830f504be18fdc"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "e8ec7ee216c3d496a2bf43d99d65d24e4c7a91cd097762553f471f0c4a68d600"
     },
     {
       "path": "docs/workflows.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "5c18755856b03c61292e69d5858c985095711f9f282e3894d712f3d94536fc69"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "9abd30aa4c92ff1655947dd3662507fa3e3f1b973d19b733a3cab13f54cafabc"
     },
     {
       "path": "prompts/Build Creative Production Loop — Phases 7–8 End-to-End.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "149f3c816b539f1b1ff9e7b219d778949e35612d479e667914f0fa1e54f0b0ab"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "6d77d56568933cdcd79b5ab5723efa2312d72bd57f12547664772618b700cc4b"
     },
     {
       "path": "prompts/Build Phase 10 — Multi-Platform Production Publishing, Analytics, Attribution & Experiments.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "9595b52c451375dafd4987169df82e206bdc81f53f07558d4bd09558c3a56a28"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "756651d83b0e132c22bdd0ecdcf9de218dd00922570c29b30ca912a3cee46b00"
     },
     {
       "path": "prompts/Build Phases 1–4 End-to-End.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "7b5ae83b6ab7b0d685752d211788c5f45b6428d961dcf76d2d31fc3dcccbce38"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "cfb5fca0452db58c216b889786eb42b91641730fa0e27dca6fc57535ea5ba88c"
     },
     {
       "path": "prompts/Build Real Intelligence Loop — Pre-Phase 5 + Phases 5–6 End-to-End.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "5a7613543416e86633e9738b9997c510817c578ca127b1ff2dadf70e3d175ebf"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "93621fa3332bf11c3f2e9ab24cf27a7b3381353aaa80634ea864f30d3253dfea"
     },
     {
       "path": "prompts/Complete Phase 7–8 Release Gate, Then Build Phase 9 Governed Publishing.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "5e0949b2cb2b56a6b2245306774385c62e32bad3590b12b85bcd488a9fc76b6a"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "cab9fb272101f8011067c79c5ac0611c0809d66cb066ce5a6f2023ff1d465af0"
     },
     {
       "path": "prompts/Install and Verify Browser Evidence on Linux EC2.md",
-      "disposition": "active project Markdown aligned with Task 1–8 publication recovery-hold fixture results and retained production holds",
-      "sha256": "0fe106e7a93229e7636815df12a9b79d9e633bbc60f9bbfbc6447f9eeced160b"
+      "disposition": "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained",
+      "sha256": "cab3134054c262cd2e38c77b9b3242ceb1caa91c346d8936212d1ad58dd4f7cc"
     }
   ],
   "qualified_application_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
-  "next_action": "Complete fresh controller review/meta-review, push the feature branch, and run exact-head CI for successor 182c4e4. Keep production acceptance HELD, effects disabled, fixture budget zero, P2–P7 gated, P6 disabled, and main unmerged; continue outstanding production-wide obligations only after candidate gates.",
+  "next_action": "Push this documentation-only refresh and verify exact-head required CI for that resulting commit. Keep application results bound to 182c4e4 and branch review/CI bound to 6f5edc7. Maintain formal PR approval NOT RUN, main unmerged, effects disabled, zero fixture budget, RG0/full RG1 HELD, P2–P7 gated and optional P6 disabled; continue production-wide obligations only under their existing gates.",
   "parallel_agents_status": "PASS_IMPLEMENTED_LOCAL_PARALLEL_AGENT_FIXTURE_SCOPE",
   "parallel_qualified_application_commit": "2653d2ecb3f0d5bb8ea6560de274137dd6032a96",
   "legacy_intelligence_status": "PASS_LOCAL_LEGACY_INTELLIGENCE_AND_PUBLICATION_FIXTURE_STAGES; ORIGINAL_NATIVE_INTELLIGENCE_AND_PUBLICATION_SCHEDULES_QUALIFIED",
   "goal_status": "ACTIVE",
-  "independent_review_scope": "Task 11 findings remain scoped to Task 10 candidate 5cb5791. Successor 182c4e4 has completed local qualification and remains outside earlier independent review scopes pending fresh controller review/meta-review and exact-head CI. Corrected-publication rereview covers only application a4b2368cdb463939d093020224a5b5667392aee6 with documentation/observed HEAD d0311725686d81b7b4747c2d6225986e5ea3a524.",
+  "independent_review_scope": "Current whole-branch review/meta-review and exact-head CI are complete for pushed head 6f5edc77edbfe189e46de4254c2fdb21c5652bce (GPT-6.1: 0 Critical / 0 Important / 1 nonblocking Minor; GPT-5.6: ACCEPT; Actions run 38592066455: both required jobs pass). These results do not change the application-bound 182c4e4 test counts or production acceptance. The later docs-only refresh requires its own post-push exact-head CI. Task 11 findings stay scoped to 5cb5791, and corrected-publication rereview stays scoped to A4/d031172.",
   "tracked_markdown_paths": [
     ".agents/skills/archify/SKILL.md",
     ".agents/skills/archify/THIRD_PARTY_NOTICES.md",
@@ -1694,16 +1734,29 @@
   "repository_readback": {
     "published_base_commit": "20be7815d5e5c95fea2161c908ce8ac5cae88ce6",
     "inspected_at": "2026-10-05T10:15:06.262580+00:00",
-    "status": "PASS for required CI checks and strict branch protection on the published base only",
+    "status": "Historical published-base required CI/strict branch-protection readback remains recorded separately; current feature-head run 38592066455 passed both required jobs on pushed 6f5edc7.",
     "artifact": "artifacts/v4-legacy-creative-qualified-head.json",
-    "current_feature_application_commit": "7878208e7a353f93bb70279ad0dd7f0760f93ec4",
-    "current_feature_head_ci": "NOT CLAIMED",
-    "formal_pr_approval": "NOT RUN"
+    "current_feature_application_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
+    "current_feature_head_ci": "PASS for pushed feature head 6f5edc77edbfe189e46de4254c2fdb21c5652bce: Actions run 38592066455 passed verify and p0-regression (hosted 787 passed / 26 expected skips / 3 warnings). The later docs-only refresh requires separate post-push exact-head CI.",
+    "formal_pr_approval": "NOT RUN",
+    "current_feature_branch_head": "6f5edc77edbfe189e46de4254c2fdb21c5652bce",
+    "current_feature_ci_run_id": 38592066455,
+    "current_feature_ci_url": "https://github.com/manojvermamv/Salience/actions/runs/38592066455",
+    "remote_ref_readback": "origin/feat/archv4-p0-foundation equals 6f5edc77edbfe189e46de4254c2fdb21c5652bce",
+    "main_merge": "UNMERGED",
+    "current_documentation_refresh": {
+      "plan_task": ".superpowers/sdd/2026-10-14-current-state-documentation-reconciliation/task-2-brief.md",
+      "starting_commit": "2779edc14d92f81bcc5beb7e8f86b9f626bf8ad7",
+      "working_branch": "work/v4-p1-publication-recovery",
+      "scope": "Documentation and durable status/evidence JSON only; no application qualification changes.",
+      "application_candidate_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
+      "post_push_exact_head_ci": "REQUIRED for the resulting docs-only commit; no CI claim is made for that later head."
+    }
   },
   "application_source_preservation_basis": "Compared the Task 9 356-path evidence lock at application 7878208 with the Task 10 qualification checkout: 347 existing paths retain identical bytes, nine existing paths have updated hashes, and four source paths were added, for 360 locked paths. The current application artifact is pinned separately to 5cb5791; the test-only qualification harness is at 1480100. This is a content comparison and lock, not an independent code review.",
   "historical_a4_qualified_application_commit": "a4b2368cdb463939d093020224a5b5667392aee6",
   "current_publication_recovery_hold_evidence": "docs/v4/publication-recovery-hold-successor-evidence.json",
-  "current_publication_recovery_hold_evidence_sha256": "101944cec5e171a3519c6db1ee9f77935082a03669fc7bbec8900f81147b0c3f",
+  "current_publication_recovery_hold_evidence_sha256": "9a8ffd1e15891409df977a4bd72b68eb068108ce66edf5fd5fb90e836def9911",
   "task_10_candidate": {
     "application_commit": "5cb57910c2c6dc2f6ea37da75640c5c947c8907b",
     "qualification_harness_commit": "14801007310232f59708566ca9a3eefb80bfea87",
@@ -1726,7 +1779,7 @@
   "previous_full_non_live_application_commit": "7878208e7a353f93bb70279ad0dd7f0760f93ec4",
   "source_files": 360,
   "corrected_head_rereview": "COMPLETE only for application `a4b2368cdb463939d093020224a5b5667392aee6` with documentation/observed HEAD `d0311725686d81b7b4747c2d6225986e5ea3a524`; it does not cover `7878208` or `5cb5791`.",
-  "documentation_tests": "PASS: 15 documentation tests; checker and self-test PASS (75 requirements, 2 source files, 366 evidence files, 360 inventory files, 97 Markdown, 4 HTML, 6 negative controls); all 4 shell contracts and 6 Mermaid diagrams passed; 4 current/new JSON files parsed; pip check, compileall, all 14? historical count not asserted, 366-file source lock, 100-path Markdown audit/hash refresh, and git diff --check passed.",
+  "documentation_tests": "PASS for 15 documentation tests, checker/self-test (75 requirements, 2 source files, 366 evidence files, 360 inventory files, 97 Markdown, 4 HTML, 6 negative controls), all 4 shell contracts, 6 blueprint Mermaid diagrams and 2 README Mermaid diagrams; 5 changed JSON documents parsed. AgentTube tests/verifier pass on a clean tracked checkout; the direct task worktree run reports an ignored historical artifact false positive, recorded explicitly. 71 updated and 29 unchanged Markdown paths are inventoried; final hash/link consistency and git diff checks are recorded in this Task 2 audit.",
   "task_8_exact_candidate_artifact_build": {
     "status": "SUCCESSOR_EXACT_CANDIDATE_ARTIFACT_BUILD_AND_LOCAL_QUALIFICATION_RECORDED",
     "application_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
@@ -1748,7 +1801,7 @@
     "qualification_report": ".superpowers/sdd/2026-10-13-p1-publication-recovery-floor-repair/task-8-report.md",
     "qualification_results": "Exact-image matrix: 12 passed; I1 replay-focused gate: 9 passed; Task 8 actual-retry producer: 1 passed; Compose restart recovery: 1 passed; final clean non-live suite: 796 passed, 17 skipped, 3 warnings. Fresh independent review/meta-review and exact-head CI remain controller gates."
   },
-  "current_focused_status": "PASS: successor 182c4e4 I1 replay-focused 9 tests, exact-image matrix 12, actual retry producer 1, targeted Compose recovery 1, and full non-live 796/17/3; fresh independent review/meta-review and exact-head CI remain pending.",
+  "current_focused_status": "PASS: application 182c4e4 has 9 I1 replay-focused tests, 12 exact-image matrix tests, 1 actual-retry producer test, 1 Compose restart recovery test, and a final full non-live result of 796 passed / 17 skipped / 3 warnings. Separate branch checkpoint 6f5edc7 has accepted whole-branch review/meta-review and successful exact-head Actions run 38592066455 (787/26/3). This later documentation-only refresh requires its own post-push exact-head CI.",
   "current_candidate_artifact_build": {
     "status": "SUCCESSOR_EXACT_CANDIDATE_ARTIFACT_BUILD_AND_LOCAL_QUALIFICATION_RECORDED",
     "application_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
@@ -1768,7 +1821,7 @@
     "runtime_file_count": 9151,
     "pyc_files": [],
     "qualification_report": ".superpowers/sdd/2026-10-13-p1-publication-recovery-floor-repair/task-8-report.md",
-    "qualification_results": "Exact-image matrix: 12 passed; I1 replay-focused gate: 9 passed; Task 8 actual-retry producer: 1 passed; Compose restart recovery: 1 passed; final clean non-live suite: 796 passed, 17 skipped, 3 warnings. Fresh independent review/meta-review and exact-head CI remain controller gates."
+    "qualification_results": "Exact-image matrix: 12 passed; I1 replay-focused gate: 9 passed; actual-retry producer: 1 passed; Compose restart recovery: 1 passed; final clean non-live suite: 796 passed, 17 skipped, 3 warnings, all bound to application 182c4e4. Whole-branch GPT-6.1/GPT-5.6 review and required hosted CI passed for pushed head 6f5edc7 (run 38592066455, hosted 787/26/3). This later docs-only refresh requires its own exact-head CI after push."
   },
   "superseded_candidate_artifact_build_386d4bc": {
     "status": "EXACT_CANDIDATE_ARTIFACT_BUILD_RECORDED",
@@ -2086,10 +2139,59 @@
   },
   "current_handoff_hashes": {
     "docs/v4/publication-recovery-hold-evidence.json": "3cce88e4d692f726be710c1f4db46b1428c9546561424a2ab0ad120363becc66",
-    "docs/v4/publication-recovery-hold-successor-evidence.json": "101944cec5e171a3519c6db1ee9f77935082a03669fc7bbec8900f81147b0c3f",
+    "docs/v4/publication-recovery-hold-successor-evidence.json": "9a8ffd1e15891409df977a4bd72b68eb068108ce66edf5fd5fb90e836def9911",
     "docs/v4/evidence-lock.json": "3b432dc1b506b847cb4bdc51bbc9229c1d51b18d94feec78e6f6d6781d3a9267",
-    "docs/v4/p1-qualification-matrix.json": "d2aae69da42fe6fbc14b3217483cb85703b1f6440f251d37c01168f6f545740f",
-    "docs/v4/progress.md": "7d00aaf308ecddec953b701db44affcea0eb334aae67c8613a1bc3d672434b86",
-    "docs/v4/IMPLEMENTATION-BLUEPRINT.md": "bc185d0fbcb40df5519570d512b923a92eacf8d1deedfe5308607af7eafa4641"
+    "docs/v4/p1-qualification-matrix.json": "0cc83700a3d0b2fdc31392cb0af172c2f41a6507a847f099f4cf310638d85dfb",
+    "docs/v4/progress.md": "c9f240eac1e675f58f6d3375eec3b7340e2f91a811420c78db4eb9cb9ba9a88e",
+    "docs/v4/IMPLEMENTATION-BLUEPRINT.md": "62e538b89b35ac5c8782df183610ddecc59c296d8d2aef5ecd20791802c3d4be",
+    "docs/v4/p0-release.json": "3d1ad7bf1c483b1c0ab09739d89f8fc28b06b48e110bf37eb1b7c048e932c0d0",
+    "docs/v4/repository-enforcement-evidence.json": "1791bb5009118af6d019d066daef04dd6a6af480509f81e0fa52e11cbaa63229"
+  },
+  "current_documentation_refresh": {
+    "plan_task": ".superpowers/sdd/2026-10-14-current-state-documentation-reconciliation/task-2-brief.md",
+    "starting_commit": "2779edc14d92f81bcc5beb7e8f86b9f626bf8ad7",
+    "working_branch": "work/v4-p1-publication-recovery",
+    "scope": "Documentation and durable status/evidence JSON only; no application qualification changes.",
+    "application_candidate_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
+    "post_push_exact_head_ci": "REQUIRED for the resulting docs-only commit; no CI claim is made for that later head."
+  },
+  "tracked_markdown_disposition_counts": {
+    "tracked_markdown_paths": 100,
+    "update_now_paths": 71,
+    "non_update_paths_preserved": 29,
+    "historical_immutable": 16,
+    "generated_vendor": 12,
+    "already_current": 1,
+    "dispositions": {
+      "preserved plugin instructions, references and examples; independent skill scope": 12,
+      "preserved dated qualification report": 2,
+      "active user-authored project instructions; preserved verbatim": 1,
+      "active documentation reconciled to successor 182c4e4 and reviewed/pushed checkpoint 6f5edc7; historical scopes and production holds retained": 71,
+      "preserved original design source or historical diagram": 2,
+      "preserved immutable historical snapshot; bytes retained verbatim": 1,
+      "preserved YouTube-agent reference research": 4,
+      "preserved dated preparation plan": 3,
+      "preserved dated design specification": 3,
+      "preserved dated independent item7 qualification report": 1
+    }
+  },
+  "current_branch_review_and_ci": {
+    "branch": "feat/archv4-p0-foundation",
+    "head_commit": "6f5edc77edbfe189e46de4254c2fdb21c5652bce",
+    "review": "GPT-6.1 whole-branch review: 59 commits / 38 files; 0 Critical / 0 Important / 1 nonblocking Minor.",
+    "meta_review": "GPT-5.6 ACCEPT; approved pushing unchanged 6f5edc7.",
+    "pushed": true,
+    "workflow_run_id": 38592066455,
+    "workflow_run_url": "https://github.com/manojvermamv/Salience/actions/runs/38592066455",
+    "required_jobs": {
+      "verify": "success",
+      "p0-regression": "success"
+    },
+    "hosted_suite_summary": {
+      "passed": 787,
+      "expected_skips": 26,
+      "warnings": 3
+    },
+    "current_docs_only_head_ci": "REQUIRED_AFTER_PUSH"
   }
 }

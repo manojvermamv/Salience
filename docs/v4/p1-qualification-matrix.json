@@ -490,7 +490,7 @@
       "gate": "RG1",
       "executed_verifier_cases": 76,
       "local_verifier_status": "PASS for implemented no-effects local fixtures, including the exact 182c4e4 successor image, both actual pending-activity retries, and the final clean non-live result (796 passed, 17 skipped, 3 warnings). The 9-test replay-focused gate and 12-test exact-image matrix also passed. These results are local fixture qualification only; production acceptance remains HELD.",
-      "independent_review_status": "Task 11 findings remain scoped to unsupported Task 10 candidate `5cb5791`. The repaired 0043 successor `182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f` now has complete local qualification, but fresh independent review, GPT-5.6 meta-review, and exact-head CI remain pending. Corrected-publication rereview still covers only application `a4b2368cdb463939d093020224a5b5667392aee6` with documentation/observed HEAD `d0311725686d81b7b4747c2d6225986e5ea3a524`; production acceptance remains HELD.",
+      "independent_review_status": "Whole-branch review/CI is complete for pushed head 6f5edc77edbfe189e46de4254c2fdb21c5652bce: GPT-6.1 found 0 Critical / 0 Important / 1 nonblocking Minor, GPT-5.6 accepted, and Actions run 38592066455 passed verify and p0-regression (hosted 787 passed / 26 expected skips / 3 warnings). This branch-level result is separate from the 182c4e4 application-bound local test counts and does not qualify production. The later docs-only refresh requires its own post-push exact-head CI; production remains HELD.",
       "production_release_status": "HELD",
       "remaining_acceptance": "Production live schedule stop/cancellation/fencing, production-wide cross-service revocation, typed recovery workers and independently scoped remote reconciliation beyond the isolated fixture receipt-only hold.",
       "independent_review_evidence": [
@@ -568,7 +568,7 @@
       "successor_candidate_evidence": {
         "application_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
         "evidence": "docs/v4/publication-recovery-hold-successor-evidence.json",
-        "evidence_sha256": "101944cec5e171a3519c6db1ee9f77935082a03669fc7bbec8900f81147b0c3f",
+        "evidence_sha256": "9a8ffd1e15891409df977a4bd72b68eb068108ce66edf5fd5fb90e836def9911",
         "production_release_status": "HELD"
       }
     },
@@ -582,7 +582,7 @@
       "gate": "RG1",
       "executed_verifier_cases": 81,
       "local_verifier_status": "PASS for implemented no-effects local fixtures, including the exact 182c4e4 successor image, both actual pending-activity retries, and the final clean non-live result (796 passed, 17 skipped, 3 warnings). The 9-test replay-focused gate and 12-test exact-image matrix also passed. These results are local fixture qualification only; production acceptance remains HELD.",
-      "independent_review_status": "Task 11 findings remain scoped to unsupported Task 10 candidate `5cb5791`. The repaired 0043 successor `182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f` now has complete local qualification, but fresh independent review, GPT-5.6 meta-review, and exact-head CI remain pending. Corrected-publication rereview still covers only application `a4b2368cdb463939d093020224a5b5667392aee6` with documentation/observed HEAD `d0311725686d81b7b4747c2d6225986e5ea3a524`; production acceptance remains HELD.",
+      "independent_review_status": "Whole-branch review/CI is complete for pushed head 6f5edc77edbfe189e46de4254c2fdb21c5652bce: GPT-6.1 found 0 Critical / 0 Important / 1 nonblocking Minor, GPT-5.6 accepted, and Actions run 38592066455 passed verify and p0-regression (hosted 787 passed / 26 expected skips / 3 warnings). This branch-level result is separate from the 182c4e4 application-bound local test counts and does not qualify production. The later docs-only refresh requires its own post-push exact-head CI; production remains HELD.",
       "production_release_status": "HELD",
       "remaining_acceptance": "Production typed recovery state transitions, durable recovery worker and external failure delivery beyond the local publication receipt-only recovery hold.",
       "independent_review_evidence": [
@@ -612,7 +612,7 @@
       "successor_candidate_evidence": {
         "application_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
         "evidence": "docs/v4/publication-recovery-hold-successor-evidence.json",
-        "evidence_sha256": "101944cec5e171a3519c6db1ee9f77935082a03669fc7bbec8900f81147b0c3f",
+        "evidence_sha256": "9a8ffd1e15891409df977a4bd72b68eb068108ce66edf5fd5fb90e836def9911",
         "production_release_status": "HELD"
       }
     },
@@ -709,7 +709,7 @@
       }
     }
   ],
-  "review_status": "PASS_LOCAL_SUCCESSOR_182C4E4_QUALIFICATION; fresh independent review/meta-review and exact-head CI pending; production release HELD.",
+  "review_status": "PASS_LOCAL_SUCCESSOR_182C4E4_QUALIFICATION; GPT-6.1/GPT-5.6 branch review chain and exact-head CI PASS at 6f5edc7; later docs-only exact-head CI required after push; production release HELD.",
   "production_effects_enabled": false,
   "RG0": "HELD",
   "RG1": "HELD",
@@ -837,13 +837,13 @@
     "p1_mapped_cases": 199
   },
   "current_qualification": {
-    "status": "PASS_LOCAL_SUCCESSOR_182C4E4; FRESH_REVIEW_AND_EXACT_HEAD_CI_PENDING; PRODUCTION_RELEASE_HELD",
+    "status": "PASS_LOCAL_SUCCESSOR_182C4E4; WHOLE_BRANCH_REVIEW_META_REVIEW_AND_6F5EDC7_CI_PASS; POST_REFRESH_EXACT_HEAD_CI_REQUIRED; PRODUCTION_RELEASE_HELD",
     "application_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
     "qualified_application_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
     "application_base_commit": "b69b040c6061046d9f92f9d391d69c6c0c36418a",
     "qualification_harness_observed_head": "4850e8d6ceb3a150b8d0cd23ff02a3c61e6f799a",
     "evidence": "docs/v4/publication-recovery-hold-successor-evidence.json",
-    "evidence_sha256": "101944cec5e171a3519c6db1ee9f77935082a03669fc7bbec8900f81147b0c3f",
+    "evidence_sha256": "9a8ffd1e15891409df977a4bd72b68eb068108ce66edf5fd5fb90e836def9911",
     "source_files": 211,
     "source_path_set_sha256": "14bddb59e1d7ad1f3d4fceb6b20e7ae0748848a93e89dc470a7af7b325dc88fe",
     "source_manifest_sha256": "58f27973abc9b3d34fa9f2eea1738c914659ff84f5151f64fdc493acca1c3005",
@@ -864,7 +864,9 @@
     "runtime_manifest_sha256": "3d58423ee9119db38c9a670c726c83692bef126d402e69f2a9ad98e05377b644",
     "runtime_file_count": 9151,
     "pyc_files": [],
-    "status_summary": "Local successor qualification complete; fresh independent review/meta-review and exact-head CI remain open. Production effects disabled, fixture budget zero, RG0/RG1 HELD."
+    "status_summary": "Local successor qualification remains bound to application 182c4e4 (796 passed / 17 skipped / 3 warnings). The whole-branch review/meta-review and required hosted CI passed for pushed head 6f5edc7 (run 38592066455; 787 passed / 26 expected skips / 3 warnings). This later docs-only refresh still needs its own post-push exact-head CI. Production effects remain disabled, fixture budget is zero, and RG0/RG1 remain HELD.",
+    "reviewed_branch_head": "6f5edc77edbfe189e46de4254c2fdb21c5652bce",
+    "branch_checkpoint_ci_run": 38592066455
   },
   "remaining_release_obligations": [
     "General registry/provider eligibility beyond the approved no-effects fixture baseline; later capability and production qualification gates remain binding",
@@ -924,7 +926,7 @@
     "source_files": 316,
     "status": "PASS independent implemented-fixture qualification; RG0/RG1 HELD"
   },
-  "qualified_application_commit_scope": "The current successor application is 182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f with exact image/wheel/runtime/lock pins in publication-recovery-hold-successor-evidence.json. Local qualification includes exact actual-retry recorder cases and 796 passed / 17 skipped / 3 warnings in the full non-live run. Fresh independent review, meta-review, exact-head CI, and production release remain pending/HELD.",
+  "qualified_application_commit_scope": "The current application candidate is 182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f with the exact image/wheel/runtime/lock pins in publication-recovery-hold-successor-evidence.json. Its local qualification remains 9 I1 replay-focused tests, 12 exact-image matrix tests, 1 actual-retry producer test, 1 Compose restart recovery test, and 796 passed / 17 skipped / 3 warnings in the full non-live run. Separately, GPT-6.1/GPT-5.6 review and hosted run 38592066455 passed for pushed branch head 6f5edc7 (787/26/3); these do not change the candidate-bound application counts. This later documentation-only head requires its own post-push CI. Production release remains HELD.",
   "historical_parallel_qualification": {
     "evidence": "docs/v4/parallel-agents-evidence.json",
     "full_non_live_tests": 540,
@@ -933,7 +935,7 @@
     "status": "PASS root-reviewed bounded parallel-agent local extension; historical item7 independent review retained; RG0/RG1/RG5 HELD",
     "qualified_application_commit": "2653d2ecb3f0d5bb8ea6560de274137dd6032a96"
   },
-  "current_independent_review_scope": "Fresh independent review and GPT-5.6 meta-review of successor 182c4e4 are pending. Earlier Task 11 findings remain scoped to unsupported 5cb5791, and corrected-publication rereview remains scoped to A4/d031172.",
+  "current_independent_review_scope": "GPT-6.1 reviewed the pushed branch head 6f5edc77edbfe189e46de4254c2fdb21c5652bce across 59 commits / 38 changed files and found 0 Critical, 0 Important, 1 explicitly nonblocking Minor. GPT-5.6 accepted that assessment and approved the unchanged push. Actions run 38592066455 passed both required jobs on that exact head (hosted 787 passed / 26 expected skips / 3 warnings). This branch-level review/CI does not alter the application-scoped 182c4e4 qualification or production holds. The later docs-only refresh requires its own post-push exact-head CI. Task 11 findings remain scoped to unsupported 5cb5791; corrected-publication rereview remains scoped to A4/d031172.",
   "historical_legacy_intelligence_qualification": {
     "evidence": "docs/v4/legacy-dispatch-evidence.json",
     "full_non_live_tests": 556,
@@ -1219,5 +1221,49 @@
   },
   "superseded_386d_qualified_application_commit_scope": "Task 10 local fixture results remain historical at 5cb5791; Task 11 found floor/evidence gaps, so that candidate is unsupported as the rollback floor. The exact 0043 candidate at 386d4bc7cc5acb794858d3c3c14400a0659a83ef has a built and authenticated wheel/image/lock recorded in .superpowers/sdd/2026-10-13-p1-publication-recovery-floor-repair/task-8-report.md. Its candidate-specific qualification results are reported there; no counts transfer from 5cb5791 or 7878208. Final independent review/meta-review and exact-head CI remain required; production acceptance, RG0/full RG1 remain HELD and P2–P7 gated.",
   "superseded_task10_source_lock_sha256": "62fa6a44498d891bcc8ff6911f243a65573174ff44b6985bdbdc26097fd10fe0",
-  "superseded_386d_review_status": "Task 8 recovery-hold evidence review PASS with zero findings for its bounded fixture scope. Corrected-publication rereview/meta-review accepted the A4 fixture-correction slice only (application a4b2368; documentation/observed HEAD d031172); it predates and does not review 7878208. RG0/RG1 remain HELD."
+  "superseded_386d_review_status": "Task 8 recovery-hold evidence review PASS with zero findings for its bounded fixture scope. Corrected-publication rereview/meta-review accepted the A4 fixture-correction slice only (application a4b2368; documentation/observed HEAD d031172); it predates and does not review 7878208. RG0/RG1 remain HELD.",
+  "current_branch_review_and_ci": {
+    "branch": "feat/archv4-p0-foundation",
+    "head_commit": "6f5edc77edbfe189e46de4254c2fdb21c5652bce",
+    "push_status": "PUSHED; origin ref readback matches this exact SHA",
+    "review": {
+      "provider": "GPT-6.1",
+      "scope": "59 commits / 38 changed files through the exact branch head",
+      "verdict": "PASS_WITH_MINOR_FINDING",
+      "critical_findings": 0,
+      "important_findings": 0,
+      "minor_findings": 1,
+      "minor_finding": "Permissive missing-revision diagnostic assertion; explicitly nonblocking.",
+      "report": ".superpowers/sdd/2026-10-13-p1-publication-recovery-floor-repair/successor-gpt61-final-review.md"
+    },
+    "meta_review": {
+      "provider": "GPT-5.6",
+      "verdict": "ACCEPT",
+      "scope": "Accepted the GPT-6.1 assessment and approved pushing the unchanged 6f5edc7 head.",
+      "report": ".superpowers/sdd/2026-10-13-p1-publication-recovery-floor-repair/successor-gpt56-final-meta-review.md"
+    },
+    "ci": {
+      "workflow_run_id": 38592066455,
+      "url": "https://github.com/manojvermamv/Salience/actions/runs/38592066455",
+      "event": "push",
+      "head_commit": "6f5edc77edbfe189e46de4254c2fdb21c5652bce",
+      "status": "completed",
+      "conclusion": "success",
+      "jobs": {
+        "verify": {
+          "check_run_id": 115949220876,
+          "conclusion": "success"
+        },
+        "p0-regression": {
+          "check_run_id": 115949220849,
+          "conclusion": "success"
+        }
+      },
+      "hosted_suite_summary": {
+        "passed": 787,
+        "expected_skips": 26,
+        "warnings": 3
+      }
+    }
+  }
 }

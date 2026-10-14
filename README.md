@@ -128,7 +128,7 @@ flowchart TB
   DIRECT --> RUNNER
   RUNNER --> DIRECT_CHILDREN
   DIRECT_CHILDREN --> LINEAGE
-  CLAIMS --> TEAM_EVIDENCE
+  CLAIMS -.->|qualification record only; not a runtime output| TEAM_EVIDENCE
   EFFECT_GATE -.-> CONTENT
   CONTENT -.-> DERIVATIVES
   DERIVATIVES -.-> YOUTUBE
@@ -158,7 +158,8 @@ flowchart TB
   class CONTENT,DERIVATIVES,INSTAGRAM,LINKEDIN,OPTIONAL_PLATFORMS,READ_ANALYTICS,METRICS,ATTRIBUTION,PROPOSAL,EXPERIMENT,POLICY,RELEASE planned
   class AGENTTUBE reference
   class LGREEN,LAMBER,LBLUE,LGRAY legend
-  linkStyle 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27 stroke:#347a46,stroke-width:2px
+  linkStyle 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26 stroke:#347a46,stroke-width:2px
+  linkStyle 27 stroke:#777777,stroke-width:1px,stroke-dasharray:3 3
   linkStyle 28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45 stroke:#3b67a0,stroke-width:2px,stroke-dasharray:5 5
 ```
 
@@ -297,7 +298,7 @@ flowchart TB
   DIRECT --> RUNNER
   RUNNER --> DIRECT_CHILDREN
   DIRECT_CHILDREN --> TEAM_LINEAGE
-  TEAM_CLAIMS --> TEAM_EVIDENCE
+  TEAM_CLAIMS -.->|qualification record only; not a runtime output| TEAM_EVIDENCE
   TARGET_PACKAGE -.-> YOUTUBE
   TARGET_PACKAGE -.-> INSTAGRAM
   TARGET_PACKAGE -.-> LINKEDIN
@@ -317,7 +318,8 @@ flowchart TB
   class TARGET_PACKAGE,INSTAGRAM,LINKEDIN,FUTURE,ANALYTICS planned
   class REFERENCE reference
   class LGREEN,LAMBER,LBLUE,LGRAY legend
-  linkStyle 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44 stroke:#347a46,stroke-width:2px
+  linkStyle 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43 stroke:#347a46,stroke-width:2px
+  linkStyle 44 stroke:#777777,stroke-width:1px,stroke-dasharray:3 3
   linkStyle 45,46,47,48,49,50,51,52 stroke:#3b67a0,stroke-width:2px,stroke-dasharray:5 5
 ```
 
@@ -340,7 +342,8 @@ Production effects remain disabled, fixture publication budget is zero, and RG0/
 - [P0 release ledger](docs/v4/p0-release.json)
 - [P1 qualification matrix](docs/v4/p1-qualification-matrix.json)
 - [Legacy dispatch contract](docs/v4/legacy-dispatch-contract.md)
-- [Application qualification evidence](docs/v4/legacy-publication-evidence.json)
+- [Historical A4 application qualification evidence](docs/v4/legacy-publication-evidence.json) — the dated 21 focused / 604 full non-live result at `a4b2368`; not the current 0043 candidate.
+- [Current 0043 successor qualification evidence](docs/v4/publication-recovery-hold-successor-evidence.json) — local results for candidate `182c4e4` and completed review/CI facts for branch head `6f5edc7`; production remains held.
 - [Inventory and preservation record](docs/v4/inventory.json)
 
 ## Historical and separate qualification records

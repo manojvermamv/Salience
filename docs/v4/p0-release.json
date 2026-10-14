@@ -380,7 +380,7 @@
     }
   ],
   "later_phase_boundaries": {
-    "P1": "Items 1–6 implemented locally; item 7 independently reviewed/repaired/re-reviewed, 132 focused / 507 full PASS. Complete retained RG0/RG1 production acceptance before later-phase release; live schedules/routing, current general policy/scoped remote reads, real providers/alerts and deployment contracts remain HELD.",
+    "P1": "Current local successor application 182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f is qualified at 796 passed / 17 skipped / 3 warnings; whole-branch review/meta-review and required CI passed separately at pushed head 6f5edc77edbfe189e46de4254c2fdb21c5652bce (run 38592066455, hosted 787/26/3). Historical item-7 results of 132 focused / 507 full non-live PASS remain bound to application e49a214. Complete retained production obligations before later-phase release; effects remain disabled, RG0/full RG1 remain HELD, and P2–P7 remain gated.",
     "P2": "Production G1 provider charge/effect integration using the fixture-qualified allocation transfer contract, ready-package reference/outbox integration and enabled provider qualification",
     "P3": "Trial/evaluation isolation and separate strategy/capability namespaces",
     "P4": "Promotion/invalidation serialization; mandatory typed learning proposals with optional qualified semantic analyst",
@@ -419,7 +419,7 @@
     ]
   },
   "p1_increment": {
-    "name": "Local admission/outbox, revisions, approved baseline, V2/V3 fixture policy/accounting, item-3 stop/permit/cases, item-4 handoff/mock trace and item-5a/5b/5c signed fixture commands/cutover; item-6 compatible fixture runtime/waits/notification receipts; item 7 independently reviewed and repaired local fixture contracts; Task 8 added local immutable publication recovery holds and a read-only two-reason rollback verifier; Task 10 pinned publication-worker candidate qualified against the retained wheel/image in local fixture scope",
+    "name": "Local P1 fixture stages through publication recovery holds; exact 0043 successor application 182c4e4 is qualified at 796 passed / 17 skipped / 3 warnings. Branch-level review/meta-review and required hosted CI passed at pushed head 6f5edc7; production acceptance and RG0/RG1 remain HELD.",
     "local_status": "PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE",
     "release_gate": "RG1",
     "release_status": "HELD",
@@ -465,8 +465,8 @@
       "5c"
     ],
     "next_queue_item": null,
-    "next_action": "Continue the remaining production-wide revocation, general policy, routing/live schedule inventory, recovery-worker, external-alert, and RG0/RG1 obligations only after exact-candidate local qualification, corrected-publication final review/meta-review, and exact-head CI. Keep production acceptance HELD, effects disabled, fixture budget zero, P2–P7 gated, P6 disabled, and main unmerged.",
-    "independent_review": "Task 8 bounded evidence review and Task 10 local image qualification remain historical scope. Task 11 found floor/evidence gaps in 5cb5791, making it unsupported as the rollback floor. The approved 0043 repair is implemented at 386d4bc7cc5acb794858d3c3c14400a0659a83ef, with exact artifact pins in the Task 8 report; this candidate remains outside prior review scope until corrected-publication final review/meta-review. Exact-head CI and broader production gates remain required; production acceptance stays HELD.",
+    "next_action": "Push the resulting documentation-only refresh and verify its own exact-head required CI. The 182c4e4 local candidate qualification and the 6f5edc7 branch review/push/CI checkpoint are complete; retain their separate scopes. Continue production-wide revocation, general policy, routing/live schedule inventory, recovery-worker, external-alert, and RG0/RG1 obligations only under their existing gates. Keep production effects disabled, fixture budget zero, P2–P7 gated, P6 disabled, and main unmerged.",
+    "independent_review": "The current local application candidate is 182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f with 796 passed / 17 skipped / 3 warnings; those counts remain application-bound. GPT-6.1 reviewed pushed branch head 6f5edc77edbfe189e46de4254c2fdb21c5652bce across 59 commits / 38 changed files with 0 Critical / 0 Important / 1 nonblocking Minor; GPT-5.6 accepted the assessment and approved the unchanged push. Actions run 38592066455 passed both required jobs on that exact head (hosted 787 passed / 26 expected skips / 3 warnings). The later docs-only refresh requires its own post-push exact-head CI. Production acceptance stays HELD.",
     "completed_implementation_tasks": [
       1,
       2,
@@ -483,9 +483,11 @@
     "task_10_qualification_harness_commit": "14801007310232f59708566ca9a3eefb80bfea87",
     "task_10_status": "PASS_LOCAL_FIXTURE_CANDIDATE; TASK_11_REVIEW_COMPLETE_FINDINGS_FOUND; 5CB5791_UNSUPPORTED_AS_ROLLBACK_FLOOR",
     "publication_recovery_holds": {
-      "scope": "Task 10 local fixture results remain historical and candidate 5cb5791 is unsupported as the rollback floor. The approved 0043 repair is implemented at 386d4bc7cc5acb794858d3c3c14400a0659a83ef, and its exact wheel/image/lock build is recorded in the Task 8 report; no earlier candidate count transfers. Continue remaining production gates only after exact-candidate qualification, corrected-publication final review/meta-review, and exact-head CI. Production remains HELD.",
+      "scope": "Task 10 candidate 5cb5791 remains unsupported as the rollback floor; no earlier candidate count transfers. The current exact 0043 successor application is 182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f and its local 796/17/3 result and exact artifact pins are recorded in publication-recovery-hold-successor-evidence.json. Whole-branch review/meta-review and required CI passed at pushed head 6f5edc7; the later docs-only head needs its own post-push CI. Continue remaining production obligations under the existing gates; production remains HELD.",
       "evidence": "docs/v4/publication-recovery-hold-evidence.json",
-      "evidence_sha256": "3cce88e4d692f726be710c1f4db46b1428c9546561424a2ab0ad120363becc66"
+      "evidence_sha256": "3cce88e4d692f726be710c1f4db46b1428c9546561424a2ab0ad120363becc66",
+      "current_successor_evidence": "docs/v4/publication-recovery-hold-successor-evidence.json",
+      "current_successor_evidence_sha256": "9a8ffd1e15891409df977a4bd72b68eb068108ce66edf5fd5fb90e836def9911"
     }
   },
   "documentation_refresh": {
@@ -711,9 +713,9 @@
     "status": "ACTIVE",
     "restored_from_own_output_at": "2026-10-04T02:44:31.946Z",
     "base_commit": "380416d35cffb6e4bf33003cb6e8df0638874436",
-    "direction": "Remaining P1 legacy dispatch-to-outbox integration, followed by retained P1 authorization/runtime/recovery acceptance; reuse completed items 1–7 and parallel extension",
-    "current_increment": "Current application candidate 7878208 includes Task 1–7 implementation plus Task 8 local recovery-hold qualification (116 focused tests, compileall and two-reason rollback rehearsal); the clean template0-database full non-live suite passed 614 tests with zero failures/errors/skips. Corrected-publication rereview is complete only for A4/d031172 and does not review 7878208.",
-    "qualification": "PASS_IMPLEMENTED_LOCAL_PUBLICATION_RECOVERY_HOLD_AND_PARALLEL_PARENT_STATUS_FIXTURE_SCOPE",
+    "direction": "Carry the locally qualified 0043 successor through the current documentation-only exact-head CI readback, then continue retained production-wide P1 obligations only under the existing authorization and release gates.",
+    "current_increment": "Application candidate 182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f is locally qualified at 796 passed / 17 skipped / 3 warnings, with exact candidate pins in publication-recovery-hold-successor-evidence.json. GPT-6.1/GPT-5.6 review and required hosted CI passed separately for pushed branch head 6f5edc77edbfe189e46de4254c2fdb21c5652bce (run 38592066455, hosted 787/26/3). This later docs-only refresh requires its own post-push exact-head CI; no application qualification changes.",
+    "qualification": "PASS_LOCAL_SUCCESSOR_182C4E4_FIXTURE_SCOPE; BRANCH_REVIEW_META_REVIEW_AND_6F5EDC7_CI_PASS; PRODUCTION_RELEASE_HELD",
     "remaining_scope": [
       "deployment-specific supported routing, live schedule inventory, fencing, drain, rollback and operator recovery",
       "general versioned policy/registry eligibility and production account/provider qualification",
@@ -725,14 +727,25 @@
     "RG0": "HELD",
     "RG1": "HELD",
     "main_merge": "NOT AUTHORIZED",
-    "qualified_application_commit": "7878208e7a353f93bb70279ad0dd7f0760f93ec4",
-    "focused_tests": 116,
-    "full_non_live_tests": 614,
-    "source_files": 356,
-    "evidence": "docs/v4/publication-recovery-hold-evidence.json",
+    "qualified_application_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
+    "focused_tests": 9,
+    "full_non_live_tests": 796,
+    "source_files": 211,
+    "evidence": "docs/v4/publication-recovery-hold-successor-evidence.json",
     "publication": "Fixture-only current recovery-hold evidence; production effects disabled, RG0/RG1 HELD, P2–P7 gated, optional P6 disabled, main unmerged.",
-    "source_lock_sha256": "d1d9f95af6f67192eb70c57bde2e066763ef1dadca6c5f58809e2833bc7ed638",
-    "review_scope": "Corrected-publication rereview: A4 application with documentation/observed HEAD d031172 only; Task 8 evidence review is bounded to local recovery-hold evidence. No current all-row independent review or production approval is implied."
+    "source_lock_sha256": "3b432dc1b506b847cb4bdc51bbc9229c1d51b18d94feec78e6f6d6781d3a9267",
+    "review_scope": "Current whole-branch review and meta-review apply to pushed head 6f5edc77edbfe189e46de4254c2fdb21c5652bce; run 38592066455 passed both required jobs there. The application test counts remain bound only to 182c4e4. The later documentation-only commit needs its own exact-head CI after push. Historical Task 11 findings remain scoped to 5cb5791 and the corrected-publication rereview remains scoped to A4/d031172; production acceptance is still HELD.",
+    "exact_image_matrix_tests": 12,
+    "actual_retry_producer_tests": 1,
+    "compose_restart_tests": 1,
+    "current_documentation_refresh": {
+      "plan_task": ".superpowers/sdd/2026-10-14-current-state-documentation-reconciliation/task-2-brief.md",
+      "starting_commit": "2779edc14d92f81bcc5beb7e8f86b9f626bf8ad7",
+      "working_branch": "work/v4-p1-publication-recovery",
+      "scope": "Documentation and durable status/evidence JSON only; no application qualification changes.",
+      "application_candidate_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
+      "post_push_exact_head_ci": "REQUIRED for the resulting docs-only commit; no CI claim is made for that later head."
+    }
   },
   "publication_review_correction": {
     "initial_review_sha256": "d154e13a1ab393ca83e771891fef48f2345ebe3a0532e7d3fd575ba15d195c68",

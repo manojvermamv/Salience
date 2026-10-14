@@ -301,5 +301,68 @@
         }
       ]
     }
+  },
+  "current_feature_head_readback": {
+    "inspected_at": "2026-10-14T17:29:23Z",
+    "branch": "feat/archv4-p0-foundation",
+    "head_commit": "6f5edc77edbfe189e46de4254c2fdb21c5652bce",
+    "application_candidate_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
+    "remote_ref": {
+      "name": "refs/heads/feat/archv4-p0-foundation",
+      "observed_sha": "6f5edc77edbfe189e46de4254c2fdb21c5652bce",
+      "status": "MATCH",
+      "source": "git ls-remote origin refs/heads/feat/archv4-p0-foundation"
+    },
+    "push": {
+      "status": "PUSHED",
+      "event": "push",
+      "run_id": 38592066455
+    },
+    "review": {
+      "provider": "GPT-6.1",
+      "scope": "59 commits / 38 changed files through the exact branch head",
+      "verdict": "PASS_WITH_MINOR_FINDING",
+      "critical_findings": 0,
+      "important_findings": 0,
+      "minor_findings": 1,
+      "minor_finding": "Permissive missing-revision diagnostic assertion; explicitly nonblocking.",
+      "report": ".superpowers/sdd/2026-10-13-p1-publication-recovery-floor-repair/successor-gpt61-final-review.md"
+    },
+    "meta_review": {
+      "provider": "GPT-5.6",
+      "verdict": "ACCEPT",
+      "scope": "Accepted the GPT-6.1 assessment and approved pushing the unchanged 6f5edc7 head.",
+      "report": ".superpowers/sdd/2026-10-13-p1-publication-recovery-floor-repair/successor-gpt56-final-meta-review.md"
+    },
+    "ci": {
+      "workflow_run_id": 38592066455,
+      "url": "https://github.com/manojvermamv/Salience/actions/runs/38592066455",
+      "event": "push",
+      "head_commit": "6f5edc77edbfe189e46de4254c2fdb21c5652bce",
+      "status": "completed",
+      "conclusion": "success",
+      "jobs": {
+        "verify": {
+          "check_run_id": 115949220876,
+          "conclusion": "success"
+        },
+        "p0-regression": {
+          "check_run_id": 115949220849,
+          "conclusion": "success"
+        }
+      },
+      "hosted_suite_summary": {
+        "passed": 787,
+        "expected_skips": 26,
+        "warnings": 3
+      }
+    },
+    "current_documentation_refresh": {
+      "starting_commit": "2779edc14d92f81bcc5beb7e8f86b9f626bf8ad7",
+      "scope": "Documentation and durable status/evidence JSON only; no application qualification changes.",
+      "post_push_exact_head_ci": "REQUIRED; no result recorded for the later docs-only head."
+    },
+    "formal_pr_approval": "NOT RUN",
+    "main_merge": "UNMERGED"
   }
 }
