@@ -225,3 +225,53 @@ manifest digest is
 image, wheel, installed runtime manifest, and zero-`.pyc` checks passed; audit
 log SHA256 is `f874a8a758ad068137eb9303d9bbde14b941cd975a4e5620b5d9abf52887f004`.
 A fresh full producer run remains necessary before Task 8 can be claimed green.
+
+### Attempt 5 missing-checkout failure, actual retry results, and cleanup
+
+A fresh attempt-5 Task 8 producer ran for 217.36 seconds and exited 1 in the
+late A4 hostile-source negative control. The test reached
+`subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=...)` at
+`tests/integration/test_v4_publication_recovery_floor.py:8199`, but the required
+clean detached PREFLOOR checkout
+`/tmp/salience-f3-retained-039ddf39cb9b846c205f352e083293fbec6f9fc5` was absent.
+The failure is retained in
+`/tmp/p1-publication-recovery-successor-182c4e4/attempt-5/task8-producer.log`
+(SHA256 `5a4e8f15177d539e6ca1869cb679d5098a699ac363a810d7281a53018c21e78a`).
+This does not invalidate the candidate or change the replay assertion. It
+requires restoring the exact disposable test checkout already referenced by
+the existing hostile-source test.
+
+Both earlier actual pending retries completed through the exact image before
+the late failure. `expired_permit_receipt` used worker container
+`391ecc13832557890cff89afec9ce3ac6eddc50c9b4a774e28bfbd4df6c721e1`, activity
+attempt 2 (`submit_or_reconcile`), worker ID
+`1e57ed84-0748-497a-8717-ef3be9e88dc1`, recorder run
+`164ff262-6f9c-44f2-9473-8692bd012235`, and returned the expected typed hold
+with zero operations. `published_during_cancel` used worker container
+`2781f4a1e7bb19e8cf43746c9383a09ad8c61f35afa5e44dc63c04e5ded62b2a`, activity
+attempt 2 (`cancel`), worker ID `546ce2a3-e7ca-4028-9c2d-9f8e8692b587`, recorder
+run `5b2a9ee9-f916-48b8-8ff1-de3677d39709`, and returned its expected typed
+hold with zero operations. The exact full readback is
+`attempt-5/failed-state-readback.json` (SHA256
+`e48dfca45250b87dafe9af2c17ab9f967c53513404c25f077918bee12df701c6`); it
+verifies both hold-row hashes, both unchanged 21-key liabilities, both
+Temporal histories, both independent empty worker recorders, and empty shared
+receiver run `9aa19f50-b374-4882-b78c-9ecb924e1dcb`.
+
+After archiving progress SHA
+`6bd1b88050894831bbeab22a78f958f87fd26e34fb524ada9c7f23a5c6170e52`,
+readback-qualified cleanup removed only attempt-5 receiver
+`cf99188c6d73940dc7914f86db85ac35047c7892674a6557f5b4118b4eb66a90` and dropped
+only primary `recovery_floor_active_07e9b354ec19` (17,585,843 bytes) and legacy
+`recovery_floor_legacy_020927697458` (17,143,475 bytes). It then removed the
+canonical progress file and preserved the exact candidate image. Cleanup passed
+(exit 0); record `attempt-5/cleanup-attempt5.json` has SHA256
+`20fb8613ffde0ec41f1546d8366c40e7e548a65996826f44194bf455bdf85718`.
+
+The controller authorized recreating the required exact detached worktree at
+`/tmp/salience-f3-retained-039ddf39cb9b846c205f352e083293fbec6f9fc5` from
+commit `039ddf39cb9b846c205f352e083293fbec6f9fc5`. I will verify exact HEAD,
+detached state, and clean status, retain it only through dependent hostile-source
+qualification, then remove it and verify the worktree list contains only the
+original `arch` and active recovery worktrees. A new producer run from fresh
+DB, Temporal, and receiver targets remains required; attempt 5 is not a pass.

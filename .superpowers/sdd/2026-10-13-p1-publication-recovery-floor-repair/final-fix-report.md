@@ -307,3 +307,33 @@ image itself was preserved.
 The post-cleanup invalidation audit passed at `HEAD=767cdcd8945133107429722c21929bcd7635f1ee` with progress absent. The pinned application commit, `HEAD`, and worktree each reconstructed all 211 source-lock rows byte-for-byte: path-set SHA `14bddb59e1d7ad1f3d4fceb6b20e7ae0748848a93e89dc470a7af7b325dc88fe`, content manifest SHA `58f27973abc9b3d34fa9f2eea1738c914659ff84f5151f64fdc493acca1c3005`. Candidate loader passed for image `sha256:c880a41e4a20f1322ad579b0b8d3f8b5ae14fcdf13635458d33cdc8c747e09a0`, wheel SHA `425b7122f6431459a15bc4fe7bbdd169692b152356a0f36c6895e3fd452e3d04`, runtime manifest SHA `3d58423ee9119db38c9a670c726c83692bef126d402e69f2a9ad98e05377b644`, 9,151 installed entries, and zero `.pyc`. This confirms the changed test and reports do not invalidate or require rebuilding the frozen candidate. Audit log and exit are `attempt-4/candidate-invalidation-audit-after-cleanup.log` and `.exit`.
 
 A fresh full Task 8 producer run is still required after the replay assertion correction; no producer pass or final qualification is claimed yet.
+
+### Attempt 5 result and approved test prerequisite restoration
+
+The fresh attempt-5 producer exited 1 after 217.36 seconds in the late A4
+hostile-source negative control. The pre-floor checkout required at test line
+8199 was missing at
+`/tmp/salience-f3-retained-039ddf39cb9b846c205f352e083293fbec6f9fc5`. Exact log
+SHA256 is `5a4e8f15177d539e6ca1869cb679d5098a699ac363a810d7281a53018c21e78a`.
+Both actual exact-image pending retries had already run and produced the
+expected typed holds on activity attempt 2; both independent recorder event
+counts and the shared receiver count were zero. The exact full readback
+`attempt-5/failed-state-readback.json` is SHA256
+`e48dfca45250b87dafe9af2c17ab9f967c53513404c25f077918bee12df701c6`.
+
+Attempt-5 progress SHA `6bd1b88050894831bbeab22a78f958f87fd26e34fb524ada9c7f23a5c6170e52`
+was archived after database/Temporal/recorder readback. Cleanup removed only
+receiver `cf99188c6d73940dc7914f86db85ac35047c7892674a6557f5b4118b4eb66a90`,
+primary DB `recovery_floor_active_07e9b354ec19`, and legacy DB
+`recovery_floor_legacy_020927697458`; both database sizes were 17,585,843 and
+17,143,475 bytes. It removed canonical progress and preserved the candidate
+image. Cleanup exit was 0; JSON evidence SHA256 is
+`20fb8613ffde0ec41f1546d8366c40e7e548a65996826f44194bf455bdf85718`.
+
+The controller explicitly authorized recreating the required detached clean
+worktree at `/tmp/salience-f3-retained-039ddf39cb9b846c205f352e083293fbec6f9fc5`
+at exact commit `039ddf39cb9b846c205f352e083293fbec6f9fc5`. It will be kept only
+for the hostile-source controls, verified clean and detached before use, then
+removed after dependent qualification with the final worktree list checked.
+No tracked test behavior was changed to suppress the missing prerequisite.
+Attempt 6 must use fresh targets before Task 8 can be claimed green.
