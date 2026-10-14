@@ -1,6 +1,6 @@
 {
-  "baseline_commit": "43fc94e6ae4a11ca63eec32d537656ff3ef3024a",
-  "scope": "Current Task 8 candidate source, migrations, tests, scripts, named deployment/dependency configuration, and durable Docker build-context boundary. Exact candidate commit 43fc94e6ae4a11ca63eec32d537656ff3ef3024a; historical Task 10 source inventory remains retained separately. This file is a content lock, not independent code review or release acceptance.",
+  "baseline_commit": "cad1817c36badd8fb6eed5f5ffb3f0d6537bd8e2",
+  "scope": "Current Task 8 candidate source, migrations, tests, scripts, named deployment/dependency configuration, and durable Docker build-context boundary. Exact candidate commit cad1817c36badd8fb6eed5f5ffb3f0d6537bd8e2; historical Task 10 source inventory remains retained separately. This file is a content lock, not independent code review or release acceptance.",
   "files": [
     {
       "path": ".dockerignore",
@@ -1272,7 +1272,7 @@
     },
     {
       "path": "tests/integration/test_v4_publication_recovery_floor.py",
-      "sha256": "4ee5d4c4ca3762444703cc86a5b7d952e40253a4422d9424adc6a299f9d3d92a"
+      "sha256": "4d073681e3e797820f23b314b0c2ad28213430b84d556257295d1270ec23742f"
     },
     {
       "path": "tests/integration/test_v4_publication_recovery_holds.py",
@@ -1463,8 +1463,8 @@
       "sha256": "7f76114852b4b9d95b3517c49718ccf2e007d64d442a1b4e05ef696dd37a8bbc"
     }
   ],
-  "reviewed_at": "2026-10-13T23:50:20Z",
-  "review_scope": "This active content lock records exact Task 8 candidate source bytes at application commit 43fc94e6ae4a11ca63eec32d537656ff3ef3024a (365 source/configuration files, including the durable build-context boundary). The previous Task 10 360-file lock and digest remain in historical_task_10_lock. This lock is a content boundary, not independent code review or production acceptance; exact-candidate qualification, corrected-publication final review/meta-review, exact-head CI, and broader production gates remain required. Production effects are disabled and RG0/RG1 remain HELD.",
+  "reviewed_at": "2026-10-14T00:15:14Z",
+  "review_scope": "This active content lock records exact Task 8 candidate source bytes at application commit cad1817c36badd8fb6eed5f5ffb3f0d6537bd8e2 (365 source/configuration files, including the durable build-context boundary). The previous Task 10 360-file lock and digest remain in historical_task_10_lock. This lock is a content boundary, not independent code review or production acceptance; exact-candidate qualification, corrected-publication final review/meta-review, exact-head CI, and broader production gates remain required. Production effects are disabled and RG0/RG1 remain HELD.",
   "historical_task_10_lock": {
     "baseline_commit": "14801007310232f59708566ca9a3eefb80bfea87",
     "application_commit": "5cb57910c2c6dc2f6ea37da75640c5c947c8907b",
@@ -1472,5 +1472,5 @@
     "file_count": 360,
     "meaning": "Retained Task 10 source inventory; historical contents remain available in the original committed evidence lock."
   },
-  "application_commit": "43fc94e6ae4a11ca63eec32d537656ff3ef3024a"
+  "application_commit": "cad1817c36badd8fb6eed5f5ffb3f0d6537bd8e2"
 }

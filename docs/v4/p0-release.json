@@ -345,7 +345,7 @@
     },
     {
       "path": "docs/v4/publication-recovery-hold-evidence.json",
-      "sha256": "fb900d966d6e816ec5991045ee2b36d0a874bbbf77eda5627bd5a35ffd145c45",
+      "sha256": "0144cef66763d6af26909766e720df973b79a8f8b81cae03602ef229cdf9be45",
       "local_only": false
     }
   ],
@@ -466,7 +466,7 @@
     ],
     "next_queue_item": null,
     "next_action": "Continue the remaining production-wide revocation, general policy, routing/live schedule inventory, recovery-worker, external-alert, and RG0/RG1 obligations only after exact-candidate local qualification, corrected-publication final review/meta-review, and exact-head CI. Keep production acceptance HELD, effects disabled, fixture budget zero, P2–P7 gated, P6 disabled, and main unmerged.",
-    "independent_review": "Task 8 bounded evidence review and Task 10 local image qualification remain historical scope. Task 11 found floor/evidence gaps in 5cb5791, making it unsupported as the rollback floor. The approved 0043 repair is implemented at 43fc94e6ae4a11ca63eec32d537656ff3ef3024a, with exact artifact pins in the Task 8 report; this candidate remains outside prior review scope until corrected-publication final review/meta-review. Exact-head CI and broader production gates remain required; production acceptance stays HELD.",
+    "independent_review": "Task 8 bounded evidence review and Task 10 local image qualification remain historical scope. Task 11 found floor/evidence gaps in 5cb5791, making it unsupported as the rollback floor. The approved 0043 repair is implemented at cad1817c36badd8fb6eed5f5ffb3f0d6537bd8e2, with exact artifact pins in the Task 8 report; this candidate remains outside prior review scope until corrected-publication final review/meta-review. Exact-head CI and broader production gates remain required; production acceptance stays HELD.",
     "completed_implementation_tasks": [
       1,
       2,
@@ -483,9 +483,9 @@
     "task_10_qualification_harness_commit": "14801007310232f59708566ca9a3eefb80bfea87",
     "task_10_status": "PASS_LOCAL_FIXTURE_CANDIDATE; TASK_11_REVIEW_COMPLETE_FINDINGS_FOUND; 5CB5791_UNSUPPORTED_AS_ROLLBACK_FLOOR",
     "publication_recovery_holds": {
-      "scope": "Task 10 local fixture results remain historical and candidate 5cb5791 is unsupported as the rollback floor. The approved 0043 repair is implemented at 43fc94e6ae4a11ca63eec32d537656ff3ef3024a, and its exact wheel/image/lock build is recorded in the Task 8 report; no earlier candidate count transfers. Continue remaining production gates only after exact-candidate qualification, corrected-publication final review/meta-review, and exact-head CI. Production remains HELD.",
+      "scope": "Task 10 local fixture results remain historical and candidate 5cb5791 is unsupported as the rollback floor. The approved 0043 repair is implemented at cad1817c36badd8fb6eed5f5ffb3f0d6537bd8e2, and its exact wheel/image/lock build is recorded in the Task 8 report; no earlier candidate count transfers. Continue remaining production gates only after exact-candidate qualification, corrected-publication final review/meta-review, and exact-head CI. Production remains HELD.",
       "evidence": "docs/v4/publication-recovery-hold-evidence.json",
-      "evidence_sha256": "fb900d966d6e816ec5991045ee2b36d0a874bbbf77eda5627bd5a35ffd145c45"
+      "evidence_sha256": "0144cef66763d6af26909766e720df973b79a8f8b81cae03602ef229cdf9be45"
     }
   },
   "documentation_refresh": {
