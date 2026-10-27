@@ -2225,6 +2225,17 @@ def test_0044_policy_and_tagged_approval_transitions_are_terminal():
             context = _approval_context_0044(
                 workspace_id, subject_id, cycle, approval_policy_id
             )
+            mismatched_job_context = {**context, "job_id": str(uuid4())}
+            with pytest.raises(
+                psycopg.Error, match="tagged effect approval job binding mismatch"
+            ):
+                with connection.transaction():
+                    _insert_0044_approval(
+                        connection,
+                        workspace_id,
+                        approval_policy_id,
+                        mismatched_job_context,
+                    )
             approval_id = _insert_0044_approval(
                 connection, workspace_id, approval_policy_id, context
             )

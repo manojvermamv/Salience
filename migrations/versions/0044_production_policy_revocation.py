@@ -610,6 +610,11 @@ def upgrade() -> None:
                     RAISE EXCEPTION 'tagged effect approval contains an invalid optional identifier';
                 END IF;
             END LOOP;
+            IF (NEW.job_id IS NULL AND NEW.request_context ? 'job_id')
+               OR (NEW.job_id IS NOT NULL
+                   AND NEW.request_context->>'job_id' IS DISTINCT FROM NEW.job_id::text) THEN
+                RAISE EXCEPTION 'tagged effect approval job binding mismatch';
+            END IF;
             BEGIN
                 approval_expiry := (NEW.request_context->>'expires_at')::timestamptz;
             EXCEPTION WHEN others THEN
