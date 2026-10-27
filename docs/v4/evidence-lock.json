@@ -1,6 +1,6 @@
 {
-  "baseline_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
-  "scope": "Current successor 182c4e4 Task 8 content lock for source, migrations, tests, scripts, named deployment/dependency configuration, and durable Docker build-context boundary. The immutable application source manifest remains 211 paths; this expanded local verification lock covers the complete 366-file checker inventory including the exact qualification harness. Historical Task 10 and superseded 386d4bc locks are preserved separately. This is a content lock, not independent review or release acceptance.",
+  "baseline_commit": "ec12763e38143f52f1af2661e00932158982f11a",
+  "scope": "Current Slice 2 application/source candidate ec12763e38143f52f1af2661e00932158982f11a content lock for source, migrations, tests, scripts, named deployment/dependency configuration, and the durable Docker build-context boundary. It covers 369 application evidence paths plus seven configuration/build-context paths (376 total checker evidence files). The historical 211-path artifact source manifest and earlier qualification locks retain their original scopes. This lock records current repository file bytes and path coverage; it is not artifact identity, independent review, exact-head CI, or production acceptance.",
   "files": [
     {
       "path": ".dockerignore",
@@ -207,6 +207,18 @@
       "sha256": "77c2ccd2d785c98868fc889aba7039cbf82bf04159ac760e5769e999c13f857a"
     },
     {
+      "path": "migrations/versions/0044_production_policy_revocation.py",
+      "sha256": "4049ed42695c40164c841747ac04842ef2224fef9b43a5ef516111f8eeba198e"
+    },
+    {
+      "path": "migrations/versions/0045_production_policy_approval_guard_repair.py",
+      "sha256": "96a42162402d3e0d49b116f9721bd4cdaf7a9ca493f7f13c6a20df9053c4084a"
+    },
+    {
+      "path": "migrations/versions/0046_production_policy_approval_id_immutability.py",
+      "sha256": "fa04dadd12658b6eb092c6c024ce6764f14086eaa45680536f87df57f5dddb00"
+    },
+    {
       "path": "migrations/versions/__init__.py",
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
@@ -228,7 +240,7 @@
     },
     {
       "path": "scripts/verify-phase-9.sh",
-      "sha256": "13df88f0b8d787fafa5043b48fc159d9cc49b4b16772666474568515164b603c"
+      "sha256": "8b0e110430a85c83a12b4b76a75a111358dea4bd3a525d725b9c504a53da21c3"
     },
     {
       "path": "scripts/verify-phases-1-4.sh",
@@ -512,7 +524,7 @@
     },
     {
       "path": "src/salience/cycles/authority.py",
-      "sha256": "d8376eb12851e8b5853c5bf4afc61c94f31d433edb59e26aa3ad7002a891c51a"
+      "sha256": "a33d7d8bb3e3c68cff770b80d1fb2c4704d4d808819ad4fb9faa6924f8a289e6"
     },
     {
       "path": "src/salience/cycles/baselines.py",
@@ -528,7 +540,7 @@
     },
     {
       "path": "src/salience/cycles/governance.py",
-      "sha256": "5ad9878f9b6fa12a272b6f819d76aa05a33821d0b849e8020691bcdd76b84821"
+      "sha256": "78f85135f299efe011273a941b738d0863418deda7fea83f7c7b7114de73f3e6"
     },
     {
       "path": "src/salience/cycles/legacy_dispatch.py",
@@ -544,7 +556,7 @@
     },
     {
       "path": "src/salience/cycles/legacy_runtime.py",
-      "sha256": "2a04a0a4dd454b17617b137fa9e40f52b9b40a6dfa572ae30c216bbde19fbaa9"
+      "sha256": "946578b6dd7a49364f16ea4ce79996ca270caa2d0d33181a3e17ecbabd09cd27"
     },
     {
       "path": "src/salience/cycles/legacy_schedule_workflow.py",
@@ -564,7 +576,15 @@
     },
     {
       "path": "src/salience/cycles/outbox.py",
-      "sha256": "d779b508c0985c4767ad2301a50fea1320e646075e7c59ceb6c0849e1bccc0ab"
+      "sha256": "59a62f5672fb10886eb9795e3f4099e4308bfccc0db1ba245467ec1c5f8ef213"
+    },
+    {
+      "path": "src/salience/cycles/production_dispatch.py",
+      "sha256": "7363f11366fb2ffa4561455508a9bef4552d5439220b574b8781895223a3eddf"
+    },
+    {
+      "path": "src/salience/cycles/production_rollback_reader.py",
+      "sha256": "44a5cfaea52b99f56907e4462a0fc8492a8d4687b3690a9bfa8127f9b49c8110"
     },
     {
       "path": "src/salience/cycles/publication_recovery.py",
@@ -644,11 +664,15 @@
     },
     {
       "path": "src/salience/governance/cycle_costs.py",
-      "sha256": "af8f58284ba233defeb14ff1d065b706ebf6756fd8c74afa5eb8c8507d87998e"
+      "sha256": "e7204f7dda1cc898c872d8e6e8b854746e83cf817368ff85c877cd79866f3854"
     },
     {
       "path": "src/salience/governance/policy.py",
       "sha256": "0d6fd7680d32fb1cebe690d6357e0d85665e63a27e6846eb090ad0299c979c4c"
+    },
+    {
+      "path": "src/salience/governance/production_policy.py",
+      "sha256": "f5ae47c3125e8bb226e1756704591a04763b6ef6b3f508280770a8d59fa7e742"
     },
     {
       "path": "src/salience/governance/scopes.py",
@@ -755,6 +779,10 @@
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
+      "path": "src/salience/observability/production_authorization.py",
+      "sha256": "ac74d6a81963d6592ebdc9bb5e250fe431cd081e9ce1704dbdc1fee0a7228bce"
+    },
+    {
       "path": "src/salience/observability/tracing.py",
       "sha256": "c5148b5aa795e8e2a4a3ea90bc5fac82311d3de28c6b2a7846c3a133351b2afa"
     },
@@ -796,7 +824,7 @@
     },
     {
       "path": "src/salience/publication/repository.py",
-      "sha256": "2290e1a6b3a4137a7fa54901919e201b8b92c272c795107df10a52db2eed305e"
+      "sha256": "250e1a7988a4658b8b95c2349d601f921398a62cfd775c7f07298358dcc20c9e"
     },
     {
       "path": "src/salience/publication/youtube.py",
@@ -880,7 +908,7 @@
     },
     {
       "path": "src/salience/workflows/publication.py",
-      "sha256": "72d24bfa52f677984277545f2f7f30888560d6c319b8389fc470a4d1786d3a4d"
+      "sha256": "6e1be3e3d0f8b7aa5490ee54b239a467c98064f4864a2b6a544ca3d494a0fe0a"
     },
     {
       "path": "src/salience/workflows/schedules.py",
@@ -1120,7 +1148,7 @@
     },
     {
       "path": "tests/integration/test_durable_parallel_teams.py",
-      "sha256": "64e6a259c223e28d0f0e28ac3e940b7a306d61d0e890bc9a2ef25879ecabca0d"
+      "sha256": "c3ff19a374fe2f486accf945355d91d5228a823d9bbf0ff68d35f964fcaa973f"
     },
     {
       "path": "tests/integration/test_fixture_publisher.py",
@@ -1157,6 +1185,10 @@
     {
       "path": "tests/integration/test_model_invocations.py",
       "sha256": "d0a641d0c49f8dfa72c7de44cfa0ba84690dc9d990cb975f5c3fc1d101ce9029"
+    },
+    {
+      "path": "tests/integration/test_p1_production_policy_revocation.py",
+      "sha256": "b16184881ebff23e5606488f69bcb86f90d381eca434862af662236ea4cb415a"
     },
     {
       "path": "tests/integration/test_publication_control_api.py",
@@ -1212,7 +1244,7 @@
     },
     {
       "path": "tests/integration/test_v4_identity_isolation.py",
-      "sha256": "5db6d320416570adb03e122b9061161108f06e9945829925b6555b1edd640f32"
+      "sha256": "9ac122464db31068c767d5bb625f02b9df96a5f2090a1e2a25b36a6c79349fab"
     },
     {
       "path": "tests/integration/test_v4_item7_admission.py",
@@ -1232,7 +1264,7 @@
     },
     {
       "path": "tests/integration/test_v4_legacy_dispatch.py",
-      "sha256": "1e232f6c327e6bad0b93d0ceb95fbe951d6592ae343e533818e0eb3099011798"
+      "sha256": "4d08b7b9a008d075f9d0ba9ac4ac68e1b7c87c7929e9b4379a232890be093fc6"
     },
     {
       "path": "tests/integration/test_v4_legacy_dummy.py",
@@ -1248,15 +1280,15 @@
     },
     {
       "path": "tests/integration/test_v4_migrations.py",
-      "sha256": "45dfc0a1e0d7ecb2a40cebf34efcfb02ec6407fa5d9905b4f0c8a025a25f8233"
+      "sha256": "baf3b32f2c10c2bf4606d462854f27d5e5baec7cfaaed18f73fe9bf349f5315b"
     },
     {
       "path": "tests/integration/test_v4_native_publication_schedules.py",
-      "sha256": "f4d9aa492185c4a361c38f4fe16d12c4badb8a4bb628462f773218a59cdac31b"
+      "sha256": "9cd0e4747b7c6b9272277b5d3ee8cdb9ae30d3d41ab6196822f346c35a3c4823"
     },
     {
       "path": "tests/integration/test_v4_native_schedules.py",
-      "sha256": "75c2ee0ea8dbfb96a3638c72c4d6ca0a07ee0e2e09402c9d1f589ef6619c1981"
+      "sha256": "841ad097d57232e84562f0c641ea6460ee164544adfc5027f6e20c6fb7a60e44"
     },
     {
       "path": "tests/integration/test_v4_object_retention.py",
@@ -1276,15 +1308,15 @@
     },
     {
       "path": "tests/integration/test_v4_publication_recovery_floor.py",
-      "sha256": "c79f7152f955b71bc0e208acf40142a277627807193bbe83d3b0cb32ee5b077e"
+      "sha256": "03236fecdd8c227efd24802bd9003fdaea27ba86ed0059503eeed458c728ef4b"
     },
     {
       "path": "tests/integration/test_v4_publication_recovery_holds.py",
-      "sha256": "0f232d70a25a03c1c45c00880a19cccce52829c295061c25d0b5bd92c0f53d8b"
+      "sha256": "9c6aa39dd34faff8f0b8289d94ffab065f28514794defdd4c739c90662095bb4"
     },
     {
       "path": "tests/integration/test_v4_runtime_waits.py",
-      "sha256": "578cec24c430ce5a31f919881f70d3841b09c452ab635b95a163fc6f0d2d9006"
+      "sha256": "cf2105eb0abe3c4159aae8298d54ee9424321195e19ca3798992d7067cb46061"
     },
     {
       "path": "tests/integration/test_v4_s3_service.py",
@@ -1325,6 +1357,10 @@
     {
       "path": "tests/scripts/test_verify_browser_evidence.sh",
       "sha256": "a9d1716a9c93cbd6af43829add91270089c75d78f2c03c8532d54c33c77c3ece"
+    },
+    {
+      "path": "tests/scripts/test_verify_phase_9_cleanup.sh",
+      "sha256": "c3b5eb957369bf33483a804e5753d03380431bc35b501ef0ad379beb24cc3225"
     },
     {
       "path": "tests/test_config.py",
@@ -1411,6 +1447,10 @@
       "sha256": "97cb2db83b823fb4fd241b6b5dbc12c6cd2338d521e041918396651039a61918"
     },
     {
+      "path": "tests/unit/test_production_policy.py",
+      "sha256": "c1bf81ce5194c4b1c17ab44fdf994dfb7485dd8cd038c1944deb5e9456f31d95"
+    },
+    {
       "path": "tests/unit/test_publication_contracts.py",
       "sha256": "592c19c767af0175dc1db78d8ce73ce0eb8c8342086d1842946c1d4ff273284e"
     },
@@ -1467,8 +1507,8 @@
       "sha256": "7f76114852b4b9d95b3517c49718ccf2e007d64d442a1b4e05ef696dd37a8bbc"
     }
   ],
-  "reviewed_at": "2026-10-27T02:52:53Z",
-  "review_scope": "Active content lock for frozen application candidate 182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f and qualification harness observed at 7c3f3822c81faba37b4b07a09e0f5a950f9f1256. It records all source/config/test/build-context bytes for local reproducibility. The application qualification remains the recorded 796 passed / 17 skipped / 3 warnings on the frozen application candidate; the harness assertion correction does not create a new application qualification. It does not imply fresh independent review, exact-head CI for the unpublished current candidate, or production acceptance; production remains HELD.",
+  "reviewed_at": "2026-10-27T17:36:40Z",
+  "review_scope": "Current local content lock for application/source candidate ec12763e38143f52f1af2661e00932158982f11a: 369 files under src, tests, migrations, and scripts plus seven deployment/dependency/build-context files. The fixture qualification result remains separately bound to the sanitized verifier log recorded in the P1 evidence report. This lock does not imply a built artifact, independent review, current exact-head CI, or production acceptance; production remains disabled, RG0/full RG1 are HELD, and P2 is BLOCKED.",
   "historical_task_10_lock": {
     "baseline_commit": "14801007310232f59708566ca9a3eefb80bfea87",
     "application_commit": "5cb57910c2c6dc2f6ea37da75640c5c947c8907b",
@@ -1476,7 +1516,7 @@
     "file_count": 360,
     "meaning": "Retained Task 10 source inventory; historical contents remain available in the original committed evidence lock."
   },
-  "application_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
+  "application_commit": "ec12763e38143f52f1af2661e00932158982f11a",
   "superseded_0043_386d4bc_lock": {
     "baseline_commit": "386d4bc7cc5acb794858d3c3c14400a0659a83ef",
     "application_commit": "386d4bc7cc5acb794858d3c3c14400a0659a83ef",

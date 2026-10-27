@@ -197,3 +197,12 @@ This append-only digest index binds the current documentation and test contents 
 | `docs/v4/p1-production-policy-revocation-evidence.json` | `e5a5a3d424157479cacaf00eae39614a5abe12ecdb04ac38af0c95692dbd982b` |
 | `.superpowers/sdd/2026-10-27-p1-production-policy-and-revocation/final-evidence-report.md` | `551c40b4d6852ab3ab4f42bc2cd26ffd1a0339fa03a5f7c2c0f0d39814d05307` |
 | `docs/v4/audits/p1-policy-revocation-ec12763-verifier.log` | `c643740f100210bad8428433db31ecd2852a538b26ad702224cd28c3f5432020` |
+
+## Hosted documentation CI evidence-lock refresh — 2026-10-27
+
+This append-only addendum preserves the prior application provenance snapshot and records the refreshed current evidence lock after hosted documentation run 40551540958 exposed stale Slice 2 file coverage. The verifier log remains byte-identical; these documentation updates do not extend any earlier review or release qualification. The status audit omits its own digest to avoid a recursive self-hash.
+
+| Path | SHA-256 |
+| --- | --- |
+| `docs/v4/evidence-lock.json` | `b44978d42ed635c8a8b59f2df2bd988a871c47eff3afd3a770d92290a39a771e` |
+| `docs/v4/progress.md` | `3fc60a980f20ced6f16372d59acf220a4e8a5caa5e7129578515d536fe81bd68` |
