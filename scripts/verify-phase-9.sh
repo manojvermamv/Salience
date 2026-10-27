@@ -116,7 +116,7 @@ else
 fi
 
 if DATABASE_URL="$database_url" "$python_bin" -m alembic upgrade head; then
-  pass "Canonical migrations apply through 0045_production_policy_approval_guard_repair"
+  pass "Canonical migrations apply through 0046_production_policy_approval_id_immutability"
 else
   fail "Canonical migrations did not apply"
   exit "$result"

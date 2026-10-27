@@ -1390,7 +1390,33 @@ class PublicationActivities:
                 (not fixture_adapter and current is not None)
                 or isinstance(payload.get("remote_id"), str)
             ):
-                receipt = await self._adapter_for(request).cancel(payload["remote_id"])
+                receipt = None
+                cancellation_error: Exception | None = None
+                try:
+                    receipt = await self._adapter_for(request).cancel(payload["remote_id"])
+                except Exception as error:
+                    if fixture_adapter:
+                        raise
+                    cancellation_error = error
+                if current is not None:
+                    expected_provider_id = getattr(
+                        current.approval_binding, "provider_id", None
+                    )
+                    if (
+                        receipt is None
+                        or expected_provider_id is None
+                        or getattr(receipt, "publisher_id", None) != expected_provider_id
+                        or getattr(receipt, "remote_id", None) != current.remote_id
+                        or getattr(receipt, "state", None) != "cancelled"
+                    ):
+                        await self._hold_publication_liability_if_claimed(
+                            payload, "cancel", "reconciliation_unresolved"
+                        )
+                        raise ApplicationError(
+                            "provider cancellation outcome is unresolved",
+                            type="ProductionPublicationLiabilityHeld",
+                            non_retryable=True,
+                        ) from cancellation_error
                 if receipt is not None and isinstance(payload.get("publication_attempt_id"), str):
                     await self._state.repository.record_status_event(
                         publication_attempt_id=payload["publication_attempt_id"],

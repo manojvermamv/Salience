@@ -1516,6 +1516,7 @@ def test_cancel_with_canonical_receipt_uses_fresh_authorization_and_provider_tar
     canonical.remote_id = "canonical-remote-1"
     canonical.remote_receipt_state = "accepted"
     canonical.approval_binding.remote_receipt_id = UUID(canonical.remote_receipt_id)
+    canonical.approval_binding.provider_id = "production-publisher"
     payload.update(
         {
             "remote_receipt_id": canonical.remote_receipt_id,
@@ -1532,6 +1533,75 @@ def test_cancel_with_canonical_receipt_uses_fresh_authorization_and_provider_tar
     assert adapter.cancel_targets == ["canonical-remote-1"]
     assert activities._publication_test_cost_calls["release"] == [payload["budget_reservation_id"]]
     assert activities._publication_test_store.terminal_states == ["cancelled"]
+
+
+@pytest.mark.parametrize(
+    "response_kind",
+    ["none", "nonterminal", "provider_mismatch", "remote_mismatch"],
+)
+def test_production_cancel_unverified_provider_response_holds_claimed_liability(response_kind):
+    dispatch = _LocalCancelPublicationDispatch(None)
+    dispatch.hold_calls = []
+    dispatch.record_publication_liability_held = (
+        lambda *args: dispatch.hold_calls.append(args) or True
+    )
+    activities, adapter, _lease_calls, payload = _publication_activity_case(dispatch=dispatch)
+    canonical = activities._publication_test_canonical
+    canonical.remote_receipt_id = activities._publication_test_repository.receipt_id
+    canonical.remote_id = "canonical-remote-1"
+    canonical.remote_receipt_state = "accepted"
+    canonical.approval_binding.remote_receipt_id = UUID(canonical.remote_receipt_id)
+    canonical.approval_binding.provider_id = "production-publisher"
+    payload.update(
+        {
+            "remote_receipt_id": canonical.remote_receipt_id,
+            "remote_id": canonical.remote_id,
+        }
+    )
+    response = {
+        "none": None,
+        "nonterminal": SimpleNamespace(
+            publisher_id="production-publisher",
+            remote_id="canonical-remote-1",
+            state="processing",
+            safe_metadata_hash="c" * 64,
+        ),
+        "provider_mismatch": SimpleNamespace(
+            publisher_id="other-provider",
+            remote_id="canonical-remote-1",
+            state="cancelled",
+            safe_metadata_hash="c" * 64,
+        ),
+        "remote_mismatch": SimpleNamespace(
+            publisher_id="production-publisher",
+            remote_id="other-remote",
+            state="cancelled",
+            safe_metadata_hash="c" * 64,
+        ),
+    }[response_kind]
+
+    async def cancel(_remote_id):
+        adapter.cancel_calls += 1
+        adapter.cancel_targets.append(_remote_id)
+        return response
+
+    adapter.cancel = cancel
+
+    with pytest.raises(ApplicationError) as raised:
+        asyncio.run(activities.cancel(payload))
+
+    assert raised.value.type == "ProductionPublicationLiabilityHeld"
+    assert raised.value.non_retryable is True
+    assert dispatch.action_calls[-1][2] == "cancel"
+    assert dispatch.hold_calls == [
+        (UUID(payload["request"]["id"]), "cancel", "reconciliation_unresolved")
+    ]
+    assert adapter.cancel_calls == 1
+    assert adapter.cancel_targets == ["canonical-remote-1"]
+    assert activities._publication_test_repository.status_events == []
+    assert activities._publication_test_repository.publications == []
+    assert activities._publication_test_cost_calls["release"] == []
+    assert activities._publication_test_store.terminal_states == []
 
 
 def test_cancel_rejects_unclaimed_workflow_remote_target_before_local_writes():

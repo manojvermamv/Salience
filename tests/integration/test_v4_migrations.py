@@ -28,6 +28,7 @@ _REVISION_0042 = "0042_publication_recovery_holds"
 _REVISION_0043 = "0043_complete_publication_recovery_liabilities"
 _REVISION_0044 = "0044_production_policy_revocation"
 _REVISION_0045 = "0045_production_policy_approval_guard_repair"
+_REVISION_0046 = "0046_production_policy_approval_id_immutability"
 _HOLD_TABLE = "public.v4_legacy_publication_recovery_holds"
 _V1_KEYS = (
     "dispatch",
@@ -361,7 +362,7 @@ def test_installed_alembic_config_resolves_inside_runtime_root(task5_worker_imag
         timeout=60,
     )
     assert resolved_heads.returncode == 0, resolved_heads.stdout + resolved_heads.stderr
-    assert _REVISION_0045 in resolved_heads.stdout
+    assert _REVISION_0046 in resolved_heads.stdout
     assert "(head)" in resolved_heads.stdout
 
     compose = yaml.safe_load((_MIGRATION_ROOT / "compose.yaml").read_text(encoding="utf-8"))
@@ -374,7 +375,7 @@ def test_installed_alembic_config_resolves_inside_runtime_root(task5_worker_imag
     ]
 
 
-def test_installed_image_migrates_disposable_database_to_0045(task5_worker_image):
+def test_installed_image_migrates_disposable_database_to_0046(task5_worker_image):
     import yaml
 
     compose = yaml.safe_load((_MIGRATION_ROOT / "compose.yaml").read_text(encoding="utf-8"))
@@ -551,7 +552,7 @@ def test_installed_image_migrates_disposable_database_to_0045(task5_worker_image
         with psycopg.connect(database) as connection:
             assert connection.execute(
                 "SELECT version_num FROM alembic_version"
-            ).fetchall() == [(_REVISION_0045,)]
+            ).fetchall() == [(_REVISION_0046,)]
             assert _alembic_version_num_type(connection) == ("character varying", 64)
             roles_after = [
                 row[0]
@@ -2481,7 +2482,7 @@ def test_0045_repairs_stale_approval_guard_without_weakening_v1_binding():
             assert legacy_id is not None
             assert connection.execute(
                 "SELECT version_num FROM alembic_version"
-            ).fetchone()[0] == _REVISION_0045
+            ).fetchone()[0] == _REVISION_0046
 
             valid_context = _approval_context_0044(
                 workspace_id, subject_id, cycle, policy_id
@@ -2567,6 +2568,168 @@ def test_0045_repairs_stale_approval_guard_without_weakening_v1_binding():
                     policy_id,
                     {key: value for key, value in valid_context.items()
                      if key != "required_scopes"},
+                ),
+            )
+    finally:
+        _drop_migration_database(source, name)
+
+
+def test_0046_freezes_decided_tagged_approval_identity_from_stamped_0045():
+    source = os.environ["TEST_DATABASE_URL"]
+    name, database, _ = _prepare_0044_database("p1_0046_approval_id_immutability_")
+    try:
+        upgraded_0045 = _migration(database, "upgrade", _REVISION_0045)
+        assert upgraded_0045.returncode == 0, upgraded_0045.stdout + upgraded_0045.stderr
+        with psycopg.connect(database) as connection:
+            assert connection.execute(
+                "SELECT version_num FROM alembic_version"
+            ).fetchone()[0] == _REVISION_0045
+            workspace_id, subject_id = _seed_0044_workspace_subject(connection)
+            cycle = _seed_0044_cycle(connection, workspace_id, subject_id)
+            policy_id = _seed_0044_policy(connection, workspace_id, status="active")
+            context = _approval_context_0044(workspace_id, subject_id, cycle, policy_id)
+
+            approved_id = _insert_0044_approval(
+                connection, workspace_id, policy_id, context
+            )
+            connection.execute(
+                """UPDATE approval_requests SET status='approved',decided_by='reviewer',
+                          decided_at=clock_timestamp() WHERE id=%s""",
+                (approved_id,),
+            )
+
+            revoked_id = _insert_0044_approval(
+                connection, workspace_id, policy_id, context
+            )
+            connection.execute(
+                """UPDATE approval_requests SET status='approved',decided_by='reviewer',
+                          decided_at=clock_timestamp() WHERE id=%s""",
+                (revoked_id,),
+            )
+            with connection.transaction():
+                transaction_id = str(
+                    connection.execute("SELECT txid_current()").fetchone()[0]
+                )
+                connection.execute(
+                    """INSERT INTO v4_cycle_events(
+                              id,workspace_id,subject_id,goal_id,intent_id,cycle_id,
+                              kind,traceparent,payload)
+                       VALUES(%s,%s,%s,%s,%s,%s,'production_approval_revoked',
+                              '00-11111111111111111111111111111111-2222222222222222-01',%s)""",
+                    (
+                        uuid4(),
+                        workspace_id,
+                        subject_id,
+                        cycle["goal_id"],
+                        cycle["intent_id"],
+                        cycle["cycle_id"],
+                        Jsonb(
+                            {
+                                "schema_version": "salience.p1-effect-approval-revocation.v1",
+                                "approval_request_id": str(revoked_id),
+                                "operation_id": str(cycle["operation_id"]),
+                                "policy_version_id": str(policy_id),
+                                "transaction_id": transaction_id,
+                            }
+                        ),
+                    ),
+                )
+                connection.execute(
+                    "UPDATE approval_requests SET status='revoked' WHERE id=%s",
+                    (revoked_id,),
+                )
+
+            unrelated_id = connection.execute(
+                """INSERT INTO approval_requests(
+                          workspace_id,policy_version_id,effect_type,status,
+                          request_context,requested_by)
+                   VALUES(%s,%s,'legacy','approved','{}'::jsonb,'legacy-owner')
+                   RETURNING id""",
+                (workspace_id, policy_id),
+            ).fetchone()[0]
+
+        upgraded_head = _migration(database, "upgrade", "head")
+        assert upgraded_head.returncode == 0, upgraded_head.stdout + upgraded_head.stderr
+        with psycopg.connect(database) as connection:
+            assert connection.execute(
+                "SELECT version_num FROM alembic_version"
+            ).fetchone()[0] == _REVISION_0046
+            tagged_ids = [approved_id, revoked_id]
+            assert connection.execute(
+                """SELECT count(*) FROM v4_production_effect_permits
+                   WHERE approval_request_id = ANY(%s)""",
+                (tagged_ids,),
+            ).fetchone()[0] == 0
+
+            for approval_id in tagged_ids:
+                replacement_id = uuid4()
+                assert _postgres_statement_rejected(
+                    connection,
+                    "decided effect approval identity is immutable",
+                    lambda: connection.execute(
+                        "UPDATE approval_requests SET id=%s WHERE id=%s",
+                        (replacement_id, approval_id),
+                    ),
+                )
+                assert _postgres_statement_rejected(
+                    connection,
+                    "tagged effect approval decision history cannot be deleted",
+                    lambda approval_id=approval_id: connection.execute(
+                        "DELETE FROM approval_requests WHERE id=%s", (approval_id,)
+                    ),
+                )
+
+            replacement_legacy_id = uuid4()
+            connection.execute(
+                "UPDATE approval_requests SET id=%s WHERE id=%s",
+                (replacement_legacy_id, unrelated_id),
+            )
+            connection.execute(
+                "DELETE FROM approval_requests WHERE id=%s", (replacement_legacy_id,)
+            )
+            identity_guard = connection.execute(
+                """SELECT function.prosecdef,function.proconfig,function.proacl
+                   FROM pg_proc function
+                   WHERE function.oid =
+                     'public.v4_guard_effect_approval_identity_v1()'::regprocedure"""
+            ).fetchone()
+            assert identity_guard is not None
+            assert identity_guard[0] is True
+            assert "search_path=pg_catalog, public" in identity_guard[1]
+            assert not any(entry.startswith("=X/") for entry in (identity_guard[2] or []))
+
+        downgraded = _migration(database, "downgrade", _REVISION_0045)
+        assert downgraded.returncode == 0, downgraded.stdout + downgraded.stderr
+        with psycopg.connect(database) as connection:
+            assert connection.execute(
+                "SELECT version_num FROM alembic_version"
+            ).fetchone()[0] == _REVISION_0045
+            assert connection.execute(
+                "SELECT count(*) FROM approval_requests WHERE id = ANY(%s)",
+                ([approved_id, revoked_id],),
+            ).fetchone()[0] == 2
+            assert _postgres_statement_rejected(
+                connection,
+                "decided effect approval identity is immutable",
+                lambda: connection.execute(
+                    "UPDATE approval_requests SET id=%s WHERE id=%s",
+                    (uuid4(), approved_id),
+                ),
+            )
+            assert _postgres_statement_rejected(
+                connection,
+                "tagged effect approval decision history cannot be deleted",
+                lambda: connection.execute(
+                    "DELETE FROM approval_requests WHERE id=%s", (revoked_id,)
+                ),
+            )
+            incomplete_context = dict(context)
+            incomplete_context.pop("required_scopes")
+            assert _postgres_statement_rejected(
+                connection,
+                "tagged effect approval requires the exact v1 binding fields",
+                lambda: _insert_0044_approval(
+                    connection, workspace_id, policy_id, incomplete_context
                 ),
             )
     finally:
