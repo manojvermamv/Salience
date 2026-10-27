@@ -291,6 +291,41 @@ class GateChecks(unittest.TestCase):
         self.assertEqual(historical["results_sha256"], "72a959686d5c2d69316dee0481e6e73c6b2b0be0980b9e60e66db97b95f003e9")
         self.assertNotEqual(historical["source_sha256"], source_sha256)
 
+    def test_qualification_matrix_labels_0043_evidence_as_historical(self):
+        matrix = json.loads(Path(__file__).with_name("p1-qualification-matrix.json").read_text())
+        historical = matrix["historical_0043_qualification"]
+        current = matrix["current_qualification"]
+        application_commit = "ec12763e38143f52f1af2661e00932158982f11a"
+
+        self.assertEqual(historical["application_commit"], "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f")
+        self.assertEqual(historical["full_non_live_tests"], 796)
+        self.assertEqual(historical["full_non_live_skipped"], 17)
+        self.assertIn("HISTORICAL_0043", historical["status"])
+        self.assertEqual(current["application_commit"], application_commit)
+        self.assertEqual(current["full_non_live_tests"], 908)
+        self.assertEqual(current["full_non_live_skipped"], 26)
+        self.assertEqual(current["full_non_live_warnings"], 3)
+        self.assertEqual(matrix["qualified_application_commit"], application_commit)
+        self.assertNotIn("current_branch_review_and_ci", matrix)
+        self.assertEqual(
+            matrix["historical_branch_review_and_ci"]["head_commit"],
+            "6f5edc77edbfe189e46de4254c2fdb21c5652bce",
+        )
+        self.assertIn("historical_candidate_post_push_exact_head_ci", matrix["historical_branch_review_and_ci"])
+        self.assertEqual(
+            current["documentation_candidate_post_push_exact_head_ci"],
+            "REQUIRED/PENDING",
+        )
+        self.assertNotIn("superseded_task_10_current_qualification", matrix)
+        self.assertEqual(
+            current["evidence"],
+            "docs/v4/p1-production-policy-revocation-evidence.json",
+        )
+        self.assertEqual(
+            current["verifier_log_sha256"],
+            "c643740f100210bad8428433db31ecd2852a538b26ad702224cd28c3f5432020",
+        )
+
     def test_corrected_blueprint_is_acyclic(self):
         self.assertEqual(CHECK.gate_errors(BLUEPRINT), [])
         self.assertEqual(CHECK.requirement_errors(BLUEPRINT), [])
@@ -655,7 +690,7 @@ class GateChecks(unittest.TestCase):
         self.assertEqual(evidence["status"], "PASS_FIXTURE_ONLY")
         self.assertEqual(
             evidence["application_candidate"]["commit"],
-            "fb2d4d63627f7de7ee9fc2307ab2831491720e12",
+            "ec12763e38143f52f1af2661e00932158982f11a",
         )
         artifact = evidence["application_candidate"]["artifact_or_image"]
         self.assertIsNone(artifact["sha256"])
@@ -689,10 +724,10 @@ class GateChecks(unittest.TestCase):
         self.assertEqual(result["migration_head"], "0046_production_policy_approval_id_immutability")
         gate = result["phase9_release_gate"]
         self.assertEqual((gate["passed"], gate["failed"], gate["skipped"], gate["errors"]), (60, 0, 0, 0))
-        self.assertEqual(gate["elapsed_seconds"], 55.26)
+        self.assertEqual(gate["elapsed_seconds"], 55.11)
         full = result["full_non_live_suite"]
         self.assertEqual((full["passed"], full["failed"], full["skipped"], full["errors"], full["warnings"]), (908, 0, 26, 0, 3))
-        self.assertEqual(full["elapsed_seconds"], 1453.58)
+        self.assertEqual(full["elapsed_seconds"], 1438.43)
         self.assertEqual(result["python_compilation"], "PASS")
         self.assertEqual(result["diff_check"], "PASS")
         self.assertEqual(result["archify_validation"], "PASS")
@@ -700,12 +735,20 @@ class GateChecks(unittest.TestCase):
         self.assertIn("YOUTUBE_PUBLISHER_CONNECTION_REF", result["live_youtube_provider"]["reason"])
         self.assertEqual(result["youtube_live_status_contract"], {"exit_code": 0, "passed": 1})
         self.assertEqual(result["disposable_database_cleanup"], "SUCCEEDED")
-        self.assertEqual(application_command["log"]["path"], "/tmp/salience-final-fb2d4d6-verify.log")
-        self.assertEqual(application_command["log"]["sha256"], "94fae65ce3535169487672811a4f5275e07445e47de37783172c92de079a0ee5")
+        self.assertEqual(application_command["log"]["path"], "/tmp/salience-final-ec12763-verify.log")
+        self.assertEqual(application_command["log"]["sha256"], "c643740f100210bad8428433db31ecd2852a538b26ad702224cd28c3f5432020")
+        self.assertEqual(application_command["log"]["source_commit"], evidence["application_candidate"]["commit"])
+        preserved_log = CHECK.ROOT / application_command["log"]["preserved_copy_path"]
+        preserved_log_bytes = preserved_log.read_bytes()
+        self.assertEqual(hashlib.sha256(preserved_log_bytes).hexdigest(), application_command["log"]["sha256"])
+        source_commit_line = re.search(rb"^SOURCE_COMMIT: ([a-f0-9]{40})$", preserved_log_bytes, re.MULTILINE)
+        self.assertIsNotNone(source_commit_line)
+        self.assertEqual(source_commit_line.group(1).decode(), evidence["application_candidate"]["commit"])
         self.assertFalse(application_command["junit"]["available"])
         self.assertTrue(application_command["junit"]["unavailable_reason"])
         self.assertIn("did not emit a JUnit artifact", application_command["junit"]["unavailable_reason"])
         self.assertEqual(evidence["application_run"]["sha256"], application_command["log"]["sha256"])
+        self.assertEqual(evidence["application_run"]["source_commit"], evidence["application_candidate"]["commit"])
 
         historical = evidence["historical_superseded_task6_checkpoint"]
         self.assertEqual(historical["superseded_evidence_sha256"], "f38f7aeb39391a4f76e4d1e89eeb1be6fc4a302b1f936dc6a21def1874f02faf")

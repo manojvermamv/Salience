@@ -3,11 +3,12 @@
   "scope": "fixture",
   "status": "PASS_FIXTURE_ONLY",
   "application_candidate": {
-    "commit": "fb2d4d63627f7de7ee9fc2307ab2831491720e12",
+    "commit": "ec12763e38143f52f1af2661e00932158982f11a",
     "artifact_or_image": {
       "sha256": null,
       "unavailable_reason": "The final verifier did not build, pull, or produce an application artifact or image."
-    }
+    },
+    "qualification_role": "Exact application/source candidate identified by SOURCE_COMMIT in the hashed verifier log."
   },
   "environment": {
     "name": "salience-phase9-disposable-postgresql-temporal-fixture",
@@ -54,7 +55,7 @@
           "failed": 0,
           "skipped": 0,
           "errors": 0,
-          "elapsed_seconds": 55.26
+          "elapsed_seconds": 55.11
         },
         "full_non_live_suite": {
           "exit_code": 0,
@@ -63,7 +64,7 @@
           "skipped": 26,
           "errors": 0,
           "warnings": 3,
-          "elapsed_seconds": 1453.58
+          "elapsed_seconds": 1438.43
         },
         "python_compilation": "PASS",
         "diff_check": "PASS",
@@ -79,8 +80,10 @@
         "disposable_database_cleanup": "SUCCEEDED"
       },
       "log": {
-        "path": "/tmp/salience-final-fb2d4d6-verify.log",
-        "sha256": "94fae65ce3535169487672811a4f5275e07445e47de37783172c92de079a0ee5"
+        "path": "/tmp/salience-final-ec12763-verify.log",
+        "sha256": "c643740f100210bad8428433db31ecd2852a538b26ad702224cd28c3f5432020",
+        "source_commit": "ec12763e38143f52f1af2661e00932158982f11a",
+        "preserved_copy_path": "docs/v4/audits/p1-policy-revocation-ec12763-verifier.log"
       },
       "junit": {
         "available": false,
@@ -89,9 +92,11 @@
     }
   ],
   "application_run": {
-    "path": "/tmp/salience-final-fb2d4d6-verify.log",
-    "sha256": "94fae65ce3535169487672811a4f5275e07445e47de37783172c92de079a0ee5",
-    "description": "Sanitized console log for the final local non-live verifier."
+    "path": "/tmp/salience-final-ec12763-verify.log",
+    "sha256": "c643740f100210bad8428433db31ecd2852a538b26ad702224cd28c3f5432020",
+    "source_commit": "ec12763e38143f52f1af2661e00932158982f11a",
+    "preserved_copy_path": "docs/v4/audits/p1-policy-revocation-ec12763-verifier.log",
+    "description": "Sanitized console log for the final local non-live verifier; the byte-identical copy is retained under docs/v4/audits."
   },
   "production": {
     "target_configuration": "NOT RUN",
@@ -242,5 +247,6 @@
       }
     }
   },
-  "verification_recorded_at_utc": "2026-10-27T16:23:21Z"
+  "verification_recorded_at_utc": "2026-10-27T17:08:08Z",
+  "documentation_commit_relationship": "The documentation commit carrying this evidence is later than and distinct from application_candidate.commit; it records the result and does not replace the verified application/source candidate."
 }

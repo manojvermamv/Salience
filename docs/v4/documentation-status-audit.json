@@ -1,12 +1,12 @@
 {
   "audited_at": "2026-10-27T15:20:52Z",
   "base_commit": "7c1ddcda280b510048ad61106c406171edd64f18",
-  "scope": "The initial P1/RG0/RG1 residual audit and five-spec design review remain COMPLETE_REVIEWED only for source 7c1ddcda280b510048ad61106c406171edd64f18 and environment manifest 18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436; exact-source Actions run 40443346020 passed verify and p0-regression. Five bounded increments remain required. Current local implementation candidate fb2d4d63627f7de7ee9fc2307ab2831491720e12 passed final non-live verification through migration 0046_production_policy_approval_id_immutability; this does not qualify a production target. Production target qualification remains NOT RUN; all 22 final-entry rows remain non-PASS; RG0/RG1 are HELD; P2 and Slice 7 are BLOCKED; production effects are disabled; main is unmerged. The current documentation candidate requires exact-head CI after push.",
-  "tracked_markdown_files": 113,
-  "documentation_artifacts": 286,
+  "scope": "The initial P1/RG0/RG1 residual audit and five-spec design review remain COMPLETE_REVIEWED only for source 7c1ddcda280b510048ad61106c406171edd64f18 and environment manifest 18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436; exact-source Actions run 40443346020 passed verify and p0-regression. Five bounded increments remain required. Current Slice 2 application/source candidate ec12763e38143f52f1af2661e00932158982f11a passed final fixture-only verification through migration 0046_production_policy_approval_id_immutability (60 Phase 9 tests; 908 passed / 26 skipped / 3 warnings; log SHA-256 c643740f100210bad8428433db31ecd2852a538b26ad702224cd28c3f5432020); this does not qualify a production target. Production target qualification remains NOT RUN; all 22 final-entry rows remain non-PASS; RG0/full RG1 are HELD; P2 and Slice 7 are BLOCKED; production effects are disabled; main is unmerged. The later documentation commit is a distinct SHA and requires exact-head CI after push.",
+  "tracked_markdown_files": 115,
+  "documentation_artifacts": 288,
   "summary": {
     "current_handoff_hashes": {
-      "docs/README.md": "810e735b69988dd567af50870b5d76d12196971f510680755872d8825f2a0b14",
+      "docs/README.md": "f122208f915838df3c58baa1574ea64b04237fa58babac3c02df256c0e0988d4",
       "docs/superpowers/plans/2026-10-27-p1-production-policy-and-revocation.md": "c1564a7ec7d09f63b5aba105678c8b5929619fecc49e5b4bb3e415ed1340672e",
       "docs/superpowers/plans/2026-10-27-p1-rg0-rg1-initial-gap-audit.md": "5d1dd8a86718184d03324144643dfb009cb36243a5bd0c0f14c46844eb3c5cd4",
       "docs/superpowers/specs/2026-10-13-p1-live-schedule-fencing-design.md": "04ed59e2ed61ca17dc2c01df3a2964e1569e03e79f0aef2bbfe2ca2d96d5129a",
@@ -17,46 +17,47 @@
       "docs/v4/IMPLEMENTATION-BLUEPRINT.md": "6e717aae30c9eb3714d760d5e04f8689a33db0b5e0a3d8dcb4e8e63137c7c58b",
       "docs/v4/evidence-lock.json": "472d603c1110a0ebe8082f598b7d02a892e6591a9f6b400c48979321551af674",
       "docs/v4/p0-release.json": "5038fa02bd73d176cbad6df99a66537fb25cdebc0f8c972f33419070e1145757",
-      "docs/v4/p1-production-policy-revocation-evidence.json": "7d27f58fb21b9cf06c8098ffbd0c2aa29b647d54d6643a1767845ebf475deb53",
-      "docs/v4/p1-qualification-matrix.json": "d52f8e5cd39497d17511d11f571370be05e602e6822da508d9164023caf117da",
-      "docs/v4/p1-rg0-rg1-audit-and-spec-review.md": "013c63bdac90d3b279513ef50b962689a92241af885c1e89ec35edc2bb0f8be8",
+      "docs/v4/p1-production-policy-revocation-evidence.json": "e5a5a3d424157479cacaf00eae39614a5abe12ecdb04ac38af0c95692dbd982b",
+      "docs/v4/p1-qualification-matrix.json": "3506caa0164280e136d0cffb0e095946057d42560648d1a75b5f70f690a5e186",
+      "docs/v4/p1-rg0-rg1-audit-and-spec-review.md": "a3af9e47305b41f0f70b59a21340d6372b193945fff4076db0b7848c43977ab1",
       "docs/v4/p1-rg0-rg1-initial-gap-audit.json": "33fe485384dcf60e36df8d48ace6394c80bce0d1bd9e6b9b39c7a905d65676b1",
       "docs/v4/p1-rg0-rg1-initial-gap-audit.md": "62aab5afb39f7c47e355a68ccf56e319a72955247515dfbdba8913fd797a5944",
-      "docs/v4/progress.md": "b70485c0cf5c14b45147532cc46cfeae42169f779c532091444976c6a210cad8",
+      "docs/v4/progress.md": "1e2985a9733e2c3f2fbadcb9518fb41831edc91c3b88b9144859a2751aa7c543",
       "docs/v4/publication-recovery-hold-evidence.json": "3cce88e4d692f726be710c1f4db46b1428c9546561424a2ab0ad120363becc66",
       "docs/v4/publication-recovery-hold-successor-evidence.json": "4baef4a2328b26a47abc150f4b2ba47aa7c3d3afa6260c651986142b110054c1",
       "docs/v4/repository-enforcement-evidence.json": "389886f670654a65848d5f43d61215562d53a95969906e5a44722a4ab7dbc006",
-      "docs/v4/test_checks.py": "9d9b20c78a934957cd3b23acb566357a0b5155dd9b03c72395c2aa14bbe74e5a",
-      "docs/v4/validation.md": "308c9b6a054708bd359cbf7e3f12a4164f7885c21382f033c9f7f2a23febafdf",
-      ".superpowers/sdd/2026-10-27-p1-production-policy-and-revocation/final-evidence-report.md": "22b88cec0f18cc3f9ac2a8007b5ee015ee571483aa5e4ce5468dac9fc7b1a1f8"
+      "docs/v4/test_checks.py": "8528619dfb28073bd30f0b344ad1c37e39b8b7d23838bd1af519309948db0655",
+      "docs/v4/validation.md": "c784063df50f1a9a83d3c6a5cf31b09a393c184aec35c318b9ef6efa5d21839c",
+      ".superpowers/sdd/2026-10-27-p1-production-policy-and-revocation/final-evidence-report.md": "551c40b4d6852ab3ab4f42bc2cd26ffd1a0339fa03a5f7c2c0f0d39814d05307"
     },
     "tracked_markdown_disposition_counts": {
-      "tracked_markdown_paths": 112,
-      "update_now_paths": 79,
-      "non_update_paths_preserved": 33,
-      "historical_immutable": 19,
+      "tracked_markdown_paths": 115,
+      "update_now_paths": 80,
+      "non_update_paths_preserved": 35,
+      "historical_immutable": 21,
       "generated_vendor": 12,
       "already_current": 2,
       "dispositions": {
-        "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged": 79,
+        "preserved plugin instructions, references and examples; independent skill scope": 12,
+        "preserved dated qualification report": 4,
+        "current final local non-live verification report for application candidate ec12763; production acceptance remains unqualified": 1,
         "active user-authored project instructions; preserved verbatim": 1,
-        "already current approved Task 6 implementation plan": 1,
-        "preserved YouTube-agent reference research": 4,
-        "preserved dated design specification": 3,
-        "preserved dated independent item7 qualification report": 1,
-        "preserved dated initial P1/RG0/RG1 subaudit report": 3,
-        "preserved dated preparation plan": 3,
-        "preserved dated qualification report": 2,
-        "preserved immutable historical snapshot; bytes retained verbatim": 1,
+        "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged": 79,
         "preserved original design source or historical diagram": 2,
-        "preserved plugin instructions, references and examples; independent skill scope": 12
+        "preserved immutable historical snapshot; bytes retained verbatim": 1,
+        "preserved YouTube-agent reference research": 4,
+        "preserved dated preparation plan": 3,
+        "already current approved Task 6 implementation plan": 1,
+        "preserved dated design specification": 3,
+        "preserved dated initial P1/RG0/RG1 subaudit report": 3,
+        "preserved dated independent item7 qualification report": 1
       }
     },
     "preserved plugin instructions, references and examples; independent skill scope": 57,
-    "preserved dated qualification report": 17,
-    "current final local non-live verification report for candidate fb2d4d6; production acceptance remains unqualified": 1,
+    "preserved dated qualification report": 19,
+    "current final local non-live verification report for application candidate ec12763; production acceptance remains unqualified": 1,
     "active user-authored project instructions; preserved verbatim": 1,
-    "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged": 80,
+    "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged": 80,
     "preserved original design source or historical diagram": 7,
     "preserved immutable historical snapshot; bytes retained verbatim": 1,
     "preserved immutable historical snapshot": 62,
@@ -108,22 +109,22 @@
   ],
   "mermaid_source_blocks_preserved": 12,
   "item7_status": "COMPLETE_IMPLEMENTED_LOCAL_FIXTURE_QUALIFICATION; historical item7 scope preserved",
-  "independent_review": "The historical GPT-6.1/GPT-5.6 whole-branch review remains scoped to pushed feature head 6f5edc77edbfe189e46de4254c2fdb21c5652bce (run 38592066455 passed its required jobs). The initial commit-bound audit and five-spec design review are COMPLETE_REVIEWED for 7c1ddcda280b510048ad61106c406171edd64f18 and environment 18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436; exact-source CI run 40443346020 passed verify and p0-regression. That design evaluation is not the final whole-change review. The current uncommitted documentation candidate requires exact-head CI after push. Application qualification remains bound to 182c4e4; production gates remain held.",
+  "independent_review": "The historical GPT-6.1/GPT-5.6 whole-branch review remains scoped to pushed feature head 6f5edc77edbfe189e46de4254c2fdb21c5652bce (run 38592066455 passed its required jobs). The initial commit-bound audit and five-spec design review are COMPLETE_REVIEWED for 7c1ddcda280b510048ad61106c406171edd64f18 and environment 18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436; exact-source CI run 40443346020 passed verify and p0-regression. That design evaluation is not the final whole-change review. The current Slice 2 application/source candidate is ec12763e38143f52f1af2661e00932158982f11a and is not covered by those prior reviews or CI. The distinct documentation commit requires exact-head CI after push. The 182c4e4 / 796/17/3 qualification is historical; production gates remain held.",
   "next_queue_item": "production_policy_and_cross_service_revocation",
   "production_effects_enabled": false,
   "RG0": "HELD",
   "RG1": "HELD",
   "verification": {
     "status": "PASS_FINAL_WHOLE_CHANGE_DOCUMENTATION_REVIEW_AFTER_F1_F3; FINAL_EXACT_CANDIDATE_AUDIT_BLOCKED; ALL_PRODUCTION_AND_RELEASE_GATES_HELD",
-    "documentation_tests": "PASS: .venv/bin/python docs/v4/test_checks.py (23 tests), phase 9 documentation contract, verifier cleanup contract, bash syntax checks, and git diff --check. Final evidence is bound to candidate fb2d4d63627f7de7ee9fc2307ab2831491720e12 with migration 0046_production_policy_approval_id_immutability and sanitized log SHA-256 94fae65ce3535169487672811a4f5275e07445e47de37783172c92de079a0ee5. Production target acceptance remains NOT RUN; production effects disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged.",
+    "documentation_tests": "PASS: .venv/bin/python docs/v4/test_checks.py (24 tests) and bash tests/scripts/test_phase_9_documentation.sh; git diff --check passed. Final application evidence is bound to ec12763e38143f52f1af2661e00932158982f11a and verifier-log SHA-256 c643740f100210bad8428433db31ecd2852a538b26ad702224cd28c3f5432020; documentation commit exact-head CI remains required after push.",
     "mapped_obligations": 75,
     "negative_controls": 6,
     "documentation_shell_contracts": 4,
     "preserved_documentation_artifacts": 168,
     "independent_reviewers": 3,
     "reviewed_p1_rows": 17,
-    "independent_review_scope": "The historical GPT-6.1/GPT-5.6 whole-branch review remains scoped to pushed feature head 6f5edc77edbfe189e46de4254c2fdb21c5652bce (run 38592066455 passed its required jobs). The initial commit-bound audit and five-spec design review are COMPLETE_REVIEWED for 7c1ddcda280b510048ad61106c406171edd64f18 and environment 18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436; exact-source CI run 40443346020 passed verify and p0-regression. The separate whole-change documentation review is PASS_AFTER_FIX_ROUND_1 for candidate manifest cafa0bd46ede2cc8aef51058f46541068a07cd031774c8b5501270bc2385ee9a, after F1-F3 fixes and a clean scoped rereview. This documentation review is not the final exact-candidate/environment P1/RG0/RG1 audit, which remains NOT RUN and BLOCKED pending required implementations and current external acceptance evidence for one frozen final pair. The current uncommitted documentation candidate requires exact-head CI after push. Application qualification remains bound to 182c4e4; production gates remain held.",
-    "tracked_markdown_files": 113,
+    "independent_review_scope": "The historical GPT-6.1/GPT-5.6 whole-branch review remains scoped to pushed feature head 6f5edc77edbfe189e46de4254c2fdb21c5652bce (run 38592066455 passed its required jobs). The initial commit-bound audit and five-spec design review are COMPLETE_REVIEWED for 7c1ddcda280b510048ad61106c406171edd64f18 and environment 18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436; exact-source CI run 40443346020 passed verify and p0-regression. The separate whole-change documentation review is PASS_AFTER_FIX_ROUND_1 for candidate manifest cafa0bd46ede2cc8aef51058f46541068a07cd031774c8b5501270bc2385ee9a, after F1-F3 fixes and a clean scoped rereview. This documentation review is not the final exact-candidate/environment P1/RG0/RG1 audit, which remains NOT RUN and BLOCKED pending required implementations and current external acceptance evidence for one frozen final pair. The current Slice 2 application/source candidate is ec12763e38143f52f1af2661e00932158982f11a and is not covered by those prior reviews or CI. The distinct documentation commit requires exact-head CI after push. The 182c4e4 / 796/17/3 qualification is historical; production gates remain held.",
+    "tracked_markdown_files": 115,
     "active_project_markdown_files": 93,
     "active_integration_contracts": 1,
     "tracked_markdown_paths": [
@@ -141,7 +142,9 @@
       ".agents/skills/archify/schemas/README.md",
       ".superpowers/sdd/2026-10-13-p1-publication-recovery-floor-repair/final-fix-report.md",
       ".superpowers/sdd/2026-10-13-p1-publication-recovery-floor-repair/task-8-report.md",
+      ".superpowers/sdd/2026-10-27-p1-production-policy-and-revocation/final-evidence-report.md",
       ".superpowers/sdd/2026-10-27-p1-production-policy-and-revocation/final-fix-report.md",
+      ".superpowers/sdd/2026-10-27-p1-production-policy-and-revocation/final-verifier-provenance-report.md",
       "AGENTS.md",
       "README.md",
       "docs-new-arch/ArchV3-implementation-notes.md",
@@ -244,12 +247,12 @@
     "mermaid_source_blocks_preserved": 12,
     "legacy_publication_root_qualification": "PASS_IMPLEMENTED_LOCAL_LEGACY_PUBLICATION_AND_NATIVE_SCHEDULE_FIXTURE_SCOPE_AFTER_ACCEPTED_REVIEW_CORRECTIONS",
     "root_qualification_scope": "isolated no-effects fixture only; production RG0/RG1 remain HELD",
-    "current_local_application_commit": "fb2d4d63627f7de7ee9fc2307ab2831491720e12",
+    "current_local_application_commit": "ec12763e38143f52f1af2661e00932158982f11a",
     "current_focused_tests": 60,
     "current_full_non_live_tests": 908,
-    "published_base_ci_protection_status": "PASS for historical published base 20be781; whole-branch review remains scoped to 6f5edc7; exact initial-audit source 7c1ddcd passed run 40443346020; current uncommitted documentation candidate CI REQUIRED_AFTER_PUSH.",
+    "published_base_ci_protection_status": "PASS for historical published base 20be781; whole-branch review remains scoped to 6f5edc7; exact initial-audit source 7c1ddcd passed run 40443346020; current documentation candidate carrying final evidence CI REQUIRED_AFTER_PUSH.",
     "published_base_commit": "20be7815d5e5c95fea2161c908ce8ac5cae88ce6",
-    "current_qualification_application": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
+    "current_qualification_application": "ec12763e38143f52f1af2661e00932158982f11a",
     "focused_tests": 21,
     "full_non_live_tests": 604,
     "source_files": 352,
@@ -278,7 +281,8 @@
           "red_status": "EXPECTED_FAIL_F1_F2",
           "red_summary": "2 focused assertions failed before the documentation fixes.",
           "green_output": "Ran 21 tests in 0.569s; OK."
-        }
+        },
+        "record_scope": "Historical documentation-audit run before the current Slice 2 final evidence refresh; the current focused docs run is recorded under verification.task6_documentation_checks."
       },
       "documentation_checker": {
         "normal": {
@@ -344,10 +348,10 @@
       "compileall": "Prior application verification PASS; not rerun because this task changes only documentation and evidence metadata.",
       "git_diff_check": "PASS",
       "audit_counts": {
-        "tracked_markdown_files": 113,
+        "tracked_markdown_files": 115,
         "active_project_markdown_files": 80,
-        "non_update_markdown_paths_preserved": 33,
-        "documentation_artifacts": 286,
+        "non_update_markdown_paths_preserved": 35,
+        "documentation_artifacts": 288,
         "checker_inventory_files": 366,
         "active_evidence_lock_files": 366
       },
@@ -363,20 +367,21 @@
         "R32_executed_verifier_cases": 81,
         "R18_R32_production_release_status": "HELD",
         "update_now_markdown_paths": 80,
-        "non_update_markdown_paths_preserved": 33,
+        "non_update_markdown_paths_preserved": 35,
         "all_non_self_inventory_hashes_recomputed": true,
         "log": "/tmp/final-whole-change-fix-report.md",
         "active_evidence_lock_sha256": "472d603c1110a0ebe8082f598b7d02a892e6591a9f6b400c48979321551af674",
         "active_evidence_lock_files": 366,
-        "tracked_markdown_files": 113,
-        "documentation_artifacts": 286,
-        "non_self_hashes_recomputed": 285,
+        "tracked_markdown_files": 115,
+        "documentation_artifacts": 288,
+        "non_self_hashes_recomputed": 287,
         "self_hash_is_null": true,
         "current_handoff_hashes_refreshed": true,
         "active_evidence_lock_file_count": 366,
         "evidence_lock_unchanged": true,
         "source_tree_paths_covered": 359,
-        "active_lock_hash_mismatches": 0
+        "active_lock_hash_mismatches": 0,
+        "current_handoff_hashes_verified": 23
       },
       "sequence_diagram": {
         "status": "PASS",
@@ -407,32 +412,26 @@
       },
       "manifest_integrity": {
         "status": "PASS",
-        "artifact_rows": 286,
+        "artifact_rows": 288,
         "sorted_unique_paths": true,
-        "tracked_markdown_files": 113,
+        "tracked_markdown_files": 115,
         "active_markdown_paths": 80,
-        "preserved_markdown_paths": 33,
-        "non_self_hashes_verified": 285,
+        "preserved_markdown_paths": 35,
+        "non_self_hashes_verified": 287,
         "intentional_audit_self_hash_null": true,
         "current_handoff_hashes_verified": 23
       }
     },
-    "current_full_non_live_application_commit": "fb2d4d63627f7de7ee9fc2307ab2831491720e12",
-    "current_full_non_live_status": "908 passed, 26 skipped, 3 warnings in 1453.58s; candidate fb2d4d63627f7de7ee9fc2307ab2831491720e12; log SHA-256 94fae65ce3535169487672811a4f5275e07445e47de37783172c92de079a0ee5",
-    "current_candidate_source_files": 211,
-    "current_candidate_source_path_set_sha256": "14bddb59e1d7ad1f3d4fceb6b20e7ae0748848a93e89dc470a7af7b325dc88fe",
-    "current_candidate_source_manifest_sha256": "58f27973abc9b3d34fa9f2eea1738c914659ff84f5151f64fdc493acca1c3005",
-    "current_candidate_image_id": "sha256:c880a41e4a20f1322ad579b0b8d3f8b5ae14fcdf13635458d33cdc8c747e09a0",
-    "current_candidate_wheel_sha256": "425b7122f6431459a15bc4fe7bbdd169692b152356a0f36c6895e3fd452e3d04",
-    "current_candidate_launch_lock_sha256": "1c8ac4ff92e589e27dc0af2c6dd0bc69c4295435df5a318174a2c77f3b1f2c9c",
-    "current_candidate_runtime_manifest_sha256": "3d58423ee9119db38c9a670c726c83692bef126d402e69f2a9ad98e05377b644",
-    "current_independent_review_scope": "The historical GPT-6.1/GPT-5.6 whole-branch review remains scoped to pushed feature head 6f5edc77edbfe189e46de4254c2fdb21c5652bce (run 38592066455 passed its required jobs). The initial commit-bound audit and five-spec design review are COMPLETE_REVIEWED for 7c1ddcda280b510048ad61106c406171edd64f18 and environment 18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436; exact-source CI run 40443346020 passed verify and p0-regression. The separate whole-change documentation review is PASS_AFTER_FIX_ROUND_1 for candidate manifest cafa0bd46ede2cc8aef51058f46541068a07cd031774c8b5501270bc2385ee9a, after F1-F3 fixes and a clean scoped rereview. This documentation review is not the final exact-candidate/environment P1/RG0/RG1 audit, which remains NOT RUN and BLOCKED pending required implementations and current external acceptance evidence for one frozen final pair. The current uncommitted documentation candidate requires exact-head CI after push. Application qualification remains bound to 182c4e4; production gates remain held.",
-    "current_documentation_artifacts": 283,
+    "current_full_non_live_application_commit": "ec12763e38143f52f1af2661e00932158982f11a",
+    "current_full_non_live_status": "908 passed, 26 skipped, 3 warnings in 1438.43s; application/source candidate ec12763e38143f52f1af2661e00932158982f11a; migration 0046_production_policy_approval_id_immutability; log SHA-256 c643740f100210bad8428433db31ecd2852a538b26ad702224cd28c3f5432020",
+    "current_independent_review_scope": "The historical 182c4e4/796/17/3 artifact qualification and prior branch review/CI remain bound to their recorded sources. Current local Slice 2 evidence is bound to application/source candidate ec12763e38143f52f1af2661e00932158982f11a; it is not independently reviewed or production qualified. The later documentation commit requires exact-head CI after push. Production acceptance remains NOT RUN and RG0/full RG1 remain HELD.",
+    "current_documentation_artifacts": 288,
     "mermaid_source_blocks_updated": 1,
     "current_task6_fixture_checkpoint": {
       "scope": "fixture",
       "record_kind": "final_local_non_live_verification",
-      "application_commit": "fb2d4d63627f7de7ee9fc2307ab2831491720e12",
+      "application_commit": "ec12763e38143f52f1af2661e00932158982f11a",
+      "application_commit_source": "SOURCE_COMMIT in the SHA-256-bound sanitized final verifier log.",
       "fixture_status": "PASS_FIXTURE_ONLY",
       "migration_head": "0046_production_policy_approval_id_immutability",
       "passed": 908,
@@ -440,19 +439,21 @@
       "skipped": 26,
       "errors": 0,
       "warnings": 3,
-      "elapsed_seconds": 1453.58,
+      "elapsed_seconds": 1438.43,
       "phase9_release_gate": {
         "exit_code": 0,
         "passed": 60,
         "failed": 0,
         "skipped": 0,
         "errors": 0,
-        "elapsed_seconds": 55.26
+        "elapsed_seconds": 55.11
       },
       "verifier_command": "bash scripts/verify-phase-9.sh",
-      "verifier_log_path": "/tmp/salience-final-fb2d4d6-verify.log",
-      "verifier_log_sha256": "94fae65ce3535169487672811a4f5275e07445e47de37783172c92de079a0ee5",
-      "evidence_sha256": "7d27f58fb21b9cf06c8098ffbd0c2aa29b647d54d6643a1767845ebf475deb53",
+      "verifier_log_path": "/tmp/salience-final-ec12763-verify.log",
+      "verifier_log_sha256": "c643740f100210bad8428433db31ecd2852a538b26ad702224cd28c3f5432020",
+      "verifier_log_preserved_copy_path": "docs/v4/audits/p1-policy-revocation-ec12763-verifier.log",
+      "verifier_log_source_commit": "ec12763e38143f52f1af2661e00932158982f11a",
+      "evidence_sha256": "e5a5a3d424157479cacaf00eae39614a5abe12ecdb04ac38af0c95692dbd982b",
       "artifact_or_image": "UNAVAILABLE; final verifier did not build, pull, or produce an application artifact or image",
       "junit": "UNAVAILABLE; final verifier did not emit a JUnit artifact",
       "database_cleanup": "SUCCEEDED; disposable database dropped by verifier cleanup",
@@ -464,24 +465,49 @@
       "RG1_scope": "full",
       "P2": "BLOCKED",
       "main": "UNMERGED",
-      "current_documentation_artifacts": 286,
-      "current_markdown_paths": 113,
-      "candidate_documentation_ci": "REQUIRED_AFTER_PUSH"
+      "current_documentation_artifacts": 288,
+      "current_markdown_paths": 115,
+      "candidate_documentation_ci": "REQUIRED_AFTER_PUSH",
+      "documentation_commit_relationship": "The documentation commit carrying this record is distinct from application_commit and does not replace the tested application/source candidate."
     },
     "task6_documentation_checks": {
-      "docs_v4_test_checks": "PASS: .venv/bin/python docs/v4/test_checks.py; 23 tests passed.",
-      "phase9_documentation_contract": "PASS: bash tests/scripts/test_phase_9_documentation.sh",
-      "verify_phase9": "PASS: bash scripts/verify-phase-9.sh exited 0 at candidate fb2d4d63627f7de7ee9fc2307ab2831491720e12; 0046_production_policy_approval_id_immutability; Phase 9 gate 60 passed in 55.26s; full non-live 908 passed, 26 skipped, 3 warnings in 1453.58s; sanitized log SHA-256 94fae65ce3535169487672811a4f5275e07445e47de37783172c92de079a0ee5.",
+      "docs_v4_test_checks": "PASS: .venv/bin/python docs/v4/test_checks.py; 24 tests passed.",
+      "phase9_documentation_contract": "PASS: bash tests/scripts/test_phase_9_documentation.sh.",
+      "verify_phase9": "PASS: bash scripts/verify-phase-9.sh exited 0 at application/source candidate ec12763e38143f52f1af2661e00932158982f11a; 0046_production_policy_approval_id_immutability; Phase 9 gate 60 passed in 55.11s; full non-live 908 passed, 26 skipped, 3 warnings in 1438.43s; sanitized log SHA-256 c643740f100210bad8428433db31ecd2852a538b26ad702224cd28c3f5432020.",
       "verify_phase9_cleanup_contract": "PASS: bash tests/scripts/test_verify_phase_9_cleanup.sh",
       "bash_syntax": "PASS: bash -n scripts/verify-phase-9.sh; bash -n tests/scripts/test_verify_phase_9_cleanup.sh",
-      "diff_check": "PASS: git diff --check",
+      "diff_check": "PASS: git diff --check.",
       "historical_pre_candidate_run": {
         "status": "FAILED_PRE_CANDIDATE",
         "result": "14 failed, 887 passed, 26 skipped, 2 errors, 3 warnings in 1379.80s; dirty-worktree build guard; not acceptance evidence",
         "disposition": "Historical diagnosis before the exact final candidate; not the current verifier result."
       }
     },
-    "current_focused_status": "PASS: final local verifier at candidate fb2d4d63627f7de7ee9fc2307ab2831491720e12 applied migrations through 0046_production_policy_approval_id_immutability, passed the Phase 9 60-test release gate in 55.26s, and passed the full non-live suite 908/26/3 in 1453.58s. Compilation, diff check, and Archify validation passed; the disposable database was dropped. The live YouTube provider was NOT RUN because its connection reference was absent; the live-status contract passed 1 test. Previous 0043 artifact pins/reviews and their result counts remain bound to their historical candidate."
+    "current_focused_status": "PASS: final local verifier at application/source candidate ec12763e38143f52f1af2661e00932158982f11a; migration 0046_production_policy_approval_id_immutability; Phase 9 gate 60 passed in 55.11s; full non-live 908 passed / 26 skipped / 3 warnings in 1438.43s; sanitized verifier log SHA-256 c643740f100210bad8428433db31ecd2852a538b26ad702224cd28c3f5432020; disposable database dropped. Compilation, diff check, and Archify validation passed. The live YouTube provider was NOT RUN because YOUTUBE_PUBLISHER_CONNECTION_REF was not configured; its status contract passed 1 test. The 0043 artifact candidate 182c4e4 / 796/17/3 remains historical. Production acceptance remains NOT RUN; production effects remain disabled; RG0/full RG1 remain HELD; P2 remains BLOCKED; main remains unmerged.",
+    "current_application_artifact_status": "No application image, JUnit artifact, source manifest, or source lock was produced by this verifier run.",
+    "historical_0043_candidate_artifact_pins": {
+      "application_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
+      "scope": "HISTORICAL_0043_ARTIFACT_FIXTURE_QUALIFICATION",
+      "source_files": 211,
+      "source_path_set_sha256": "14bddb59e1d7ad1f3d4fceb6b20e7ae0748848a93e89dc470a7af7b325dc88fe",
+      "source_manifest_sha256": "58f27973abc9b3d34fa9f2eea1738c914659ff84f5151f64fdc493acca1c3005",
+      "image_id": "sha256:c880a41e4a20f1322ad579b0b8d3f8b5ae14fcdf13635458d33cdc8c747e09a0",
+      "wheel_sha256": "425b7122f6431459a15bc4fe7bbdd169692b152356a0f36c6895e3fd452e3d04",
+      "launch_lock_sha256": "1c8ac4ff92e589e27dc0af2c6dd0bc69c4295435df5a318174a2c77f3b1f2c9c",
+      "runtime_manifest_sha256": "3d58423ee9119db38c9a670c726c83692bef126d402e69f2a9ad98e05377b644"
+    },
+    "current_application_candidate": {
+      "application_commit": "ec12763e38143f52f1af2661e00932158982f11a",
+      "source_commit_marker": "SOURCE_COMMIT",
+      "verifier_log_sha256": "c643740f100210bad8428433db31ecd2852a538b26ad702224cd28c3f5432020",
+      "migration_head": "0046_production_policy_approval_id_immutability",
+      "artifact_image": "NOT PRODUCED",
+      "junit": "NOT PRODUCED",
+      "documentation_commit_is_distinct": true
+    },
+    "historical_0043_qualification_application": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
+    "historical_0043_focused_test_subset": 60,
+    "current_focused_test_scope": "Phase 9 release gate"
   },
   "files": [
     {
@@ -780,9 +806,19 @@
       "disposition": "preserved dated qualification report"
     },
     {
+      "path": ".superpowers/sdd/2026-10-27-p1-production-policy-and-revocation/final-evidence-report.md",
+      "sha256": "551c40b4d6852ab3ab4f42bc2cd26ffd1a0339fa03a5f7c2c0f0d39814d05307",
+      "disposition": "current final local non-live verification report for application candidate ec12763; production acceptance remains unqualified"
+    },
+    {
       "path": ".superpowers/sdd/2026-10-27-p1-production-policy-and-revocation/final-fix-report.md",
       "sha256": "16adfaf8ce7affbaef94f6416014711b485f47f74736771f2fbc064d9e86e759",
-      "disposition": "current final local non-live verification report for candidate fb2d4d6; production acceptance remains unqualified"
+      "disposition": "preserved dated qualification report"
+    },
+    {
+      "path": ".superpowers/sdd/2026-10-27-p1-production-policy-and-revocation/final-verifier-provenance-report.md",
+      "sha256": "31417d3dec2e99ac1eb6d8aaf7675b57742cc7ba55f81b860b13bd073177f698",
+      "disposition": "preserved dated qualification report"
     },
     {
       "path": "AGENTS.md",
@@ -792,7 +828,7 @@
     {
       "path": "README.md",
       "sha256": "3f672a0e4bd804a0cc2280c7a57b2a350dbde4991a3ae4e941e3380b16ee3d44",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs-new-arch/ArchCurrent.mermaid",
@@ -832,57 +868,57 @@
     {
       "path": "docs-new-arch/README.md",
       "sha256": "bae52f5f32c00e3ca53f7da2dd48eaa0db5329c84e1f5826de78a2791772dc9f",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/README.md",
-      "sha256": "810e735b69988dd567af50870b5d76d12196971f510680755872d8825f2a0b14",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "sha256": "f122208f915838df3c58baa1574ea64b04237fa58babac3c02df256c0e0988d4",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/adr/0001-durable-runtime.md",
       "sha256": "45b80c8aa0c54b57130c53b84a4aa6e359816ac298fa2d92a702faf8fc20f07e",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/adr/0002-object-storage.md",
       "sha256": "ed5776e6af156a3029027b29e1ea626c349401edc4ffffa8d5308474c9d05604",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/adr/0003-api-persistence-and-contracts.md",
       "sha256": "5c92b8d942dda0d7eea15d6f6086f98f97e3ed20cdf7571c7e4d0cf20f445de6",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/adr/0004-governance-secrets-and-protocols.md",
       "sha256": "ea646993715d4fe26b55a2d161d8df4ebc6d9d2dd5161e2603c768e53f105a48",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/adr/0005-mcp-a2a-and-browser-sdk-adoption.md",
       "sha256": "4759e94e373289311c987cb52edd32b00a10a875b7ab920bc060670fbc9c1d43",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/adr/0006-governed-publishing.md",
       "sha256": "2ffd75e09151365f53f7080fd57b00b6d742f25537b45fe0866bd2195b71f713",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/agents.md",
       "sha256": "475925db59db9e4d6bfbb359dda57e8c1248dbdb527db255370d141c03bf7125",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/api.md",
       "sha256": "0d55c63c67ee84b2edb1fb5dfdf76afe15aba2e71190aa3611e8c4ae560907c2",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/architecture.md",
       "sha256": "a7dc8d8f5c27f023bdc1064a91f91daadc9828ad0addc5e27b37ac3f2cfd46b4",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/archive/2026-09-22/README.md",
@@ -1202,152 +1238,152 @@
     {
       "path": "docs/bootstrap.md",
       "sha256": "0d272075f524ade0a55b50a56a16936eb03220e4bacd75f60393ea462f52ce61",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/compatibility.md",
       "sha256": "492e88c292af028c11c55e42b9463e4967c3250a70b3cdb2d0ccde2bea657adb",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/contracts/adapter-contracts.md",
       "sha256": "8da92cb1c787573be8f0e709bfa32aa04b403fbcec33f171fe559d99db3fd302",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/core/00_BUILD_AGENT_PROMPT.md",
       "sha256": "3fc7941ce612f521cdc153425cbdbd613358869d6a6abf2f055d44e1e9cf1cba",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/core/01_PRODUCT_CONTEXT_AND_INTENT.md",
       "sha256": "a50944e6368d3d3a20c650275553675af8fd959e5b869af5ddae90fcc7c6b05f",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/core/02_REFERENCE_RESEARCH.md",
       "sha256": "d2be8feda6f5fbd4804ce1e7e01dcad1453b7262df8898e754e417572c8ccbf9",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/core/03_TARGET_ARCHITECTURE.md",
       "sha256": "ab2e7d16ef67435fd1ed351dabe09142f295edb431b5b41ed226522f53a00378",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/core/04_BROWSER_APP_AND_RESEARCH_CONTROL.md",
       "sha256": "54e69de25f5326f6de2aa079b4e7f6cb337cc5715bec2629e9c0699487137c30",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/core/05_IMPLEMENTATION_PLAN.md",
       "sha256": "e89fdd85c0d802374b8a1e67a41ed8ff20ba0a5b9a6b0d33d8358f9be36718cb",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/core/06_ACCEPTANCE_TESTS_AND_GUARDRAILS.md",
       "sha256": "6ac887e7258b366eae68bcd4c4524b57d0b19b3acd5a94563a67f1e34496e8e0",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/core/07_REUSE_EXTENSION_AND_FUTURE_PROOFING.md",
       "sha256": "a4448853f4a3a4830faa64625150e281486823c5b38d262a5d15f24fb9c6d64e",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/core/08_LEAD_AGENT_AND_CREATIVE_TOOL_RUNTIME.md",
       "sha256": "9224db9889f871729424ca570ee23c4b4715fc7410899d1e4cb3fd3d94538c67",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/core/09_CALLABLE_AGENTS_AND_ENGINEERING_METHOD.md",
       "sha256": "6eb539f5e7105f017cd4202c7571570eb1ea0f912d8384bb1f0a09de705e86a7",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/core/README.md",
       "sha256": "0dbbce2165ab53ba320202c583eaa97ef67971c5411d4ea2a2fef5d8e43045c7",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/database.md",
       "sha256": "ae816ebc7ce53dc8c9e80d8766b9900f45b52cea20a983f1c04b3786ebb84153",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/dependencies.md",
       "sha256": "762268eee8946866fd437b21027527373ff924a3de030f00d3bb821c38e37166",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/deployment.md",
       "sha256": "1c3e0686624df9b2b72a0d8f55b0247c8d8c44f1d8c8929ae4ed286cd681d69a",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/governance.md",
       "sha256": "001097734cca9757d4ccfc22039f6815dec1b24c40a43c39460567e48291458f",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/implementation-progress.md",
       "sha256": "1129993aaab20b5f127af83b61e845b7a2a5b8b67788df298b557facb22c4191",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/limitations.md",
       "sha256": "4a02b07eb29c8c8937f3592318ba8608586f8fe722f82f5bc7c1731286479f50",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/local-development.md",
       "sha256": "a7ab041edea247a91073c28e2781f42dd0e44cbcfd050bd3525f3d62c0646801",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/mcp-a2a.md",
       "sha256": "04965f3c7954bc92dfe498ed754a94794fc249f76d8f5c3805111451a34f3e5b",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/memory.md",
       "sha256": "7929ad3ac8391a72ff43d357f82388ff1c61b5415cf819c2ec6258fbfe7cfc33",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/model-execution.md",
       "sha256": "00bbc35117d6ba10dd1d97655e850640282e698f7a5c1421a9cac29235d494ab",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/model-gateway.md",
       "sha256": "28a952d2b3fb75ca53febf5c3f1e8495a85e3ef4d47563a6d715e719c627d922",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/phase-7-handoff.md",
       "sha256": "aafc003f673daec17987f11eb7ac777e2ff5b3532670e4f7acc5a52803702772",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/phase-9-handoff.md",
       "sha256": "339fac8570a67815ccfb768dd6d0a03b2001d1529b1e90cb4c26ed3a3fcdf9ad",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/plugins.md",
       "sha256": "5eda3b009f6c14653fdc42ea83276d8e9c8284ed86890fab78710dddabaf0f34",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/recovery.md",
       "sha256": "03e8134c79365bf66ab375229457fc322cc37ff38d794b45c48bf10bc0e74ea2",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/research.md",
       "sha256": "b9e6fffd86360640e0137640d0efdd0ab982eb89786a60ba613ba28d5344fbf4",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/research/youtube-agent/architecture-audit.md",
@@ -1412,42 +1448,42 @@
     {
       "path": "docs/superpowers/plans/2026-09-12-browser-evidence.md",
       "sha256": "379e8a91f6c5bdf86e626b85b65183a9c6eab44295c6c810890d064992047a1e",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/superpowers/plans/2026-09-12-intelligence-loop-phases-5-6.md",
       "sha256": "7c9ff324f68a28a73a31d927117a9fc24e89f393fdc032fa05661a66c650116e",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/superpowers/plans/2026-09-12-phases-1-4-foundation.md",
       "sha256": "c458aef124dbb8cdfeb637d89856710f0ac73e30c14665639f67ac40d72a1e7c",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/superpowers/plans/2026-09-13-creative-production-phases-7-8.md",
       "sha256": "d7d5322cb4f6df5c73bf47dab67c27627a682239d38abe073f35341372397d82",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/superpowers/plans/2026-09-13-phase-7-8-release-gate-phase-9-publishing.md",
       "sha256": "6ecc4343cf22586451099c463f746464e61f0f51518050d48fbbc5363af2ec23",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/superpowers/plans/2026-09-13-phase-7-8-review-repairs.md",
       "sha256": "096cd3e808a5cb8baebd26306a488a392be439791fe94c0bfc6295286d455ca2",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/superpowers/plans/2026-09-13-phase-9-independent-review-repairs.md",
       "sha256": "8b0586343504d8d461e735d3c177c533373cf35c706a649396f36dffda656e88",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/superpowers/plans/2026-10-06-p1-publication-recovery-hold.md",
       "sha256": "48684cfbb088ed4c2015a3b7e76e68bdce6cc3ce85184334a33619c7a59bb001",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/superpowers/plans/2026-10-13-agenttube-immutable-reference-guard.md",
@@ -1472,42 +1508,42 @@
     {
       "path": "docs/superpowers/plans/2026-10-27-p1-rg0-rg1-initial-gap-audit.md",
       "sha256": "5d1dd8a86718184d03324144643dfb009cb36243a5bd0c0f14c46844eb3c5cd4",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/superpowers/reviews/2026-09-13-phase-7-8-release-gate.md",
       "sha256": "a285b5420c677c3a35e23306b72b3ecf44b0877b03a1832511dd0a1e74396408",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/superpowers/reviews/2026-09-13-phase-9-independent-review.md",
       "sha256": "36bbd9319a1286b817685daffbc752017f41b7ef65752fe675b6223ffdaeec0c",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/superpowers/specs/2026-09-12-browser-evidence-design.md",
       "sha256": "49eede3f517b83f2e2ff7584717436e668f847a4af5cbbc6639b5a5dfc45e8df",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/superpowers/specs/2026-09-12-intelligence-loop-phases-5-6-design.md",
       "sha256": "07754380584a9df1ba52d57ee9dc90e32f5207064979d72b98dcb54d1b87ad35",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/superpowers/specs/2026-09-13-creative-production-phases-7-8-design.md",
       "sha256": "e0f0406a1fe058b71bee31034b77fa183e406f8658468ea118889909ee710ff5",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/superpowers/specs/2026-09-13-phase-7-8-release-gate-phase-9-publishing-design.md",
       "sha256": "3295c2f0e18ef307694c2600639810e1d5cdf802ec624f6030876267b6592c95",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/superpowers/specs/2026-10-06-p1-publication-recovery-hold-design.md",
       "sha256": "ff961144c58b22fbcbfe624dfd17909377d8aa4b25d04ca14e3ae4947aa2d26d",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/superpowers/specs/2026-10-13-agenttube-reference-and-native-adoption-design.md",
@@ -1517,22 +1553,22 @@
     {
       "path": "docs/superpowers/specs/2026-10-13-p1-live-schedule-fencing-design.md",
       "sha256": "04ed59e2ed61ca17dc2c01df3a2964e1569e03e79f0aef2bbfe2ca2d96d5129a",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/superpowers/specs/2026-10-13-p1-production-policy-and-revocation-design.md",
       "sha256": "6be8f5ec6c48491a45a734510cc20af98e2cd7554fdc0409e77c6d9667d42fe2",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/superpowers/specs/2026-10-13-p1-production-recovery-and-alerts-design.md",
       "sha256": "1c731ee595be6582902aa79f9ebb52d520f6fd18ad6054ca304709ce16aea61c",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/superpowers/specs/2026-10-13-p1-production-routing-and-worker-fencing-design.md",
       "sha256": "d4d2c06a1f0925d2826b29a4e2c053f7f7773f660397fe986883c370aee78f67",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/superpowers/specs/2026-10-13-p1-publication-recovery-floor-repair-design.md",
@@ -1542,7 +1578,7 @@
     {
       "path": "docs/superpowers/specs/2026-10-13-rg0-rg1-external-acceptance-design.md",
       "sha256": "2a5d6cff0dd44070b1942e79f073906527b8e2650b62b3473d63542f00bfbcd8",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/superpowers/specs/2026-10-13-v4-multiplatform-autonomy-program-sequence.md",
@@ -1552,12 +1588,12 @@
     {
       "path": "docs/trust-model.md",
       "sha256": "664d74e61f43bd12b5f87f04c828a492f484c6fec2dc42f015f6e5ee3049e550",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/v4/IMPLEMENTATION-BLUEPRINT.md",
       "sha256": "6e717aae30c9eb3714d760d5e04f8689a33db0b5e0a3d8dcb4e8e63137c7c58b",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/v4/agenttube-adoption-evidence.json",
@@ -1722,7 +1758,7 @@
     {
       "path": "docs/v4/legacy-dispatch-contract.md",
       "sha256": "a57b3588de14ffbd5dbfe1b4a5a33ca5244dbd42844fb096a41d892b48c75395",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/v4/legacy-dispatch-evidence.json",
@@ -1766,18 +1802,18 @@
     },
     {
       "path": "docs/v4/p1-production-policy-revocation-evidence.json",
-      "sha256": "7d27f58fb21b9cf06c8098ffbd0c2aa29b647d54d6643a1767845ebf475deb53",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "sha256": "e5a5a3d424157479cacaf00eae39614a5abe12ecdb04ac38af0c95692dbd982b",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/v4/p1-qualification-matrix.json",
-      "sha256": "d52f8e5cd39497d17511d11f571370be05e602e6822da508d9164023caf117da",
+      "sha256": "3506caa0164280e136d0cffb0e095946057d42560648d1a75b5f70f690a5e186",
       "disposition": "Current P1 matrix keeps application scope frozen, exact review and documentation CI heads distinct, and current candidate CI pending; production holds retained"
     },
     {
       "path": "docs/v4/p1-rg0-rg1-audit-and-spec-review.md",
-      "sha256": "013c63bdac90d3b279513ef50b962689a92241af885c1e89ec35edc2bb0f8be8",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "sha256": "a3af9e47305b41f0f70b59a21340d6372b193945fff4076db0b7848c43977ab1",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/v4/p1-rg0-rg1-initial-gap-audit.json",
@@ -1787,12 +1823,12 @@
     {
       "path": "docs/v4/p1-rg0-rg1-initial-gap-audit.md",
       "sha256": "62aab5afb39f7c47e355a68ccf56e319a72955247515dfbdba8913fd797a5944",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/v4/parallel-agent-contract.md",
       "sha256": "9daa5c45a4493dc693ca3bde3bf327b4a24bf84e611ea2a0843caa26a3209c10",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/v4/parallel-agents-evidence.json",
@@ -1801,8 +1837,8 @@
     },
     {
       "path": "docs/v4/progress.md",
-      "sha256": "b70485c0cf5c14b45147532cc46cfeae42169f779c532091444976c6a210cad8",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "sha256": "1e2985a9733e2c3f2fbadcb9518fb41831edc91c3b88b9144859a2751aa7c543",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/v4/publication-recovery-hold-evidence.json",
@@ -1871,57 +1907,57 @@
     },
     {
       "path": "docs/v4/validation.md",
-      "sha256": "308c9b6a054708bd359cbf7e3f12a4164f7885c21382f033c9f7f2a23febafdf",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "sha256": "c784063df50f1a9a83d3c6a5cf31b09a393c184aec35c318b9ef6efa5d21839c",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/verification.md",
       "sha256": "e8ec7ee216c3d496a2bf43d99d65d24e4c7a91cd097762553f471f0c4a68d600",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/workflows.md",
       "sha256": "9abd30aa4c92ff1655947dd3662507fa3e3f1b973d19b733a3cab13f54cafabc",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "prompts/Build Creative Production Loop — Phases 7–8 End-to-End.md",
       "sha256": "6d77d56568933cdcd79b5ab5723efa2312d72bd57f12547664772618b700cc4b",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "prompts/Build Phase 10 — Multi-Platform Production Publishing, Analytics, Attribution & Experiments.md",
       "sha256": "756651d83b0e132c22bdd0ecdcf9de218dd00922570c29b30ca912a3cee46b00",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "prompts/Build Phases 1–4 End-to-End.md",
       "sha256": "cfb5fca0452db58c216b889786eb42b91641730fa0e27dca6fc57535ea5ba88c",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "prompts/Build Real Intelligence Loop — Pre-Phase 5 + Phases 5–6 End-to-End.md",
       "sha256": "93621fa3332bf11c3f2e9ab24cf27a7b3381353aaa80634ea864f30d3253dfea",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "prompts/Complete Phase 7–8 Release Gate, Then Build Phase 9 Governed Publishing.md",
       "sha256": "cab9fb272101f8011067c79c5ac0611c0809d66cb066ce5a6f2023ff1d465af0",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "prompts/Install and Verify Browser Evidence on Linux EC2.md",
       "sha256": "cab3134054c262cd2e38c77b9b3242ceb1caa91c346d8936212d1ad58dd4f7cc",
-      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     }
   ],
-  "qualified_application_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
-  "next_action": "Initial commit-bound P1/RG0/RG1 audit and five-spec design review remain COMPLETE_REVIEWED only for source 7c1ddcda280b510048ad61106c406171edd64f18 and environment manifest 18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436; exact-source CI run 40443346020 passed both required jobs. The final local non-live implementation verification passed for candidate fb2d4d63627f7de7ee9fc2307ab2831491720e12 through migration 0046_production_policy_approval_id_immutability; this is fixture-only evidence. Continue with the five required increments in approved sequence order. Production target qualification remains NOT RUN; all 22 final-entry rows remain non-PASS; RG0/RG1 HELD; P2/Slice 7 BLOCKED; production disabled; main unmerged. The current documentation candidate requires exact-head CI after push. The final exact-candidate/environment P1/RG0/RG1 audit remains NOT RUN and BLOCKED until the required increments and current external acceptance evidence are complete for one frozen candidate/environment.",
+  "qualified_application_commit": "ec12763e38143f52f1af2661e00932158982f11a",
+  "next_action": "Initial audit and five-spec design review remain COMPLETE_REVIEWED only for source 7c1ddcda280b510048ad61106c406171edd64f18 and environment manifest 18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436; source CI run 40443346020 passed both required jobs. Current local Slice 2 fixture evidence is bound to application/source candidate ec12763e38143f52f1af2661e00932158982f11a; the 0043 artifact candidate 182c4e4 / 796/17/3 is historical. Continue the five required increments in approved sequence order. Production target qualification remains NOT RUN; all 22 final-entry rows remain non-PASS; RG0/full RG1 HELD; P2/Slice 7 BLOCKED; production disabled; main unmerged. The documentation commit requires exact-head CI after push. The final exact-candidate/environment P1/RG0/RG1 audit remains NOT RUN and BLOCKED until required increments and current external acceptance evidence are complete for one frozen candidate/environment.",
   "parallel_agents_status": "PASS_IMPLEMENTED_LOCAL_PARALLEL_AGENT_FIXTURE_SCOPE",
   "parallel_qualified_application_commit": "2653d2ecb3f0d5bb8ea6560de274137dd6032a96",
   "legacy_intelligence_status": "PASS_LOCAL_LEGACY_INTELLIGENCE_AND_PUBLICATION_FIXTURE_STAGES; ORIGINAL_NATIVE_INTELLIGENCE_AND_PUBLICATION_SCHEDULES_QUALIFIED",
   "goal_status": "ACTIVE",
-  "independent_review_scope": "The historical GPT-6.1/GPT-5.6 whole-branch review remains scoped to pushed feature head 6f5edc77edbfe189e46de4254c2fdb21c5652bce (run 38592066455 passed its required jobs). The initial commit-bound audit and five-spec design review are COMPLETE_REVIEWED for 7c1ddcda280b510048ad61106c406171edd64f18 and environment 18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436; exact-source CI run 40443346020 passed verify and p0-regression. The separate whole-change documentation review is PASS_AFTER_FIX_ROUND_1 for candidate manifest cafa0bd46ede2cc8aef51058f46541068a07cd031774c8b5501270bc2385ee9a, after F1-F3 fixes and a clean scoped rereview. This documentation review is not the final exact-candidate/environment P1/RG0/RG1 audit, which remains NOT RUN and BLOCKED pending required implementations and current external acceptance evidence for one frozen final pair. The current uncommitted documentation candidate requires exact-head CI after push. Application qualification remains bound to 182c4e4; production gates remain held.",
+  "independent_review_scope": "The historical GPT-6.1/GPT-5.6 whole-branch review remains scoped to pushed feature head 6f5edc77edbfe189e46de4254c2fdb21c5652bce (run 38592066455 passed its required jobs). The initial commit-bound audit and five-spec design review are COMPLETE_REVIEWED for 7c1ddcda280b510048ad61106c406171edd64f18 and environment 18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436; exact-source CI run 40443346020 passed verify and p0-regression. The separate whole-change documentation review is PASS_AFTER_FIX_ROUND_1 for candidate manifest cafa0bd46ede2cc8aef51058f46541068a07cd031774c8b5501270bc2385ee9a, after F1-F3 fixes and a clean scoped rereview. This documentation review is not the final exact-candidate/environment P1/RG0/RG1 audit, which remains NOT RUN and BLOCKED pending required implementations and current external acceptance evidence for one frozen final pair. The current Slice 2 application/source candidate is ec12763e38143f52f1af2661e00932158982f11a and is not covered by those prior reviews or CI. The distinct documentation commit requires exact-head CI after push. The 182c4e4 / 796/17/3 qualification is historical; production gates remain held.",
   "tracked_markdown_paths": [
     ".agents/skills/archify/SKILL.md",
     ".agents/skills/archify/THIRD_PARTY_NOTICES.md",
@@ -1937,7 +1973,9 @@
     ".agents/skills/archify/schemas/README.md",
     ".superpowers/sdd/2026-10-13-p1-publication-recovery-floor-repair/final-fix-report.md",
     ".superpowers/sdd/2026-10-13-p1-publication-recovery-floor-repair/task-8-report.md",
+    ".superpowers/sdd/2026-10-27-p1-production-policy-and-revocation/final-evidence-report.md",
     ".superpowers/sdd/2026-10-27-p1-production-policy-and-revocation/final-fix-report.md",
+    ".superpowers/sdd/2026-10-27-p1-production-policy-and-revocation/final-verifier-provenance-report.md",
     "AGENTS.md",
     "README.md",
     "docs-new-arch/ArchV3-implementation-notes.md",
@@ -2037,27 +2075,27 @@
     "prompts/Complete Phase 7–8 Release Gate, Then Build Phase 9 Governed Publishing.md",
     "prompts/Install and Verify Browser Evidence on Linux EC2.md"
   ],
-  "repository_readback": {
+  "historical_repository_readback": {
     "published_base_commit": "20be7815d5e5c95fea2161c908ce8ac5cae88ce6",
     "inspected_at": "2026-10-27T05:11:43Z",
-    "status": "Historical published-base protection and prior whole-branch review remain separately scoped. Current initial-audit source/feature ref 7c1ddcda280b510048ad61106c406171edd64f18; exact-source Actions run 40443346020 passed verify and p0-regression. This does not establish CI for the current uncommitted documentation candidate or formal PR approval.",
+    "status": "Historical published-base protection and prior review snapshot recorded at 2026-10-27T05:11:43Z. Initial-audit source/feature ref 7c1ddcda280b510048ad61106c406171edd64f18 passed exact-source Actions run 40443346020. This snapshot does not establish CI for the final documentation commit or formal PR approval.",
     "artifact": "artifacts/v4-legacy-creative-qualified-head.json",
-    "current_feature_application_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
-    "current_feature_head_ci": "PASS for feature head 6f5edc77edbfe189e46de4254c2fdb21c5652bce: run 38592066455 passed verify and p0-regression (hosted 787/26/3). Separately, pushed docs head 67effe8c9c176c0bd1c17fdef20b841c0e14b6de passed both required jobs in run 38610329330; current unpublished candidate exact-head CI is REQUIRED/PENDING.",
+    "historical_feature_application_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
+    "historical_feature_head_ci": "PASS for feature head 6f5edc77edbfe189e46de4254c2fdb21c5652bce: run 38592066455 passed verify and p0-regression (hosted 787/26/3). Separately, pushed docs head 67effe8c9c176c0bd1c17fdef20b841c0e14b6de passed both required jobs in run 38610329330; final documentation commit exact-head CI is REQUIRED/PENDING.",
     "formal_pr_approval": "NOT RUN",
-    "current_feature_branch_head": "7c1ddcda280b510048ad61106c406171edd64f18",
-    "current_feature_ci_run_id": 40443346020,
-    "current_feature_ci_url": "https://github.com/manojvermamv/Salience/actions/runs/40443346020",
+    "historical_feature_branch_head": "7c1ddcda280b510048ad61106c406171edd64f18",
+    "historical_feature_ci_run_id": 40443346020,
+    "historical_feature_ci_url": "https://github.com/manojvermamv/Salience/actions/runs/40443346020",
     "remote_ref_readback": "origin/feat/archv4-p0-foundation equals 7c1ddcda280b510048ad61106c406171edd64f18 at the recorded audit source readback.",
     "main_merge": "UNMERGED",
-    "current_documentation_refresh": {
+    "historical_documentation_refresh": {
       "plan_task": ".superpowers/sdd/2026-10-27-resume-housekeeping/task-2-brief.md",
       "starting_commit": "7c1ddcda280b510048ad61106c406171edd64f18",
       "working_branch": "arch",
-      "application_candidate_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
+      "historical_application_candidate_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
       "latest_pushed_documentation_head": "67effe8c9c176c0bd1c17fdef20b841c0e14b6de",
       "latest_pushed_documentation_ci_run": 38610329330,
-      "current_candidate_post_push_exact_head_ci": "REQUIRED_AFTER_PUSH",
+      "historical_candidate_post_push_exact_head_ci": "REQUIRED_AFTER_PUSH for the documentation candidate recorded in this historical refresh.",
       "initial_audit_source_commit": "7c1ddcda280b510048ad61106c406171edd64f18",
       "initial_audit_environment_manifest_sha256": "18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436",
       "initial_audit_source_ci_run_id": 40443346020,
@@ -2065,14 +2103,12 @@
       "required_designs": 5,
       "implementation_status": "NOT RUN",
       "target_qualification_status": "NOT RUN",
-      "current_candidate_status": "UNCOMMITTED_WORKTREE; no candidate SHA assigned"
+      "historical_candidate_status": "HISTORICAL_WORKTREE_SNAPSHOT; no final documentation commit SHA was assigned in that record."
     },
-    "current_feature_ci": "PASS for exact initial-audit source 7c1ddcda280b510048ad61106c406171edd64f18: Actions run 40443346020 passed verify and p0-regression. This is source CI, not final candidate/environment qualification."
+    "historical_initial_audit_source_ci": "PASS for exact initial-audit source 7c1ddcda280b510048ad61106c406171edd64f18: Actions run 40443346020 passed verify and p0-regression. This is source CI, not final candidate/environment qualification."
   },
   "application_source_preservation_basis": "Compared the Task 9 356-path evidence lock at application 7878208 with the Task 10 qualification checkout: 347 existing paths retain identical bytes, nine existing paths have updated hashes, and four source paths were added, for 360 locked paths. The current application artifact is pinned separately to 5cb5791; the test-only qualification harness is at 1480100. This is a content comparison and lock, not an independent code review.",
   "historical_a4_qualified_application_commit": "a4b2368cdb463939d093020224a5b5667392aee6",
-  "current_publication_recovery_hold_evidence": "docs/v4/publication-recovery-hold-successor-evidence.json",
-  "current_publication_recovery_hold_evidence_sha256": "4baef4a2328b26a47abc150f4b2ba47aa7c3d3afa6260c651986142b110054c1",
   "task_10_candidate": {
     "application_commit": "5cb57910c2c6dc2f6ea37da75640c5c947c8907b",
     "qualification_harness_commit": "14801007310232f59708566ca9a3eefb80bfea87",
@@ -2083,12 +2119,12 @@
     "production_effects_enabled": false,
     "fixture_publication_budget": 0
   },
-  "current_local_application_commit": "fb2d4d63627f7de7ee9fc2307ab2831491720e12",
-  "current_focused_tests": 9,
+  "current_local_application_commit": "ec12763e38143f52f1af2661e00932158982f11a",
+  "current_focused_tests": 60,
   "current_full_non_live_tests": 908,
-  "current_full_non_live_application_commit": "fb2d4d63627f7de7ee9fc2307ab2831491720e12",
-  "current_full_non_live_status": "PASS: 908 passed, 26 skipped, 3 warnings in 1453.58s at exact local implementation candidate fb2d4d63627f7de7ee9fc2307ab2831491720e12; migration 0046_production_policy_approval_id_immutability; sanitized verifier log SHA-256 94fae65ce3535169487672811a4f5275e07445e47de37783172c92de079a0ee5.",
-  "current_qualification_application": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
+  "current_full_non_live_application_commit": "ec12763e38143f52f1af2661e00932158982f11a",
+  "current_full_non_live_status": "908 passed, 26 skipped, 3 warnings in 1438.43s; application/source candidate ec12763e38143f52f1af2661e00932158982f11a; migration 0046_production_policy_approval_id_immutability; log SHA-256 c643740f100210bad8428433db31ecd2852a538b26ad702224cd28c3f5432020",
+  "current_qualification_application": "ec12763e38143f52f1af2661e00932158982f11a",
   "focused_tests": 20,
   "full_non_live_tests": 796,
   "previous_full_non_live_tests": 614,
@@ -2098,7 +2134,7 @@
   "documentation_tests": {
     "status": "PASS",
     "command": ".venv/bin/python docs/v4/test_checks.py",
-    "passed": 21
+    "passed": 24
   },
   "task_8_exact_candidate_artifact_build": {
     "status": "SUCCESSOR_EXACT_CANDIDATE_ARTIFACT_BUILD_AND_LOCAL_QUALIFICATION_RECORDED",
@@ -2119,30 +2155,9 @@
     "runtime_file_count": 9151,
     "pyc_files": [],
     "qualification_report": ".superpowers/sdd/2026-10-13-p1-publication-recovery-floor-repair/task-8-report.md",
-    "qualification_results": "Exact-image matrix: 12 passed; I1 replay-focused gate: 9 passed; actual-retry producer: 1 passed; Compose restart recovery: 1 passed; final clean non-live suite: 796 passed, 17 skipped, 3 warnings, all bound to application 182c4e4. Whole-branch review and CI remain bound to pushed feature head 6f5edc77edbfe189e46de4254c2fdb21c5652bce (run 38592066455). Exact initial-audit source CI run 40443346020 passed on 7c1ddcda280b510048ad61106c406171edd64f18. Current documentation candidate has no commit SHA yet and needs its own exact-head CI after push."
+    "qualification_results": "Exact-image matrix: 12 passed; I1 replay-focused gate: 9 passed; actual-retry producer: 1 passed; Compose restart recovery: 1 passed; final clean non-live suite: 796 passed, 17 skipped, 3 warnings, all bound to application 182c4e4. Whole-branch review and CI remain bound to pushed feature head 6f5edc77edbfe189e46de4254c2fdb21c5652bce (run 38592066455). Exact initial-audit source CI run 40443346020 passed on 7c1ddcda280b510048ad61106c406171edd64f18. The final documentation commit is distinct from this historical application record and requires exact-head CI after push."
   },
-  "current_focused_status": "PASS: final local verifier at candidate fb2d4d63627f7de7ee9fc2307ab2831491720e12 applied migrations through 0046_production_policy_approval_id_immutability, passed the Phase 9 60-test release gate in 55.26s, and passed the full non-live suite 908/26/3 in 1453.58s. Compilation, diff check, and Archify validation passed; the disposable database was dropped. The live YouTube provider was NOT RUN because its connection reference was absent; the live-status contract passed 1 test. Previous 0043 artifact pins/reviews and their result counts remain bound to their historical candidate.",
-  "current_candidate_artifact_build": {
-    "status": "SUCCESSOR_EXACT_CANDIDATE_ARTIFACT_BUILD_AND_LOCAL_QUALIFICATION_RECORDED",
-    "application_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
-    "artifact_build_result": "PASS",
-    "image_ref": "salience-p1-floor-182c4e4-worker:latest",
-    "image_id": "sha256:c880a41e4a20f1322ad579b0b8d3f8b5ae14fcdf13635458d33cdc8c747e09a0",
-    "wheel_sha256": "425b7122f6431459a15bc4fe7bbdd169692b152356a0f36c6895e3fd452e3d04",
-    "record_sha256": "f3fbd4bd43c25786969016b1d0c806c9591b5aea07dcd4753b87a3980dc1b74b",
-    "record_entry_count": 172,
-    "launch_lock_sha256": "1c8ac4ff92e589e27dc0af2c6dd0bc69c4295435df5a318174a2c77f3b1f2c9c",
-    "source_path_count": 211,
-    "source_path_set_sha256": "14bddb59e1d7ad1f3d4fceb6b20e7ae0748848a93e89dc470a7af7b325dc88fe",
-    "source_manifest_sha256": "58f27973abc9b3d34fa9f2eea1738c914659ff84f5151f64fdc493acca1c3005",
-    "interpreter_sha256": "73b68fc2dac176af16098180a2c98a03ee9f1f1b02db25d42d44d782e79e2330",
-    "runtime_root": "/usr/local/lib/python3.13/site-packages",
-    "runtime_manifest_sha256": "3d58423ee9119db38c9a670c726c83692bef126d402e69f2a9ad98e05377b644",
-    "runtime_file_count": 9151,
-    "pyc_files": [],
-    "qualification_report": ".superpowers/sdd/2026-10-13-p1-publication-recovery-floor-repair/task-8-report.md",
-    "qualification_results": "Exact-image matrix: 12 passed; I1 replay-focused gate: 9 passed; actual-retry producer: 1 passed; Compose restart recovery: 1 passed; final clean non-live suite: 796 passed, 17 skipped, 3 warnings, all bound to application 182c4e4. Whole-branch review remains bound to 6f5edc77edbfe189e46de4254c2fdb21c5652bce (run 38592066455). Separately, exact CI run 40443346020 passed on initial audit source 7c1ddcda280b510048ad61106c406171edd64f18. The current documentation candidate has no commit SHA yet and requires exact-head CI after push."
-  },
+  "current_focused_status": "PASS: final local verifier at application/source candidate ec12763e38143f52f1af2661e00932158982f11a; migration 0046_production_policy_approval_id_immutability; Phase 9 gate 60 passed in 55.11s; full non-live 908 passed / 26 skipped / 3 warnings in 1438.43s; sanitized verifier log SHA-256 c643740f100210bad8428433db31ecd2852a538b26ad702224cd28c3f5432020; disposable database dropped. Compilation, diff check, and Archify validation passed. The live YouTube provider was NOT RUN because YOUTUBE_PUBLISHER_CONNECTION_REF was not configured; its status contract passed 1 test. The 0043 artifact candidate 182c4e4 / 796/17/3 remains historical. Production acceptance remains NOT RUN; production effects remain disabled; RG0/full RG1 remain HELD; P2 remains BLOCKED; main remains unmerged.",
   "superseded_candidate_artifact_build_386d4bc": {
     "status": "EXACT_CANDIDATE_ARTIFACT_BUILD_RECORDED",
     "application_commit": "386d4bc7cc5acb794858d3c3c14400a0659a83ef",
@@ -2216,100 +2231,6 @@
     "qualification_results": "Exact-candidate command outcomes are recorded in the referenced Task 8 report. This pin record does not transfer counts from Task 10, 9e4f2aa, 7878208, or superseded artifact builds."
   },
   "superseded_qualified_application_commit": "5cb57910c2c6dc2f6ea37da75640c5c947c8907b",
-  "current_candidate_source_files": 211,
-  "current_candidate_source_path_set_sha256": "14bddb59e1d7ad1f3d4fceb6b20e7ae0748848a93e89dc470a7af7b325dc88fe",
-  "current_candidate_source_manifest_sha256": "58f27973abc9b3d34fa9f2eea1738c914659ff84f5151f64fdc493acca1c3005",
-  "current_successor_qualification": {
-    "i1_replay_focused": {
-      "passed": 9,
-      "seconds": 129.46,
-      "exit_code": 0
-    },
-    "exact_image_prerequisite_and_overlay_matrix": {
-      "passed": 12,
-      "seconds": 47.26,
-      "exit_code": 0,
-      "coverage": [
-        "wholly absent and partial candidate state before DB setup",
-        "exact candidate loader",
-        "hostile PYTHONPATH/PYTHONHOME/cwd",
-        "valid malicious pyc with positive execution control",
-        "real empty-0042",
-        "physical extra/missing/changed/down_revision migration inventory overlays"
-      ]
-    },
-    "task8_actual_pending_activity_retry_producer": {
-      "passed": 1,
-      "seconds": 194.14,
-      "exit_code": 0,
-      "reasons": [
-        {
-          "reason": "expired_permit_receipt",
-          "activity": "salience.publication.submit_or_reconcile",
-          "attempt": 2,
-          "worker_container_id": "7474278e13c37fc53f1640bbaab444595d479e823dacba3260c0f1a4faa82ac6",
-          "recorder_run_id": "243c8119-bdda-4241-a708-601c49448755",
-          "worker_id": "cdd47a20-93f1-470d-896b-f884a189065e",
-          "history_event_boundary": 27,
-          "recorded_adapter_operations": 0
-        },
-        {
-          "reason": "published_during_cancel",
-          "activity": "salience.publication.cancel",
-          "attempt": 2,
-          "worker_container_id": "ca838159ff2d9855442136242ab07c820635d52935b5d810d83d95fa6228de00",
-          "recorder_run_id": "e66bea22-9a8f-48b9-8d00-82f2e731c4c4",
-          "worker_id": "8c88c87b-8d2f-4163-953e-adbc36102723",
-          "history_event_boundary": 44,
-          "recorded_adapter_operations": 0
-        }
-      ],
-      "readback_sha256": "722723b7d6d18d9e37ec84d0945a7486ea9d3fd2e06018ce1dac482bcc29edc4"
-    },
-    "compose_restart_recovery": {
-      "passed": 1,
-      "seconds": 88.19,
-      "exit_code": 0,
-      "log_sha256": "e7eae0123edd77c395199598edc7ae289526bd4f5890f169b971a75bfff3b8ad"
-    },
-    "full_non_live": {
-      "command": "SALIENCE_DEPLOYMENT_MODE=fixture .venv/bin/python -m pytest -p no:cacheprovider tests/contracts tests/unit tests/integration tests/e2e tests/evals -m 'not live' -q -rs",
-      "application_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
-      "passed": 796,
-      "skipped": 17,
-      "failed": 0,
-      "warnings": 3,
-      "seconds": 1576.95,
-      "exit_code": 0,
-      "log_path": "/tmp/p1-publication-recovery-successor-182c4e4/attempt-6/full-run-final/run.log",
-      "log_sha256": "9948122a8b2749f33ac20a5c26b60dfd072519bbd24c07a584d0896fc45fd27d"
-    },
-    "failed_diagnostic_run": {
-      "result": "The exact-image fail-closed gate correctly rejected a stale global wheel in the test harness; harness fix pinned exact candidate wheel/lock before the successful rerun.",
-      "passed": 795,
-      "skipped": 17,
-      "failed": 1,
-      "log_sha256": "0a2352d6a1e05244208d7ae97199002cd87f08771932d90a97f4430fb0b4869e"
-    },
-    "candidate_invalidation_audit": {
-      "status": "PASS",
-      "all_source_rows_match": 211,
-      "path_set_sha256": "14bddb59e1d7ad1f3d4fceb6b20e7ae0748848a93e89dc470a7af7b325dc88fe",
-      "source_manifest_sha256": "58f27973abc9b3d34fa9f2eea1738c914659ff84f5151f64fdc493acca1c3005",
-      "runtime_entries": 9151,
-      "pyc_entries": 0,
-      "log_sha256": "6cf617f53485317d5f9c618849e2ce25537558036ae6a6813971005d88bf246a"
-    },
-    "post_run_cleanup": {
-      "status": "PASS",
-      "removed_only_inactive_test_images_and_seven_private_build_cache_records": true,
-      "candidate_image_preserved": true,
-      "active_service_containers_and_volumes_unchanged": true,
-      "tmp_free_mib": 891,
-      "root_free_gib": 9.2,
-      "available_ram_gib": 2.3
-    }
-  },
   "superseded_verification_snapshot_before_successor": {
     "status": "PASS_LOCAL_SUCCESSOR_182C4E4_QUALIFICATION; HISTORICAL_614_TEST_RESULT_REMAINS_BOUND_TO_7878208; PRODUCTION_RELEASE_HELD",
     "documentation_tests": "PASS: 15 documentation tests; checker and self-test PASS (75 requirements, 2 source files, 360 evidence files, 360 inventory files, 6 negative controls); all 4 shell contracts and 6 Mermaid diagrams passed; 5 modified JSON files parsed; pip check, compileall, 14 historical hash checks, 360-file application evidence-lock validation, and git diff --check passed.",
@@ -2455,7 +2376,8 @@
     "current_candidate_wheel_sha256": "425b7122f6431459a15bc4fe7bbdd169692b152356a0f36c6895e3fd452e3d04",
     "current_candidate_launch_lock_sha256": "1c8ac4ff92e589e27dc0af2c6dd0bc69c4295435df5a318174a2c77f3b1f2c9c",
     "current_candidate_runtime_manifest_sha256": "3d58423ee9119db38c9a670c726c83692bef126d402e69f2a9ad98e05377b644",
-    "current_independent_review_scope": "Successor 182c4e4 fresh independent review/meta-review and exact-head CI remain pending; Task 11 findings stay scoped to 5cb5791 and corrected-publication rereview stays scoped to A4/d031172."
+    "current_independent_review_scope": "Successor 182c4e4 fresh independent review/meta-review and exact-head CI remain pending; Task 11 findings stay scoped to 5cb5791 and corrected-publication rereview stays scoped to A4/d031172.",
+    "record_scope": "HISTORICAL_0043_ARTIFACT_FIXTURE_QUALIFICATION_AT_182C4E4; not current Slice 2 evidence."
   },
   "current_handoff_hashes": {
     "docs/README.md": "810e735b69988dd567af50870b5d76d12196971f510680755872d8825f2a0b14",
@@ -2482,12 +2404,12 @@
     "docs/v4/validation.md": "308c9b6a054708bd359cbf7e3f12a4164f7885c21382f033c9f7f2a23febafdf",
     ".superpowers/sdd/2026-10-27-p1-production-policy-and-revocation/final-evidence-report.md": "22b88cec0f18cc3f9ac2a8007b5ee015ee571483aa5e4ce5468dac9fc7b1a1f8"
   },
-  "current_documentation_refresh": {
+  "historical_documentation_refresh": {
     "plan_task": "docs/superpowers/plans/2026-10-27-p1-rg0-rg1-initial-gap-audit.md",
     "starting_commit": "7c1ddcda280b510048ad61106c406171edd64f18",
     "working_branch": "arch",
     "scope": "Current P1/RG0/RG1 audit, five reviewed design specs, status/navigation, durable review and manifest records; no application source or build-evidence changes.",
-    "application_candidate_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
+    "historical_application_candidate_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
     "latest_pushed_documentation_head": "67effe8c9c176c0bd1c17fdef20b841c0e14b6de",
     "latest_pushed_documentation_ci_run": 38610329330,
     "post_push_exact_head_ci": "REQUIRED_AFTER_PUSH; no future candidate SHA or run is claimed",
@@ -2509,7 +2431,7 @@
         "verify": "success",
         "p0-regression": "success"
       },
-      "scope": "Exact frozen initial-audit source commit; result does not transfer to the uncommitted documentation candidate."
+      "scope": "Exact frozen initial-audit source commit; result does not transfer to the documentation candidate carrying final evidence."
     },
     "required_designs": [
       "production_policy_and_cross_service_revocation",
@@ -2527,7 +2449,7 @@
       "pass": 0,
       "non_pass": 22
     },
-    "final_candidate_status": "UNCOMMITTED_WORKTREE; no candidate SHA assigned",
+    "historical_candidate_status": "HISTORICAL_WORKTREE_SNAPSHOT; no final documentation commit SHA was assigned in that record.",
     "RG0": "HELD",
     "RG1": "HELD",
     "P2": "BLOCKED",
@@ -2544,74 +2466,30 @@
       "docs/v4/reviews/final-whole-change-fix.md.txt",
       "docs/v4/reviews/final-whole-change-rereview.md.txt",
       "docs/v4/reviews/final-whole-change-review.md.txt"
-    ]
+    ],
+    "record_scope": "Historical initial-audit documentation refresh; its application candidate field does not identify current Slice 2 source."
   },
   "tracked_markdown_disposition_counts": {
-    "tracked_markdown_paths": 113,
+    "tracked_markdown_paths": 115,
     "update_now_paths": 80,
-    "non_update_paths_preserved": 33,
-    "historical_immutable": 19,
+    "non_update_paths_preserved": 35,
+    "historical_immutable": 21,
     "generated_vendor": 12,
     "already_current": 2,
     "dispositions": {
-      "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged": 79,
+      "preserved plugin instructions, references and examples; independent skill scope": 12,
+      "preserved dated qualification report": 4,
+      "current final local non-live verification report for application candidate ec12763; production acceptance remains unqualified": 1,
       "active user-authored project instructions; preserved verbatim": 1,
-      "already current approved Task 6 implementation plan": 1,
-      "current final local non-live verification report for candidate fb2d4d6; production acceptance remains unqualified": 1,
-      "preserved YouTube-agent reference research": 4,
-      "preserved dated design specification": 3,
-      "preserved dated independent item7 qualification report": 1,
-      "preserved dated initial P1/RG0/RG1 subaudit report": 3,
-      "preserved dated preparation plan": 3,
-      "preserved dated qualification report": 2,
-      "preserved immutable historical snapshot; bytes retained verbatim": 1,
+      "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged": 79,
       "preserved original design source or historical diagram": 2,
-      "preserved plugin instructions, references and examples; independent skill scope": 12
-    }
-  },
-  "current_branch_review_and_ci": {
-    "branch": "feat/archv4-p0-foundation",
-    "head_commit": "6f5edc77edbfe189e46de4254c2fdb21c5652bce",
-    "review": "GPT-6.1 whole-branch review: 59 commits / 38 files; 0 Critical / 0 Important / 1 nonblocking Minor.",
-    "meta_review": "GPT-5.6 ACCEPT; approved pushing unchanged 6f5edc7.",
-    "pushed": true,
-    "workflow_run_id": 38592066455,
-    "workflow_run_url": "https://github.com/manojvermamv/Salience/actions/runs/38592066455",
-    "required_jobs": {
-      "verify": "success",
-      "p0-regression": "success"
-    },
-    "hosted_suite_summary": {
-      "passed": 787,
-      "expected_skips": 26,
-      "warnings": 3
-    },
-    "current_docs_only_head_ci": "PASS_FOR_67EFFE8 (run 38610329330); INITIAL_AUDIT_SOURCE_7C1DDCD_PASS (run 40443346020); current uncommitted candidate CI REQUIRED_AFTER_PUSH.",
-    "latest_pushed_documentation_head_ci": {
-      "head_commit": "67effe8c9c176c0bd1c17fdef20b841c0e14b6de",
-      "workflow_run_id": 38610329330,
-      "workflow_run_url": "https://github.com/manojvermamv/Salience/actions/runs/38610329330",
-      "status": "completed",
-      "conclusion": "success",
-      "required_jobs": {
-        "verify": "success",
-        "p0-regression": "success"
-      },
-      "scope": "Documentation-only; no application result counts attributed."
-    },
-    "current_candidate_post_push_exact_head_ci": "REQUIRED_AFTER_PUSH; current documentation candidate is uncommitted and has no exact-head run.",
-    "initial_audit_source_ci": {
-      "head_commit": "7c1ddcda280b510048ad61106c406171edd64f18",
-      "run_id": 40443346020,
-      "url": "https://github.com/manojvermamv/Salience/actions/runs/40443346020",
-      "workflow": "V4 documentation contract",
-      "status": "completed",
-      "conclusion": "success",
-      "required_jobs": {
-        "verify": "success",
-        "p0-regression": "success"
-      },
-      "scope": "Exact frozen initial-audit source commit; result does not transfer to the uncommitted documentation candidate."
+      "preserved immutable historical snapshot; bytes retained verbatim": 1,
+      "preserved YouTube-agent reference research": 4,
+      "preserved dated preparation plan": 3,
+      "already current approved Task 6 implementation plan": 1,
+      "preserved dated design specification": 3,
+      "preserved dated initial P1/RG0/RG1 subaudit report": 3,
+      "preserved dated independent item7 qualification report": 1
     }
   },
   "mermaid_source_blocks_updated": 1,
@@ -2634,7 +2512,7 @@
         "verify": "success",
         "p0-regression": "success"
       },
-      "scope": "Exact frozen initial-audit source commit; result does not transfer to the uncommitted documentation candidate."
+      "scope": "Exact frozen initial-audit source commit; result does not transfer to the documentation candidate carrying final evidence."
     },
     "required_increments": [
       "production_policy_and_cross_service_revocation",
@@ -2674,11 +2552,12 @@
   "Slice7": "BLOCKED",
   "final_entry_audit_status": "NOT RUN",
   "main_merge": "UNMERGED",
-  "current_documentation_artifacts": 286,
+  "current_documentation_artifacts": 288,
   "current_task6_fixture_checkpoint": {
     "scope": "fixture",
     "record_kind": "final_local_non_live_verification",
-    "application_commit": "fb2d4d63627f7de7ee9fc2307ab2831491720e12",
+    "application_commit": "ec12763e38143f52f1af2661e00932158982f11a",
+    "application_commit_source": "SOURCE_COMMIT in the SHA-256-bound sanitized final verifier log.",
     "fixture_status": "PASS_FIXTURE_ONLY",
     "migration_head": "0046_production_policy_approval_id_immutability",
     "passed": 908,
@@ -2686,19 +2565,21 @@
     "skipped": 26,
     "errors": 0,
     "warnings": 3,
-    "elapsed_seconds": 1453.58,
+    "elapsed_seconds": 1438.43,
     "phase9_release_gate": {
       "exit_code": 0,
       "passed": 60,
       "failed": 0,
       "skipped": 0,
       "errors": 0,
-      "elapsed_seconds": 55.26
+      "elapsed_seconds": 55.11
     },
     "verifier_command": "bash scripts/verify-phase-9.sh",
-    "verifier_log_path": "/tmp/salience-final-fb2d4d6-verify.log",
-    "verifier_log_sha256": "94fae65ce3535169487672811a4f5275e07445e47de37783172c92de079a0ee5",
-    "evidence_sha256": "7d27f58fb21b9cf06c8098ffbd0c2aa29b647d54d6643a1767845ebf475deb53",
+    "verifier_log_path": "/tmp/salience-final-ec12763-verify.log",
+    "verifier_log_sha256": "c643740f100210bad8428433db31ecd2852a538b26ad702224cd28c3f5432020",
+    "verifier_log_preserved_copy_path": "docs/v4/audits/p1-policy-revocation-ec12763-verifier.log",
+    "verifier_log_source_commit": "ec12763e38143f52f1af2661e00932158982f11a",
+    "evidence_sha256": "e5a5a3d424157479cacaf00eae39614a5abe12ecdb04ac38af0c95692dbd982b",
     "artifact_or_image": "UNAVAILABLE; final verifier did not build, pull, or produce an application artifact or image",
     "junit": "UNAVAILABLE; final verifier did not emit a JUnit artifact",
     "database_cleanup": "SUCCEEDED; disposable database dropped by verifier cleanup",
@@ -2710,9 +2591,10 @@
     "RG1_scope": "full",
     "P2": "BLOCKED",
     "main": "UNMERGED",
-    "current_documentation_artifacts": 286,
-    "current_markdown_paths": 113,
-    "candidate_documentation_ci": "REQUIRED_AFTER_PUSH"
+    "current_documentation_artifacts": 288,
+    "current_markdown_paths": 115,
+    "candidate_documentation_ci": "REQUIRED_AFTER_PUSH",
+    "documentation_commit_relationship": "The documentation commit carrying this record is distinct from application_commit and does not replace the tested application/source candidate."
   },
   "historical_task6_fixture_checkpoint": {
     "scope": "fixture",
@@ -2745,5 +2627,190 @@
     "current_markdown_paths": 112,
     "candidate_documentation_ci": "REQUIRED_AFTER_PUSH"
   },
-  "active_project_markdown_files": 93
+  "active_project_markdown_files": 93,
+  "current_application_artifact_status": "No application image, JUnit artifact, source manifest, or source lock was produced by this verifier run.",
+  "current_independent_review_scope": "The historical 182c4e4/796/17/3 artifact qualification and prior branch review/CI remain bound to their recorded sources. Current local Slice 2 evidence is bound to application/source candidate ec12763e38143f52f1af2661e00932158982f11a; it is not independently reviewed or production qualified. The later documentation commit requires exact-head CI after push. Production acceptance remains NOT RUN and RG0/full RG1 remain HELD.",
+  "historical_0043_candidate_artifact_pins": {
+    "application_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
+    "scope": "HISTORICAL_0043_ARTIFACT_FIXTURE_QUALIFICATION",
+    "source_files": 211,
+    "source_path_set_sha256": "14bddb59e1d7ad1f3d4fceb6b20e7ae0748848a93e89dc470a7af7b325dc88fe",
+    "source_manifest_sha256": "58f27973abc9b3d34fa9f2eea1738c914659ff84f5151f64fdc493acca1c3005",
+    "image_id": null,
+    "wheel_sha256": null,
+    "launch_lock_sha256": null,
+    "runtime_manifest_sha256": null
+  },
+  "current_application_candidate": {
+    "application_commit": "ec12763e38143f52f1af2661e00932158982f11a",
+    "source_commit_marker": "SOURCE_COMMIT",
+    "verifier_log_sha256": "c643740f100210bad8428433db31ecd2852a538b26ad702224cd28c3f5432020",
+    "migration_head": "0046_production_policy_approval_id_immutability",
+    "artifact_image": "NOT PRODUCED",
+    "junit": "NOT PRODUCED",
+    "documentation_commit_is_distinct": true
+  },
+  "historical_0043_qualification_application": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
+  "historical_0043_focused_test_subset": 9,
+  "current_focused_test_scope": "Phase 9 release gate",
+  "historical_0043_candidate_artifact_build": {
+    "status": "SUCCESSOR_EXACT_CANDIDATE_ARTIFACT_BUILD_AND_LOCAL_QUALIFICATION_RECORDED",
+    "application_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
+    "artifact_build_result": "PASS",
+    "image_ref": "salience-p1-floor-182c4e4-worker:latest",
+    "image_id": "sha256:c880a41e4a20f1322ad579b0b8d3f8b5ae14fcdf13635458d33cdc8c747e09a0",
+    "wheel_sha256": "425b7122f6431459a15bc4fe7bbdd169692b152356a0f36c6895e3fd452e3d04",
+    "record_sha256": "f3fbd4bd43c25786969016b1d0c806c9591b5aea07dcd4753b87a3980dc1b74b",
+    "record_entry_count": 172,
+    "launch_lock_sha256": "1c8ac4ff92e589e27dc0af2c6dd0bc69c4295435df5a318174a2c77f3b1f2c9c",
+    "source_path_count": 211,
+    "source_path_set_sha256": "14bddb59e1d7ad1f3d4fceb6b20e7ae0748848a93e89dc470a7af7b325dc88fe",
+    "source_manifest_sha256": "58f27973abc9b3d34fa9f2eea1738c914659ff84f5151f64fdc493acca1c3005",
+    "interpreter_sha256": "73b68fc2dac176af16098180a2c98a03ee9f1f1b02db25d42d44d782e79e2330",
+    "runtime_root": "/usr/local/lib/python3.13/site-packages",
+    "runtime_manifest_sha256": "3d58423ee9119db38c9a670c726c83692bef126d402e69f2a9ad98e05377b644",
+    "runtime_file_count": 9151,
+    "pyc_files": [],
+    "qualification_report": ".superpowers/sdd/2026-10-13-p1-publication-recovery-floor-repair/task-8-report.md",
+    "qualification_results": "Exact-image matrix: 12 passed; I1 replay-focused gate: 9 passed; actual-retry producer: 1 passed; Compose restart recovery: 1 passed; final clean non-live suite: 796 passed, 17 skipped, 3 warnings, all bound to application 182c4e4. Whole-branch review remains bound to 6f5edc77edbfe189e46de4254c2fdb21c5652bce (run 38592066455). Separately, exact CI run 40443346020 passed on initial audit source 7c1ddcda280b510048ad61106c406171edd64f18. The final documentation commit is distinct from this historical application record and requires exact-head CI after push."
+  },
+  "historical_0043_successor_qualification": {
+    "i1_replay_focused": {
+      "passed": 9,
+      "seconds": 129.46,
+      "exit_code": 0
+    },
+    "exact_image_prerequisite_and_overlay_matrix": {
+      "passed": 12,
+      "seconds": 47.26,
+      "exit_code": 0,
+      "coverage": [
+        "wholly absent and partial candidate state before DB setup",
+        "exact candidate loader",
+        "hostile PYTHONPATH/PYTHONHOME/cwd",
+        "valid malicious pyc with positive execution control",
+        "real empty-0042",
+        "physical extra/missing/changed/down_revision migration inventory overlays"
+      ]
+    },
+    "task8_actual_pending_activity_retry_producer": {
+      "passed": 1,
+      "seconds": 194.14,
+      "exit_code": 0,
+      "reasons": [
+        {
+          "reason": "expired_permit_receipt",
+          "activity": "salience.publication.submit_or_reconcile",
+          "attempt": 2,
+          "worker_container_id": "7474278e13c37fc53f1640bbaab444595d479e823dacba3260c0f1a4faa82ac6",
+          "recorder_run_id": "243c8119-bdda-4241-a708-601c49448755",
+          "worker_id": "cdd47a20-93f1-470d-896b-f884a189065e",
+          "history_event_boundary": 27,
+          "recorded_adapter_operations": 0
+        },
+        {
+          "reason": "published_during_cancel",
+          "activity": "salience.publication.cancel",
+          "attempt": 2,
+          "worker_container_id": "ca838159ff2d9855442136242ab07c820635d52935b5d810d83d95fa6228de00",
+          "recorder_run_id": "e66bea22-9a8f-48b9-8d00-82f2e731c4c4",
+          "worker_id": "8c88c87b-8d2f-4163-953e-adbc36102723",
+          "history_event_boundary": 44,
+          "recorded_adapter_operations": 0
+        }
+      ],
+      "readback_sha256": "722723b7d6d18d9e37ec84d0945a7486ea9d3fd2e06018ce1dac482bcc29edc4"
+    },
+    "compose_restart_recovery": {
+      "passed": 1,
+      "seconds": 88.19,
+      "exit_code": 0,
+      "log_sha256": "e7eae0123edd77c395199598edc7ae289526bd4f5890f169b971a75bfff3b8ad"
+    },
+    "full_non_live": {
+      "command": "SALIENCE_DEPLOYMENT_MODE=fixture .venv/bin/python -m pytest -p no:cacheprovider tests/contracts tests/unit tests/integration tests/e2e tests/evals -m 'not live' -q -rs",
+      "application_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
+      "passed": 796,
+      "skipped": 17,
+      "failed": 0,
+      "warnings": 3,
+      "seconds": 1576.95,
+      "exit_code": 0,
+      "log_path": "/tmp/p1-publication-recovery-successor-182c4e4/attempt-6/full-run-final/run.log",
+      "log_sha256": "9948122a8b2749f33ac20a5c26b60dfd072519bbd24c07a584d0896fc45fd27d"
+    },
+    "failed_diagnostic_run": {
+      "result": "The exact-image fail-closed gate correctly rejected a stale global wheel in the test harness; harness fix pinned exact candidate wheel/lock before the successful rerun.",
+      "passed": 795,
+      "skipped": 17,
+      "failed": 1,
+      "log_sha256": "0a2352d6a1e05244208d7ae97199002cd87f08771932d90a97f4430fb0b4869e"
+    },
+    "candidate_invalidation_audit": {
+      "status": "PASS",
+      "all_source_rows_match": 211,
+      "path_set_sha256": "14bddb59e1d7ad1f3d4fceb6b20e7ae0748848a93e89dc470a7af7b325dc88fe",
+      "source_manifest_sha256": "58f27973abc9b3d34fa9f2eea1738c914659ff84f5151f64fdc493acca1c3005",
+      "runtime_entries": 9151,
+      "pyc_entries": 0,
+      "log_sha256": "6cf617f53485317d5f9c618849e2ce25537558036ae6a6813971005d88bf246a"
+    },
+    "post_run_cleanup": {
+      "status": "PASS",
+      "removed_only_inactive_test_images_and_seven_private_build_cache_records": true,
+      "candidate_image_preserved": true,
+      "active_service_containers_and_volumes_unchanged": true,
+      "tmp_free_mib": 891,
+      "root_free_gib": 9.2,
+      "available_ram_gib": 2.3
+    }
+  },
+  "historical_0043_publication_recovery_hold_evidence": "docs/v4/publication-recovery-hold-successor-evidence.json",
+  "historical_0043_publication_recovery_hold_evidence_sha256": "4baef4a2328b26a47abc150f4b2ba47aa7c3d3afa6260c651986142b110054c1",
+  "historical_branch_review_and_ci": {
+    "branch": "feat/archv4-p0-foundation",
+    "head_commit": "6f5edc77edbfe189e46de4254c2fdb21c5652bce",
+    "review": "GPT-6.1 whole-branch review: 59 commits / 38 files; 0 Critical / 0 Important / 1 nonblocking Minor.",
+    "meta_review": "GPT-5.6 ACCEPT; approved pushing unchanged 6f5edc7.",
+    "pushed": true,
+    "workflow_run_id": 38592066455,
+    "workflow_run_url": "https://github.com/manojvermamv/Salience/actions/runs/38592066455",
+    "required_jobs": {
+      "verify": "success",
+      "p0-regression": "success"
+    },
+    "hosted_suite_summary": {
+      "passed": 787,
+      "expected_skips": 26,
+      "warnings": 3
+    },
+    "historical_docs_only_head_ci": "Historical: PASS_FOR_67EFFE8 (run 38610329330); initial-audit source 7C1DDCD passed run 40443346020.",
+    "latest_pushed_documentation_head_ci": {
+      "head_commit": "67effe8c9c176c0bd1c17fdef20b841c0e14b6de",
+      "workflow_run_id": 38610329330,
+      "workflow_run_url": "https://github.com/manojvermamv/Salience/actions/runs/38610329330",
+      "status": "completed",
+      "conclusion": "success",
+      "required_jobs": {
+        "verify": "success",
+        "p0-regression": "success"
+      },
+      "scope": "Documentation-only; no application result counts attributed."
+    },
+    "current_documentation_candidate_post_push_exact_head_ci": "REQUIRED_AFTER_PUSH; the documentation commit carrying Slice 2 evidence is distinct from application candidate ec12763e38143f52f1af2661e00932158982f11a; no exact-head run is recorded.",
+    "initial_audit_source_ci": {
+      "head_commit": "7c1ddcda280b510048ad61106c406171edd64f18",
+      "run_id": 40443346020,
+      "url": "https://github.com/manojvermamv/Salience/actions/runs/40443346020",
+      "workflow": "V4 documentation contract",
+      "status": "completed",
+      "conclusion": "success",
+      "required_jobs": {
+        "verify": "success",
+        "p0-regression": "success"
+      },
+      "scope": "Exact frozen initial-audit source commit; result does not transfer to the documentation candidate carrying final evidence."
+    },
+    "record_scope": "Historical branch review and CI scopes; no review or CI result transfers to the current Slice 2 candidate or later documentation commit."
+  }
 }

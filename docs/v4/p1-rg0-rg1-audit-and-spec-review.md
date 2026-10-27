@@ -145,9 +145,9 @@ This append-only index binds the current documentation and test contents after t
 | `docs/superpowers/specs/2026-10-13-v4-multiplatform-autonomy-program-sequence.md` | `ba64032ca707c4348c97651fa06beced3df90d1612c38c56de50fed1558947ca` |
 | `docs/superpowers/plans/2026-10-27-p1-rg0-rg1-initial-gap-audit.md` | `5d1dd8a86718184d03324144643dfb009cb36243a5bd0c0f14c46844eb3c5cd4` |
 
-## Current local evidence hash addendum — final Slice 2 verification
+## Historical superseded evidence hash addendum — pre-final Slice 2 candidate
 
-This addendum binds the final local non-live evidence to candidate `fb2d4d63627f7de7ee9fc2307ab2831491720e12` and migration `0046_production_policy_approval_id_immutability`. It does not change the frozen initial audit or historical review scope. The documentation status audit intentionally omits its own digest to avoid a recursive self-hash.
+This historical addendum records an earlier local non-live evidence snapshot for candidate `fb2d4d63627f7de7ee9fc2307ab2831491720e12` and migration `0046_production_policy_approval_id_immutability`. It is superseded by the final application provenance alignment below and does not change the frozen initial audit or historical review scope. The documentation status audit intentionally omits its own digest to avoid a recursive self-hash.
 
 | Path | SHA-256 |
 | --- | --- |
@@ -170,3 +170,30 @@ This addendum binds the final local non-live evidence to candidate `fb2d4d63627f
 | `docs/superpowers/plans/2026-10-27-p1-rg0-rg1-initial-gap-audit.md` | `5d1dd8a86718184d03324144643dfb009cb36243a5bd0c0f14c46844eb3c5cd4` |
 | `docs/v4/p1-production-policy-revocation-evidence.json` | `7d27f58fb21b9cf06c8098ffbd0c2aa29b647d54d6643a1767845ebf475deb53` |
 | `.superpowers/sdd/2026-10-27-p1-production-policy-and-revocation/final-evidence-report.md` | `22b88cec0f18cc3f9ac2a8007b5ee015ee571483aa5e4ce5468dac9fc7b1a1f8` |
+
+## Final application provenance alignment — 2026-10-27
+
+This append-only digest index binds the current documentation and test contents to the final local non-live verifier result for application/source candidate `ec12763e38143f52f1af2661e00932158982f11a`. The sanitized log prints that value as `SOURCE_COMMIT` and has SHA-256 `c643740f100210bad8428433db31ecd2852a538b26ad702224cd28c3f5432020`. The documentation commit is distinct from that application candidate and still requires exact-head CI after push. These hashes do not extend prior review verdicts or establish production acceptance. The documentation status audit omits its own digest to avoid a recursive self-hash.
+
+| Path | SHA-256 |
+| --- | --- |
+| `docs/v4/p1-rg0-rg1-initial-gap-audit.json` | `33fe485384dcf60e36df8d48ace6394c80bce0d1bd9e6b9b39c7a905d65676b1` |
+| `docs/v4/p1-rg0-rg1-initial-gap-audit.md` | `62aab5afb39f7c47e355a68ccf56e319a72955247515dfbdba8913fd797a5944` |
+| `docs/v4/p0-release.json` | `5038fa02bd73d176cbad6df99a66537fb25cdebc0f8c972f33419070e1145757` |
+| `docs/v4/p1-qualification-matrix.json` | `3506caa0164280e136d0cffb0e095946057d42560648d1a75b5f70f690a5e186` |
+| `docs/superpowers/specs/2026-10-13-p1-production-policy-and-revocation-design.md` | `6be8f5ec6c48491a45a734510cc20af98e2cd7554fdc0409e77c6d9667d42fe2` |
+| `docs/superpowers/specs/2026-10-13-p1-production-routing-and-worker-fencing-design.md` | `d4d2c06a1f0925d2826b29a4e2c053f7f7773f660397fe986883c370aee78f67` |
+| `docs/superpowers/specs/2026-10-13-p1-live-schedule-fencing-design.md` | `04ed59e2ed61ca17dc2c01df3a2964e1569e03e79f0aef2bbfe2ca2d96d5129a` |
+| `docs/superpowers/specs/2026-10-13-p1-production-recovery-and-alerts-design.md` | `1c731ee595be6582902aa79f9ebb52d520f6fd18ad6054ca304709ce16aea61c` |
+| `docs/superpowers/specs/2026-10-13-rg0-rg1-external-acceptance-design.md` | `2a5d6cff0dd44070b1942e79f073906527b8e2650b62b3473d63542f00bfbcd8` |
+| `docs/v4/test_checks.py` | `8528619dfb28073bd30f0b344ad1c37e39b8b7d23838bd1af519309948db0655` |
+| `README.md` | `3f672a0e4bd804a0cc2280c7a57b2a350dbde4991a3ae4e941e3380b16ee3d44` |
+| `docs/README.md` | `f122208f915838df3c58baa1574ea64b04237fa58babac3c02df256c0e0988d4` |
+| `docs/v4/IMPLEMENTATION-BLUEPRINT.md` | `6e717aae30c9eb3714d760d5e04f8689a33db0b5e0a3d8dcb4e8e63137c7c58b` |
+| `docs/v4/progress.md` | `1e2985a9733e2c3f2fbadcb9518fb41831edc91c3b88b9144859a2751aa7c543` |
+| `docs/v4/validation.md` | `c784063df50f1a9a83d3c6a5cf31b09a393c184aec35c318b9ef6efa5d21839c` |
+| `docs/superpowers/specs/2026-10-13-v4-multiplatform-autonomy-program-sequence.md` | `ba64032ca707c4348c97651fa06beced3df90d1612c38c56de50fed1558947ca` |
+| `docs/superpowers/plans/2026-10-27-p1-rg0-rg1-initial-gap-audit.md` | `5d1dd8a86718184d03324144643dfb009cb36243a5bd0c0f14c46844eb3c5cd4` |
+| `docs/v4/p1-production-policy-revocation-evidence.json` | `e5a5a3d424157479cacaf00eae39614a5abe12ecdb04ac38af0c95692dbd982b` |
+| `.superpowers/sdd/2026-10-27-p1-production-policy-and-revocation/final-evidence-report.md` | `551c40b4d6852ab3ab4f42bc2cd26ffd1a0339fa03a5f7c2c0f0d39814d05307` |
+| `docs/v4/audits/p1-policy-revocation-ec12763-verifier.log` | `c643740f100210bad8428433db31ecd2852a538b26ad702224cd28c3f5432020` |

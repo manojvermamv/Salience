@@ -1,0 +1,183 @@
+SOURCE_COMMIT: ec12763e38143f52f1af2661e00932158982f11a
+Phase 9 documentation contract passed
+PASS: Phase 9 documentation contract
+ Container salience-temporal-1 Running 
+ Container salience-postgres-1 Running 
+ Container salience-postgres-1 Waiting 
+ Container salience-postgres-1 Healthy 
+PASS: PostgreSQL and Temporal fixture services are available
+CREATE DATABASE
+PASS: Disposable Phase 9 test database was created
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 0001_canonical_foundation, Create the immutable Phase-1 canonical data foundation.
+INFO  [alembic.runtime.migration] Running upgrade 0001_canonical_foundation -> 0002_agents, Add canonical callable-agent and team records.
+INFO  [alembic.runtime.migration] Running upgrade 0002_agents -> 0003_memory_strategy, Add scoped durable memory, evidence, and strategy records.
+INFO  [alembic.runtime.migration] Running upgrade 0003_memory_strategy -> 0004_intelligence_loop, Add canonical Phase 5-6 intelligence-loop lineage.
+INFO  [alembic.runtime.migration] Running upgrade 0004_intelligence_loop -> 0005_strategy_idempotency, Make durable strategy proposals safe to retry.
+INFO  [alembic.runtime.migration] Running upgrade 0005_strategy_idempotency -> 0006_creative_production, Add canonical Phase 7-8 creative production and distribution records.
+INFO  [alembic.runtime.migration] Running upgrade 0006_creative_production -> 0007_creative_lineage, Anchor retry-safe provider ownership and package asset lineage.
+INFO  [alembic.runtime.migration] Running upgrade 0007_creative_lineage -> 0008_creative_release_gate, Persist creative release-gate lifecycle, rights, and immutability invariants.
+INFO  [alembic.runtime.migration] Running upgrade 0008_creative_release_gate -> 0009_governed_publication, Add canonical provider-neutral governed publication records.
+INFO  [alembic.runtime.migration] Running upgrade 0009_governed_publication -> 0010_publication_hardening, Harden governed-publication approval, scheduling, and immutability.
+INFO  [alembic.runtime.migration] Running upgrade 0010_publication_hardening -> 0011_publication_plan_lifecycle, Allow only durable cost lifecycle transitions for publication plans.
+INFO  [alembic.runtime.migration] Running upgrade 0011_publication_plan_lifecycle -> 0012_publication_profile_scope, Bind capability profile identity to its publisher account.
+INFO  [alembic.runtime.migration] Running upgrade 0012_publication_profile_scope -> 0013_identity_boundary, Add isolated subject identity and append-only access decisions.
+INFO  [alembic.runtime.migration] Running upgrade 0013_identity_boundary -> 0014_object_inventory, Persist object verification, holds and reference-safe collection.
+INFO  [alembic.runtime.migration] Running upgrade 0014_object_inventory -> 0015_identity_lock, Delegate only the identity read lock, not authority mutation.
+INFO  [alembic.runtime.migration] Running upgrade 0015_identity_lock -> 0016_cycle_admission, Add dry-run V4 intent, context and lifecycle identities.
+INFO  [alembic.runtime.migration] Running upgrade 0016_cycle_admission -> 0017_cycle_identity_guards, Enforce stable business identities and terminal cycle dispositions.
+INFO  [alembic.runtime.migration] Running upgrade 0017_cycle_identity_guards -> 0018_cycle_outbox, Commit local cycle messages with bounded ordered delivery and consumption.
+INFO  [alembic.runtime.migration] Running upgrade 0018_cycle_outbox -> 0019_goal_revision_commands, Preserve atomic goal revision commands and guarded mutable pointers.
+INFO  [alembic.runtime.migration] Running upgrade 0019_goal_revision_commands -> 0020_goal_baselines, Require explicit revision-bound no-effects baseline approvals.
+INFO  [alembic.runtime.migration] Running upgrade 0020_goal_baselines -> 0021_cycle_policy, Add versioned cadence receipts without rewriting existing admission history.
+INFO  [alembic.runtime.migration] Running upgrade 0021_cycle_policy -> 0022_program_policy_lock, Delegate a scoped program read lock without granting program mutation.
+INFO  [alembic.runtime.migration] Running upgrade 0022_program_policy_lock -> 0023_cycle_allocations, Canonical G0 parent reservations and G1 transfers, without production effects.
+INFO  [alembic.runtime.migration] Running upgrade 0023_cycle_allocations -> 0024_allocation_guards, Preserve allocation scope and delegate budget locks without cap-edit authority.
+INFO  [alembic.runtime.migration] Running upgrade 0024_allocation_guards -> 0025_accounting_categories, Keep all ArchV4 cost categories attributable without enabling their operations.
+INFO  [alembic.runtime.migration] Running upgrade 0025_accounting_categories -> 0026_cycle_governance, Add scoped stop authority, fixture permit claims and bound recovery cases.
+INFO  [alembic.runtime.migration] Running upgrade 0026_cycle_governance -> 0027_auto_dispatch_escalation, Deduplicate durable local outbox dead-letter escalations.
+INFO  [alembic.runtime.migration] Running upgrade 0027_auto_dispatch_escalation -> 0028_fixture_adapter_receipts, Deduplicate accepted no-effects adapter fixture receipts.
+INFO  [alembic.runtime.migration] Running upgrade 0028_fixture_adapter_receipts -> 0029_goal_create_receipts, Preserve exact public goal-creation command identity.
+INFO  [alembic.runtime.migration] Running upgrade 0029_goal_create_receipts -> 0030_v4_schedule_cutover, Fence one fixture legacy schedule before enabling a canonical goal cursor.
+INFO  [alembic.runtime.migration] Running upgrade 0030_v4_schedule_cutover -> 0031_runtime_waits, Preserved local wait handoffs, owner holds and fixture notification receipts.
+INFO  [alembic.runtime.migration] Running upgrade 0031_runtime_waits -> 0032_runtime_hold_owner, Bind runtime hold ownership to the immutable original start subject.
+INFO  [alembic.runtime.migration] Running upgrade 0032_runtime_hold_owner -> 0033_goal_state_commands, Serialize goal state commands without changing frozen specification revisions.
+INFO  [alembic.runtime.migration] Running upgrade 0033_goal_state_commands -> 0034_runtime_delivery_scope, Protect canonical outbox scope and terminal-runtime hold evidence.
+INFO  [alembic.runtime.migration] Running upgrade 0034_runtime_delivery_scope -> 0035_parallel_agent_teams, Bounded durable parallel teams over canonical agent runs.
+INFO  [alembic.runtime.migration] Running upgrade 0035_parallel_agent_teams -> 0036_legacy_cycle_dispatch, Bind legacy no-effects jobs to original canonical V4 dispatch identity.
+INFO  [alembic.runtime.migration] Running upgrade 0036_legacy_cycle_dispatch -> 0037_native_schedule_sources, Preserve original native schedules and separately retain cutover progress.
+INFO  [alembic.runtime.migration] Running upgrade 0037_native_schedule_sources -> 0038_legacy_dummy_stage, Retain legacy intelligence bindings while qualifying no-send dummy starts.
+INFO  [alembic.runtime.migration] Running upgrade 0038_legacy_dummy_stage -> 0039_legacy_creative_stage, Qualify fixed dry creative starts without rewriting original legacy history.
+INFO  [alembic.runtime.migration] Running upgrade 0039_legacy_creative_stage -> 0040_legacy_publication_stage, Original publication identity with explicit fixture account approval and durable simulation.
+INFO  [alembic.runtime.migration] Running upgrade 0040_legacy_publication_stage -> 0041_native_publication_sources, Preserve original governed-publication schedule identities and cutover progress.
+INFO  [alembic.runtime.migration] Running upgrade 0041_native_publication_sources -> 0042_publication_recovery_holds, Record immutable evidence when a legacy publication must remain held.
+INFO  [alembic.runtime.migration] Running upgrade 0042_publication_recovery_holds -> 0043_complete_publication_recovery_liabilities, Add the complete immutable publication recovery liability baseline.
+INFO  [alembic.runtime.migration] Running upgrade 0043_complete_publication_recovery_liabilities -> 0044_production_policy_revocation, Add production effect permit history and terminal authority revisions.
+INFO  [alembic.runtime.migration] Running upgrade 0044_production_policy_revocation -> 0045_production_policy_approval_guard_repair, Repair the strict production effect approval transition guard.
+INFO  [alembic.runtime.migration] Running upgrade 0045_production_policy_approval_guard_repair -> 0046_production_policy_approval_id_immutability, Keep decided tagged effect approval identity and history immutable.
+PASS: Canonical migrations apply through 0046_production_policy_approval_id_immutability
+............................................................             [100%]
+60 passed in 55.11s
+PASS: Phase 9 fixture release gate: governed persistence, policy, cost, scheduling, reconciliation, callbacks, control clients, and private YouTube session boundary
+........................................................................ [  7%]
+........................................................................ [ 15%]
+........................................................................ [ 23%]
+........................................................................ [ 30%]
+........................................................................ [ 38%]
+........................................................................ [ 46%]
+........................................................................ [ 53%]
+..........................s............................................. [ 61%]
+......................................................................s. [ 69%]
+........................................................................ [ 77%]
+.........................ssssss.....................ssssssssssssssss.... [ 84%]
+..s..................................................................... [ 92%]
+.........s............................................................   [100%]
+=============================== warnings summary ===============================
+tests/integration/test_v4_migrations.py::test_owner_binding_upgrade_preserves_or_holds_existing_history[original]
+tests/integration/test_v4_migrations.py::test_owner_binding_upgrade_preserves_or_holds_existing_history[foreign]
+tests/integration/test_v4_migrations.py::test_owner_binding_upgrade_preserves_or_holds_existing_history[concurrent_foreign]
+  /home/admin/Salience/.venv/lib/python3.13/site-packages/alembic/config.py:604: DeprecationWarning: No path_separator found in configuration; falling back to legacy splitting on spaces, commas, and colons for prepend_sys_path.  Consider adding path_separator=os to Alembic config.
+    util.warn_deprecated(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+908 passed, 26 skipped, 3 warnings in 1438.43s (0:23:58)
+PASS: Full non-live regression suite
+PASS: Python compilation
+PASS: Whitespace and patch integrity
+{
+  "schemaVersion": 1,
+  "ok": true,
+  "command": "validate",
+  "type": "architecture",
+  "input": "/home/admin/Salience/docs/salience-phase-1-9.architecture.json",
+  "checks": [
+    {
+      "name": "single_svg",
+      "ok": true,
+      "details": [
+        "found 1 <svg> block(s)"
+      ]
+    },
+    {
+      "name": "finite_svg",
+      "ok": true,
+      "details": []
+    },
+    {
+      "name": "orthogonal_arrows",
+      "ok": true,
+      "details": []
+    },
+    {
+      "name": "label_route_clearance",
+      "ok": true,
+      "details": []
+    },
+    {
+      "name": "relationship_crossings",
+      "ok": true,
+      "details": []
+    },
+    {
+      "name": "relationship_corridors",
+      "ok": true,
+      "details": []
+    },
+    {
+      "name": "container_border_runs",
+      "ok": true,
+      "details": []
+    },
+    {
+      "name": "route_rhythm",
+      "ok": true,
+      "details": []
+    },
+    {
+      "name": "legend_clearance",
+      "ok": true,
+      "details": []
+    }
+  ],
+  "composition": {
+    "schemaVersion": 1,
+    "profile": "showcase",
+    "status": "pass",
+    "summary": {
+      "errors": 0,
+      "warnings": 0
+    },
+    "metrics": {
+      "properCrossings": 0,
+      "ambiguousCorridors": 0,
+      "containerBorderRuns": 0,
+      "labelRouteClearanceIssues": 0,
+      "minLabelRouteClearance": 18.6,
+      "desktopReadabilityIssues": 0,
+      "minProjectedNodeTextPx": null,
+      "maxBends": 2,
+      "routesOverSuggestedBends": 0,
+      "maxStretch": 1.259,
+      "routesOverSuggestedStretch": 0,
+      "minSegmentPx": 30,
+      "minInteriorSegmentPx": 115,
+      "shortSegmentCount": 0,
+      "shortEndpointSegmentCount": 0,
+      "shortInteriorSegmentCount": 0,
+      "microSegmentCount": 0
+    },
+    "suggestedLimits": {
+      "bendsPerRelationship": 2,
+      "stretch": 1.35,
+      "segmentPx": 16,
+      "microSegmentPx": 8
+    },
+    "issues": []
+  }
+}
+PASS: Phase 1–9 Archify validation
+NOT RUN: YOUTUBE_PUBLISHER_CONNECTION_REF is not configured
+.                                                                        [100%]
+1 passed in 0.13s
+PASS: YouTube live-smoke status contract
