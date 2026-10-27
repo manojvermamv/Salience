@@ -3148,9 +3148,8 @@ def test_candidate_control_bundle_authenticates_full_0043_inventory(
         ),
     )
     assert (
-        "publication worker source pin mismatch" in missing_physical_diagnostic
-        or "publication worker launch pin is invalid" in missing_physical_diagnostic
-        or "migration" in missing_physical_diagnostic
+        "publication worker launch denied: publication worker launch pin is invalid"
+        in missing_physical_diagnostic
     )
 
     missing_lock = json.loads(lock_bytes)
@@ -3169,11 +3168,7 @@ def test_candidate_control_bundle_authenticates_full_0043_inventory(
     missing_diagnostic = invoke_case(
         "missing-file", candidate_lock=missing_lock_path, independent_digest=missing_digest_path
     )
-    assert (
-        "source manifest is incomplete" in missing_diagnostic
-        or "migration" in missing_diagnostic
-        or "floor 0043" in missing_diagnostic
-    )
+    assert "publication worker source manifest is incomplete" in missing_diagnostic
 
     changed_runtime = runtime_copy("changed-file")
     changed_path = changed_runtime / "migrations/versions/0043_complete_publication_recovery_liabilities.py"
