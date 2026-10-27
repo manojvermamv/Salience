@@ -44,6 +44,9 @@ _APPROVAL_BINDING_KEYS = (
     "artifact_sha256",
     "account_id",
     "provider_id",
+    "required_scopes",
+    "budget_id",
+    "budget_reservation_id",
     "expires_at",
 )
 _PUBLICATION_BINDING_KEYS = (
@@ -109,6 +112,9 @@ class ProductionApprovalBinding:
     artifact_sha256: str
     account_id: UUID
     provider_id: str
+    required_scopes: tuple[str, ...]
+    budget_id: UUID
+    budget_reservation_id: UUID
     expires_at: datetime
     publication_request_id: UUID | None = None
     job_id: UUID | None = None
@@ -412,6 +418,8 @@ def _parse_context_binding(field: str, value: object) -> object:
         "subject_id",
         "policy_version_id",
         "account_id",
+        "budget_id",
+        "budget_reservation_id",
         *_PUBLICATION_BINDING_KEYS[:2],
         *_PUBLICATION_BINDING_KEYS[4:],
         *_OPTIONAL_PUBLICATION_IDENTITY_KEYS,
@@ -427,6 +435,20 @@ def _parse_context_binding(field: str, value: object) -> object:
         return value
     if field == "expires_at":
         return _document_datetime(value, field)
+    if field == "required_scopes":
+        if (
+            not isinstance(value, list)
+            or not value
+            or any(
+                not isinstance(scope, str)
+                or not scope.strip()
+                or len(scope) > 128
+                for scope in value
+            )
+            or len(value) != len(set(value))
+        ):
+            raise PermissionError("production approval required_scopes is malformed")
+        return tuple(value)
     if not isinstance(value, str) or not value.strip():
         raise PermissionError(f"production approval {field} is malformed")
     return value

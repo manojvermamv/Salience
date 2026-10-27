@@ -2,13 +2,20 @@ import json
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from hashlib import sha256
+from types import SimpleNamespace
 from uuid import UUID, uuid4
 
 import pytest
 
+from salience.cycles.production_dispatch import (
+    ProductionAuthorizationDenied,
+    ProductionEffectDispatch,
+    PublicationEffectBinding,
+)
 from salience.governance.policy import EffectClass
 from salience.governance.production_policy import (
     ProductionApprovalBinding,
+    ProductionPublicationScope,
     ProductionPolicyVersion,
     load_policy,
     parse_approval_row,
@@ -230,6 +237,9 @@ def _approval_fixture() -> tuple[dict[str, object], ProductionApprovalBinding]:
         "artifact_sha256": "b" * 64,
         "account_id": UUID("10000000-0000-0000-0000-000000000010"),
         "provider_id": "fixture-provider",
+        "required_scopes": ("effects:write", "media:publish"),
+        "budget_id": UUID("10000000-0000-0000-0000-000000000013"),
+        "budget_reservation_id": UUID("10000000-0000-0000-0000-000000000012"),
         "expires_at": datetime(2026, 10, 27, 12, 0, tzinfo=UTC),
     }
     approval_id = UUID("10000000-0000-0000-0000-000000000011")
@@ -243,7 +253,10 @@ def _approval_fixture() -> tuple[dict[str, object], ProductionApprovalBinding]:
 
     context = {
         "schema_version": "salience.p1-effect-approval.v1",
-        **{key: as_json_value(value) for key, value in values.items()},
+        **{
+            key: list(value) if key == "required_scopes" else as_json_value(value)
+            for key, value in values.items()
+        },
     }
     row: dict[str, object] = {
         "id": approval_id,
@@ -288,6 +301,9 @@ def test_approval_binding_matches_exact_operation_scope_and_expiry() -> None:
         "artifact_sha256": "c" * 64,
         "account_id": str(uuid4()),
         "provider_id": "different-provider",
+        "required_scopes": ["effects:write"],
+        "budget_id": str(uuid4()),
+        "budget_reservation_id": str(uuid4()),
         "expires_at": "2026-10-27T12:00:01+00:00",
     }
     for key, value in context_field_mismatches.items():
@@ -297,6 +313,36 @@ def test_approval_binding_matches_exact_operation_scope_and_expiry() -> None:
             parse_approval_row(
                 mismatched, expected=expected, database_time=database_time
             )
+
+    for invalid_scopes in ([], ["effects:write", "effects:write"], [" "]):
+        malformed = dict(row)
+        malformed["request_context"] = {
+            **row["request_context"],
+            "required_scopes": invalid_scopes,
+        }
+        with pytest.raises(PermissionError):
+            parse_approval_row(
+                malformed, expected=expected, database_time=database_time
+            )
+
+    malformed_budget = dict(row)
+    malformed_budget["request_context"] = {
+        **row["request_context"],
+        "budget_reservation_id": "not-a-canonical-uuid",
+    }
+    with pytest.raises(PermissionError):
+        parse_approval_row(
+            malformed_budget, expected=expected, database_time=database_time
+        )
+    malformed_budget = dict(row)
+    malformed_budget["request_context"] = {
+        **row["request_context"],
+        "budget_id": "not-a-canonical-uuid",
+    }
+    with pytest.raises(PermissionError):
+        parse_approval_row(
+            malformed_budget, expected=expected, database_time=database_time
+        )
 
     row_field_mismatches = (
         {**row, "id": uuid4()},
@@ -319,4 +365,104 @@ def test_approval_binding_matches_exact_operation_scope_and_expiry() -> None:
         with pytest.raises(PermissionError):
             parse_approval_row(
                 mismatched, expected=expected, database_time=database_time
+            )
+
+
+def test_publication_current_facts_must_match_every_policy_scope_field() -> None:
+    now = datetime(2026, 10, 27, 11, 0, tzinfo=UTC)
+    workspace_id, program_id, account_id = uuid4(), uuid4(), uuid4()
+    budget_reservation_id = uuid4()
+    binding = PublicationEffectBinding(
+        publication_request_id=uuid4(),
+        job_id=uuid4(),
+        workflow_id="publisher-workflow",
+        workflow_run_id="publisher-run",
+        publication_plan_id=uuid4(),
+        publication_attempt_id=uuid4(),
+        external_effect_id=uuid4(),
+    )
+    scope = ProductionPublicationScope(
+        platform="approved-platform",
+        destination="channel:approved",
+        locale="en-US",
+        territory="US",
+        visibility="public",
+    )
+    row = {
+        "publication_request_id": binding.publication_request_id,
+        "workspace_id": workspace_id,
+        "content_program_id": program_id,
+        "publisher_account_id": account_id,
+        "publisher_capability_profile_id": uuid4(),
+        "request_publisher_id": "publisher-id",
+        "platform": scope.platform,
+        "destination": scope.destination,
+        "locale": scope.locale,
+        "territory": scope.territory,
+        "visibility": scope.visibility,
+        "request_state": "planned",
+        "plan_id": binding.publication_plan_id,
+        "plan_request_id": binding.publication_request_id,
+        "plan_publisher_id": "publisher-id",
+        "external_effect_id": binding.external_effect_id,
+        "plan_budget_reservation_id": budget_reservation_id,
+        "plan_state": "planned",
+        "attempt_id": binding.publication_attempt_id,
+        "attempt_plan_id": binding.publication_plan_id,
+        "attempt_state": "planned",
+        "account_platform": scope.platform,
+        "account_status": "active",
+        "profile_account_id": account_id,
+        "profile_publisher_id": "publisher-id",
+        "profile_platform": scope.platform,
+        "audit_state": "verified",
+        "profile_expires_at": now + timedelta(hours=1),
+        "job_id": binding.job_id,
+        "job_workspace_id": workspace_id,
+        "job_program_id": program_id,
+        "job_type": "publication",
+        "job_state": "queued",
+        "workflow_run_id": binding.workflow_run_id,
+        "input_payload": {"workflow_id": binding.workflow_id},
+        "publication_approval_status": "approved",
+    }
+
+    class StaticPublicationConnection:
+        def __init__(self, value):
+            self.value = value
+
+        def execute(self, _statement, _parameters):
+            return _Result(self.value)
+
+    request = SimpleNamespace(
+        publication_binding=binding,
+        account_id=account_id,
+        budget_reservation_id=budget_reservation_id,
+        provider_id="publisher-id",
+    )
+    ProductionEffectDispatch._lock_publication(
+        StaticPublicationConnection(row),
+        request,
+        workspace_id,
+        program_id,
+        scope,
+        now,
+    )
+
+    for field, changes in (
+        ("platform", {"platform": "other", "account_platform": "other", "profile_platform": "other"}),
+        ("destination", {"destination": "channel:other"}),
+        ("locale", {"locale": "fr-CA"}),
+        ("territory", {"territory": "CA"}),
+        ("visibility", {"visibility": "private"}),
+    ):
+        mismatched = row | changes
+        with pytest.raises(ProductionAuthorizationDenied, match="invalid_binding"):
+            ProductionEffectDispatch._lock_publication(
+                StaticPublicationConnection(mismatched),
+                request,
+                workspace_id,
+                program_id,
+                scope,
+                now,
             )

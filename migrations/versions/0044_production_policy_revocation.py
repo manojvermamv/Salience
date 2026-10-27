@@ -544,6 +544,9 @@ def upgrade() -> None:
                 'artifact_sha256',
                 'account_id',
                 'provider_id',
+                'required_scopes',
+                'budget_id',
+                'budget_reservation_id',
                 'policy_version_id',
                 'policy_document_hash',
                 'expires_at',
@@ -575,12 +578,17 @@ def upgrade() -> None:
                 'artifact_sha256',
                 'account_id',
                 'provider_id',
+                'required_scopes',
+                'budget_id',
+                'budget_reservation_id',
                 'policy_version_id',
                 'policy_document_hash',
                 'expires_at'
             ]::text[];
             identifier_key text;
             approval_expiry timestamptz;
+            scope_count integer;
+            unique_scope_count integer;
         BEGIN
             IF TG_RELID <> 'public.approval_requests'::regclass
                OR TG_TABLE_SCHEMA <> 'public'
@@ -610,6 +618,20 @@ def upgrade() -> None:
                OR (NEW.request_context - allowed_keys) <> '{}'::jsonb THEN
                 RAISE EXCEPTION 'tagged effect approval requires the exact v1 binding fields';
             END IF;
+            IF jsonb_typeof(NEW.request_context->'required_scopes') IS DISTINCT FROM 'array' THEN
+                RAISE EXCEPTION 'tagged effect approval requires a nonempty unique scope array';
+            END IF;
+            SELECT count(*), count(DISTINCT value #>> '{}')
+              INTO scope_count, unique_scope_count
+              FROM jsonb_array_elements(NEW.request_context->'required_scopes') AS scope(value)
+             WHERE jsonb_typeof(value) = 'string'
+               AND btrim(value #>> '{}') <> ''
+               AND length(value #>> '{}') <= 128;
+            IF scope_count = 0
+               OR scope_count <> jsonb_array_length(NEW.request_context->'required_scopes')
+               OR scope_count <> unique_scope_count THEN
+                RAISE EXCEPTION 'tagged effect approval requires a nonempty unique scope array';
+            END IF;
             IF NEW.policy_version_id IS NULL
                OR NEW.request_context->>'workspace_id' IS DISTINCT FROM NEW.workspace_id::text
                OR NEW.request_context->>'policy_version_id'
@@ -633,7 +655,10 @@ def upgrade() -> None:
                 'context_id',
                 'operation_id',
                 'subject_id',
-                'policy_version_id'
+                'policy_version_id',
+                'account_id',
+                'budget_id',
+                'budget_reservation_id'
             ]::text[] LOOP
                 IF NEW.request_context->>identifier_key
                      !~ '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$' THEN

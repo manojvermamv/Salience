@@ -2048,8 +2048,11 @@ def _approval_context_0044(workspace_id, subject_id, cycle, policy_id):
         "effect_type": "publication",
         "purpose": "publish-approved-artifact",
         "artifact_sha256": "c" * 64,
-        "account_id": "production-account-1",
+        "account_id": str(uuid4()),
         "provider_id": "production-provider-1",
+        "required_scopes": ["effects:write"],
+        "budget_id": str(uuid4()),
+        "budget_reservation_id": str(uuid4()),
         "policy_version_id": str(policy_id),
         "policy_document_hash": "b" * 64,
         "expires_at": "2099-01-01T00:00:00Z",
@@ -2283,6 +2286,21 @@ def test_0044_policy_and_tagged_approval_transitions_are_terminal():
                         approval_policy_id,
                         naive_expiry_context,
                     )
+            for invalid_scopes in ([], ["effects:write", "effects:write"], [""]):
+                invalid_scope_context = {
+                    **context,
+                    "required_scopes": invalid_scopes,
+                }
+                assert _postgres_statement_rejected(
+                    connection,
+                    "tagged effect approval requires a nonempty unique scope array",
+                    lambda invalid_scope_context=invalid_scope_context: _insert_0044_approval(
+                        connection,
+                        workspace_id,
+                        approval_policy_id,
+                        invalid_scope_context,
+                    ),
+                )
             approval_id = _insert_0044_approval(
                 connection, workspace_id, approval_policy_id, context
             )
