@@ -27,6 +27,7 @@ _REVISION_0041 = "0041_native_publication_sources"
 _REVISION_0042 = "0042_publication_recovery_holds"
 _REVISION_0043 = "0043_complete_publication_recovery_liabilities"
 _REVISION_0044 = "0044_production_policy_revocation"
+_REVISION_0045 = "0045_production_policy_approval_guard_repair"
 _HOLD_TABLE = "public.v4_legacy_publication_recovery_holds"
 _V1_KEYS = (
     "dispatch",
@@ -2405,6 +2406,163 @@ def test_0044_policy_and_tagged_approval_transitions_are_terminal():
             connection.execute(
                 "UPDATE approval_requests SET status='approved' WHERE id=%s",
                 (unrelated_id,),
+            )
+    finally:
+        _drop_migration_database(source, name)
+
+
+def test_0045_repairs_stale_approval_guard_without_weakening_v1_binding():
+    source = os.environ["TEST_DATABASE_URL"]
+    name, database, _ = _prepare_0044_database("p1_0045_approval_guard_repair_")
+    try:
+        with psycopg.connect(database) as connection:
+            workspace_id, subject_id = _seed_0044_workspace_subject(connection)
+            cycle = _seed_0044_cycle(connection, workspace_id, subject_id)
+            policy_id = _seed_0044_policy(connection, workspace_id, status="active")
+            connection.execute(
+                """CREATE OR REPLACE FUNCTION public.v4_guard_effect_approval_transition_v1()
+                RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER
+                SET search_path = pg_catalog, public AS $$
+                DECLARE
+                    tagged boolean;
+                BEGIN
+                    tagged := NEW.request_context->>'schema_version' =
+                              'salience.p1-effect-approval.v1';
+                    IF NOT tagged THEN
+                        RETURN NEW;
+                    END IF;
+                    IF jsonb_typeof(NEW.request_context) IS DISTINCT FROM 'object'
+                       OR NOT (NEW.request_context ?& ARRAY['schema_version']::text[])
+                       OR (NEW.request_context - ARRAY['schema_version']::text[])
+                           <> '{}'::jsonb THEN
+                        RAISE EXCEPTION
+                            'tagged effect approval requires the exact v1 binding fields';
+                    END IF;
+                    RETURN NEW;
+                END
+                $$"""
+            )
+            assert connection.execute(
+                "SELECT version_num FROM alembic_version"
+            ).fetchone()[0] == _REVISION_0044
+            assert _postgres_statement_rejected(
+                connection,
+                "tagged effect approval requires the exact v1 binding fields",
+                lambda: connection.execute(
+                    """INSERT INTO approval_requests(
+                              workspace_id,effect_type,status,request_context,requested_by)
+                       VALUES(%s,'creative_distribution','approved',%s,'legacy-fixture')""",
+                    (
+                        workspace_id,
+                        Jsonb({"distribution_package_id": str(uuid4())}),
+                    ),
+                ),
+            )
+
+        upgraded = _migration(database, "upgrade", "head")
+        assert upgraded.returncode == 0, upgraded.stdout + upgraded.stderr
+
+        with psycopg.connect(database) as connection:
+            legacy_id = connection.execute(
+                """INSERT INTO approval_requests(
+                          workspace_id,effect_type,status,request_context,requested_by)
+                   VALUES(%s,'creative_distribution','approved',%s,'legacy-fixture')
+                   RETURNING id""",
+                (
+                    workspace_id,
+                    Jsonb({"distribution_package_id": str(uuid4())}),
+                ),
+            ).fetchone()[0]
+            assert legacy_id is not None
+            assert connection.execute(
+                "SELECT version_num FROM alembic_version"
+            ).fetchone()[0] == _REVISION_0045
+
+            valid_context = _approval_context_0044(
+                workspace_id, subject_id, cycle, policy_id
+            )
+            valid_id = _insert_0044_approval(
+                connection, workspace_id, policy_id, valid_context
+            )
+            assert valid_id is not None
+
+            incomplete_scope_context = dict(valid_context)
+            incomplete_scope_context.pop("required_scopes")
+            incomplete_budget_context = dict(valid_context)
+            incomplete_budget_context.pop("budget_id")
+            invalid_account_context = {
+                **valid_context,
+                "account_id": "fixture-account",
+            }
+            other_policy_id = _seed_0044_policy(
+                connection, workspace_id, status="active", version="2"
+            )
+            mismatched_policy_context = {
+                **valid_context,
+                "policy_version_id": str(other_policy_id),
+            }
+            invalid_operation_context = {
+                **valid_context,
+                "operation_id": "not-a-uuid",
+            }
+            invalid_budget_context = {
+                **valid_context,
+                "budget_reservation_id": "not-a-uuid",
+            }
+            for context, message in (
+                (
+                    incomplete_scope_context,
+                    "tagged effect approval requires the exact v1 binding fields",
+                ),
+                (
+                    incomplete_budget_context,
+                    "tagged effect approval requires the exact v1 binding fields",
+                ),
+                (
+                    invalid_account_context,
+                    "tagged effect approval binding does not match its row",
+                ),
+                (
+                    mismatched_policy_context,
+                    "tagged effect approval binding does not match its row",
+                ),
+                (
+                    invalid_operation_context,
+                    "tagged effect approval contains an invalid operation_id binding",
+                ),
+                (
+                    invalid_budget_context,
+                    "tagged effect approval contains an invalid budget_reservation_id binding",
+                ),
+            ):
+                assert _postgres_statement_rejected(
+                    connection,
+                    message,
+                    lambda context=context: _insert_0044_approval(
+                        connection, workspace_id, policy_id, context
+                    ),
+                )
+
+        downgraded = _migration(database, "downgrade", _REVISION_0044)
+        assert downgraded.returncode == 0, downgraded.stdout + downgraded.stderr
+        with psycopg.connect(database) as connection:
+            assert connection.execute(
+                "SELECT version_num FROM alembic_version"
+            ).fetchone()[0] == _REVISION_0044
+            assert connection.execute(
+                "SELECT count(*) FROM approval_requests WHERE id = ANY(%s)",
+                ([legacy_id, valid_id],),
+            ).fetchone()[0] == 2
+            assert _postgres_statement_rejected(
+                connection,
+                "tagged effect approval requires the exact v1 binding fields",
+                lambda: _insert_0044_approval(
+                    connection,
+                    workspace_id,
+                    policy_id,
+                    {key: value for key, value in valid_context.items()
+                     if key != "required_scopes"},
+                ),
             )
     finally:
         _drop_migration_database(source, name)

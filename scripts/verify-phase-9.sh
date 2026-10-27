@@ -3,6 +3,18 @@ set -euo pipefail
 
 root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 result=0
+test_database_name=
+
+cleanup_test_database() {
+  if [[ -n $test_database_name ]]; then
+    docker compose exec -T postgres psql -U salience -d postgres \
+      -v ON_ERROR_STOP=1 \
+      -c "DROP DATABASE IF EXISTS ${test_database_name} WITH (FORCE)" \
+      >/dev/null 2>&1 || true
+  fi
+}
+
+trap cleanup_test_database EXIT
 
 pass() {
   printf 'PASS: %s\n' "$1"
@@ -66,15 +78,39 @@ if [[ -z $postgres_ip ]]; then
   exit "$result"
 fi
 
-database_url="postgresql+asyncpg://salience:salience@${postgres_ip}:5432/salience"
+temporal_id=$(docker compose ps -q temporal)
+if [[ -z $temporal_id ]]; then
+  fail "Temporal Compose container was not found"
+  exit "$result"
+fi
+
+temporal_ip=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$temporal_id")
+if [[ -z $temporal_ip ]]; then
+  fail "Temporal container has no reachable network address"
+  exit "$result"
+fi
+
+test_database_name="salience_phase9_${$}_${RANDOM}"
+test_database_url="postgresql://salience:salience@${postgres_ip}:5432/${test_database_name}"
+test_temporal_target="${temporal_ip}:7233"
+database_url="postgresql+asyncpg://salience:salience@${postgres_ip}:5432/${test_database_name}"
+if docker compose exec -T postgres psql -U salience -d postgres \
+  -v ON_ERROR_STOP=1 -c "CREATE DATABASE ${test_database_name}"; then
+  pass "Disposable Phase 9 test database was created"
+else
+  fail "Disposable Phase 9 test database could not be created"
+  exit "$result"
+fi
+
 if DATABASE_URL="$database_url" "$python_bin" -m alembic upgrade head; then
-  pass "Canonical migrations apply through 0012_publication_profile_scope"
+  pass "Canonical migrations apply through 0045_production_policy_approval_guard_repair"
 else
   fail "Canonical migrations did not apply"
   exit "$result"
 fi
 
-if "$python_bin" -m pytest -p no:cacheprovider \
+if TEST_DATABASE_URL="$test_database_url" TEST_TEMPORAL_TARGET="$test_temporal_target" \
+  "$python_bin" -m pytest -p no:cacheprovider \
   tests/contracts/test_publisher_registry.py \
   tests/unit/test_publication_contracts.py \
   tests/unit/test_publication_governance.py \
@@ -95,7 +131,8 @@ else
   fail "Phase 9 fixture release-gate test suite"
 fi
 
-if "$python_bin" -m pytest -p no:cacheprovider tests/contracts tests/unit tests/integration tests/e2e tests/evals -m 'not live' -q; then
+if TEST_DATABASE_URL="$test_database_url" TEST_TEMPORAL_TARGET="$test_temporal_target" \
+  "$python_bin" -m pytest -p no:cacheprovider tests/contracts tests/unit tests/integration tests/e2e tests/evals -m 'not live' -q; then
   pass "Full non-live regression suite"
 else
   fail "Full non-live regression suite"
@@ -136,7 +173,8 @@ case "$live_status" in
     ;;
 esac
 
-if "$python_bin" -m pytest -p no:cacheprovider -m live tests/live/test_youtube_publisher_smoke.py -q; then
+if TEST_DATABASE_URL="$test_database_url" TEST_TEMPORAL_TARGET="$test_temporal_target" \
+  "$python_bin" -m pytest -p no:cacheprovider -m live tests/live/test_youtube_publisher_smoke.py -q; then
   pass "YouTube live-smoke status contract"
 else
   fail "YouTube live-smoke status contract"
