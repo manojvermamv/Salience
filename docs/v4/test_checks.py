@@ -655,28 +655,26 @@ class GateChecks(unittest.TestCase):
         self.assertEqual(evidence["status"], "PASS_FIXTURE_ONLY")
         self.assertEqual(
             evidence["application_candidate"]["commit"],
-            "3cd1e28d6358d1432e9e90a51a4fc58faeeb5c1d",
+            "fb2d4d63627f7de7ee9fc2307ab2831491720e12",
         )
         artifact = evidence["application_candidate"]["artifact_or_image"]
-        self.assertTrue(
-            re.fullmatch(r"[a-f0-9]{64}", artifact.get("sha256") or "")
-            or artifact.get("unavailable_reason"),
-            artifact,
-        )
-        self.assertEqual(evidence["migration_head"], "0045_production_policy_approval_guard_repair")
+        self.assertIsNone(artifact["sha256"])
+        self.assertIn("did not build, pull, or produce", artifact["unavailable_reason"])
+        self.assertEqual(evidence["migration_head"], "0046_production_policy_approval_id_immutability")
 
         environment = evidence["environment"]
         self.assertEqual(environment["scope"], "fixture")
         self.assertTrue(environment["name"])
-        self.assertRegex(environment["manifest"]["sha256"], r"^[a-f0-9]{64}$")
+        self.assertIsNone(environment["manifest"]["sha256"])
+        self.assertTrue(environment["manifest"]["unavailable_reason"])
+        self.assertFalse(environment["secrets_or_endpoint_values_included"])
+        self.assertEqual(environment["database_lifecycle"]["status"], "DROPPED")
+        self.assertIn("successfully dropped", environment["database_lifecycle"]["details"])
         issuer_audience = evidence["issuer_audience"]
         self.assertTrue(issuer_audience["issuer_identifier"])
         self.assertTrue(issuer_audience["audience_identifier"])
-        self.assertNotIn("key", issuer_audience)
-        self.assertNotIn("token", issuer_audience)
-
-        self.assertRegex(evidence["started_at_utc"], r"^\d{4}-\d{2}-\d{2}T")
-        self.assertRegex(evidence["finished_at_utc"], r"^\d{4}-\d{2}-\d{2}T")
+        self.assertFalse(issuer_audience["credentials_or_keys_included"])
+        self.assertRegex(evidence["verification_recorded_at_utc"], r"^\d{4}-\d{2}-\d{2}T")
         self.assertTrue(evidence["operator"]["identifier"])
         self.assertEqual(evidence["operator"]["status"], "EXECUTED")
         self.assertEqual(evidence["reviewer"]["status"], "NOT INDEPENDENTLY REVIEWED")
@@ -684,36 +682,37 @@ class GateChecks(unittest.TestCase):
         commands = evidence["test_commands"]
         self.assertGreater(len(commands), 0)
         self.assertTrue(all(command["scope"] == "fixture" for command in commands))
-        migration_command = next(
-            command for command in commands if command["id"] == "task6-migration-upgrade-head"
-        )
-        self.assertEqual(migration_command["result"]["exit_code"], 0)
-        self.assertEqual(
-            migration_command["result"]["migration_head"],
-            "0045_production_policy_approval_guard_repair",
-        )
-        self.assertRegex(migration_command["log"]["sha256"], r"^[a-f0-9]{64}$")
-        application_command = next(
-            command for command in commands if command["id"] == "task6-final-focused-fixture-suite"
-        )
+        application_command = next(command for command in commands if command["id"] == "phase9-final-verifier")
+        self.assertEqual(application_command["command"], "bash scripts/verify-phase-9.sh")
         result = application_command["result"]
         self.assertEqual(result["exit_code"], 0)
-        self.assertEqual(result["passed"], 153)
-        for field in ["failed", "skipped", "errors"]:
-            self.assertEqual(result[field], 0)
-        self.assertRegex(application_command["log"]["sha256"], r"^[a-f0-9]{64}$")
-        self.assertRegex(evidence["database_readback"]["sha256"], r"^[a-f0-9]{64}$")
-        self.assertRegex(evidence["application_run"]["sha256"], r"^[a-f0-9]{64}$")
+        self.assertEqual(result["migration_head"], "0046_production_policy_approval_id_immutability")
+        gate = result["phase9_release_gate"]
+        self.assertEqual((gate["passed"], gate["failed"], gate["skipped"], gate["errors"]), (60, 0, 0, 0))
+        self.assertEqual(gate["elapsed_seconds"], 55.26)
+        full = result["full_non_live_suite"]
+        self.assertEqual((full["passed"], full["failed"], full["skipped"], full["errors"], full["warnings"]), (908, 0, 26, 0, 3))
+        self.assertEqual(full["elapsed_seconds"], 1453.58)
+        self.assertEqual(result["python_compilation"], "PASS")
+        self.assertEqual(result["diff_check"], "PASS")
+        self.assertEqual(result["archify_validation"], "PASS")
+        self.assertEqual(result["live_youtube_provider"]["status"], "NOT RUN")
+        self.assertIn("YOUTUBE_PUBLISHER_CONNECTION_REF", result["live_youtube_provider"]["reason"])
+        self.assertEqual(result["youtube_live_status_contract"], {"exit_code": 0, "passed": 1})
+        self.assertEqual(result["disposable_database_cleanup"], "SUCCEEDED")
+        self.assertEqual(application_command["log"]["path"], "/tmp/salience-final-fb2d4d6-verify.log")
+        self.assertEqual(application_command["log"]["sha256"], "94fae65ce3535169487672811a4f5275e07445e47de37783172c92de079a0ee5")
         self.assertFalse(application_command["junit"]["available"])
         self.assertTrue(application_command["junit"]["unavailable_reason"])
-        self.assertIn(
-            "tests/integration/test_v4_migrations.py::test_0045_repairs_stale_approval_guard_without_weakening_v1_binding",
-            application_command["command"],
-        )
-        self.assertIn(
-            "tests/integration/test_p1_production_policy_revocation.py::test_issue_denies_missing_or_wrong_current_authority",
-            application_command["included_regression_cases"],
-        )
+        self.assertIn("did not emit a JUnit artifact", application_command["junit"]["unavailable_reason"])
+        self.assertEqual(evidence["application_run"]["sha256"], application_command["log"]["sha256"])
+
+        historical = evidence["historical_superseded_task6_checkpoint"]
+        self.assertEqual(historical["superseded_evidence_sha256"], "f38f7aeb39391a4f76e4d1e89eeb1be6fc4a302b1f936dc6a21def1874f02faf")
+        old = historical["evidence"]
+        self.assertEqual(old["application_candidate"]["commit"], "3cd1e28d6358d1432e9e90a51a4fc58faeeb5c1d")
+        self.assertEqual(old["migration_head"], "0045_production_policy_approval_guard_repair")
+        self.assertEqual(old["test_commands"][1]["result"]["passed"], 153)
 
         self.assertEqual(evidence["production"]["target_configuration"], "NOT RUN")
         self.assertEqual(evidence["production"]["acceptance"], "NOT RUN")
@@ -730,12 +729,19 @@ class GateChecks(unittest.TestCase):
         self.assertEqual(extension["application_commit"], evidence["application_candidate"]["commit"])
         fixture_counts = extension["fixture_result"]
         for field in ["passed", "failed", "skipped", "errors"]:
-            self.assertEqual(fixture_counts[field], result[field], f"matrix {field}")
+            self.assertEqual(fixture_counts[field], full[field], f"matrix {field}")
+        self.assertEqual(fixture_counts["warnings"], full["warnings"])
+        self.assertEqual(fixture_counts["elapsed_seconds"], full["elapsed_seconds"])
         self.assertEqual(extension["evidence_path"], "docs/v4/p1-production-policy-revocation-evidence.json")
         self.assertEqual(
             extension["evidence_sha256"],
             hashlib.sha256(evidence_path.read_bytes()).hexdigest(),
         )
+        self.assertEqual(extension["migration_head"], evidence["migration_head"])
+        self.assertEqual(extension["test_command_id"], application_command["id"])
+        self.assertEqual(extension["verifier_log_sha256"], application_command["log"]["sha256"])
+        self.assertEqual(extension["phase9_release_gate"]["passed"], gate["passed"])
+        self.assertEqual(extension["phase9_release_gate"]["elapsed_seconds"], gate["elapsed_seconds"])
         self.assertEqual(extension["production_release_status"], "HELD")
         self.assertEqual(extension["gate_disposition"], {"RG0": "HELD", "RG1": "HELD", "P2": "BLOCKED"})
         expected_rows = {"R05", "R07", "R10", "R13", "R15", "R17", "R18", "R23F"}
@@ -747,10 +753,16 @@ class GateChecks(unittest.TestCase):
                 self.assertEqual(row["production_release_status"], "HELD")
                 self.assertEqual(row["policy_revocation_fixture_extension"]["evidence_path"], extension["evidence_path"])
                 self.assertEqual(row["policy_revocation_fixture_extension"]["scope"], "fixture")
+                self.assertEqual(row["policy_revocation_fixture_extension"]["application_commit"], evidence["application_candidate"]["commit"])
+                self.assertEqual(row["policy_revocation_fixture_extension"]["evidence_sha256"], extension["evidence_sha256"])
+                self.assertEqual(row["policy_revocation_fixture_extension"]["migration_head"], evidence["migration_head"])
         r23f = matrix["initial_commit_bound_gap_audit"]["rows"]["R23F"]
         self.assertEqual(r23f["status"], "HELD")
         self.assertEqual(r23f["policy_revocation_fixture_extension"]["evidence_path"], extension["evidence_path"])
         self.assertEqual(r23f["policy_revocation_fixture_extension"]["scope"], "fixture")
+        self.assertEqual(r23f["policy_revocation_fixture_extension"]["application_commit"], evidence["application_candidate"]["commit"])
+        self.assertEqual(r23f["policy_revocation_fixture_extension"]["evidence_sha256"], extension["evidence_sha256"])
+        self.assertEqual(r23f["policy_revocation_fixture_extension"]["migration_head"], evidence["migration_head"])
 
         status_audit = json.loads((CHECK.ROOT / "docs/v4/documentation-status-audit.json").read_text())
         status_checkpoints = [
@@ -760,13 +772,18 @@ class GateChecks(unittest.TestCase):
         for status_checkpoint, label in status_checkpoints:
             self.assertEqual(status_checkpoint["application_commit"], evidence["application_candidate"]["commit"])
             self.assertEqual(status_checkpoint["migration_head"], evidence["migration_head"])
-            for field in ["passed", "failed", "skipped", "errors"]:
-                self.assertEqual(status_checkpoint[field], result[field], f"{label} {field}")
+            for field in ["passed", "failed", "skipped", "errors", "warnings", "elapsed_seconds"]:
+                self.assertEqual(status_checkpoint[field], full[field], f"{label} {field}")
+            self.assertEqual(status_checkpoint["evidence_sha256"], extension["evidence_sha256"])
+            self.assertEqual(status_checkpoint["verifier_log_sha256"], application_command["log"]["sha256"])
+            self.assertEqual(status_checkpoint["phase9_release_gate"], extension["phase9_release_gate"])
         documentation_checks = status_audit["verification"]["task6_documentation_checks"]
         self.assertTrue(documentation_checks["docs_v4_test_checks"].startswith("PASS"))
         self.assertTrue(documentation_checks["phase9_documentation_contract"].startswith("PASS"))
-        self.assertTrue(documentation_checks["verify_phase9"].startswith("FAILED_PRE_CANDIDATE"))
-        self.assertIn("not acceptance evidence", documentation_checks["verify_phase9"])
+        self.assertTrue(documentation_checks["verify_phase9"].startswith("PASS"))
+        self.assertIn("908 passed", documentation_checks["verify_phase9"])
+        self.assertEqual(documentation_checks["historical_pre_candidate_run"]["status"], "FAILED_PRE_CANDIDATE")
+        self.assertIn("not acceptance evidence", documentation_checks["historical_pre_candidate_run"]["result"])
 
         scoped_checkpoint_lines = [
             ("docs/README.md", "**Current checkpoint — 2026-10-27:**"),

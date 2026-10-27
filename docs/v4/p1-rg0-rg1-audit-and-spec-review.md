@@ -120,7 +120,7 @@ The findings were technically valid. The row-level corrections and seven cross-s
 
 This orchestrator meta-review accepts only the completed initial audit/spec design evaluation. It does **not** approve implementation, live qualification, production enablement, RG0/RG1 release, P2, merge, or release. Implementation and target qualification remain NOT RUN; all 22 final-entry rows remain non-PASS; RG0/RG1 remain HELD; Slice 7/P2 remain BLOCKED; production remains disabled and `main` remains unmerged. The separate whole-change documentation review is PASS_AFTER_FIX_ROUND_1 for the manifest recorded above; the final exact-candidate/environment P1/RG0/RG1 audit remains NOT RUN and BLOCKED.
 
-## Current-content hash addendum — Slice 2 Task 6
+## Historical content hash addendum — prior Task 6 fixture checkpoint
 
 This append-only index binds the current documentation and test contents after the fixture-only policy/revocation checkpoint. The review decisions and frozen initial-audit evidence above remain scoped to their recorded source and candidate.
 
@@ -144,3 +144,29 @@ This append-only index binds the current documentation and test contents after t
 | `docs/v4/validation.md` | `72bd84feb01691e89f97aae36b43ed16e8d1ec736cfada7c7ee0e76d723368f1` |
 | `docs/superpowers/specs/2026-10-13-v4-multiplatform-autonomy-program-sequence.md` | `ba64032ca707c4348c97651fa06beced3df90d1612c38c56de50fed1558947ca` |
 | `docs/superpowers/plans/2026-10-27-p1-rg0-rg1-initial-gap-audit.md` | `5d1dd8a86718184d03324144643dfb009cb36243a5bd0c0f14c46844eb3c5cd4` |
+
+## Current local evidence hash addendum — final Slice 2 verification
+
+This addendum binds the final local non-live evidence to candidate `fb2d4d63627f7de7ee9fc2307ab2831491720e12` and migration `0046_production_policy_approval_id_immutability`. It does not change the frozen initial audit or historical review scope. The documentation status audit intentionally omits its own digest to avoid a recursive self-hash.
+
+| Path | SHA-256 |
+| --- | --- |
+| `docs/v4/p1-rg0-rg1-initial-gap-audit.json` | `33fe485384dcf60e36df8d48ace6394c80bce0d1bd9e6b9b39c7a905d65676b1` |
+| `docs/v4/p1-rg0-rg1-initial-gap-audit.md` | `62aab5afb39f7c47e355a68ccf56e319a72955247515dfbdba8913fd797a5944` |
+| `docs/v4/p0-release.json` | `5038fa02bd73d176cbad6df99a66537fb25cdebc0f8c972f33419070e1145757` |
+| `docs/v4/p1-qualification-matrix.json` | `d52f8e5cd39497d17511d11f571370be05e602e6822da508d9164023caf117da` |
+| `docs/superpowers/specs/2026-10-13-p1-production-policy-and-revocation-design.md` | `6be8f5ec6c48491a45a734510cc20af98e2cd7554fdc0409e77c6d9667d42fe2` |
+| `docs/superpowers/specs/2026-10-13-p1-production-routing-and-worker-fencing-design.md` | `d4d2c06a1f0925d2826b29a4e2c053f7f7773f660397fe986883c370aee78f67` |
+| `docs/superpowers/specs/2026-10-13-p1-live-schedule-fencing-design.md` | `04ed59e2ed61ca17dc2c01df3a2964e1569e03e79f0aef2bbfe2ca2d96d5129a` |
+| `docs/superpowers/specs/2026-10-13-p1-production-recovery-and-alerts-design.md` | `1c731ee595be6582902aa79f9ebb52d520f6fd18ad6054ca304709ce16aea61c` |
+| `docs/superpowers/specs/2026-10-13-rg0-rg1-external-acceptance-design.md` | `2a5d6cff0dd44070b1942e79f073906527b8e2650b62b3473d63542f00bfbcd8` |
+| `docs/v4/test_checks.py` | `9d9b20c78a934957cd3b23acb566357a0b5155dd9b03c72395c2aa14bbe74e5a` |
+| `README.md` | `3f672a0e4bd804a0cc2280c7a57b2a350dbde4991a3ae4e941e3380b16ee3d44` |
+| `docs/README.md` | `810e735b69988dd567af50870b5d76d12196971f510680755872d8825f2a0b14` |
+| `docs/v4/IMPLEMENTATION-BLUEPRINT.md` | `6e717aae30c9eb3714d760d5e04f8689a33db0b5e0a3d8dcb4e8e63137c7c58b` |
+| `docs/v4/progress.md` | `b70485c0cf5c14b45147532cc46cfeae42169f779c532091444976c6a210cad8` |
+| `docs/v4/validation.md` | `308c9b6a054708bd359cbf7e3f12a4164f7885c21382f033c9f7f2a23febafdf` |
+| `docs/superpowers/specs/2026-10-13-v4-multiplatform-autonomy-program-sequence.md` | `ba64032ca707c4348c97651fa06beced3df90d1612c38c56de50fed1558947ca` |
+| `docs/superpowers/plans/2026-10-27-p1-rg0-rg1-initial-gap-audit.md` | `5d1dd8a86718184d03324144643dfb009cb36243a5bd0c0f14c46844eb3c5cd4` |
+| `docs/v4/p1-production-policy-revocation-evidence.json` | `7d27f58fb21b9cf06c8098ffbd0c2aa29b647d54d6643a1767845ebf475deb53` |
+| `.superpowers/sdd/2026-10-27-p1-production-policy-and-revocation/final-evidence-report.md` | `22b88cec0f18cc3f9ac2a8007b5ee015ee571483aa5e4ce5468dac9fc7b1a1f8` |

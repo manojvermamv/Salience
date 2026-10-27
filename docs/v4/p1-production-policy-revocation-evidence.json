@@ -3,37 +3,36 @@
   "scope": "fixture",
   "status": "PASS_FIXTURE_ONLY",
   "application_candidate": {
-    "commit": "3cd1e28d6358d1432e9e90a51a4fc58faeeb5c1d",
+    "commit": "fb2d4d63627f7de7ee9fc2307ab2831491720e12",
     "artifact_or_image": {
       "sha256": null,
-      "unavailable_reason": "The bounded fixture test command did not build, pull, or produce an application artifact or image."
+      "unavailable_reason": "The final verifier did not build, pull, or produce an application artifact or image."
     }
   },
   "environment": {
-    "name": "salience-slice2-disposable-postgresql-temporal-fixture",
+    "name": "salience-phase9-disposable-postgresql-temporal-fixture",
     "scope": "fixture",
-    "manifest": {
-      "path": "/tmp/salience-slice2-task6-evidence-3cd1e28-20261027/fixture-environment-manifest.json",
-      "sha256": "e639d2ea16601a4da2e157d814af9f93bc613ba6ef583c1e471cb948ed436ec8"
-    },
     "database_lifecycle": {
       "status": "DROPPED",
-      "database_identifier": "salience_slice2_task6_9a38ffb275fe474682eb",
-      "details": "A collision-checked task-specific database was created, migrated, read back, and dropped after the run."
+      "database_identifier": "Omitted from the sanitized verifier record.",
+      "details": "The verifier created and migrated a disposable database, ran the fixture suites, and successfully dropped the database during cleanup."
     },
-    "temporal_target": "PROVIDED NON-PRODUCTION FIXTURE; ENDPOINT VALUE OMITTED"
+    "temporal_target": "PROVIDED NON-PRODUCTION FIXTURE; ENDPOINT VALUE OMITTED",
+    "manifest": {
+      "sha256": null,
+      "unavailable_reason": "The final sanitized verifier log does not include a separate environment manifest."
+    },
+    "secrets_or_endpoint_values_included": false
   },
   "issuer_audience": {
-    "issuer_identifier": "https://fixture.invalid",
-    "issuer_identifier_source": "tests/integration/test_v4_cycle_admission.py fixture identity",
-    "audience_identifier": "NOT CONFIGURED OR EXERCISED BY THE SELECTED DATABASE/TEMPORAL FIXTURE SUITE",
+    "issuer_identifier": "NOT RECORDED IN THE SANITIZED FINAL VERIFIER LOG",
+    "issuer_identifier_source": "Not part of this whole-suite verification record.",
+    "audience_identifier": "NOT RECORDED IN THE SANITIZED FINAL VERIFIER LOG",
     "credentials_or_keys_included": false
   },
-  "migration_head": "0045_production_policy_approval_guard_repair",
-  "started_at_utc": "2026-10-27T14:25:27.579293Z",
-  "finished_at_utc": "2026-10-27T14:30:50.139830Z",
+  "migration_head": "0046_production_policy_approval_id_immutability",
   "operator": {
-    "identifier": "Codex agent delegated for Salience Slice 2 Task 6",
+    "identifier": "Codex agent delegated for Salience final evidence reconciliation",
     "status": "EXECUTED"
   },
   "reviewer": {
@@ -42,55 +41,57 @@
   },
   "test_commands": [
     {
-      "id": "task6-migration-upgrade-head",
+      "id": "phase9-final-verifier",
       "scope": "fixture",
-      "command": ".venv/bin/python -m alembic upgrade head",
-      "environment": "DATABASE_URL was bound to the collision-checked disposable Task 6 PostgreSQL database; endpoint omitted.",
+      "command": "bash scripts/verify-phase-9.sh",
+      "environment": "Disposable PostgreSQL and Temporal fixture services; credentials, connection references, database URLs, and endpoints omitted.",
       "result": {
         "exit_code": 0,
-        "migration_head": "0045_production_policy_approval_guard_repair",
-        "elapsed_seconds": 1.522
+        "migration_head": "0046_production_policy_approval_id_immutability",
+        "phase9_release_gate": {
+          "exit_code": 0,
+          "passed": 60,
+          "failed": 0,
+          "skipped": 0,
+          "errors": 0,
+          "elapsed_seconds": 55.26
+        },
+        "full_non_live_suite": {
+          "exit_code": 0,
+          "passed": 908,
+          "failed": 0,
+          "skipped": 26,
+          "errors": 0,
+          "warnings": 3,
+          "elapsed_seconds": 1453.58
+        },
+        "python_compilation": "PASS",
+        "diff_check": "PASS",
+        "archify_validation": "PASS",
+        "live_youtube_provider": {
+          "status": "NOT RUN",
+          "reason": "YOUTUBE_PUBLISHER_CONNECTION_REF is not configured."
+        },
+        "youtube_live_status_contract": {
+          "exit_code": 0,
+          "passed": 1
+        },
+        "disposable_database_cleanup": "SUCCEEDED"
       },
       "log": {
-        "path": "/tmp/salience-slice2-task6-evidence-3cd1e28-20261027/migration.log",
-        "sha256": "10e74e899b8a30cba1eddc1db174d29385253be16dfdee374106f118cbd6854d"
-      }
-    },
-    {
-      "id": "task6-final-focused-fixture-suite",
-      "scope": "fixture",
-      "command": "TEST_DATABASE_URL=\"$TEST_DATABASE_URL\" TEST_TEMPORAL_TARGET=\"$TEST_TEMPORAL_TARGET\" .venv/bin/python -m pytest -p no:cacheprovider tests/unit/test_policy.py tests/unit/test_production_policy.py tests/integration/test_v4_migrations.py::test_0044_upgrade_preserves_0043_fixture_rows tests/integration/test_v4_migrations.py::test_0044_grant_mutation_advances_subject_revision tests/integration/test_v4_migrations.py::test_0044_policy_and_tagged_approval_transitions_are_terminal tests/integration/test_v4_migrations.py::test_0044_production_claim_is_unique_and_mode_separated tests/integration/test_v4_migrations.py::test_0044_rollback_inventory_is_complete_and_read_only tests/integration/test_v4_migrations.py::test_0044_populated_downgrade_refuses_without_mutation tests/integration/test_v4_migrations.py::test_0044_empty_downgrade_preserves_0043_fixture_contract tests/integration/test_v4_migrations.py::test_0045_repairs_stale_approval_guard_without_weakening_v1_binding tests/integration/test_p1_production_policy_revocation.py tests/integration/test_v4_cycle_governance.py tests/integration/test_v4_legacy_publication.py -q -rs",
-      "included_regression_cases": [
-        "tests/integration/test_v4_migrations.py::test_0045_repairs_stale_approval_guard_without_weakening_v1_binding",
-        "tests/integration/test_p1_production_policy_revocation.py::test_issue_denies_missing_or_wrong_current_authority"
-      ],
-      "result": {
-        "exit_code": 0,
-        "passed": 153,
-        "failed": 0,
-        "skipped": 0,
-        "errors": 0,
-        "elapsed_seconds": 322.56
-      },
-      "log": {
-        "path": "/tmp/salience-slice2-task6-evidence-3cd1e28-20261027/application-fixture.log",
-        "sha256": "344aed943cbaf672f6132f9c71cc7c9bacacc496270b2b02239ad6cf6545a523"
+        "path": "/tmp/salience-final-fb2d4d6-verify.log",
+        "sha256": "94fae65ce3535169487672811a4f5275e07445e47de37783172c92de079a0ee5"
       },
       "junit": {
         "available": false,
-        "unavailable_reason": "The approved combined fixture command did not emit a JUnit artifact."
+        "unavailable_reason": "The final verifier did not emit a JUnit artifact."
       }
     }
   ],
   "application_run": {
-    "path": "/tmp/salience-slice2-task6-evidence-3cd1e28-20261027/application-fixture-run.json",
-    "sha256": "d0a2b4b4d9ea2eb0cf0d23b0f37ec9ba371ff51ccc4c7b2c229629661e5e5c4d"
-  },
-  "database_readback": {
-    "path": "/tmp/salience-slice2-task6-evidence-3cd1e28-20261027/database-readback.json",
-    "sha256": "9acf9d5f0061ba35d07a79ee3ecee9ec2744aba8e2b4209df562943d1f4852ac",
-    "migration_head": "0045_production_policy_approval_guard_repair",
-    "database_dropped_after_readback": true
+    "path": "/tmp/salience-final-fb2d4d6-verify.log",
+    "sha256": "94fae65ce3535169487672811a4f5275e07445e47de37783172c92de079a0ee5",
+    "description": "Sanitized console log for the final local non-live verifier."
   },
   "production": {
     "target_configuration": "NOT RUN",
@@ -116,5 +117,130 @@
     "RG1_scope": "full",
     "P2": "BLOCKED",
     "main_merged": false
-  }
+  },
+  "historical_superseded_task6_checkpoint": {
+    "superseded_evidence_sha256": "f38f7aeb39391a4f76e4d1e89eeb1be6fc4a302b1f936dc6a21def1874f02faf",
+    "disposition": "HISTORICAL_TASK6_FIXTURE_ONLY; superseded as the current implementation checkpoint by the final local non-live verification below.",
+    "evidence": {
+      "schema_version": "salience.p1-production-policy-revocation-evidence.v1",
+      "scope": "fixture",
+      "status": "PASS_FIXTURE_ONLY",
+      "application_candidate": {
+        "commit": "3cd1e28d6358d1432e9e90a51a4fc58faeeb5c1d",
+        "artifact_or_image": {
+          "sha256": null,
+          "unavailable_reason": "The bounded fixture test command did not build, pull, or produce an application artifact or image."
+        }
+      },
+      "environment": {
+        "name": "salience-slice2-disposable-postgresql-temporal-fixture",
+        "scope": "fixture",
+        "manifest": {
+          "path": "/tmp/salience-slice2-task6-evidence-3cd1e28-20261027/fixture-environment-manifest.json",
+          "sha256": "e639d2ea16601a4da2e157d814af9f93bc613ba6ef583c1e471cb948ed436ec8"
+        },
+        "database_lifecycle": {
+          "status": "DROPPED",
+          "database_identifier": "salience_slice2_task6_9a38ffb275fe474682eb",
+          "details": "A collision-checked task-specific database was created, migrated, read back, and dropped after the run."
+        },
+        "temporal_target": "PROVIDED NON-PRODUCTION FIXTURE; ENDPOINT VALUE OMITTED"
+      },
+      "issuer_audience": {
+        "issuer_identifier": "https://fixture.invalid",
+        "issuer_identifier_source": "tests/integration/test_v4_cycle_admission.py fixture identity",
+        "audience_identifier": "NOT CONFIGURED OR EXERCISED BY THE SELECTED DATABASE/TEMPORAL FIXTURE SUITE",
+        "credentials_or_keys_included": false
+      },
+      "migration_head": "0045_production_policy_approval_guard_repair",
+      "started_at_utc": "2026-10-27T14:25:27.579293Z",
+      "finished_at_utc": "2026-10-27T14:30:50.139830Z",
+      "operator": {
+        "identifier": "Codex agent delegated for Salience Slice 2 Task 6",
+        "status": "EXECUTED"
+      },
+      "reviewer": {
+        "identifier": null,
+        "status": "NOT INDEPENDENTLY REVIEWED"
+      },
+      "test_commands": [
+        {
+          "id": "task6-migration-upgrade-head",
+          "scope": "fixture",
+          "command": ".venv/bin/python -m alembic upgrade head",
+          "environment": "DATABASE_URL was bound to the collision-checked disposable Task 6 PostgreSQL database; endpoint omitted.",
+          "result": {
+            "exit_code": 0,
+            "migration_head": "0045_production_policy_approval_guard_repair",
+            "elapsed_seconds": 1.522
+          },
+          "log": {
+            "path": "/tmp/salience-slice2-task6-evidence-3cd1e28-20261027/migration.log",
+            "sha256": "10e74e899b8a30cba1eddc1db174d29385253be16dfdee374106f118cbd6854d"
+          }
+        },
+        {
+          "id": "task6-final-focused-fixture-suite",
+          "scope": "fixture",
+          "command": "TEST_DATABASE_URL=\"$TEST_DATABASE_URL\" TEST_TEMPORAL_TARGET=\"$TEST_TEMPORAL_TARGET\" .venv/bin/python -m pytest -p no:cacheprovider tests/unit/test_policy.py tests/unit/test_production_policy.py tests/integration/test_v4_migrations.py::test_0044_upgrade_preserves_0043_fixture_rows tests/integration/test_v4_migrations.py::test_0044_grant_mutation_advances_subject_revision tests/integration/test_v4_migrations.py::test_0044_policy_and_tagged_approval_transitions_are_terminal tests/integration/test_v4_migrations.py::test_0044_production_claim_is_unique_and_mode_separated tests/integration/test_v4_migrations.py::test_0044_rollback_inventory_is_complete_and_read_only tests/integration/test_v4_migrations.py::test_0044_populated_downgrade_refuses_without_mutation tests/integration/test_v4_migrations.py::test_0044_empty_downgrade_preserves_0043_fixture_contract tests/integration/test_v4_migrations.py::test_0045_repairs_stale_approval_guard_without_weakening_v1_binding tests/integration/test_p1_production_policy_revocation.py tests/integration/test_v4_cycle_governance.py tests/integration/test_v4_legacy_publication.py -q -rs",
+          "included_regression_cases": [
+            "tests/integration/test_v4_migrations.py::test_0045_repairs_stale_approval_guard_without_weakening_v1_binding",
+            "tests/integration/test_p1_production_policy_revocation.py::test_issue_denies_missing_or_wrong_current_authority"
+          ],
+          "result": {
+            "exit_code": 0,
+            "passed": 153,
+            "failed": 0,
+            "skipped": 0,
+            "errors": 0,
+            "elapsed_seconds": 322.56
+          },
+          "log": {
+            "path": "/tmp/salience-slice2-task6-evidence-3cd1e28-20261027/application-fixture.log",
+            "sha256": "344aed943cbaf672f6132f9c71cc7c9bacacc496270b2b02239ad6cf6545a523"
+          },
+          "junit": {
+            "available": false,
+            "unavailable_reason": "The approved combined fixture command did not emit a JUnit artifact."
+          }
+        }
+      ],
+      "application_run": {
+        "path": "/tmp/salience-slice2-task6-evidence-3cd1e28-20261027/application-fixture-run.json",
+        "sha256": "d0a2b4b4d9ea2eb0cf0d23b0f37ec9ba371ff51ccc4c7b2c229629661e5e5c4d"
+      },
+      "database_readback": {
+        "path": "/tmp/salience-slice2-task6-evidence-3cd1e28-20261027/database-readback.json",
+        "sha256": "9acf9d5f0061ba35d07a79ee3ecee9ec2744aba8e2b4209df562943d1f4852ac",
+        "migration_head": "0045_production_policy_approval_guard_repair",
+        "database_dropped_after_readback": true
+      },
+      "production": {
+        "target_configuration": "NOT RUN",
+        "acceptance": "NOT RUN",
+        "route_fence_platform_acceptance": "NOT RUN",
+        "local_route_fence_test_double": "LOCAL CONTRACT TEST ONLY; DOES NOT ESTABLISH PLATFORM ROUTE-FENCE ORDERING",
+        "fixture_results_transfer_to_production": false,
+        "effects_enabled": false
+      },
+      "requirement_rows": [
+        "R05",
+        "R07",
+        "R10",
+        "R13",
+        "R15",
+        "R17",
+        "R18",
+        "R23F"
+      ],
+      "gates": {
+        "RG0": "HELD",
+        "RG1": "HELD",
+        "RG1_scope": "full",
+        "P2": "BLOCKED",
+        "main_merged": false
+      }
+    }
+  },
+  "verification_recorded_at_utc": "2026-10-27T16:23:21Z"
 }

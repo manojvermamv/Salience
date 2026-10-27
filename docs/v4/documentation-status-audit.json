@@ -1,12 +1,12 @@
 {
   "audited_at": "2026-10-27T15:20:52Z",
   "base_commit": "7c1ddcda280b510048ad61106c406171edd64f18",
-  "scope": "Current status records the frozen initial P1/RG0/RG1 residual audit and five-spec design review as COMPLETE_REVIEWED for source 7c1ddcda280b510048ad61106c406171edd64f18 and environment manifest 18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436. Exact-source Actions run 40443346020 passed verify and p0-regression. Five bounded increments are required; implementation and target qualification remain NOT RUN. All 22 final-entry rows remain non-PASS; RG0/RG1 are HELD; P2 and Slice 7 are BLOCKED. Production effects are disabled and main is unmerged. The current documentation candidate is an uncommitted worktree and requires its own exact-head CI after push. Application qualification remains bound to 182c4e4; prior whole-branch review and CI remain bound to their historical exact heads.",
-  "tracked_markdown_files": 112,
-  "documentation_artifacts": 285,
+  "scope": "The initial P1/RG0/RG1 residual audit and five-spec design review remain COMPLETE_REVIEWED only for source 7c1ddcda280b510048ad61106c406171edd64f18 and environment manifest 18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436; exact-source Actions run 40443346020 passed verify and p0-regression. Five bounded increments remain required. Current local implementation candidate fb2d4d63627f7de7ee9fc2307ab2831491720e12 passed final non-live verification through migration 0046_production_policy_approval_id_immutability; this does not qualify a production target. Production target qualification remains NOT RUN; all 22 final-entry rows remain non-PASS; RG0/RG1 are HELD; P2 and Slice 7 are BLOCKED; production effects are disabled; main is unmerged. The current documentation candidate requires exact-head CI after push.",
+  "tracked_markdown_files": 113,
+  "documentation_artifacts": 286,
   "summary": {
     "current_handoff_hashes": {
-      "docs/README.md": "956fff1ee80e569dd6ce0cde8a8e08a74aacc26c221ddaa36cb9e55932f5b2c9",
+      "docs/README.md": "810e735b69988dd567af50870b5d76d12196971f510680755872d8825f2a0b14",
       "docs/superpowers/plans/2026-10-27-p1-production-policy-and-revocation.md": "c1564a7ec7d09f63b5aba105678c8b5929619fecc49e5b4bb3e415ed1340672e",
       "docs/superpowers/plans/2026-10-27-p1-rg0-rg1-initial-gap-audit.md": "5d1dd8a86718184d03324144643dfb009cb36243a5bd0c0f14c46844eb3c5cd4",
       "docs/superpowers/specs/2026-10-13-p1-live-schedule-fencing-design.md": "04ed59e2ed61ca17dc2c01df3a2964e1569e03e79f0aef2bbfe2ca2d96d5129a",
@@ -17,17 +17,18 @@
       "docs/v4/IMPLEMENTATION-BLUEPRINT.md": "6e717aae30c9eb3714d760d5e04f8689a33db0b5e0a3d8dcb4e8e63137c7c58b",
       "docs/v4/evidence-lock.json": "472d603c1110a0ebe8082f598b7d02a892e6591a9f6b400c48979321551af674",
       "docs/v4/p0-release.json": "5038fa02bd73d176cbad6df99a66537fb25cdebc0f8c972f33419070e1145757",
-      "docs/v4/p1-production-policy-revocation-evidence.json": "f38f7aeb39391a4f76e4d1e89eeb1be6fc4a302b1f936dc6a21def1874f02faf",
-      "docs/v4/p1-qualification-matrix.json": "db149716ecdf76fc22638a4dba54e6be9190854769ba72046474fc42e2a02177",
-      "docs/v4/p1-rg0-rg1-audit-and-spec-review.md": "056d1f6f0b224eef012d6f57902d0b31962e64e16ada7f8f69b811a4e3f9ae7a",
+      "docs/v4/p1-production-policy-revocation-evidence.json": "7d27f58fb21b9cf06c8098ffbd0c2aa29b647d54d6643a1767845ebf475deb53",
+      "docs/v4/p1-qualification-matrix.json": "d52f8e5cd39497d17511d11f571370be05e602e6822da508d9164023caf117da",
+      "docs/v4/p1-rg0-rg1-audit-and-spec-review.md": "013c63bdac90d3b279513ef50b962689a92241af885c1e89ec35edc2bb0f8be8",
       "docs/v4/p1-rg0-rg1-initial-gap-audit.json": "33fe485384dcf60e36df8d48ace6394c80bce0d1bd9e6b9b39c7a905d65676b1",
       "docs/v4/p1-rg0-rg1-initial-gap-audit.md": "62aab5afb39f7c47e355a68ccf56e319a72955247515dfbdba8913fd797a5944",
-      "docs/v4/progress.md": "e5ab68f09879d5c06b5eb6827413cfe2c771319c85d3a50f3cba88a58e3cce60",
+      "docs/v4/progress.md": "b70485c0cf5c14b45147532cc46cfeae42169f779c532091444976c6a210cad8",
       "docs/v4/publication-recovery-hold-evidence.json": "3cce88e4d692f726be710c1f4db46b1428c9546561424a2ab0ad120363becc66",
       "docs/v4/publication-recovery-hold-successor-evidence.json": "4baef4a2328b26a47abc150f4b2ba47aa7c3d3afa6260c651986142b110054c1",
       "docs/v4/repository-enforcement-evidence.json": "389886f670654a65848d5f43d61215562d53a95969906e5a44722a4ab7dbc006",
-      "docs/v4/test_checks.py": "e12d7056d10333d18a2f90d6104a0610793d90fcf5113634753dd167fe7cbdb5",
-      "docs/v4/validation.md": "72bd84feb01691e89f97aae36b43ed16e8d1ec736cfada7c7ee0e76d723368f1"
+      "docs/v4/test_checks.py": "9d9b20c78a934957cd3b23acb566357a0b5155dd9b03c72395c2aa14bbe74e5a",
+      "docs/v4/validation.md": "308c9b6a054708bd359cbf7e3f12a4164f7885c21382f033c9f7f2a23febafdf",
+      ".superpowers/sdd/2026-10-27-p1-production-policy-and-revocation/final-evidence-report.md": "22b88cec0f18cc3f9ac2a8007b5ee015ee571483aa5e4ce5468dac9fc7b1a1f8"
     },
     "tracked_markdown_disposition_counts": {
       "tracked_markdown_paths": 112,
@@ -53,8 +54,9 @@
     },
     "preserved plugin instructions, references and examples; independent skill scope": 57,
     "preserved dated qualification report": 17,
+    "current final local non-live verification report for candidate fb2d4d6; production acceptance remains unqualified": 1,
     "active user-authored project instructions; preserved verbatim": 1,
-    "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged": 80,
+    "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged": 80,
     "preserved original design source or historical diagram": 7,
     "preserved immutable historical snapshot; bytes retained verbatim": 1,
     "preserved immutable historical snapshot": 62,
@@ -113,7 +115,7 @@
   "RG1": "HELD",
   "verification": {
     "status": "PASS_FINAL_WHOLE_CHANGE_DOCUMENTATION_REVIEW_AFTER_F1_F3; FINAL_EXACT_CANDIDATE_AUDIT_BLOCKED; ALL_PRODUCTION_AND_RELEASE_GATES_HELD",
-    "documentation_tests": "PASS: 21 documentation tests; check.py normal and self-test PASS (75 obligations, 2 source records, 366 evidence files, 360 inventory files, 108 Markdown files, 4 HTML files, 6 negative controls); AgentTube verifier and 17 tests PASS; all 83 audited JSON files parse; 111 Markdown paths / 283 documentation artifacts inventoried; 282 non-self hashes verified with the audit self-hash null; evidence lock unchanged at 366 paths; git diff --check PASS. Initial audit/design is COMPLETE_REVIEWED for source 7c1ddcd and environment 18b15955; run 40443346020 passed both required jobs. The whole-change documentation review is PASS_AFTER_FIX_ROUND_1 for the recorded manifest, while the final exact-candidate/environment P1/RG0/RG1 audit remains NOT RUN and BLOCKED. Implementation and target qualification remain NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged; final documentation candidate CI REQUIRED_AFTER_PUSH.",
+    "documentation_tests": "PASS: .venv/bin/python docs/v4/test_checks.py (23 tests), phase 9 documentation contract, verifier cleanup contract, bash syntax checks, and git diff --check. Final evidence is bound to candidate fb2d4d63627f7de7ee9fc2307ab2831491720e12 with migration 0046_production_policy_approval_id_immutability and sanitized log SHA-256 94fae65ce3535169487672811a4f5275e07445e47de37783172c92de079a0ee5. Production target acceptance remains NOT RUN; production effects disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged.",
     "mapped_obligations": 75,
     "negative_controls": 6,
     "documentation_shell_contracts": 4,
@@ -121,8 +123,8 @@
     "independent_reviewers": 3,
     "reviewed_p1_rows": 17,
     "independent_review_scope": "The historical GPT-6.1/GPT-5.6 whole-branch review remains scoped to pushed feature head 6f5edc77edbfe189e46de4254c2fdb21c5652bce (run 38592066455 passed its required jobs). The initial commit-bound audit and five-spec design review are COMPLETE_REVIEWED for 7c1ddcda280b510048ad61106c406171edd64f18 and environment 18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436; exact-source CI run 40443346020 passed verify and p0-regression. The separate whole-change documentation review is PASS_AFTER_FIX_ROUND_1 for candidate manifest cafa0bd46ede2cc8aef51058f46541068a07cd031774c8b5501270bc2385ee9a, after F1-F3 fixes and a clean scoped rereview. This documentation review is not the final exact-candidate/environment P1/RG0/RG1 audit, which remains NOT RUN and BLOCKED pending required implementations and current external acceptance evidence for one frozen final pair. The current uncommitted documentation candidate requires exact-head CI after push. Application qualification remains bound to 182c4e4; production gates remain held.",
-    "tracked_markdown_files": 112,
-    "active_project_markdown_files": 79,
+    "tracked_markdown_files": 113,
+    "active_project_markdown_files": 93,
     "active_integration_contracts": 1,
     "tracked_markdown_paths": [
       ".agents/skills/archify/SKILL.md",
@@ -139,6 +141,7 @@
       ".agents/skills/archify/schemas/README.md",
       ".superpowers/sdd/2026-10-13-p1-publication-recovery-floor-repair/final-fix-report.md",
       ".superpowers/sdd/2026-10-13-p1-publication-recovery-floor-repair/task-8-report.md",
+      ".superpowers/sdd/2026-10-27-p1-production-policy-and-revocation/final-fix-report.md",
       "AGENTS.md",
       "README.md",
       "docs-new-arch/ArchV3-implementation-notes.md",
@@ -241,9 +244,9 @@
     "mermaid_source_blocks_preserved": 12,
     "legacy_publication_root_qualification": "PASS_IMPLEMENTED_LOCAL_LEGACY_PUBLICATION_AND_NATIVE_SCHEDULE_FIXTURE_SCOPE_AFTER_ACCEPTED_REVIEW_CORRECTIONS",
     "root_qualification_scope": "isolated no-effects fixture only; production RG0/RG1 remain HELD",
-    "current_local_application_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
-    "current_focused_tests": 9,
-    "current_full_non_live_tests": 796,
+    "current_local_application_commit": "fb2d4d63627f7de7ee9fc2307ab2831491720e12",
+    "current_focused_tests": 60,
+    "current_full_non_live_tests": 908,
     "published_base_ci_protection_status": "PASS for historical published base 20be781; whole-branch review remains scoped to 6f5edc7; exact initial-audit source 7c1ddcd passed run 40443346020; current uncommitted documentation candidate CI REQUIRED_AFTER_PUSH.",
     "published_base_commit": "20be7815d5e5c95fea2161c908ce8ac5cae88ce6",
     "current_qualification_application": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
@@ -341,10 +344,10 @@
       "compileall": "Prior application verification PASS; not rerun because this task changes only documentation and evidence metadata.",
       "git_diff_check": "PASS",
       "audit_counts": {
-        "tracked_markdown_files": 111,
-        "active_project_markdown_files": 79,
-        "non_update_markdown_paths_preserved": 32,
-        "documentation_artifacts": 280,
+        "tracked_markdown_files": 113,
+        "active_project_markdown_files": 80,
+        "non_update_markdown_paths_preserved": 33,
+        "documentation_artifacts": 286,
         "checker_inventory_files": 366,
         "active_evidence_lock_files": 366
       },
@@ -359,15 +362,15 @@
         "R18_executed_verifier_cases": 76,
         "R32_executed_verifier_cases": 81,
         "R18_R32_production_release_status": "HELD",
-        "update_now_markdown_paths": 79,
-        "non_update_markdown_paths_preserved": 32,
+        "update_now_markdown_paths": 80,
+        "non_update_markdown_paths_preserved": 33,
         "all_non_self_inventory_hashes_recomputed": true,
         "log": "/tmp/final-whole-change-fix-report.md",
         "active_evidence_lock_sha256": "472d603c1110a0ebe8082f598b7d02a892e6591a9f6b400c48979321551af674",
         "active_evidence_lock_files": 366,
-        "tracked_markdown_files": 111,
-        "documentation_artifacts": 280,
-        "non_self_hashes_recomputed": 279,
+        "tracked_markdown_files": 113,
+        "documentation_artifacts": 286,
+        "non_self_hashes_recomputed": 285,
         "self_hash_is_null": true,
         "current_handoff_hashes_refreshed": true,
         "active_evidence_lock_file_count": 366,
@@ -404,18 +407,18 @@
       },
       "manifest_integrity": {
         "status": "PASS",
-        "artifact_rows": 280,
+        "artifact_rows": 286,
         "sorted_unique_paths": true,
-        "tracked_markdown_files": 111,
-        "active_markdown_paths": 79,
-        "preserved_markdown_paths": 32,
-        "non_self_hashes_verified": 279,
+        "tracked_markdown_files": 113,
+        "active_markdown_paths": 80,
+        "preserved_markdown_paths": 33,
+        "non_self_hashes_verified": 285,
         "intentional_audit_self_hash_null": true,
-        "current_handoff_hashes_verified": 17
+        "current_handoff_hashes_verified": 23
       }
     },
-    "current_full_non_live_application_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
-    "current_full_non_live_status": "796 passed, 17 skipped, 3 warnings in 1576.95s; exact command/log in Task 8 successor report",
+    "current_full_non_live_application_commit": "fb2d4d63627f7de7ee9fc2307ab2831491720e12",
+    "current_full_non_live_status": "908 passed, 26 skipped, 3 warnings in 1453.58s; candidate fb2d4d63627f7de7ee9fc2307ab2831491720e12; log SHA-256 94fae65ce3535169487672811a4f5275e07445e47de37783172c92de079a0ee5",
     "current_candidate_source_files": 211,
     "current_candidate_source_path_set_sha256": "14bddb59e1d7ad1f3d4fceb6b20e7ae0748848a93e89dc470a7af7b325dc88fe",
     "current_candidate_source_manifest_sha256": "58f27973abc9b3d34fa9f2eea1738c914659ff84f5151f64fdc493acca1c3005",
@@ -428,23 +431,31 @@
     "mermaid_source_blocks_updated": 1,
     "current_task6_fixture_checkpoint": {
       "scope": "fixture",
-      "application_commit": "3cd1e28d6358d1432e9e90a51a4fc58faeeb5c1d",
+      "record_kind": "final_local_non_live_verification",
+      "application_commit": "fb2d4d63627f7de7ee9fc2307ab2831491720e12",
       "fixture_status": "PASS_FIXTURE_ONLY",
-      "migration_head": "0045_production_policy_approval_guard_repair",
-      "passed": 153,
+      "migration_head": "0046_production_policy_approval_id_immutability",
+      "passed": 908,
       "failed": 0,
-      "skipped": 0,
+      "skipped": 26,
       "errors": 0,
-      "elapsed_seconds": 322.56,
-      "manifest_sha256": "e639d2ea16601a4da2e157d814af9f93bc613ba6ef583c1e471cb948ed436ec8",
-      "migration_log_sha256": "10e74e899b8a30cba1eddc1db174d29385253be16dfdee374106f118cbd6854d",
-      "log_sha256": "344aed943cbaf672f6132f9c71cc7c9bacacc496270b2b02239ad6cf6545a523",
-      "application_run_sha256": "d0a2b4b4d9ea2eb0cf0d23b0f37ec9ba371ff51ccc4c7b2c229629661e5e5c4d",
-      "database_readback_sha256": "9acf9d5f0061ba35d07a79ee3ecee9ec2744aba8e2b4209df562943d1f4852ac",
-      "evidence_sha256": "f38f7aeb39391a4f76e4d1e89eeb1be6fc4a302b1f936dc6a21def1874f02faf",
-      "artifact_or_image": "UNAVAILABLE; the bounded fixture command did not build, pull, or produce an artifact or image",
-      "junit": "UNAVAILABLE; the approved combined fixture command emitted no JUnit artifact",
-      "database_cleanup": "DROPPED",
+      "warnings": 3,
+      "elapsed_seconds": 1453.58,
+      "phase9_release_gate": {
+        "exit_code": 0,
+        "passed": 60,
+        "failed": 0,
+        "skipped": 0,
+        "errors": 0,
+        "elapsed_seconds": 55.26
+      },
+      "verifier_command": "bash scripts/verify-phase-9.sh",
+      "verifier_log_path": "/tmp/salience-final-fb2d4d6-verify.log",
+      "verifier_log_sha256": "94fae65ce3535169487672811a4f5275e07445e47de37783172c92de079a0ee5",
+      "evidence_sha256": "7d27f58fb21b9cf06c8098ffbd0c2aa29b647d54d6643a1767845ebf475deb53",
+      "artifact_or_image": "UNAVAILABLE; final verifier did not build, pull, or produce an application artifact or image",
+      "junit": "UNAVAILABLE; final verifier did not emit a JUnit artifact",
+      "database_cleanup": "SUCCEEDED; disposable database dropped by verifier cleanup",
       "production_target_configuration": "NOT RUN",
       "production_acceptance": "NOT RUN",
       "production_effects_enabled": false,
@@ -453,1448 +464,1459 @@
       "RG1_scope": "full",
       "P2": "BLOCKED",
       "main": "UNMERGED",
-      "current_documentation_artifacts": 285,
-      "current_markdown_paths": 112,
+      "current_documentation_artifacts": 286,
+      "current_markdown_paths": 113,
       "candidate_documentation_ci": "REQUIRED_AFTER_PUSH"
     },
     "task6_documentation_checks": {
-      "docs_v4_test_checks": "PASS: 23 passed, 121 subtests",
-      "phase9_documentation_contract": "PASS: Phase 9 documentation contract passed",
-      "verify_phase9": "FAILED_PRE_CANDIDATE: 14 failed, 887 passed, 26 skipped, 2 errors, 3 warnings in 1379.80s; dirty-worktree build guard; not acceptance evidence",
-      "verify_phase9_cleanup_contract": "PASS",
-      "bash_syntax": "PASS",
-      "diff_check": "PASS"
-    }
+      "docs_v4_test_checks": "PASS: .venv/bin/python docs/v4/test_checks.py; 23 tests passed.",
+      "phase9_documentation_contract": "PASS: bash tests/scripts/test_phase_9_documentation.sh",
+      "verify_phase9": "PASS: bash scripts/verify-phase-9.sh exited 0 at candidate fb2d4d63627f7de7ee9fc2307ab2831491720e12; 0046_production_policy_approval_id_immutability; Phase 9 gate 60 passed in 55.26s; full non-live 908 passed, 26 skipped, 3 warnings in 1453.58s; sanitized log SHA-256 94fae65ce3535169487672811a4f5275e07445e47de37783172c92de079a0ee5.",
+      "verify_phase9_cleanup_contract": "PASS: bash tests/scripts/test_verify_phase_9_cleanup.sh",
+      "bash_syntax": "PASS: bash -n scripts/verify-phase-9.sh; bash -n tests/scripts/test_verify_phase_9_cleanup.sh",
+      "diff_check": "PASS: git diff --check",
+      "historical_pre_candidate_run": {
+        "status": "FAILED_PRE_CANDIDATE",
+        "result": "14 failed, 887 passed, 26 skipped, 2 errors, 3 warnings in 1379.80s; dirty-worktree build guard; not acceptance evidence",
+        "disposition": "Historical diagnosis before the exact final candidate; not the current verifier result."
+      }
+    },
+    "current_focused_status": "PASS: final local verifier at candidate fb2d4d63627f7de7ee9fc2307ab2831491720e12 applied migrations through 0046_production_policy_approval_id_immutability, passed the Phase 9 60-test release gate in 55.26s, and passed the full non-live suite 908/26/3 in 1453.58s. Compilation, diff check, and Archify validation passed; the disposable database was dropped. The live YouTube provider was NOT RUN because its connection reference was absent; the live-status contract passed 1 test. Previous 0043 artifact pins/reviews and their result counts remain bound to their historical candidate."
   },
   "files": [
     {
       "path": ".agents/skills/archify/SKILL.md",
-      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
-      "sha256": "10094272d6d1b4ad0f2c2e0880cb646fe4991454a2dc3d854aecb27e7407ee1f"
+      "sha256": "10094272d6d1b4ad0f2c2e0880cb646fe4991454a2dc3d854aecb27e7407ee1f",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope"
     },
     {
       "path": ".agents/skills/archify/THIRD_PARTY_NOTICES.md",
-      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
-      "sha256": "0b7fb59365dc21c93b0f62526d74ee913aeec9ae532c112bc76afa7edcd56e14"
+      "sha256": "0b7fb59365dc21c93b0f62526d74ee913aeec9ae532c112bc76afa7edcd56e14",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope"
     },
     {
       "path": ".agents/skills/archify/assets/JetBrainsMono-OFL.txt",
-      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
-      "sha256": "c1ab7c666206842a02b35b30770dac0d7a10156ed401c9defc3f02a754d89e90"
+      "sha256": "c1ab7c666206842a02b35b30770dac0d7a10156ed401c9defc3f02a754d89e90",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope"
     },
     {
       "path": ".agents/skills/archify/assets/template.html",
-      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
-      "sha256": "003f2ddc4ec00ab37bdb0c9351cde73ccd9a82ef193a15adae6179eb4c51a735"
+      "sha256": "003f2ddc4ec00ab37bdb0c9351cde73ccd9a82ef193a15adae6179eb4c51a735",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope"
     },
     {
       "path": ".agents/skills/archify/brand-marks/README.md",
-      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
-      "sha256": "8b771a16322ce9ea47fdc00b9935e33adf0f3af608f2d735235443e15ef622e2"
+      "sha256": "8b771a16322ce9ea47fdc00b9935e33adf0f3af608f2d735235443e15ef622e2",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope"
     },
     {
       "path": ".agents/skills/archify/brand-marks/catalog.json",
-      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
-      "sha256": "e1a6c555cbf8ea36fb8100a4a25824e7ab87bebe9871e450ba05b6dea3b036d6"
+      "sha256": "e1a6c555cbf8ea36fb8100a4a25824e7ab87bebe9871e450ba05b6dea3b036d6",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope"
     },
     {
       "path": ".agents/skills/archify/examples/agent-run.lifecycle.json",
-      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
-      "sha256": "7c0ad72ee7affbd6c6e4758b7520d61ddd4508c917acf36beabcad3ee7ca3ba7"
+      "sha256": "7c0ad72ee7affbd6c6e4758b7520d61ddd4508c917acf36beabcad3ee7ca3ba7",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope"
     },
     {
       "path": ".agents/skills/archify/examples/agent-tool-call.workflow.json",
-      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
-      "sha256": "4d3f6c23de2ca7d306e05d0041a9506833bb5a164a2bddc2d1984cf4da3ee90c"
+      "sha256": "4d3f6c23de2ca7d306e05d0041a9506833bb5a164a2bddc2d1984cf4da3ee90c",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope"
     },
     {
       "path": ".agents/skills/archify/examples/async-job-roundtrip.sequence.json",
-      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
-      "sha256": "545f20920c89b69c2bb1f15508d5543fddbeb15cffba61e102206e04bd5a5cd9"
+      "sha256": "545f20920c89b69c2bb1f15508d5543fddbeb15cffba61e102206e04bd5a5cd9",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope"
     },
     {
       "path": ".agents/skills/archify/examples/brand-aware-delivery.architecture.json",
-      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
-      "sha256": "d4f0df8114b3524756ffa49529c015e00757b0594a357183490c1edeb341e3c6"
+      "sha256": "d4f0df8114b3524756ffa49529c015e00757b0594a357183490c1edeb341e3c6",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope"
     },
     {
       "path": ".agents/skills/archify/examples/cache-miss-request.sequence.json",
-      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
-      "sha256": "9a799a3661c16cd6ab4f6373ff6a04da95a9ab70d93b0a349b668466f4912fd7"
+      "sha256": "9a799a3661c16cd6ab4f6373ff6a04da95a9ab70d93b0a349b668466f4912fd7",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope"
     },
     {
       "path": ".agents/skills/archify/examples/checkout-platform.base.architecture.json",
-      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
-      "sha256": "c112195e7285e3e4aedaeab3e1f85f5891d30fccc2c260aebe4e1da12c80cf84"
+      "sha256": "c112195e7285e3e4aedaeab3e1f85f5891d30fccc2c260aebe4e1da12c80cf84",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope"
     },
     {
       "path": ".agents/skills/archify/examples/checkout-platform.head.architecture.json",
-      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
-      "sha256": "e3aaf47f77afeadafc81c6ce853dc1df68cc1e6932dec972cf478f4008fdda99"
+      "sha256": "e3aaf47f77afeadafc81c6ce853dc1df68cc1e6932dec972cf478f4008fdda99",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope"
     },
     {
       "path": ".agents/skills/archify/examples/dataflow-product-analytics.html",
-      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
-      "sha256": "c401af2063084329198bc915c0c3caec1c5156668dfd12c7f599f0573cb74814"
+      "sha256": "c401af2063084329198bc915c0c3caec1c5156668dfd12c7f599f0573cb74814",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope"
     },
     {
       "path": ".agents/skills/archify/examples/deployment-release.lifecycle.json",
-      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
-      "sha256": "735c2c5819266e6ea2a71775b6eefce98b53030ce90cb721dc8e1d022ce5be71"
+      "sha256": "735c2c5819266e6ea2a71775b6eefce98b53030ce90cb721dc8e1d022ce5be71",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope"
     },
     {
       "path": ".agents/skills/archify/examples/event-stream.dataflow.json",
-      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
-      "sha256": "a92d6597ddbe164f395da32a7d4b33cfae08edd7d9600a6fb45a2058e5bbb43e"
+      "sha256": "a92d6597ddbe164f395da32a7d4b33cfae08edd7d9600a6fb45a2058e5bbb43e",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope"
     },
     {
       "path": ".agents/skills/archify/examples/incident-response.workflow.json",
-      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
-      "sha256": "5c760c82eee545dfb7da38a4e628059d7891af4cfbfc13c8a7009ea64f69aa1b"
+      "sha256": "5c760c82eee545dfb7da38a4e628059d7891af4cfbfc13c8a7009ea64f69aa1b",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope"
     },
     {
       "path": ".agents/skills/archify/examples/lifecycle-agent-run.html",
-      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
-      "sha256": "e11f2b1db9bb0c9659516f33a139c6c0e4f68c7a8ff264daf941e8bf4347f8bd"
+      "sha256": "e11f2b1db9bb0c9659516f33a139c6c0e4f68c7a8ff264daf941e8bf4347f8bd",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope"
     },
     {
       "path": ".agents/skills/archify/examples/product-analytics.dataflow.json",
-      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
-      "sha256": "91411404fb4828a3b7ea358f3a7b9877781c9e9dc9c04b42b6eb4a757281b59f"
+      "sha256": "91411404fb4828a3b7ea358f3a7b9877781c9e9dc9c04b42b6eb4a757281b59f",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope"
     },
     {
       "path": ".agents/skills/archify/examples/production-deployment.architecture.json",
-      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
-      "sha256": "ec484aa8576664fdb207b543fa49486b23273faccb7a5071e1a0becfb48c22eb"
+      "sha256": "ec484aa8576664fdb207b543fa49486b23273faccb7a5071e1a0becfb48c22eb",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope"
     },
     {
       "path": ".agents/skills/archify/examples/release-delivery.workflow.json",
-      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
-      "sha256": "e5c880417eac1623923c3dd5461e0c78acd762e1621a28bd53fc14a84cad6a91"
+      "sha256": "e5c880417eac1623923c3dd5461e0c78acd762e1621a28bd53fc14a84cad6a91",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope"
     },
     {
       "path": ".agents/skills/archify/examples/sequence-cache-miss-request.html",
-      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
-      "sha256": "1a38f34911db256a86962512fbd744ed6ec894750b91256a0ca41ca543921d0b"
+      "sha256": "1a38f34911db256a86962512fbd744ed6ec894750b91256a0ca41ca543921d0b",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope"
     },
     {
       "path": ".agents/skills/archify/examples/web-app-rendered.html",
-      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
-      "sha256": "3b6576e29920ce22343b48ab6ee8cb3c98aa1febc583b569e4af30543e37be96"
+      "sha256": "3b6576e29920ce22343b48ab6ee8cb3c98aa1febc583b569e4af30543e37be96",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope"
     },
     {
       "path": ".agents/skills/archify/examples/web-app.architecture.json",
-      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
-      "sha256": "483350f5297df682aba4e4a0fa491307ce3d3abd725ae4df07fab177490752cf"
+      "sha256": "483350f5297df682aba4e4a0fa491307ce3d3abd725ae4df07fab177490752cf",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope"
     },
     {
       "path": ".agents/skills/archify/examples/workflow-agent-tool-call-rendered.html",
-      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
-      "sha256": "3ad7b10452fc1afe61008c2dd6eebf6348c7e694227f0b03f217bd1bac1fe046"
+      "sha256": "3ad7b10452fc1afe61008c2dd6eebf6348c7e694227f0b03f217bd1bac1fe046",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope"
     },
     {
       "path": ".agents/skills/archify/package-lock.json",
-      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
-      "sha256": "f875c29b190f6f5dc14bea7e56879ad2282c0a5212253b24937f77b4f6198054"
+      "sha256": "f875c29b190f6f5dc14bea7e56879ad2282c0a5212253b24937f77b4f6198054",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope"
     },
     {
       "path": ".agents/skills/archify/package.json",
-      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
-      "sha256": "d065836911f377598cbfd8e1c0166eaadc3397de18a21e3c57742fac8f15bd11"
+      "sha256": "d065836911f377598cbfd8e1c0166eaadc3397de18a21e3c57742fac8f15bd11",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope"
     },
     {
       "path": ".agents/skills/archify/references/authoring-contract.md",
-      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
-      "sha256": "873494557cf9be91d9eed8ecce37072886c0e98b851ad59ab8938f405c6fbc5e"
+      "sha256": "873494557cf9be91d9eed8ecce37072886c0e98b851ad59ab8938f405c6fbc5e",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope"
     },
     {
       "path": ".agents/skills/archify/references/brand-marks.md",
-      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
-      "sha256": "8010869da70677e686ecb312d9c3eec2d20723a44f817ab2bbf5525361c8a136"
+      "sha256": "8010869da70677e686ecb312d9c3eec2d20723a44f817ab2bbf5525361c8a136",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope"
     },
     {
       "path": ".agents/skills/archify/references/delivery-contract.md",
-      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
-      "sha256": "a614c31f41d270995a5aee99036532470a43722f8208fdc8ef922805914d1d01"
+      "sha256": "a614c31f41d270995a5aee99036532470a43722f8208fdc8ef922805914d1d01",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope"
     },
     {
       "path": ".agents/skills/archify/references/viewer-runtime.md",
-      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
-      "sha256": "dc0d9ffe6b9987d73d2d48710fce5ab4c120bbf1940ff1eb9355259c5d4f32b6"
+      "sha256": "dc0d9ffe6b9987d73d2d48710fce5ab4c120bbf1940ff1eb9355259c5d4f32b6",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope"
     },
     {
       "path": ".agents/skills/archify/renderers/dataflow/README.md",
-      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
-      "sha256": "18c4f86ba62fcee371d9fe38094625b3a68cc76231c36ab8c8124acb4c1ffa42"
+      "sha256": "18c4f86ba62fcee371d9fe38094625b3a68cc76231c36ab8c8124acb4c1ffa42",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope"
     },
     {
       "path": ".agents/skills/archify/renderers/lifecycle/README.md",
-      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
-      "sha256": "f8ef88dc859189bb18bad7bb2e27d997cbc9d30936cf20f8bf401bae7f57deec"
+      "sha256": "f8ef88dc859189bb18bad7bb2e27d997cbc9d30936cf20f8bf401bae7f57deec",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope"
     },
     {
       "path": ".agents/skills/archify/renderers/sequence/README.md",
-      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
-      "sha256": "a442335dcf44b1587d3ad88809e31b001a4fafdf7a134040e8b1927455af4206"
+      "sha256": "a442335dcf44b1587d3ad88809e31b001a4fafdf7a134040e8b1927455af4206",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope"
     },
     {
       "path": ".agents/skills/archify/renderers/workflow/README.md",
-      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
-      "sha256": "7e1bd65cc5cc38206304ae2f61f4f0f493da98d71a111a61d0754c9da362c5c9"
+      "sha256": "7e1bd65cc5cc38206304ae2f61f4f0f493da98d71a111a61d0754c9da362c5c9",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope"
     },
     {
       "path": ".agents/skills/archify/schemas/README.md",
-      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
-      "sha256": "f4ca94ec18cf60ad02211f2c5bb64e9c26a87467a22215e06db34dbfc5d6145f"
+      "sha256": "f4ca94ec18cf60ad02211f2c5bb64e9c26a87467a22215e06db34dbfc5d6145f",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope"
     },
     {
       "path": ".agents/skills/archify/schemas/architecture.schema.json",
-      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
-      "sha256": "94568c7ca72c07ac0ee02ee76bd39392874b3a13bb796a127962be68d0f5bc90"
+      "sha256": "94568c7ca72c07ac0ee02ee76bd39392874b3a13bb796a127962be68d0f5bc90",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope"
     },
     {
       "path": ".agents/skills/archify/schemas/common.schema.json",
-      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
-      "sha256": "2630c958314eeebb92e0f6f6330475f1a2bc48f8c1b53201ba3b58889b319c80"
+      "sha256": "2630c958314eeebb92e0f6f6330475f1a2bc48f8c1b53201ba3b58889b319c80",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope"
     },
     {
       "path": ".agents/skills/archify/schemas/dataflow.schema.json",
-      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
-      "sha256": "09d238a6a18f2e074ec69c8f905f58a44d3a0b68fc6a925b8346c484a912af90"
+      "sha256": "09d238a6a18f2e074ec69c8f905f58a44d3a0b68fc6a925b8346c484a912af90",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope"
     },
     {
       "path": ".agents/skills/archify/schemas/lifecycle.schema.json",
-      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
-      "sha256": "05b46c0db95ee7ed44305b61496a96bb4f69342b20f9903d6534d952ebc65083"
+      "sha256": "05b46c0db95ee7ed44305b61496a96bb4f69342b20f9903d6534d952ebc65083",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope"
     },
     {
       "path": ".agents/skills/archify/schemas/sequence.schema.json",
-      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
-      "sha256": "c9fec3fad087f14d55c0bb2d34446246e3405f0238c292c1cb6bef28d1120fcb"
+      "sha256": "c9fec3fad087f14d55c0bb2d34446246e3405f0238c292c1cb6bef28d1120fcb",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope"
     },
     {
       "path": ".agents/skills/archify/schemas/workflow.schema.json",
-      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
-      "sha256": "2128e82afd2b971fcb7d80ada86fa836bb4a5035b504053b87d3aeefec380e3c"
+      "sha256": "2128e82afd2b971fcb7d80ada86fa836bb4a5035b504053b87d3aeefec380e3c",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope"
     },
     {
       "path": ".agents/skills/archify/skill-release.json",
-      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
-      "sha256": "269772492c38663b5d19730a54e5d7ad973ef04e47eb4f75b6dfa2e249614097"
+      "sha256": "269772492c38663b5d19730a54e5d7ad973ef04e47eb4f75b6dfa2e249614097",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope"
     },
     {
       "path": ".agents/skills/archify/test/fixtures/automatic-routing-node-border-clearance.workflow.json",
-      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
-      "sha256": "7c3ede1070394a94c565b7a80e0d5ca2cba4f041aaac85777c74df48bf71e933"
+      "sha256": "7c3ede1070394a94c565b7a80e0d5ca2cba4f041aaac85777c74df48bf71e933",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope"
     },
     {
       "path": ".agents/skills/archify/test/fixtures/issue-126/custom-widths.workflow.json",
-      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
-      "sha256": "7701a2f6271b9d02d9477d5fb02d52e70738ff14be824956cf77ff466c1c1013"
+      "sha256": "7701a2f6271b9d02d9477d5fb02d52e70738ff14be824956cf77ff466c1c1013",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope"
     },
     {
       "path": ".agents/skills/archify/test/fixtures/issue-126/explicit-route.workflow.json",
-      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
-      "sha256": "985ba9146664598785cc3a5008e847259ac66caf4c2c5570e32477f384f31b21"
+      "sha256": "985ba9146664598785cc3a5008e847259ac66caf4c2c5570e32477f384f31b21",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope"
     },
     {
       "path": ".agents/skills/archify/test/fixtures/issue-126/explicit-viewbox.workflow.json",
-      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
-      "sha256": "520071d14b748aa184589bac22fc548e501c78fb9cf2c8bdceba4bf715620c3f"
+      "sha256": "520071d14b748aa184589bac22fc548e501c78fb9cf2c8bdceba4bf715620c3f",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope"
     },
     {
       "path": ".agents/skills/archify/test/fixtures/issue-126/labels.workflow.json",
-      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
-      "sha256": "496ea86f39914458688f0c3b4277c03c3dedc8eedf1ba35a11e8c99a4a323d08"
+      "sha256": "496ea86f39914458688f0c3b4277c03c3dedc8eedf1ba35a11e8c99a4a323d08",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope"
     },
     {
       "path": ".agents/skills/archify/test/fixtures/v1-baseline/agent-run.lifecycle.json",
-      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
-      "sha256": "b2264f4b2eff23e69b3dc79922062e942fc64ed0bec4f939fa53dda3cacd82d6"
+      "sha256": "b2264f4b2eff23e69b3dc79922062e942fc64ed0bec4f939fa53dda3cacd82d6",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope"
     },
     {
       "path": ".agents/skills/archify/test/fixtures/v1-baseline/agent-tool-call.workflow.json",
-      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
-      "sha256": "4903056b3634e02cce9fd7c71b61fb27e6db455480c8d776a7005346b3afc564"
+      "sha256": "4903056b3634e02cce9fd7c71b61fb27e6db455480c8d776a7005346b3afc564",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope"
     },
     {
       "path": ".agents/skills/archify/test/fixtures/v1-baseline/cache-miss-request.sequence.json",
-      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
-      "sha256": "047914c4dc4ed753b6b9f100ebaf6e7f15f9b72af0913e3a8e7a223bdef39aaa"
+      "sha256": "047914c4dc4ed753b6b9f100ebaf6e7f15f9b72af0913e3a8e7a223bdef39aaa",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope"
     },
     {
       "path": ".agents/skills/archify/test/fixtures/v1-baseline/event-stream.dataflow.json",
-      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
-      "sha256": "a92d6597ddbe164f395da32a7d4b33cfae08edd7d9600a6fb45a2058e5bbb43e"
+      "sha256": "a92d6597ddbe164f395da32a7d4b33cfae08edd7d9600a6fb45a2058e5bbb43e",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope"
     },
     {
       "path": ".agents/skills/archify/test/fixtures/v1-baseline/product-analytics.dataflow.json",
-      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
-      "sha256": "6da9959f729d81c4cdf8895fb6611080ff0368c3cde48b00b0081495a006140d"
+      "sha256": "6da9959f729d81c4cdf8895fb6611080ff0368c3cde48b00b0081495a006140d",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope"
     },
     {
       "path": ".agents/skills/archify/test/fixtures/v1-baseline/production-deployment.architecture.json",
-      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
-      "sha256": "738e9c7f22e4e6e88f5aafc087dc58409105927daa9a79aaf240c8393654494f"
+      "sha256": "738e9c7f22e4e6e88f5aafc087dc58409105927daa9a79aaf240c8393654494f",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope"
     },
     {
       "path": ".agents/skills/archify/test/fixtures/v1-baseline/web-app.architecture.json",
-      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
-      "sha256": "5fb15d0e0f7e5ed3a1a3f2e7ee406fb50aae126818c58db24f77236b07dd63f6"
+      "sha256": "5fb15d0e0f7e5ed3a1a3f2e7ee406fb50aae126818c58db24f77236b07dd63f6",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope"
     },
     {
       "path": ".agents/skills/archify/test/fixtures/v1-workflow-700x400.workflow.json",
-      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
-      "sha256": "74a9bf3424c656b47a757b39cc1bd69c27ae553c264d3186799bdc5d080b5509"
+      "sha256": "74a9bf3424c656b47a757b39cc1bd69c27ae553c264d3186799bdc5d080b5509",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope"
     },
     {
       "path": ".agents/skills/archify/test/fixtures/v1-workflow-explicit-coordinates.workflow.json",
-      "disposition": "preserved plugin instructions, references and examples; independent skill scope",
-      "sha256": "4f1140e720fdfbae7f7efed9fb9fdffb581fef849798697db9df7fa56b2131af"
+      "sha256": "4f1140e720fdfbae7f7efed9fb9fdffb581fef849798697db9df7fa56b2131af",
+      "disposition": "preserved plugin instructions, references and examples; independent skill scope"
     },
     {
       "path": ".superpowers/sdd/2026-10-13-p1-publication-recovery-floor-repair/final-fix-report.md",
-      "disposition": "preserved dated qualification report",
-      "sha256": "2bcc64d1e61e056a95c497e0b806184135ef78f5a92050b1c44eb419e1609a68"
+      "sha256": "2bcc64d1e61e056a95c497e0b806184135ef78f5a92050b1c44eb419e1609a68",
+      "disposition": "preserved dated qualification report"
     },
     {
       "path": ".superpowers/sdd/2026-10-13-p1-publication-recovery-floor-repair/task-8-report.md",
-      "disposition": "preserved dated qualification report",
-      "sha256": "6f46b4ab98a8b1378f86431a27cb454a959c54ed31dbd3f65a40c483f49b6f3b"
+      "sha256": "6f46b4ab98a8b1378f86431a27cb454a959c54ed31dbd3f65a40c483f49b6f3b",
+      "disposition": "preserved dated qualification report"
+    },
+    {
+      "path": ".superpowers/sdd/2026-10-27-p1-production-policy-and-revocation/final-fix-report.md",
+      "sha256": "16adfaf8ce7affbaef94f6416014711b485f47f74736771f2fbc064d9e86e759",
+      "disposition": "current final local non-live verification report for candidate fb2d4d6; production acceptance remains unqualified"
     },
     {
       "path": "AGENTS.md",
-      "disposition": "active user-authored project instructions; preserved verbatim",
-      "sha256": "524d3c31e4593b76899b2519c72677552101ae5e6babf7a636db36bc4dcb04d3"
+      "sha256": "524d3c31e4593b76899b2519c72677552101ae5e6babf7a636db36bc4dcb04d3",
+      "disposition": "active user-authored project instructions; preserved verbatim"
     },
     {
       "path": "README.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "3f672a0e4bd804a0cc2280c7a57b2a350dbde4991a3ae4e941e3380b16ee3d44"
+      "sha256": "3f672a0e4bd804a0cc2280c7a57b2a350dbde4991a3ae4e941e3380b16ee3d44",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs-new-arch/ArchCurrent.mermaid",
-      "disposition": "preserved original design source or historical diagram",
-      "sha256": "8babef81879d00387499e28324c325fa10ebb0fc8255ca613b61efff0dd207ad"
+      "sha256": "8babef81879d00387499e28324c325fa10ebb0fc8255ca613b61efff0dd207ad",
+      "disposition": "preserved original design source or historical diagram"
     },
     {
       "path": "docs-new-arch/ArchV1.mermaid",
-      "disposition": "preserved original design source or historical diagram",
-      "sha256": "a40d2446978d2ca663518049f2ea8076479a936ddc9eb7c3b630e22827f5f0f8"
+      "sha256": "a40d2446978d2ca663518049f2ea8076479a936ddc9eb7c3b630e22827f5f0f8",
+      "disposition": "preserved original design source or historical diagram"
     },
     {
       "path": "docs-new-arch/ArchV2.mermaid",
-      "disposition": "preserved original design source or historical diagram",
-      "sha256": "f97c4b5519f679346f403ced265df753d9ff29f01ddbb6e40fc1e5b63ae377d8"
+      "sha256": "f97c4b5519f679346f403ced265df753d9ff29f01ddbb6e40fc1e5b63ae377d8",
+      "disposition": "preserved original design source or historical diagram"
     },
     {
       "path": "docs-new-arch/ArchV3-implementation-notes.md",
-      "disposition": "preserved original design source or historical diagram",
-      "sha256": "7afdf8693a234cc21becba522b30bf93e01ebb747fa3105e1f1782d2058e8a1a"
+      "sha256": "7afdf8693a234cc21becba522b30bf93e01ebb747fa3105e1f1782d2058e8a1a",
+      "disposition": "preserved original design source or historical diagram"
     },
     {
       "path": "docs-new-arch/ArchV3.mermaid",
-      "disposition": "preserved original design source or historical diagram",
-      "sha256": "26af467c25d62f6485c4ee32a32ad9a95a74ba9489edb12f76fce38e8baab37d"
+      "sha256": "26af467c25d62f6485c4ee32a32ad9a95a74ba9489edb12f76fce38e8baab37d",
+      "disposition": "preserved original design source or historical diagram"
     },
     {
       "path": "docs-new-arch/ArchV4-implementation-notes.md",
-      "disposition": "preserved original design source or historical diagram",
-      "sha256": "6378d46cc347b84a1e8983263ba860faab2c44c81e84c12c32b7d2724fc0f078"
+      "sha256": "6378d46cc347b84a1e8983263ba860faab2c44c81e84c12c32b7d2724fc0f078",
+      "disposition": "preserved original design source or historical diagram"
     },
     {
       "path": "docs-new-arch/ArchV4.mermaid",
-      "disposition": "preserved original design source or historical diagram",
-      "sha256": "44a0cf58e7f18129f3c6cdd8e8c5f179f0211f830456b59f0e9b48a3b9185809"
+      "sha256": "44a0cf58e7f18129f3c6cdd8e8c5f179f0211f830456b59f0e9b48a3b9185809",
+      "disposition": "preserved original design source or historical diagram"
     },
     {
       "path": "docs-new-arch/README.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "bae52f5f32c00e3ca53f7da2dd48eaa0db5329c84e1f5826de78a2791772dc9f"
+      "sha256": "bae52f5f32c00e3ca53f7da2dd48eaa0db5329c84e1f5826de78a2791772dc9f",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/README.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "956fff1ee80e569dd6ce0cde8a8e08a74aacc26c221ddaa36cb9e55932f5b2c9"
+      "sha256": "810e735b69988dd567af50870b5d76d12196971f510680755872d8825f2a0b14",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/adr/0001-durable-runtime.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "45b80c8aa0c54b57130c53b84a4aa6e359816ac298fa2d92a702faf8fc20f07e"
+      "sha256": "45b80c8aa0c54b57130c53b84a4aa6e359816ac298fa2d92a702faf8fc20f07e",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/adr/0002-object-storage.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "ed5776e6af156a3029027b29e1ea626c349401edc4ffffa8d5308474c9d05604"
+      "sha256": "ed5776e6af156a3029027b29e1ea626c349401edc4ffffa8d5308474c9d05604",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/adr/0003-api-persistence-and-contracts.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "5c92b8d942dda0d7eea15d6f6086f98f97e3ed20cdf7571c7e4d0cf20f445de6"
+      "sha256": "5c92b8d942dda0d7eea15d6f6086f98f97e3ed20cdf7571c7e4d0cf20f445de6",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/adr/0004-governance-secrets-and-protocols.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "ea646993715d4fe26b55a2d161d8df4ebc6d9d2dd5161e2603c768e53f105a48"
+      "sha256": "ea646993715d4fe26b55a2d161d8df4ebc6d9d2dd5161e2603c768e53f105a48",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/adr/0005-mcp-a2a-and-browser-sdk-adoption.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "4759e94e373289311c987cb52edd32b00a10a875b7ab920bc060670fbc9c1d43"
+      "sha256": "4759e94e373289311c987cb52edd32b00a10a875b7ab920bc060670fbc9c1d43",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/adr/0006-governed-publishing.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "2ffd75e09151365f53f7080fd57b00b6d742f25537b45fe0866bd2195b71f713"
+      "sha256": "2ffd75e09151365f53f7080fd57b00b6d742f25537b45fe0866bd2195b71f713",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/agents.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "475925db59db9e4d6bfbb359dda57e8c1248dbdb527db255370d141c03bf7125"
+      "sha256": "475925db59db9e4d6bfbb359dda57e8c1248dbdb527db255370d141c03bf7125",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/api.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "0d55c63c67ee84b2edb1fb5dfdf76afe15aba2e71190aa3611e8c4ae560907c2"
+      "sha256": "0d55c63c67ee84b2edb1fb5dfdf76afe15aba2e71190aa3611e8c4ae560907c2",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/architecture.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "a7dc8d8f5c27f023bdc1064a91f91daadc9828ad0addc5e27b37ac3f2cfd46b4"
+      "sha256": "a7dc8d8f5c27f023bdc1064a91f91daadc9828ad0addc5e27b37ac3f2cfd46b4",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/archive/2026-09-22/README.md",
-      "disposition": "preserved immutable historical snapshot; bytes retained verbatim",
-      "sha256": "dad28a2d6a9099457496e7d60bcde83dc5d15de6fc8c53f5d7e4a2c40b374d20"
+      "sha256": "dad28a2d6a9099457496e7d60bcde83dc5d15de6fc8c53f5d7e4a2c40b374d20",
+      "disposition": "preserved immutable historical snapshot; bytes retained verbatim"
     },
     {
       "path": "docs/archive/2026-09-22/README.md.snapshot",
-      "disposition": "preserved immutable historical snapshot",
-      "sha256": "66ec85addfcd598ba745681b543df133f22af2a76e858020bebf0afd956b7310"
+      "sha256": "66ec85addfcd598ba745681b543df133f22af2a76e858020bebf0afd956b7310",
+      "disposition": "preserved immutable historical snapshot"
     },
     {
       "path": "docs/archive/2026-09-22/docs/adr/0001-durable-runtime.md.snapshot",
-      "disposition": "preserved immutable historical snapshot",
-      "sha256": "b41c23fe0a9d2e180d30e4ac233a22f4bf466b5b62cab5b0e9b1548062c530cd"
+      "sha256": "b41c23fe0a9d2e180d30e4ac233a22f4bf466b5b62cab5b0e9b1548062c530cd",
+      "disposition": "preserved immutable historical snapshot"
     },
     {
       "path": "docs/archive/2026-09-22/docs/adr/0002-object-storage.md.snapshot",
-      "disposition": "preserved immutable historical snapshot",
-      "sha256": "1c0ba49fc0aa928715b4dc3f6ea8dba6c0de16157e9f79cb67cfb644ce4f1feb"
+      "sha256": "1c0ba49fc0aa928715b4dc3f6ea8dba6c0de16157e9f79cb67cfb644ce4f1feb",
+      "disposition": "preserved immutable historical snapshot"
     },
     {
       "path": "docs/archive/2026-09-22/docs/adr/0003-api-persistence-and-contracts.md.snapshot",
-      "disposition": "preserved immutable historical snapshot",
-      "sha256": "c7182cd23c08b65213c6fa58212b402f546c117d7ed652133530553a2f04b3ac"
+      "sha256": "c7182cd23c08b65213c6fa58212b402f546c117d7ed652133530553a2f04b3ac",
+      "disposition": "preserved immutable historical snapshot"
     },
     {
       "path": "docs/archive/2026-09-22/docs/adr/0004-governance-secrets-and-protocols.md.snapshot",
-      "disposition": "preserved immutable historical snapshot",
-      "sha256": "0f7f8ce508222398e6a743beeac9b060c658f2aadcfaec0b10428ae8ed4d1031"
+      "sha256": "0f7f8ce508222398e6a743beeac9b060c658f2aadcfaec0b10428ae8ed4d1031",
+      "disposition": "preserved immutable historical snapshot"
     },
     {
       "path": "docs/archive/2026-09-22/docs/adr/0005-mcp-a2a-and-browser-sdk-adoption.md.snapshot",
-      "disposition": "preserved immutable historical snapshot",
-      "sha256": "8bc7fbf513356b2804f1931c271614f9bd7813328a48056734b083048d56bc47"
+      "sha256": "8bc7fbf513356b2804f1931c271614f9bd7813328a48056734b083048d56bc47",
+      "disposition": "preserved immutable historical snapshot"
     },
     {
       "path": "docs/archive/2026-09-22/docs/adr/0006-governed-publishing.md.snapshot",
-      "disposition": "preserved immutable historical snapshot",
-      "sha256": "a50e696679d19fba9a755e6dbc62a062e7da22fd4826abb21d19d9d9a22ee8d7"
+      "sha256": "a50e696679d19fba9a755e6dbc62a062e7da22fd4826abb21d19d9d9a22ee8d7",
+      "disposition": "preserved immutable historical snapshot"
     },
     {
       "path": "docs/archive/2026-09-22/docs/agents.md.snapshot",
-      "disposition": "preserved immutable historical snapshot",
-      "sha256": "6a3f7c19371f5a7daa87e34ece22a11baf55ef1d17208f46c13c9cb5904b8ae7"
+      "sha256": "6a3f7c19371f5a7daa87e34ece22a11baf55ef1d17208f46c13c9cb5904b8ae7",
+      "disposition": "preserved immutable historical snapshot"
     },
     {
       "path": "docs/archive/2026-09-22/docs/api.md.snapshot",
-      "disposition": "preserved immutable historical snapshot",
-      "sha256": "fcd25d5066336629cd667ebeef7228c696b638fe37684ec9a2e8a4d80940c930"
+      "sha256": "fcd25d5066336629cd667ebeef7228c696b638fe37684ec9a2e8a4d80940c930",
+      "disposition": "preserved immutable historical snapshot"
     },
     {
       "path": "docs/archive/2026-09-22/docs/architecture.md.snapshot",
-      "disposition": "preserved immutable historical snapshot",
-      "sha256": "244d933d845c0c2527765f1525c13c48af7608ef1ea49770cf73a31bc515fa83"
+      "sha256": "244d933d845c0c2527765f1525c13c48af7608ef1ea49770cf73a31bc515fa83",
+      "disposition": "preserved immutable historical snapshot"
     },
     {
       "path": "docs/archive/2026-09-22/docs/bootstrap.md.snapshot",
-      "disposition": "preserved immutable historical snapshot",
-      "sha256": "143320985d501ab5aab18798534ed792ea3d9c9ca4779bfe7e18725224b9a077"
+      "sha256": "143320985d501ab5aab18798534ed792ea3d9c9ca4779bfe7e18725224b9a077",
+      "disposition": "preserved immutable historical snapshot"
     },
     {
       "path": "docs/archive/2026-09-22/docs/compatibility.md.snapshot",
-      "disposition": "preserved immutable historical snapshot",
-      "sha256": "de9745608fb57014eff8372af3168030f8071c92b4b5f9c82722f01ca8a69473"
+      "sha256": "de9745608fb57014eff8372af3168030f8071c92b4b5f9c82722f01ca8a69473",
+      "disposition": "preserved immutable historical snapshot"
     },
     {
       "path": "docs/archive/2026-09-22/docs/contracts/adapter-contracts.md.snapshot",
-      "disposition": "preserved immutable historical snapshot",
-      "sha256": "7572693b70598a0ba1f7829b33492133a643267410217e67c26e119bd27ff3dd"
+      "sha256": "7572693b70598a0ba1f7829b33492133a643267410217e67c26e119bd27ff3dd",
+      "disposition": "preserved immutable historical snapshot"
     },
     {
       "path": "docs/archive/2026-09-22/docs/core/00_BUILD_AGENT_PROMPT.md.snapshot",
-      "disposition": "preserved immutable historical snapshot",
-      "sha256": "9c24cc3b232cad25f0650f18438a9106a5dbeda6e7f6ddfc764c6ac90413613c"
+      "sha256": "9c24cc3b232cad25f0650f18438a9106a5dbeda6e7f6ddfc764c6ac90413613c",
+      "disposition": "preserved immutable historical snapshot"
     },
     {
       "path": "docs/archive/2026-09-22/docs/core/01_PRODUCT_CONTEXT_AND_INTENT.md.snapshot",
-      "disposition": "preserved immutable historical snapshot",
-      "sha256": "2f0ab3a836a37ff9815af4c0f840ace52a577471c0af4bb28b00364000d1adf9"
+      "sha256": "2f0ab3a836a37ff9815af4c0f840ace52a577471c0af4bb28b00364000d1adf9",
+      "disposition": "preserved immutable historical snapshot"
     },
     {
       "path": "docs/archive/2026-09-22/docs/core/02_REFERENCE_RESEARCH.md.snapshot",
-      "disposition": "preserved immutable historical snapshot",
-      "sha256": "c1bda4694f36b51e157499144310425a1e895ff4fb3a21d968f1d74257c39f48"
+      "sha256": "c1bda4694f36b51e157499144310425a1e895ff4fb3a21d968f1d74257c39f48",
+      "disposition": "preserved immutable historical snapshot"
     },
     {
       "path": "docs/archive/2026-09-22/docs/core/03_TARGET_ARCHITECTURE.md.snapshot",
-      "disposition": "preserved immutable historical snapshot",
-      "sha256": "de4ff15e13b35d354bc69a1976ea8a1b83e139b4d30c69f5ac9e3a570e991d63"
+      "sha256": "de4ff15e13b35d354bc69a1976ea8a1b83e139b4d30c69f5ac9e3a570e991d63",
+      "disposition": "preserved immutable historical snapshot"
     },
     {
       "path": "docs/archive/2026-09-22/docs/core/04_BROWSER_APP_AND_RESEARCH_CONTROL.md.snapshot",
-      "disposition": "preserved immutable historical snapshot",
-      "sha256": "8d3f48448e995e0e035c2bf3e01f05fac03c24993a8b8d833b74a46555ce8c35"
+      "sha256": "8d3f48448e995e0e035c2bf3e01f05fac03c24993a8b8d833b74a46555ce8c35",
+      "disposition": "preserved immutable historical snapshot"
     },
     {
       "path": "docs/archive/2026-09-22/docs/core/05_IMPLEMENTATION_PLAN.md.snapshot",
-      "disposition": "preserved immutable historical snapshot",
-      "sha256": "03e12a8610f01cda5f85b393870e1ad021d9655940654f7262b3c6bf8bd608f2"
+      "sha256": "03e12a8610f01cda5f85b393870e1ad021d9655940654f7262b3c6bf8bd608f2",
+      "disposition": "preserved immutable historical snapshot"
     },
     {
       "path": "docs/archive/2026-09-22/docs/core/06_ACCEPTANCE_TESTS_AND_GUARDRAILS.md.snapshot",
-      "disposition": "preserved immutable historical snapshot",
-      "sha256": "45140b8ea60f0dcf7b22ee5e1da3d6bcb473d6709345f23bed2df6aab4abc8ec"
+      "sha256": "45140b8ea60f0dcf7b22ee5e1da3d6bcb473d6709345f23bed2df6aab4abc8ec",
+      "disposition": "preserved immutable historical snapshot"
     },
     {
       "path": "docs/archive/2026-09-22/docs/core/07_REUSE_EXTENSION_AND_FUTURE_PROOFING.md.snapshot",
-      "disposition": "preserved immutable historical snapshot",
-      "sha256": "2fe977ebe26442c13bb7a30ac8678584f98a02fb7a8c9b7d5c6bd09f58d8b9cf"
+      "sha256": "2fe977ebe26442c13bb7a30ac8678584f98a02fb7a8c9b7d5c6bd09f58d8b9cf",
+      "disposition": "preserved immutable historical snapshot"
     },
     {
       "path": "docs/archive/2026-09-22/docs/core/08_LEAD_AGENT_AND_CREATIVE_TOOL_RUNTIME.md.snapshot",
-      "disposition": "preserved immutable historical snapshot",
-      "sha256": "e09519b29e5bd72b60385cf11c9f7ca15cac57b1316bb0a38eeb91d3eb46b0a2"
+      "sha256": "e09519b29e5bd72b60385cf11c9f7ca15cac57b1316bb0a38eeb91d3eb46b0a2",
+      "disposition": "preserved immutable historical snapshot"
     },
     {
       "path": "docs/archive/2026-09-22/docs/core/09_CALLABLE_AGENTS_AND_ENGINEERING_METHOD.md.snapshot",
-      "disposition": "preserved immutable historical snapshot",
-      "sha256": "ae7e580d0a4b43f1a1df19049208f92bf5b3fa39caa7c6033b75862ca9d64369"
+      "sha256": "ae7e580d0a4b43f1a1df19049208f92bf5b3fa39caa7c6033b75862ca9d64369",
+      "disposition": "preserved immutable historical snapshot"
     },
     {
       "path": "docs/archive/2026-09-22/docs/core/README.md.snapshot",
-      "disposition": "preserved immutable historical snapshot",
-      "sha256": "7960ef750a38a63b2982a1494c373f8b6b406f74836da550c898b67a7807e58d"
+      "sha256": "7960ef750a38a63b2982a1494c373f8b6b406f74836da550c898b67a7807e58d",
+      "disposition": "preserved immutable historical snapshot"
     },
     {
       "path": "docs/archive/2026-09-22/docs/database.md.snapshot",
-      "disposition": "preserved immutable historical snapshot",
-      "sha256": "ba4215b0a69d6182a1bc386e7f947a2a9bd3d307b3363ab99cf732d490842766"
+      "sha256": "ba4215b0a69d6182a1bc386e7f947a2a9bd3d307b3363ab99cf732d490842766",
+      "disposition": "preserved immutable historical snapshot"
     },
     {
       "path": "docs/archive/2026-09-22/docs/dependencies.md.snapshot",
-      "disposition": "preserved immutable historical snapshot",
-      "sha256": "a12ea9edc5458bf49feec48a6e7886312376670c48db51821f48470a88fddccf"
+      "sha256": "a12ea9edc5458bf49feec48a6e7886312376670c48db51821f48470a88fddccf",
+      "disposition": "preserved immutable historical snapshot"
     },
     {
       "path": "docs/archive/2026-09-22/docs/deployment.md.snapshot",
-      "disposition": "preserved immutable historical snapshot",
-      "sha256": "ac4a945f9bbce9ebde35b185d7c4c3b8091d874ddf94c54eb5389e50dd26d3e1"
+      "sha256": "ac4a945f9bbce9ebde35b185d7c4c3b8091d874ddf94c54eb5389e50dd26d3e1",
+      "disposition": "preserved immutable historical snapshot"
     },
     {
       "path": "docs/archive/2026-09-22/docs/governance.md.snapshot",
-      "disposition": "preserved immutable historical snapshot",
-      "sha256": "b3f32490b58c24841dc2cf015c09c866f21fd062e3731f3b2fe43fc7035313f9"
+      "sha256": "b3f32490b58c24841dc2cf015c09c866f21fd062e3731f3b2fe43fc7035313f9",
+      "disposition": "preserved immutable historical snapshot"
     },
     {
       "path": "docs/archive/2026-09-22/docs/implementation-progress.md.snapshot",
-      "disposition": "preserved immutable historical snapshot",
-      "sha256": "9ee94aac9260552fdeb922d549f9ff0d85c199b31ad46e460b81ee5263522303"
+      "sha256": "9ee94aac9260552fdeb922d549f9ff0d85c199b31ad46e460b81ee5263522303",
+      "disposition": "preserved immutable historical snapshot"
     },
     {
       "path": "docs/archive/2026-09-22/docs/limitations.md.snapshot",
-      "disposition": "preserved immutable historical snapshot",
-      "sha256": "0c2a992b192070f7b170d656a177775b5874147e3e0ce19e16a24c98f4e7c58c"
+      "sha256": "0c2a992b192070f7b170d656a177775b5874147e3e0ce19e16a24c98f4e7c58c",
+      "disposition": "preserved immutable historical snapshot"
     },
     {
       "path": "docs/archive/2026-09-22/docs/local-development.md.snapshot",
-      "disposition": "preserved immutable historical snapshot",
-      "sha256": "10dad0fefd10e08b55d37b78fc7841a908a6669fc18893d069e661fd6f33e055"
+      "sha256": "10dad0fefd10e08b55d37b78fc7841a908a6669fc18893d069e661fd6f33e055",
+      "disposition": "preserved immutable historical snapshot"
     },
     {
       "path": "docs/archive/2026-09-22/docs/mcp-a2a.md.snapshot",
-      "disposition": "preserved immutable historical snapshot",
-      "sha256": "c536b468768d1b280365de86670aeaf790284d68dd316f8b6ddedabb9380bc06"
+      "sha256": "c536b468768d1b280365de86670aeaf790284d68dd316f8b6ddedabb9380bc06",
+      "disposition": "preserved immutable historical snapshot"
     },
     {
       "path": "docs/archive/2026-09-22/docs/memory.md.snapshot",
-      "disposition": "preserved immutable historical snapshot",
-      "sha256": "aeeabd0d30f2ab2ca41a6f024ccd0406bc20c0c28f49e7ece7cf798713d05e6d"
+      "sha256": "aeeabd0d30f2ab2ca41a6f024ccd0406bc20c0c28f49e7ece7cf798713d05e6d",
+      "disposition": "preserved immutable historical snapshot"
     },
     {
       "path": "docs/archive/2026-09-22/docs/model-execution.md.snapshot",
-      "disposition": "preserved immutable historical snapshot",
-      "sha256": "3a0095f817ec9fbb4c33ebc1b00c6516340b6fa593f905ceec7a7d57710d8fc9"
+      "sha256": "3a0095f817ec9fbb4c33ebc1b00c6516340b6fa593f905ceec7a7d57710d8fc9",
+      "disposition": "preserved immutable historical snapshot"
     },
     {
       "path": "docs/archive/2026-09-22/docs/model-gateway.md.snapshot",
-      "disposition": "preserved immutable historical snapshot",
-      "sha256": "5e055f63f7fea4e4edc239298eb4a0e47acb39ef079e0fec8a6d9ffcc5c72f5d"
+      "sha256": "5e055f63f7fea4e4edc239298eb4a0e47acb39ef079e0fec8a6d9ffcc5c72f5d",
+      "disposition": "preserved immutable historical snapshot"
     },
     {
       "path": "docs/archive/2026-09-22/docs/phase-7-handoff.md.snapshot",
-      "disposition": "preserved immutable historical snapshot",
-      "sha256": "107bbe282b895f08937968f407d6b6f9dcfc52a3b7b3b02cc5de5b0b44e7d76a"
+      "sha256": "107bbe282b895f08937968f407d6b6f9dcfc52a3b7b3b02cc5de5b0b44e7d76a",
+      "disposition": "preserved immutable historical snapshot"
     },
     {
       "path": "docs/archive/2026-09-22/docs/phase-9-handoff.md.snapshot",
-      "disposition": "preserved immutable historical snapshot",
-      "sha256": "41758937d0470a7dc07ab8896c62e408f6d7df5e3fdc1778dac0ce4b668627a0"
+      "sha256": "41758937d0470a7dc07ab8896c62e408f6d7df5e3fdc1778dac0ce4b668627a0",
+      "disposition": "preserved immutable historical snapshot"
     },
     {
       "path": "docs/archive/2026-09-22/docs/plugins.md.snapshot",
-      "disposition": "preserved immutable historical snapshot",
-      "sha256": "26f92a545483b717c14989f5d7b469eaa854697fcbc7b7956ee36cfb95e80b8e"
+      "sha256": "26f92a545483b717c14989f5d7b469eaa854697fcbc7b7956ee36cfb95e80b8e",
+      "disposition": "preserved immutable historical snapshot"
     },
     {
       "path": "docs/archive/2026-09-22/docs/recovery.md.snapshot",
-      "disposition": "preserved immutable historical snapshot",
-      "sha256": "e430889320462cd423fab1ab0b018ca4e110464a1939ac281d9b60b905aab08a"
+      "sha256": "e430889320462cd423fab1ab0b018ca4e110464a1939ac281d9b60b905aab08a",
+      "disposition": "preserved immutable historical snapshot"
     },
     {
       "path": "docs/archive/2026-09-22/docs/research.md.snapshot",
-      "disposition": "preserved immutable historical snapshot",
-      "sha256": "9939d512bb71f9bbd8b2effd6355d84cf471d2d539ddd160dd9fcaabbcca0c8e"
+      "sha256": "9939d512bb71f9bbd8b2effd6355d84cf471d2d539ddd160dd9fcaabbcca0c8e",
+      "disposition": "preserved immutable historical snapshot"
     },
     {
       "path": "docs/archive/2026-09-22/docs/superpowers/plans/2026-09-12-browser-evidence.md.snapshot",
-      "disposition": "preserved immutable historical snapshot",
-      "sha256": "dc3580a1905d2a4cf809d1b1dfbe5eccfcb2cd7a094a89c2ec9ee4b36c7ff038"
+      "sha256": "dc3580a1905d2a4cf809d1b1dfbe5eccfcb2cd7a094a89c2ec9ee4b36c7ff038",
+      "disposition": "preserved immutable historical snapshot"
     },
     {
       "path": "docs/archive/2026-09-22/docs/superpowers/plans/2026-09-12-intelligence-loop-phases-5-6.md.snapshot",
-      "disposition": "preserved immutable historical snapshot",
-      "sha256": "005432e80f72297e3c4c44766b77199931e9bf5f5c5d7290a415565d32ada1e3"
+      "sha256": "005432e80f72297e3c4c44766b77199931e9bf5f5c5d7290a415565d32ada1e3",
+      "disposition": "preserved immutable historical snapshot"
     },
     {
       "path": "docs/archive/2026-09-22/docs/superpowers/plans/2026-09-12-phases-1-4-foundation.md.snapshot",
-      "disposition": "preserved immutable historical snapshot",
-      "sha256": "a54a3ae82e027663782e832b1d615b98896bc96d55b3ea2f90482d5e62e9b6b9"
+      "sha256": "a54a3ae82e027663782e832b1d615b98896bc96d55b3ea2f90482d5e62e9b6b9",
+      "disposition": "preserved immutable historical snapshot"
     },
     {
       "path": "docs/archive/2026-09-22/docs/superpowers/plans/2026-09-13-creative-production-phases-7-8.md.snapshot",
-      "disposition": "preserved immutable historical snapshot",
-      "sha256": "786eea554dc9997868063cf86a66911db98ef9a7d824b919a9a5d1bfc170eddf"
+      "sha256": "786eea554dc9997868063cf86a66911db98ef9a7d824b919a9a5d1bfc170eddf",
+      "disposition": "preserved immutable historical snapshot"
     },
     {
       "path": "docs/archive/2026-09-22/docs/superpowers/plans/2026-09-13-phase-7-8-release-gate-phase-9-publishing.md.snapshot",
-      "disposition": "preserved immutable historical snapshot",
-      "sha256": "c97dcd0ffb9337bb1b30e22ec2d5c32f99cc317a4cc0236a3053711b4801dded"
+      "sha256": "c97dcd0ffb9337bb1b30e22ec2d5c32f99cc317a4cc0236a3053711b4801dded",
+      "disposition": "preserved immutable historical snapshot"
     },
     {
       "path": "docs/archive/2026-09-22/docs/superpowers/plans/2026-09-13-phase-7-8-review-repairs.md.snapshot",
-      "disposition": "preserved immutable historical snapshot",
-      "sha256": "9bc7e49558f7293907cb390a6b7be0cc5e51ba53bdbecac73420a3441ca766ab"
+      "sha256": "9bc7e49558f7293907cb390a6b7be0cc5e51ba53bdbecac73420a3441ca766ab",
+      "disposition": "preserved immutable historical snapshot"
     },
     {
       "path": "docs/archive/2026-09-22/docs/superpowers/plans/2026-09-13-phase-9-independent-review-repairs.md.snapshot",
-      "disposition": "preserved immutable historical snapshot",
-      "sha256": "f495598ef9b40fe4eb326aa905935503234c826a89905bbdcd75ba76fce11c1a"
+      "sha256": "f495598ef9b40fe4eb326aa905935503234c826a89905bbdcd75ba76fce11c1a",
+      "disposition": "preserved immutable historical snapshot"
     },
     {
       "path": "docs/archive/2026-09-22/docs/superpowers/reviews/2026-09-13-phase-7-8-release-gate.md.snapshot",
-      "disposition": "preserved immutable historical snapshot",
-      "sha256": "ed1d7fec0f8b7ef512286a294e6d073278d8407dd8888ce7ca25d971f54fa305"
+      "sha256": "ed1d7fec0f8b7ef512286a294e6d073278d8407dd8888ce7ca25d971f54fa305",
+      "disposition": "preserved immutable historical snapshot"
     },
     {
       "path": "docs/archive/2026-09-22/docs/superpowers/reviews/2026-09-13-phase-9-independent-review.md.snapshot",
-      "disposition": "preserved immutable historical snapshot",
-      "sha256": "7e2d79b46f1e8113641b78ff72ca1e38b00f089e5449b7cef18997b648c83ee7"
+      "sha256": "7e2d79b46f1e8113641b78ff72ca1e38b00f089e5449b7cef18997b648c83ee7",
+      "disposition": "preserved immutable historical snapshot"
     },
     {
       "path": "docs/archive/2026-09-22/docs/superpowers/specs/2026-09-12-browser-evidence-design.md.snapshot",
-      "disposition": "preserved immutable historical snapshot",
-      "sha256": "000764f384f38f00ef43aaa9ea9bd6e7e71f8b4cd0b0a05903ab89750daf594b"
+      "sha256": "000764f384f38f00ef43aaa9ea9bd6e7e71f8b4cd0b0a05903ab89750daf594b",
+      "disposition": "preserved immutable historical snapshot"
     },
     {
       "path": "docs/archive/2026-09-22/docs/superpowers/specs/2026-09-12-intelligence-loop-phases-5-6-design.md.snapshot",
-      "disposition": "preserved immutable historical snapshot",
-      "sha256": "560ff30bf09f2fd196f3cfaf5ac226833d6bd9c4e9ff3f6fd5bf83d8c56ebb25"
+      "sha256": "560ff30bf09f2fd196f3cfaf5ac226833d6bd9c4e9ff3f6fd5bf83d8c56ebb25",
+      "disposition": "preserved immutable historical snapshot"
     },
     {
       "path": "docs/archive/2026-09-22/docs/superpowers/specs/2026-09-13-creative-production-phases-7-8-design.md.snapshot",
-      "disposition": "preserved immutable historical snapshot",
-      "sha256": "40ad68143c171862afe0de7d8e6e3ada38a3df791562dae3639ead67a94b6ba5"
+      "sha256": "40ad68143c171862afe0de7d8e6e3ada38a3df791562dae3639ead67a94b6ba5",
+      "disposition": "preserved immutable historical snapshot"
     },
     {
       "path": "docs/archive/2026-09-22/docs/superpowers/specs/2026-09-13-phase-7-8-release-gate-phase-9-publishing-design.md.snapshot",
-      "disposition": "preserved immutable historical snapshot",
-      "sha256": "604ca8184ee1f42c22cfa80db8101640ccf1bc3e773c55a17a2075d2d063e025"
+      "sha256": "604ca8184ee1f42c22cfa80db8101640ccf1bc3e773c55a17a2075d2d063e025",
+      "disposition": "preserved immutable historical snapshot"
     },
     {
       "path": "docs/archive/2026-09-22/docs/trust-model.md.snapshot",
-      "disposition": "preserved immutable historical snapshot",
-      "sha256": "726b8b2fcba6206aac0d9855e2454ea2b97b166d4ad774b74d4449bc49eb3633"
+      "sha256": "726b8b2fcba6206aac0d9855e2454ea2b97b166d4ad774b74d4449bc49eb3633",
+      "disposition": "preserved immutable historical snapshot"
     },
     {
       "path": "docs/archive/2026-09-22/docs/verification.md.snapshot",
-      "disposition": "preserved immutable historical snapshot",
-      "sha256": "5f1ab914d9eaa810e26cfeccc28a43ba7e0ca2d0222e54fb4ee96adc571f262a"
+      "sha256": "5f1ab914d9eaa810e26cfeccc28a43ba7e0ca2d0222e54fb4ee96adc571f262a",
+      "disposition": "preserved immutable historical snapshot"
     },
     {
       "path": "docs/archive/2026-09-22/docs/workflows.md.snapshot",
-      "disposition": "preserved immutable historical snapshot",
-      "sha256": "6301ff82f4816f7300de6b1101b802e5af27475219faa9241a79e9a91b5e12b1"
+      "sha256": "6301ff82f4816f7300de6b1101b802e5af27475219faa9241a79e9a91b5e12b1",
+      "disposition": "preserved immutable historical snapshot"
     },
     {
       "path": "docs/archive/2026-09-22/prompts/Build Creative Production Loop — Phases 7–8 End-to-End.md.snapshot.b64",
-      "disposition": "preserved immutable historical snapshot",
-      "sha256": "968ff9305b92e00907c7a2b7e493959b8f66c64f05bc431c975c1ca97d75b9e0"
+      "sha256": "968ff9305b92e00907c7a2b7e493959b8f66c64f05bc431c975c1ca97d75b9e0",
+      "disposition": "preserved immutable historical snapshot"
     },
     {
       "path": "docs/archive/2026-09-22/prompts/Build Phase 10 — Multi-Platform Production Publishing, Analytics, Attribution & Experiments.md.snapshot.b64",
-      "disposition": "preserved immutable historical snapshot",
-      "sha256": "bb7ee354bb59b4f599aeef44e0a18b17f1f672826454621ed56b0f1055aa55ed"
+      "sha256": "bb7ee354bb59b4f599aeef44e0a18b17f1f672826454621ed56b0f1055aa55ed",
+      "disposition": "preserved immutable historical snapshot"
     },
     {
       "path": "docs/archive/2026-09-22/prompts/Build Phases 1–4 End-to-End.md.snapshot",
-      "disposition": "preserved immutable historical snapshot",
-      "sha256": "4486a0868585423a951e1a874eb55714cd35242963f9a0f47c9d53420d7c101a"
+      "sha256": "4486a0868585423a951e1a874eb55714cd35242963f9a0f47c9d53420d7c101a",
+      "disposition": "preserved immutable historical snapshot"
     },
     {
       "path": "docs/archive/2026-09-22/prompts/Build Real Intelligence Loop — Pre-Phase 5 + Phases 5–6 End-to-End.md.snapshot.b64",
-      "disposition": "preserved immutable historical snapshot",
-      "sha256": "d009ce7b7d6b309591554a39a9841afaf8b470ff63a366d134a9535fdf977a93"
+      "sha256": "d009ce7b7d6b309591554a39a9841afaf8b470ff63a366d134a9535fdf977a93",
+      "disposition": "preserved immutable historical snapshot"
     },
     {
       "path": "docs/archive/2026-09-22/prompts/Complete Phase 7–8 Release Gate, Then Build Phase 9 Governed Publishing.md.snapshot.b64",
-      "disposition": "preserved immutable historical snapshot",
-      "sha256": "6f3bd7a20b4831fc95da3583d636ea6f4b6cccfa3e270425027cec63a6bcec95"
+      "sha256": "6f3bd7a20b4831fc95da3583d636ea6f4b6cccfa3e270425027cec63a6bcec95",
+      "disposition": "preserved immutable historical snapshot"
     },
     {
       "path": "docs/archive/2026-09-22/prompts/Install and Verify Browser Evidence on Linux EC2.md.snapshot.b64",
-      "disposition": "preserved immutable historical snapshot",
-      "sha256": "e71816cf69c082ce224452a69874fca54932d5c7debd2ffc8efa2e660ac7e6ae"
+      "sha256": "e71816cf69c082ce224452a69874fca54932d5c7debd2ffc8efa2e660ac7e6ae",
+      "disposition": "preserved immutable historical snapshot"
     },
     {
       "path": "docs/bootstrap.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "0d272075f524ade0a55b50a56a16936eb03220e4bacd75f60393ea462f52ce61"
+      "sha256": "0d272075f524ade0a55b50a56a16936eb03220e4bacd75f60393ea462f52ce61",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/compatibility.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "492e88c292af028c11c55e42b9463e4967c3250a70b3cdb2d0ccde2bea657adb"
+      "sha256": "492e88c292af028c11c55e42b9463e4967c3250a70b3cdb2d0ccde2bea657adb",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/contracts/adapter-contracts.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "8da92cb1c787573be8f0e709bfa32aa04b403fbcec33f171fe559d99db3fd302"
+      "sha256": "8da92cb1c787573be8f0e709bfa32aa04b403fbcec33f171fe559d99db3fd302",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/core/00_BUILD_AGENT_PROMPT.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "3fc7941ce612f521cdc153425cbdbd613358869d6a6abf2f055d44e1e9cf1cba"
+      "sha256": "3fc7941ce612f521cdc153425cbdbd613358869d6a6abf2f055d44e1e9cf1cba",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/core/01_PRODUCT_CONTEXT_AND_INTENT.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "a50944e6368d3d3a20c650275553675af8fd959e5b869af5ddae90fcc7c6b05f"
+      "sha256": "a50944e6368d3d3a20c650275553675af8fd959e5b869af5ddae90fcc7c6b05f",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/core/02_REFERENCE_RESEARCH.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "d2be8feda6f5fbd4804ce1e7e01dcad1453b7262df8898e754e417572c8ccbf9"
+      "sha256": "d2be8feda6f5fbd4804ce1e7e01dcad1453b7262df8898e754e417572c8ccbf9",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/core/03_TARGET_ARCHITECTURE.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "ab2e7d16ef67435fd1ed351dabe09142f295edb431b5b41ed226522f53a00378"
+      "sha256": "ab2e7d16ef67435fd1ed351dabe09142f295edb431b5b41ed226522f53a00378",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/core/04_BROWSER_APP_AND_RESEARCH_CONTROL.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "54e69de25f5326f6de2aa079b4e7f6cb337cc5715bec2629e9c0699487137c30"
+      "sha256": "54e69de25f5326f6de2aa079b4e7f6cb337cc5715bec2629e9c0699487137c30",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/core/05_IMPLEMENTATION_PLAN.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "e89fdd85c0d802374b8a1e67a41ed8ff20ba0a5b9a6b0d33d8358f9be36718cb"
+      "sha256": "e89fdd85c0d802374b8a1e67a41ed8ff20ba0a5b9a6b0d33d8358f9be36718cb",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/core/06_ACCEPTANCE_TESTS_AND_GUARDRAILS.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "6ac887e7258b366eae68bcd4c4524b57d0b19b3acd5a94563a67f1e34496e8e0"
+      "sha256": "6ac887e7258b366eae68bcd4c4524b57d0b19b3acd5a94563a67f1e34496e8e0",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/core/07_REUSE_EXTENSION_AND_FUTURE_PROOFING.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "a4448853f4a3a4830faa64625150e281486823c5b38d262a5d15f24fb9c6d64e"
+      "sha256": "a4448853f4a3a4830faa64625150e281486823c5b38d262a5d15f24fb9c6d64e",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/core/08_LEAD_AGENT_AND_CREATIVE_TOOL_RUNTIME.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "9224db9889f871729424ca570ee23c4b4715fc7410899d1e4cb3fd3d94538c67"
+      "sha256": "9224db9889f871729424ca570ee23c4b4715fc7410899d1e4cb3fd3d94538c67",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/core/09_CALLABLE_AGENTS_AND_ENGINEERING_METHOD.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "6eb539f5e7105f017cd4202c7571570eb1ea0f912d8384bb1f0a09de705e86a7"
+      "sha256": "6eb539f5e7105f017cd4202c7571570eb1ea0f912d8384bb1f0a09de705e86a7",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/core/README.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "0dbbce2165ab53ba320202c583eaa97ef67971c5411d4ea2a2fef5d8e43045c7"
+      "sha256": "0dbbce2165ab53ba320202c583eaa97ef67971c5411d4ea2a2fef5d8e43045c7",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/database.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "ae816ebc7ce53dc8c9e80d8766b9900f45b52cea20a983f1c04b3786ebb84153"
+      "sha256": "ae816ebc7ce53dc8c9e80d8766b9900f45b52cea20a983f1c04b3786ebb84153",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/dependencies.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "762268eee8946866fd437b21027527373ff924a3de030f00d3bb821c38e37166"
+      "sha256": "762268eee8946866fd437b21027527373ff924a3de030f00d3bb821c38e37166",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/deployment.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "1c3e0686624df9b2b72a0d8f55b0247c8d8c44f1d8c8929ae4ed286cd681d69a"
+      "sha256": "1c3e0686624df9b2b72a0d8f55b0247c8d8c44f1d8c8929ae4ed286cd681d69a",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/governance.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "001097734cca9757d4ccfc22039f6815dec1b24c40a43c39460567e48291458f"
+      "sha256": "001097734cca9757d4ccfc22039f6815dec1b24c40a43c39460567e48291458f",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/implementation-progress.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "1129993aaab20b5f127af83b61e845b7a2a5b8b67788df298b557facb22c4191"
+      "sha256": "1129993aaab20b5f127af83b61e845b7a2a5b8b67788df298b557facb22c4191",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/limitations.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "4a02b07eb29c8c8937f3592318ba8608586f8fe722f82f5bc7c1731286479f50"
+      "sha256": "4a02b07eb29c8c8937f3592318ba8608586f8fe722f82f5bc7c1731286479f50",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/local-development.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "a7ab041edea247a91073c28e2781f42dd0e44cbcfd050bd3525f3d62c0646801"
+      "sha256": "a7ab041edea247a91073c28e2781f42dd0e44cbcfd050bd3525f3d62c0646801",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/mcp-a2a.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "04965f3c7954bc92dfe498ed754a94794fc249f76d8f5c3805111451a34f3e5b"
+      "sha256": "04965f3c7954bc92dfe498ed754a94794fc249f76d8f5c3805111451a34f3e5b",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/memory.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "7929ad3ac8391a72ff43d357f82388ff1c61b5415cf819c2ec6258fbfe7cfc33"
+      "sha256": "7929ad3ac8391a72ff43d357f82388ff1c61b5415cf819c2ec6258fbfe7cfc33",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/model-execution.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "00bbc35117d6ba10dd1d97655e850640282e698f7a5c1421a9cac29235d494ab"
+      "sha256": "00bbc35117d6ba10dd1d97655e850640282e698f7a5c1421a9cac29235d494ab",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/model-gateway.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "28a952d2b3fb75ca53febf5c3f1e8495a85e3ef4d47563a6d715e719c627d922"
+      "sha256": "28a952d2b3fb75ca53febf5c3f1e8495a85e3ef4d47563a6d715e719c627d922",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/phase-7-handoff.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "aafc003f673daec17987f11eb7ac777e2ff5b3532670e4f7acc5a52803702772"
+      "sha256": "aafc003f673daec17987f11eb7ac777e2ff5b3532670e4f7acc5a52803702772",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/phase-9-handoff.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "339fac8570a67815ccfb768dd6d0a03b2001d1529b1e90cb4c26ed3a3fcdf9ad"
+      "sha256": "339fac8570a67815ccfb768dd6d0a03b2001d1529b1e90cb4c26ed3a3fcdf9ad",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/plugins.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "5eda3b009f6c14653fdc42ea83276d8e9c8284ed86890fab78710dddabaf0f34"
+      "sha256": "5eda3b009f6c14653fdc42ea83276d8e9c8284ed86890fab78710dddabaf0f34",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/recovery.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "03e8134c79365bf66ab375229457fc322cc37ff38d794b45c48bf10bc0e74ea2"
+      "sha256": "03e8134c79365bf66ab375229457fc322cc37ff38d794b45c48bf10bc0e74ea2",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/research.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "b9e6fffd86360640e0137640d0efdd0ab982eb89786a60ba613ba28d5344fbf4"
+      "sha256": "b9e6fffd86360640e0137640d0efdd0ab982eb89786a60ba613ba28d5344fbf4",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/research/youtube-agent/architecture-audit.md",
-      "disposition": "preserved YouTube-agent reference research",
-      "sha256": "23daa3962eda5f876be12f166966dc84fc06e9395d904992ff7672ed75564485"
+      "sha256": "23daa3962eda5f876be12f166966dc84fc06e9395d904992ff7672ed75564485",
+      "disposition": "preserved YouTube-agent reference research"
     },
     {
       "path": "docs/research/youtube-agent/ops-quality-audit.md",
-      "disposition": "preserved YouTube-agent reference research",
-      "sha256": "6364f88a7acdb24e6e5f1449248a4b0c0e89c142441c8d460d255baa0eee28f8"
+      "sha256": "6364f88a7acdb24e6e5f1449248a4b0c0e89c142441c8d460d255baa0eee28f8",
+      "disposition": "preserved YouTube-agent reference research"
     },
     {
       "path": "docs/research/youtube-agent/orchestrator-synthesis.md",
-      "disposition": "preserved YouTube-agent reference research",
-      "sha256": "8055a07720d022fdd469266c9e90ae69264b5b129f0f6c7cebfe7e359dea7a14"
+      "sha256": "8055a07720d022fdd469266c9e90ae69264b5b129f0f6c7cebfe7e359dea7a14",
+      "disposition": "preserved YouTube-agent reference research"
     },
     {
       "path": "docs/research/youtube-agent/salience-gap-audit.md",
-      "disposition": "preserved YouTube-agent reference research",
-      "sha256": "93c0822ca6ed4b965b699d8b28567ad51d537464783e3a482c9c621990fc331a"
+      "sha256": "93c0822ca6ed4b965b699d8b28567ad51d537464783e3a482c9c621990fc331a",
+      "disposition": "preserved YouTube-agent reference research"
     },
     {
       "path": "docs/salience-phase-1-6.architecture.html",
-      "disposition": "preserved historical architecture visual",
-      "sha256": "d68f14807c03baf56e8e07b4829d4b08a3898f4f07c4460ee3d09d3fb416107d"
+      "sha256": "d68f14807c03baf56e8e07b4829d4b08a3898f4f07c4460ee3d09d3fb416107d",
+      "disposition": "preserved historical architecture visual"
     },
     {
       "path": "docs/salience-phase-1-6.architecture.json",
-      "disposition": "preserved historical architecture visual",
-      "sha256": "24bfe7c9e3f60892bc0b98de615dde858dd13f93ec7aa0008d43a0f0f6109edc"
+      "sha256": "24bfe7c9e3f60892bc0b98de615dde858dd13f93ec7aa0008d43a0f0f6109edc",
+      "disposition": "preserved historical architecture visual"
     },
     {
       "path": "docs/salience-phase-1-6.architecture.visual-check.html",
-      "disposition": "preserved historical architecture visual",
-      "sha256": "b6c348b09e4d70e371f5bb3ae2b9c5039168a37f5c603204a09c64310e957fa3"
+      "sha256": "b6c348b09e4d70e371f5bb3ae2b9c5039168a37f5c603204a09c64310e957fa3",
+      "disposition": "preserved historical architecture visual"
     },
     {
       "path": "docs/salience-phase-1-6.architecture.visual-check.json",
-      "disposition": "preserved historical architecture visual",
-      "sha256": "e344a60e979a74243390666764fccc56baec2380f0d083a0f07746b7d8d1b430"
+      "sha256": "e344a60e979a74243390666764fccc56baec2380f0d083a0f07746b7d8d1b430",
+      "disposition": "preserved historical architecture visual"
     },
     {
       "path": "docs/salience-phase-1-8-final.architecture.html",
-      "disposition": "preserved historical architecture visual",
-      "sha256": "e888dd64671a5c456f166234ec84ae422b223e4944772c69ff6c704512260603"
+      "sha256": "e888dd64671a5c456f166234ec84ae422b223e4944772c69ff6c704512260603",
+      "disposition": "preserved historical architecture visual"
     },
     {
       "path": "docs/salience-phase-1-8-final.architecture.json",
-      "disposition": "preserved historical architecture visual",
-      "sha256": "f06d8d549297cd8614c2da36e266a133160673220ccfe441acde565540d6fd97"
+      "sha256": "f06d8d549297cd8614c2da36e266a133160673220ccfe441acde565540d6fd97",
+      "disposition": "preserved historical architecture visual"
     },
     {
       "path": "docs/salience-phase-1-9.architecture.html",
-      "disposition": "preserved historical architecture visual",
-      "sha256": "f4861980432083493d2bd1d9b14ccb56487e46bfa6833370acff3ccf187af68e"
+      "sha256": "f4861980432083493d2bd1d9b14ccb56487e46bfa6833370acff3ccf187af68e",
+      "disposition": "preserved historical architecture visual"
     },
     {
       "path": "docs/salience-phase-1-9.architecture.json",
-      "disposition": "preserved historical architecture visual",
-      "sha256": "a2bfdb1ff9dc935b624cba5155ba9e1a26cbe7594f8469c431e709a26269796b"
+      "sha256": "a2bfdb1ff9dc935b624cba5155ba9e1a26cbe7594f8469c431e709a26269796b",
+      "disposition": "preserved historical architecture visual"
     },
     {
       "path": "docs/superpowers/plans/2026-09-12-browser-evidence.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "379e8a91f6c5bdf86e626b85b65183a9c6eab44295c6c810890d064992047a1e"
+      "sha256": "379e8a91f6c5bdf86e626b85b65183a9c6eab44295c6c810890d064992047a1e",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/superpowers/plans/2026-09-12-intelligence-loop-phases-5-6.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "7c9ff324f68a28a73a31d927117a9fc24e89f393fdc032fa05661a66c650116e"
+      "sha256": "7c9ff324f68a28a73a31d927117a9fc24e89f393fdc032fa05661a66c650116e",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/superpowers/plans/2026-09-12-phases-1-4-foundation.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "c458aef124dbb8cdfeb637d89856710f0ac73e30c14665639f67ac40d72a1e7c"
+      "sha256": "c458aef124dbb8cdfeb637d89856710f0ac73e30c14665639f67ac40d72a1e7c",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/superpowers/plans/2026-09-13-creative-production-phases-7-8.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "d7d5322cb4f6df5c73bf47dab67c27627a682239d38abe073f35341372397d82"
+      "sha256": "d7d5322cb4f6df5c73bf47dab67c27627a682239d38abe073f35341372397d82",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/superpowers/plans/2026-09-13-phase-7-8-release-gate-phase-9-publishing.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "6ecc4343cf22586451099c463f746464e61f0f51518050d48fbbc5363af2ec23"
+      "sha256": "6ecc4343cf22586451099c463f746464e61f0f51518050d48fbbc5363af2ec23",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/superpowers/plans/2026-09-13-phase-7-8-review-repairs.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "096cd3e808a5cb8baebd26306a488a392be439791fe94c0bfc6295286d455ca2"
+      "sha256": "096cd3e808a5cb8baebd26306a488a392be439791fe94c0bfc6295286d455ca2",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/superpowers/plans/2026-09-13-phase-9-independent-review-repairs.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "8b0586343504d8d461e735d3c177c533373cf35c706a649396f36dffda656e88"
+      "sha256": "8b0586343504d8d461e735d3c177c533373cf35c706a649396f36dffda656e88",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/superpowers/plans/2026-10-06-p1-publication-recovery-hold.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "48684cfbb088ed4c2015a3b7e76e68bdce6cc3ce85184334a33619c7a59bb001"
+      "sha256": "48684cfbb088ed4c2015a3b7e76e68bdce6cc3ce85184334a33619c7a59bb001",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/superpowers/plans/2026-10-13-agenttube-immutable-reference-guard.md",
-      "disposition": "preserved dated preparation plan",
-      "sha256": "4226a0c0b48c80e3891008913d4486db5a8ad83430cf8e2158b77a03dfae4d94"
+      "sha256": "4226a0c0b48c80e3891008913d4486db5a8ad83430cf8e2158b77a03dfae4d94",
+      "disposition": "preserved dated preparation plan"
     },
     {
       "path": "docs/superpowers/plans/2026-10-13-agenttube-reference-adoption.md",
-      "disposition": "preserved dated preparation plan",
-      "sha256": "3508872b035b032ca6379b5f9ce03d4e30fba90d6a585cc9df9808674b6eecf4"
+      "sha256": "3508872b035b032ca6379b5f9ce03d4e30fba90d6a585cc9df9808674b6eecf4",
+      "disposition": "preserved dated preparation plan"
     },
     {
       "path": "docs/superpowers/plans/2026-10-13-p1-publication-recovery-floor-repair.md",
-      "disposition": "preserved dated preparation plan",
-      "sha256": "fbb80a6214ae41ae04fbbf153e2fe6dcce20922a4301de42e53a46377479f276"
+      "sha256": "fbb80a6214ae41ae04fbbf153e2fe6dcce20922a4301de42e53a46377479f276",
+      "disposition": "preserved dated preparation plan"
     },
     {
       "path": "docs/superpowers/plans/2026-10-27-p1-production-policy-and-revocation.md",
-      "disposition": "already current approved Task 6 implementation plan",
-      "sha256": "c1564a7ec7d09f63b5aba105678c8b5929619fecc49e5b4bb3e415ed1340672e"
+      "sha256": "c1564a7ec7d09f63b5aba105678c8b5929619fecc49e5b4bb3e415ed1340672e",
+      "disposition": "already current approved Task 6 implementation plan"
     },
     {
       "path": "docs/superpowers/plans/2026-10-27-p1-rg0-rg1-initial-gap-audit.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "5d1dd8a86718184d03324144643dfb009cb36243a5bd0c0f14c46844eb3c5cd4"
+      "sha256": "5d1dd8a86718184d03324144643dfb009cb36243a5bd0c0f14c46844eb3c5cd4",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/superpowers/reviews/2026-09-13-phase-7-8-release-gate.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "a285b5420c677c3a35e23306b72b3ecf44b0877b03a1832511dd0a1e74396408"
+      "sha256": "a285b5420c677c3a35e23306b72b3ecf44b0877b03a1832511dd0a1e74396408",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/superpowers/reviews/2026-09-13-phase-9-independent-review.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "36bbd9319a1286b817685daffbc752017f41b7ef65752fe675b6223ffdaeec0c"
+      "sha256": "36bbd9319a1286b817685daffbc752017f41b7ef65752fe675b6223ffdaeec0c",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/superpowers/specs/2026-09-12-browser-evidence-design.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "49eede3f517b83f2e2ff7584717436e668f847a4af5cbbc6639b5a5dfc45e8df"
+      "sha256": "49eede3f517b83f2e2ff7584717436e668f847a4af5cbbc6639b5a5dfc45e8df",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/superpowers/specs/2026-09-12-intelligence-loop-phases-5-6-design.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "07754380584a9df1ba52d57ee9dc90e32f5207064979d72b98dcb54d1b87ad35"
+      "sha256": "07754380584a9df1ba52d57ee9dc90e32f5207064979d72b98dcb54d1b87ad35",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/superpowers/specs/2026-09-13-creative-production-phases-7-8-design.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "e0f0406a1fe058b71bee31034b77fa183e406f8658468ea118889909ee710ff5"
+      "sha256": "e0f0406a1fe058b71bee31034b77fa183e406f8658468ea118889909ee710ff5",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/superpowers/specs/2026-09-13-phase-7-8-release-gate-phase-9-publishing-design.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "3295c2f0e18ef307694c2600639810e1d5cdf802ec624f6030876267b6592c95"
+      "sha256": "3295c2f0e18ef307694c2600639810e1d5cdf802ec624f6030876267b6592c95",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/superpowers/specs/2026-10-06-p1-publication-recovery-hold-design.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "ff961144c58b22fbcbfe624dfd17909377d8aa4b25d04ca14e3ae4947aa2d26d"
+      "sha256": "ff961144c58b22fbcbfe624dfd17909377d8aa4b25d04ca14e3ae4947aa2d26d",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/superpowers/specs/2026-10-13-agenttube-reference-and-native-adoption-design.md",
-      "disposition": "preserved dated design specification",
-      "sha256": "d8e1f17c8029fc5016a604f24cc335ec1f5111bca725d548cc23b68fe5106f0c"
+      "sha256": "d8e1f17c8029fc5016a604f24cc335ec1f5111bca725d548cc23b68fe5106f0c",
+      "disposition": "preserved dated design specification"
     },
     {
       "path": "docs/superpowers/specs/2026-10-13-p1-live-schedule-fencing-design.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "04ed59e2ed61ca17dc2c01df3a2964e1569e03e79f0aef2bbfe2ca2d96d5129a"
+      "sha256": "04ed59e2ed61ca17dc2c01df3a2964e1569e03e79f0aef2bbfe2ca2d96d5129a",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/superpowers/specs/2026-10-13-p1-production-policy-and-revocation-design.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "6be8f5ec6c48491a45a734510cc20af98e2cd7554fdc0409e77c6d9667d42fe2"
+      "sha256": "6be8f5ec6c48491a45a734510cc20af98e2cd7554fdc0409e77c6d9667d42fe2",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/superpowers/specs/2026-10-13-p1-production-recovery-and-alerts-design.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "1c731ee595be6582902aa79f9ebb52d520f6fd18ad6054ca304709ce16aea61c"
+      "sha256": "1c731ee595be6582902aa79f9ebb52d520f6fd18ad6054ca304709ce16aea61c",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/superpowers/specs/2026-10-13-p1-production-routing-and-worker-fencing-design.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "d4d2c06a1f0925d2826b29a4e2c053f7f7773f660397fe986883c370aee78f67"
+      "sha256": "d4d2c06a1f0925d2826b29a4e2c053f7f7773f660397fe986883c370aee78f67",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/superpowers/specs/2026-10-13-p1-publication-recovery-floor-repair-design.md",
-      "disposition": "preserved dated design specification",
-      "sha256": "120d21654c9d5f3e422f8e457f7f6baed137a4ef223d337e9825eae35726ff0c"
+      "sha256": "120d21654c9d5f3e422f8e457f7f6baed137a4ef223d337e9825eae35726ff0c",
+      "disposition": "preserved dated design specification"
     },
     {
       "path": "docs/superpowers/specs/2026-10-13-rg0-rg1-external-acceptance-design.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "2a5d6cff0dd44070b1942e79f073906527b8e2650b62b3473d63542f00bfbcd8"
+      "sha256": "2a5d6cff0dd44070b1942e79f073906527b8e2650b62b3473d63542f00bfbcd8",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/superpowers/specs/2026-10-13-v4-multiplatform-autonomy-program-sequence.md",
-      "disposition": "preserved dated design specification",
-      "sha256": "ba64032ca707c4348c97651fa06beced3df90d1612c38c56de50fed1558947ca"
+      "sha256": "ba64032ca707c4348c97651fa06beced3df90d1612c38c56de50fed1558947ca",
+      "disposition": "preserved dated design specification"
     },
     {
       "path": "docs/trust-model.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "664d74e61f43bd12b5f87f04c828a492f484c6fec2dc42f015f6e5ee3049e550"
+      "sha256": "664d74e61f43bd12b5f87f04c828a492f484c6fec2dc42f015f6e5ee3049e550",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/v4/IMPLEMENTATION-BLUEPRINT.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "6e717aae30c9eb3714d760d5e04f8689a33db0b5e0a3d8dcb4e8e63137c7c58b"
+      "sha256": "6e717aae30c9eb3714d760d5e04f8689a33db0b5e0a3d8dcb4e8e63137c7c58b",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/v4/agenttube-adoption-evidence.json",
-      "disposition": "preserved YouTube-agent reference research",
-      "sha256": "77e356eeb0bcc8f734ae7ca9203d5c986428a276796adb1790fd3250d71215af"
+      "sha256": "77e356eeb0bcc8f734ae7ca9203d5c986428a276796adb1790fd3250d71215af",
+      "disposition": "preserved YouTube-agent reference research"
     },
     {
       "path": "docs/v4/allocation-evidence.json",
-      "disposition": "preserved dated qualification report",
-      "sha256": "65c8334184cae24c8935db80b397b4ef31627da705c88b68ee77430dcd11db3c"
+      "sha256": "65c8334184cae24c8935db80b397b4ef31627da705c88b68ee77430dcd11db3c",
+      "disposition": "preserved dated qualification report"
     },
     {
       "path": "docs/v4/audits/salience-p1-external-evidence-audit.md",
-      "disposition": "preserved dated initial P1/RG0/RG1 subaudit report",
-      "sha256": "b29b8135af40e8f95f5e9b903ea70d8840ec95c3b01eaf684004986c9e75997b"
+      "sha256": "b29b8135af40e8f95f5e9b903ea70d8840ec95c3b01eaf684004986c9e75997b",
+      "disposition": "preserved dated initial P1/RG0/RG1 subaudit report"
     },
     {
       "path": "docs/v4/audits/salience-p1-policy-routing-audit.md",
-      "disposition": "preserved dated initial P1/RG0/RG1 subaudit report",
-      "sha256": "0a538f5cfac2c8bbd59556fbb227258157b9c4abdaea002711bad71682b1a460"
+      "sha256": "0a538f5cfac2c8bbd59556fbb227258157b9c4abdaea002711bad71682b1a460",
+      "disposition": "preserved dated initial P1/RG0/RG1 subaudit report"
     },
     {
       "path": "docs/v4/audits/salience-p1-policy-routing-audit.md.txt",
-      "disposition": "preserved unscanned P1 policy-routing subaudit payload",
-      "sha256": "af34376c35348d102576dcccbc90165396e9611cd3e5cf0e4fb5be7d02cd0572"
+      "sha256": "af34376c35348d102576dcccbc90165396e9611cd3e5cf0e4fb5be7d02cd0572",
+      "disposition": "preserved unscanned P1 policy-routing subaudit payload"
     },
     {
       "path": "docs/v4/audits/salience-p1-temporal-recovery-audit.md",
-      "disposition": "preserved dated initial P1/RG0/RG1 subaudit report",
-      "sha256": "0370638903bff6006ff9fe29dec3d91d86956fd8618b8ef41694fbab1181133c"
+      "sha256": "0370638903bff6006ff9fe29dec3d91d86956fd8618b8ef41694fbab1181133c",
+      "disposition": "preserved dated initial P1/RG0/RG1 subaudit report"
     },
     {
       "path": "docs/v4/baseline-approval-evidence.json",
-      "disposition": "preserved dated qualification report",
-      "sha256": "66c3ca048068f29fafe6f8ed06cac5e544328c6493684ad8ef00a4de0b31a02f"
+      "sha256": "66c3ca048068f29fafe6f8ed06cac5e544328c6493684ad8ef00a4de0b31a02f",
+      "disposition": "preserved dated qualification report"
     },
     {
       "path": "docs/v4/cadence-policy-evidence.json",
-      "disposition": "preserved dated qualification report",
-      "sha256": "d8aeda06cade48ba421942073854966517a1bc0bf9f3ff63acbea52aa4fdb608"
+      "sha256": "d8aeda06cade48ba421942073854966517a1bc0bf9f3ff63acbea52aa4fdb608",
+      "disposition": "preserved dated qualification report"
     },
     {
       "path": "docs/v4/cadence-policy-recheck-evidence.json",
-      "disposition": "preserved dated qualification report",
-      "sha256": "13a39e9d22f58220ccfd5b4d5663cf279014006e23c50f700a7e55dea8011c0a"
+      "sha256": "13a39e9d22f58220ccfd5b4d5663cf279014006e23c50f700a7e55dea8011c0a",
+      "disposition": "preserved dated qualification report"
     },
     {
       "path": "docs/v4/coverage.json",
-      "disposition": "preserved source, archive or coverage manifest",
-      "sha256": "b7969a6cef9813f9ec5b8e48d4f2798fdb55dee82062f4dff6ee3115415ae038"
+      "sha256": "b7969a6cef9813f9ec5b8e48d4f2798fdb55dee82062f4dff6ee3115415ae038",
+      "disposition": "preserved source, archive or coverage manifest"
     },
     {
       "path": "docs/v4/development-entry-evidence.json",
-      "disposition": "preserved dated qualification report",
-      "sha256": "88de230412755a616f8a4485c06a3917d5b75acdb270f7f9cb843e07b013fe98"
+      "sha256": "88de230412755a616f8a4485c06a3917d5b75acdb270f7f9cb843e07b013fe98",
+      "disposition": "preserved dated qualification report"
     },
     {
       "path": "docs/v4/dispositions.json",
-      "disposition": "preserved source, archive or coverage manifest",
-      "sha256": "a161263ad529610fc42613b0bfaa8e014da423ccc8cb8ee6dbc3e961916a9945"
+      "sha256": "a161263ad529610fc42613b0bfaa8e014da423ccc8cb8ee6dbc3e961916a9945",
+      "disposition": "preserved source, archive or coverage manifest"
     },
     {
       "path": "docs/v4/documentation-status-audit.json",
-      "disposition": "current documentation audit; self hash omitted to avoid a recursive digest",
-      "sha256": null
+      "sha256": null,
+      "disposition": "current documentation audit; self hash omitted to avoid a recursive digest"
     },
     {
       "path": "docs/v4/evidence-baseline.json",
-      "disposition": "preserved source, archive or coverage manifest",
-      "sha256": "ac53e0f4e924dc9c367383c6fc37a3f755b96ff8d887ce501314f25baad932c8"
+      "sha256": "ac53e0f4e924dc9c367383c6fc37a3f755b96ff8d887ce501314f25baad932c8",
+      "disposition": "preserved source, archive or coverage manifest"
     },
     {
       "path": "docs/v4/evidence-lock.json",
-      "disposition": "Active 366-file qualification content lock for frozen application 182c4e4; qualification harness observed at 7c3f382; historical locks retained separately",
-      "sha256": "472d603c1110a0ebe8082f598b7d02a892e6591a9f6b400c48979321551af674"
+      "sha256": "472d603c1110a0ebe8082f598b7d02a892e6591a9f6b400c48979321551af674",
+      "disposition": "Active 366-file qualification content lock for frozen application 182c4e4; qualification harness observed at 7c3f382; historical locks retained separately"
     },
     {
       "path": "docs/v4/goal-revision-evidence.json",
-      "disposition": "preserved dated qualification report",
-      "sha256": "97805c1b80c9ad243726c9b5e5242daa3ddb867cebdfde5e391ea0b1a63164a2"
+      "sha256": "97805c1b80c9ad243726c9b5e5242daa3ddb867cebdfde5e391ea0b1a63164a2",
+      "disposition": "preserved dated qualification report"
     },
     {
       "path": "docs/v4/governance-evidence.json",
-      "disposition": "preserved dated qualification report",
-      "sha256": "9b90c8a1059c61c8f7f0ad99d9c86d781eb3318c187de20f6f378f7a34c72fee"
+      "sha256": "9b90c8a1059c61c8f7f0ad99d9c86d781eb3318c187de20f6f378f7a34c72fee",
+      "disposition": "preserved dated qualification report"
     },
     {
       "path": "docs/v4/inventory.json",
-      "disposition": "preserved source, archive or coverage manifest",
-      "sha256": "988fe36c86834277a58eeabd6f68ed79f4d5ece5f57b181b225fef0a6a8dede0"
+      "sha256": "988fe36c86834277a58eeabd6f68ed79f4d5ece5f57b181b225fef0a6a8dede0",
+      "disposition": "preserved source, archive or coverage manifest"
     },
     {
       "path": "docs/v4/item4-evidence.json",
-      "disposition": "preserved dated qualification report",
-      "sha256": "baa59cc476e7f91fd7b724f7511602751e81af40a9c480c130a2581df72d6711"
+      "sha256": "baa59cc476e7f91fd7b724f7511602751e81af40a9c480c130a2581df72d6711",
+      "disposition": "preserved dated qualification report"
     },
     {
       "path": "docs/v4/item5a-evidence.json",
-      "disposition": "preserved dated qualification report",
-      "sha256": "e8bcfaaa88ce7ad09061e57f2bd73f7bfbfda7e2dee186bb8a379e8ccf2ddf22"
+      "sha256": "e8bcfaaa88ce7ad09061e57f2bd73f7bfbfda7e2dee186bb8a379e8ccf2ddf22",
+      "disposition": "preserved dated qualification report"
     },
     {
       "path": "docs/v4/item5b-evidence.json",
-      "disposition": "preserved dated qualification report",
-      "sha256": "1c2c53647e773aa8a9c4f83622654eb9c90cdcd88d9f4563ad9a65d29b8980b1"
+      "sha256": "1c2c53647e773aa8a9c4f83622654eb9c90cdcd88d9f4563ad9a65d29b8980b1",
+      "disposition": "preserved dated qualification report"
     },
     {
       "path": "docs/v4/item5c-evidence.json",
-      "disposition": "preserved dated qualification report",
-      "sha256": "4b0ef8eccccae966c301cd8a331fee88c4cf7467460077416fb6c7eab2a595c9"
+      "sha256": "4b0ef8eccccae966c301cd8a331fee88c4cf7467460077416fb6c7eab2a595c9",
+      "disposition": "preserved dated qualification report"
     },
     {
       "path": "docs/v4/item6-evidence.json",
-      "disposition": "preserved dated qualification report",
-      "sha256": "ac589561522bff809a609af0579ab69d0bbdad69c8257f7ee919700434bf5f10"
+      "sha256": "ac589561522bff809a609af0579ab69d0bbdad69c8257f7ee919700434bf5f10",
+      "disposition": "preserved dated qualification report"
     },
     {
       "path": "docs/v4/item6-operator-evidence.json",
-      "disposition": "preserved dated qualification report",
-      "sha256": "05f9efdcfa2bd73f1af52ecb9177bf80a4164effd8ed09345a8b766f409ffd88"
+      "sha256": "05f9efdcfa2bd73f1af52ecb9177bf80a4164effd8ed09345a8b766f409ffd88",
+      "disposition": "preserved dated qualification report"
     },
     {
       "path": "docs/v4/item7-admission-review.json",
-      "disposition": "preserved dated independent item7 qualification report",
-      "sha256": "bd200cbf73c90393a57591e39ba8463cb5cd0b8c5279924778fe01487469cb67"
+      "sha256": "bd200cbf73c90393a57591e39ba8463cb5cd0b8c5279924778fe01487469cb67",
+      "disposition": "preserved dated independent item7 qualification report"
     },
     {
       "path": "docs/v4/item7-evidence.json",
-      "disposition": "preserved dated independent item7 qualification report",
-      "sha256": "1ce1f3a6e6942c3eef5ebaa1198bbc614c28dee18fa8d66d59d01cf56627246d"
+      "sha256": "1ce1f3a6e6942c3eef5ebaa1198bbc614c28dee18fa8d66d59d01cf56627246d",
+      "disposition": "preserved dated independent item7 qualification report"
     },
     {
       "path": "docs/v4/item7-findings.json",
-      "disposition": "preserved dated independent item7 qualification report",
-      "sha256": "972edc056896af66416c455bb0e90885a8afaa5ba69a34dd18f43a2a05f38a18"
+      "sha256": "972edc056896af66416c455bb0e90885a8afaa5ba69a34dd18f43a2a05f38a18",
+      "disposition": "preserved dated independent item7 qualification report"
     },
     {
       "path": "docs/v4/item7-governance-review.json",
-      "disposition": "preserved dated independent item7 qualification report",
-      "sha256": "cccb44d195fcc37ccd0782d5bc5ae18cbf7838cc6280fbfcffa48b65eca0bf37"
+      "sha256": "cccb44d195fcc37ccd0782d5bc5ae18cbf7838cc6280fbfcffa48b65eca0bf37",
+      "disposition": "preserved dated independent item7 qualification report"
     },
     {
       "path": "docs/v4/item7-independent-review.md",
-      "disposition": "preserved dated independent item7 qualification report",
-      "sha256": "a645cdc0867ce62d08040ec461818f3ec90d57926d95b6a84cf911d631d6b57b"
+      "sha256": "a645cdc0867ce62d08040ec461818f3ec90d57926d95b6a84cf911d631d6b57b",
+      "disposition": "preserved dated independent item7 qualification report"
     },
     {
       "path": "docs/v4/item7-preparation-evidence.json",
-      "disposition": "preserved dated preparation report",
-      "sha256": "e4c20e32e4b05b0a3e40fb45ec907a3b87f722b22dea169b2e596e70f16c8054"
+      "sha256": "e4c20e32e4b05b0a3e40fb45ec907a3b87f722b22dea169b2e596e70f16c8054",
+      "disposition": "preserved dated preparation report"
     },
     {
       "path": "docs/v4/item7-runtime-review.json",
-      "disposition": "preserved dated independent item7 qualification report",
-      "sha256": "410781b5e8d229a2d515a8ec439592a76fd3e1fc08277ede5fd24c3ae0b05f6c"
+      "sha256": "410781b5e8d229a2d515a8ec439592a76fd3e1fc08277ede5fd24c3ae0b05f6c",
+      "disposition": "preserved dated independent item7 qualification report"
     },
     {
       "path": "docs/v4/legacy-creative-evidence.json",
-      "disposition": "durable local canonical dry creative qualification report",
-      "sha256": "8e1c69f1a666a9e1f8b7eebb4e4d7a3c823e98bdfc714d4cf0834a2e5e8de008"
+      "sha256": "8e1c69f1a666a9e1f8b7eebb4e4d7a3c823e98bdfc714d4cf0834a2e5e8de008",
+      "disposition": "durable local canonical dry creative qualification report"
     },
     {
       "path": "docs/v4/legacy-dispatch-contract.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "a57b3588de14ffbd5dbfe1b4a5a33ca5244dbd42844fb096a41d892b48c75395"
+      "sha256": "a57b3588de14ffbd5dbfe1b4a5a33ca5244dbd42844fb096a41d892b48c75395",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/v4/legacy-dispatch-evidence.json",
-      "disposition": "preserved dated legacy intelligence qualification report",
-      "sha256": "fe6784dee7b40a34a30a0acffac6b03ca2a8e8abafe1289a4d5cdee0ff96e9fd"
+      "sha256": "fe6784dee7b40a34a30a0acffac6b03ca2a8e8abafe1289a4d5cdee0ff96e9fd",
+      "disposition": "preserved dated legacy intelligence qualification report"
     },
     {
       "path": "docs/v4/legacy-dummy-evidence.json",
-      "disposition": "preserved dated canonical no-send dummy qualification report",
-      "sha256": "3946d47b029a0607cb8a6fecc9830d98bee9c04afd54112c98b6ee0402eff0bc"
+      "sha256": "3946d47b029a0607cb8a6fecc9830d98bee9c04afd54112c98b6ee0402eff0bc",
+      "disposition": "preserved dated canonical no-send dummy qualification report"
     },
     {
       "path": "docs/v4/legacy-publication-evidence.json",
-      "disposition": "historical A4 publication qualification with current recovery-hold evidence pointer and exact A4/d031172 rereview scope",
-      "sha256": "099fce0869b655aed8c83ab53e2a27c0b2a74d9afd8bdc51680ad2bc7ff24c0f"
+      "sha256": "099fce0869b655aed8c83ab53e2a27c0b2a74d9afd8bdc51680ad2bc7ff24c0f",
+      "disposition": "historical A4 publication qualification with current recovery-hold evidence pointer and exact A4/d031172 rereview scope"
     },
     {
       "path": "docs/v4/legacy-schedule-evidence.json",
-      "disposition": "preserved dated legacy brief and scheduled ingress qualification report",
-      "sha256": "ce1cf24817c356ce5e7b3e38f208290c151c1f6ab2580f8429916cfe7b6cfa51"
+      "sha256": "ce1cf24817c356ce5e7b3e38f208290c151c1f6ab2580f8429916cfe7b6cfa51",
+      "disposition": "preserved dated legacy brief and scheduled ingress qualification report"
     },
     {
       "path": "docs/v4/native-schedule-evidence.json",
-      "disposition": "preserved dated original native schedule qualification report",
-      "sha256": "d22da11eabab1118d0c807a93416cbeb9f1ceb845de61566a01e2e4a243f3d4a"
+      "sha256": "d22da11eabab1118d0c807a93416cbeb9f1ceb845de61566a01e2e4a243f3d4a",
+      "disposition": "preserved dated original native schedule qualification report"
     },
     {
       "path": "docs/v4/outbox-increment-evidence.json",
-      "disposition": "preserved dated qualification report",
-      "sha256": "d1200fda0921e7c46844e9a5804c68e522addf1d41f176e68210e4834fc30504"
+      "sha256": "d1200fda0921e7c46844e9a5804c68e522addf1d41f176e68210e4834fc30504",
+      "disposition": "preserved dated qualification report"
     },
     {
       "path": "docs/v4/p0-release.json",
-      "disposition": "Current release ledger records frozen application scope, exact pushed documentation CI, approved sequence navigation, and pending current-candidate CI; release gates retained",
-      "sha256": "5038fa02bd73d176cbad6df99a66537fb25cdebc0f8c972f33419070e1145757"
+      "sha256": "5038fa02bd73d176cbad6df99a66537fb25cdebc0f8c972f33419070e1145757",
+      "disposition": "Current release ledger records frozen application scope, exact pushed documentation CI, approved sequence navigation, and pending current-candidate CI; release gates retained"
     },
     {
       "path": "docs/v4/p1-increment-evidence.json",
-      "disposition": "preserved dated qualification report",
-      "sha256": "0ff2183c8993d72b05832db167e82433c2bced74e047b3609574877701ac591f"
+      "sha256": "0ff2183c8993d72b05832db167e82433c2bced74e047b3609574877701ac591f",
+      "disposition": "preserved dated qualification report"
     },
     {
       "path": "docs/v4/p1-production-policy-revocation-evidence.json",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "f38f7aeb39391a4f76e4d1e89eeb1be6fc4a302b1f936dc6a21def1874f02faf"
+      "sha256": "7d27f58fb21b9cf06c8098ffbd0c2aa29b647d54d6643a1767845ebf475deb53",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/v4/p1-qualification-matrix.json",
-      "disposition": "Current P1 matrix keeps application scope frozen, exact review and documentation CI heads distinct, and current candidate CI pending; production holds retained",
-      "sha256": "db149716ecdf76fc22638a4dba54e6be9190854769ba72046474fc42e2a02177"
+      "sha256": "d52f8e5cd39497d17511d11f571370be05e602e6822da508d9164023caf117da",
+      "disposition": "Current P1 matrix keeps application scope frozen, exact review and documentation CI heads distinct, and current candidate CI pending; production holds retained"
     },
     {
       "path": "docs/v4/p1-rg0-rg1-audit-and-spec-review.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "056d1f6f0b224eef012d6f57902d0b31962e64e16ada7f8f69b811a4e3f9ae7a"
+      "sha256": "013c63bdac90d3b279513ef50b962689a92241af885c1e89ec35edc2bb0f8be8",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/v4/p1-rg0-rg1-initial-gap-audit.json",
-      "disposition": "current initial commit-bound P1/RG0/RG1 audit evidence; COMPLETE_REVIEWED at source 7c1ddcd; 22 rows non-PASS; implementation/target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2 BLOCKED",
-      "sha256": "33fe485384dcf60e36df8d48ace6394c80bce0d1bd9e6b9b39c7a905d65676b1"
+      "sha256": "33fe485384dcf60e36df8d48ace6394c80bce0d1bd9e6b9b39c7a905d65676b1",
+      "disposition": "current initial commit-bound P1/RG0/RG1 audit evidence; COMPLETE_REVIEWED at source 7c1ddcd; 22 rows non-PASS; implementation/target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2 BLOCKED"
     },
     {
       "path": "docs/v4/p1-rg0-rg1-initial-gap-audit.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "62aab5afb39f7c47e355a68ccf56e319a72955247515dfbdba8913fd797a5944"
+      "sha256": "62aab5afb39f7c47e355a68ccf56e319a72955247515dfbdba8913fd797a5944",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/v4/parallel-agent-contract.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "9daa5c45a4493dc693ca3bde3bf327b4a24bf84e611ea2a0843caa26a3209c10"
+      "sha256": "9daa5c45a4493dc693ca3bde3bf327b4a24bf84e611ea2a0843caa26a3209c10",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/v4/parallel-agents-evidence.json",
-      "disposition": "preserved dated parallel qualification report",
-      "sha256": "efc4a5cfe9b12784c9c89eba4718271ef1cf8e873df67e7bee53714c7d0a6cb8"
+      "sha256": "efc4a5cfe9b12784c9c89eba4718271ef1cf8e873df67e7bee53714c7d0a6cb8",
+      "disposition": "preserved dated parallel qualification report"
     },
     {
       "path": "docs/v4/progress.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "e5ab68f09879d5c06b5eb6827413cfe2c771319c85d3a50f3cba88a58e3cce60"
+      "sha256": "b70485c0cf5c14b45147532cc46cfeae42169f779c532091444976c6a210cad8",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/v4/publication-recovery-hold-evidence.json",
-      "disposition": "preserved historical Task 10 publication recovery-hold evidence and original P0-pinned bytes",
-      "sha256": "3cce88e4d692f726be710c1f4db46b1428c9546561424a2ab0ad120363becc66"
+      "sha256": "3cce88e4d692f726be710c1f4db46b1428c9546561424a2ab0ad120363becc66",
+      "disposition": "preserved historical Task 10 publication recovery-hold evidence and original P0-pinned bytes"
     },
     {
       "path": "docs/v4/publication-recovery-hold-successor-evidence.json",
-      "disposition": "Current successor evidence preserves frozen application result and historical review, adds exact pushed docs CI and Task 1 diagnostic-assertion closure, and keeps current candidate CI pending",
-      "sha256": "4baef4a2328b26a47abc150f4b2ba47aa7c3d3afa6260c651986142b110054c1"
+      "sha256": "4baef4a2328b26a47abc150f4b2ba47aa7c3d3afa6260c651986142b110054c1",
+      "disposition": "Current successor evidence preserves frozen application result and historical review, adds exact pushed docs CI and Task 1 diagnostic-assertion closure, and keeps current candidate CI pending"
     },
     {
       "path": "docs/v4/repository-enforcement-evidence.json",
-      "disposition": "Historical exact feature-head readback preserved; exact pushed documentation CI and current unpublished candidate pending status recorded separately",
-      "sha256": "389886f670654a65848d5f43d61215562d53a95969906e5a44722a4ab7dbc006"
+      "sha256": "389886f670654a65848d5f43d61215562d53a95969906e5a44722a4ab7dbc006",
+      "disposition": "Historical exact feature-head readback preserved; exact pushed documentation CI and current unpublished candidate pending status recorded separately"
     },
     {
       "path": "docs/v4/reviews/final-whole-change-fix.md.txt",
-      "disposition": "preserved durable P1 audit/spec review and repair report payload",
-      "sha256": "d2449d8760eb4978f796d29c4b3f88a49ccb658aaeb01bd1c2df37fa0b5d8e8f"
+      "sha256": "d2449d8760eb4978f796d29c4b3f88a49ccb658aaeb01bd1c2df37fa0b5d8e8f",
+      "disposition": "preserved durable P1 audit/spec review and repair report payload"
     },
     {
       "path": "docs/v4/reviews/final-whole-change-rereview.md.txt",
-      "disposition": "preserved durable P1 audit/spec review and repair report payload",
-      "sha256": "a9618776e2114435b12f147a4221a8018914517e4e21900130a5b259da2c0b5b"
+      "sha256": "a9618776e2114435b12f147a4221a8018914517e4e21900130a5b259da2c0b5b",
+      "disposition": "preserved durable P1 audit/spec review and repair report payload"
     },
     {
       "path": "docs/v4/reviews/final-whole-change-review.md.txt",
-      "disposition": "preserved durable P1 audit/spec review and repair report payload",
-      "sha256": "0f1b136cbb0f24adb596bcb628848f1ec5fdf7723178cd9c0b6bfad31b1aa104"
+      "sha256": "0f1b136cbb0f24adb596bcb628848f1ec5fdf7723178cd9c0b6bfad31b1aa104",
+      "disposition": "preserved durable P1 audit/spec review and repair report payload"
     },
     {
       "path": "docs/v4/reviews/initial-audit-contract-fix.md.txt",
-      "disposition": "preserved durable P1 audit/spec review and repair report payload",
-      "sha256": "87ed41a656c6fd7bde1c72424872dc38e0bec07e72e7aefef3443214c5994964"
+      "sha256": "87ed41a656c6fd7bde1c72424872dc38e0bec07e72e7aefef3443214c5994964",
+      "disposition": "preserved durable P1 audit/spec review and repair report payload"
     },
     {
       "path": "docs/v4/reviews/initial-audit-row-rereview-round1.md.txt",
-      "disposition": "preserved durable P1 audit/spec review and repair report payload",
-      "sha256": "b268cd962222ca35dcf558d45339c576e32d9bcb14da1a7e1932d80664ac848e"
+      "sha256": "b268cd962222ca35dcf558d45339c576e32d9bcb14da1a7e1932d80664ac848e",
+      "disposition": "preserved durable P1 audit/spec review and repair report payload"
     },
     {
       "path": "docs/v4/reviews/initial-audit-row-rereview-round2.md.txt",
-      "disposition": "preserved durable P1 audit/spec review and repair report payload",
-      "sha256": "dccf878b83638d38a288fc2e12012a1582c08b49de33f92fba35287a629a52a6"
+      "sha256": "dccf878b83638d38a288fc2e12012a1582c08b49de33f92fba35287a629a52a6",
+      "disposition": "preserved durable P1 audit/spec review and repair report payload"
     },
     {
       "path": "docs/v4/reviews/initial-audit-row-review.md.txt",
-      "disposition": "preserved durable P1 audit/spec review and repair report payload",
-      "sha256": "54e296b0ca00dc397886f188265a9f9cd2015ab0c395faf39d6d234a1c581c3d"
+      "sha256": "54e296b0ca00dc397886f188265a9f9cd2015ab0c395faf39d6d234a1c581c3d",
+      "disposition": "preserved durable P1 audit/spec review and repair report payload"
     },
     {
       "path": "docs/v4/reviews/initial-cross-spec-fix.md.txt",
-      "disposition": "preserved durable P1 audit/spec review and repair report payload",
-      "sha256": "8fe8429d03eda7f5e01a02e3976c5c074ca39bf10d8ba964d8e1fcf393e91e8c"
+      "sha256": "8fe8429d03eda7f5e01a02e3976c5c074ca39bf10d8ba964d8e1fcf393e91e8c",
+      "disposition": "preserved durable P1 audit/spec review and repair report payload"
     },
     {
       "path": "docs/v4/reviews/initial-cross-spec-rereview.md.txt",
-      "disposition": "preserved durable P1 audit/spec review and repair report payload",
-      "sha256": "daacc06aefec84c1a665addb2ebc42d660789101cc0897cc6df4f8698fecbc95"
+      "sha256": "daacc06aefec84c1a665addb2ebc42d660789101cc0897cc6df4f8698fecbc95",
+      "disposition": "preserved durable P1 audit/spec review and repair report payload"
     },
     {
       "path": "docs/v4/reviews/initial-cross-spec-review.md.txt",
-      "disposition": "preserved durable P1 audit/spec review and repair report payload",
-      "sha256": "9c310cecc839cfe334ec8a6c9c1fc940e4637e70aeb9e37e9ef0e2a1c2e6d229"
+      "sha256": "9c310cecc839cfe334ec8a6c9c1fc940e4637e70aeb9e37e9ef0e2a1c2e6d229",
+      "disposition": "preserved durable P1 audit/spec review and repair report payload"
     },
     {
       "path": "docs/v4/validation.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "72bd84feb01691e89f97aae36b43ed16e8d1ec736cfada7c7ee0e76d723368f1"
+      "sha256": "308c9b6a054708bd359cbf7e3f12a4164f7885c21382f033c9f7f2a23febafdf",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/verification.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "e8ec7ee216c3d496a2bf43d99d65d24e4c7a91cd097762553f471f0c4a68d600"
+      "sha256": "e8ec7ee216c3d496a2bf43d99d65d24e4c7a91cd097762553f471f0c4a68d600",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "docs/workflows.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "9abd30aa4c92ff1655947dd3662507fa3e3f1b973d19b733a3cab13f54cafabc"
+      "sha256": "9abd30aa4c92ff1655947dd3662507fa3e3f1b973d19b733a3cab13f54cafabc",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "prompts/Build Creative Production Loop — Phases 7–8 End-to-End.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "6d77d56568933cdcd79b5ab5723efa2312d72bd57f12547664772618b700cc4b"
+      "sha256": "6d77d56568933cdcd79b5ab5723efa2312d72bd57f12547664772618b700cc4b",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "prompts/Build Phase 10 — Multi-Platform Production Publishing, Analytics, Attribution & Experiments.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "756651d83b0e132c22bdd0ecdcf9de218dd00922570c29b30ca912a3cee46b00"
+      "sha256": "756651d83b0e132c22bdd0ecdcf9de218dd00922570c29b30ca912a3cee46b00",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "prompts/Build Phases 1–4 End-to-End.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "cfb5fca0452db58c216b889786eb42b91641730fa0e27dca6fc57535ea5ba88c"
+      "sha256": "cfb5fca0452db58c216b889786eb42b91641730fa0e27dca6fc57535ea5ba88c",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "prompts/Build Real Intelligence Loop — Pre-Phase 5 + Phases 5–6 End-to-End.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "93621fa3332bf11c3f2e9ab24cf27a7b3381353aaa80634ea864f30d3253dfea"
+      "sha256": "93621fa3332bf11c3f2e9ab24cf27a7b3381353aaa80634ea864f30d3253dfea",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "prompts/Complete Phase 7–8 Release Gate, Then Build Phase 9 Governed Publishing.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "cab9fb272101f8011067c79c5ac0611c0809d66cb066ce5a6f2023ff1d465af0"
+      "sha256": "cab9fb272101f8011067c79c5ac0611c0809d66cb066ce5a6f2023ff1d465af0",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
       "path": "prompts/Install and Verify Browser Evidence on Linux EC2.md",
-      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "cab3134054c262cd2e38c77b9b3242ceb1caa91c346d8936212d1ad58dd4f7cc"
+      "sha256": "cab3134054c262cd2e38c77b9b3242ceb1caa91c346d8936212d1ad58dd4f7cc",
+      "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     }
   ],
   "qualified_application_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
-  "next_action": "Initial commit-bound P1/RG0/RG1 audit and five-spec design review are COMPLETE_REVIEWED for source 7c1ddcda280b510048ad61106c406171edd64f18 and environment 18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436; exact-source CI run 40443346020 passed both required jobs. The separate whole-change documentation review is PASS_AFTER_FIX_ROUND_1 for candidate manifest cafa0bd46ede2cc8aef51058f46541068a07cd031774c8b5501270bc2385ee9a. Continue with the five required increments in approved sequence order. Implementation and target qualification remain NOT RUN; all 22 final-entry rows remain non-PASS; RG0/RG1 HELD; P2/Slice 7 BLOCKED; production disabled; main unmerged. The current documentation candidate has no commit SHA yet and requires exact-head CI after push. The final exact-candidate/environment P1/RG0/RG1 audit remains NOT RUN and BLOCKED until required increments and current external acceptance evidence are complete for one frozen final candidate/environment.",
+  "next_action": "Initial commit-bound P1/RG0/RG1 audit and five-spec design review remain COMPLETE_REVIEWED only for source 7c1ddcda280b510048ad61106c406171edd64f18 and environment manifest 18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436; exact-source CI run 40443346020 passed both required jobs. The final local non-live implementation verification passed for candidate fb2d4d63627f7de7ee9fc2307ab2831491720e12 through migration 0046_production_policy_approval_id_immutability; this is fixture-only evidence. Continue with the five required increments in approved sequence order. Production target qualification remains NOT RUN; all 22 final-entry rows remain non-PASS; RG0/RG1 HELD; P2/Slice 7 BLOCKED; production disabled; main unmerged. The current documentation candidate requires exact-head CI after push. The final exact-candidate/environment P1/RG0/RG1 audit remains NOT RUN and BLOCKED until the required increments and current external acceptance evidence are complete for one frozen candidate/environment.",
   "parallel_agents_status": "PASS_IMPLEMENTED_LOCAL_PARALLEL_AGENT_FIXTURE_SCOPE",
   "parallel_qualified_application_commit": "2653d2ecb3f0d5bb8ea6560de274137dd6032a96",
   "legacy_intelligence_status": "PASS_LOCAL_LEGACY_INTELLIGENCE_AND_PUBLICATION_FIXTURE_STAGES; ORIGINAL_NATIVE_INTELLIGENCE_AND_PUBLICATION_SCHEDULES_QUALIFIED",
@@ -1915,6 +1937,7 @@
     ".agents/skills/archify/schemas/README.md",
     ".superpowers/sdd/2026-10-13-p1-publication-recovery-floor-repair/final-fix-report.md",
     ".superpowers/sdd/2026-10-13-p1-publication-recovery-floor-repair/task-8-report.md",
+    ".superpowers/sdd/2026-10-27-p1-production-policy-and-revocation/final-fix-report.md",
     "AGENTS.md",
     "README.md",
     "docs-new-arch/ArchV3-implementation-notes.md",
@@ -2060,11 +2083,11 @@
     "production_effects_enabled": false,
     "fixture_publication_budget": 0
   },
-  "current_local_application_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
+  "current_local_application_commit": "fb2d4d63627f7de7ee9fc2307ab2831491720e12",
   "current_focused_tests": 9,
-  "current_full_non_live_tests": 796,
-  "current_full_non_live_application_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
-  "current_full_non_live_status": "PASS: 796 passed, 17 skipped, 3 warnings in 1576.95s at successor application 182c4e4; exact command and log SHA are in the Task 8 report and successor evidence addendum.",
+  "current_full_non_live_tests": 908,
+  "current_full_non_live_application_commit": "fb2d4d63627f7de7ee9fc2307ab2831491720e12",
+  "current_full_non_live_status": "PASS: 908 passed, 26 skipped, 3 warnings in 1453.58s at exact local implementation candidate fb2d4d63627f7de7ee9fc2307ab2831491720e12; migration 0046_production_policy_approval_id_immutability; sanitized verifier log SHA-256 94fae65ce3535169487672811a4f5275e07445e47de37783172c92de079a0ee5.",
   "current_qualification_application": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
   "focused_tests": 20,
   "full_non_live_tests": 796,
@@ -2098,7 +2121,7 @@
     "qualification_report": ".superpowers/sdd/2026-10-13-p1-publication-recovery-floor-repair/task-8-report.md",
     "qualification_results": "Exact-image matrix: 12 passed; I1 replay-focused gate: 9 passed; actual-retry producer: 1 passed; Compose restart recovery: 1 passed; final clean non-live suite: 796 passed, 17 skipped, 3 warnings, all bound to application 182c4e4. Whole-branch review and CI remain bound to pushed feature head 6f5edc77edbfe189e46de4254c2fdb21c5652bce (run 38592066455). Exact initial-audit source CI run 40443346020 passed on 7c1ddcda280b510048ad61106c406171edd64f18. Current documentation candidate has no commit SHA yet and needs its own exact-head CI after push."
   },
-  "current_focused_status": "PASS: application 182c4e4 has 9 I1 replay-focused tests, 12 exact-image matrix tests, 1 actual-retry producer test, 1 Compose restart recovery test, and a final full non-live result of 796 passed / 17 skipped / 3 warnings. Separate branch checkpoint 6f5edc7 has the accepted whole-branch review/meta-review and successful exact-head Actions run 38592066455 (787/26/3). Pushed docs head 67effe8c9c176c0bd1c17fdef20b841c0e14b6de passed both required jobs in run 38610329330. The current unpublished candidate requires its own exact-head CI after push.",
+  "current_focused_status": "PASS: final local verifier at candidate fb2d4d63627f7de7ee9fc2307ab2831491720e12 applied migrations through 0046_production_policy_approval_id_immutability, passed the Phase 9 60-test release gate in 55.26s, and passed the full non-live suite 908/26/3 in 1453.58s. Compilation, diff check, and Archify validation passed; the disposable database was dropped. The live YouTube provider was NOT RUN because its connection reference was absent; the live-status contract passed 1 test. Previous 0043 artifact pins/reviews and their result counts remain bound to their historical candidate.",
   "current_candidate_artifact_build": {
     "status": "SUCCESSOR_EXACT_CANDIDATE_ARTIFACT_BUILD_AND_LOCAL_QUALIFICATION_RECORDED",
     "application_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
@@ -2435,7 +2458,7 @@
     "current_independent_review_scope": "Successor 182c4e4 fresh independent review/meta-review and exact-head CI remain pending; Task 11 findings stay scoped to 5cb5791 and corrected-publication rereview stays scoped to A4/d031172."
   },
   "current_handoff_hashes": {
-    "docs/README.md": "956fff1ee80e569dd6ce0cde8a8e08a74aacc26c221ddaa36cb9e55932f5b2c9",
+    "docs/README.md": "810e735b69988dd567af50870b5d76d12196971f510680755872d8825f2a0b14",
     "docs/superpowers/plans/2026-10-27-p1-production-policy-and-revocation.md": "c1564a7ec7d09f63b5aba105678c8b5929619fecc49e5b4bb3e415ed1340672e",
     "docs/superpowers/plans/2026-10-27-p1-rg0-rg1-initial-gap-audit.md": "5d1dd8a86718184d03324144643dfb009cb36243a5bd0c0f14c46844eb3c5cd4",
     "docs/superpowers/specs/2026-10-13-p1-live-schedule-fencing-design.md": "04ed59e2ed61ca17dc2c01df3a2964e1569e03e79f0aef2bbfe2ca2d96d5129a",
@@ -2446,17 +2469,18 @@
     "docs/v4/IMPLEMENTATION-BLUEPRINT.md": "6e717aae30c9eb3714d760d5e04f8689a33db0b5e0a3d8dcb4e8e63137c7c58b",
     "docs/v4/evidence-lock.json": "472d603c1110a0ebe8082f598b7d02a892e6591a9f6b400c48979321551af674",
     "docs/v4/p0-release.json": "5038fa02bd73d176cbad6df99a66537fb25cdebc0f8c972f33419070e1145757",
-    "docs/v4/p1-production-policy-revocation-evidence.json": "f38f7aeb39391a4f76e4d1e89eeb1be6fc4a302b1f936dc6a21def1874f02faf",
-    "docs/v4/p1-qualification-matrix.json": "db149716ecdf76fc22638a4dba54e6be9190854769ba72046474fc42e2a02177",
-    "docs/v4/p1-rg0-rg1-audit-and-spec-review.md": "056d1f6f0b224eef012d6f57902d0b31962e64e16ada7f8f69b811a4e3f9ae7a",
+    "docs/v4/p1-production-policy-revocation-evidence.json": "7d27f58fb21b9cf06c8098ffbd0c2aa29b647d54d6643a1767845ebf475deb53",
+    "docs/v4/p1-qualification-matrix.json": "d52f8e5cd39497d17511d11f571370be05e602e6822da508d9164023caf117da",
+    "docs/v4/p1-rg0-rg1-audit-and-spec-review.md": "013c63bdac90d3b279513ef50b962689a92241af885c1e89ec35edc2bb0f8be8",
     "docs/v4/p1-rg0-rg1-initial-gap-audit.json": "33fe485384dcf60e36df8d48ace6394c80bce0d1bd9e6b9b39c7a905d65676b1",
     "docs/v4/p1-rg0-rg1-initial-gap-audit.md": "62aab5afb39f7c47e355a68ccf56e319a72955247515dfbdba8913fd797a5944",
-    "docs/v4/progress.md": "e5ab68f09879d5c06b5eb6827413cfe2c771319c85d3a50f3cba88a58e3cce60",
+    "docs/v4/progress.md": "b70485c0cf5c14b45147532cc46cfeae42169f779c532091444976c6a210cad8",
     "docs/v4/publication-recovery-hold-evidence.json": "3cce88e4d692f726be710c1f4db46b1428c9546561424a2ab0ad120363becc66",
     "docs/v4/publication-recovery-hold-successor-evidence.json": "4baef4a2328b26a47abc150f4b2ba47aa7c3d3afa6260c651986142b110054c1",
     "docs/v4/repository-enforcement-evidence.json": "389886f670654a65848d5f43d61215562d53a95969906e5a44722a4ab7dbc006",
-    "docs/v4/test_checks.py": "e12d7056d10333d18a2f90d6104a0610793d90fcf5113634753dd167fe7cbdb5",
-    "docs/v4/validation.md": "72bd84feb01691e89f97aae36b43ed16e8d1ec736cfada7c7ee0e76d723368f1"
+    "docs/v4/test_checks.py": "9d9b20c78a934957cd3b23acb566357a0b5155dd9b03c72395c2aa14bbe74e5a",
+    "docs/v4/validation.md": "308c9b6a054708bd359cbf7e3f12a4164f7885c21382f033c9f7f2a23febafdf",
+    ".superpowers/sdd/2026-10-27-p1-production-policy-and-revocation/final-evidence-report.md": "22b88cec0f18cc3f9ac2a8007b5ee015ee571483aa5e4ce5468dac9fc7b1a1f8"
   },
   "current_documentation_refresh": {
     "plan_task": "docs/superpowers/plans/2026-10-27-p1-rg0-rg1-initial-gap-audit.md",
@@ -2523,16 +2547,17 @@
     ]
   },
   "tracked_markdown_disposition_counts": {
-    "tracked_markdown_paths": 112,
-    "update_now_paths": 79,
+    "tracked_markdown_paths": 113,
+    "update_now_paths": 80,
     "non_update_paths_preserved": 33,
     "historical_immutable": 19,
     "generated_vendor": 12,
     "already_current": 2,
     "dispositions": {
-      "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged": 79,
+      "active documentation aligned to frozen initial audit source 7c1ddcd; final local candidate fb2d4d6 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests; production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged": 79,
       "active user-authored project instructions; preserved verbatim": 1,
       "already current approved Task 6 implementation plan": 1,
+      "current final local non-live verification report for candidate fb2d4d6; production acceptance remains unqualified": 1,
       "preserved YouTube-agent reference research": 4,
       "preserved dated design specification": 3,
       "preserved dated independent item7 qualification report": 1,
@@ -2649,8 +2674,47 @@
   "Slice7": "BLOCKED",
   "final_entry_audit_status": "NOT RUN",
   "main_merge": "UNMERGED",
-  "current_documentation_artifacts": 285,
+  "current_documentation_artifacts": 286,
   "current_task6_fixture_checkpoint": {
+    "scope": "fixture",
+    "record_kind": "final_local_non_live_verification",
+    "application_commit": "fb2d4d63627f7de7ee9fc2307ab2831491720e12",
+    "fixture_status": "PASS_FIXTURE_ONLY",
+    "migration_head": "0046_production_policy_approval_id_immutability",
+    "passed": 908,
+    "failed": 0,
+    "skipped": 26,
+    "errors": 0,
+    "warnings": 3,
+    "elapsed_seconds": 1453.58,
+    "phase9_release_gate": {
+      "exit_code": 0,
+      "passed": 60,
+      "failed": 0,
+      "skipped": 0,
+      "errors": 0,
+      "elapsed_seconds": 55.26
+    },
+    "verifier_command": "bash scripts/verify-phase-9.sh",
+    "verifier_log_path": "/tmp/salience-final-fb2d4d6-verify.log",
+    "verifier_log_sha256": "94fae65ce3535169487672811a4f5275e07445e47de37783172c92de079a0ee5",
+    "evidence_sha256": "7d27f58fb21b9cf06c8098ffbd0c2aa29b647d54d6643a1767845ebf475deb53",
+    "artifact_or_image": "UNAVAILABLE; final verifier did not build, pull, or produce an application artifact or image",
+    "junit": "UNAVAILABLE; final verifier did not emit a JUnit artifact",
+    "database_cleanup": "SUCCEEDED; disposable database dropped by verifier cleanup",
+    "production_target_configuration": "NOT RUN",
+    "production_acceptance": "NOT RUN",
+    "production_effects_enabled": false,
+    "RG0": "HELD",
+    "RG1": "HELD",
+    "RG1_scope": "full",
+    "P2": "BLOCKED",
+    "main": "UNMERGED",
+    "current_documentation_artifacts": 286,
+    "current_markdown_paths": 113,
+    "candidate_documentation_ci": "REQUIRED_AFTER_PUSH"
+  },
+  "historical_task6_fixture_checkpoint": {
     "scope": "fixture",
     "application_commit": "3cd1e28d6358d1432e9e90a51a4fc58faeeb5c1d",
     "fixture_status": "PASS_FIXTURE_ONLY",
@@ -2680,5 +2744,6 @@
     "current_documentation_artifacts": 285,
     "current_markdown_paths": 112,
     "candidate_documentation_ci": "REQUIRED_AFTER_PUSH"
-  }
+  },
+  "active_project_markdown_files": 93
 }
