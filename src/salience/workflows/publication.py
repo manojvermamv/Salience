@@ -1042,6 +1042,7 @@ class PublicationActivities:
                 attempt_number=1,
                 idempotency_key=f"{request.idempotency_key}:attempt:1",
             )
+            submitting = await self._state.store.begin_effect_submission(run, effect_key)
         else:
             existing_effect = await self._state.store.effect(run, effect_key)
             effect_may_have_started = (
@@ -1057,6 +1058,12 @@ class PublicationActivities:
                     payload, request
                 )
             if target_denial is not None or current is None:
+                if effect_may_have_started:
+                    raise ApplicationError(
+                        "publication outcome requires reconciliation under current authority",
+                        type="ProductionPublicationLiabilityHeld",
+                        non_retryable=True,
+                    )
                 return {
                     **payload,
                     "authorization_revoked": True,
@@ -1065,18 +1072,31 @@ class PublicationActivities:
             request = current.request
             attempt = SimpleNamespace(id=current.publication_attempt_id)
             payload = self._canonical_publication_payload(payload, current)
-        submitting = await self._state.store.begin_effect_submission(run, effect_key)
-        adapter = self._adapter_for(request)
-        if submitting:
-            if fixture_adapter:
-                denial_reason = await self._current_authorization_denial(request)
+            if effect_may_have_started:
+                submitting = False
             else:
                 denial_reason = await self._claim_production_permit(payload, request, current)
-            if denial_reason is not None:
-                if not fixture_adapter and self._state.production_dispatch is not None:
+                if denial_reason is not None:
                     await self._hold_publication_liability_if_claimed(
                         payload, "submit", denial_reason
                     )
+                    await self._checkpoint("publication.authorization.revoked_before_submit")
+                    return {
+                        **payload,
+                        "authorization_revoked": True,
+                        "denial_reason": denial_reason,
+                    }
+                # The permit claim serializes submit authority. Only its owner may win
+                # this canonical planned-to-submitting transition and resolve credentials.
+                submitting = await self._state.store.begin_effect_submission(run, effect_key)
+        adapter = self._adapter_for(request)
+        if submitting:
+            denial_reason = (
+                await self._current_authorization_denial(request)
+                if fixture_adapter
+                else None
+            )
+            if denial_reason is not None:
                 await self._checkpoint("publication.authorization.revoked_before_submit")
                 return {
                     **payload,
@@ -1092,16 +1112,25 @@ class PublicationActivities:
                     payload, "reconcile"
                 )
                 if denial_reason is not None:
-                    return {
-                        **payload,
-                        "authorization_revoked": True,
-                        "denial_reason": denial_reason,
-                    }
+                    raise ApplicationError(
+                        "publication outcome requires reconciliation under current authority",
+                        type="ProductionPublicationLiabilityHeld",
+                        non_retryable=True,
+                    )
                 if current is None:
                     raise RuntimeError("canonical production publication target disappeared")
                 payload = self._canonical_publication_payload(payload, current)
             receipt = await adapter.reconcile(request.idempotency_key)
             if receipt is None:
+                if not fixture_adapter:
+                    await self._hold_publication_liability_if_claimed(
+                        payload, "reconcile", "reconciliation_unresolved"
+                    )
+                    raise ApplicationError(
+                        "publication provider outcome remains unresolved",
+                        type="ProductionPublicationLiabilityHeld",
+                        non_retryable=True,
+                    )
                 raise RuntimeError("ambiguous publication outcome requires reconciliation")
             reconciled = True
         remote = await self._state.repository.record_remote_receipt(
@@ -1307,6 +1336,43 @@ class PublicationActivities:
             fixture_adapter = self._is_fixture_adapter(request)
             current = None
             if not fixture_adapter:
+                dispatch = self._state.production_dispatch
+                local_cancel = (
+                    getattr(dispatch, "cancel_unsubmitted_publication", None)
+                    if dispatch is not None
+                    else None
+                )
+                has_provider_target = any(
+                    payload.get(name) is not None
+                    for name in ("remote_receipt_id", "remote_id", "publication_id")
+                )
+                if callable(local_cancel) and not has_provider_target:
+                    try:
+                        reservation_id = await asyncio.to_thread(
+                            local_cancel,
+                            payload.get("production_operation_id"),
+                            payload.get("production_permit_id"),
+                            payload.get("publication_request_id"),
+                            payload.get("publication_plan_id"),
+                            payload.get("publication_attempt_id"),
+                            payload.get("external_effect_id"),
+                        )
+                    except (TypeError, ValueError, ProductionAuthorizationDenied):
+                        reservation_id = None
+                    if reservation_id is not None:
+                        if self._state.cost_repository is None:
+                            raise RuntimeError(
+                                "durable cost repository is required for publication cancellation"
+                            )
+                        await self._state.cost_repository.release_unused(str(reservation_id))
+                        await self._checkpoint("publication.cancelled")
+                        await self._state.store.terminal(run, "cancelled")
+                        return PublicationWorkflowResult(
+                            publication_state="cancelled",
+                            job_id=str(run.job_id),
+                            trace_id=run.trace_context.trace_id,
+                            publication_request_id=payload.get("publication_request_id"),
+                        )
                 current, denial_reason = await self._production_action_current(payload, "cancel")
                 if denial_reason is not None:
                     return PublicationWorkflowResult(
@@ -1318,6 +1384,7 @@ class PublicationActivities:
                     )
                 if current is None:
                     raise RuntimeError("canonical production cancellation target disappeared")
+                request = current.request
                 payload = self._canonical_publication_payload(payload, current)
             if (
                 (not fixture_adapter and current is not None)

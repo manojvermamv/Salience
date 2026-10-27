@@ -11,6 +11,7 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
+import hashlib
 import re
 from typing import Protocol
 from uuid import UUID, uuid4
@@ -74,6 +75,7 @@ _REASON_CODES = frozenset(
         "route_fence_denied",
         "route_fence_invalid",
         "route_fence_unavailable",
+        "reconciliation_unresolved",
         "stale_revision",
         "stop_active",
         "stop_scope_missing",
@@ -718,6 +720,264 @@ class ProductionEffectDispatch:
         return self._record_publication_liability_held(
             publication_request_id, action_kind, safe_reason
         )
+
+    def cancel_unsubmitted_publication(
+        self,
+        operation_id: UUID | str,
+        permit_id: UUID | str,
+        publication_request_id: UUID | str,
+        publication_plan_id: UUID | str,
+        publication_attempt_id: UUID | str,
+        external_effect_id: UUID | str,
+    ) -> str | None:
+        """Cancel only a canonical publication with no committed claim or provider attempt."""
+        try:
+            identifiers = tuple(
+                UUID(str(value))
+                for value in (
+                    operation_id,
+                    permit_id,
+                    publication_request_id,
+                    publication_plan_id,
+                    publication_attempt_id,
+                    external_effect_id,
+                )
+            )
+        except (TypeError, ValueError) as error:
+            raise ValueError("canonical publication cancellation UUIDs required") from error
+        return self._cancel_unsubmitted_publication(*identifiers)
+
+    def _cancel_unsubmitted_publication(
+        self,
+        operation_id: UUID,
+        permit_id: UUID,
+        publication_request_id: UUID,
+        publication_plan_id: UUID,
+        publication_attempt_id: UUID,
+        external_effect_id: UUID,
+    ) -> str | None:
+        with psycopg.connect(self.database_url, row_factory=dict_row) as connection:
+            with connection.transaction():
+                self._lock_operation(connection, operation_id)
+                pointer = connection.execute(
+                    """SELECT * FROM public.v4_production_current_dispatch
+                       WHERE operation_id=%s FOR UPDATE""",
+                    (operation_id,),
+                ).fetchone()
+                permit = connection.execute(
+                    """SELECT * FROM public.v4_production_effect_permits
+                       WHERE operation_id=%s AND permit_id=%s FOR UPDATE""",
+                    (operation_id, permit_id),
+                ).fetchone()
+                if (
+                    pointer is None
+                    or permit is None
+                    or pointer["generation"] != 1
+                    or permit["generation"] != 1
+                    or pointer["current_permit_id"] != permit_id
+                    or pointer["current_claim_id"] is not None
+                ):
+                    return None
+                request = self._request_from_snapshot(permit["request_snapshot"])
+                binding = request.publication_binding
+                if (
+                    binding is None
+                    or binding.publication_request_id != publication_request_id
+                    or binding.publication_plan_id != publication_plan_id
+                    or binding.publication_attempt_id != publication_attempt_id
+                    or binding.external_effect_id != external_effect_id
+                    or binding.remote_receipt_id is not None
+                ):
+                    return None
+
+                row = connection.execute(
+                    """SELECT publication_request.state AS request_state,
+                              plan.id AS plan_id,plan.version,plan.state AS plan_state,
+                              plan.external_effect_id,plan.budget_reservation_id,
+                              attempt.id AS attempt_id,attempt.attempt_number,
+                              attempt.state AS attempt_state,attempt.submitted_at,
+                              effect.id AS effect_id,effect.job_id AS effect_job_id,
+                              effect.status AS effect_state,effect.attempted_at,
+                              job.id AS job_id,job.job_type,job.state AS job_state,
+                              job.workflow_run_id,job.input_payload,
+                              reservation.id AS reservation_id,reservation.status AS reservation_state
+                       FROM public.publication_requests publication_request
+                       JOIN public.publication_plans plan
+                         ON plan.id=%s AND plan.publication_request_id=publication_request.id
+                        AND NOT EXISTS (
+                            SELECT 1 FROM public.publication_plans newer_plan
+                            WHERE newer_plan.publication_request_id=plan.publication_request_id
+                              AND newer_plan.version>plan.version
+                        )
+                       JOIN public.publication_attempts attempt
+                         ON attempt.id=%s AND attempt.publication_plan_id=plan.id
+                        AND NOT EXISTS (
+                            SELECT 1 FROM public.publication_attempts newer_attempt
+                            WHERE newer_attempt.publication_plan_id=attempt.publication_plan_id
+                              AND newer_attempt.attempt_number>attempt.attempt_number
+                        )
+                       JOIN public.external_effects effect ON effect.id=plan.external_effect_id
+                       JOIN public.jobs job ON job.id=%s AND job.id=effect.job_id
+                       JOIN public.budget_reservations reservation
+                         ON reservation.id=plan.budget_reservation_id
+                       WHERE publication_request.id=%s
+                       FOR UPDATE OF publication_request,plan,attempt,effect,job,reservation""",
+                    (
+                        publication_plan_id,
+                        publication_attempt_id,
+                        binding.job_id,
+                        publication_request_id,
+                    ),
+                ).fetchone()
+                if row is None:
+                    return None
+                receipt = connection.execute(
+                    """SELECT id FROM public.remote_publication_receipts
+                       WHERE publication_attempt_id=%s FOR UPDATE""",
+                    (publication_attempt_id,),
+                ).fetchone()
+                publication = connection.execute(
+                    """SELECT id FROM public.publications
+                       WHERE publication_request_id=%s FOR UPDATE""",
+                    (publication_request_id,),
+                ).fetchone()
+                if (
+                    row["plan_id"] != publication_plan_id
+                    or row["external_effect_id"] != external_effect_id
+                    or row["effect_id"] != external_effect_id
+                    or row["effect_job_id"] != binding.job_id
+                    or row["attempt_id"] != publication_attempt_id
+                    or row["job_id"] != binding.job_id
+                    or row["job_type"] != "publication"
+                    or row["workflow_run_id"] != binding.workflow_run_id
+                    or not isinstance(row["input_payload"], Mapping)
+                    or row["input_payload"].get("workflow_id") != binding.workflow_id
+                    or row["reservation_id"] != request.budget_reservation_id
+                    or row["reservation_id"] != row["budget_reservation_id"]
+                    or receipt is not None
+                    or publication is not None
+                    or row["submitted_at"] is not None
+                    or row["attempted_at"] is not None
+                ):
+                    return None
+                status_hash = hashlib.sha256(
+                    f"publication-cancelled-before-submit:{publication_request_id}:{publication_attempt_id}".encode()
+                ).hexdigest()
+                prior_status_event = connection.execute(
+                    """SELECT id FROM public.publication_status_events
+                       WHERE publication_attempt_id=%s AND state='cancelled'
+                         AND source='cancellation' AND safe_payload_hash=%s""",
+                    (publication_attempt_id, status_hash),
+                ).fetchone()
+                if (
+                    row["effect_state"] == "cancelled"
+                    and row["job_state"] == "cancelled"
+                    and prior_status_event is not None
+                    and row["reservation_state"] in {"reserved", "released"}
+                ):
+                    return str(row["reservation_id"])
+                if (
+                    row["request_state"] not in {"planned", "authorized"}
+                    or row["plan_state"] not in {"planned", "authorized", "reserved"}
+                    or row["attempt_state"] not in {"planned", "authorized"}
+                    or row["effect_state"] != "planned"
+                    or row["job_state"] not in {"queued", "running"}
+                    or row["reservation_state"] != "reserved"
+                ):
+                    return None
+
+                now = self._database_time(connection)
+                connection.execute(
+                    "SELECT pg_advisory_xact_lock(hashtext(%s))",
+                    (str(publication_attempt_id),),
+                )
+                connection.execute(
+                    """INSERT INTO public.publication_status_events(
+                              publication_attempt_id,sequence_no,state,source,safe_payload_hash,
+                              trace_id,span_id)
+                       SELECT %s,COALESCE(MAX(sequence_no),0)+1,'cancelled','cancellation',%s,%s,%s
+                       FROM public.publication_status_events
+                       WHERE publication_attempt_id=%s
+                       ON CONFLICT (publication_attempt_id,source,safe_payload_hash) DO NOTHING""",
+                    (
+                        publication_attempt_id,
+                        status_hash,
+                        permit["request_snapshot"].get("trace_id"),
+                        permit["request_snapshot"].get("span_id"),
+                        publication_attempt_id,
+                    ),
+                )
+                connection.execute(
+                    """UPDATE public.external_effects
+                       SET status='cancelled',completed_at=%s,updated_at=%s,
+                           reconciliation_state=%s
+                       WHERE id=%s""",
+                    (
+                        now,
+                        now,
+                        Jsonb({"state": "cancelled_before_submit"}),
+                        external_effect_id,
+                    ),
+                )
+                connection.execute(
+                    """UPDATE public.jobs SET state='cancelled',finished_at=%s,updated_at=%s
+                       WHERE id=%s""",
+                    (now, now, binding.job_id),
+                )
+                cycle = connection.execute(
+                    """SELECT cycle.id AS cycle_id,cycle.intent_id,goal.workspace_id,
+                              goal.id AS goal_id,context.payload->>'traceparent' AS traceparent
+                       FROM public.v4_cycles cycle
+                       JOIN public.v4_cycle_intents intent ON intent.id=cycle.intent_id
+                       JOIN public.v4_goals goal ON goal.id=intent.goal_id
+                       JOIN public.v4_run_contexts context ON context.id=cycle.context_id
+                       WHERE cycle.operation_id=%s""",
+                    (operation_id,),
+                ).fetchone()
+                if cycle is None:
+                    raise ProductionAuthorizationDenied("current_operation_missing")
+                prior = connection.execute(
+                    """SELECT id FROM public.v4_cycle_events
+                       WHERE cycle_id=%s AND kind='production_publication_cancelled_before_submit'
+                         AND payload->>'operation_id'=%s AND payload->>'permit_id'=%s
+                       LIMIT 1""",
+                    (cycle["cycle_id"], str(operation_id), str(permit_id)),
+                ).fetchone()
+                if prior is None:
+                    traceparent = cycle["traceparent"] or (
+                        f"00-{operation_id.hex}-{permit_id.hex[:16]}-01"
+                    )
+                    connection.execute(
+                        """INSERT INTO public.v4_cycle_events(
+                                  id,workspace_id,subject_id,goal_id,intent_id,cycle_id,kind,
+                                  traceparent,payload)
+                           VALUES(%s,%s,%s,%s,%s,%s,'production_publication_cancelled_before_submit',%s,%s)""",
+                        (
+                            uuid4(),
+                            cycle["workspace_id"],
+                            permit["subject_id"],
+                            cycle["goal_id"],
+                            cycle["intent_id"],
+                            cycle["cycle_id"],
+                            traceparent,
+                            Jsonb(
+                                {
+                                    "schema_version": "salience.p1-production-publication-cancelled-before-submit.v1",
+                                    "operation_id": str(operation_id),
+                                    "permit_id": str(permit_id),
+                                    "claim_id": None,
+                                    "publication_request_id": str(publication_request_id),
+                                    "publication_plan_id": str(publication_plan_id),
+                                    "publication_attempt_id": str(publication_attempt_id),
+                                    "publication_status": "cancelled",
+                                    "external_effect_id": str(external_effect_id),
+                                    "budget_reservation_id": str(row["reservation_id"]),
+                                    "cancelled_at": now.astimezone(timezone.utc).isoformat(),
+                                }
+                            ),
+                        ),
+                    )
+                return str(row["reservation_id"])
 
     def _record_publication_liability_held(
         self,
