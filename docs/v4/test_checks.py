@@ -494,6 +494,8 @@ class GateChecks(unittest.TestCase):
             "The final exact-candidate/environment P1/RG0/RG1 audit remains NOT RUN / BLOCKED. "
             "Implementation and target qualification remain NOT RUN."
         )
+        review_status = status.rsplit("Implementation and target qualification remain NOT RUN.", 1)[0].rstrip()
+        scoped_status_pages = {"docs/README.md", "docs/v4/progress.md", "docs/v4/validation.md"}
         pending_review_claim = "Post-review packaging changes have not received another whole-change rereview."
 
         def section(source, start, end):
@@ -535,7 +537,10 @@ class GateChecks(unittest.TestCase):
         ]
         for path, content in handoffs.items():
             with self.subTest(handoff=path):
-                self.assertIn(status, content)
+                if path in scoped_status_pages:
+                    self.assertIn(review_status, content)
+                else:
+                    self.assertIn(status, content)
                 self.assertIn("that review does not transfer to later content or exact-candidate CI.", content)
                 self.assertNotIn(pending_review_claim.casefold(), content.casefold())
                 for stale in stale_claims:
@@ -693,7 +698,7 @@ class GateChecks(unittest.TestCase):
         )
         result = application_command["result"]
         self.assertEqual(result["exit_code"], 0)
-        self.assertGreater(result["passed"], 0)
+        self.assertEqual(result["passed"], 153)
         for field in ["failed", "skipped", "errors"]:
             self.assertEqual(result[field], 0)
         self.assertRegex(application_command["log"]["sha256"], r"^[a-f0-9]{64}$")
@@ -723,6 +728,9 @@ class GateChecks(unittest.TestCase):
         extension = matrix["p1_production_policy_revocation_fixture_extension"]
         self.assertEqual(extension["scope"], "fixture")
         self.assertEqual(extension["application_commit"], evidence["application_candidate"]["commit"])
+        fixture_counts = extension["fixture_result"]
+        for field in ["passed", "failed", "skipped", "errors"]:
+            self.assertEqual(fixture_counts[field], result[field], f"matrix {field}")
         self.assertEqual(extension["evidence_path"], "docs/v4/p1-production-policy-revocation-evidence.json")
         self.assertEqual(
             extension["evidence_sha256"],
@@ -743,6 +751,43 @@ class GateChecks(unittest.TestCase):
         self.assertEqual(r23f["status"], "HELD")
         self.assertEqual(r23f["policy_revocation_fixture_extension"]["evidence_path"], extension["evidence_path"])
         self.assertEqual(r23f["policy_revocation_fixture_extension"]["scope"], "fixture")
+
+        status_audit = json.loads((CHECK.ROOT / "docs/v4/documentation-status-audit.json").read_text())
+        status_checkpoints = [
+            (status_audit["current_task6_fixture_checkpoint"], "status audit"),
+            (status_audit["verification"]["current_task6_fixture_checkpoint"], "verification status"),
+        ]
+        for status_checkpoint, label in status_checkpoints:
+            self.assertEqual(status_checkpoint["application_commit"], evidence["application_candidate"]["commit"])
+            self.assertEqual(status_checkpoint["migration_head"], evidence["migration_head"])
+            for field in ["passed", "failed", "skipped", "errors"]:
+                self.assertEqual(status_checkpoint[field], result[field], f"{label} {field}")
+        documentation_checks = status_audit["verification"]["task6_documentation_checks"]
+        self.assertTrue(documentation_checks["docs_v4_test_checks"].startswith("PASS"))
+        self.assertTrue(documentation_checks["phase9_documentation_contract"].startswith("PASS"))
+        self.assertTrue(documentation_checks["verify_phase9"].startswith("FAILED_PRE_CANDIDATE"))
+        self.assertIn("not acceptance evidence", documentation_checks["verify_phase9"])
+
+        scoped_checkpoint_lines = [
+            ("docs/README.md", "**Current checkpoint — 2026-10-27:**"),
+            ("docs/README.md", "P0 and DG1 remain locally qualified."),
+            ("docs/v4/validation.md", "**Current checkpoint — 2026-10-27:**"),
+            ("docs/v4/validation.md", "See the [audit report]"),
+            ("docs/v4/progress.md", "**Current checkpoint — 2026-10-27:**"),
+            ("docs/v4/progress.md", "**APPROVED program sequence:**"),
+            ("docs/v4/progress.md", "See the [audit report]"),
+        ]
+        for relative_path, prefix in scoped_checkpoint_lines:
+            with self.subTest(path=relative_path, prefix=prefix):
+                lines = (CHECK.ROOT / relative_path).read_text().splitlines()
+                line = next(item for item in lines if item.startswith(prefix))
+                self.assertIn("production integration and target qualification", line.casefold())
+                self.assertNotIn("implementation and target qualification", line.casefold())
+        initial_audit_lines = [
+            (CHECK.ROOT / path).read_text().splitlines()[2]
+            for path in ["docs/README.md", "docs/v4/validation.md", "docs/v4/progress.md"]
+        ]
+        self.assertTrue(all("implementation and target qualification NOT RUN" in line for line in initial_audit_lines))
 
 
 if __name__ == "__main__":
