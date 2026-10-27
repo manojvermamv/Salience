@@ -1276,7 +1276,7 @@
     },
     {
       "path": "tests/integration/test_v4_publication_recovery_floor.py",
-      "sha256": "237f9c4cbc33b20672b9d3c5af33ac219a8ccdbbfe0815a8ab8b8d4d7956292e"
+      "sha256": "c79f7152f955b71bc0e208acf40142a277627807193bbe83d3b0cb32ee5b077e"
     },
     {
       "path": "tests/integration/test_v4_publication_recovery_holds.py",
@@ -1467,8 +1467,8 @@
       "sha256": "7f76114852b4b9d95b3517c49718ccf2e007d64d442a1b4e05ef696dd37a8bbc"
     }
   ],
-  "reviewed_at": "2026-10-14T14:12:37Z",
-  "review_scope": "Active content lock for successor application 182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f and qualification harness observed at 4850e8d6ceb3a150b8d0cd23ff02a3c61e6f799a. It records all current source/config/test/build-context bytes for local reproducibility. It does not imply fresh independent review, exact-head CI, or production acceptance; production remains HELD.",
+  "reviewed_at": "2026-10-27T02:52:53Z",
+  "review_scope": "Active content lock for frozen application candidate 182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f and qualification harness observed at 7c3f3822c81faba37b4b07a09e0f5a950f9f1256. It records all source/config/test/build-context bytes for local reproducibility. The application qualification remains the recorded 796 passed / 17 skipped / 3 warnings on the frozen application candidate; the harness assertion correction does not create a new application qualification. It does not imply fresh independent review, exact-head CI for the unpublished current candidate, or production acceptance; production remains HELD.",
   "historical_task_10_lock": {
     "baseline_commit": "14801007310232f59708566ca9a3eefb80bfea87",
     "application_commit": "5cb57910c2c6dc2f6ea37da75640c5c947c8907b",
@@ -2949,5 +2949,5 @@
     ],
     "meaning": "Exact prior 0043 386d4bc Task 8 content lock retained byte-for-byte as historical evidence; it is superseded as the active lock by successor 182c4e4."
   },
-  "qualification_harness_observed_head": "4850e8d6ceb3a150b8d0cd23ff02a3c61e6f799a"
+  "qualification_harness_observed_head": "7c3f3822c81faba37b4b07a09e0f5a950f9f1256"
 }

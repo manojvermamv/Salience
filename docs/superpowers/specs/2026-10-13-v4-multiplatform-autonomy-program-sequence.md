@@ -1,18 +1,18 @@
 # V4 Multiplatform Autonomy Program Sequence
 
 **Date:** 2026-10-13
-**Status:** Draft; user review pending.
+**Status:** Approved by the user.
 **Authority:** Navigation and dependency order only. The [V4 implementation blueprint](../../v4/IMPLEMENTATION-BLUEPRINT.md) remains authoritative for requirements, phase ownership, migration contracts, acceptance, and release gates. This document cannot change or satisfy them.
 
 ## Purpose and current boundary
 
-This document gives one dependency-sorted route from the active P1 recovery-floor repair to the governed multi-platform system described by V4. It coordinates separate, phase-owned design and qualification slices; it is not an implementation plan, a combined migration, or permission to cross a gate. A slice contributes only the evidence it actually produces. A phase gate changes only when the blueprint's full applicable requirements and evidence pass.
+This user-approved document gives one dependency-sorted route from the completed P1 recovery-floor repair to the governed multi-platform system described by V4. Slice 0 is complete; slice 1, the initial commit-bound P1/RG0/RG1 gap-inventory audit, is the next gated work. The sequence coordinates separate, phase-owned design and qualification slices; it is not an implementation plan, a combined migration, or permission to cross a gate. A slice contributes only the evidence it actually produces. A phase gate changes only when the blueprint's full applicable requirements and evidence pass.
 
-The current sequence begins with the 0043 publication recovery-floor repair in the [P1 repair design](2026-10-13-p1-publication-recovery-floor-repair-design.md). The [progress ledger](../../v4/progress.md) records the Task 10 candidate and local artifact evidence, while the repair's final artifact qualification, independent read-only GPT-6.1 review, main-agent meta-review, and exact-candidate CI remain completion obligations. Effects stay disabled, the fixture publication budget stays zero, RG0 and full RG1 stay HELD, P2–P7 stay gated, optional P6 stays disabled, and `main` stays unmerged.
+Slice 0's 0043 publication recovery-floor repair is recorded in the [P1 repair design](2026-10-13-p1-publication-recovery-floor-repair-design.md), and its local candidate evidence is preserved in the [progress ledger](../../v4/progress.md). The GPT-6.1 review, GPT-5.6 meta-review, and required CI are recorded at their original commit scopes; the later diagnostic assertion correction is separately recorded in the successor evidence without rewriting the historical review. Slice 1 performs the initial residual-work inventory only. Effects stay disabled, the fixture publication budget stays zero, RG0 and full RG1 stay HELD, P2–P7 stay gated, optional P6 stays disabled, and `main` stays unmerged.
 
 The P2–P7 entries below are future specification slots in dependency order. Do not draft or implement a P2 slice until the final exact-commit P1/RG0/RG1 entry audit, after all applicable conditional gap work and external acceptance, reconciles the unchanged candidate and environment and declares the applicable RG0/RG1 entry conditions pass. The earlier audit is a residual-work inventory only. After entry, draft and approve just the next slice's spec; no implementation, migration, provider probe, or effect is authorized by this sequence document.
 
-“Current” means the next bounded work in this sequence, not a claim that a task is running or complete. “Gated” means entry evidence is still required. “Optional” means the slice does not exist unless its explicit enabling decision and conditions are met.
+“Next” means the next bounded work in this approved sequence, not a claim that a task is running or complete. “Gated” means entry evidence is still required. “Optional” means the slice does not exist unless its explicit enabling decision and conditions are met.
 
 ## Program control and shared invariants
 
@@ -39,11 +39,11 @@ AgentTube is not a wholesale port target. Each candidate capability or implement
 
 ```mermaid
 flowchart TD
-    A[Current: P1 0043 repair] --> B[Final artifact qualification]
+    A[Slice 0: P1 0043 repair — COMPLETE] --> B[Final artifact qualification]
     B --> C[Read-only GPT-6.1 review]
     C --> D[Main meta-review]
     D --> E[Exact-candidate CI; effects off; main unmerged]
-    E --> F[Initial commit-bound P1/RG0/RG1 gap-inventory audit]
+    E --> F[Slice 1: commit-bound gap-inventory audit — NEXT, GATED]
     F --> G{Conditional P1 gap work or external acceptance needed?}
     G -->|Yes| H[Only required bounded gap specs and acceptance]
     G -->|No| I[Final exact-commit P1/RG0/RG1 entry audit]
@@ -84,7 +84,7 @@ The required P2 path reaches the RG2 decision through the canonical contract and
 
 ## Ordered slices
 
-### 0. Finish the current P1 0043 repair — Current
+### Slice 0 — Complete: Finish the P1 0043 repair
 
 - **Spec:** [2026-10-13 P1 publication recovery-floor repair](2026-10-13-p1-publication-recovery-floor-repair-design.md), read together with the [2026-10-06 recovery-hold design](2026-10-06-p1-publication-recovery-hold-design.md).
 - **Dependencies and entry:** Current P1 candidate and prior evidence from the progress ledger; repair-specific written-spec review before implementation. Preserve the blueprint's active P1 queue.
@@ -94,7 +94,7 @@ The required P2 path reaches the RG2 decision through the canonical contract and
 - **Exit contribution:** Closes only the repair's specified local fixture obligations, including its applicable R18/R32 evidence. It does not close all P1, RG0, or RG1.
 - **Excludes:** Production effects, production routing/restore, gate release, P2 behavior, `main` merge, or any inference from earlier candidate results.
 
-### 1. Initial commit-bound P1/RG0/RG1 gap-inventory audit — Gated
+### Slice 1 — Next (Gated): Initial commit-bound P1/RG0/RG1 gap-inventory audit
 
 - **Artifact:** A commit-bound audit report and reconciled row status in the existing P1 qualification/evidence records; no new architecture spec is presumed.
 - **Dependencies and entry:** Slice 0 complete on the exact audited commit. Read the blueprint, progress, P1 matrix, current source locks, retained evidence, and external qualification records at that commit.

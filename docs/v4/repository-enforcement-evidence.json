@@ -358,11 +358,35 @@
       }
     },
     "current_documentation_refresh": {
-      "starting_commit": "2779edc14d92f81bcc5beb7e8f86b9f626bf8ad7",
-      "scope": "Documentation and durable status/evidence JSON only; no application qualification changes.",
-      "post_push_exact_head_ci": "REQUIRED; no result recorded for the later docs-only head."
+      "starting_commit": "7c3f3822c81faba37b4b07a09e0f5a950f9f1256",
+      "scope": "Current status and evidence reconciliation; application qualification unchanged.",
+      "latest_pushed_documentation_head": "67effe8c9c176c0bd1c17fdef20b841c0e14b6de",
+      "latest_pushed_documentation_ci_run": 38610329330,
+      "current_unpublished_candidate_post_push_exact_head_ci": "REQUIRED/PENDING"
     },
     "formal_pr_approval": "NOT RUN",
     "main_merge": "UNMERGED"
+  },
+  "latest_pushed_documentation_head_ci": {
+    "head_commit": "67effe8c9c176c0bd1c17fdef20b841c0e14b6de",
+    "workflow_run_id": 38610329330,
+    "workflow_run_url": "https://github.com/manojvermamv/Salience/actions/runs/38610329330",
+    "status": "completed",
+    "conclusion": "success",
+    "required_jobs": {
+      "verify": "success",
+      "p0-regression": "success"
+    },
+    "scope": "Exact pushed documentation head; no application counts attributed."
+  },
+  "current_unpublished_candidate_post_push_exact_head_ci": "REQUIRED/PENDING",
+  "current_documentation_ci_reconciliation": {
+    "prior_exact_pushed_docs_head": "67effe8c9c176c0bd1c17fdef20b841c0e14b6de",
+    "prior_exact_head_ci_run": 38610329330,
+    "current_unpublished_candidate_includes": [
+      "bbd617fba5db7a7c8ad02baa5f721cce0f167f99",
+      "7c3f3822c81faba37b4b07a09e0f5a950f9f1256"
+    ],
+    "current_candidate_post_push_exact_head_ci": "REQUIRED/PENDING"
   }
 }

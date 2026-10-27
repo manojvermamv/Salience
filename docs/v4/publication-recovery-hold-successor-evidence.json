@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "recorded_at": "2026-10-14T17:39:39Z",
-  "status": "PASS_LOCAL_SUCCESSOR_QUALIFICATION; BRANCH_REVIEW_META_REVIEW_AND_6F5EDC7_EXACT_HEAD_CI_PASS; POST_REFRESH_EXACT_HEAD_CI_REQUIRED; PRODUCTION_RELEASE_HELD",
+  "recorded_at": "2026-10-27T02:58:29Z",
+  "status": "PASS_LOCAL_SUCCESSOR_QUALIFICATION; BRANCH_REVIEW_META_REVIEW_AND_6F5EDC7_EXACT_HEAD_CI_PASS; 67EFFE8_DOCUMENTATION_HEAD_CI_PASS; CURRENT_UNPUBLISHED_CANDIDATE_CI_REQUIRED_PENDING; PRODUCTION_RELEASE_HELD",
   "application": {
     "candidate_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
     "branch": "work/v4-p1-publication-recovery",
@@ -151,21 +151,21 @@
     "main": "UNMERGED",
     "fresh_independent_review": "PASS: GPT-6.1 whole-branch review at 6f5edc7; 0 Critical / 0 Important / 1 nonblocking Minor.",
     "GPT-5.6_meta_review": "ACCEPT: GPT-5.6 accepted the review assessment and approved pushing unchanged head 6f5edc7.",
-    "exact_head_CI": "PASS for pushed branch head 6f5edc7; Actions run 38592066455; verify and p0-regression both succeeded (hosted 787 passed / 26 expected skips / 3 warnings). The later docs-only refresh needs its own post-push exact-head CI.",
-    "current_documentation_head_CI": "REQUIRED_AFTER_PUSH"
+    "exact_head_CI": "PASS for reviewed/pushed feature head 6f5edc7 in Actions run 38592066455 (verify and p0-regression succeeded; hosted 787/26/3). Separately, exact pushed documentation head 67effe8c9c176c0bd1c17fdef20b841c0e14b6de passed both required jobs in Actions run 38610329330. Neither result is the current unpublished candidate post-push CI, which remains REQUIRED/PENDING.",
+    "current_documentation_head_CI": "PASS for exact pushed documentation head 67effe8c9c176c0bd1c17fdef20b841c0e14b6de (run 38610329330); the current unpublished candidate still requires its own post-push exact-head CI (REQUIRED/PENDING).",
+    "current_candidate_post_push_exact_head_CI": "REQUIRED/PENDING"
   },
   "evidence_report": ".superpowers/sdd/2026-10-13-p1-publication-recovery-floor-repair/task-8-report.md",
   "documentation_verification": {
-    "status": "PASS_WITH_LOCAL_IGNORED_ARTIFACT_EXCEPTION",
+    "status": "PASS",
     "documentation_tests": {
-      "command": "python3 docs/v4/test_checks.py",
+      "command": ".venv/bin/python docs/v4/test_checks.py",
       "passed": 15,
-      "exit_code": 0,
-      "log": "captured in Task 2 execution output"
+      "exit_code": 0
     },
     "documentation_checker": {
       "normal": {
-        "command": "python3 docs/v4/check.py",
+        "command": ".venv/bin/python docs/v4/check.py",
         "status": "PASS",
         "requirements": 75,
         "source_files": 2,
@@ -173,15 +173,13 @@
         "inventory_files": 360,
         "markdown_files_checked": 97,
         "html_files_checked": 4,
-        "exit_code": 0,
-        "log": "captured in Task 2 execution output"
+        "exit_code": 0
       },
       "self_test": {
-        "command": "python3 docs/v4/check.py --self-test",
+        "command": ".venv/bin/python docs/v4/check.py --self-test",
         "status": "PASS",
         "negative_controls": 6,
-        "exit_code": 0,
-        "log": "captured in Task 2 execution output"
+        "exit_code": 0
       }
     },
     "documentation_shell_contracts": {
@@ -196,64 +194,56 @@
       ]
     },
     "agenttube_reference_boundary": {
-      "status": "PASS_IN_CLEAN_TRACKED_CHECKOUT; DIRECT_TASK_WORKTREE_RUN_FLAGS_IGNORED_ARCHIVED_ARTIFACT",
-      "direct_task_worktree": {
-        "test_command": "python3 docs/v4/test_agenttube_reference.py",
-        "test_status": "FAIL: 2 of 17 tests; 15 passed",
-        "verifier_command": "python3 docs/v4/verify_agenttube_reference.py",
-        "verifier_status": "FAIL",
-        "cause": "The verifier recursively scans ignored artifacts/ and flags a historical audit snapshot that mentions AgentTube in its status prose.",
-        "artifact_path": "artifacts/v4-next-p1/agents/p1-publication-recovery-0043/task8-cfebcd0-docs-before-final-pin-update/documentation-status-audit.json",
-        "artifact_modified": false
-      },
-      "clean_tracked_checkout": {
-        "test_command": "/tmp/salience-v4-p1-recovery-20261006/.venv/bin/python docs/v4/test_agenttube_reference.py",
-        "tests_passed": 17,
-        "test_status": "PASS",
-        "verifier_command": "/tmp/salience-v4-p1-recovery-20261006/.venv/bin/python docs/v4/verify_agenttube_reference.py",
-        "verifier_status": "PASS",
-        "worktree_head": "2779edc14d92f81bcc5beb7e8f86b9f626bf8ad7"
-      }
+      "status": "PASS_DIRECT_TASK_WORKTREE",
+      "test_command": ".venv/bin/python docs/v4/test_agenttube_reference.py",
+      "tests_passed": 17,
+      "verifier_command": ".venv/bin/python docs/v4/verify_agenttube_reference.py",
+      "verifier_status": "PASS",
+      "gitlink_commit": "e26792ae00dc1ec2434faf32632896609396dfad",
+      "gitlink_worktree_clean": true,
+      "contents_modified": false
     },
     "mermaid": {
       "status": "PASS",
       "diagrams_rendered": 6,
       "version": "12.0.0",
       "results_sha256": "6a04203cacd481c7c9e2000bd83834a2ac1ad0cb0ab4d4db433ba6aa557502ba",
-      "output": "/tmp/salience-v4-p1-recovery-20261006-mermaid-task2",
-      "execution_environment": "Repository .venv Python with explicit local Mermaid modules and Chromium paths."
+      "output": "/tmp/task2-blueprint-diagrams",
+      "execution_environment": "Repository .venv Playwright with local Mermaid 12.0.0 and existing Playwright Chromium headless shell."
     },
     "readme_mermaid": {
       "status": "PASS",
       "diagrams_rendered": 2,
       "version": "12.0.0",
-      "results_sha256": "35b748c9a67e47e8d2d6bfc9c87ceb77f67e18b0e7161a7a994e453b3a27f3dd",
-      "output": "/tmp/salience-v4-p1-readme-task2-render",
-      "visual_inspection": "PASS; both diagrams rendered and evidence links are dashed/labeled as documentation only."
+      "results_sha256": "c8952f2e8a19d33f83f6e0bf5e065aba4910cc427b5a8c658415ed8c4d766807",
+      "output": "/tmp/task2-extra-diagrams",
+      "visual_inspection": "PASS; both diagrams rendered and inspected."
     },
     "json_parse": {
       "status": "PASS",
-      "changed_tracked_json_files": 5,
+      "changed_tracked_json_files": 6,
       "paths": [
-        "docs/v4/publication-recovery-hold-successor-evidence.json",
-        "docs/v4/p1-qualification-matrix.json",
-        "docs/v4/p0-release.json",
+        "docs/v4/evidence-lock.json",
         "docs/v4/documentation-status-audit.json",
+        "docs/v4/p0-release.json",
+        "docs/v4/p1-qualification-matrix.json",
+        "docs/v4/publication-recovery-hold-successor-evidence.json",
         "docs/v4/repository-enforcement-evidence.json"
       ]
     },
-    "pip_check": "PASS in the preceding candidate verification; not rerun because this refresh changed documentation only.",
-    "compileall": "PASS in the preceding candidate verification; not rerun because this refresh changed documentation only.",
+    "pip_check": "Prior application verification PASS; not rerun because this task changes only documentation and evidence metadata.",
+    "compileall": "Prior application verification PASS; not rerun because this task changes only documentation and evidence metadata.",
     "git_diff_check": "PASS",
     "audit_counts": {
       "tracked_markdown_files": 100,
       "active_project_markdown_files": 71,
-      "non_update_markdown_files": 29,
+      "non_update_markdown_paths_preserved": 29,
       "documentation_artifacts": 259,
-      "checker_inventory_files": 366
+      "checker_inventory_files": 366,
+      "active_evidence_lock_files": 366
     },
     "audit_and_lock_consistency": {
-      "status": "PENDING_FINAL_HASH_VALIDATION",
+      "status": "PASS",
       "intentional_self_hash_null_preserved": true,
       "historical_p0_evidence_hash_preserved": true,
       "historical_lock_counts_preserved": [
@@ -266,7 +256,23 @@
       "update_now_markdown_paths": 71,
       "non_update_markdown_paths_preserved": 29,
       "all_non_self_inventory_hashes_recomputed": true,
-      "log": "final validation recorded in Task 2 report"
+      "log": "Final validation is recorded in .superpowers/sdd/2026-10-13-p1-publication-recovery-floor-repair/final-fix-report.md; Task 2 recomputation and focused check outputs are recorded in .superpowers/sdd/2026-10-27-resume-housekeeping/task-2-report.md.",
+      "active_evidence_lock_sha256": "472d603c1110a0ebe8082f598b7d02a892e6591a9f6b400c48979321551af674",
+      "active_evidence_lock_files": 366,
+      "tracked_markdown_files": 100,
+      "documentation_artifacts": 259,
+      "non_self_hashes_recomputed": 258,
+      "self_hash_is_null": true,
+      "current_handoff_hashes_refreshed": true,
+      "active_evidence_lock_file_count": 366
+    },
+    "sequence_diagram": {
+      "status": "PASS",
+      "diagrams_rendered": 1,
+      "version": "12.0.0",
+      "results_sha256": "72a959686d5c2d69316dee0481e6e73c6b2b0be0980b9e60e66db97b95f003e9",
+      "output": "/tmp/task2-extra-diagrams",
+      "visual_inspection": "PASS; approved sequence labels render clearly."
     }
   },
   "branch_checkpoint_2026_10_14": {
@@ -314,11 +320,57 @@
     }
   },
   "current_documentation_refresh": {
-    "plan_task": ".superpowers/sdd/2026-10-14-current-state-documentation-reconciliation/task-2-brief.md",
-    "starting_commit": "2779edc14d92f81bcc5beb7e8f86b9f626bf8ad7",
-    "working_branch": "work/v4-p1-publication-recovery",
-    "scope": "Documentation and durable status/evidence JSON only; no application qualification changes.",
+    "plan_task": ".superpowers/sdd/2026-10-27-resume-housekeeping/task-2-brief.md",
+    "starting_commit": "7c3f3822c81faba37b4b07a09e0f5a950f9f1256",
+    "working_branch": "arch",
+    "scope": "Current status/navigation and durable evidence manifests only; no application qualification changes.",
     "application_candidate_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
-    "post_push_exact_head_ci": "REQUIRED for the resulting docs-only commit; no CI claim is made for that later head."
+    "latest_pushed_documentation_head_ci": "67effe8c9c176c0bd1c17fdef20b841c0e14b6de / Actions run 38610329330 / verify and p0-regression success",
+    "current_candidate_includes": [
+      "bbd617fba5db7a7c8ad02baa5f721cce0f167f99",
+      "7c3f3822c81faba37b4b07a09e0f5a950f9f1256"
+    ],
+    "post_push_exact_head_ci": "REQUIRED/PENDING; no result is claimed for the unpublished current candidate."
+  },
+  "latest_pushed_documentation_head_ci": {
+    "head_commit": "67effe8c9c176c0bd1c17fdef20b841c0e14b6de",
+    "workflow_run_id": 38610329330,
+    "workflow_run_url": "https://github.com/manojvermamv/Salience/actions/runs/38610329330",
+    "event": "push",
+    "status": "completed",
+    "conclusion": "success",
+    "required_jobs": {
+      "verify": "success",
+      "p0-regression": "success"
+    },
+    "scope": "Exact pushed documentation head only; no application test counts are attributed."
+  },
+  "current_candidate_post_push_exact_head_ci": "REQUIRED/PENDING",
+  "current_unpublished_candidate": {
+    "includes_commits": [
+      "bbd617fba5db7a7c8ad02baa5f721cce0f167f99",
+      "7c3f3822c81faba37b4b07a09e0f5a950f9f1256"
+    ],
+    "post_push_exact_head_ci": "REQUIRED/PENDING",
+    "scope": "Current local candidate has not been pushed; no result is claimed."
+  },
+  "diagnostic_assertion_correction": {
+    "status": "CLOSED_IN_TEST_ASSERTIONS; HISTORICAL_REVIEW_RETAINED",
+    "original_gpt_6_1_finding": "Permissive missing-revision diagnostic assertion; explicitly nonblocking.",
+    "commit": "7c3f3822c81faba37b4b07a09e0f5a950f9f1256",
+    "subject": "test: pin exact missing migration diagnostics",
+    "scope": "Tests only; no production code or frozen application candidate changed.",
+    "assertions": [
+      {
+        "trigger": "Physically missing 0043 migration file",
+        "required_diagnostic": "publication worker launch denied: publication worker launch pin is invalid"
+      },
+      {
+        "trigger": "Authenticated source manifest omits 0043",
+        "required_diagnostic": "publication worker source manifest is incomplete"
+      }
+    ],
+    "verification": "The missing-revision focused assertion passed; the container-backed inventory test skipped because the Task 8 exact candidate state was absent. Both exact diagnostics were independently exercised with temporary fixtures.",
+    "qualification_effect": "Does not alter the frozen 182c4e4 application result or transfer any hosted CI result."
   }
 }
