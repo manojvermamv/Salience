@@ -1,0 +1,137 @@
+# Independent cross-spec architecture review
+
+Spec verdict: **FAIL**. Final readiness: **not ready to pass Slice 1's independent specification review**. Findings: **0 Critical, 7 Important, 0 Minor**. Score range: **2–5 / 5**.
+
+This is a read-only design review of the five new specs against `docs/v4/p1-rg0-rg1-initial-gap-audit.json`, its Markdown companion, the 2026-10-27 audit plan, program-sequence Slices 2–6 (and the Slice 7 handoff), and cited source/tests/migrations. The only output written is this report. No application tests, production actions, external messages, commits, or repository mutations were performed. Named test functions and their relevant assertions were inspected; their historical pass results were not independently rerun or promoted into production evidence.
+
+## Strengths and scope reconciliation
+
+- The audit has exactly 22 unique applicable rows: five RG0 and 17 RG1. Every spec names all of its audit-assigned primary/supporting row IDs. Policy owns R13/R15/R17/R18 with R05/R07/R10/R23F support; routing owns R02/R03/R06/R08 with R01/R10/R17/R23F/R53 support; schedules own R03/R06/R08/R18; recovery owns R18/R32/R33/R34 with R09/R35/R53 support; external acceptance consumes all 22. No row was silently omitted or newly declared PASS.
+- Business operation identity is consistently distinguished from worker route identity and Temporal run identity. The specs preserve unknown external liabilities and prohibit provider/account substitution, hold deletion, notification-as-approval, fixture-to-production promotion, and automatic gate release.
+- The schedule spec has a bounded one-remote-schedule-per-goal model, complete two-sided inventory, explicit unsupported-shape holds, durable pending and rollback fences, remote readback, monotonic slots/cursors, lost-ack reconciliation, and independently owned worker/recovery interfaces. Its tests cover all named state boundaries and require prior-code restart verification separately from remote resume acknowledgement.
+- Proposed schema additions are generally justified by concrete missing durable facts: grant revision/immutability guards, production schedule target identity, production recovery source/alert evidence. Fixture backfill and destructive downgrade are prohibited.
+- Every spec acknowledges absent human owners and absent production environment/access. Effects remain disabled; RG0/RG1 remain HELD and P2 remains BLOCKED. Current CI, human approval, fixture results, production observations, and historical artifacts remain distinct evidence classes.
+
+## Evaluation scores
+
+A score of 5 means the design contract is complete at this stage; 3 means material clarification/integration work is needed; 2 means a required boundary is currently contradictory or unimplementable as written. A per-spec PASS concerns its own bounded design and does not pass its dependencies or any release gate.
+
+| Spec | Verdict | Traceability | Boundedness | Testability | Migration safety | Rollback safety | Observability | Gate honesty |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Production policy/revocation | FAIL | 5 | 4 | 3 | 3 | 4 | 5 | 5 |
+| Production routing/worker fencing | FAIL | 5 | 5 | 3 | 4 | 2 | 5 | 5 |
+| Live schedule fencing | PASS | 5 | 5 | 5 | 4 | 4 | 5 | 5 |
+| Production recovery/alerts | FAIL | 4 | 4 | 2 | 3 | 2 | 5 | 5 |
+| External acceptance | FAIL | 5 | 5 | 3 | 5 | 4 | 5 | 5 |
+
+## Critical findings
+
+None. These are design-only documents that explicitly leave production disabled. The following are Important design blockers, not claims of observed production incidents.
+
+## Important findings
+
+### I1. Production permit issuance has no specified compatible persistence contract
+
+**Locations:** `docs/superpowers/specs/2026-10-13-p1-production-policy-and-revocation-design.md:62`, `:65`, `:98`, `:117`–`:127`.
+
+The spec retains the fixture-only `CycleGovernance` and fixture literal checks, retains the current permit/claim history, and requires issuance/claim of production-shaped permits. Its one proposed migration addresses grant revisions and policy/approval immutability, but never defines how a production permit can be persisted without relaxing the fixture boundary. This is more than a missing type annotation: `migrations/versions/0026_cycle_governance.py:261`–`:281` requires every `v4_dispatch_permits` request to contain `effect='fixture.noop'`, `purpose='fixture_execution'`, and `account_ref='fixture-account'`; `:75` also binds the current claim pointer to that table. Current request models repeat those literals at `src/salience/cycles/governance.py:35`–`:45`.
+
+**Impact:** R15/R17's production-shaped acceptance cannot run under the declared migration. An implementer must either violate the fixture-preservation requirement or invent an unreviewed production permit/claim schema and compatibility boundary. Calling the production path “separately typed” does not resolve the database constraint or its foreign-key/pointer semantics.
+
+**Concrete fix:** Choose and specify a versioned production permit persistence path in this increment: either a strictly discriminated production branch whose additive SQL preserves the existing fixture branch unchanged, or a production relation with explicit claim/current-pointer and operation uniqueness semantics. Name the service/type that owns it, bind the policy/approval/route/operation facts, define the resulting compatibility floor and rollback reader requirements, and add PostgreSQL acceptance tests for production-shaped insert/issue/claim plus cross-mode denial and preservation of all existing fixture assertions. If production permits are intentionally a later increment, assign that missing increment and keep the associated production acceptance explicitly outside the five-increment closeout.
+
+### I2. A route fencing epoch is carried into transactions without an enforcement contract
+
+**Locations:** `docs/superpowers/specs/2026-10-13-p1-production-routing-and-worker-fencing-design.md:61`, `:68`; `docs/superpowers/specs/2026-10-13-p1-production-policy-and-revocation-design.md:96`–`:100`.
+
+Routing requires new activity/permit boundaries to carry `route_id`, slot, owner, epoch, and digests, and promises that expiry/loss of renewal immediately fences the process. The consuming policy protocol never checks the authoritative lease owner/epoch/expiry, and no contract defines how those externally stored facts are validated at the action boundary. Metadata by itself cannot reject a stale process. A suspended worker can resume after its TTL and pass current subject/policy/stop checks even though its worker lease is no longer current; a local renewal timer is not a durable authorization barrier. The current routing tests cover registration/polling and delayed renewal, but not a previously running activity resumed past TTL before its next permit/effect boundary.
+
+**Impact:** The promised stale-owner fencing can be implemented as a startup/polling check only, leaving an authority leak for already dispatched activities. This crosses the precise routing/policy boundary the specs are meant to establish.
+
+**Concrete fix:** Define which authoritative component checks the exact route/slot/owner/epoch, external lock/manifest digest, and lease-service time before issue, claim, and every later action boundary; define its serialization rule and fail-closed behavior on unknown lease state. State which already committed claim is an in-flight liability and which later work is denied. If the selected platform cannot enforce that rule, make qualification HELD rather than accepting an epoch as evidence. Add a real-process pause/resume test across TTL, lease-service outage, and owner termination/transfer proving that the stale process cannot obtain new authority or make another call after resumption.
+
+### I3. Production rollback requires a verifier that the routing contract only defines for fixture holds
+
+**Locations:** `docs/superpowers/specs/2026-10-13-p1-production-routing-and-worker-fencing-design.md:90`, `:113`; `docs/superpowers/specs/2026-10-13-p1-production-recovery-and-alerts-design.md:135`, `:150`.
+
+Routing mandates reusing `verify_publication_recovery_rollback` with exactly two operation IDs, one per reason. Recovery requires that same authenticated-launcher path to inspect both fixture and new production holds and every snapshot version. The current verifier accepts exactly one ID per reason (`src/salience/cycles/publication_recovery.py:634`–`:654`), queries only `v4_legacy_publication_recovery_holds` (`:665`–`:686`), and reconstructs evidence through fixture receipt/progress joins (`:181`–`:185`) and literal fixture remote/publisher IDs (`:288`–`:289`). The launcher/preflight ABI likewise accepts one workspace and those two IDs (`scripts/launch-v4-publication-worker.py:451`–`:465`; `src/salience/cycles/publication_recovery_compatibility.py:1124`–`:1138`). It cannot inspect `v4_production_recovery_work`, and no spec owns a versioned authenticated extension to do so.
+
+**Impact:** A valid production rollback cannot satisfy the written verification requirement, while selecting two fixture rows would leave production holds outside the actual verifier. Requiring one of each reason as deployment data also does not define valid zero/one/many hold inventories. This blocks routing's promised restart proof and recovery's production snapshot proof.
+
+**Concrete fix:** Assign recovery ownership of a read-only, source-discriminated verifier and assign routing ownership of the versioned, authenticated launcher ABI that consumes it. Verify the complete affected workspace/source/work inventory and all snapshot versions with no omitted holds, preserve existing fixture verification, and define empty/one/many inventory behavior separately from the requirement to test both reasons. Bind its inventory digest and pre/post fingerprints to the prior artifact and compatible migration floor. Test the actual prior image before exec with production-only holds, mixed fixture/production inventories, each reason, omitted extra holds, unsupported snapshot versions, missing/changed evidence, and verifier failure. Merely retaining a 0043 minimum does not qualify an old artifact to read the newly added production evidence.
+
+### I4. The production hold model excludes the open-cycle state required by one of its two reasons
+
+**Locations:** `docs/superpowers/specs/2026-10-13-p1-production-recovery-and-alerts-design.md:44`, `:69`, `:149`.
+
+The spec makes the new immutable production hold a closed-cycle publication outcome, and directs other eligible open-cycle work to the existing case model. Nevertheless, acceptance test 9 requires a corresponding production immutable-hold path for both `expired_permit_receipt` and `published_during_cancel`. The retained reason semantics differ: `expired_permit_receipt` requires an expired permit, accepted/processing progress, and `cycle.state <> 'closed'` (`src/salience/cycles/publication_recovery.py:291`–`:294`); `published_during_cancel` requires a closed/cancelled cycle (`:296`–`:298`). A case-source production work row is only a binding and is not specified to retain the complete immutable liability snapshot that the two-reason hold test requires.
+
+**Impact:** The expired-permit production test has no legal target state under the proposed model. An implementer could silently close an unresolved operation to manufacture a hold, weaken the reason semantics, or omit the required immutable evidence.
+
+**Concrete fix:** Specify the production subject discriminants and state/reason predicates explicitly. Permit an immutable expired-permit evidence hold for an open cycle (optionally linked to the existing typed case without changing its identity), or define an equally complete immutable case-linked evidence form and adapt the two-reason test to that form. Preserve the closed-cycle published-during-cancel path without opening/reopening a case. Test both reason/state pairs, wrong-state rejection, concurrent exact insert, crash after commit, and unchanged complete snapshots across replay and verification.
+
+### I5. The work identity cannot represent the operationless pre-admission recovery required by R09
+
+**Locations:** `docs/superpowers/specs/2026-10-13-p1-production-recovery-and-alerts-design.md:33`, `:63`, `:67`, `:69`, `:91`; `docs/superpowers/specs/2026-10-13-rg0-rg1-external-acceptance-design.md:96`.
+
+The recovery goals and production work binding require an original operation ID, source-operation equality/uniqueness, and an exact provider/remote operation target. The external R09 procedure requires bounded pre-admission recovery through this deployed recovery path. Pre-admission intent cases canonically have no cycle/context/operation: `src/salience/cycles/governance.py:267`–`:270` explicitly uses NULL context and operation, enforced by `migrations/versions/0026_cycle_governance.py:96`–`:98`. Current wait tests prove no cycle is allocated before a valid wake (`tests/integration/test_v4_runtime_waits.py:102`–`:118`). The spec does not define an operationless source kind or forbid unnecessary provider lookup for it.
+
+**Impact:** R09 either remains unimplemented, or a new operation/cycle is fabricated merely to fit recovery bookkeeping, violating the preserved pre-admission identity boundary. “Context when present” does not address the unconditionally required operation/remote-target fields.
+
+**Concrete fix:** Add an explicit intent-case discriminant bound to the original intent, eligibility/case revision, deadline, and owner; allow NULL cycle/context/operation/remote target only for that source. Reject provider reads for operationless subjects. Preserve the same intent through bounded timer wake and admission; allocate a cycle/operation only after successful current admission. Add concurrent adoption, timer/restart, stale revision, stop/revocation, exhausted wake, and no-premature-cycle tests for this source alongside the existing cycle-case and publication-hold tests.
+
+### I6. Required production case/timer lifecycle work is deferred to fixture-only paths with no implementation owner
+
+**Locations:** `docs/superpowers/specs/2026-10-13-p1-production-recovery-and-alerts-design.md:41`, `:104`, `:108`, `:125`, `:146`; `docs/superpowers/specs/2026-10-13-p1-production-policy-and-revocation-design.md:62`; `docs/superpowers/specs/2026-10-13-rg0-rg1-external-acceptance-design.md:102`–`:105`.
+
+Keeping the new read worker unable to resume/resolve a business operation is sound. However, required R32 deadline suspension, R33 production resume, and R35 archive qualification are delegated to “existing” case/wait commands, while the spec explicitly prohibits the production worker from using the fixture timer and does not specify another production command/timer controller. The existing public case endpoints are behind `enable_v4_fixture_commands`, which is rejected outside no-effects fixture mode (`src/salience/api/p0.py:114`–`:115`). Case opening/review uses fixture account/purpose bindings (`src/salience/cycles/governance.py:258`, `:304`); wait registration/driver is fixture-only (`src/salience/cycles/runtime.py:152`–`:157`; `src/salience/cycles/runtime_waits.py:211`–`:215`). Reading a deadline and appending an alert event, as specified at recovery line 125, does not execute the canonical suspension transition. The policy spec keeps `CycleGovernance` fixture-only and owns no explicit production case-command integration. Recovery line 104 honestly says the absent R33 path remains held, but never assigns the missing work within the audit's required increments.
+
+**Impact:** The five increments cannot deliver their specified external recovery acceptance without another unassigned behavior change or removal of fixture guards. The deadline test and external R32/R33/R35 procedures are not executable from the declared design.
+
+**Concrete fix:** Assign a narrow production case-command and deadline controller to the recovery increment (or name an additional required bounded prerequisite). Reuse the canonical typed state machine and receipts through a production boundary with current stage/policy authority; keep the evidence read worker read-only. Specify registration/route, due-time wake identity, concurrency and crash replay, suspension/escalation command, currently permitted resume paths, terminalization, and archival ownership. Do not invent a generic reconciling-to-retry transition or weaken the fixture APIs. Add deployed production-shaped tests proving these commands execute with fixture routes disabled, while current stop/revocation and case revision/action limits remain enforced. If those paths are intentionally deferred, mark the affected rows and the audit's work inventory as explicitly incomplete rather than implying the listed five designs cover all residual implementation.
+
+### I7. Expected acceptance mutations invalidate their own successful evidence
+
+**Locations:** `docs/superpowers/specs/2026-10-13-rg0-rg1-external-acceptance-design.md:54`, `:86`, `:98`, `:134`, `:139`, `:143`; checker acceptance test at `:159`.
+
+The freshness rule says a mutable-state change between beginning and ending run readbacks invalidates affected evidence; the invalidation list includes any policy/grant/approval/secret-version change. But required procedures deliberately revoke grants/policies and test leases, and explicitly preserve revocation rather than restoring it. Those tests necessarily change exactly that mutable state. The package currently has no distinction between an authorized, digest-bound state transition that is the test result and unexpected drift after the observation. Matching start/end target digests can only be required for genuine NO_MUTATION cases; it cannot also be the general acceptance predicate for these mutation cases.
+
+**Impact:** A correctly executed R13/R22/R16F mutation/retirement exercise self-invalidates (and may invalidate dependent rows) before the package can be signed. An implementer must invent a freshness exception or restore revoked authority contrary to the security rule.
+
+**Concrete fix:** Distinguish immutable procedure evidence, planned authorized pre/post state transitions, and mutable final-state observations. Pin the expected transition and authorized scope before execution, retain all pre/post digests and permanent revocations, freeze/read back the final reviewed state, and apply freshness/invalidation to unplanned or subsequent drift. Require reruns of dependencies genuinely affected by the final state, while permitting evidence of the planned test transition to remain valid. Add checker tests where the planned revocation with verified final denial passes, an unauthorized or subsequent revision change fails, NO_MUTATION requires equal start/end state, and revoked credentials are never restored to force equality.
+
+## Cross-spec dependency and architecture assessment
+
+The intended order remains policy authority → authenticated worker route → schedule preparation/pause and worker drain → cutover/recovery qualification → external evidence package → independent final audit. Schedule preparation supplies an admission hold before routing drain; routing readback then supplies the schedule's drain/activation prerequisite. That is an ordered protocol, not inherently a cycle.
+
+Recovery/alert and external acceptance documents may be drafted as shared interface contracts before their runtime qualification. The specs should continue to distinguish consuming that contract from requiring its completed acceptance result; otherwise “preceding contracts” at schedule lines 52–57 can be read as a circular execution prerequisite. I did not count this wording as a separate defect because the named requirements can be met through contract-first sequencing.
+
+No duplicate policy microservice, artifact registry, launcher, general case state machine, or acceptance database is proposed. The Important findings concern the unowned production transitions between reused fixture contracts and the new production records, rather than a recommendation to add parallel platforms. The additive grant-revision repair is justified by the actual serialization trigger, which locks subjects but does not advance their revisions (`migrations/versions/0021_cycle_policy.py:53`–`:67`). The schedule source-binding addition is justified by the fixture queue/target constraints in migration 0037 and the fixture adapter. Recovery's new source/alert evidence is also justified, provided its source variants, producer, and rollback verifier are specified consistently.
+
+The rollback contracts are consistently conservative about unknown effects, stop state, immutable history, compatible artifacts, and verification before prior process execution. The unresolved implementation/ABI conflict in I3 prevents treating that conservatism as an executable production restart proof. Schedule rollback and the final external audit must consume the corrected verifier/routing evidence.
+
+## Cannot verify / declined to judge
+
+- No production target, provider account, issuer/DB role configuration, deployment lease service, authorized schedule inventory, external alert channel, named human roster, target freshness/latency policy, or independent production reviewer is supplied. Their capabilities and actual acceptance are NOT RUN/HELD; absence is not an implementation defect or a reason to execute live probes during this review.
+- No selected lease platform exists to verify its CAS/time/termination guarantees; I2 concerns the missing consumer contract regardless of eventual platform choice.
+- No actual production provider read/absence semantics or visibility window is named. Provider-specific feasibility remains held under recovery lines 91–102; arbitrary not-found interpretation is correctly prohibited.
+- No retained future production/prior image or newly versioned production snapshot/verifier exists. The historical 182c4e4 image's fixture qualification is not evidence for the new schema/production records.
+- Historical 796/17/3 results, exact-head CI, remote repository protection, and formal approval were read as scoped audit assertions; their remote/live state and signatures were not independently re-executed here.
+- New provider adapters, P2/P3/P4/P5 behavior, hold retirement/post-close business projection, deployment enablement, and `main` integration were set aside because the authorized work is initial documentation/spec review. Their absence was not silently interpreted as PASS.
+- I did not require production owners to be invented in a draft. The supplied plan explicitly treats their absence as a future execution prerequisite and blocker. Nothing here approves implementation before they and the other declared prerequisites exist.
+
+## Reviewed spec digests
+
+These bind this verdict to the reviewed working-tree text, not to a later edit:
+
+| Spec | SHA-256 |
+| --- | --- |
+| `2026-10-13-p1-production-policy-and-revocation-design.md` | `cc0dae0b2ba1e7019c5ef7bf161c313aeadaaa2001186e558fc635e45a15e8a3` |
+| `2026-10-13-p1-production-routing-and-worker-fencing-design.md` | `8d73f52aeceb94e05d1d2814d9c10201a790613ef9019ebc185bf3bc93c3029e` |
+| `2026-10-13-p1-live-schedule-fencing-design.md` | `2c4e7c88e1adba618e98c1031adea3583af9f045bdf391724cd2007162d1268d` |
+| `2026-10-13-p1-production-recovery-and-alerts-design.md` | `af9ed3549eb7921e185b681048ebc7683cba72c27fbb23affc542ff1c8928517` |
+| `2026-10-13-rg0-rg1-external-acceptance-design.md` | `daa8320e42da0b8599fc7e67a2ea940260febd3c2cdffe8cf4830882150da3b5` |
+
+## Final readiness
+
+Resolve I1–I7 and re-review the exact revised boundaries and tests before marking the required specs independently accepted. The live-schedule contract is individually sound at this stage; it remains dependent on corrected routing/policy/recovery interfaces and real target prerequisites. RG0/RG1 remain HELD; P2 remains BLOCKED. No score or design PASS authorizes production effects, implementation, a release, or merge.

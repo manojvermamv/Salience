@@ -1,0 +1,100 @@
+# Cross-spec correction rereview — round 1
+
+**Scoped verdict: PASS.** All prior findings **I1–I7 are ADDRESSED** in the revised design contracts. **New findings introduced by these corrections: 0 Critical, 0 Important.** The live-schedule specification retains its prior PASS.
+
+This rereview covers only the seven findings in `/tmp/cross-spec-reviewer-report.md`, their corrections described in `/tmp/fix-cross-spec-report.md`, the current five specs, and `GateChecks.test_p1_spec_boundaries_cover_production_authority_recovery_and_evidence` in `docs/v4/test_checks.py`. I read the revised contracts and their consumers, rather than treating phrase-presence assertions as architectural proof. No repository files, application state, index/branch state, or production systems were changed. This report is the only file written.
+
+## Prior-finding dispositions
+
+### I1 — ADDRESSED: production-compatible permit persistence
+
+**Evidence:** `docs/superpowers/specs/2026-10-13-p1-production-policy-and-revocation-design.md:66`, `:99`–`:101`, `:107`–`:123`, `:136`–`:147`, `:170`.
+
+The policy spec now explicitly creates three production-only relations: immutable issued permits (`v4_production_effect_permits`), append-only claims (`v4_production_effect_permit_claims`), and a serialized current-generation pointer (`v4_production_current_dispatch`). Production references cannot target fixture permit/claim relations, and fixture literals and foreign-key/pointer behavior remain unchanged. The permit discriminator, operation/generation uniqueness, single-claim rule, restricted pointer advancement, original idempotency key, and proven-no-effect-only generation advancement are specified.
+
+The migration contract now owns these production facts and the compatible rollback reader; production requires the exact additive schema head rather than assuming the fixture 0043 floor is sufficient. Acceptance includes real PostgreSQL production-shaped issue/claim and both cross-mode denial directions. The prior persistence/constraint conflict is resolved at design level.
+
+### I2 — ADDRESSED: authoritative action fencing
+
+**Evidence:** `docs/superpowers/specs/2026-10-13-p1-production-routing-and-worker-fencing-design.md:63`–`:69`, `:76`, `:107`, `:118`; `docs/superpowers/specs/2026-10-13-p1-production-policy-and-revocation-design.md:99`–`:101`, `:119`–`:121`, `:171`.
+
+Routing now owns a versioned `RouteFenceAuthority.authorize_action` interface. It checks current owner/epoch, exact target and route/artifact digests, action/operation binding, and lease-service time. Its order is linearizable with claim, renewal, expiry, termination, and transfer. Policy consumes a unique one-use decision in the current policy/stop and action transaction; carrying an epoch or checking only at startup is explicitly insufficient.
+
+The committed-action versus later-action boundary is stated: an already consumed exact claim remains an in-flight liability; a stale process cannot use it to authorize another action. Expiry/transfer invalidates unused decisions. A target that cannot demonstrate this ordering remains HELD. Real-process pause beyond TTL, service outage, and owner termination/transfer are included in acceptance at issue, claim, and later action boundaries. This closes the missing consumer-enforcement contract without claiming an unnamed platform already supplies it.
+
+### I3 — ADDRESSED: full rollback inventory and authenticated launcher ABI
+
+**Evidence:** `docs/superpowers/specs/2026-10-13-p1-production-routing-and-worker-fencing-design.md:85`, `:98`–`:99`, `:109`, `:121`; `docs/superpowers/specs/2026-10-13-p1-production-recovery-and-alerts-design.md:42`, `:153`, `:168`; `docs/superpowers/specs/2026-10-13-p1-production-policy-and-revocation-design.md:183`–`:186`.
+
+The fixture-only two-ID API is no longer the production restart contract. Recovery owns `verify_p1_recovery_rollback_v2`; routing owns its externally pinned, authenticated version-2 launcher ABI. The verifier discovers the complete affected workspace/source/work inventory, with the policy rollback contract explicitly including all operation, permit/claim/pointer, case/work/hold, receipt, attempt, reservation, and liability families. Caller-supplied hold/operation lists cannot narrow the scope.
+
+Both reason predicates execute on every run; zero, one, and many rows are legitimate inventory shapes only after complete discovery and validation. Mixed fixture/production sources, all supported snapshot versions, sorted inventory digests, and pre/post identity/fingerprint equality are required. Unsupported versions, omitted extra rows, incomplete queries, missing snapshots, changed liabilities, or verifier failure deny before exec/registration. Production restart requires an artifact that understands the exact production schema and barriers; a 0043-only artifact does not qualify. Actual-image acceptance now covers these cases.
+
+### I4 — ADDRESSED: legal reason/state predicates for both immutable holds
+
+**Evidence:** `docs/superpowers/specs/2026-10-13-p1-production-recovery-and-alerts-design.md:44`, `:63`, `:69`, `:79`–`:81`, `:159`, `:167`.
+
+Production immutable holds now explicitly support `expired_permit_receipt` on an open cycle and `published_during_cancel` on a closed/cancelled cycle. The expired-permit form may reference an already matching case but does not close a cycle or fabricate a case merely to store immutable evidence. The close-race form does not open or reopen a case.
+
+Both forms retain complete, versioned liability snapshots and original operation identity. The acceptance matrix specifies each legal state/reason pair, rejection of the wrong pair, concurrent exact insertion, real-process crash after commit, one stable hold/work ID, and byte-equivalent liabilities across restart/replay. The previous impossible expired-permit production target is removed.
+
+### I5 — ADDRESSED: operationless pre-admission intent source
+
+**Evidence:** `docs/superpowers/specs/2026-10-13-p1-production-recovery-and-alerts-design.md:58`–`:69`, `:83`, `:91`, `:159`–`:160`, `:169`–`:170`.
+
+The work model now has explicit `cycle_case`, `production_publication_hold`, and `pre_admission_intent_case` source variants. The intent variant binds the canonical intent, eligibility revision, admission disposition, due/expiry deadline, goal/workspace, and owner while requiring NULL cycle/context/operation/remote target. Those NULLs are legal only for that discriminant. It has no provider-read permission and is rejected before provider-client construction.
+
+An authorized typed wake rechecks current eligibility, authority, stop, expiry, and limits. A cycle/context/operation is allocated only by successful canonical admission, while the intent remains stable. The tests cover concurrent adoption/wake, crashes on either side of commit, stale/changed eligibility, revocation, exhausted wake bounds, provider-read rejection, and no premature allocation. The previously unconditional operation requirement is now qualified by the explicit source/nullability contract.
+
+### I6 — ADDRESSED: production case-command and deadline ownership
+
+**Evidence:** `docs/superpowers/specs/2026-10-13-p1-production-recovery-and-alerts-design.md:41`, `:77`, `:85`–`:97`, `:126`, `:164`.
+
+`ProductionRecoveryCaseController` is now an owned internal production boundary. It reuses canonical typed case/admission/command/event/archive records and their revision, transition, owner, deadline, action-limit, terminal-disposition, retention, and idempotency rules. It uses separate production authorization and a restricted role; fixture public commands, account/purpose bindings, wait driver, and notification routes remain disabled in production.
+
+The business-state read worker remains unable to issue commands. The controller owns separately authorized review/resume, deadline suspension/escalation, terminalization, archive, and pre-admission wake/admission paths. Deadline wake identity is deterministic by source/revision/due time/action and is recorded in the production event ledger. It does not introduce a reconciling-to-retry transition or a second case state machine. The former reference to the fixture “current wait contract” is replaced with explicit production deadline-controller ownership.
+
+Acceptance now exercises these commands with fixture routes disabled, production principals and canonical rows, concurrency/crash replay, deadline/action bounds, stop/revocation and route-fence denial, read-worker prohibition, terminal-only archival, and preservation of fixture endpoint denials. The previously unassigned lifecycle integration is now part of the recovery increment rather than an assumed existing production path.
+
+### I7 — ADDRESSED: planned transitions versus subsequent/unplanned drift
+
+**Evidence:** `docs/superpowers/specs/2026-10-13-rg0-rg1-external-acceptance-design.md:49`–`:58`, `:62`–`:67`, `:138`, `:143`, `:147`, `:163`–`:168`.
+
+Freshness now distinguishes NO_MUTATION, a predeclared authorized transition, and subsequent/unplanned drift. Planned mutation records pin exact scope, authorization/ticket, expected transition and versions, actor receipt, and independent final readback before execution. A matching planned transition is valid procedure evidence, and its final reviewed state becomes the currentness comparison point. Subsequent drift invalidates affected observations and dependencies; it cannot erase valid evidence that a planned revocation occurred.
+
+NO_MUTATION still requires matching start/end digests. Permanent revocation finishes with the revoked identity still revoked and denial verified. Restoration, when permitted, is a separately declared transition; old credentials or policy versions cannot be restored merely to force digest equality. The checker contract now includes positive planned-revocation evidence, negative unplanned/subsequent revision drift, NO_MUTATION equality, and rejection of restored revoked credentials. The self-invalidating test sequence is resolved.
+
+## Live-schedule regression check
+
+**Verdict: PASS retained.** Reviewed the entire current schedule spec, including interface changes at `docs/superpowers/specs/2026-10-13-p1-live-schedule-fencing-design.md:82` and `:142`.
+
+Those edits require the exact qualified production descendant, route-action decision, and complete-inventory rollback/launcher interface. They do not relax fixture adapter guards, introduce new schedules/cadence, or transfer worker/lease ownership into the schedule controller. The one-schedule-per-goal bound, complete inventory, durable pending/rollback fences, stop ordering, stable slot/coalescing rules, crash/lost-ack reconciliation, remote later-slot readback, and separate prior-code restart fence remain intact (`:78`–`:109`, `:150`–`:171`). No new Critical/Important schedule regression was found.
+
+## Focused test and verification
+
+Inspected `docs/v4/test_checks.py:231`–`:286`. The test guards the corrected production relations, mode separation, authoritative action fence, complete rollback inventory/ABI, source variants, production deadline ownership, fixture-route exclusion, and freshness distinctions. It also rejects reintroduction of “the current wait contract may move.” These are useful structural documentation guards; they are not runtime or production acceptance tests.
+
+Fresh checks performed during this rereview:
+
+- `.venv/bin/python -B docs/v4/test_checks.py GateChecks.test_p1_spec_boundaries_cover_production_authority_recovery_and_evidence` — **PASS**, one test, exit 0.
+- `git diff --check` — **PASS**, exit 0, no output.
+- SHA-256 capture of all five current specs and the focused test file — recorded below.
+
+I did not rerun application tests, the full documentation suite, prior fixture qualification, actual deployment/lease behavior, provider reads, schedule control, external alerts, or repository control-plane checks. The correction report's full-suite history remains a separate assertion from the fresh scoped checks above.
+
+## Exact reviewed hashes
+
+| File | SHA-256 |
+| --- | --- |
+| `docs/superpowers/specs/2026-10-13-p1-production-policy-and-revocation-design.md` | `416ef232c267aced5cea163745812779d53bdd0eda289c18da4b1429547be1b2` |
+| `docs/superpowers/specs/2026-10-13-p1-production-routing-and-worker-fencing-design.md` | `aa035848fd1495aa13579dfc085349eca164b95a1b3d55222cb0c4279c2db1e2` |
+| `docs/superpowers/specs/2026-10-13-p1-live-schedule-fencing-design.md` | `ffc1c0ddc14ca43e8d803eb6c407b1fef378e3e38893d65b49b7618aa8b99821` |
+| `docs/superpowers/specs/2026-10-13-p1-production-recovery-and-alerts-design.md` | `1c2a4fb00a0fd77d7572b17ab973fb38c368de85fb335e4d59bf6e78912a9307` |
+| `docs/superpowers/specs/2026-10-13-rg0-rg1-external-acceptance-design.md` | `12c5a57bb30b07a4cacb63527cfcafc81082b41ed51fcf0efe0d933c38c5dbc4` |
+| `docs/v4/test_checks.py` | `3a55bf70e96a1122397fd0a64f06e255dfd36bcd49a5394426f3875ab2162cd3` |
+
+## Readiness and remaining limits
+
+The seven corrections are ready for the coordinator's final whole-change review at these exact hashes. No new Critical/Important issue was found within the scoped fix loop. Missing named owners, selected production platform/target, actual authoritative fencing capability, production-schema/artifact qualification, live inventory, provider-specific reconciliation guarantees, external alert evidence, and final same-candidate/environment audit remain explicit prerequisites. The revised documents do not claim those prerequisites passed.
+
+Production remains disabled; RG0/RG1 remain HELD; P2 remains BLOCKED. This scoped design PASS grants no implementation, live action, production enablement, release, or merge authority.

@@ -1,0 +1,22 @@
+# Cross-spec review correction report
+
+Resolved the seven findings from `/tmp/cross-spec-reviewer-report.md` across the policy, routing, recovery, and external-acceptance specifications. The individually passing live-schedule spec received only the interface consistency update needed for the corrected route-action decision and rollback-launcher ABI. A focused structural test now guards those interfaces and prevents the production recovery deadline contract from reverting to the fixture wait driver.
+
+## Verification
+
+- **Initial RED before the specification corrections:** `.venv/bin/python docs/v4/test_checks.py GateChecks.test_p1_spec_boundaries_cover_production_authority_recovery_and_evidence` — failed on 26 missing cross-spec contract assertions.
+- **Follow-up RED for the remaining I6 inconsistency:** same command — failed because the production recovery table still said “the current wait contract may move” and lacked explicit production deadline ownership.
+- **Focused GREEN:** same command — `Ran 1 test ... OK`.
+- **Documentation checks:** `.venv/bin/python docs/v4/test_checks.py` — `Ran 17 tests ... OK`.
+- **Whitespace check:** `git diff --check` — passed with no output.
+
+## Files changed by this correction
+
+- `docs/superpowers/specs/2026-10-13-p1-production-policy-and-revocation-design.md`
+- `docs/superpowers/specs/2026-10-13-p1-production-routing-and-worker-fencing-design.md`
+- `docs/superpowers/specs/2026-10-13-p1-production-recovery-and-alerts-design.md`
+- `docs/superpowers/specs/2026-10-13-rg0-rg1-external-acceptance-design.md`
+- `docs/superpowers/specs/2026-10-13-p1-live-schedule-fencing-design.md` (cross-interface consistency only)
+- `docs/v4/test_checks.py` (one focused structural contract test method)
+
+No commit was made. Production effects remain disabled; RG0/RG1 remain HELD; P2 remains BLOCKED; `main` remains unmerged.

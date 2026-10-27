@@ -1,0 +1,44 @@
+# Final whole-change review fix report — round 1/5
+
+Scope: fix only final-review findings F1–F3. No application code, migrations, production configuration, live provider/Temporal calls, commit, push, merge, or phase release were performed.
+
+## Fixes
+
+- **F1:** The external acceptance design now assigns production collector/alert delivery to owning RG0 row R01 and labels R18/R32/R34 as related RG1 rows. R01's evidence package separately consumes collector export/delivery evidence, an external destination receipt, a named human acknowledgement, and escalation receipt. A focused contract test compares the audit's owning/related row fields with the design table mapping and checks R01's child-evidence requirements.
+- **F2:** Active `p0-release.json` and P1 matrix Slice 1 pointers now say COMPLETE_REVIEWED at frozen source `7c1ddcda280b510048ad61106c406171edd64f18`, with five required designs COMPLETE_REVIEWED and implementation/target qualification NOT RUN. Active release prose was aligned; dated historical fields were retained. The plan now records the completed 280-artifact manifest refresh and unchanged 366-file evidence lock.
+- **F3:** Re-rendered the current program-sequence Mermaid block with the repository's Mermaid 12.0.0 and Playwright headless-shell setup. The image was visually inspected. The documentation audit now records current source, result-file, SVG, PNG and output bindings, with the prior render preserved under a `historical` record. A test asserts that the recorded source SHA equals the current Mermaid block SHA.
+
+## Red-first evidence
+
+Command:
+
+```text
+.venv/bin/python docs/v4/test_checks.py GateChecks.test_external_collector_acceptance_maps_rg0_owner_and_related_rg1_rows GateChecks.test_active_program_status_and_sequence_evidence_bind_current_state
+```
+
+Captured at `/tmp/final-whole-change-fix-red.txt`. Before the fixes, both focused tests failed: F1 expected R01 as RG0 owner but the table listed only R18/R32/R34; F2 found active Slice 1 still marked `NEXT / GATED`. The initial final-review report separately measured stale Mermaid source SHA `991a394ae9a9ca63a1348956e8b4744effb15d315495ebf22c97f8ff2fb96759`, while the current block was `7721ab90bfe2b811c98fff5176a7bc40e0738c452204f4f4287e9ecc97e1d6b7`.
+
+## Green verification
+
+- `.venv/bin/python docs/v4/test_checks.py` — exit 0; 21 tests passed (`Ran 21 tests in 0.569s; OK`).
+- `.venv/bin/python docs/v4/check.py` — exit 0; PASS; 75 requirements, 2 source records, 366 evidence records, 360 inventory entries, 108 Markdown files, 4 HTML files, no errors.
+- `.venv/bin/python docs/v4/check.py --self-test` — exit 0; PASS; 6 negative controls.
+- `.venv/bin/python docs/v4/test_agenttube_reference.py` — exit 0; 17 tests passed.
+- `.venv/bin/python docs/v4/verify_agenttube_reference.py` — exit 0; PASS.
+- `.venv/bin/python /tmp/verify-p1-fix-evidence.py` — exit 0; current source/result/SVG/PNG hashes agree; 280 manifest paths, 279 non-self hashes, 17 handoffs, 83 JSON files parsed; evidence-lock has 366 entries and SHA-256 `472d603c1110a0ebe8082f598b7d02a892e6591a9f6b400c48979321551af674`.
+- `git diff --check` — exit 0; clean.
+- Focused post-update contract checks — exit 0; 3 tests passed, including manifest integrity, RG0 mapping, active status, and source-equality binding.
+
+Fresh Mermaid evidence is in `/tmp/salience-p1-final-whole-change-r1-sequence/`: Mermaid 12.0.0; source SHA `7721ab90bfe2b811c98fff5176a7bc40e0738c452204f4f4287e9ecc97e1d6b7`; results JSON SHA `3b7d31df481a17d7fd665d2f5c76e2a40cd89dd06214111face9e02d8f030e16`; SVG SHA `ea4f71313623a4e3eb9c8352eafc91e4e2af7ed3bbb6cb7c6137d9ddf21997c4`; PNG SHA `1c79af82d6c13edbf279f0278539bae87464362d1ba989fcaa7ad0642bb1af0e`.
+
+## Files changed for F1–F3
+
+- `docs/superpowers/specs/2026-10-13-rg0-rg1-external-acceptance-design.md`
+- `docs/superpowers/plans/2026-10-27-p1-rg0-rg1-initial-gap-audit.md`
+- `docs/v4/p0-release.json`
+- `docs/v4/p1-qualification-matrix.json`
+- `docs/v4/test_checks.py`
+- `docs/v4/documentation-status-audit.json`
+- `docs/v4/p1-rg0-rg1-audit-and-spec-review.md`
+
+The documentation audit remains at 280 artifacts with one null self-hash; its active hash rows, handoffs, and disposition histograms were refreshed. The application evidence lock is byte-identical and unchanged. Production remains disabled, RG0/RG1 HELD, P2 blocked, and main unmerged. No new final whole-change review has been performed in this fix report.

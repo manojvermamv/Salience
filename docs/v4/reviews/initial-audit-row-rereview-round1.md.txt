@@ -1,0 +1,57 @@
+# Initial audit repair round 1/5 — scoped independent re-review
+
+Scoped verdict: **FAIL — prior I1–I3 addressed; one new Important documentation regression.**
+
+Prior Important findings: I1 **ADDRESSED**, I2 **ADDRESSED**, I3 **ADDRESSED**.
+New findings: **0 Critical / 1 Important**.
+Incidental Minor closure: M1 **RESOLVED**, M2 **RESOLVED**.
+
+## Prior findings
+
+- **I1 ADDRESSED.** All 22 requirement rows now contain structured evidence observations. Across 80 observations, the qualified candidate, artifact digest or explicit unavailability, environment scope, immutable Git content reference and hash, source/verifier references, current audit observation, and final-entry freshness are explicit. The audit separates the frozen repository source, historical local application candidates, and unselected final production candidate/target. All 80 evidence references, 85 source references, and 97 verifier references were independently read from their recorded Git commits and SHA-256 checked with zero mismatches. The three ledger phase fields and evidence pointers resolve consistently for every row. See `docs/v4/p1-rg0-rg1-initial-gap-audit.md:17` and JSON `:6032`.
+
+- **I2 ADDRESSED.** Exactly five mandatory RG0 external checks are now individually recorded at `docs/v4/p1-rg0-rg1-initial-gap-audit.json:5866`, with source/historical/current status, freshness, accountable roles, missing humans, exact RG0 mapping, dependencies, owning increment and frozen source reference. The five-check Markdown table is at `docs/v4/p1-rg0-rg1-initial-gap-audit.md:48`. The P0 current checks remain NOT RUN; the published-base repository PASS is retained only as stale historical scope. P0/P1 ledger pointers resolve to the same external-check records.
+
+- **I3 ADDRESSED.** Every row now separates current-entry residuals, preservation obligations, and deferred phase-owned work. R03/R17 separate P1 no-effect routing/permit qualification from P2 provider execution; R35/R53 require refreshed evidence for current archive/envelope controls and explicitly defer later record families. The P2 entry rule no longer makes P2-owned implementation its prerequisite, and unnamed future phase ownership is recorded explicitly. See JSON `:3736`, `:5334`, `:5428`, `:6051` and Markdown `:62`. The new ledger audit sections contain the same split and valid references.
+
+## New Important finding
+
+### N1 — Durable policy/routing report breaks the mandatory Markdown link check
+
+**Location:** `docs/v4/audits/salience-p1-policy-routing-audit.md:5` and the repeated absolute source citations throughout that file; scanner inclusion at `docs/v4/check.py:412`–`:417`.
+
+The repair copies the original report byte-for-byte into the actively scanned `docs/**/*.md` corpus. Its absolute `/home/admin/Salience/...:line` links are not portable repository Markdown targets. Independently calling the repository `link_errors` function with the correct absolute path produces **38 broken links** for this report; both other copied reports produce zero. Because normal `verify()` recursively scans every Markdown file under `docs`, this newly added file prevents the required documentation check from passing even though the focused audit test succeeds. The fix report correctly discloses this result, but it remains an introduced blocking regression.
+
+**Fix:** Preserve the exact original report bytes outside the Markdown scanner, for example in a `.md.txt` evidence file or encoded historical archive, and update the durable reference/hash and any encoding metadata. If a rendered report is useful, add a separate Markdown wrapper with portable links. Do not rewrite the immutable original bytes or relax the link validator. Re-run the focused test, report byte/hash checks and normal documentation link check.
+
+No other new Critical/Important repair breakage was found in this scope.
+
+## Incidental Minor closure
+
+- **M1 RESOLVED.** R03 now names 7878208 as the earlier Task 1–8 application, separates application 182c4e4 from audit source 7c1ddcd, and keeps A4/d031172 review evidence historical. The old current-candidate label is removed from the audited row and corrected in the matrix wording.
+- **M2 RESOLVED.** Three durable repository report copies now have recorded SHA-256 values and original source scopes; `/tmp` is labeled scratch only. All copies match their original bytes and recorded hashes. N1 concerns their new scanner placement, not a failure of the preserved hashes.
+
+## Verification
+
+Fresh command: `PYTHONDONTWRITEBYTECODE=1 python3 docs/v4/test_checks.py GateChecks.test_initial_p1_rg0_rg1_gap_audit_is_fail_closed_and_specs_are_bounded`. Result: **1 test, OK, exit 0**, matching the fix report GREEN claim. The historical RED run was not rerun or independently witnessed; this review verifies the final GREEN state.
+
+Additional read-only checks: JSON parses; 22 required rows; 80 observations; five external checks; all current/phase/evidence JSON pointers resolve; all 262 evidence/source/verifier reference checks pass; the canonical environment digest still matches `18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436`; scoped `git diff --check` passes. No live calls, repository edits, commit or implementation action were performed.
+
+Report-copy hashes (verified against both the repository bytes and original `/tmp` bytes):
+
+- policy/routing: `af34376c35348d102576dcccbc90165396e9611cd3e5cf0e4fb5be7d02cd0572`
+- Temporal/recovery: `0370638903bff6006ff9fe29dec3d91d86956fd8618b8ef41694fbab1181133c`
+- external acceptance: `b29b8135af40e8f95f5e9b903ea70d8840ec95c3b01eaf684004986c9e75997b`
+
+Reviewed artifact SHA-256 values:
+
+- `docs/v4/p1-rg0-rg1-initial-gap-audit.json`: `f2dab5348f682913ea903da777f7112fc10f722dcd2ca38e7d0f60fceab741c5`
+- `docs/v4/p1-rg0-rg1-initial-gap-audit.md`: `2baccbbb604ac1b6821e365b1b68a6c385f94720d70ab931d29c228d193b3336`
+- `docs/v4/p1-qualification-matrix.json`: `bb6873524be206fc52ce09eab308bbb0ba434716f907d9a20a55879be32bac9f`
+- `docs/v4/p0-release.json`: `a5ec536b8064b64c535e9876e13737b3173e7ef8f2bf08cced76367e19e1d0ee`
+- `docs/v4/test_checks.py`: `ad133bf69869d86e6c4e55d4175408de610eaea48d3d395d8382c2d03129f136`
+- `/tmp/fix-audit-contract-report.md`: `761bcb1c4dc05f08e963c599fc1d374620078cdb265b7edcc4f702a7b889a102`
+
+## Readiness
+
+The original three Important audit-contract findings are closed. Repair round 1 still requires N1 to be fixed and checked before this scope can pass. **RG0 HELD, RG1 HELD, P2 BLOCKED** remains the supported disposition.

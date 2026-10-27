@@ -41,6 +41,28 @@
           "tests/integration/test_v4_migrations.py"
         ],
         "application_commit": "a4b2368cdb463939d093020224a5b5667392aee6"
+      },
+      "initial_commit_bound_gap_audit": {
+        "audit_commit": "7c1ddcda280b510048ad61106c406171edd64f18",
+        "environment_manifest_sha256": "18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436",
+        "status": "HELD",
+        "owner_role": "workflow runtime owner",
+        "named_owner_status": "MISSING",
+        "entry_evidence_freshness": "STALE_OR_DIFFERENT_CANDIDATE_ENVIRONMENT",
+        "required_increments": [
+          "production_routing_and_worker_fencing",
+          "external_rg0_rg1_acceptance"
+        ],
+        "evidence_observations": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/5/evidence_observations",
+        "current_entry_residual": [
+          "Supported production worker route, registration/ownership, drain, compatible workflow floor, and rollback readback are not qualified on one target."
+        ],
+        "preservation_obligations": [
+          "Preserve deterministic activity replay, bounded workflow histories, and the tested compatible old-history path."
+        ],
+        "deferred_phase_owned_work": [],
+        "artifact": "docs/v4/p1-rg0-rg1-initial-gap-audit.json",
+        "phase_split_reference": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/5"
       }
     },
     {
@@ -55,7 +77,7 @@
       "local_verifier_status": "PASS; covers implemented local fixtures, not unimplemented production acceptance",
       "independent_review_status": "PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE; production acceptance remains HELD",
       "production_release_status": "HELD",
-      "remaining_acceptance": "Production dispatcher/provider, approved account authorization, supported routing, native schedule inventory/fencing, remote reconciliation and complete RG1 acceptance remain unqualified. Corrected-publication rereview is complete only for A4/d031172 and does not review current candidate 7878208.",
+      "remaining_acceptance": "Production routing/worker ownership, live schedule inventory/fencing, scoped remote reconciliation, and complete RG1 acceptance remain unqualified. The corrected-publication rereview applies only to historical application A4/d031172; 7878208 is the earlier Task 1\u20138 application candidate, while this audit separately freezes local application 182c4e4 and audit source 7c1ddcd.",
       "independent_review_evidence": [
         "docs/v4/item7-runtime-review.json"
       ],
@@ -117,6 +139,35 @@
           "tests/integration/test_v4_migrations.py"
         ],
         "application_commit": "a4b2368cdb463939d093020224a5b5667392aee6"
+      },
+      "initial_commit_bound_gap_audit": {
+        "audit_commit": "7c1ddcda280b510048ad61106c406171edd64f18",
+        "environment_manifest_sha256": "18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436",
+        "status": "HELD",
+        "owner_role": "delivery runtime owner",
+        "named_owner_status": "MISSING",
+        "entry_evidence_freshness": "STALE_OR_DIFFERENT_CANDIDATE_ENVIRONMENT",
+        "required_increments": [
+          "production_routing_and_worker_fencing",
+          "live_temporal_schedule_fencing",
+          "external_rg0_rg1_acceptance"
+        ],
+        "evidence_observations": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/6/evidence_observations",
+        "current_entry_residual": [
+          "Production route/worker ownership, native schedule inventory/fencing, scoped remote reconciliation, and same-target RG1 acceptance remain unqualified; provider effects stay phase-gated."
+        ],
+        "preservation_obligations": [
+          "Preserve atomic outbox transitions, ordered acknowledged delivery, deduplication, and the no-direct-start fixture boundary."
+        ],
+        "deferred_phase_owned_work": [
+          {
+            "owning_phase": "P2",
+            "work": "Provider charge/effect integration and enabled provider qualification.",
+            "entry_boundary": "P2 owns this implementation; it is not a prerequisite to entering P2. Effects stay disabled until P2-specific acceptance passes."
+          }
+        ],
+        "artifact": "docs/v4/p1-rg0-rg1-initial-gap-audit.json",
+        "phase_split_reference": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/6"
       }
     },
     {
@@ -144,6 +195,34 @@
           "tests/integration/test_v4_migrations.py"
         ],
         "application_commit": "a4b2368cdb463939d093020224a5b5667392aee6"
+      },
+      "initial_commit_bound_gap_audit": {
+        "audit_commit": "7c1ddcda280b510048ad61106c406171edd64f18",
+        "environment_manifest_sha256": "18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436",
+        "status": "HELD",
+        "owner_role": "goal/baseline governance owner",
+        "named_owner_status": "MISSING",
+        "entry_evidence_freshness": "STALE_OR_DIFFERENT_CANDIDATE_ENVIRONMENT",
+        "required_increments": [
+          "production_policy_and_cross_service_revocation",
+          "external_rg0_rg1_acceptance"
+        ],
+        "evidence_observations": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/7/evidence_observations",
+        "current_entry_residual": [
+          "Production baseline/registry eligibility and exact target acceptance beyond the approved no-effects fixture are unqualified."
+        ],
+        "preservation_obligations": [
+          "Preserve exact GoalSpec/baseline revisions and the no-assignment state of disabled trial fixtures."
+        ],
+        "deferred_phase_owned_work": [
+          {
+            "owning_phase": "P3",
+            "work": "Trial/evaluation assignment and isolation, only if a trial capability is enabled.",
+            "entry_boundary": "No trial is enabled or assigned by this current P1 audit."
+          }
+        ],
+        "artifact": "docs/v4/p1-rg0-rg1-initial-gap-audit.json",
+        "phase_split_reference": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/7"
       }
     },
     {
@@ -220,6 +299,29 @@
           "tests/integration/test_v4_migrations.py"
         ],
         "application_commit": "a4b2368cdb463939d093020224a5b5667392aee6"
+      },
+      "initial_commit_bound_gap_audit": {
+        "audit_commit": "7c1ddcda280b510048ad61106c406171edd64f18",
+        "environment_manifest_sha256": "18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436",
+        "status": "HELD",
+        "owner_role": "cadence identity owner",
+        "named_owner_status": "MISSING",
+        "entry_evidence_freshness": "STALE_OR_DIFFERENT_CANDIDATE_ENVIRONMENT",
+        "required_increments": [
+          "production_routing_and_worker_fencing",
+          "live_temporal_schedule_fencing",
+          "external_rg0_rg1_acceptance"
+        ],
+        "evidence_observations": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/8/evidence_observations",
+        "current_entry_residual": [
+          "Production legacy slot/cycle mapping, supported routing, live schedule inventory/cutover/fencing, and deployment rollback readback remain unqualified."
+        ],
+        "preservation_obligations": [
+          "Preserve stable intent/cycle/slot identity and original event/manual idempotency across revisions."
+        ],
+        "deferred_phase_owned_work": [],
+        "artifact": "docs/v4/p1-rg0-rg1-initial-gap-audit.json",
+        "phase_split_reference": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/8"
       }
     },
     {
@@ -237,7 +339,35 @@
       "remaining_acceptance": "production/stage authorization integration. Trial eligibility remains conditional on later trial enablement; current fixtures explicitly have no assignment.",
       "independent_review_evidence": [
         "docs/v4/item7-admission-review.json"
-      ]
+      ],
+      "initial_commit_bound_gap_audit": {
+        "audit_commit": "7c1ddcda280b510048ad61106c406171edd64f18",
+        "environment_manifest_sha256": "18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436",
+        "status": "HELD",
+        "owner_role": "admission owner",
+        "named_owner_status": "MISSING",
+        "entry_evidence_freshness": "STALE_OR_DIFFERENT_CANDIDATE_ENVIRONMENT",
+        "required_increments": [
+          "production_policy_and_cross_service_revocation",
+          "external_rg0_rg1_acceptance"
+        ],
+        "evidence_observations": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/9/evidence_observations",
+        "current_entry_residual": [
+          "Production/stage authorization integration and same-target G0 readback are absent; the current no-effects fixtures assign no trial."
+        ],
+        "preservation_obligations": [
+          "Preserve the single G0 decision, bounded admission, and disabled/unassigned trial state."
+        ],
+        "deferred_phase_owned_work": [
+          {
+            "owning_phase": "P3",
+            "work": "Trial eligibility and assignment behavior, only if trial/evaluation capabilities are enabled.",
+            "entry_boundary": "The current no-effects admission contract remains unassigned; P3 work is not a P2-entry prerequisite."
+          }
+        ],
+        "artifact": "docs/v4/p1-rg0-rg1-initial-gap-audit.json",
+        "phase_split_reference": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/9"
+      }
     },
     {
       "id": "R08",
@@ -288,6 +418,29 @@
           "tests/integration/test_v4_migrations.py"
         ],
         "application_commit": "a4b2368cdb463939d093020224a5b5667392aee6"
+      },
+      "initial_commit_bound_gap_audit": {
+        "audit_commit": "7c1ddcda280b510048ad61106c406171edd64f18",
+        "environment_manifest_sha256": "18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436",
+        "status": "HELD",
+        "owner_role": "schedule operations owner",
+        "named_owner_status": "MISSING",
+        "entry_evidence_freshness": "STALE_OR_DIFFERENT_CANDIDATE_ENVIRONMENT",
+        "required_increments": [
+          "production_routing_and_worker_fencing",
+          "live_temporal_schedule_fencing",
+          "external_rg0_rg1_acceptance"
+        ],
+        "evidence_observations": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/10/evidence_observations",
+        "current_entry_residual": [
+          "Live schedule inventory, pause/stop/fencing, monitoring, rollback, and named operational response have not been qualified on a target."
+        ],
+        "preservation_obligations": [
+          "Preserve overlap/catch-up bounds and schedule stop/rollback fences already proven in fixtures."
+        ],
+        "deferred_phase_owned_work": [],
+        "artifact": "docs/v4/p1-rg0-rg1-initial-gap-audit.json",
+        "phase_split_reference": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/10"
       }
     },
     {
@@ -321,6 +474,28 @@
           "tests/integration/test_v4_legacy_brief_dispatch.py"
         ],
         "application_commit": "fcc5dfa11fa6281a1e281ac41867b3b0e4d8c722"
+      },
+      "initial_commit_bound_gap_audit": {
+        "audit_commit": "7c1ddcda280b510048ad61106c406171edd64f18",
+        "environment_manifest_sha256": "18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436",
+        "status": "HELD",
+        "owner_role": "deferral/recovery owner",
+        "named_owner_status": "MISSING",
+        "entry_evidence_freshness": "STALE_OR_DIFFERENT_CANDIDATE_ENVIRONMENT",
+        "required_increments": [
+          "production_recovery_remote_read_and_alerts",
+          "external_rg0_rg1_acceptance"
+        ],
+        "evidence_observations": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/11/evidence_observations",
+        "current_entry_residual": [
+          "Production stage deferral/recovery and owned worker qualification are absent; local identity/timer tests do not transfer."
+        ],
+        "preservation_obligations": [
+          "Preserve distinct pre-admission defer, admitted-cycle strategic close, and same-cycle recovery identities."
+        ],
+        "deferred_phase_owned_work": [],
+        "artifact": "docs/v4/p1-rg0-rg1-initial-gap-audit.json",
+        "phase_split_reference": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/11"
       }
     },
     {
@@ -354,6 +529,35 @@
           "tests/integration/test_v4_legacy_creative.py"
         ],
         "application_commit": "57eb84f62d978ca235f1119939d9f6adda781735"
+      },
+      "initial_commit_bound_gap_audit": {
+        "audit_commit": "7c1ddcda280b510048ad61106c406171edd64f18",
+        "environment_manifest_sha256": "18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436",
+        "status": "HELD",
+        "owner_role": "context owner",
+        "named_owner_status": "MISSING",
+        "entry_evidence_freshness": "STALE_OR_DIFFERENT_CANDIDATE_ENVIRONMENT",
+        "required_increments": [
+          "production_policy_and_cross_service_revocation",
+          "production_routing_and_worker_fencing",
+          "external_rg0_rg1_acceptance"
+        ],
+        "evidence_observations": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/12/evidence_observations",
+        "current_entry_residual": [
+          "Same-target evidence that authoritative context is pinned before affected P1 work is absent; effect/provider paths remain disabled."
+        ],
+        "preservation_obligations": [
+          "Preserve immutable context resolution after admission and before affected work; keep provider actions disabled."
+        ],
+        "deferred_phase_owned_work": [
+          {
+            "owning_phase": "P2",
+            "work": "Provider-specific stage/effect integration beyond no-effects context binding.",
+            "entry_boundary": "P2 owns the provider integration; it is not a prerequisite to entering P2, and effects remain gated."
+          }
+        ],
+        "artifact": "docs/v4/p1-rg0-rg1-initial-gap-audit.json",
+        "phase_split_reference": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/12"
       }
     },
     {
@@ -387,6 +591,34 @@
           "tests/integration/test_v4_legacy_brief_dispatch.py"
         ],
         "application_commit": "fcc5dfa11fa6281a1e281ac41867b3b0e4d8c722"
+      },
+      "initial_commit_bound_gap_audit": {
+        "audit_commit": "7c1ddcda280b510048ad61106c406171edd64f18",
+        "environment_manifest_sha256": "18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436",
+        "status": "HELD",
+        "owner_role": "authority/revocation owner",
+        "named_owner_status": "MISSING",
+        "entry_evidence_freshness": "STALE_OR_DIFFERENT_CANDIDATE_ENVIRONMENT",
+        "required_increments": [
+          "production_policy_and_cross_service_revocation",
+          "external_rg0_rg1_acceptance"
+        ],
+        "evidence_observations": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/13/evidence_observations",
+        "current_entry_residual": [
+          "Production current-revocation propagation across services and invalidation of affected approvals are not qualified."
+        ],
+        "preservation_obligations": [
+          "Preserve current-authority checks and approval invalidation after revocation or revision."
+        ],
+        "deferred_phase_owned_work": [
+          {
+            "owning_phase": "P4/P5 as assigned by the program sequence",
+            "work": "Later capability/promotion policy families.",
+            "entry_boundary": "Current P1 revocation and approval invalidation remain required; later capability families keep their own phase gates."
+          }
+        ],
+        "artifact": "docs/v4/p1-rg0-rg1-initial-gap-audit.json",
+        "phase_split_reference": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/13"
       }
     },
     {
@@ -430,6 +662,34 @@
           "tests/integration/test_v4_migrations.py"
         ],
         "application_commit": "a4b2368cdb463939d093020224a5b5667392aee6"
+      },
+      "initial_commit_bound_gap_audit": {
+        "audit_commit": "7c1ddcda280b510048ad61106c406171edd64f18",
+        "environment_manifest_sha256": "18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436",
+        "status": "HELD",
+        "owner_role": "policy owner",
+        "named_owner_status": "MISSING",
+        "entry_evidence_freshness": "STALE_OR_DIFFERENT_CANDIDATE_ENVIRONMENT",
+        "required_increments": [
+          "production_policy_and_cross_service_revocation",
+          "external_rg0_rg1_acceptance"
+        ],
+        "evidence_observations": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/14/evidence_observations",
+        "current_entry_residual": [
+          "A general versioned production policy and exact approval purpose/effect/artifact/account/expiry binding remain unqualified beyond typed fixtures."
+        ],
+        "preservation_obligations": [
+          "Preserve exact approval-purpose/effect/artifact/account/expiry binding; untrusted text grants no authority."
+        ],
+        "deferred_phase_owned_work": [
+          {
+            "owning_phase": "P2",
+            "work": "Activation of provider-facing effects after policy acceptance.",
+            "entry_boundary": "P2 provider effects are gated by P2-specific acceptance and are not a prerequisite to entering P2."
+          }
+        ],
+        "artifact": "docs/v4/p1-rg0-rg1-initial-gap-audit.json",
+        "phase_split_reference": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/14"
       }
     },
     {
@@ -478,6 +738,35 @@
           "tests/integration/test_v4_legacy_creative.py"
         ],
         "application_commit": "57eb84f62d978ca235f1119939d9f6adda781735"
+      },
+      "initial_commit_bound_gap_audit": {
+        "audit_commit": "7c1ddcda280b510048ad61106c406171edd64f18",
+        "environment_manifest_sha256": "18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436",
+        "status": "HELD",
+        "owner_role": "effect dispatch owner",
+        "named_owner_status": "MISSING",
+        "entry_evidence_freshness": "STALE_OR_DIFFERENT_CANDIDATE_ENVIRONMENT",
+        "required_increments": [
+          "production_policy_and_cross_service_revocation",
+          "production_routing_and_worker_fencing",
+          "external_rg0_rg1_acceptance"
+        ],
+        "evidence_observations": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/15/evidence_observations",
+        "current_entry_residual": [
+          "The exact current no-effects entry candidate still lacks named-owner and target evidence for one bounded permit claim, stop/revocation serialization, and fail-closed behavior; production provider execution is outside this current-entry residual."
+        ],
+        "preservation_obligations": [
+          "Preserve one bounded permit, single claim, serialized stop/revocation checks, and zero effects in the current P1 acceptance proof."
+        ],
+        "deferred_phase_owned_work": [
+          {
+            "owning_phase": "P2",
+            "work": "Production provider charge/effect integration using the transfer contract, ready-package/outbox integration, and enabled provider qualification.",
+            "entry_boundary": "This work belongs to P2 itself and cannot be a prerequisite to P2 entry. Before effects are enabled, P2 must pass its own exact-candidate/environment acceptance."
+          }
+        ],
+        "artifact": "docs/v4/p1-rg0-rg1-initial-gap-audit.json",
+        "phase_split_reference": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/15"
       }
     },
     {
@@ -570,6 +859,30 @@
         "evidence": "docs/v4/publication-recovery-hold-successor-evidence.json",
         "evidence_sha256": "4baef4a2328b26a47abc150f4b2ba47aa7c3d3afa6260c651986142b110054c1",
         "production_release_status": "HELD"
+      },
+      "initial_commit_bound_gap_audit": {
+        "audit_commit": "7c1ddcda280b510048ad61106c406171edd64f18",
+        "environment_manifest_sha256": "18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436",
+        "status": "HELD",
+        "owner_role": "safety/reconciliation owner",
+        "named_owner_status": "MISSING",
+        "entry_evidence_freshness": "STALE_OR_DIFFERENT_CANDIDATE_ENVIRONMENT",
+        "required_increments": [
+          "production_policy_and_cross_service_revocation",
+          "live_temporal_schedule_fencing",
+          "production_recovery_remote_read_and_alerts",
+          "external_rg0_rg1_acceptance"
+        ],
+        "evidence_observations": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/16/evidence_observations",
+        "current_entry_residual": [
+          "Production-wide stop/revocation, live schedule cancellation/fencing, typed recovery, scoped remote read, and independently acknowledged alert delivery remain unqualified."
+        ],
+        "preservation_obligations": [
+          "Preserve fail-closed stop/outage behavior, immutable receipt-only reconciliation scope, and unresolved liability holds."
+        ],
+        "deferred_phase_owned_work": [],
+        "artifact": "docs/v4/p1-rg0-rg1-initial-gap-audit.json",
+        "phase_split_reference": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/16"
       }
     },
     {
@@ -614,6 +927,28 @@
         "evidence": "docs/v4/publication-recovery-hold-successor-evidence.json",
         "evidence_sha256": "4baef4a2328b26a47abc150f4b2ba47aa7c3d3afa6260c651986142b110054c1",
         "production_release_status": "HELD"
+      },
+      "initial_commit_bound_gap_audit": {
+        "audit_commit": "7c1ddcda280b510048ad61106c406171edd64f18",
+        "environment_manifest_sha256": "18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436",
+        "status": "HELD",
+        "owner_role": "recovery operations owner",
+        "named_owner_status": "MISSING",
+        "entry_evidence_freshness": "STALE_OR_DIFFERENT_CANDIDATE_ENVIRONMENT",
+        "required_increments": [
+          "production_recovery_remote_read_and_alerts",
+          "external_rg0_rg1_acceptance"
+        ],
+        "evidence_observations": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/17/evidence_observations",
+        "current_entry_residual": [
+          "Production typed recovery transitions, durable recovery workers, scoped remote reconciliation, and external failure delivery are absent."
+        ],
+        "preservation_obligations": [
+          "Preserve typed recovery ownership, bounded actions, durable failures, and holds through restart/rollback."
+        ],
+        "deferred_phase_owned_work": [],
+        "artifact": "docs/v4/p1-rg0-rg1-initial-gap-audit.json",
+        "phase_split_reference": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/17"
       }
     },
     {
@@ -632,7 +967,29 @@
       "independent_review_evidence": [
         "docs/v4/item7-governance-review.json",
         "docs/v4/item7-runtime-review.json"
-      ]
+      ],
+      "initial_commit_bound_gap_audit": {
+        "audit_commit": "7c1ddcda280b510048ad61106c406171edd64f18",
+        "environment_manifest_sha256": "18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436",
+        "status": "HELD",
+        "owner_role": "recovery command owner",
+        "named_owner_status": "MISSING",
+        "entry_evidence_freshness": "STALE_OR_DIFFERENT_CANDIDATE_ENVIRONMENT",
+        "required_increments": [
+          "production_recovery_remote_read_and_alerts",
+          "external_rg0_rg1_acceptance"
+        ],
+        "evidence_observations": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/18/evidence_observations",
+        "current_entry_residual": [
+          "Production stage-specific reauthorization and the idempotent resume command have no same-target owner/evidence record."
+        ],
+        "preservation_obligations": [
+          "Preserve exact idempotent resume identity and reauthorize the current stage before every retry."
+        ],
+        "deferred_phase_owned_work": [],
+        "artifact": "docs/v4/p1-rg0-rg1-initial-gap-audit.json",
+        "phase_split_reference": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/18"
+      }
     },
     {
       "id": "R34",
@@ -650,7 +1007,29 @@
       "independent_review_evidence": [
         "docs/v4/item7-governance-review.json",
         "docs/v4/item7-runtime-review.json"
-      ]
+      ],
+      "initial_commit_bound_gap_audit": {
+        "audit_commit": "7c1ddcda280b510048ad61106c406171edd64f18",
+        "environment_manifest_sha256": "18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436",
+        "status": "HELD",
+        "owner_role": "alert/on-call owner",
+        "named_owner_status": "MISSING",
+        "entry_evidence_freshness": "STALE_OR_DIFFERENT_CANDIDATE_ENVIRONMENT",
+        "required_increments": [
+          "production_recovery_remote_read_and_alerts",
+          "external_rg0_rg1_acceptance"
+        ],
+        "evidence_observations": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/19/evidence_observations",
+        "current_entry_residual": [
+          "External alert delivery receipt, named human acknowledgement, and escalation evidence are absent."
+        ],
+        "preservation_obligations": [
+          "Preserve separate alert delivery, human acknowledgement, escalation, and resolution records."
+        ],
+        "deferred_phase_owned_work": [],
+        "artifact": "docs/v4/p1-rg0-rg1-initial-gap-audit.json",
+        "phase_split_reference": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/19"
+      }
     },
     {
       "id": "R35",
@@ -667,7 +1046,35 @@
       "remaining_acceptance": "Current terminal archive/retention/idempotency is tested; rights-filtered discovery and later record families require their own later-phase qualification.",
       "independent_review_evidence": [
         "docs/v4/item7-governance-review.json"
-      ]
+      ],
+      "initial_commit_bound_gap_audit": {
+        "audit_commit": "7c1ddcda280b510048ad61106c406171edd64f18",
+        "environment_manifest_sha256": "18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436",
+        "status": "HELD",
+        "owner_role": "records/retention owner",
+        "named_owner_status": "MISSING",
+        "entry_evidence_freshness": "STALE_OR_DIFFERENT_CANDIDATE_ENVIRONMENT",
+        "required_increments": [
+          "production_recovery_remote_read_and_alerts",
+          "external_rg0_rg1_acceptance"
+        ],
+        "evidence_observations": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/20/evidence_observations",
+        "current_entry_residual": [
+          "Current P1 terminal archive reason/evidence/retention/idempotency/no-reuse controls have fixture evidence only; same-candidate target evidence and named owner are absent."
+        ],
+        "preservation_obligations": [
+          "Preserve immutable terminal archive reason/evidence/retention and prohibit implicit reuse."
+        ],
+        "deferred_phase_owned_work": [
+          {
+            "owning_phase": "Future phase to be named before implementation",
+            "work": "Rights-filtered discovery extensions and later record families.",
+            "entry_boundary": "Current R35 P1 acceptance is the terminal archive/no-reuse contract. The source does not name the later phase; record an explicit phase owner and row mapping before those extensions ship. They do not gate P2 entry."
+          }
+        ],
+        "artifact": "docs/v4/p1-rg0-rg1-initial-gap-audit.json",
+        "phase_split_reference": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/20"
+      }
     },
     {
       "id": "R53",
@@ -706,6 +1113,35 @@
           "tests/integration/test_v4_migrations.py"
         ],
         "application_commit": "a4b2368cdb463939d093020224a5b5667392aee6"
+      },
+      "initial_commit_bound_gap_audit": {
+        "audit_commit": "7c1ddcda280b510048ad61106c406171edd64f18",
+        "environment_manifest_sha256": "18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436",
+        "status": "HELD",
+        "owner_role": "data contract owner",
+        "named_owner_status": "MISSING",
+        "entry_evidence_freshness": "STALE_OR_DIFFERENT_CANDIDATE_ENVIRONMENT",
+        "required_increments": [
+          "production_routing_and_worker_fencing",
+          "production_recovery_remote_read_and_alerts",
+          "external_rg0_rg1_acceptance"
+        ],
+        "evidence_observations": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/21/evidence_observations",
+        "current_entry_residual": [
+          "Current P1 event-envelope uniqueness, superseding corrections, immutable receipts, and audited mutable-pointer evidence has not been refreshed on the final candidate/environment."
+        ],
+        "preservation_obligations": [
+          "Preserve immutable P1 envelope and command receipts, canonical delivery scope, exact-match rollback guards, and no fabricated historical scope."
+        ],
+        "deferred_phase_owned_work": [
+          {
+            "owning_phase": "Future phase owning each new record family",
+            "work": "Envelope tests and migration/rollback qualification for record families beyond the current P1 envelopes.",
+            "entry_boundary": "The source does not assign each later family to a specific phase; name that phase and map the row before adding the family. Later-family work does not gate P2 entry."
+          }
+        ],
+        "artifact": "docs/v4/p1-rg0-rg1-initial-gap-audit.json",
+        "phase_split_reference": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/21"
       }
     }
   ],
@@ -882,7 +1318,7 @@
       "status": "APPROVED",
       "spec": "docs/superpowers/specs/2026-10-13-v4-multiplatform-autonomy-program-sequence.md",
       "slice_0": "COMPLETE",
-      "slice_1": "NEXT / GATED: commit-bound P1/RG0/RG1 gap-inventory audit",
+      "slice_1": "COMPLETE_REVIEWED at frozen source 7c1ddcda280b510048ad61106c406171edd64f18; five required designs COMPLETE_REVIEWED; implementation and target qualification NOT RUN; 22 final-entry rows non-PASS; RG0/RG1 HELD; P2 BLOCKED",
       "authority": "Navigation only; production and phase release gates remain unchanged."
     }
   },
@@ -1157,7 +1593,7 @@
     "focused_tests": 21,
     "full_non_live_tests": 604,
     "source_files": 352,
-    "status": "HISTORICAL_A4 fixture qualification; 21 focused / 604 full non-live / 352 source hashes. Corrected-publication rereview completed only for A4/d031172; this does not review current 7878208. RG0/RG1 HELD.",
+    "status": "HISTORICAL_A4 fixture qualification; 21 focused / 604 full non-live / 352 source hashes. Corrected-publication rereview completed only for A4/d031172; it predates the historical Task 1\u20138 application candidate 7878208 and the later local application candidate 182c4e4, and does not review either candidate. The initial residual audit separately uses source 7c1ddcd. RG0/RG1 HELD.",
     "qualified_application_commit": "a4b2368cdb463939d093020224a5b5667392aee6",
     "source_lock_sha256": "a972dfadd0f72bdf86c52969a55c94c2fa17ff29a07b4cf8c8d21ff9dc55b08c",
     "base_commit": "5683cfab4a3a8f20cb83506de5debb0b5692f010",
@@ -1284,9 +1720,9 @@
       }
     },
     "latest_pushed_documentation_head_ci": {
-      "head_commit": "67effe8c9c176c0bd1c17fdef20b841c0e14b6de",
-      "workflow_run_id": 38610329330,
-      "workflow_run_url": "https://github.com/manojvermamv/Salience/actions/runs/38610329330",
+      "head_commit": "7c1ddcda280b510048ad61106c406171edd64f18",
+      "workflow_run_id": 40443346020,
+      "workflow_run_url": "https://github.com/manojvermamv/Salience/actions/runs/40443346020",
       "status": "completed",
       "conclusion": "success",
       "required_jobs": {
@@ -1294,7 +1730,545 @@
         "p0-regression": "success"
       }
     },
-    "current_docs_only_head_ci": "PASS_FOR_67EFFE8; CURRENT_UNPUBLISHED_CANDIDATE_REQUIRED_PENDING",
-    "current_candidate_post_push_exact_head_ci": "REQUIRED/PENDING"
+    "current_docs_only_head_ci": "PASS_FOR_7C1DDCD; exact audit-head verify and p0-regression succeeded",
+    "current_candidate_post_push_exact_head_ci": "PASS_FOR_DOCUMENTATION_HEAD_7C1DDCD; application qualification remains separately bound to 182C4E4"
+  },
+  "initial_commit_bound_gap_audit": {
+    "status": "COMPLETE_REVIEWED",
+    "audit_commit": "7c1ddcda280b510048ad61106c406171edd64f18",
+    "environment_manifest_sha256": "18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436",
+    "artifact": "docs/v4/p1-rg0-rg1-initial-gap-audit.json",
+    "report": "docs/v4/p1-rg0-rg1-initial-gap-audit.md",
+    "contract_version": "ROW_EVIDENCE_AND_PHASE_OWNERSHIP_V2",
+    "RG0": "HELD",
+    "RG1": "HELD",
+    "P2": "BLOCKED",
+    "external_rg0_checks": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/external_rg0_checks",
+    "independent_domain_audits": [
+      {
+        "path": "docs/v4/audits/salience-p1-policy-routing-audit.md.txt",
+        "sha256": "af34376c35348d102576dcccbc90165396e9611cd3e5cf0e4fb5be7d02cd0572",
+        "wrapper_path": "docs/v4/audits/salience-p1-policy-routing-audit.md",
+        "wrapper_sha256": "0a538f5cfac2c8bbd59556fbb227258157b9c4abdaea002711bad71682b1a460"
+      },
+      {
+        "path": "docs/v4/audits/salience-p1-temporal-recovery-audit.md",
+        "sha256": "0370638903bff6006ff9fe29dec3d91d86956fd8618b8ef41694fbab1181133c"
+      },
+      {
+        "path": "docs/v4/audits/salience-p1-external-evidence-audit.md",
+        "sha256": "b29b8135af40e8f95f5e9b903ea70d8840ec95c3b01eaf684004986c9e75997b"
+      }
+    ],
+    "rows": {
+      "R01": {
+        "status": "NOT RUN",
+        "owner_role": "platform/runtime owner",
+        "named_owner_status": "MISSING",
+        "entry_evidence_freshness": "STALE_OR_NOT_RUN_FOR_TARGET_ENVIRONMENT",
+        "required_increments": [
+          "production_routing_and_worker_fencing",
+          "external_rg0_rg1_acceptance"
+        ],
+        "evidence_observations": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/0/evidence_observations",
+        "current_entry_residual": [
+          "No named production deployment/runtime owner, owned service-export and adapter evidence, exact target artifact/environment, or rollback readback is recorded; repository inspection cannot qualify those target facts."
+        ],
+        "preservation_obligations": [
+          "Preserve explicit service ownership boundaries and effects-disabled default behavior; a fixture or repository check is not deployment acceptance."
+        ],
+        "deferred_phase_owned_work": [],
+        "phase_split_reference": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/0"
+      },
+      "R22": {
+        "status": "NOT RUN",
+        "owner_role": "security/identity owner",
+        "named_owner_status": "MISSING",
+        "entry_evidence_freshness": "STALE_OR_NOT_RUN_FOR_TARGET_ENVIRONMENT",
+        "required_increments": [
+          "external_rg0_rg1_acceptance"
+        ],
+        "evidence_observations": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/1/evidence_observations",
+        "current_entry_residual": [
+          "Managed production secret references, credential rotation/revocation ownership, and destination/audience acceptance on one target are absent."
+        ],
+        "preservation_obligations": [
+          "Preserve edge-only secret handling, narrow destinations, and lease expiry/revocation checks."
+        ],
+        "deferred_phase_owned_work": [],
+        "phase_split_reference": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/1"
+      },
+      "R69": {
+        "status": "NOT RUN",
+        "owner_role": "data governance owner",
+        "named_owner_status": "MISSING",
+        "entry_evidence_freshness": "STALE_OR_NOT_RUN_FOR_TARGET_ENVIRONMENT",
+        "required_increments": [
+          "external_rg0_rg1_acceptance"
+        ],
+        "evidence_observations": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/2/evidence_observations",
+        "current_entry_residual": [
+          "Production tenancy, retention, jurisdiction, legal-hold/data-use acceptance, and managed storage/restore evidence are absent."
+        ],
+        "preservation_obligations": [
+          "Preserve tenant/data-use provenance, retention, jurisdiction, and legal-hold distinctions without inventing missing history."
+        ],
+        "deferred_phase_owned_work": [],
+        "phase_split_reference": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/2"
+      },
+      "R16F": {
+        "status": "NOT RUN",
+        "owner_role": "security/identity owner",
+        "named_owner_status": "MISSING",
+        "entry_evidence_freshness": "STALE_OR_NOT_RUN_FOR_TARGET_ENVIRONMENT",
+        "required_increments": [
+          "external_rg0_rg1_acceptance"
+        ],
+        "evidence_observations": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/3/evidence_observations",
+        "current_entry_residual": [
+          "Production issuer, TLS ingress, scoped database role, approved account/provider credentials, and named operator evidence are absent."
+        ],
+        "preservation_obligations": [
+          "Preserve issuer/audience scoping, least-privilege role boundaries, and provider allowlists."
+        ],
+        "deferred_phase_owned_work": [],
+        "phase_split_reference": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/3"
+      },
+      "R23F": {
+        "status": "HELD",
+        "owner_role": "policy/release owner",
+        "named_owner_status": "MISSING",
+        "entry_evidence_freshness": "STALE_OR_NOT_RUN_FOR_TARGET_ENVIRONMENT",
+        "required_increments": [
+          "production_policy_and_cross_service_revocation",
+          "production_routing_and_worker_fencing",
+          "external_rg0_rg1_acceptance"
+        ],
+        "evidence_observations": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/4/evidence_observations",
+        "current_entry_residual": [
+          "Production route/policy negative proof for implicit provider substitution and target-environment fallback behavior is absent."
+        ],
+        "preservation_obligations": [
+          "Preserve default-deny provider routing and prove every substitution path remains rejected unless separately authorized."
+        ],
+        "deferred_phase_owned_work": [],
+        "phase_split_reference": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/4"
+      },
+      "R02": {
+        "status": "HELD",
+        "owner_role": "workflow runtime owner",
+        "named_owner_status": "MISSING",
+        "entry_evidence_freshness": "STALE_OR_DIFFERENT_CANDIDATE_ENVIRONMENT",
+        "required_increments": [
+          "production_routing_and_worker_fencing",
+          "external_rg0_rg1_acceptance"
+        ],
+        "evidence_observations": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/5/evidence_observations",
+        "current_entry_residual": [
+          "Supported production worker route, registration/ownership, drain, compatible workflow floor, and rollback readback are not qualified on one target."
+        ],
+        "preservation_obligations": [
+          "Preserve deterministic activity replay, bounded workflow histories, and the tested compatible old-history path."
+        ],
+        "deferred_phase_owned_work": [],
+        "phase_split_reference": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/5"
+      },
+      "R03": {
+        "status": "HELD",
+        "owner_role": "delivery runtime owner",
+        "named_owner_status": "MISSING",
+        "entry_evidence_freshness": "STALE_OR_DIFFERENT_CANDIDATE_ENVIRONMENT",
+        "required_increments": [
+          "production_routing_and_worker_fencing",
+          "live_temporal_schedule_fencing",
+          "external_rg0_rg1_acceptance"
+        ],
+        "evidence_observations": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/6/evidence_observations",
+        "current_entry_residual": [
+          "Production route/worker ownership, native schedule inventory/fencing, scoped remote reconciliation, and same-target RG1 acceptance remain unqualified; provider effects stay phase-gated."
+        ],
+        "preservation_obligations": [
+          "Preserve atomic outbox transitions, ordered acknowledged delivery, deduplication, and the no-direct-start fixture boundary."
+        ],
+        "deferred_phase_owned_work": [
+          {
+            "owning_phase": "P2",
+            "work": "Provider charge/effect integration and enabled provider qualification.",
+            "entry_boundary": "P2 owns this implementation; it is not a prerequisite to entering P2. Effects stay disabled until P2-specific acceptance passes."
+          }
+        ],
+        "phase_split_reference": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/6"
+      },
+      "R05": {
+        "status": "HELD",
+        "owner_role": "goal/baseline governance owner",
+        "named_owner_status": "MISSING",
+        "entry_evidence_freshness": "STALE_OR_DIFFERENT_CANDIDATE_ENVIRONMENT",
+        "required_increments": [
+          "production_policy_and_cross_service_revocation",
+          "external_rg0_rg1_acceptance"
+        ],
+        "evidence_observations": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/7/evidence_observations",
+        "current_entry_residual": [
+          "Production baseline/registry eligibility and exact target acceptance beyond the approved no-effects fixture are unqualified."
+        ],
+        "preservation_obligations": [
+          "Preserve exact GoalSpec/baseline revisions and the no-assignment state of disabled trial fixtures."
+        ],
+        "deferred_phase_owned_work": [
+          {
+            "owning_phase": "P3",
+            "work": "Trial/evaluation assignment and isolation, only if a trial capability is enabled.",
+            "entry_boundary": "No trial is enabled or assigned by this current P1 audit."
+          }
+        ],
+        "phase_split_reference": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/7"
+      },
+      "R06": {
+        "status": "HELD",
+        "owner_role": "cadence identity owner",
+        "named_owner_status": "MISSING",
+        "entry_evidence_freshness": "STALE_OR_DIFFERENT_CANDIDATE_ENVIRONMENT",
+        "required_increments": [
+          "production_routing_and_worker_fencing",
+          "live_temporal_schedule_fencing",
+          "external_rg0_rg1_acceptance"
+        ],
+        "evidence_observations": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/8/evidence_observations",
+        "current_entry_residual": [
+          "Production legacy slot/cycle mapping, supported routing, live schedule inventory/cutover/fencing, and deployment rollback readback remain unqualified."
+        ],
+        "preservation_obligations": [
+          "Preserve stable intent/cycle/slot identity and original event/manual idempotency across revisions."
+        ],
+        "deferred_phase_owned_work": [],
+        "phase_split_reference": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/8"
+      },
+      "R07": {
+        "status": "HELD",
+        "owner_role": "admission owner",
+        "named_owner_status": "MISSING",
+        "entry_evidence_freshness": "STALE_OR_DIFFERENT_CANDIDATE_ENVIRONMENT",
+        "required_increments": [
+          "production_policy_and_cross_service_revocation",
+          "external_rg0_rg1_acceptance"
+        ],
+        "evidence_observations": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/9/evidence_observations",
+        "current_entry_residual": [
+          "Production/stage authorization integration and same-target G0 readback are absent; the current no-effects fixtures assign no trial."
+        ],
+        "preservation_obligations": [
+          "Preserve the single G0 decision, bounded admission, and disabled/unassigned trial state."
+        ],
+        "deferred_phase_owned_work": [
+          {
+            "owning_phase": "P3",
+            "work": "Trial eligibility and assignment behavior, only if trial/evaluation capabilities are enabled.",
+            "entry_boundary": "The current no-effects admission contract remains unassigned; P3 work is not a P2-entry prerequisite."
+          }
+        ],
+        "phase_split_reference": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/9"
+      },
+      "R08": {
+        "status": "HELD",
+        "owner_role": "schedule operations owner",
+        "named_owner_status": "MISSING",
+        "entry_evidence_freshness": "STALE_OR_DIFFERENT_CANDIDATE_ENVIRONMENT",
+        "required_increments": [
+          "production_routing_and_worker_fencing",
+          "live_temporal_schedule_fencing",
+          "external_rg0_rg1_acceptance"
+        ],
+        "evidence_observations": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/10/evidence_observations",
+        "current_entry_residual": [
+          "Live schedule inventory, pause/stop/fencing, monitoring, rollback, and named operational response have not been qualified on a target."
+        ],
+        "preservation_obligations": [
+          "Preserve overlap/catch-up bounds and schedule stop/rollback fences already proven in fixtures."
+        ],
+        "deferred_phase_owned_work": [],
+        "phase_split_reference": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/10"
+      },
+      "R09": {
+        "status": "HELD",
+        "owner_role": "deferral/recovery owner",
+        "named_owner_status": "MISSING",
+        "entry_evidence_freshness": "STALE_OR_DIFFERENT_CANDIDATE_ENVIRONMENT",
+        "required_increments": [
+          "production_recovery_remote_read_and_alerts",
+          "external_rg0_rg1_acceptance"
+        ],
+        "evidence_observations": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/11/evidence_observations",
+        "current_entry_residual": [
+          "Production stage deferral/recovery and owned worker qualification are absent; local identity/timer tests do not transfer."
+        ],
+        "preservation_obligations": [
+          "Preserve distinct pre-admission defer, admitted-cycle strategic close, and same-cycle recovery identities."
+        ],
+        "deferred_phase_owned_work": [],
+        "phase_split_reference": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/11"
+      },
+      "R10": {
+        "status": "HELD",
+        "owner_role": "context owner",
+        "named_owner_status": "MISSING",
+        "entry_evidence_freshness": "STALE_OR_DIFFERENT_CANDIDATE_ENVIRONMENT",
+        "required_increments": [
+          "production_policy_and_cross_service_revocation",
+          "production_routing_and_worker_fencing",
+          "external_rg0_rg1_acceptance"
+        ],
+        "evidence_observations": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/12/evidence_observations",
+        "current_entry_residual": [
+          "Same-target evidence that authoritative context is pinned before affected P1 work is absent; effect/provider paths remain disabled."
+        ],
+        "preservation_obligations": [
+          "Preserve immutable context resolution after admission and before affected work; keep provider actions disabled."
+        ],
+        "deferred_phase_owned_work": [
+          {
+            "owning_phase": "P2",
+            "work": "Provider-specific stage/effect integration beyond no-effects context binding.",
+            "entry_boundary": "P2 owns the provider integration; it is not a prerequisite to entering P2, and effects remain gated."
+          }
+        ],
+        "phase_split_reference": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/12"
+      },
+      "R13": {
+        "status": "HELD",
+        "owner_role": "authority/revocation owner",
+        "named_owner_status": "MISSING",
+        "entry_evidence_freshness": "STALE_OR_DIFFERENT_CANDIDATE_ENVIRONMENT",
+        "required_increments": [
+          "production_policy_and_cross_service_revocation",
+          "external_rg0_rg1_acceptance"
+        ],
+        "evidence_observations": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/13/evidence_observations",
+        "current_entry_residual": [
+          "Production current-revocation propagation across services and invalidation of affected approvals are not qualified."
+        ],
+        "preservation_obligations": [
+          "Preserve current-authority checks and approval invalidation after revocation or revision."
+        ],
+        "deferred_phase_owned_work": [
+          {
+            "owning_phase": "P4/P5 as assigned by the program sequence",
+            "work": "Later capability/promotion policy families.",
+            "entry_boundary": "Current P1 revocation and approval invalidation remain required; later capability families keep their own phase gates."
+          }
+        ],
+        "phase_split_reference": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/13"
+      },
+      "R15": {
+        "status": "HELD",
+        "owner_role": "policy owner",
+        "named_owner_status": "MISSING",
+        "entry_evidence_freshness": "STALE_OR_DIFFERENT_CANDIDATE_ENVIRONMENT",
+        "required_increments": [
+          "production_policy_and_cross_service_revocation",
+          "external_rg0_rg1_acceptance"
+        ],
+        "evidence_observations": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/14/evidence_observations",
+        "current_entry_residual": [
+          "A general versioned production policy and exact approval purpose/effect/artifact/account/expiry binding remain unqualified beyond typed fixtures."
+        ],
+        "preservation_obligations": [
+          "Preserve exact approval-purpose/effect/artifact/account/expiry binding; untrusted text grants no authority."
+        ],
+        "deferred_phase_owned_work": [
+          {
+            "owning_phase": "P2",
+            "work": "Activation of provider-facing effects after policy acceptance.",
+            "entry_boundary": "P2 provider effects are gated by P2-specific acceptance and are not a prerequisite to entering P2."
+          }
+        ],
+        "phase_split_reference": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/14"
+      },
+      "R17": {
+        "status": "HELD",
+        "owner_role": "effect dispatch owner",
+        "named_owner_status": "MISSING",
+        "entry_evidence_freshness": "STALE_OR_DIFFERENT_CANDIDATE_ENVIRONMENT",
+        "required_increments": [
+          "production_policy_and_cross_service_revocation",
+          "production_routing_and_worker_fencing",
+          "external_rg0_rg1_acceptance"
+        ],
+        "evidence_observations": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/15/evidence_observations",
+        "current_entry_residual": [
+          "The exact current no-effects entry candidate still lacks named-owner and target evidence for one bounded permit claim, stop/revocation serialization, and fail-closed behavior; production provider execution is outside this current-entry residual."
+        ],
+        "preservation_obligations": [
+          "Preserve one bounded permit, single claim, serialized stop/revocation checks, and zero effects in the current P1 acceptance proof."
+        ],
+        "deferred_phase_owned_work": [
+          {
+            "owning_phase": "P2",
+            "work": "Production provider charge/effect integration using the transfer contract, ready-package/outbox integration, and enabled provider qualification.",
+            "entry_boundary": "This work belongs to P2 itself and cannot be a prerequisite to P2 entry. Before effects are enabled, P2 must pass its own exact-candidate/environment acceptance."
+          }
+        ],
+        "phase_split_reference": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/15"
+      },
+      "R18": {
+        "status": "HELD",
+        "owner_role": "safety/reconciliation owner",
+        "named_owner_status": "MISSING",
+        "entry_evidence_freshness": "STALE_OR_DIFFERENT_CANDIDATE_ENVIRONMENT",
+        "required_increments": [
+          "production_policy_and_cross_service_revocation",
+          "live_temporal_schedule_fencing",
+          "production_recovery_remote_read_and_alerts",
+          "external_rg0_rg1_acceptance"
+        ],
+        "evidence_observations": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/16/evidence_observations",
+        "current_entry_residual": [
+          "Production-wide stop/revocation, live schedule cancellation/fencing, typed recovery, scoped remote read, and independently acknowledged alert delivery remain unqualified."
+        ],
+        "preservation_obligations": [
+          "Preserve fail-closed stop/outage behavior, immutable receipt-only reconciliation scope, and unresolved liability holds."
+        ],
+        "deferred_phase_owned_work": [],
+        "phase_split_reference": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/16"
+      },
+      "R32": {
+        "status": "HELD",
+        "owner_role": "recovery operations owner",
+        "named_owner_status": "MISSING",
+        "entry_evidence_freshness": "STALE_OR_DIFFERENT_CANDIDATE_ENVIRONMENT",
+        "required_increments": [
+          "production_recovery_remote_read_and_alerts",
+          "external_rg0_rg1_acceptance"
+        ],
+        "evidence_observations": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/17/evidence_observations",
+        "current_entry_residual": [
+          "Production typed recovery transitions, durable recovery workers, scoped remote reconciliation, and external failure delivery are absent."
+        ],
+        "preservation_obligations": [
+          "Preserve typed recovery ownership, bounded actions, durable failures, and holds through restart/rollback."
+        ],
+        "deferred_phase_owned_work": [],
+        "phase_split_reference": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/17"
+      },
+      "R33": {
+        "status": "HELD",
+        "owner_role": "recovery command owner",
+        "named_owner_status": "MISSING",
+        "entry_evidence_freshness": "STALE_OR_DIFFERENT_CANDIDATE_ENVIRONMENT",
+        "required_increments": [
+          "production_recovery_remote_read_and_alerts",
+          "external_rg0_rg1_acceptance"
+        ],
+        "evidence_observations": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/18/evidence_observations",
+        "current_entry_residual": [
+          "Production stage-specific reauthorization and the idempotent resume command have no same-target owner/evidence record."
+        ],
+        "preservation_obligations": [
+          "Preserve exact idempotent resume identity and reauthorize the current stage before every retry."
+        ],
+        "deferred_phase_owned_work": [],
+        "phase_split_reference": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/18"
+      },
+      "R34": {
+        "status": "HELD",
+        "owner_role": "alert/on-call owner",
+        "named_owner_status": "MISSING",
+        "entry_evidence_freshness": "STALE_OR_DIFFERENT_CANDIDATE_ENVIRONMENT",
+        "required_increments": [
+          "production_recovery_remote_read_and_alerts",
+          "external_rg0_rg1_acceptance"
+        ],
+        "evidence_observations": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/19/evidence_observations",
+        "current_entry_residual": [
+          "External alert delivery receipt, named human acknowledgement, and escalation evidence are absent."
+        ],
+        "preservation_obligations": [
+          "Preserve separate alert delivery, human acknowledgement, escalation, and resolution records."
+        ],
+        "deferred_phase_owned_work": [],
+        "phase_split_reference": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/19"
+      },
+      "R35": {
+        "status": "HELD",
+        "owner_role": "records/retention owner",
+        "named_owner_status": "MISSING",
+        "entry_evidence_freshness": "STALE_OR_DIFFERENT_CANDIDATE_ENVIRONMENT",
+        "required_increments": [
+          "production_recovery_remote_read_and_alerts",
+          "external_rg0_rg1_acceptance"
+        ],
+        "evidence_observations": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/20/evidence_observations",
+        "current_entry_residual": [
+          "Current P1 terminal archive reason/evidence/retention/idempotency/no-reuse controls have fixture evidence only; same-candidate target evidence and named owner are absent."
+        ],
+        "preservation_obligations": [
+          "Preserve immutable terminal archive reason/evidence/retention and prohibit implicit reuse."
+        ],
+        "deferred_phase_owned_work": [
+          {
+            "owning_phase": "Future phase to be named before implementation",
+            "work": "Rights-filtered discovery extensions and later record families.",
+            "entry_boundary": "Current R35 P1 acceptance is the terminal archive/no-reuse contract. The source does not name the later phase; record an explicit phase owner and row mapping before those extensions ship. They do not gate P2 entry."
+          }
+        ],
+        "phase_split_reference": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/20"
+      },
+      "R53": {
+        "status": "HELD",
+        "owner_role": "data contract owner",
+        "named_owner_status": "MISSING",
+        "entry_evidence_freshness": "STALE_OR_DIFFERENT_CANDIDATE_ENVIRONMENT",
+        "required_increments": [
+          "production_routing_and_worker_fencing",
+          "production_recovery_remote_read_and_alerts",
+          "external_rg0_rg1_acceptance"
+        ],
+        "evidence_observations": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/21/evidence_observations",
+        "current_entry_residual": [
+          "Current P1 event-envelope uniqueness, superseding corrections, immutable receipts, and audited mutable-pointer evidence has not been refreshed on the final candidate/environment."
+        ],
+        "preservation_obligations": [
+          "Preserve immutable P1 envelope and command receipts, canonical delivery scope, exact-match rollback guards, and no fabricated historical scope."
+        ],
+        "deferred_phase_owned_work": [
+          {
+            "owning_phase": "Future phase owning each new record family",
+            "work": "Envelope tests and migration/rollback qualification for record families beyond the current P1 envelopes.",
+            "entry_boundary": "The source does not assign each later family to a specific phase; name that phase and map the row before adding the family. Later-family work does not gate P2 entry."
+          }
+        ],
+        "phase_split_reference": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/21"
+      }
+    },
+    "review_record": "docs/v4/p1-rg0-rg1-audit-and-spec-review.md",
+    "row_by_row_review": "PASS",
+    "cross_spec_review": "PASS",
+    "orchestrator_meta_review": "COMPLETE; DESIGN_EVALUATION_ONLY",
+    "final_whole_change_review": "PASS_AFTER_FIX_ROUND_1",
+    "design_status": "COMPLETE_REVIEWED",
+    "implementation_status": "NOT RUN",
+    "target_qualification_status": "NOT RUN",
+    "required_increments": [
+      "production_policy_and_cross_service_revocation",
+      "production_routing_and_worker_fencing",
+      "live_temporal_schedule_fencing",
+      "production_recovery_remote_read_and_alerts",
+      "external_rg0_rg1_acceptance"
+    ],
+    "final_entry_rows": {
+      "total": 22,
+      "pass": 0,
+      "non_pass": 22
+    },
+    "documentation_whole_change_review": "PASS_AFTER_FIX_ROUND_1",
+    "documentation_whole_change_candidate_manifest_sha256": "cafa0bd46ede2cc8aef51058f46541068a07cd031774c8b5501270bc2385ee9a",
+    "documentation_whole_change_review_record": "docs/v4/p1-rg0-rg1-audit-and-spec-review.md",
+    "documentation_whole_change_review_reports": [
+      "docs/v4/reviews/final-whole-change-review.md.txt",
+      "docs/v4/reviews/final-whole-change-fix.md.txt",
+      "docs/v4/reviews/final-whole-change-rereview.md.txt"
+    ],
+    "final_exact_candidate_environment_p1_rg0_rg1_audit": "NOT RUN",
+    "final_exact_candidate_environment_audit_gate": "BLOCKED"
   }
 }

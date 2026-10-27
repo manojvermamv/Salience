@@ -1,0 +1,101 @@
+# Final whole-change scoped fix-loop rereview — round 1
+
+**Scoped verdict: PASS.** F1 **ADDRESSED**; F2 **ADDRESSED**; F3 **ADDRESSED**. New breakage introduced by this repair: **0 Critical / 0 Important**.
+
+This is a read-only rereview of only the three findings in `/tmp/p1-rg0-rg1-final-whole-change-review.md`, their corrections described by `/tmp/final-whole-change-fix-report.md`, and new Critical/Important breakage introduced by that exact repair. It does not reopen or expand the earlier architecture review. The only intentional output written is this report. No repository file, index/branch state, submodule or application state was changed; no commit, push, fetch, external message or live-system call was made.
+
+Base HEAD remains `7c1ddcda280b510048ad61106c406171edd64f18`, tree `af010fba37debad65b9494abc3b70db0a6a2f915`, branch `arch`. The candidate path set is still exactly the same 30 files. Only the seven repair files declared in the fix report have different hashes from the prior final-review manifest; every other reviewed file has the same bytes.
+
+## Finding dispositions
+
+### F1 — ADDRESSED
+
+**Evidence:** `docs/superpowers/specs/2026-10-13-rg0-rg1-external-acceptance-design.md:89`, `:125`; `docs/v4/test_checks.py:221`.
+
+The external-acceptance check now identifies R01 as the owning RG0 row for production collector/alert delivery, and explicitly labels R18/R32/R34 as related RG1 rows. This agrees with the audit's `owning_rg0_rows=[R01]` and `related_p1_rows=[R18,R32,R34]` rather than substituting the latter for RG0 ownership.
+
+R01's own procedure now consumes the correlated no-secret collector export/delivery record, external destination receipt, named human acknowledgment and escalation receipt as separate child evidence. Its independent-check column reads those records separately. The new focused test extracts the actual collector table row, compares the exact owning/related mapping, and checks the R01 procedure's child evidence; it is no longer satisfied just by finding the requirement IDs somewhere in the document. Recovery behavior and notification acknowledgment remain distinct from RG0 acceptance and approval. No sixth increment or runtime change was introduced.
+
+### F2 — ADDRESSED
+
+**Evidence:** `docs/v4/p0-release.json` active `later_phase_boundaries.P1`, `resumed_development_goal.direction` and `resumed_development_goal.program_sequence.slice_1`; `docs/v4/p1-qualification-matrix.json` active `current_qualification.approved_program_sequence.slice_1`; `docs/superpowers/plans/2026-10-27-p1-rg0-rg1-initial-gap-audit.md:118`; `docs/v4/test_checks.py:243`.
+
+Both active Slice 1 pointers now record COMPLETE_REVIEWED at frozen source `7c1ddcda280b510048ad61106c406171edd64f18`, five required designs COMPLETE_REVIEWED, implementation/target qualification NOT RUN, 22 final-entry rows non-PASS, RG0/RG1 HELD and P2 BLOCKED. The active release direction names the same frozen source/environment and points only to a separately approved bounded implementation scope; it no longer directs another initial audit. The active later-phase P1 statement agrees. The historical goal capture remains distinct.
+
+The plan's current-results paragraph now records the completed 280-artifact manifest refresh and unchanged 366-file evidence lock instead of saying the refresh awaits completion. It truthfully identifies the first final-review findings and the scoped repair/rereview as in progress at this pre-verdict candidate. The new test checks the structured active pointers and their unimplemented/held state. A scoped text search found no remaining F2 stale NEXT/GATED/audit-next/awaiting-refresh phrases in these current fields/files. This rereview does not authorize implementation or change an operational gate.
+
+### F3 — ADDRESSED
+
+**Evidence:** `docs/v4/documentation-status-audit.json` `verification.documentation_verification.sequence_diagram`; `/tmp/salience-p1-final-whole-change-r1-sequence/results.json`, `sequence.svg`, `sequence.png`; `docs/v4/test_checks.py:243` onward.
+
+The current sequence evidence binds the exact present Mermaid source block, result file and output files:
+
+| Bound artifact | SHA-256 |
+| --- | --- |
+| Current program-sequence Mermaid block 1 | `7721ab90bfe2b811c98fff5176a7bc40e0738c452204f4f4287e9ecc97e1d6b7` |
+| Render results JSON | `3b7d31df481a17d7fd665d2f5c76e2a40cd89dd06214111face9e02d8f030e16` |
+| Rendered SVG | `ea4f71313623a4e3eb9c8352eafc91e4e2af7ed3bbb6cb7c6137d9ddf21997c4` |
+| Rendered PNG | `1c79af82d6c13edbf279f0278539bae87464362d1ba989fcaa7ad0642bb1af0e` |
+
+I independently extracted the current block and recomputed its hash; it equals both manifest and result-file source hashes. The results JSON hash, source path, block index, PASS status, output directory and SVG/PNG hashes agree with the manifest, and the actual output file bytes match. The result declares Mermaid 12.0.0 and the named local Playwright headless-shell browser. I independently viewed the current PNG: the Slice 1/five-design checkpoint, unimplemented qualification step, blocked final audit/P2 and subsequent sequence render without clipped diagram content or missing labels.
+
+The old source hash `991a394ae9a9ca63a1348956e8b4744effb15d315495ebf22c97f8ff2fb96759` and result digest `72a959686d5c2d69316dee0481e6e73c6b2b0be0980b9e60e66db97b95f003e9` are preserved under `historical`, explicitly superseded by the current render. They are no longer attributed to the changed source. The focused test recomputes source equality, guards current status/version and preserves the distinct historical result. No Markdown validator was weakened and the application evidence lock was not changed.
+
+## Fresh verification and integrity results
+
+- `.venv/bin/python -B docs/v4/test_checks.py` — **PASS**, exit 0, 21 tests in 0.215s. This includes both new repair tests, the durable wrapper/current-hash test and the 280-path manifest integrity test.
+- `.venv/bin/python -B docs/v4/check.py --self-test` — **PASS**, exit 0; 75 requirements, 2 source records, 366 evidence records, 360 inventory entries, 108 Markdown files, 4 HTML files, 6 negative controls, no errors.
+- `git diff --check` — **PASS**, exit 0, no output.
+- `git diff --quiet -- src tests migrations scripts deployment .gitmodules youtube-automation-agent` and `git -C youtube-automation-agent status --porcelain` — **PASS**, exit 0, no output; no runtime, migration, deployment or reference changes introduced.
+- Independent inline Python artifact inventory readback — **PASS**: exact candidate-eligible path set, 280 sorted unique rows, 279 matching non-self hashes, one intentional null self-hash, 111 Markdown files, 17 matching manifest handoff hashes, and all 83 audited JSON artifacts parse.
+- Independent wrapper-table readback — **PASS**: all 17 declared current-content hashes match the corresponding files, including the changed test, plan, external spec, release and matrix. The wrapper table and manifest handoff map were checked as their own declared sets rather than assumed to contain identical paths.
+- Independent evidence-lock readback — **PASS**: byte-identical to base HEAD; 366 unique entries all match current file bytes; SHA-256 `472d603c1110a0ebe8082f598b7d02a892e6591a9f6b400c48979321551af674`.
+- Independent current-source/results/SVG/PNG binding and visual inspection — **PASS**, as detailed in F3. No render was regenerated or altered during this read-only rereview.
+- Independent gate readback — unchanged: all 22 final-entry rows non-PASS; five REQUIRED designs with implementation and target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED. No final-candidate CI or formal approval was invented.
+
+The fix report's historical RED claim was not recreated by editing the candidate. The original final-review findings independently established the pre-fix defects; fresh checks establish the present GREEN state. During independent verification, two reviewer-only helper assumptions were corrected (the manifest handoff set differs from the wrapper table set, and the wrapper's current-content heading was renamed during repair). Those helper errors required no repository change and do not indicate a candidate failure. The final corrected checks above pass.
+
+## Exact current candidate binding
+
+There is still no new committed candidate tree SHA. The manifest below uses the same convention as the original review: sorted UTF-8 JSON array of `{path,sha256}` objects, sorted keys and compact separators, with one final newline. It covers all changed tracked and nonignored untracked candidate files, excluding ignored scratch files.
+
+**Current candidate manifest SHA-256:** `cafa0bd46ede2cc8aef51058f46541068a07cd031774c8b5501270bc2385ee9a`; **files:** 30.
+
+| Path | SHA-256 |
+| --- | --- |
+| `README.md` | `5819c4097688348c293f3acc1482a154c4b4f53482124741368ae116d2bce84d` |
+| `docs/README.md` | `3ed21f642c0cd2182a8704e1a40c50754e6c2614804b1394454b5b2ddba3c09c` |
+| `docs/superpowers/plans/2026-10-27-p1-rg0-rg1-initial-gap-audit.md` | `3013340d5e5947fd70f8cb671e225a19a7906b736507d0448a638875ae9bf38b` |
+| `docs/superpowers/specs/2026-10-13-p1-live-schedule-fencing-design.md` | `04ed59e2ed61ca17dc2c01df3a2964e1569e03e79f0aef2bbfe2ca2d96d5129a` |
+| `docs/superpowers/specs/2026-10-13-p1-production-policy-and-revocation-design.md` | `6be8f5ec6c48491a45a734510cc20af98e2cd7554fdc0409e77c6d9667d42fe2` |
+| `docs/superpowers/specs/2026-10-13-p1-production-recovery-and-alerts-design.md` | `1c731ee595be6582902aa79f9ebb52d520f6fd18ad6054ca304709ce16aea61c` |
+| `docs/superpowers/specs/2026-10-13-p1-production-routing-and-worker-fencing-design.md` | `d4d2c06a1f0925d2826b29a4e2c053f7f7773f660397fe986883c370aee78f67` |
+| `docs/superpowers/specs/2026-10-13-rg0-rg1-external-acceptance-design.md` | `2a5d6cff0dd44070b1942e79f073906527b8e2650b62b3473d63542f00bfbcd8` |
+| `docs/superpowers/specs/2026-10-13-v4-multiplatform-autonomy-program-sequence.md` | `e8a7dc565fc64e16a50c27b655183a7afded60fee049ecdb73ea0da22dee9082` |
+| `docs/v4/IMPLEMENTATION-BLUEPRINT.md` | `2a39bec97b50867cccde6a252f4d4816b90e7b77c90ae867fe67f0fb1b77dfa0` |
+| `docs/v4/audits/salience-p1-external-evidence-audit.md` | `b29b8135af40e8f95f5e9b903ea70d8840ec95c3b01eaf684004986c9e75997b` |
+| `docs/v4/audits/salience-p1-policy-routing-audit.md` | `0a538f5cfac2c8bbd59556fbb227258157b9c4abdaea002711bad71682b1a460` |
+| `docs/v4/audits/salience-p1-policy-routing-audit.md.txt` | `af34376c35348d102576dcccbc90165396e9611cd3e5cf0e4fb5be7d02cd0572` |
+| `docs/v4/audits/salience-p1-temporal-recovery-audit.md` | `0370638903bff6006ff9fe29dec3d91d86956fd8618b8ef41694fbab1181133c` |
+| `docs/v4/documentation-status-audit.json` | `630d9d48698e829eac1c1382229c6e9498c3f49881a70b274985ed6e57dd66ea` |
+| `docs/v4/p0-release.json` | `b3305521516a613930ed45e0c3511c21cdbc79762a5a5bbf5b6fe511f7ed5dad` |
+| `docs/v4/p1-qualification-matrix.json` | `bc9ed6b7e00b2ac1765b30dfcf8a4c94d45c7fb9fd821d128158e7a8aef36197` |
+| `docs/v4/p1-rg0-rg1-audit-and-spec-review.md` | `c252359cf810ad8c0e9a237935c26aed2a9ec97263304cdde69fb5dba853d547` |
+| `docs/v4/p1-rg0-rg1-initial-gap-audit.json` | `dce0696e25db1aadc26f8ae6ec161f0d343c702e3c38c1c65254b9b18005b50c` |
+| `docs/v4/p1-rg0-rg1-initial-gap-audit.md` | `9cf68d96d8c741552048c0ff3777915498702a6264c3d7832d91215506f145a3` |
+| `docs/v4/progress.md` | `01597a4be73101ca0cb882b2182d862130628d97bab3573e8b28c3b73d57d20f` |
+| `docs/v4/reviews/initial-audit-contract-fix.md.txt` | `87ed41a656c6fd7bde1c72424872dc38e0bec07e72e7aefef3443214c5994964` |
+| `docs/v4/reviews/initial-audit-row-rereview-round1.md.txt` | `b268cd962222ca35dcf558d45339c576e32d9bcb14da1a7e1932d80664ac848e` |
+| `docs/v4/reviews/initial-audit-row-rereview-round2.md.txt` | `dccf878b83638d38a288fc2e12012a1582c08b49de33f92fba35287a629a52a6` |
+| `docs/v4/reviews/initial-audit-row-review.md.txt` | `54e296b0ca00dc397886f188265a9f9cd2015ab0c395faf39d6d234a1c581c3d` |
+| `docs/v4/reviews/initial-cross-spec-fix.md.txt` | `8fe8429d03eda7f5e01a02e3976c5c074ca39bf10d8ba964d8e1fcf393e91e8c` |
+| `docs/v4/reviews/initial-cross-spec-rereview.md.txt` | `daacc06aefec84c1a665addb2ebc42d660789101cc0897cc6df4f8698fecbc95` |
+| `docs/v4/reviews/initial-cross-spec-review.md.txt` | `9c310cecc839cfe334ec8a6c9c1fc940e4637e70aeb9e37e9ef0e2a1c2e6d229` |
+| `docs/v4/test_checks.py` | `a84fb9ec2ebf8b0e665bde54ba268d9b2ecd6d2de428a08a768ea8a05f562415` |
+| `docs/v4/validation.md` | `e9648ac5f8c4bf3050dc98baf2cf2bcbe359774fecadd4c1d283a880a64356c3` |
+
+## Readiness
+
+F1–F3 are closed and no new Critical/Important breakage was found in their exact repair. This scoped fix loop **passes** for the manifest above. It closes the original final-review blockers within the previously reviewed documentation/specification scope; it does not qualify an implementation, selected deployment, live operation or release.
+
+Production remains disabled; RG0/full RG1 HELD; all 22 final-entry rows non-PASS; P2/Slice 7 BLOCKED; later phases gated; main unmerged. Exact final-candidate CI remains REQUIRED_AFTER_PUSH. Final review/status publication and CI must remain bound to the actual subsequent commit and must not transfer this uncommitted-manifest verdict to a different technical candidate.

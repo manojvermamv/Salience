@@ -1,51 +1,63 @@
 {
-  "audited_at": "2026-10-27T02:59:21Z",
-  "base_commit": "7c3f3822c81faba37b4b07a09e0f5a950f9f1256",
-  "scope": "Active documentation and durable V4 ledgers keep the frozen application candidate 182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f at 796 passed / 17 skipped / 3 warnings. The GPT-6.1/GPT-5.6 review and run 38592066455 remain bound to pushed feature head 6f5edc77edbfe189e46de4254c2fdb21c5652bce. Exact pushed documentation head 67effe8c9c176c0bd1c17fdef20b841c0e14b6de passed both required jobs in Actions run 38610329330. The current unpublished candidate includes bbd617f and 7c3f382 and requires its own post-push exact-head CI. Production remains HELD; historical counts retain their original scopes.",
-  "tracked_markdown_files": 100,
-  "documentation_artifacts": 259,
+  "audited_at": "2026-10-27T05:13:10Z",
+  "base_commit": "7c1ddcda280b510048ad61106c406171edd64f18",
+  "scope": "Current status records the frozen initial P1/RG0/RG1 residual audit and five-spec design review as COMPLETE_REVIEWED for source 7c1ddcda280b510048ad61106c406171edd64f18 and environment manifest 18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436. Exact-source Actions run 40443346020 passed verify and p0-regression. Five bounded increments are required; implementation and target qualification remain NOT RUN. All 22 final-entry rows remain non-PASS; RG0/RG1 are HELD; P2 and Slice 7 are BLOCKED. Production effects are disabled and main is unmerged. The current documentation candidate is an uncommitted worktree and requires its own exact-head CI after push. Application qualification remains bound to 182c4e4; prior whole-branch review and CI remain bound to their historical exact heads.",
+  "tracked_markdown_files": 111,
+  "documentation_artifacts": 283,
   "summary": {
     "current_handoff_hashes": {
+      "docs/superpowers/plans/2026-10-27-p1-rg0-rg1-initial-gap-audit.md": "5d1dd8a86718184d03324144643dfb009cb36243a5bd0c0f14c46844eb3c5cd4",
+      "docs/superpowers/specs/2026-10-13-p1-live-schedule-fencing-design.md": "04ed59e2ed61ca17dc2c01df3a2964e1569e03e79f0aef2bbfe2ca2d96d5129a",
+      "docs/superpowers/specs/2026-10-13-p1-production-policy-and-revocation-design.md": "6be8f5ec6c48491a45a734510cc20af98e2cd7554fdc0409e77c6d9667d42fe2",
+      "docs/superpowers/specs/2026-10-13-p1-production-recovery-and-alerts-design.md": "1c731ee595be6582902aa79f9ebb52d520f6fd18ad6054ca304709ce16aea61c",
+      "docs/superpowers/specs/2026-10-13-p1-production-routing-and-worker-fencing-design.md": "d4d2c06a1f0925d2826b29a4e2c053f7f7773f660397fe986883c370aee78f67",
+      "docs/superpowers/specs/2026-10-13-rg0-rg1-external-acceptance-design.md": "2a5d6cff0dd44070b1942e79f073906527b8e2650b62b3473d63542f00bfbcd8",
+      "docs/v4/IMPLEMENTATION-BLUEPRINT.md": "6e717aae30c9eb3714d760d5e04f8689a33db0b5e0a3d8dcb4e8e63137c7c58b",
+      "docs/v4/evidence-lock.json": "472d603c1110a0ebe8082f598b7d02a892e6591a9f6b400c48979321551af674",
+      "docs/v4/p0-release.json": "5038fa02bd73d176cbad6df99a66537fb25cdebc0f8c972f33419070e1145757",
+      "docs/v4/p1-qualification-matrix.json": "c36bca335575d0b128d8d2232b1b50c741566d2d2a6d8fbb43d404e2ad5e3237",
+      "docs/v4/p1-rg0-rg1-audit-and-spec-review.md": "ba131347a6918be208d4a690c3f4e7c31bbf2af167862a117b8b274f85a95c05",
+      "docs/v4/p1-rg0-rg1-initial-gap-audit.json": "33fe485384dcf60e36df8d48ace6394c80bce0d1bd9e6b9b39c7a905d65676b1",
+      "docs/v4/p1-rg0-rg1-initial-gap-audit.md": "62aab5afb39f7c47e355a68ccf56e319a72955247515dfbdba8913fd797a5944",
+      "docs/v4/progress.md": "63bbb93983b1b93af53a10fc75a2051605ee278daa1fab826f303be1909f54d0",
       "docs/v4/publication-recovery-hold-evidence.json": "3cce88e4d692f726be710c1f4db46b1428c9546561424a2ab0ad120363becc66",
       "docs/v4/publication-recovery-hold-successor-evidence.json": "4baef4a2328b26a47abc150f4b2ba47aa7c3d3afa6260c651986142b110054c1",
-      "docs/v4/evidence-lock.json": "472d603c1110a0ebe8082f598b7d02a892e6591a9f6b400c48979321551af674",
-      "docs/v4/p1-qualification-matrix.json": "81737dc19cfdd67208afcf90df1696df37888e3c8d7d1e5db9f8aab8bb5a346e",
-      "docs/v4/progress.md": "3c00e983a8134e31dccb3c011675400fc49984acdf86424a58112960117b56cf",
-      "docs/v4/IMPLEMENTATION-BLUEPRINT.md": "e1c967ca6794df20bfcf3895590a58bdfb9c4b820667ed7cc4b55e9d7cc0774f",
-      "docs/v4/p0-release.json": "b9782fdd7912ef45288621814624ec3305eb47ba7793043d419a1edc94053cd7",
       "docs/v4/repository-enforcement-evidence.json": "389886f670654a65848d5f43d61215562d53a95969906e5a44722a4ab7dbc006"
     },
     "tracked_markdown_disposition_counts": {
-      "tracked_markdown_paths": 100,
-      "update_now_paths": 71,
-      "non_update_paths_preserved": 29,
-      "historical_immutable": 16,
+      "tracked_markdown_paths": 111,
+      "update_now_paths": 79,
+      "non_update_paths_preserved": 32,
+      "historical_immutable": 19,
       "generated_vendor": 12,
       "already_current": 1,
       "dispositions": {
-        "preserved plugin instructions, references and examples; independent skill scope": 12,
-        "preserved dated qualification report": 2,
+        "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged": 79,
         "active user-authored project instructions; preserved verbatim": 1,
-        "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained": 71,
-        "preserved original design source or historical diagram": 2,
-        "preserved immutable historical snapshot; bytes retained verbatim": 1,
         "preserved YouTube-agent reference research": 4,
-        "preserved dated preparation plan": 3,
         "preserved dated design specification": 3,
-        "preserved dated independent item7 qualification report": 1
+        "preserved dated independent item7 qualification report": 1,
+        "preserved dated initial P1/RG0/RG1 subaudit report": 3,
+        "preserved dated preparation plan": 3,
+        "preserved dated qualification report": 2,
+        "preserved immutable historical snapshot; bytes retained verbatim": 1,
+        "preserved original design source or historical diagram": 2,
+        "preserved plugin instructions, references and examples; independent skill scope": 12
       }
     },
     "preserved plugin instructions, references and examples; independent skill scope": 57,
     "preserved dated qualification report": 17,
     "active user-authored project instructions; preserved verbatim": 1,
-    "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained": 71,
+    "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged": 79,
     "preserved original design source or historical diagram": 7,
     "preserved immutable historical snapshot; bytes retained verbatim": 1,
     "preserved immutable historical snapshot": 62,
-    "preserved YouTube-agent reference research": 4,
+    "preserved YouTube-agent reference research": 5,
     "preserved historical architecture visual": 8,
     "preserved dated preparation plan": 3,
     "preserved dated design specification": 3,
+    "preserved dated initial P1/RG0/RG1 subaudit report": 3,
+    "preserved unscanned P1 policy-routing subaudit payload": 1,
     "preserved source, archive or coverage manifest": 4,
     "current documentation audit; self hash omitted to avoid a recursive digest": 1,
     "Active 366-file qualification content lock for frozen application 182c4e4; qualification harness observed at 7c3f382; historical locks retained separately": 1,
@@ -59,10 +71,12 @@
     "preserved dated original native schedule qualification report": 1,
     "Current release ledger records frozen application scope, exact pushed documentation CI, approved sequence navigation, and pending current-candidate CI; release gates retained": 1,
     "Current P1 matrix keeps application scope frozen, exact review and documentation CI heads distinct, and current candidate CI pending; production holds retained": 1,
+    "current initial commit-bound P1/RG0/RG1 audit evidence; COMPLETE_REVIEWED at source 7c1ddcd; 22 rows non-PASS; implementation/target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2 BLOCKED": 1,
     "preserved dated parallel qualification report": 1,
     "preserved historical Task 10 publication recovery-hold evidence and original P0-pinned bytes": 1,
     "Current successor evidence preserves frozen application result and historical review, adds exact pushed docs CI and Task 1 diagnostic-assertion closure, and keeps current candidate CI pending": 1,
-    "Historical exact feature-head readback preserved; exact pushed documentation CI and current unpublished candidate pending status recorded separately": 1
+    "Historical exact feature-head readback preserved; exact pushed documentation CI and current unpublished candidate pending status recorded separately": 1,
+    "preserved durable P1 audit/spec review and repair report payload": 10
   },
   "application_source_files_verified": 360,
   "prior_application_files_preserved": 347,
@@ -85,23 +99,23 @@
   ],
   "mermaid_source_blocks_preserved": 12,
   "item7_status": "COMPLETE_IMPLEMENTED_LOCAL_FIXTURE_QUALIFICATION; historical item7 scope preserved",
-  "independent_review": "GPT-6.1 reviewed pushed feature head 6f5edc77edbfe189e46de4254c2fdb21c5652bce across 59 commits / 38 changed files and found 0 Critical / 0 Important / 1 explicitly nonblocking Minor. GPT-5.6 accepted the assessment; Actions run 38592066455 passed both required jobs on that feature head. Separately, Actions run 38610329330 passed both required jobs for pushed documentation head 67effe8c9c176c0bd1c17fdef20b841c0e14b6de. The original review finding remains historical; Task 1 commit 7c3f382 tightened the two test diagnostic assertions, with closure recorded separately. Application-local results remain bound to 182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f; current unpublished candidate CI is REQUIRED/PENDING.",
-  "next_queue_item": null,
+  "independent_review": "The historical GPT-6.1/GPT-5.6 whole-branch review remains scoped to pushed feature head 6f5edc77edbfe189e46de4254c2fdb21c5652bce (run 38592066455 passed its required jobs). The initial commit-bound audit and five-spec design review are COMPLETE_REVIEWED for 7c1ddcda280b510048ad61106c406171edd64f18 and environment 18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436; exact-source CI run 40443346020 passed verify and p0-regression. That design evaluation is not the final whole-change review. The current uncommitted documentation candidate requires exact-head CI after push. Application qualification remains bound to 182c4e4; production gates remain held.",
+  "next_queue_item": "production_policy_and_cross_service_revocation",
   "production_effects_enabled": false,
   "RG0": "HELD",
   "RG1": "HELD",
   "verification": {
-    "status": "PASS_LOCAL_SUCCESSOR_182C4E4; 6F5EDC7_REVIEW_AND_CI_HISTORICAL; 67EFFE8_DOCS_CI_PASS; CURRENT_CANDIDATE_CI_REQUIRED_PENDING; PRODUCTION_HELD",
-    "documentation_tests": "PASS: 15 documentation tests; check.py and self-test PASS (75 obligations, 2 source files, 366 evidence files, 360 inventory files, 97 Markdown, 4 HTML, 6 negative controls); four documentation shell contracts PASS; six blueprint diagrams, two README diagrams and the updated sequence diagram render with Mermaid 12.0.0; AgentTube verifier and all 17 tests PASS; six changed JSON files parse; 100 Markdown files / 259 documentation artifacts inventoried; 258 non-self hashes refreshed with audit self-hash null; git diff checks PASS.",
+    "status": "PASS_FINAL_WHOLE_CHANGE_DOCUMENTATION_REVIEW_AFTER_F1_F3; FINAL_EXACT_CANDIDATE_AUDIT_BLOCKED; ALL_PRODUCTION_AND_RELEASE_GATES_HELD",
+    "documentation_tests": "PASS: 21 documentation tests; check.py normal and self-test PASS (75 obligations, 2 source records, 366 evidence files, 360 inventory files, 108 Markdown files, 4 HTML files, 6 negative controls); AgentTube verifier and 17 tests PASS; all 83 audited JSON files parse; 111 Markdown paths / 283 documentation artifacts inventoried; 282 non-self hashes verified with the audit self-hash null; evidence lock unchanged at 366 paths; git diff --check PASS. Initial audit/design is COMPLETE_REVIEWED for source 7c1ddcd and environment 18b15955; run 40443346020 passed both required jobs. The whole-change documentation review is PASS_AFTER_FIX_ROUND_1 for the recorded manifest, while the final exact-candidate/environment P1/RG0/RG1 audit remains NOT RUN and BLOCKED. Implementation and target qualification remain NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged; final documentation candidate CI REQUIRED_AFTER_PUSH.",
     "mapped_obligations": 75,
     "negative_controls": 6,
     "documentation_shell_contracts": 4,
-    "preserved_documentation_artifacts": 165,
+    "preserved_documentation_artifacts": 168,
     "independent_reviewers": 3,
     "reviewed_p1_rows": 17,
-    "independent_review_scope": "Whole-branch GPT-6.1/GPT-5.6 review remains scoped to pushed feature head 6f5edc77edbfe189e46de4254c2fdb21c5652bce; its run 38592066455 passed both required jobs there. Exact docs-head Actions run 38610329330 passed both required jobs for pushed head 67effe8c9c176c0bd1c17fdef20b841c0e14b6de. These results do not change the application-bound 182c4e4 test counts or production acceptance. The original nonblocking missing-revision diagnostic finding remains preserved; Task 1 commit 7c3f382 closes the assertion weakness. The current unpublished candidate still needs its own post-push exact-head CI. Task 11 findings stay scoped to 5cb5791; corrected-publication rereview stays scoped to A4/d031172.",
-    "tracked_markdown_files": 100,
-    "active_project_markdown_files": 71,
+    "independent_review_scope": "The historical GPT-6.1/GPT-5.6 whole-branch review remains scoped to pushed feature head 6f5edc77edbfe189e46de4254c2fdb21c5652bce (run 38592066455 passed its required jobs). The initial commit-bound audit and five-spec design review are COMPLETE_REVIEWED for 7c1ddcda280b510048ad61106c406171edd64f18 and environment 18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436; exact-source CI run 40443346020 passed verify and p0-regression. The separate whole-change documentation review is PASS_AFTER_FIX_ROUND_1 for candidate manifest cafa0bd46ede2cc8aef51058f46541068a07cd031774c8b5501270bc2385ee9a, after F1-F3 fixes and a clean scoped rereview. This documentation review is not the final exact-candidate/environment P1/RG0/RG1 audit, which remains NOT RUN and BLOCKED pending required implementations and current external acceptance evidence for one frozen final pair. The current uncommitted documentation candidate requires exact-head CI after push. Application qualification remains bound to 182c4e4; production gates remain held.",
+    "tracked_markdown_files": 111,
+    "active_project_markdown_files": 79,
     "active_integration_contracts": 1,
     "tracked_markdown_paths": [
       ".agents/skills/archify/SKILL.md",
@@ -179,6 +193,7 @@
       "docs/superpowers/plans/2026-10-13-agenttube-immutable-reference-guard.md",
       "docs/superpowers/plans/2026-10-13-agenttube-reference-adoption.md",
       "docs/superpowers/plans/2026-10-13-p1-publication-recovery-floor-repair.md",
+      "docs/superpowers/plans/2026-10-27-p1-rg0-rg1-initial-gap-audit.md",
       "docs/superpowers/reviews/2026-09-13-phase-7-8-release-gate.md",
       "docs/superpowers/reviews/2026-09-13-phase-9-independent-review.md",
       "docs/superpowers/specs/2026-09-12-browser-evidence-design.md",
@@ -187,12 +202,22 @@
       "docs/superpowers/specs/2026-09-13-phase-7-8-release-gate-phase-9-publishing-design.md",
       "docs/superpowers/specs/2026-10-06-p1-publication-recovery-hold-design.md",
       "docs/superpowers/specs/2026-10-13-agenttube-reference-and-native-adoption-design.md",
+      "docs/superpowers/specs/2026-10-13-p1-live-schedule-fencing-design.md",
+      "docs/superpowers/specs/2026-10-13-p1-production-policy-and-revocation-design.md",
+      "docs/superpowers/specs/2026-10-13-p1-production-recovery-and-alerts-design.md",
+      "docs/superpowers/specs/2026-10-13-p1-production-routing-and-worker-fencing-design.md",
       "docs/superpowers/specs/2026-10-13-p1-publication-recovery-floor-repair-design.md",
+      "docs/superpowers/specs/2026-10-13-rg0-rg1-external-acceptance-design.md",
       "docs/superpowers/specs/2026-10-13-v4-multiplatform-autonomy-program-sequence.md",
       "docs/trust-model.md",
       "docs/v4/IMPLEMENTATION-BLUEPRINT.md",
+      "docs/v4/audits/salience-p1-external-evidence-audit.md",
+      "docs/v4/audits/salience-p1-policy-routing-audit.md",
+      "docs/v4/audits/salience-p1-temporal-recovery-audit.md",
       "docs/v4/item7-independent-review.md",
       "docs/v4/legacy-dispatch-contract.md",
+      "docs/v4/p1-rg0-rg1-audit-and-spec-review.md",
+      "docs/v4/p1-rg0-rg1-initial-gap-audit.md",
       "docs/v4/parallel-agent-contract.md",
       "docs/v4/progress.md",
       "docs/v4/validation.md",
@@ -211,7 +236,7 @@
     "current_local_application_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
     "current_focused_tests": 9,
     "current_full_non_live_tests": 796,
-    "published_base_ci_protection_status": "PASS for historical published base 20be781; feature readback at 6f5edc7 remains separate; pushed docs head 67effe8 passed run 38610329330.",
+    "published_base_ci_protection_status": "PASS for historical published base 20be781; whole-branch review remains scoped to 6f5edc7; exact initial-audit source 7c1ddcd passed run 40443346020; current uncommitted documentation candidate CI REQUIRED_AFTER_PUSH.",
     "published_base_commit": "20be7815d5e5c95fea2161c908ce8ac5cae88ce6",
     "current_qualification_application": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
     "focused_tests": 21,
@@ -222,8 +247,27 @@
       "status": "PASS",
       "documentation_tests": {
         "command": ".venv/bin/python docs/v4/test_checks.py",
-        "passed": 15,
-        "exit_code": 0
+        "passed": 21,
+        "exit_code": 0,
+        "focused_integrity_test": {
+          "command": ".venv/bin/python docs/v4/test_checks.py GateChecks.test_documentation_status_audit_covers_current_artifacts_and_hashes",
+          "status": "PASS",
+          "red_before_refresh": "Failed with 21 missing inventory paths: 20 new eligible P1 audit/spec/review artifacts plus the previously unlisted docs/v4/agenttube-adoption-evidence.json."
+        },
+        "fix_round": {
+          "findings": [
+            "F1",
+            "F2",
+            "F3"
+          ],
+          "red_command": ".venv/bin/python docs/v4/test_checks.py GateChecks.test_external_collector_acceptance_maps_rg0_owner_and_related_rg1_rows GateChecks.test_active_program_status_and_sequence_evidence_bind_current_state",
+          "red_output": "/tmp/final-whole-change-fix-red.txt",
+          "green_command": ".venv/bin/python docs/v4/test_checks.py",
+          "green_status": "PASS",
+          "red_status": "EXPECTED_FAIL_F1_F2",
+          "red_summary": "2 focused assertions failed before the documentation fixes.",
+          "green_output": "Ran 21 tests in 0.569s; OK."
+        }
       },
       "documentation_checker": {
         "normal": {
@@ -233,7 +277,7 @@
           "source_files": 2,
           "evidence_files": 366,
           "inventory_files": 360,
-          "markdown_files_checked": 97,
+          "markdown_files_checked": 108,
           "html_files_checked": 4,
           "exit_code": 0
         },
@@ -283,24 +327,16 @@
       },
       "json_parse": {
         "status": "PASS",
-        "changed_tracked_json_files": 6,
-        "paths": [
-          "docs/v4/evidence-lock.json",
-          "docs/v4/documentation-status-audit.json",
-          "docs/v4/p0-release.json",
-          "docs/v4/p1-qualification-matrix.json",
-          "docs/v4/publication-recovery-hold-successor-evidence.json",
-          "docs/v4/repository-enforcement-evidence.json"
-        ]
+        "audited_json_files_parsed": 83
       },
       "pip_check": "Prior application verification PASS; not rerun because this task changes only documentation and evidence metadata.",
       "compileall": "Prior application verification PASS; not rerun because this task changes only documentation and evidence metadata.",
       "git_diff_check": "PASS",
       "audit_counts": {
-        "tracked_markdown_files": 100,
-        "active_project_markdown_files": 71,
-        "non_update_markdown_paths_preserved": 29,
-        "documentation_artifacts": 259,
+        "tracked_markdown_files": 111,
+        "active_project_markdown_files": 79,
+        "non_update_markdown_paths_preserved": 32,
+        "documentation_artifacts": 280,
         "checker_inventory_files": 366,
         "active_evidence_lock_files": 366
       },
@@ -315,26 +351,59 @@
         "R18_executed_verifier_cases": 76,
         "R32_executed_verifier_cases": 81,
         "R18_R32_production_release_status": "HELD",
-        "update_now_markdown_paths": 71,
-        "non_update_markdown_paths_preserved": 29,
+        "update_now_markdown_paths": 79,
+        "non_update_markdown_paths_preserved": 32,
         "all_non_self_inventory_hashes_recomputed": true,
-        "log": "Final validation is recorded in .superpowers/sdd/2026-10-13-p1-publication-recovery-floor-repair/final-fix-report.md; Task 2 recomputation and focused check outputs are recorded in .superpowers/sdd/2026-10-27-resume-housekeeping/task-2-report.md.",
+        "log": "/tmp/final-whole-change-fix-report.md",
         "active_evidence_lock_sha256": "472d603c1110a0ebe8082f598b7d02a892e6591a9f6b400c48979321551af674",
         "active_evidence_lock_files": 366,
-        "tracked_markdown_files": 100,
-        "documentation_artifacts": 259,
-        "non_self_hashes_recomputed": 258,
+        "tracked_markdown_files": 111,
+        "documentation_artifacts": 280,
+        "non_self_hashes_recomputed": 279,
         "self_hash_is_null": true,
         "current_handoff_hashes_refreshed": true,
-        "active_evidence_lock_file_count": 366
+        "active_evidence_lock_file_count": 366,
+        "evidence_lock_unchanged": true,
+        "source_tree_paths_covered": 359,
+        "active_lock_hash_mismatches": 0
       },
       "sequence_diagram": {
         "status": "PASS",
         "diagrams_rendered": 1,
         "version": "12.0.0",
-        "results_sha256": "72a959686d5c2d69316dee0481e6e73c6b2b0be0980b9e60e66db97b95f003e9",
-        "output": "/tmp/task2-extra-diagrams",
-        "visual_inspection": "PASS; approved sequence labels render clearly."
+        "source_path": "docs/superpowers/specs/2026-10-13-v4-multiplatform-autonomy-program-sequence.md",
+        "source_block_index": 1,
+        "source_sha256": "7721ab90bfe2b811c98fff5176a7bc40e0738c452204f4f4287e9ecc97e1d6b7",
+        "source_equality_assertion": true,
+        "results_path": "/tmp/salience-p1-final-whole-change-r1-sequence/results.json",
+        "results_sha256": "3b7d31df481a17d7fd665d2f5c76e2a40cd89dd06214111face9e02d8f030e16",
+        "rendered_svg_sha256": "ea4f71313623a4e3eb9c8352eafc91e4e2af7ed3bbb6cb7c6137d9ddf21997c4",
+        "rendered_png_sha256": "1c79af82d6c13edbf279f0278539bae87464362d1ba989fcaa7ad0642bb1af0e",
+        "output": "/tmp/salience-p1-final-whole-change-r1-sequence",
+        "visual_inspection": "PASS; inspected the current source-bound PNG; complete flow renders with legible labels.",
+        "historical": {
+          "status": "PASS",
+          "diagrams_rendered": 1,
+          "version": "12.0.0",
+          "source_path": "docs/superpowers/specs/2026-10-13-v4-multiplatform-autonomy-program-sequence.md",
+          "source_block_index": 1,
+          "source_sha256": "991a394ae9a9ca63a1348956e8b4744effb15d315495ebf22c97f8ff2fb96759",
+          "results_sha256": "72a959686d5c2d69316dee0481e6e73c6b2b0be0980b9e60e66db97b95f003e9",
+          "output": "/tmp/task2-extra-diagrams",
+          "visual_inspection": "PASS; approved sequence labels render clearly.",
+          "superseded_by_current_source_render": true
+        }
+      },
+      "manifest_integrity": {
+        "status": "PASS",
+        "artifact_rows": 280,
+        "sorted_unique_paths": true,
+        "tracked_markdown_files": 111,
+        "active_markdown_paths": 79,
+        "preserved_markdown_paths": 32,
+        "non_self_hashes_verified": 279,
+        "intentional_audit_self_hash_null": true,
+        "current_handoff_hashes_verified": 17
       }
     },
     "current_full_non_live_application_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
@@ -346,8 +415,8 @@
     "current_candidate_wheel_sha256": "425b7122f6431459a15bc4fe7bbdd169692b152356a0f36c6895e3fd452e3d04",
     "current_candidate_launch_lock_sha256": "1c8ac4ff92e589e27dc0af2c6dd0bc69c4295435df5a318174a2c77f3b1f2c9c",
     "current_candidate_runtime_manifest_sha256": "3d58423ee9119db38c9a670c726c83692bef126d402e69f2a9ad98e05377b644",
-    "current_independent_review_scope": "Whole-branch GPT-6.1/GPT-5.6 review remains scoped to pushed feature head 6f5edc77edbfe189e46de4254c2fdb21c5652bce; Actions run 38592066455 passed both required jobs there. Exact docs-head Actions run 38610329330 passed both required jobs for pushed head 67effe8c9c176c0bd1c17fdef20b841c0e14b6de. These results do not change the application-bound 182c4e4 test counts or production acceptance. The original nonblocking missing-revision diagnostic finding remains preserved; Task 1 commit 7c3f382 closes the assertion weakness. The current unpublished candidate still needs its own post-push exact-head CI. Task 11 findings stay scoped to 5cb5791; corrected-publication rereview stays scoped to A4/d031172.",
-    "current_documentation_artifacts": 259,
+    "current_independent_review_scope": "The historical GPT-6.1/GPT-5.6 whole-branch review remains scoped to pushed feature head 6f5edc77edbfe189e46de4254c2fdb21c5652bce (run 38592066455 passed its required jobs). The initial commit-bound audit and five-spec design review are COMPLETE_REVIEWED for 7c1ddcda280b510048ad61106c406171edd64f18 and environment 18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436; exact-source CI run 40443346020 passed verify and p0-regression. The separate whole-change documentation review is PASS_AFTER_FIX_ROUND_1 for candidate manifest cafa0bd46ede2cc8aef51058f46541068a07cd031774c8b5501270bc2385ee9a, after F1-F3 fixes and a clean scoped rereview. This documentation review is not the final exact-candidate/environment P1/RG0/RG1 audit, which remains NOT RUN and BLOCKED pending required implementations and current external acceptance evidence for one frozen final pair. The current uncommitted documentation candidate requires exact-head CI after push. Application qualification remains bound to 182c4e4; production gates remain held.",
+    "current_documentation_artifacts": 283,
     "mermaid_source_blocks_updated": 1
   },
   "files": [
@@ -653,8 +722,8 @@
     },
     {
       "path": "README.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
-      "sha256": "b77a3aa949c4397314dd0f0835b6dec8210cb1fa1ef3fb0c179db3fa426ac2dc"
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
+      "sha256": "3f672a0e4bd804a0cc2280c7a57b2a350dbde4991a3ae4e941e3380b16ee3d44"
     },
     {
       "path": "docs-new-arch/ArchCurrent.mermaid",
@@ -693,57 +762,57 @@
     },
     {
       "path": "docs-new-arch/README.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
       "sha256": "bae52f5f32c00e3ca53f7da2dd48eaa0db5329c84e1f5826de78a2791772dc9f"
     },
     {
       "path": "docs/README.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
-      "sha256": "76effa8ff3ddb3d20c991caa069c09510c25f18d40bd09018397b94388d33dea"
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
+      "sha256": "2c2ff50f38b4d5924e7a23fa3b3586acac18528b7a69df0dcc540c71ed1c42f5"
     },
     {
       "path": "docs/adr/0001-durable-runtime.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
       "sha256": "45b80c8aa0c54b57130c53b84a4aa6e359816ac298fa2d92a702faf8fc20f07e"
     },
     {
       "path": "docs/adr/0002-object-storage.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
       "sha256": "ed5776e6af156a3029027b29e1ea626c349401edc4ffffa8d5308474c9d05604"
     },
     {
       "path": "docs/adr/0003-api-persistence-and-contracts.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
       "sha256": "5c92b8d942dda0d7eea15d6f6086f98f97e3ed20cdf7571c7e4d0cf20f445de6"
     },
     {
       "path": "docs/adr/0004-governance-secrets-and-protocols.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
       "sha256": "ea646993715d4fe26b55a2d161d8df4ebc6d9d2dd5161e2603c768e53f105a48"
     },
     {
       "path": "docs/adr/0005-mcp-a2a-and-browser-sdk-adoption.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
       "sha256": "4759e94e373289311c987cb52edd32b00a10a875b7ab920bc060670fbc9c1d43"
     },
     {
       "path": "docs/adr/0006-governed-publishing.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
       "sha256": "2ffd75e09151365f53f7080fd57b00b6d742f25537b45fe0866bd2195b71f713"
     },
     {
       "path": "docs/agents.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
       "sha256": "475925db59db9e4d6bfbb359dda57e8c1248dbdb527db255370d141c03bf7125"
     },
     {
       "path": "docs/api.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
       "sha256": "0d55c63c67ee84b2edb1fb5dfdf76afe15aba2e71190aa3611e8c4ae560907c2"
     },
     {
       "path": "docs/architecture.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
       "sha256": "a7dc8d8f5c27f023bdc1064a91f91daadc9828ad0addc5e27b37ac3f2cfd46b4"
     },
     {
@@ -1063,152 +1132,152 @@
     },
     {
       "path": "docs/bootstrap.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
       "sha256": "0d272075f524ade0a55b50a56a16936eb03220e4bacd75f60393ea462f52ce61"
     },
     {
       "path": "docs/compatibility.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
       "sha256": "492e88c292af028c11c55e42b9463e4967c3250a70b3cdb2d0ccde2bea657adb"
     },
     {
       "path": "docs/contracts/adapter-contracts.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
       "sha256": "8da92cb1c787573be8f0e709bfa32aa04b403fbcec33f171fe559d99db3fd302"
     },
     {
       "path": "docs/core/00_BUILD_AGENT_PROMPT.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
       "sha256": "3fc7941ce612f521cdc153425cbdbd613358869d6a6abf2f055d44e1e9cf1cba"
     },
     {
       "path": "docs/core/01_PRODUCT_CONTEXT_AND_INTENT.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
       "sha256": "a50944e6368d3d3a20c650275553675af8fd959e5b869af5ddae90fcc7c6b05f"
     },
     {
       "path": "docs/core/02_REFERENCE_RESEARCH.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
       "sha256": "d2be8feda6f5fbd4804ce1e7e01dcad1453b7262df8898e754e417572c8ccbf9"
     },
     {
       "path": "docs/core/03_TARGET_ARCHITECTURE.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
       "sha256": "ab2e7d16ef67435fd1ed351dabe09142f295edb431b5b41ed226522f53a00378"
     },
     {
       "path": "docs/core/04_BROWSER_APP_AND_RESEARCH_CONTROL.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
       "sha256": "54e69de25f5326f6de2aa079b4e7f6cb337cc5715bec2629e9c0699487137c30"
     },
     {
       "path": "docs/core/05_IMPLEMENTATION_PLAN.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
       "sha256": "e89fdd85c0d802374b8a1e67a41ed8ff20ba0a5b9a6b0d33d8358f9be36718cb"
     },
     {
       "path": "docs/core/06_ACCEPTANCE_TESTS_AND_GUARDRAILS.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
       "sha256": "6ac887e7258b366eae68bcd4c4524b57d0b19b3acd5a94563a67f1e34496e8e0"
     },
     {
       "path": "docs/core/07_REUSE_EXTENSION_AND_FUTURE_PROOFING.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
       "sha256": "a4448853f4a3a4830faa64625150e281486823c5b38d262a5d15f24fb9c6d64e"
     },
     {
       "path": "docs/core/08_LEAD_AGENT_AND_CREATIVE_TOOL_RUNTIME.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
       "sha256": "9224db9889f871729424ca570ee23c4b4715fc7410899d1e4cb3fd3d94538c67"
     },
     {
       "path": "docs/core/09_CALLABLE_AGENTS_AND_ENGINEERING_METHOD.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
       "sha256": "6eb539f5e7105f017cd4202c7571570eb1ea0f912d8384bb1f0a09de705e86a7"
     },
     {
       "path": "docs/core/README.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
       "sha256": "0dbbce2165ab53ba320202c583eaa97ef67971c5411d4ea2a2fef5d8e43045c7"
     },
     {
       "path": "docs/database.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
       "sha256": "ae816ebc7ce53dc8c9e80d8766b9900f45b52cea20a983f1c04b3786ebb84153"
     },
     {
       "path": "docs/dependencies.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
       "sha256": "762268eee8946866fd437b21027527373ff924a3de030f00d3bb821c38e37166"
     },
     {
       "path": "docs/deployment.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
       "sha256": "1c3e0686624df9b2b72a0d8f55b0247c8d8c44f1d8c8929ae4ed286cd681d69a"
     },
     {
       "path": "docs/governance.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
       "sha256": "001097734cca9757d4ccfc22039f6815dec1b24c40a43c39460567e48291458f"
     },
     {
       "path": "docs/implementation-progress.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
       "sha256": "1129993aaab20b5f127af83b61e845b7a2a5b8b67788df298b557facb22c4191"
     },
     {
       "path": "docs/limitations.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
       "sha256": "4a02b07eb29c8c8937f3592318ba8608586f8fe722f82f5bc7c1731286479f50"
     },
     {
       "path": "docs/local-development.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
       "sha256": "a7ab041edea247a91073c28e2781f42dd0e44cbcfd050bd3525f3d62c0646801"
     },
     {
       "path": "docs/mcp-a2a.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
       "sha256": "04965f3c7954bc92dfe498ed754a94794fc249f76d8f5c3805111451a34f3e5b"
     },
     {
       "path": "docs/memory.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
       "sha256": "7929ad3ac8391a72ff43d357f82388ff1c61b5415cf819c2ec6258fbfe7cfc33"
     },
     {
       "path": "docs/model-execution.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
       "sha256": "00bbc35117d6ba10dd1d97655e850640282e698f7a5c1421a9cac29235d494ab"
     },
     {
       "path": "docs/model-gateway.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
       "sha256": "28a952d2b3fb75ca53febf5c3f1e8495a85e3ef4d47563a6d715e719c627d922"
     },
     {
       "path": "docs/phase-7-handoff.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
       "sha256": "aafc003f673daec17987f11eb7ac777e2ff5b3532670e4f7acc5a52803702772"
     },
     {
       "path": "docs/phase-9-handoff.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
       "sha256": "339fac8570a67815ccfb768dd6d0a03b2001d1529b1e90cb4c26ed3a3fcdf9ad"
     },
     {
       "path": "docs/plugins.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
       "sha256": "5eda3b009f6c14653fdc42ea83276d8e9c8284ed86890fab78710dddabaf0f34"
     },
     {
       "path": "docs/recovery.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
       "sha256": "03e8134c79365bf66ab375229457fc322cc37ff38d794b45c48bf10bc0e74ea2"
     },
     {
       "path": "docs/research.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
       "sha256": "b9e6fffd86360640e0137640d0efdd0ab982eb89786a60ba613ba28d5344fbf4"
     },
     {
@@ -1273,42 +1342,42 @@
     },
     {
       "path": "docs/superpowers/plans/2026-09-12-browser-evidence.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
       "sha256": "379e8a91f6c5bdf86e626b85b65183a9c6eab44295c6c810890d064992047a1e"
     },
     {
       "path": "docs/superpowers/plans/2026-09-12-intelligence-loop-phases-5-6.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
       "sha256": "7c9ff324f68a28a73a31d927117a9fc24e89f393fdc032fa05661a66c650116e"
     },
     {
       "path": "docs/superpowers/plans/2026-09-12-phases-1-4-foundation.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
       "sha256": "c458aef124dbb8cdfeb637d89856710f0ac73e30c14665639f67ac40d72a1e7c"
     },
     {
       "path": "docs/superpowers/plans/2026-09-13-creative-production-phases-7-8.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
       "sha256": "d7d5322cb4f6df5c73bf47dab67c27627a682239d38abe073f35341372397d82"
     },
     {
       "path": "docs/superpowers/plans/2026-09-13-phase-7-8-release-gate-phase-9-publishing.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
       "sha256": "6ecc4343cf22586451099c463f746464e61f0f51518050d48fbbc5363af2ec23"
     },
     {
       "path": "docs/superpowers/plans/2026-09-13-phase-7-8-review-repairs.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
       "sha256": "096cd3e808a5cb8baebd26306a488a392be439791fe94c0bfc6295286d455ca2"
     },
     {
       "path": "docs/superpowers/plans/2026-09-13-phase-9-independent-review-repairs.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
       "sha256": "8b0586343504d8d461e735d3c177c533373cf35c706a649396f36dffda656e88"
     },
     {
       "path": "docs/superpowers/plans/2026-10-06-p1-publication-recovery-hold.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
       "sha256": "48684cfbb088ed4c2015a3b7e76e68bdce6cc3ce85184334a33619c7a59bb001"
     },
     {
@@ -1327,38 +1396,43 @@
       "sha256": "fbb80a6214ae41ae04fbbf153e2fe6dcce20922a4301de42e53a46377479f276"
     },
     {
+      "path": "docs/superpowers/plans/2026-10-27-p1-rg0-rg1-initial-gap-audit.md",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
+      "sha256": "5d1dd8a86718184d03324144643dfb009cb36243a5bd0c0f14c46844eb3c5cd4"
+    },
+    {
       "path": "docs/superpowers/reviews/2026-09-13-phase-7-8-release-gate.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
       "sha256": "a285b5420c677c3a35e23306b72b3ecf44b0877b03a1832511dd0a1e74396408"
     },
     {
       "path": "docs/superpowers/reviews/2026-09-13-phase-9-independent-review.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
       "sha256": "36bbd9319a1286b817685daffbc752017f41b7ef65752fe675b6223ffdaeec0c"
     },
     {
       "path": "docs/superpowers/specs/2026-09-12-browser-evidence-design.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
       "sha256": "49eede3f517b83f2e2ff7584717436e668f847a4af5cbbc6639b5a5dfc45e8df"
     },
     {
       "path": "docs/superpowers/specs/2026-09-12-intelligence-loop-phases-5-6-design.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
       "sha256": "07754380584a9df1ba52d57ee9dc90e32f5207064979d72b98dcb54d1b87ad35"
     },
     {
       "path": "docs/superpowers/specs/2026-09-13-creative-production-phases-7-8-design.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
       "sha256": "e0f0406a1fe058b71bee31034b77fa183e406f8658468ea118889909ee710ff5"
     },
     {
       "path": "docs/superpowers/specs/2026-09-13-phase-7-8-release-gate-phase-9-publishing-design.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
       "sha256": "3295c2f0e18ef307694c2600639810e1d5cdf802ec624f6030876267b6592c95"
     },
     {
       "path": "docs/superpowers/specs/2026-10-06-p1-publication-recovery-hold-design.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
       "sha256": "ff961144c58b22fbcbfe624dfd17909377d8aa4b25d04ca14e3ae4947aa2d26d"
     },
     {
@@ -1367,29 +1441,79 @@
       "sha256": "d8e1f17c8029fc5016a604f24cc335ec1f5111bca725d548cc23b68fe5106f0c"
     },
     {
+      "path": "docs/superpowers/specs/2026-10-13-p1-live-schedule-fencing-design.md",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
+      "sha256": "04ed59e2ed61ca17dc2c01df3a2964e1569e03e79f0aef2bbfe2ca2d96d5129a"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-10-13-p1-production-policy-and-revocation-design.md",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
+      "sha256": "6be8f5ec6c48491a45a734510cc20af98e2cd7554fdc0409e77c6d9667d42fe2"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-10-13-p1-production-recovery-and-alerts-design.md",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
+      "sha256": "1c731ee595be6582902aa79f9ebb52d520f6fd18ad6054ca304709ce16aea61c"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-10-13-p1-production-routing-and-worker-fencing-design.md",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
+      "sha256": "d4d2c06a1f0925d2826b29a4e2c053f7f7773f660397fe986883c370aee78f67"
+    },
+    {
       "path": "docs/superpowers/specs/2026-10-13-p1-publication-recovery-floor-repair-design.md",
       "disposition": "preserved dated design specification",
       "sha256": "120d21654c9d5f3e422f8e457f7f6baed137a4ef223d337e9825eae35726ff0c"
     },
     {
+      "path": "docs/superpowers/specs/2026-10-13-rg0-rg1-external-acceptance-design.md",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
+      "sha256": "2a5d6cff0dd44070b1942e79f073906527b8e2650b62b3473d63542f00bfbcd8"
+    },
+    {
       "path": "docs/superpowers/specs/2026-10-13-v4-multiplatform-autonomy-program-sequence.md",
       "disposition": "preserved dated design specification",
-      "sha256": "1f6f7159f009a2772095262c52d36e187559ac7edd67920c52c2deed4b2f5e50"
+      "sha256": "ba64032ca707c4348c97651fa06beced3df90d1612c38c56de50fed1558947ca"
     },
     {
       "path": "docs/trust-model.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
       "sha256": "664d74e61f43bd12b5f87f04c828a492f484c6fec2dc42f015f6e5ee3049e550"
     },
     {
       "path": "docs/v4/IMPLEMENTATION-BLUEPRINT.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
-      "sha256": "e1c967ca6794df20bfcf3895590a58bdfb9c4b820667ed7cc4b55e9d7cc0774f"
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
+      "sha256": "6e717aae30c9eb3714d760d5e04f8689a33db0b5e0a3d8dcb4e8e63137c7c58b"
+    },
+    {
+      "path": "docs/v4/agenttube-adoption-evidence.json",
+      "disposition": "preserved YouTube-agent reference research",
+      "sha256": "77e356eeb0bcc8f734ae7ca9203d5c986428a276796adb1790fd3250d71215af"
     },
     {
       "path": "docs/v4/allocation-evidence.json",
       "disposition": "preserved dated qualification report",
       "sha256": "65c8334184cae24c8935db80b397b4ef31627da705c88b68ee77430dcd11db3c"
+    },
+    {
+      "path": "docs/v4/audits/salience-p1-external-evidence-audit.md",
+      "disposition": "preserved dated initial P1/RG0/RG1 subaudit report",
+      "sha256": "b29b8135af40e8f95f5e9b903ea70d8840ec95c3b01eaf684004986c9e75997b"
+    },
+    {
+      "path": "docs/v4/audits/salience-p1-policy-routing-audit.md",
+      "disposition": "preserved dated initial P1/RG0/RG1 subaudit report",
+      "sha256": "0a538f5cfac2c8bbd59556fbb227258157b9c4abdaea002711bad71682b1a460"
+    },
+    {
+      "path": "docs/v4/audits/salience-p1-policy-routing-audit.md.txt",
+      "disposition": "preserved unscanned P1 policy-routing subaudit payload",
+      "sha256": "af34376c35348d102576dcccbc90165396e9611cd3e5cf0e4fb5be7d02cd0572"
+    },
+    {
+      "path": "docs/v4/audits/salience-p1-temporal-recovery-audit.md",
+      "disposition": "preserved dated initial P1/RG0/RG1 subaudit report",
+      "sha256": "0370638903bff6006ff9fe29dec3d91d86956fd8618b8ef41694fbab1181133c"
     },
     {
       "path": "docs/v4/baseline-approval-evidence.json",
@@ -1523,7 +1647,7 @@
     },
     {
       "path": "docs/v4/legacy-dispatch-contract.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
       "sha256": "a57b3588de14ffbd5dbfe1b4a5a33ca5244dbd42844fb096a41d892b48c75395"
     },
     {
@@ -1559,7 +1683,7 @@
     {
       "path": "docs/v4/p0-release.json",
       "disposition": "Current release ledger records frozen application scope, exact pushed documentation CI, approved sequence navigation, and pending current-candidate CI; release gates retained",
-      "sha256": "b9782fdd7912ef45288621814624ec3305eb47ba7793043d419a1edc94053cd7"
+      "sha256": "5038fa02bd73d176cbad6df99a66537fb25cdebc0f8c972f33419070e1145757"
     },
     {
       "path": "docs/v4/p1-increment-evidence.json",
@@ -1569,11 +1693,26 @@
     {
       "path": "docs/v4/p1-qualification-matrix.json",
       "disposition": "Current P1 matrix keeps application scope frozen, exact review and documentation CI heads distinct, and current candidate CI pending; production holds retained",
-      "sha256": "81737dc19cfdd67208afcf90df1696df37888e3c8d7d1e5db9f8aab8bb5a346e"
+      "sha256": "c36bca335575d0b128d8d2232b1b50c741566d2d2a6d8fbb43d404e2ad5e3237"
+    },
+    {
+      "path": "docs/v4/p1-rg0-rg1-audit-and-spec-review.md",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
+      "sha256": "ba131347a6918be208d4a690c3f4e7c31bbf2af167862a117b8b274f85a95c05"
+    },
+    {
+      "path": "docs/v4/p1-rg0-rg1-initial-gap-audit.json",
+      "disposition": "current initial commit-bound P1/RG0/RG1 audit evidence; COMPLETE_REVIEWED at source 7c1ddcd; 22 rows non-PASS; implementation/target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2 BLOCKED",
+      "sha256": "33fe485384dcf60e36df8d48ace6394c80bce0d1bd9e6b9b39c7a905d65676b1"
+    },
+    {
+      "path": "docs/v4/p1-rg0-rg1-initial-gap-audit.md",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
+      "sha256": "62aab5afb39f7c47e355a68ccf56e319a72955247515dfbdba8913fd797a5944"
     },
     {
       "path": "docs/v4/parallel-agent-contract.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
       "sha256": "9daa5c45a4493dc693ca3bde3bf327b4a24bf84e611ea2a0843caa26a3209c10"
     },
     {
@@ -1583,8 +1722,8 @@
     },
     {
       "path": "docs/v4/progress.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
-      "sha256": "3c00e983a8134e31dccb3c011675400fc49984acdf86424a58112960117b56cf"
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
+      "sha256": "63bbb93983b1b93af53a10fc75a2051605ee278daa1fab826f303be1909f54d0"
     },
     {
       "path": "docs/v4/publication-recovery-hold-evidence.json",
@@ -1602,58 +1741,108 @@
       "sha256": "389886f670654a65848d5f43d61215562d53a95969906e5a44722a4ab7dbc006"
     },
     {
+      "path": "docs/v4/reviews/final-whole-change-fix.md.txt",
+      "disposition": "preserved durable P1 audit/spec review and repair report payload",
+      "sha256": "d2449d8760eb4978f796d29c4b3f88a49ccb658aaeb01bd1c2df37fa0b5d8e8f"
+    },
+    {
+      "path": "docs/v4/reviews/final-whole-change-rereview.md.txt",
+      "disposition": "preserved durable P1 audit/spec review and repair report payload",
+      "sha256": "a9618776e2114435b12f147a4221a8018914517e4e21900130a5b259da2c0b5b"
+    },
+    {
+      "path": "docs/v4/reviews/final-whole-change-review.md.txt",
+      "disposition": "preserved durable P1 audit/spec review and repair report payload",
+      "sha256": "0f1b136cbb0f24adb596bcb628848f1ec5fdf7723178cd9c0b6bfad31b1aa104"
+    },
+    {
+      "path": "docs/v4/reviews/initial-audit-contract-fix.md.txt",
+      "disposition": "preserved durable P1 audit/spec review and repair report payload",
+      "sha256": "87ed41a656c6fd7bde1c72424872dc38e0bec07e72e7aefef3443214c5994964"
+    },
+    {
+      "path": "docs/v4/reviews/initial-audit-row-rereview-round1.md.txt",
+      "disposition": "preserved durable P1 audit/spec review and repair report payload",
+      "sha256": "b268cd962222ca35dcf558d45339c576e32d9bcb14da1a7e1932d80664ac848e"
+    },
+    {
+      "path": "docs/v4/reviews/initial-audit-row-rereview-round2.md.txt",
+      "disposition": "preserved durable P1 audit/spec review and repair report payload",
+      "sha256": "dccf878b83638d38a288fc2e12012a1582c08b49de33f92fba35287a629a52a6"
+    },
+    {
+      "path": "docs/v4/reviews/initial-audit-row-review.md.txt",
+      "disposition": "preserved durable P1 audit/spec review and repair report payload",
+      "sha256": "54e296b0ca00dc397886f188265a9f9cd2015ab0c395faf39d6d234a1c581c3d"
+    },
+    {
+      "path": "docs/v4/reviews/initial-cross-spec-fix.md.txt",
+      "disposition": "preserved durable P1 audit/spec review and repair report payload",
+      "sha256": "8fe8429d03eda7f5e01a02e3976c5c074ca39bf10d8ba964d8e1fcf393e91e8c"
+    },
+    {
+      "path": "docs/v4/reviews/initial-cross-spec-rereview.md.txt",
+      "disposition": "preserved durable P1 audit/spec review and repair report payload",
+      "sha256": "daacc06aefec84c1a665addb2ebc42d660789101cc0897cc6df4f8698fecbc95"
+    },
+    {
+      "path": "docs/v4/reviews/initial-cross-spec-review.md.txt",
+      "disposition": "preserved durable P1 audit/spec review and repair report payload",
+      "sha256": "9c310cecc839cfe334ec8a6c9c1fc940e4637e70aeb9e37e9ef0e2a1c2e6d229"
+    },
+    {
       "path": "docs/v4/validation.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
-      "sha256": "89a85881cafffd046b4ed746726a79414273425478e9090b2aea1c4c47e075f7"
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
+      "sha256": "4afc4def5a5e4df09b1a0ba0f061f073f974fa719072f4bfe33f7d7438d1021d"
     },
     {
       "path": "docs/verification.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
       "sha256": "e8ec7ee216c3d496a2bf43d99d65d24e4c7a91cd097762553f471f0c4a68d600"
     },
     {
       "path": "docs/workflows.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
       "sha256": "9abd30aa4c92ff1655947dd3662507fa3e3f1b973d19b733a3cab13f54cafabc"
     },
     {
       "path": "prompts/Build Creative Production Loop \u2014 Phases 7\u20138 End-to-End.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
       "sha256": "6d77d56568933cdcd79b5ab5723efa2312d72bd57f12547664772618b700cc4b"
     },
     {
       "path": "prompts/Build Phase 10 \u2014 Multi-Platform Production Publishing, Analytics, Attribution & Experiments.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
       "sha256": "756651d83b0e132c22bdd0ecdcf9de218dd00922570c29b30ca912a3cee46b00"
     },
     {
       "path": "prompts/Build Phases 1\u20134 End-to-End.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
       "sha256": "cfb5fca0452db58c216b889786eb42b91641730fa0e27dca6fc57535ea5ba88c"
     },
     {
       "path": "prompts/Build Real Intelligence Loop \u2014 Pre-Phase 5 + Phases 5\u20136 End-to-End.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
       "sha256": "93621fa3332bf11c3f2e9ab24cf27a7b3381353aaa80634ea864f30d3253dfea"
     },
     {
       "path": "prompts/Complete Phase 7\u20138 Release Gate, Then Build Phase 9 Governed Publishing.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
       "sha256": "cab9fb272101f8011067c79c5ac0611c0809d66cb066ce5a6f2023ff1d465af0"
     },
     {
       "path": "prompts/Install and Verify Browser Evidence on Linux EC2.md",
-      "disposition": "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
       "sha256": "cab3134054c262cd2e38c77b9b3242ceb1caa91c346d8936212d1ad58dd4f7cc"
     }
   ],
   "qualified_application_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
-  "next_action": "Follow the approved program sequence: slice 0 complete; slice 1 commit-bound P1/RG0/RG1 gap-inventory audit next and gated. Exact pushed docs head 67effe8c9c176c0bd1c17fdef20b841c0e14b6de passed both required jobs in run 38610329330. The current unpublished candidate includes bbd617f and 7c3f382 and its post-push exact-head CI is REQUIRED/PENDING. Keep application results bound to 182c4e4 and review/CI scopes bound to their exact heads. Formal PR approval remains NOT RUN; main unmerged; effects disabled; fixture budget zero; RG0/full RG1 HELD; P2-P7 gated; P6 disabled.",
+  "next_action": "Initial commit-bound P1/RG0/RG1 audit and five-spec design review are COMPLETE_REVIEWED for source 7c1ddcda280b510048ad61106c406171edd64f18 and environment 18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436; exact-source CI run 40443346020 passed both required jobs. The separate whole-change documentation review is PASS_AFTER_FIX_ROUND_1 for candidate manifest cafa0bd46ede2cc8aef51058f46541068a07cd031774c8b5501270bc2385ee9a. Continue with the five required increments in approved sequence order. Implementation and target qualification remain NOT RUN; all 22 final-entry rows remain non-PASS; RG0/RG1 HELD; P2/Slice 7 BLOCKED; production disabled; main unmerged. The current documentation candidate has no commit SHA yet and requires exact-head CI after push. The final exact-candidate/environment P1/RG0/RG1 audit remains NOT RUN and BLOCKED until required increments and current external acceptance evidence are complete for one frozen final candidate/environment.",
   "parallel_agents_status": "PASS_IMPLEMENTED_LOCAL_PARALLEL_AGENT_FIXTURE_SCOPE",
   "parallel_qualified_application_commit": "2653d2ecb3f0d5bb8ea6560de274137dd6032a96",
   "legacy_intelligence_status": "PASS_LOCAL_LEGACY_INTELLIGENCE_AND_PUBLICATION_FIXTURE_STAGES; ORIGINAL_NATIVE_INTELLIGENCE_AND_PUBLICATION_SCHEDULES_QUALIFIED",
   "goal_status": "ACTIVE",
-  "independent_review_scope": "Whole-branch GPT-6.1/GPT-5.6 review remains scoped to pushed feature head 6f5edc77edbfe189e46de4254c2fdb21c5652bce; Actions run 38592066455 passed both required jobs there. Exact docs-head Actions run 38610329330 passed both required jobs for pushed head 67effe8c9c176c0bd1c17fdef20b841c0e14b6de. These results do not change the application-bound 182c4e4 test counts or production acceptance. The original nonblocking missing-revision diagnostic finding remains preserved; Task 1 commit 7c3f382 closes the assertion weakness. The current unpublished candidate still needs its own post-push exact-head CI. Task 11 findings stay scoped to 5cb5791; corrected-publication rereview stays scoped to A4/d031172.",
+  "independent_review_scope": "The historical GPT-6.1/GPT-5.6 whole-branch review remains scoped to pushed feature head 6f5edc77edbfe189e46de4254c2fdb21c5652bce (run 38592066455 passed its required jobs). The initial commit-bound audit and five-spec design review are COMPLETE_REVIEWED for 7c1ddcda280b510048ad61106c406171edd64f18 and environment 18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436; exact-source CI run 40443346020 passed verify and p0-regression. The separate whole-change documentation review is PASS_AFTER_FIX_ROUND_1 for candidate manifest cafa0bd46ede2cc8aef51058f46541068a07cd031774c8b5501270bc2385ee9a, after F1-F3 fixes and a clean scoped rereview. This documentation review is not the final exact-candidate/environment P1/RG0/RG1 audit, which remains NOT RUN and BLOCKED pending required implementations and current external acceptance evidence for one frozen final pair. The current uncommitted documentation candidate requires exact-head CI after push. Application qualification remains bound to 182c4e4; production gates remain held.",
   "tracked_markdown_paths": [
     ".agents/skills/archify/SKILL.md",
     ".agents/skills/archify/THIRD_PARTY_NOTICES.md",
@@ -1730,6 +1919,7 @@
     "docs/superpowers/plans/2026-10-13-agenttube-immutable-reference-guard.md",
     "docs/superpowers/plans/2026-10-13-agenttube-reference-adoption.md",
     "docs/superpowers/plans/2026-10-13-p1-publication-recovery-floor-repair.md",
+    "docs/superpowers/plans/2026-10-27-p1-rg0-rg1-initial-gap-audit.md",
     "docs/superpowers/reviews/2026-09-13-phase-7-8-release-gate.md",
     "docs/superpowers/reviews/2026-09-13-phase-9-independent-review.md",
     "docs/superpowers/specs/2026-09-12-browser-evidence-design.md",
@@ -1738,12 +1928,22 @@
     "docs/superpowers/specs/2026-09-13-phase-7-8-release-gate-phase-9-publishing-design.md",
     "docs/superpowers/specs/2026-10-06-p1-publication-recovery-hold-design.md",
     "docs/superpowers/specs/2026-10-13-agenttube-reference-and-native-adoption-design.md",
+    "docs/superpowers/specs/2026-10-13-p1-live-schedule-fencing-design.md",
+    "docs/superpowers/specs/2026-10-13-p1-production-policy-and-revocation-design.md",
+    "docs/superpowers/specs/2026-10-13-p1-production-recovery-and-alerts-design.md",
+    "docs/superpowers/specs/2026-10-13-p1-production-routing-and-worker-fencing-design.md",
     "docs/superpowers/specs/2026-10-13-p1-publication-recovery-floor-repair-design.md",
+    "docs/superpowers/specs/2026-10-13-rg0-rg1-external-acceptance-design.md",
     "docs/superpowers/specs/2026-10-13-v4-multiplatform-autonomy-program-sequence.md",
     "docs/trust-model.md",
     "docs/v4/IMPLEMENTATION-BLUEPRINT.md",
+    "docs/v4/audits/salience-p1-external-evidence-audit.md",
+    "docs/v4/audits/salience-p1-policy-routing-audit.md",
+    "docs/v4/audits/salience-p1-temporal-recovery-audit.md",
     "docs/v4/item7-independent-review.md",
     "docs/v4/legacy-dispatch-contract.md",
+    "docs/v4/p1-rg0-rg1-audit-and-spec-review.md",
+    "docs/v4/p1-rg0-rg1-initial-gap-audit.md",
     "docs/v4/parallel-agent-contract.md",
     "docs/v4/progress.md",
     "docs/v4/validation.md",
@@ -1758,26 +1958,35 @@
   ],
   "repository_readback": {
     "published_base_commit": "20be7815d5e5c95fea2161c908ce8ac5cae88ce6",
-    "inspected_at": "2026-10-05T10:15:06.262580+00:00",
-    "status": "Historical published-base required CI/strict branch-protection readback remains recorded separately; current feature-head run 38592066455 passed both required jobs on pushed 6f5edc7.",
+    "inspected_at": "2026-10-27T05:11:43Z",
+    "status": "Historical published-base protection and prior whole-branch review remain separately scoped. Current initial-audit source/feature ref 7c1ddcda280b510048ad61106c406171edd64f18; exact-source Actions run 40443346020 passed verify and p0-regression. This does not establish CI for the current uncommitted documentation candidate or formal PR approval.",
     "artifact": "artifacts/v4-legacy-creative-qualified-head.json",
     "current_feature_application_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
     "current_feature_head_ci": "PASS for feature head 6f5edc77edbfe189e46de4254c2fdb21c5652bce: run 38592066455 passed verify and p0-regression (hosted 787/26/3). Separately, pushed docs head 67effe8c9c176c0bd1c17fdef20b841c0e14b6de passed both required jobs in run 38610329330; current unpublished candidate exact-head CI is REQUIRED/PENDING.",
     "formal_pr_approval": "NOT RUN",
-    "current_feature_branch_head": "6f5edc77edbfe189e46de4254c2fdb21c5652bce",
-    "current_feature_ci_run_id": 38592066455,
-    "current_feature_ci_url": "https://github.com/manojvermamv/Salience/actions/runs/38592066455",
-    "remote_ref_readback": "origin/feat/archv4-p0-foundation equals 6f5edc77edbfe189e46de4254c2fdb21c5652bce",
+    "current_feature_branch_head": "7c1ddcda280b510048ad61106c406171edd64f18",
+    "current_feature_ci_run_id": 40443346020,
+    "current_feature_ci_url": "https://github.com/manojvermamv/Salience/actions/runs/40443346020",
+    "remote_ref_readback": "origin/feat/archv4-p0-foundation equals 7c1ddcda280b510048ad61106c406171edd64f18 at the recorded audit source readback.",
     "main_merge": "UNMERGED",
     "current_documentation_refresh": {
       "plan_task": ".superpowers/sdd/2026-10-27-resume-housekeeping/task-2-brief.md",
-      "starting_commit": "7c3f3822c81faba37b4b07a09e0f5a950f9f1256",
+      "starting_commit": "7c1ddcda280b510048ad61106c406171edd64f18",
       "working_branch": "arch",
       "application_candidate_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
       "latest_pushed_documentation_head": "67effe8c9c176c0bd1c17fdef20b841c0e14b6de",
       "latest_pushed_documentation_ci_run": 38610329330,
-      "current_candidate_post_push_exact_head_ci": "REQUIRED/PENDING"
-    }
+      "current_candidate_post_push_exact_head_ci": "REQUIRED_AFTER_PUSH",
+      "initial_audit_source_commit": "7c1ddcda280b510048ad61106c406171edd64f18",
+      "initial_audit_environment_manifest_sha256": "18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436",
+      "initial_audit_source_ci_run_id": 40443346020,
+      "initial_audit_status": "COMPLETE_REVIEWED",
+      "required_designs": 5,
+      "implementation_status": "NOT RUN",
+      "target_qualification_status": "NOT RUN",
+      "current_candidate_status": "UNCOMMITTED_WORKTREE; no candidate SHA assigned"
+    },
+    "current_feature_ci": "PASS for exact initial-audit source 7c1ddcda280b510048ad61106c406171edd64f18: Actions run 40443346020 passed verify and p0-regression. This is source CI, not final candidate/environment qualification."
   },
   "application_source_preservation_basis": "Compared the Task 9 356-path evidence lock at application 7878208 with the Task 10 qualification checkout: 347 existing paths retain identical bytes, nine existing paths have updated hashes, and four source paths were added, for 360 locked paths. The current application artifact is pinned separately to 5cb5791; the test-only qualification harness is at 1480100. This is a content comparison and lock, not an independent code review.",
   "historical_a4_qualified_application_commit": "a4b2368cdb463939d093020224a5b5667392aee6",
@@ -1805,7 +2014,11 @@
   "previous_full_non_live_application_commit": "7878208e7a353f93bb70279ad0dd7f0760f93ec4",
   "source_files": 360,
   "corrected_head_rereview": "COMPLETE only for application `a4b2368cdb463939d093020224a5b5667392aee6` with documentation/observed HEAD `d0311725686d81b7b4747c2d6225986e5ea3a524`; it does not cover `7878208` or `5cb5791`.",
-  "documentation_tests": "PASS: 15 documentation tests; check.py and self-test PASS (75 obligations, 2 source files, 366 evidence files, 360 inventory files, 97 Markdown, 4 HTML, 6 negative controls); four documentation shell contracts PASS; six blueprint diagrams, two README diagrams and the updated sequence diagram render with Mermaid 12.0.0; AgentTube verifier and all 17 tests PASS; six changed JSON files parse; 100 Markdown files / 259 documentation artifacts inventoried; 258 non-self hashes refreshed with audit self-hash null; git diff checks PASS.",
+  "documentation_tests": {
+    "status": "PASS",
+    "command": ".venv/bin/python docs/v4/test_checks.py",
+    "passed": 21
+  },
   "task_8_exact_candidate_artifact_build": {
     "status": "SUCCESSOR_EXACT_CANDIDATE_ARTIFACT_BUILD_AND_LOCAL_QUALIFICATION_RECORDED",
     "application_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
@@ -1825,7 +2038,7 @@
     "runtime_file_count": 9151,
     "pyc_files": [],
     "qualification_report": ".superpowers/sdd/2026-10-13-p1-publication-recovery-floor-repair/task-8-report.md",
-    "qualification_results": "Exact-image matrix: 12 passed; I1 replay-focused gate: 9 passed; Task 8 actual-retry producer: 1 passed; Compose restart recovery: 1 passed; final clean non-live suite: 796 passed, 17 skipped, 3 warnings. Fresh independent review/meta-review and exact-head CI remain controller gates."
+    "qualification_results": "Exact-image matrix: 12 passed; I1 replay-focused gate: 9 passed; actual-retry producer: 1 passed; Compose restart recovery: 1 passed; final clean non-live suite: 796 passed, 17 skipped, 3 warnings, all bound to application 182c4e4. Whole-branch review and CI remain bound to pushed feature head 6f5edc77edbfe189e46de4254c2fdb21c5652bce (run 38592066455). Exact initial-audit source CI run 40443346020 passed on 7c1ddcda280b510048ad61106c406171edd64f18. Current documentation candidate has no commit SHA yet and needs its own exact-head CI after push."
   },
   "current_focused_status": "PASS: application 182c4e4 has 9 I1 replay-focused tests, 12 exact-image matrix tests, 1 actual-retry producer test, 1 Compose restart recovery test, and a final full non-live result of 796 passed / 17 skipped / 3 warnings. Separate branch checkpoint 6f5edc7 has the accepted whole-branch review/meta-review and successful exact-head Actions run 38592066455 (787/26/3). Pushed docs head 67effe8c9c176c0bd1c17fdef20b841c0e14b6de passed both required jobs in run 38610329330. The current unpublished candidate requires its own exact-head CI after push.",
   "current_candidate_artifact_build": {
@@ -1847,7 +2060,7 @@
     "runtime_file_count": 9151,
     "pyc_files": [],
     "qualification_report": ".superpowers/sdd/2026-10-13-p1-publication-recovery-floor-repair/task-8-report.md",
-    "qualification_results": "Exact-image matrix: 12 passed; I1 replay-focused gate: 9 passed; actual-retry producer: 1 passed; Compose restart recovery: 1 passed; final clean non-live suite: 796 passed, 17 skipped, 3 warnings, all bound to application 182c4e4. Whole-branch review and required CI remain bound to pushed feature head 6f5edc77edbfe189e46de4254c2fdb21c5652bce (run 38592066455, hosted 787/26/3). Separately, pushed documentation head 67effe8c9c176c0bd1c17fdef20b841c0e14b6de passed both required jobs in run 38610329330. The current unpublished candidate includes bbd617f and 7c3f382 and needs its own post-push exact-head CI."
+    "qualification_results": "Exact-image matrix: 12 passed; I1 replay-focused gate: 9 passed; actual-retry producer: 1 passed; Compose restart recovery: 1 passed; final clean non-live suite: 796 passed, 17 skipped, 3 warnings, all bound to application 182c4e4. Whole-branch review remains bound to 6f5edc77edbfe189e46de4254c2fdb21c5652bce (run 38592066455). Separately, exact CI run 40443346020 passed on initial audit source 7c1ddcda280b510048ad61106c406171edd64f18. The current documentation candidate has no commit SHA yet and requires exact-head CI after push."
   },
   "superseded_candidate_artifact_build_386d4bc": {
     "status": "EXACT_CANDIDATE_ARTIFACT_BUILD_RECORDED",
@@ -2164,47 +2377,107 @@
     "current_independent_review_scope": "Successor 182c4e4 fresh independent review/meta-review and exact-head CI remain pending; Task 11 findings stay scoped to 5cb5791 and corrected-publication rereview stays scoped to A4/d031172."
   },
   "current_handoff_hashes": {
+    "docs/superpowers/plans/2026-10-27-p1-rg0-rg1-initial-gap-audit.md": "5d1dd8a86718184d03324144643dfb009cb36243a5bd0c0f14c46844eb3c5cd4",
+    "docs/superpowers/specs/2026-10-13-p1-live-schedule-fencing-design.md": "04ed59e2ed61ca17dc2c01df3a2964e1569e03e79f0aef2bbfe2ca2d96d5129a",
+    "docs/superpowers/specs/2026-10-13-p1-production-policy-and-revocation-design.md": "6be8f5ec6c48491a45a734510cc20af98e2cd7554fdc0409e77c6d9667d42fe2",
+    "docs/superpowers/specs/2026-10-13-p1-production-recovery-and-alerts-design.md": "1c731ee595be6582902aa79f9ebb52d520f6fd18ad6054ca304709ce16aea61c",
+    "docs/superpowers/specs/2026-10-13-p1-production-routing-and-worker-fencing-design.md": "d4d2c06a1f0925d2826b29a4e2c053f7f7773f660397fe986883c370aee78f67",
+    "docs/superpowers/specs/2026-10-13-rg0-rg1-external-acceptance-design.md": "2a5d6cff0dd44070b1942e79f073906527b8e2650b62b3473d63542f00bfbcd8",
+    "docs/v4/IMPLEMENTATION-BLUEPRINT.md": "6e717aae30c9eb3714d760d5e04f8689a33db0b5e0a3d8dcb4e8e63137c7c58b",
+    "docs/v4/evidence-lock.json": "472d603c1110a0ebe8082f598b7d02a892e6591a9f6b400c48979321551af674",
+    "docs/v4/p0-release.json": "5038fa02bd73d176cbad6df99a66537fb25cdebc0f8c972f33419070e1145757",
+    "docs/v4/p1-qualification-matrix.json": "c36bca335575d0b128d8d2232b1b50c741566d2d2a6d8fbb43d404e2ad5e3237",
+    "docs/v4/p1-rg0-rg1-audit-and-spec-review.md": "ba131347a6918be208d4a690c3f4e7c31bbf2af167862a117b8b274f85a95c05",
+    "docs/v4/p1-rg0-rg1-initial-gap-audit.json": "33fe485384dcf60e36df8d48ace6394c80bce0d1bd9e6b9b39c7a905d65676b1",
+    "docs/v4/p1-rg0-rg1-initial-gap-audit.md": "62aab5afb39f7c47e355a68ccf56e319a72955247515dfbdba8913fd797a5944",
+    "docs/v4/progress.md": "63bbb93983b1b93af53a10fc75a2051605ee278daa1fab826f303be1909f54d0",
     "docs/v4/publication-recovery-hold-evidence.json": "3cce88e4d692f726be710c1f4db46b1428c9546561424a2ab0ad120363becc66",
     "docs/v4/publication-recovery-hold-successor-evidence.json": "4baef4a2328b26a47abc150f4b2ba47aa7c3d3afa6260c651986142b110054c1",
-    "docs/v4/evidence-lock.json": "472d603c1110a0ebe8082f598b7d02a892e6591a9f6b400c48979321551af674",
-    "docs/v4/p1-qualification-matrix.json": "81737dc19cfdd67208afcf90df1696df37888e3c8d7d1e5db9f8aab8bb5a346e",
-    "docs/v4/progress.md": "3c00e983a8134e31dccb3c011675400fc49984acdf86424a58112960117b56cf",
-    "docs/v4/IMPLEMENTATION-BLUEPRINT.md": "e1c967ca6794df20bfcf3895590a58bdfb9c4b820667ed7cc4b55e9d7cc0774f",
-    "docs/v4/p0-release.json": "b9782fdd7912ef45288621814624ec3305eb47ba7793043d419a1edc94053cd7",
     "docs/v4/repository-enforcement-evidence.json": "389886f670654a65848d5f43d61215562d53a95969906e5a44722a4ab7dbc006"
   },
   "current_documentation_refresh": {
-    "plan_task": ".superpowers/sdd/2026-10-27-resume-housekeeping/task-2-brief.md",
-    "starting_commit": "7c3f3822c81faba37b4b07a09e0f5a950f9f1256",
+    "plan_task": "docs/superpowers/plans/2026-10-27-p1-rg0-rg1-initial-gap-audit.md",
+    "starting_commit": "7c1ddcda280b510048ad61106c406171edd64f18",
     "working_branch": "arch",
-    "scope": "Current status/navigation and durable evidence manifests only; no application qualification changes.",
+    "scope": "Current P1/RG0/RG1 audit, five reviewed design specs, status/navigation, durable review and manifest records; no application source or build-evidence changes.",
     "application_candidate_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
     "latest_pushed_documentation_head": "67effe8c9c176c0bd1c17fdef20b841c0e14b6de",
     "latest_pushed_documentation_ci_run": 38610329330,
-    "current_candidate_includes": [
+    "post_push_exact_head_ci": "REQUIRED_AFTER_PUSH; no future candidate SHA or run is claimed",
+    "previous_candidate_checkpoint_includes": [
       "bbd617fba5db7a7c8ad02baa5f721cce0f167f99",
       "7c3f3822c81faba37b4b07a09e0f5a950f9f1256"
     ],
-    "post_push_exact_head_ci": "REQUIRED/PENDING for the current unpublished candidate."
+    "initial_audit_status": "COMPLETE_REVIEWED",
+    "initial_audit_source_commit": "7c1ddcda280b510048ad61106c406171edd64f18",
+    "initial_audit_environment_manifest_sha256": "18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436",
+    "initial_audit_source_ci": {
+      "head_commit": "7c1ddcda280b510048ad61106c406171edd64f18",
+      "run_id": 40443346020,
+      "url": "https://github.com/manojvermamv/Salience/actions/runs/40443346020",
+      "workflow": "V4 documentation contract",
+      "status": "completed",
+      "conclusion": "success",
+      "required_jobs": {
+        "verify": "success",
+        "p0-regression": "success"
+      },
+      "scope": "Exact frozen initial-audit source commit; result does not transfer to the uncommitted documentation candidate."
+    },
+    "required_designs": [
+      "production_policy_and_cross_service_revocation",
+      "production_routing_and_worker_fencing",
+      "live_temporal_schedule_fencing",
+      "production_recovery_remote_read_and_alerts",
+      "external_rg0_rg1_acceptance"
+    ],
+    "required_design_count": 5,
+    "design_review_status": "COMPLETE_REVIEWED",
+    "implementation_status": "NOT RUN",
+    "target_qualification_status": "NOT RUN",
+    "final_entry_rows": {
+      "total": 22,
+      "pass": 0,
+      "non_pass": 22
+    },
+    "final_candidate_status": "UNCOMMITTED_WORKTREE; no candidate SHA assigned",
+    "RG0": "HELD",
+    "RG1": "HELD",
+    "P2": "BLOCKED",
+    "Slice7": "BLOCKED",
+    "production_effects_enabled": false,
+    "main_merge": "UNMERGED",
+    "documentation_status_inventory_artifacts": 283,
+    "documentation_status_inventory_non_self_hashes": 282,
+    "documentation_whole_change_review": "PASS_AFTER_FIX_ROUND_1",
+    "documentation_whole_change_review_candidate_manifest_sha256": "cafa0bd46ede2cc8aef51058f46541068a07cd031774c8b5501270bc2385ee9a",
+    "final_exact_candidate_environment_p1_rg0_rg1_audit": "NOT RUN",
+    "final_exact_candidate_environment_audit_gate": "BLOCKED",
+    "documentation_review_reports": [
+      "docs/v4/reviews/final-whole-change-fix.md.txt",
+      "docs/v4/reviews/final-whole-change-rereview.md.txt",
+      "docs/v4/reviews/final-whole-change-review.md.txt"
+    ]
   },
   "tracked_markdown_disposition_counts": {
-    "tracked_markdown_paths": 100,
-    "update_now_paths": 71,
-    "non_update_paths_preserved": 29,
-    "historical_immutable": 16,
+    "tracked_markdown_paths": 111,
+    "update_now_paths": 79,
+    "non_update_paths_preserved": 32,
+    "historical_immutable": 19,
     "generated_vendor": 12,
     "already_current": 1,
     "dispositions": {
       "preserved plugin instructions, references and examples; independent skill scope": 12,
       "preserved dated qualification report": 2,
       "active user-authored project instructions; preserved verbatim": 1,
+      "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged": 79,
       "preserved original design source or historical diagram": 2,
       "preserved immutable historical snapshot; bytes retained verbatim": 1,
       "preserved YouTube-agent reference research": 4,
       "preserved dated preparation plan": 3,
       "preserved dated design specification": 3,
-      "preserved dated independent item7 qualification report": 1,
-      "active documentation reconciled to frozen successor 182c4e4, historical reviewed feature head 6f5edc7, and pushed documentation head 67effe8; current unpublished candidate CI remains required/pending; production holds retained": 71
+      "preserved dated initial P1/RG0/RG1 subaudit report": 3,
+      "preserved dated independent item7 qualification report": 1
     }
   },
   "current_branch_review_and_ci": {
@@ -2224,7 +2497,7 @@
       "expected_skips": 26,
       "warnings": 3
     },
-    "current_docs_only_head_ci": "PASS_FOR_67EFFE8; CURRENT_UNPUBLISHED_CANDIDATE_REQUIRED_PENDING",
+    "current_docs_only_head_ci": "PASS_FOR_67EFFE8 (run 38610329330); INITIAL_AUDIT_SOURCE_7C1DDCD_PASS (run 40443346020); current uncommitted candidate CI REQUIRED_AFTER_PUSH.",
     "latest_pushed_documentation_head_ci": {
       "head_commit": "67effe8c9c176c0bd1c17fdef20b841c0e14b6de",
       "workflow_run_id": 38610329330,
@@ -2237,7 +2510,80 @@
       },
       "scope": "Documentation-only; no application result counts attributed."
     },
-    "current_candidate_post_push_exact_head_ci": "REQUIRED/PENDING"
+    "current_candidate_post_push_exact_head_ci": "REQUIRED_AFTER_PUSH; current documentation candidate is uncommitted and has no exact-head run.",
+    "initial_audit_source_ci": {
+      "head_commit": "7c1ddcda280b510048ad61106c406171edd64f18",
+      "run_id": 40443346020,
+      "url": "https://github.com/manojvermamv/Salience/actions/runs/40443346020",
+      "workflow": "V4 documentation contract",
+      "status": "completed",
+      "conclusion": "success",
+      "required_jobs": {
+        "verify": "success",
+        "p0-regression": "success"
+      },
+      "scope": "Exact frozen initial-audit source commit; result does not transfer to the uncommitted documentation candidate."
+    }
   },
-  "mermaid_source_blocks_updated": 1
+  "mermaid_source_blocks_updated": 1,
+  "current_initial_commit_bound_gap_audit": {
+    "status": "COMPLETE_REVIEWED",
+    "source_commit": "7c1ddcda280b510048ad61106c406171edd64f18",
+    "source_tree": "af010fba37debad65b9494abc3b70db0a6a2f915",
+    "source_branch": "arch",
+    "remote_ref": "origin/feat/archv4-p0-foundation",
+    "remote_ref_commit": "7c1ddcda280b510048ad61106c406171edd64f18",
+    "environment_manifest_sha256": "18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436",
+    "source_ci": {
+      "head_commit": "7c1ddcda280b510048ad61106c406171edd64f18",
+      "run_id": 40443346020,
+      "url": "https://github.com/manojvermamv/Salience/actions/runs/40443346020",
+      "workflow": "V4 documentation contract",
+      "status": "completed",
+      "conclusion": "success",
+      "required_jobs": {
+        "verify": "success",
+        "p0-regression": "success"
+      },
+      "scope": "Exact frozen initial-audit source commit; result does not transfer to the uncommitted documentation candidate."
+    },
+    "required_increments": [
+      "production_policy_and_cross_service_revocation",
+      "production_routing_and_worker_fencing",
+      "live_temporal_schedule_fencing",
+      "production_recovery_remote_read_and_alerts",
+      "external_rg0_rg1_acceptance"
+    ],
+    "required_design_count": 5,
+    "design_status": "COMPLETE_REVIEWED",
+    "implementation_status": "NOT RUN",
+    "target_qualification_status": "NOT RUN",
+    "final_entry_rows": {
+      "total": 22,
+      "pass": 0,
+      "non_pass": 22
+    },
+    "final_whole_change_review": "PASS_AFTER_FIX_ROUND_1",
+    "RG0": "HELD",
+    "RG1": "HELD",
+    "P2": "BLOCKED",
+    "final_entry_audit": "NOT RUN; execute only after required increments and external acceptance on a frozen final pair.",
+    "production_effects_enabled": false,
+    "main_merge": "UNMERGED",
+    "documentation_whole_change_review": "PASS_AFTER_FIX_ROUND_1",
+    "documentation_whole_change_candidate_manifest_sha256": "cafa0bd46ede2cc8aef51058f46541068a07cd031774c8b5501270bc2385ee9a",
+    "final_exact_candidate_environment_p1_rg0_rg1_audit": "NOT RUN",
+    "final_exact_candidate_environment_audit_gate": "BLOCKED",
+    "final_exact_candidate_environment_audit_blockers": [
+      "required increments are not implemented",
+      "current external RG0/RG1 acceptance evidence for one final candidate/environment is absent",
+      "all 22 final-entry rows remain non-PASS",
+      "named production owners remain missing"
+    ]
+  },
+  "P2": "BLOCKED",
+  "Slice7": "BLOCKED",
+  "final_entry_audit_status": "NOT RUN",
+  "main_merge": "UNMERGED",
+  "current_documentation_artifacts": 283
 }

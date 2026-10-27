@@ -1,0 +1,118 @@
+# Initial audit contract repair — round 1/5
+
+Status: **complete within scope**. The initial audit remains conservative: production effects disabled, RG0/RG1 **HELD**, P2 **BLOCKED**. No commit was created.
+
+## Changes
+
+- `docs/v4/p1-rg0-rg1-initial-gap-audit.json`: added 80 structured evidence observations across all 22 rows. Each observation binds the qualified commit, artifact digest or explicit unavailability reason, environment and scope, repo-relative evidence path and SHA-256, source/verifier references, separate current audit observation, and final-entry freshness. Added five individually owned RG0 external-check records, and split every row into `current_entry_residual`, `preservation_obligations`, and `deferred_phase_owned_work`.
+- `docs/v4/p1-rg0-rg1-initial-gap-audit.md`: documented the evidence boundary, five external checks, current/preservation/deferred phase split, and durable independent-audit report copies. Clarified that the 7878208 application is historical and distinct from local application candidate 182c4e4 and audit source 7c1ddcd. P2/provider work is explicitly not a prerequisite to P2 entry.
+- `docs/v4/p1-qualification-matrix.json`: synchronized the R03 residual and phase references; corrected the historical A4 review wording to avoid labeling 7878208 current; added links into the structured row evidence.
+- `docs/v4/p0-release.json`: synchronized its embedded audit pointers and retained current external-check status as NOT RUN; the old repository-enforcement PASS remains historical only.
+- `docs/v4/test_checks.py`: extended the focused contract test for row-level evidence bindings, all five RG0 external checks and mappings, phase split, P2 boundary, and candidate wording.
+- Added exact durable copies of the three source reports under `docs/v4/audits/`. `/tmp` is identified as scratch only.
+
+## TDD RED/GREEN
+
+**RED, before implementation**
+
+Command:
+
+```text
+python3 docs/v4/test_checks.py GateChecks.test_initial_p1_rg0_rg1_gap_audit_is_fail_closed_and_specs_are_bounded
+```
+
+Result: **FAIL (45 failures)**. The new assertions detected missing structured per-row candidate/artifact/environment/evidence/current-audit/freshness records, the absent five-check RG0 inventory, and missing current-entry/preservation/deferred-phase fields.
+
+**GREEN, after implementation and final wording correction**
+
+Command:
+
+```text
+python3 docs/v4/test_checks.py GateChecks.test_initial_p1_rg0_rg1_gap_audit_is_fail_closed_and_specs_are_bounded
+```
+
+Result:
+
+```text
+.
+----------------------------------------------------------------------
+Ran 1 test in 0.016s
+
+OK
+```
+
+A later added assertion initially referenced the wrong field shape and failed with `KeyError`; the assertion was corrected to inspect matrix `requirements[R03].remaining_acceptance`, then the final focused run above passed.
+
+## Other validation
+
+- JSON parsing passed for `docs/v4/p1-rg0-rg1-initial-gap-audit.json`, `docs/v4/p1-qualification-matrix.json`, and `docs/v4/p0-release.json`.
+- Structural/link check with `docs/v4/check.py` passed for the new initial-audit Markdown. All four changed/new Markdown files passed structure and trailing-whitespace checks. `git diff --check` passed for scoped tracked files.
+- The policy-routing report has 38 repository-link checker errors because its preserved original bytes contain absolute `/home/admin/Salience/...` source citations. The other two copied reports and the initial-audit Markdown pass. The policy report was not rewritten because its required durable copy must remain byte-identical to the source report.
+- `cmp` passed for each `/tmp/salience-p1-*-audit.md` and its durable repository copy. Source/copy SHA-256 values match:
+  - policy-routing: `af34376c35348d102576dcccbc90165396e9611cd3e5cf0e4fb5be7d02cd0572`
+  - temporal-recovery: `0370638903bff6006ff9fe29dec3d91d86956fd8618b8ef41694fbab1181133c`
+  - external-evidence: `b29b8135af40e8f95f5e9b903ea70d8840ec95c3b01eaf684004986c9e75997b`
+- Structural inventory recheck: 22 rows, 80 observations, five RG0 external checks, and all 22 rows have the three phase fields.
+
+## Files in scope
+
+`docs/v4/p1-rg0-rg1-initial-gap-audit.json`, `docs/v4/p1-rg0-rg1-initial-gap-audit.md`, `docs/v4/p1-qualification-matrix.json`, `docs/v4/p0-release.json`, `docs/v4/test_checks.py`, and the three new files in `docs/v4/audits/`.
+
+## Concerns
+
+The preserved policy-routing report's embedded absolute local citations are not portable and fail this repository's link validator. Byte identity was explicitly required, so the report remains unchanged; the audit's own references use durable repo-relative paths and hashes. No production evidence was run or promoted, and the gate remains held/blocked as above.
+
+# Round 2/5 — preserve source report outside Markdown scanning
+
+Status: **complete**. The original policy/routing report bytes are preserved at `docs/v4/audits/salience-p1-policy-routing-audit.md.txt`; the scanned `docs/v4/audits/salience-p1-policy-routing-audit.md` is now a portable wrapper with the source scope and payload digest. JSON, matrix, and P0 manifests point to the `.md.txt` payload, retain its source SHA-256 and byte-identity assertion, and record the wrapper path and wrapper SHA-256. No link validator behavior was changed. `docs/v4/test_checks.py` was left untouched for the concurrent scoped test edit.
+
+## Round-2 verification commands and results
+
+**Exact source bytes**
+
+```text
+cmp /tmp/salience-p1-policy-routing-audit.md docs/v4/audits/salience-p1-policy-routing-audit.md.txt
+sha256sum /tmp/salience-p1-policy-routing-audit.md docs/v4/audits/salience-p1-policy-routing-audit.md.txt docs/v4/audits/salience-p1-policy-routing-audit.md
+```
+
+`cmp` passed. Hashes:
+
+```text
+af34376c35348d102576dcccbc90165396e9611cd3e5cf0e4fb5be7d02cd0572  /tmp/salience-p1-policy-routing-audit.md
+af34376c35348d102576dcccbc90165396e9611cd3e5cf0e4fb5be7d02cd0572  docs/v4/audits/salience-p1-policy-routing-audit.md.txt
+0a538f5cfac2c8bbd59556fbb227258157b9c4abdaea002711bad71682b1a460  docs/v4/audits/salience-p1-policy-routing-audit.md
+```
+
+**Repository Markdown check**
+
+Command:
+
+```text
+python3 docs/v4/check.py
+```
+
+Result: `PASS`, consolidated mode, 107 Markdown files checked, `errors: []`. Direct `link_errors` plus `markdown_structure_errors` checks also passed for the policy wrapper and the initial audit Markdown (zero errors each). The `.md.txt` payload is excluded by the scanner's `*.md` pattern.
+
+**Audit contract focused test (after concurrent `test_checks.py` edit settled)**
+
+Command:
+
+```text
+python3 docs/v4/test_checks.py GateChecks.test_initial_p1_rg0_rg1_gap_audit_is_fail_closed_and_specs_are_bounded
+```
+
+Result:
+
+```text
+.
+----------------------------------------------------------------------
+Ran 1 test in 0.017s
+
+OK
+```
+
+**Manifest consistency**
+
+A Python assertion script verified valid JSON for the audit/matrix/P0 records, exact payload and wrapper hashes, the audit's `copy_verified_byte_for_byte: true`, and matching payload/wrapper path+hash entries in the matrix and P0 manifests. Result: `manifest paths/digests OK` for both manifests and `audit payload and wrapper digests OK`.
+
+`git diff --check` passed for the scoped JSON and Markdown files. Round 2 touched only the audit JSON/Markdown, qualification matrix, P0 release manifest, and the two policy report evidence files; it did not edit `docs/v4/test_checks.py`. No commit was created.

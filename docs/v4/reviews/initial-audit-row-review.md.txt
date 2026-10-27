@@ -1,0 +1,79 @@
+# Independent initial P1/RG0/RG1 audit review
+
+Spec verdict: **FAIL**
+
+Findings: **0 Critical, 3 Important, 2 Minor**.
+
+This is a read-only review of the initial residual audit, not an implementation review or a production acceptance. Repository files were not edited. The only created file is this report. The reviewed application/source object is `7c1ddcda280b510048ad61106c406171edd64f18`, tree `af010fba37debad65b9494abc3b70db0a6a2f915`. The audit JSON reviewed here has SHA-256 `458666d983cc51dd2d5f011f8d8beddd34c447f0aaa65be3509d50a4fb34ff5d`; the audit Markdown has SHA-256 `f26ce9c72ec94a718403a3fa8499674fb397cff54d9d610e6d40b9aa2db4fcdc`.
+
+## Verified scope and positive results
+
+- The frozen HEAD, tree, branch `arch`, and local remote-tracking ref match the audit source. The original temporary environment capture also records a matching remote-head readback and no tracked changes at capture time. Current documentation edits are separate from that source snapshot.
+- The audit has exactly all five RG0 IDs and all 17 P1/RG1 IDs, once each. Its 4 `NOT RUN` / 18 `HELD` statuses contain no external `PASS`. All 22 named human owners are explicitly missing; this absence remains a blocker. The appended P0/P1 ledger records agree with the audit on status, owner role, freshness, and increment IDs.
+- All referenced row evidence paths exist at the frozen source commit. The forward and reverse row/increment mappings agree. All five proposed increments have source-supported primary gaps; existing fixture mechanisms are identified for reuse.
+- The environment digest reproduces exactly as SHA-256 of sorted, compact JSON of `environment`, excluding `environment_manifest_sha256`: `18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436`. The different digest in the raw `/tmp` capture describes that larger raw record and is not a hash mismatch.
+- Fresh, read-only host checks reproduce the hostname, OS release/architecture, Python 3.13.5, Docker 29.8.2/29.8.2, Compose 5.5.1, all ten allowlisted absent environment keys, and the running local PostgreSQL/Temporal image references and health states. No production endpoint was accessed.
+- Every one of the 211 locked source rows in the current worker launch lock matches its recorded SHA-256 at the frozen audit commit. This supports the bounded source-equivalence claim; it does not establish a production deployment.
+- Fresh `gh run view 40443346020 --repo manojvermamv/Salience --json ...` returns head `7c1ddcda280b510048ad61106c406171edd64f18`, completed/success, and successful `verify` and `p0-regression` jobs. The audit correctly distinguishes that CI from the historical 182c4e4 application fixture qualification and from formal PR approval.
+- The code supports the principal residual findings: the deployable worker rejects non-fixture mode (`src/salience/workflows/worker.py:61`); schedule control is fixture-only (`src/salience/cycles/temporal_schedule_control.py:23`); alerts accept only the database fixture sink (`src/salience/cycles/runtime_waits.py:160`); current authority/governance remain local/fixture contracts. The reports do not promote those capabilities to external acceptance.
+- RG0 and full RG1 remain `HELD`; P2 remains `BLOCKED`; the initial audit claims no final entry authority. These dispositions are correct for the available evidence.
+
+## Critical findings
+
+None.
+
+## Important findings
+
+### I1 — Individual row evidence is not bound to its actual candidate/artifact/environment
+
+**Location:** `docs/v4/p1-rg0-rg1-initial-gap-audit.json:82` (all requirement records; examples `:195`, `:197`, `:423`, `:425`).
+
+The plan requires every row to record exact candidate/artifact/environment and evidence scope (`docs/superpowers/plans/2026-10-27-p1-rg0-rg1-initial-gap-audit.md:14`), as does the controlling sequence at `docs/superpowers/specs/2026-10-13-v4-multiplatform-autonomy-program-sequence.md:101`. All 22 records currently contain no candidate, artifact, or environment binding field. `evidence_scope` is a list of file paths, not a record of the scope qualified by each artifact. The global audit source/environment identifies the inventory snapshot; the global 182c4e4 summary does not bind the older review evidence to that candidate. For example, the item-7 reviews cited by R02/R03 and most other rows certify e49a214/local fixture scope, while the R18/R32 successor evidence certifies 182c4e4 and exact image/wheel/runtime pins. A reader must recover these different bindings manually and cannot validate them from the row contract. No production PASS has been inferred, but the required row-level provenance is incomplete.
+
+**Fix:** Give each row structured historical/local evidence entries with the qualified commit, artifact digest or an explicit unavailable reason, environment reference/scope, immutable evidence reference/hash, and a precise freshness reason. Bind the audit observation separately to the global source/environment. Record the unchosen production candidate/artifact/environment as missing rather than assigning the development host to that role. Include the applicable current extension evidence and verifier/source references rather than copying only the item-7 independent-review list. Validate these fields mechanically.
+
+### I2 — The mandatory RG0 external checks are not individually reconciled in the initial inventory
+
+**Location:** `docs/v4/p1-rg0-rg1-initial-gap-audit.json:84` through the five RG0 requirement records; external increment decision at `:635`. Source obligations: `docs/v4/p0-release.json:355` and `docs/v4/check.py:291`.
+
+The requirement-ID set is complete, but the audit does not explicitly inventory the five separately mandatory RG0 external checks: independent safety/deployment review, production identity/ingress, production storage/restore, production collector/alert delivery, and remote repository gate enforcement. The five RG0 `remaining_dependency` strings omit, in particular, production storage/restore and collector qualification; the generic external increment reason does not provide their status/owner/row mapping. Those checks are independent gate inputs enforced by the repository checker, not synonyms for the five RG0 requirement IDs. The source reports identify them, including the stale published-base repository PASS, but the new audit never reconciles them as individual owned obligations. Updating the remote-enforcement row in `p0-release.json` to `NOT RUN` is correct and does not complete that missing audit mapping.
+
+**Fix:** Add explicit external-check records or child checks to the audit, each mapping its source status and historical candidate, present audit status/freshness, accountable owner role/missing human, exact owning RG rows, remaining dependency, and external acceptance increment. Preserve the stale remote-enforcement PASS only as historical evidence. Include these check records in the audit Markdown and consistency checks. The derived external acceptance spec already proposes such a mapping at its `External RG0 checks and current blockers` section; the initial inventory should state the residuals that justify it.
+
+### I3 — Current-entry dependencies and later-phase obligations remain mixed
+
+**Location:** `docs/v4/p1-rg0-rg1-initial-gap-audit.json:220`, `:345`, `:407`, `:515`, `:537`; final-entry rule at `docs/v4/p1-rg0-rg1-initial-gap-audit.md:107`.
+
+The audit copies broad ledger residuals into the current P1 gap contract without separating phase ownership. R17's remaining dependency is “enabled real-provider stage/permit integration”; R03 likewise includes a production provider. Yet `docs/v4/p0-release.json:384` assigns production G1 provider effect/charge integration to P2, and the blueprint's R17 acceptance at `docs/v4/IMPLEMENTATION-BLUEPRINT.md:501` explicitly keeps actual providers gated. R35 and R53 list later record families as their remaining work, without a distinct current-P1 entry dependency. The audit then requires every row to clear its dependencies before P2. This leaves an apparent circular requirement or permits a later reviewer to treat a no-effect proof as silently satisfying a stronger real-provider claim. The derived external acceptance table already uses a no-effect R17 control and excludes later record families for R35/R53, so its closure criteria do not literally close the copied audit dependencies.
+
+**Fix:** Split each affected row into current P1/RG0/RG1 entry residuals, preservation/regression obligations for the new increments, and explicitly deferred phase-owned work. State exactly which current contract/evidence the bounded increment must close while provider effects remain gated. If the authoritative blueprint's full-production statements leave that boundary unresolved, record an explicit phase-ownership decision/blocker; do not silently waive the stronger requirement or make P2 entry depend on P2 implementation.
+
+## Minor findings
+
+### M1 — R03 names an earlier candidate as current
+
+**Location:** `docs/v4/p1-rg0-rg1-initial-gap-audit.json:220`; also the copied `remaining_acceptance` in `docs/v4/p1-qualification-matrix.json`.
+
+The R03 residual says the A4/d031172 rereview “does not review current candidate 7878208.” The initial audit source is 7c1ddcd, and its frozen application/artifact candidate is 182c4e4. The blueprint identifies 7878208 as the prior Task 1–8 candidate (`docs/v4/IMPLEMENTATION-BLUEPRINT.md:37`). The old rereview limitation is valid, but its “current” label is stale.
+
+**Fix:** Retain the original historical sentence only in historical evidence. In the current row, name 7878208 as historical and distinguish the exact current application candidate, audit source, and historical rereview scope.
+
+### M2 — Independent sub-audit references are ephemeral and unpinned
+
+**Location:** `docs/v4/p1-rg0-rg1-initial-gap-audit.json:687`; method claim at `docs/v4/p1-rg0-rg1-initial-gap-audit.md:112`.
+
+The only references to the three independent domain reports are absolute `/tmp/...` paths, without hashes or retained copies. They are readable on this host today but will not survive a clean checkout or temporary-directory cleanup. Their stale CI wording also reflects their historical capture, so their exact bytes and scope should be preserved if they support the audit method.
+
+**Fix:** Retain the reports or a faithful signed/hashed result record at a durable repository-relative or approved immutable evidence location. Record their hashes and original source/environment scope, and mark `/tmp` paths as local scratch references only. Do not rewrite the original reports to update their historical CI statements.
+
+## Cannot verify / deliberate limits
+
+- No production environment, credential manager, account, deployed worker, schedule inventory, database, storage, alert destination, on-call acknowledgement, or operator authority was accessed. Production absence/readiness conclusions are limited to the captured host manifest and frozen repository records, not an exhaustive scan of external systems.
+- The historical 796/17/3 application suite and image exercises were not rerun; this review checked retained scope/pins and source equivalence. Historical test execution is reported as historical evidence.
+- Formal PR approval, current protected-branch settings, and the present remote `main` merge state were not independently read back. CI success was independently verified and does not establish any of those facts.
+- The original clean tracked worktree at 03:58 UTC cannot be recreated as a fresh historical observation; it is supported by the retained raw capture and the domain reports. Current in-progress documentation changes are present.
+- Root `graphify-out/graph.json` was absent at review time. No graph rebuild, package installation, repository mutation, live acceptance action, or subagent delegation was performed.
+
+## Final readiness
+
+The initial audit is **not ready to be marked independently accepted** until I1–I3 are repaired and re-reviewed. Its conservative gate result is supported: **RG0 HELD, RG1 HELD, P2 BLOCKED**. No Critical safety failure or false external PASS was found. The five required increment decisions are directionally supported, but the row-level evidence and phase/check reconciliation need the fixes above before this inventory is a reproducible closure contract.

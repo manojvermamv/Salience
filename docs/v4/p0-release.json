@@ -375,12 +375,20 @@
     },
     {
       "check": "remote repository gate enforcement",
-      "status": "PASS",
-      "evidence": "Published base 20be7815d5e5c95fea2161c908ce8ac5cae88ce6: required verify/p0-regression checks and strict branch protection PASS at 2026-10-05T10:15:06.262580+00:00; exact readback artifact artifacts/v4-legacy-creative-qualified-head.json. This is base evidence only and does not establish CI/protection for local feature application 3986a1de43d1ca8e9ca84e7c69dedbe698b3d312 or this later documentation commit. Formal PR approval NOT RUN, no main merge or production release."
+      "status": "NOT RUN",
+      "reason": "Current target-repository protection/formal-approval readback is NOT RUN. The frozen source snapshot contains a historical PASS only for published base 20be7815d5e5c95fea2161c908ce8ac5cae88ce6; that stale base result does not transfer. Audit-head Actions run 40443346020 is CI evidence only and does not establish current protection or formal PR approval.",
+      "historical_evidence": {
+        "status": "PASS_STALE_PUBLISHED_BASE_ONLY",
+        "candidate_commit": "20be7815d5e5c95fea2161c908ce8ac5cae88ce6",
+        "readback_commit": "4bbffb61338d27a9da59ec07154e67794007e8cb",
+        "durable_record": "docs/v4/repository-enforcement-evidence.json",
+        "durable_record_sha256_at_audit_commit": "389886f670654a65848d5f43d61215562d53a95969906e5a44722a4ab7dbc006",
+        "current_status": "NOT RUN"
+      }
     }
   ],
   "later_phase_boundaries": {
-    "P1": "Frozen local 0043 application candidate 182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f remains qualified at 796 passed / 17 skipped / 3 warnings. GPT-6.1/GPT-5.6 review and required CI are historical at pushed feature head 6f5edc77edbfe189e46de4254c2fdb21c5652bce (run 38592066455). Exact pushed documentation head 67effe8c9c176c0bd1c17fdef20b841c0e14b6de passed both required jobs in run 38610329330. Current unpublished candidate post-push CI remains REQUIRED/PENDING. The user-approved sequence marks slice 0 complete and slice 1 gap-inventory audit next/gated. Production acceptance remains HELD; effects stay disabled and P2-P7 gated.",
+    "P1": "Frozen local 0043 application candidate 182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f remains qualified at 796 passed / 17 skipped / 3 warnings. GPT-6.1/GPT-5.6 review and required CI are historical at pushed feature head 6f5edc77edbfe189e46de4254c2fdb21c5652bce (run 38592066455). Exact pushed documentation head 67effe8c9c176c0bd1c17fdef20b841c0e14b6de passed both required jobs in run 38610329330. Current unpublished candidate post-push CI remains REQUIRED/PENDING. The user-approved sequence records Slice 1 audit/design COMPLETE_REVIEWED at frozen source 7c1ddcda280b510048ad61106c406171edd64f18; five required designs COMPLETE_REVIEWED; implementation and target qualification NOT RUN. Production acceptance remains HELD; effects stay disabled and P2-P7 gated.",
     "P2": "Production G1 provider charge/effect integration using the fixture-qualified allocation transfer contract, ready-package reference/outbox integration and enabled provider qualification",
     "P3": "Trial/evaluation isolation and separate strategy/capability namespaces",
     "P4": "Promotion/invalidation serialization; mandatory typed learning proposals with optional qualified semantic analyst",
@@ -465,7 +473,7 @@
       "5c"
     ],
     "next_queue_item": null,
-    "next_action": "Continue under the user-approved program sequence: slice 0 is complete; slice 1 is the next gated commit-bound P1/RG0/RG1 gap-inventory audit. Pushed documentation head 67effe8c9c176c0bd1c17fdef20b841c0e14b6de passed both required jobs in Actions run 38610329330. The current unpublished candidate includes bbd617f and 7c3f382 and still requires its own exact-head CI after push. Do not change production effects, zero fixture budget, RG0/full RG1 HELD, P2-P7 gated, P6 disabled, main unmerged, or formal PR approval NOT RUN.",
+    "next_action": "The initial commit-bound P1/RG0/RG1 audit and five bounded design evaluations are COMPLETE_REVIEWED for frozen source 7c1ddcda280b510048ad61106c406171edd64f18 and environment manifest 18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436. All five increments are REQUIRED; implementation and target qualification are NOT RUN. The next gated action is a separately approved implementation scope. Keep production effects disabled, publication budget zero, RG0/RG1 HELD, P2-P7 gated, P6 disabled, formal PR approval NOT RUN, and main unmerged.",
     "independent_review": "The frozen local application candidate remains 182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f with 796 passed / 17 skipped / 3 warnings. GPT-6.1 reviewed pushed branch head 6f5edc77edbfe189e46de4254c2fdb21c5652bce across 59 commits / 38 changed files with 0 Critical / 0 Important / 1 nonblocking Minor; GPT-5.6 accepted the assessment. That original review finding is preserved in the dated report; Task 1 commit 7c3f382 later tightened the two test diagnostics, with closure recorded in the successor evidence. Actions run 38592066455 passed both required jobs on 6f5edc7; separately, run 38610329330 passed both required jobs for pushed docs head 67effe8c9c176c0bd1c17fdef20b841c0e14b6de. No hosted count transfers to the application or current unpublished candidate; the latter exact-head CI remains REQUIRED/PENDING. Production acceptance stays HELD.",
     "completed_implementation_tasks": [
       1,
@@ -713,8 +721,8 @@
     "status": "ACTIVE",
     "restored_from_own_output_at": "2026-10-04T02:44:31.946Z",
     "base_commit": "380416d35cffb6e4bf33003cb6e8df0638874436",
-    "direction": "Preserve the frozen 0043 local candidate and historical review scopes; reconcile exact pushed documentation CI, then proceed to the user-approved slice 1 gap-inventory audit only under existing gates.",
-    "current_increment": "Frozen application candidate 182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f remains locally qualified at 796 passed / 17 skipped / 3 warnings. Feature review/CI remain bound to 6f5edc77edbfe189e46de4254c2fdb21c5652bce; exact pushed docs head 67effe8c9c176c0bd1c17fdef20b841c0e14b6de passed run 38610329330. Current unpublished candidate includes bbd617f and 7c3f382; its own post-push exact-head CI is REQUIRED/PENDING. No application qualification changes.",
+    "direction": "The initial commit-bound P1/RG0/RG1 audit and five bounded design evaluations are COMPLETE_REVIEWED at frozen source 7c1ddcda280b510048ad61106c406171edd64f18 and environment 18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436. All five required designs COMPLETE_REVIEWED; implementation and target qualification NOT RUN. Continue only with the separately approved bounded implementation scope and existing release gates.",
+    "current_increment": "Initial Slice 1 audit/design is COMPLETE_REVIEWED: five required designs COMPLETE_REVIEWED; implementation and target qualification NOT RUN. The 280-artifact documentation manifest is refreshed and the 366-file evidence lock is unchanged. The current documentation candidate still requires its own post-push exact-head CI; production remains disabled, RG0/RG1 HELD, P2 BLOCKED, and main unmerged.",
     "qualification": "PASS_LOCAL_SUCCESSOR_182C4E4_FIXTURE_SCOPE; 6F5EDC7_REVIEW_AND_CI_HISTORICAL; 67EFFE8_DOCUMENTATION_CI_PASS; CURRENT_UNPUBLISHED_CANDIDATE_CI_REQUIRED_PENDING; PRODUCTION_RELEASE_HELD",
     "remaining_scope": [
       "deployment-specific supported routing, live schedule inventory, fencing, drain, rollback and operator recovery",
@@ -752,7 +760,7 @@
       "status": "APPROVED",
       "spec": "docs/superpowers/specs/2026-10-13-v4-multiplatform-autonomy-program-sequence.md",
       "slice_0": "COMPLETE",
-      "slice_1": "NEXT / GATED: commit-bound P1/RG0/RG1 gap-inventory audit",
+      "slice_1": "COMPLETE_REVIEWED at frozen source 7c1ddcda280b510048ad61106c406171edd64f18; five required designs COMPLETE_REVIEWED; implementation and target qualification NOT RUN; 22 final-entry rows non-PASS; RG0/RG1 HELD; P2 BLOCKED",
       "authority": "Navigation only; does not change acceptance or release gates."
     }
   },
@@ -830,5 +838,158 @@
     "source_files": 352,
     "evidence": "docs/v4/legacy-publication-evidence.json",
     "publication": "Corrected local evidence is fixture-scoped; exact corrected-head rereview and feature-head CI/protection are separate. Broader P1 ACTIVE; production effects disabled; RG0/RG1 HELD."
+  },
+  "initial_commit_bound_gap_audit": {
+    "status": "COMPLETE_REVIEWED",
+    "audit_commit": "7c1ddcda280b510048ad61106c406171edd64f18",
+    "environment_manifest_sha256": "18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436",
+    "artifact": "docs/v4/p1-rg0-rg1-initial-gap-audit.json",
+    "report": "docs/v4/p1-rg0-rg1-initial-gap-audit.md",
+    "contract_version": "ROW_EVIDENCE_AND_PHASE_OWNERSHIP_V2",
+    "RG0": "HELD",
+    "RG1": "HELD",
+    "P2": "BLOCKED",
+    "external_rg0_checks": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/external_rg0_checks",
+    "independent_domain_audits": [
+      {
+        "path": "docs/v4/audits/salience-p1-policy-routing-audit.md.txt",
+        "sha256": "af34376c35348d102576dcccbc90165396e9611cd3e5cf0e4fb5be7d02cd0572",
+        "wrapper_path": "docs/v4/audits/salience-p1-policy-routing-audit.md",
+        "wrapper_sha256": "0a538f5cfac2c8bbd59556fbb227258157b9c4abdaea002711bad71682b1a460"
+      },
+      {
+        "path": "docs/v4/audits/salience-p1-temporal-recovery-audit.md",
+        "sha256": "0370638903bff6006ff9fe29dec3d91d86956fd8618b8ef41694fbab1181133c"
+      },
+      {
+        "path": "docs/v4/audits/salience-p1-external-evidence-audit.md",
+        "sha256": "b29b8135af40e8f95f5e9b903ea70d8840ec95c3b01eaf684004986c9e75997b"
+      }
+    ],
+    "rows": {
+      "R01": {
+        "status": "NOT RUN",
+        "owner_role": "platform/runtime owner",
+        "named_owner_status": "MISSING",
+        "entry_evidence_freshness": "STALE_OR_NOT_RUN_FOR_TARGET_ENVIRONMENT",
+        "required_increments": [
+          "production_routing_and_worker_fencing",
+          "external_rg0_rg1_acceptance"
+        ],
+        "evidence_observations": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/0/evidence_observations",
+        "current_entry_residual": [
+          "No named production deployment/runtime owner, owned service-export and adapter evidence, exact target artifact/environment, or rollback readback is recorded; repository inspection cannot qualify those target facts."
+        ],
+        "preservation_obligations": [
+          "Preserve explicit service ownership boundaries and effects-disabled default behavior; a fixture or repository check is not deployment acceptance."
+        ],
+        "deferred_phase_owned_work": [],
+        "phase_split_reference": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/0"
+      },
+      "R22": {
+        "status": "NOT RUN",
+        "owner_role": "security/identity owner",
+        "named_owner_status": "MISSING",
+        "entry_evidence_freshness": "STALE_OR_NOT_RUN_FOR_TARGET_ENVIRONMENT",
+        "required_increments": [
+          "external_rg0_rg1_acceptance"
+        ],
+        "evidence_observations": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/1/evidence_observations",
+        "current_entry_residual": [
+          "Managed production secret references, credential rotation/revocation ownership, and destination/audience acceptance on one target are absent."
+        ],
+        "preservation_obligations": [
+          "Preserve edge-only secret handling, narrow destinations, and lease expiry/revocation checks."
+        ],
+        "deferred_phase_owned_work": [],
+        "phase_split_reference": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/1"
+      },
+      "R69": {
+        "status": "NOT RUN",
+        "owner_role": "data governance owner",
+        "named_owner_status": "MISSING",
+        "entry_evidence_freshness": "STALE_OR_NOT_RUN_FOR_TARGET_ENVIRONMENT",
+        "required_increments": [
+          "external_rg0_rg1_acceptance"
+        ],
+        "evidence_observations": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/2/evidence_observations",
+        "current_entry_residual": [
+          "Production tenancy, retention, jurisdiction, legal-hold/data-use acceptance, and managed storage/restore evidence are absent."
+        ],
+        "preservation_obligations": [
+          "Preserve tenant/data-use provenance, retention, jurisdiction, and legal-hold distinctions without inventing missing history."
+        ],
+        "deferred_phase_owned_work": [],
+        "phase_split_reference": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/2"
+      },
+      "R16F": {
+        "status": "NOT RUN",
+        "owner_role": "security/identity owner",
+        "named_owner_status": "MISSING",
+        "entry_evidence_freshness": "STALE_OR_NOT_RUN_FOR_TARGET_ENVIRONMENT",
+        "required_increments": [
+          "external_rg0_rg1_acceptance"
+        ],
+        "evidence_observations": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/3/evidence_observations",
+        "current_entry_residual": [
+          "Production issuer, TLS ingress, scoped database role, approved account/provider credentials, and named operator evidence are absent."
+        ],
+        "preservation_obligations": [
+          "Preserve issuer/audience scoping, least-privilege role boundaries, and provider allowlists."
+        ],
+        "deferred_phase_owned_work": [],
+        "phase_split_reference": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/3"
+      },
+      "R23F": {
+        "status": "HELD",
+        "owner_role": "policy/release owner",
+        "named_owner_status": "MISSING",
+        "entry_evidence_freshness": "STALE_OR_NOT_RUN_FOR_TARGET_ENVIRONMENT",
+        "required_increments": [
+          "production_policy_and_cross_service_revocation",
+          "production_routing_and_worker_fencing",
+          "external_rg0_rg1_acceptance"
+        ],
+        "evidence_observations": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/4/evidence_observations",
+        "current_entry_residual": [
+          "Production route/policy negative proof for implicit provider substitution and target-environment fallback behavior is absent."
+        ],
+        "preservation_obligations": [
+          "Preserve default-deny provider routing and prove every substitution path remains rejected unless separately authorized."
+        ],
+        "deferred_phase_owned_work": [],
+        "phase_split_reference": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/4"
+      }
+    },
+    "review_record": "docs/v4/p1-rg0-rg1-audit-and-spec-review.md",
+    "row_by_row_review": "PASS",
+    "cross_spec_review": "PASS",
+    "orchestrator_meta_review": "COMPLETE; DESIGN_EVALUATION_ONLY",
+    "final_whole_change_review": "PASS_AFTER_FIX_ROUND_1",
+    "design_status": "COMPLETE_REVIEWED",
+    "implementation_status": "NOT RUN",
+    "target_qualification_status": "NOT RUN",
+    "required_increments": [
+      "production_policy_and_cross_service_revocation",
+      "production_routing_and_worker_fencing",
+      "live_temporal_schedule_fencing",
+      "production_recovery_remote_read_and_alerts",
+      "external_rg0_rg1_acceptance"
+    ],
+    "final_entry_rows": {
+      "total": 22,
+      "pass": 0,
+      "non_pass": 22
+    },
+    "documentation_whole_change_review": "PASS_AFTER_FIX_ROUND_1",
+    "documentation_whole_change_candidate_manifest_sha256": "cafa0bd46ede2cc8aef51058f46541068a07cd031774c8b5501270bc2385ee9a",
+    "documentation_whole_change_review_record": "docs/v4/p1-rg0-rg1-audit-and-spec-review.md",
+    "documentation_whole_change_review_reports": [
+      "docs/v4/reviews/final-whole-change-review.md.txt",
+      "docs/v4/reviews/final-whole-change-fix.md.txt",
+      "docs/v4/reviews/final-whole-change-rereview.md.txt"
+    ],
+    "final_exact_candidate_environment_p1_rg0_rg1_audit": "NOT RUN",
+    "final_exact_candidate_environment_audit_gate": "BLOCKED"
   }
 }

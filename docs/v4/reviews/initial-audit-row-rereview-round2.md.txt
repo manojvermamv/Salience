@@ -1,0 +1,41 @@
+# Round-2 scoped independent re-review
+
+Verdict: **ADDRESSED**.
+
+New findings in this repair: **0 Critical / 0 Important**.
+
+Scope: only round-1 N1, the policy/routing report's Markdown-scanner regression, and new Critical/Important breakage introduced by its round-2 repair. Prior I1–I3 remain closed; this review does not expand their scope.
+
+## Finding disposition
+
+**N1 ADDRESSED.** The exact original policy/routing report is retained at `docs/v4/audits/salience-p1-policy-routing-audit.md.txt`. Its 12,601 bytes equal `/tmp/salience-p1-policy-routing-audit.md` byte-for-byte, with SHA-256 `af34376c35348d102576dcccbc90165396e9611cd3e5cf0e4fb5be7d02cd0572`. The original evidence was not rewritten.
+
+`docs/v4/audits/salience-p1-policy-routing-audit.md:1` is now a portable wrapper. It links to the exact payload, records its hash and source scope, and distinguishes the wrapper from the immutable original. Its SHA-256 is `0a538f5cfac2c8bbd59556fbb227258157b9c4abdaea002711bad71682b1a460`.
+
+The audit JSON (`docs/v4/p1-rg0-rg1-initial-gap-audit.json:6063`), P1 matrix (`docs/v4/p1-qualification-matrix.json:1749`), and P0 manifest (`docs/v4/p0-release.json:855`) all identify that exact payload path/hash and wrapper path/hash. Those references were independently checked against the actual file bytes. The audit retains `copy_verified_byte_for_byte: true`, the original source scope, and the scratch-only role of `/tmp`. The audit Markdown links to both payload and wrapper with their distinct hashes.
+
+The `.md.txt` payload does not match the normal scanner's `*.md` pattern. The wrapper and initial-audit Markdown each pass the actual `link_errors` and `markdown_structure_errors` functions with zero errors. The validator was not weakened to accommodate the historical citations.
+
+## Fresh verification
+
+- `PYTHONDONTWRITEBYTECODE=1 python3 docs/v4/test_checks.py GateChecks.test_initial_p1_rg0_rg1_gap_audit_is_fail_closed_and_specs_are_bounded`: **1 test, OK, exit 0**.
+- `PYTHONDONTWRITEBYTECODE=1 python3 docs/v4/check.py`: **PASS, exit 0**, consolidated mode, 75 requirements, 366 evidence files, 360 inventory files, 107 Markdown files, 4 HTML files, `errors: []`.
+- Byte comparison and SHA-256 assertions: **PASS** for original payload, retained `.md.txt`, wrapper, and all three manifests.
+- Direct wrapper and initial-audit Markdown structure/link checks: **PASS**, zero errors. Payload exclusion from `docs/**/*.md`: **confirmed**.
+
+These reproduce the round-2 fix report's claimed GREEN state. No new Critical/Important breakage was found in this scoped repair. No live calls, repository edits, commit or production acceptance were performed; only this report was created.
+
+## Readiness
+
+The one round-2 fix-loop item is closed. This scoped review passes. **RG0 HELD, RG1 HELD, P2 BLOCKED** remains unchanged; documentation-check success is not external acceptance or gate release.
+
+Reviewed-file hashes:
+
+- `docs/v4/audits/salience-p1-policy-routing-audit.md.txt`: `af34376c35348d102576dcccbc90165396e9611cd3e5cf0e4fb5be7d02cd0572`
+- `docs/v4/audits/salience-p1-policy-routing-audit.md`: `0a538f5cfac2c8bbd59556fbb227258157b9c4abdaea002711bad71682b1a460`
+- `docs/v4/p1-rg0-rg1-initial-gap-audit.json`: `09302c98473fa9873831df669eefdfbe3b43de438a1f1d09bc57c81db485c9d7`
+- `docs/v4/p1-rg0-rg1-initial-gap-audit.md`: `10f5571297fb97a56687885656a81bc980a66e6fc095edc2926c7f55d0b2c4f9`
+- `docs/v4/p1-qualification-matrix.json`: `c739ea7fcc22ded9d98ee8c17ff589c1427e4eea46813f22b6168e5ea651f8dc`
+- `docs/v4/p0-release.json`: `440ee9026aefa0deb4ecc7d2a312db87a8bed45b9ff417472096ef764c0e5a36`
+- `docs/v4/test_checks.py`: `85b3a0184683d3e4ebefffff6f6ba4b506d9751d20fed6e57c0433c05c5e7458`
+- `/tmp/fix-audit-contract-report.md`: `87ed41a656c6fd7bde1c72424872dc38e0bec07e72e7aefef3443214c5994964`
