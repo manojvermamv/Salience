@@ -8,12 +8,14 @@ from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from hashlib import sha256
 import json
+import re
 import time
 from threading import Event, Thread
 from types import SimpleNamespace
 from uuid import UUID, uuid4
 
 import psycopg
+from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
 import pytest
 from opentelemetry.sdk.metrics import MeterProvider
@@ -30,6 +32,10 @@ from salience.cycles.production_dispatch import (
     RouteFenceDecision,
     RouteFenceRequest,
 )
+from salience.cycles.production_rollback_reader import (
+    ProductionPolicyRollbackInventoryV1,
+    read_production_policy_rollback_inventory,
+)
 from salience.observability.production_authorization import ProductionAuthorizationMetrics
 from salience.governance.costs import CostSettlementStatus
 from salience.governance.cost_repository import CostReservationRepository
@@ -39,7 +45,11 @@ from salience.publication.repository import PublicationRepository
 from salience.workflows.publication import PublicationActivities, PublicationWorkflowState
 from test_v4_cycle_admission import cycles
 from test_v4_cadence_policy import policy, request as cadence_request
-from test_v4_cycle_accounting import accounting, admitted as accounting_admitted
+from test_v4_cycle_accounting import (
+    accounting,
+    admitted as accounting_admitted,
+    transfer as accounting_transfer,
+)
 
 
 class LocalRouteFence:
@@ -1855,6 +1865,393 @@ def test_postgres_concurrent_retry_persists_claim_and_hold_before_submit_owner_r
     assert effect_state == "planned"
     assert activities._publication_test_cost_calls["release"] == []
     assert activities._publication_test_store.terminal_states == []
+
+
+def _grant_fixture_permit_scope(accounting):
+    service, _, _, database = accounting
+    with psycopg.connect(database) as connection:
+        connection.execute(
+            """INSERT INTO permission_grants(
+                      workspace_id,principal_type,principal_id,scope,effect,constraints)
+               VALUES(%s,'identity',%s,'cycles:permit','allow','{}')
+               ON CONFLICT (workspace_id,principal_type,principal_id,scope)
+               DO UPDATE SET effect='allow',constraints='{}',
+                             expires_at=clock_timestamp()+interval '1 hour'""",
+            (service.workspace_id, str(service.subject_id)),
+        )
+
+
+def _seed_fixture_rollback_permit(case, *, final_state):
+    database = case["database"]
+    with psycopg.connect(database, row_factory=dict_row) as connection:
+        cycle = connection.execute(
+            """SELECT goal.workspace_id,goal.id AS goal_id,
+                      cycle.intent_id,cycle.context_id,cycle.operation_id,
+                      intent.goal_revision,
+                      workspace_stop.revision AS workspace_stop_revision,
+                      goal_stop.revision AS goal_stop_revision,
+                      (SELECT mapping.reservation_id
+                       FROM v4_allocation_reservations mapping
+                       WHERE mapping.operation_id=cycle.operation_id
+                       ORDER BY mapping.budget_id LIMIT 1) AS reservation_id
+               FROM v4_cycles cycle
+               JOIN v4_cycle_intents intent ON intent.id=cycle.intent_id
+               JOIN v4_goals goal ON goal.id=intent.goal_id
+               JOIN v4_stop_scopes workspace_stop
+                 ON workspace_stop.workspace_id=goal.workspace_id
+                AND workspace_stop.scope_key='workspace'
+               JOIN v4_stop_scopes goal_stop
+                 ON goal_stop.workspace_id=goal.workspace_id
+                AND goal_stop.scope_key='goal:' || goal.id::text
+               WHERE cycle.id=%s""",
+            (case["cycle_id"],),
+        ).fetchone()
+        assert cycle is not None and cycle["reservation_id"] is not None
+        request = {
+            "context_id": str(cycle["context_id"]),
+            "operation_id": str(cycle["operation_id"]),
+            "expected_goal_revision": cycle["goal_revision"],
+            "account_ref": "fixture-account",
+            "purpose": "fixture_execution",
+            "effect": "fixture.noop",
+            "artifact_sha256": "f" * 64,
+            "ttl_seconds": 30,
+        }
+        fingerprint = sha256(
+            json.dumps(request, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
+        claim_id, permit_id = uuid4(), uuid4()
+        idempotency_key = "rollback-inventory-fixture-" + uuid4().hex
+        connection.execute(
+            """INSERT INTO v4_permit_claims(
+                      id,cycle_id,operation_id,context_id,request_fingerprint)
+               VALUES(%s,%s,%s,%s,%s)""",
+            (claim_id, case["cycle_id"], cycle["operation_id"], cycle["context_id"], fingerprint),
+        )
+        connection.execute(
+            """INSERT INTO v4_dispatch_permits(
+                      id,claim_id,version,idempotency_key,fingerprint,subject_id,
+                      goal_revision,workspace_stop_revision,goal_stop_revision,
+                      reservation_id,request,expires_at,traceparent)
+               VALUES(%s,%s,1,%s,%s,%s,%s,%s,%s,%s,%s,
+                      clock_timestamp()+interval '30 seconds',
+                      '00-11111111111111111111111111111111-2222222222222222-01')""",
+            (
+                permit_id,
+                claim_id,
+                idempotency_key,
+                fingerprint,
+                case["subject_id"],
+                cycle["goal_revision"],
+                cycle["workspace_stop_revision"],
+                cycle["goal_stop_revision"],
+                cycle["reservation_id"],
+                Jsonb(request),
+            ),
+        )
+        connection.execute(
+            "UPDATE v4_permit_claims SET current_permit_id=%s,revision=2 WHERE id=%s",
+            (permit_id, claim_id),
+        )
+        if final_state in {"claimed", "unknown"}:
+            connection.execute(
+                """INSERT INTO v4_cycle_events(
+                          id,workspace_id,subject_id,goal_id,intent_id,cycle_id,
+                          kind,traceparent,payload)
+                   VALUES(%s,%s,%s,%s,%s,%s,'permit_claimed',
+                          '00-11111111111111111111111111111111-2222222222222222-01',%s)""",
+                (
+                    uuid4(),
+                    cycle["workspace_id"],
+                    case["subject_id"],
+                    cycle["goal_id"],
+                    cycle["intent_id"],
+                    case["cycle_id"],
+                    Jsonb({"permit_id": str(permit_id)}),
+                ),
+            )
+            connection.execute(
+                """UPDATE v4_permit_claims
+                   SET state='claimed',claimed_at=clock_timestamp(),revision=3
+                   WHERE id=%s""",
+                (claim_id,),
+            )
+        if final_state == "unknown":
+            connection.execute(
+                """INSERT INTO v4_cycle_events(
+                          id,workspace_id,subject_id,goal_id,intent_id,cycle_id,
+                          kind,traceparent,payload)
+                   VALUES(%s,%s,%s,%s,%s,%s,'permit_unknown',
+                          '00-11111111111111111111111111111111-2222222222222222-01',%s)""",
+                (
+                    uuid4(),
+                    cycle["workspace_id"],
+                    case["subject_id"],
+                    cycle["goal_id"],
+                    cycle["intent_id"],
+                    case["cycle_id"],
+                    Jsonb({"permit_id": str(permit_id)}),
+                ),
+            )
+            connection.execute(
+                "UPDATE v4_permit_claims SET state='unknown',revision=4 WHERE id=%s",
+                (claim_id,),
+            )
+    return {"permit_id": str(permit_id)}, {"claim_id": str(claim_id)}
+
+
+def _production_rollback_case(accounting, *, publication=False):
+    service, _, _, database = accounting
+    _grant_fixture_permit_scope(accounting)
+    binding = None
+    scope = None
+    if publication:
+        binding = PublicationEffectBinding(
+            publication_request_id=uuid4(),
+            job_id=uuid4(),
+            workflow_id="rollback-inventory-publication",
+            workflow_run_id="rollback-inventory-run-" + uuid4().hex,
+            publication_plan_id=uuid4(),
+            publication_attempt_id=uuid4(),
+            external_effect_id=uuid4(),
+        )
+        scope = {
+            "platform": "p1-local",
+            "destination": "channel:approved",
+            "locale": "en-US",
+            "territory": "US",
+            "visibility": "public",
+        }
+    case = _production_case(
+        accounting,
+        publication_scope=scope,
+        publication_binding=binding,
+        seed_publication_rows=publication,
+    )
+    accounting_transfer(
+        service,
+        case["cycle_id"],
+        operation=case["operation_id"],
+        key="rollback-inventory-fixture-transfer",
+    )
+    return case, binding
+
+
+def test_rollback_inventory_covers_fixture_and_production_modes(accounting):
+    case, _ = _production_rollback_case(accounting)
+    production_permit = case["dispatch"].issue_permit(case["request"])
+    production_claim = case["dispatch"].claim_permit(
+        case["operation_id"], production_permit.permit_id
+    )
+    fixture_permit, fixture_claim = _seed_fixture_rollback_permit(case, final_state="claimed")
+
+    with psycopg.connect(case["database"]) as connection:
+        inventory = read_production_policy_rollback_inventory(
+            connection, workspace_id=case["workspace_id"]
+        )
+
+    assert isinstance(inventory, ProductionPolicyRollbackInventoryV1)
+    assert inventory.workspace_id == case["workspace_id"]
+    assert inventory.schema_version == "salience.p1-production-policy-rollback-inventory.v1"
+    assert re.fullmatch(r"[0-9a-f]{64}", inventory.inventory_sha256)
+    assert not hasattr(inventory, "safe")
+    assert any(
+        entry["source"] == "fixture"
+        and entry["relation"] == "v4_dispatch_permits"
+        and str(fixture_permit["permit_id"]) in entry["identity"]
+        for entry in inventory.inventory
+    )
+    assert any(
+        entry["source"] == "fixture"
+        and entry["relation"] == "v4_permit_claims"
+        and str(fixture_claim["claim_id"]) in entry["identity"]
+        for entry in inventory.inventory
+    )
+    assert any(
+        entry["source"] == "production"
+        and entry["relation"] == "v4_production_effect_permits"
+        and str(production_permit.permit_id) in entry["identity"]
+        for entry in inventory.inventory
+    )
+    assert any(
+        entry["source"] == "production"
+        and entry["relation"] == "v4_production_effect_permit_claims"
+        and str(production_claim.claim_id) in entry["identity"]
+        for entry in inventory.inventory
+    )
+
+
+def test_rollback_inventory_is_deterministic_and_read_only(accounting):
+    case, _ = _production_rollback_case(accounting)
+    case["dispatch"].issue_permit(case["request"])
+    relations = (
+        "v4_production_effect_permits",
+        "v4_production_effect_permit_claims",
+        "v4_production_current_dispatch",
+        "v4_dispatch_permits",
+        "v4_permit_claims",
+        "v4_cycles",
+        "v4_run_contexts",
+        "v4_cycle_events",
+        "v4_cycle_outbox",
+        "jobs",
+        "publication_requests",
+        "publication_attempts",
+        "budget_reservations",
+        "remote_publication_receipts",
+    )
+
+    def row_counts(connection):
+        return tuple(
+            connection.execute(f"SELECT count(*) FROM public.{relation}").fetchone()[0]
+            for relation in relations
+        )
+
+    class RecordingConnection:
+        def __init__(self, connection):
+            self.connection = connection
+            self.statements = []
+
+        def execute(self, statement, parameters=None):
+            self.statements.append((statement, parameters))
+            return self.connection.execute(statement, parameters)
+
+    with psycopg.connect(case["database"]) as connection:
+        before = row_counts(connection)
+        connection.execute("SET TRANSACTION READ ONLY")
+        recorded = RecordingConnection(connection)
+        first = read_production_policy_rollback_inventory(
+            recorded, workspace_id=case["workspace_id"]
+        )
+        second = read_production_policy_rollback_inventory(
+            recorded, workspace_id=case["workspace_id"]
+        )
+        after = row_counts(connection)
+
+    assert len(recorded.statements) == 2
+    assert after == before
+    assert all(parameters == (case["workspace_id"],) for _, parameters in recorded.statements)
+    assert first.inventory_sha256 == second.inventory_sha256
+    assert first.inventory == second.inventory
+    assert first.status == second.status
+
+
+def test_rollback_inventory_retains_unknown_and_unmatched_liabilities(accounting):
+    case, binding = _production_rollback_case(accounting, publication=True)
+    production_permit = case["dispatch"].issue_permit(case["request"])
+    fixture_permit, fixture_claim = _seed_fixture_rollback_permit(case, final_state="unknown")
+    unmatched_reservation_id = uuid4()
+    with psycopg.connect(case["database"]) as connection:
+        connection.execute(
+            """INSERT INTO budget_reservations(
+                      id,budget_id,reservation_key,estimated_amount,reserved_amount,status,expires_at)
+               VALUES(%s,%s,%s,0.020000,0.020000,'reserved',
+                      clock_timestamp()+interval '1 hour')""",
+            (
+                unmatched_reservation_id,
+                case["production_budget_id"],
+                "rollback-unmatched-" + str(unmatched_reservation_id),
+            ),
+        )
+        assert connection.execute(
+            "SELECT 1 FROM remote_publication_receipts WHERE publication_attempt_id=%s",
+            (binding.publication_attempt_id,),
+        ).fetchone() is None
+
+    with psycopg.connect(case["database"]) as connection:
+        inventory = read_production_policy_rollback_inventory(
+            connection, workspace_id=case["workspace_id"]
+        )
+
+    blocker_identities = {entry["identity"] for entry in inventory.blockers}
+    assert inventory.status == "blocked"
+    assert any(str(production_permit.permit_id) in identity for identity in blocker_identities)
+    assert any(str(fixture_permit["permit_id"]) in identity for identity in blocker_identities)
+    assert any(str(fixture_claim["claim_id"]) in identity for identity in blocker_identities)
+    assert any(str(unmatched_reservation_id) in identity for identity in blocker_identities)
+    assert any(str(binding.external_effect_id) in identity for identity in blocker_identities)
+    assert any(
+        entry["relation"] == "v4_permit_claims"
+        and entry.get("row", {}).get("state") == "unknown"
+        for entry in inventory.blockers
+    )
+    missing_receipts = [
+        entry["relation"] == "remote_publication_receipts"
+        and entry.get("inventory_status") == "empty"
+        and entry["identity"] == "~empty"
+        for entry in inventory.blockers
+    ]
+    assert any(missing_receipts)
+
+
+@pytest.mark.parametrize(
+    "malformation",
+    (
+        "version",
+        "workspace",
+        "entry_shape",
+        "duplicate",
+        "ordering",
+        "uppercase_fingerprint",
+        "database_digest_mismatch",
+    ),
+)
+def test_rollback_inventory_rejects_malformed_responses(malformation):
+    workspace_id = uuid4()
+    empty = {
+        "source": "authority",
+        "relation": "policy_versions",
+        "identity": "~empty",
+        "inventory_status": "empty",
+        "row": None,
+    }
+    second = {
+        "source": "publication",
+        "relation": "jobs",
+        "identity": "~empty",
+        "inventory_status": "empty",
+        "row": None,
+    }
+    payload = {
+        "schema_version": "salience.p1-production-policy-rollback-inventory.v1",
+        "workspace_id": str(workspace_id),
+        "inventory": [empty],
+        "inventory_sha256": "a" * 64,
+    }
+    database_digest = "a" * 64
+    if malformation == "version":
+        payload["schema_version"] = "salience.p1-production-policy-rollback-inventory.v0"
+    elif malformation == "workspace":
+        payload["workspace_id"] = str(uuid4())
+    elif malformation == "entry_shape":
+        payload["inventory"] = [{"source": "authority"}]
+    elif malformation == "duplicate":
+        payload["inventory"] = [empty, dict(empty)]
+    elif malformation == "ordering":
+        payload["inventory"] = [second, empty]
+    elif malformation == "uppercase_fingerprint":
+        payload["inventory_sha256"] = "A" * 64
+        database_digest = "A" * 64
+    elif malformation == "database_digest_mismatch":
+        database_digest = "b" * 64
+
+    class Result:
+        def fetchone(self):
+            return payload, database_digest
+
+    class Connection:
+        def __init__(self):
+            self.calls = []
+
+        def execute(self, statement, parameters):
+            self.calls.append((statement, parameters))
+            return Result()
+
+    connection = Connection()
+    with pytest.raises(ValueError):
+        read_production_policy_rollback_inventory(connection, workspace_id=workspace_id)
+    assert len(connection.calls) == 1
+    assert connection.calls[0][1] == (workspace_id,)
 
 
 @pytest.mark.parametrize("denial_source", ["route", "current_authority"])
