@@ -26,6 +26,7 @@ _TASK5_EVIDENCE = (
 _REVISION_0041 = "0041_native_publication_sources"
 _REVISION_0042 = "0042_publication_recovery_holds"
 _REVISION_0043 = "0043_complete_publication_recovery_liabilities"
+_REVISION_0044 = "0044_production_policy_revocation"
 _HOLD_TABLE = "public.v4_legacy_publication_recovery_holds"
 _V1_KEYS = (
     "dispatch",
@@ -1799,3 +1800,1173 @@ def test_owner_binding_upgrade_preserves_or_holds_existing_history(owner_mode):
         finally:
             admin.execute("SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname=%s",(name,))
             admin.execute(psycopg.sql.SQL("DROP DATABASE {}").format(psycopg.sql.Identifier(name)))
+
+
+_0044_CANONICAL_TABLES = {
+    "approval_requests",
+    "budgets",
+    "content_programs",
+    "identity_subjects",
+    "permission_grants",
+    "policy_versions",
+    "workspaces",
+}
+
+
+def _capture_0043_fixture_contract(connection, baseline=None):
+    """Capture pre-0044 fixture rows and the contracts later migrations must retain."""
+    if baseline is None:
+        table_names = connection.execute(
+            """SELECT relation.relname FROM pg_class relation
+               JOIN pg_namespace schema ON schema.oid=relation.relnamespace
+               WHERE schema.nspname='public' AND relation.relkind IN ('r','p')
+                 AND relation.relname <> 'alembic_version'
+                 AND (left(relation.relname,3)='v4_'
+                      OR relation.relname = ANY(%s))
+               ORDER BY relation.relname""",
+            (sorted(_0044_CANONICAL_TABLES),),
+        ).fetchall()
+        table_names = [row[0] for row in table_names]
+        function_rows = connection.execute(
+            """SELECT function.proname,
+                      pg_get_function_identity_arguments(function.oid),
+                      pg_get_functiondef(function.oid), function.prosecdef,
+                      function.proconfig, pg_get_userbyid(function.proowner),
+                      COALESCE(function.proacl,
+                               acldefault('f', function.proowner))::text
+               FROM pg_proc function JOIN pg_namespace schema
+                 ON schema.oid=function.pronamespace
+               WHERE schema.nspname='public' AND function.prokind='f'
+               ORDER BY function.proname,
+                        pg_get_function_identity_arguments(function.oid)"""
+        ).fetchall()
+        role_rows = connection.execute(
+            """SELECT rolname, rolsuper, rolcreaterole, rolcreatedb, rolcanlogin
+               FROM pg_roles ORDER BY rolname"""
+        ).fetchall()
+    else:
+        table_names = list(baseline["tables"])
+        function_rows = [
+            connection.execute(
+                """SELECT function.proname,
+                          pg_get_function_identity_arguments(function.oid),
+                          pg_get_functiondef(function.oid), function.prosecdef,
+                          function.proconfig, pg_get_userbyid(function.proowner),
+                          COALESCE(function.proacl,
+                                   acldefault('f', function.proowner))::text
+                   FROM pg_proc function JOIN pg_namespace schema
+                     ON schema.oid=function.pronamespace
+                   WHERE schema.nspname='public' AND function.prokind='f'
+                     AND function.proname=%s
+                     AND pg_get_function_identity_arguments(function.oid)=%s""",
+                signature,
+            ).fetchone()
+            for signature in baseline["functions"]
+        ]
+        role_rows = [
+            connection.execute(
+                """SELECT rolname, rolsuper, rolcreaterole, rolcreatedb, rolcanlogin
+                   FROM pg_roles WHERE rolname=%s""",
+                (role_name,),
+            ).fetchone()
+            for role_name in baseline["roles"]
+        ]
+
+    tables = {}
+    for table_name in table_names:
+        columns = connection.execute(
+            """SELECT column_name, data_type, udt_name, is_nullable,
+                      column_default, ordinal_position
+               FROM information_schema.columns
+               WHERE table_schema='public' AND table_name=%s
+               ORDER BY ordinal_position""",
+            (table_name,),
+        ).fetchall()
+        constraints = connection.execute(
+            """SELECT conname, pg_get_constraintdef(oid)
+               FROM pg_constraint WHERE conrelid=%s::regclass
+               ORDER BY conname""",
+            (f"public.{table_name}",),
+        ).fetchall()
+        indexes = connection.execute(
+            """SELECT indexname, indexdef FROM pg_indexes
+               WHERE schemaname='public' AND tablename=%s
+               ORDER BY indexname""",
+            (table_name,),
+        ).fetchall()
+        trigger_names = None
+        if baseline is not None:
+            trigger_names = baseline["tables"][table_name]["trigger_names"]
+        triggers = connection.execute(
+            """SELECT tgname, pg_get_triggerdef(oid), tgenabled
+               FROM pg_trigger WHERE tgrelid=%s::regclass AND NOT tgisinternal
+                 AND (%s::text[] IS NULL OR tgname=ANY(%s::text[]))
+               ORDER BY tgname""",
+            (f"public.{table_name}", trigger_names, trigger_names),
+        ).fetchall()
+        rows = connection.execute(
+            psycopg.sql.SQL(
+                "SELECT COALESCE(jsonb_agg(row_data ORDER BY row_data::text), '[]'::jsonb) "
+                "FROM (SELECT to_jsonb(row_value) AS row_data FROM public.{} row_value) rows"
+            ).format(psycopg.sql.Identifier(table_name))
+        ).fetchone()[0]
+        tables[table_name] = {
+            "columns": columns,
+            "constraints": constraints,
+            "indexes": indexes,
+            "triggers": triggers,
+            "trigger_names": [row[0] for row in triggers],
+            "rows": rows,
+        }
+
+    return {
+        "tables": tables,
+        "functions": [(row[0], row[1]) for row in function_rows if row is not None],
+        "function_rows": [row for row in function_rows if row is not None],
+        "roles": [row[0] for row in role_rows if row is not None],
+        "role_rows": [row for row in role_rows if row is not None],
+    }
+
+
+def _assert_0043_fixture_contract(connection, before):
+    after = _capture_0043_fixture_contract(connection, before)
+    for table_name, contract in before["tables"].items():
+        assert after["tables"][table_name] == contract
+    assert after["function_rows"] == before["function_rows"]
+    assert after["role_rows"] == before["role_rows"]
+
+
+def _seed_0044_workspace_subject(connection):
+    workspace_id = uuid4()
+    subject_id = uuid4()
+    connection.execute(
+        "INSERT INTO workspaces(id,slug,display_name) VALUES(%s,%s,'0044 fixture')",
+        (workspace_id, "p1-0044-" + uuid4().hex),
+    )
+    connection.execute(
+        """INSERT INTO identity_subjects(id,workspace_id,issuer,subject,expires_at)
+           VALUES(%s,%s,'https://fixture.invalid',%s,clock_timestamp()+interval '1 day')""",
+        (subject_id, workspace_id, str(subject_id)),
+    )
+    return workspace_id, subject_id
+
+
+def _seed_0044_cycle(connection, workspace_id, subject_id):
+    goal_id = uuid4()
+    program_id = uuid4()
+    intent_id = uuid4()
+    cycle_id = uuid4()
+    context_id = uuid4()
+    operation_id = uuid4()
+    connection.execute(
+        """INSERT INTO content_programs(id,workspace_id,slug,name,niche)
+           VALUES(%s,%s,%s,'0044 program','fixture')""",
+        (program_id, workspace_id, "p1-0044-" + uuid4().hex),
+    )
+    connection.execute(
+        "INSERT INTO v4_goals(id,workspace_id,state) VALUES(%s,%s,'active')",
+        (goal_id, workspace_id),
+    )
+    connection.execute(
+        """INSERT INTO v4_goal_revisions(goal_id,revision,payload)
+           VALUES(%s,1,%s)""",
+        (goal_id, Jsonb({"schema_version": "GoalSpec.local.v1"})),
+    )
+    connection.execute(
+        """INSERT INTO v4_cycle_intents(id,goal_id,goal_revision,slot,fingerprint,
+                  due_at,expires_at)
+           VALUES(%s,%s,1,%s,%s,clock_timestamp()-interval '1 minute',
+                  clock_timestamp()+interval '1 day')""",
+        (intent_id, goal_id, str(intent_id), "a" * 64),
+    )
+    connection.execute("SET CONSTRAINTS ALL DEFERRED")
+    connection.execute(
+        """INSERT INTO v4_cycles(id,intent_id,context_id,operation_id,state)
+           VALUES(%s,%s,%s,%s,'runnable')""",
+        (cycle_id, intent_id, context_id, operation_id),
+    )
+    connection.execute(
+        """INSERT INTO v4_run_contexts(id,cycle_id,payload)
+           VALUES(%s,%s,%s)""",
+        (
+            context_id,
+            cycle_id,
+            Jsonb(
+                {
+                    "schema_version": "RunContext.local.v1",
+                    "content_program_id": str(program_id),
+                    "subject_id": str(subject_id),
+                }
+            ),
+        ),
+    )
+    return {
+        "goal_id": goal_id,
+        "program_id": program_id,
+        "intent_id": intent_id,
+        "cycle_id": cycle_id,
+        "context_id": context_id,
+        "operation_id": operation_id,
+    }
+
+
+def _seed_0044_policy(connection, workspace_id, *, status="draft", version="1"):
+    policy_id = uuid4()
+    document = {
+        "schema_version": "salience.p1-policy.v1",
+        "expires_at": "2099-01-01T00:00:00Z",
+    }
+    connection.execute(
+        """INSERT INTO policy_versions(id,workspace_id,policy_name,version,status,
+                  document,document_hash,jurisdiction_refs)
+           VALUES(%s,%s,'production-effect',%s,%s,%s,%s,%s)""",
+        (
+            policy_id,
+            workspace_id,
+            version,
+            status,
+            Jsonb(document),
+            "b" * 64,
+            Jsonb({"jurisdictions": ["fixture"]}),
+        ),
+    )
+    return policy_id
+
+
+def _approval_context_0044(workspace_id, subject_id, cycle, policy_id):
+    return {
+        "schema_version": "salience.p1-effect-approval.v1",
+        "workspace_id": str(workspace_id),
+        "program_id": str(cycle["program_id"]),
+        "goal_id": str(cycle["goal_id"]),
+        "goal_revision": 1,
+        "intent_id": str(cycle["intent_id"]),
+        "cycle_id": str(cycle["cycle_id"]),
+        "context_id": str(cycle["context_id"]),
+        "operation_id": str(cycle["operation_id"]),
+        "subject_id": str(subject_id),
+        "effect_type": "publication",
+        "purpose": "publish-approved-artifact",
+        "artifact_sha256": "c" * 64,
+        "account_id": "production-account-1",
+        "provider_id": "production-provider-1",
+        "policy_version_id": str(policy_id),
+        "policy_document_hash": "b" * 64,
+        "expires_at": "2099-01-01T00:00:00Z",
+    }
+
+
+def _insert_0044_approval(connection, workspace_id, policy_id, context):
+    approval_id = uuid4()
+    connection.execute(
+        """INSERT INTO approval_requests(
+                  id,workspace_id,policy_version_id,effect_type,status,
+                  request_context,requested_by)
+           VALUES(%s,%s,%s,'publication','pending',%s,'policy-owner')""",
+        (approval_id, workspace_id, policy_id, Jsonb(context)),
+    )
+    return approval_id
+
+
+def _prepare_0044_database(prefix, *, seed=None):
+    source = os.environ["TEST_DATABASE_URL"]
+    name, database = _create_migration_database(source, prefix)
+    try:
+        upgraded_0043 = _migration(database, "upgrade", _REVISION_0043)
+        assert upgraded_0043.returncode == 0, upgraded_0043.stdout + upgraded_0043.stderr
+        with psycopg.connect(database) as connection:
+            if seed is not None:
+                seed(connection)
+            before = _capture_0043_fixture_contract(connection)
+        upgraded_0044 = _migration(database, "upgrade", _REVISION_0044)
+        assert upgraded_0044.returncode == 0, upgraded_0044.stdout + upgraded_0044.stderr
+        with psycopg.connect(database) as connection:
+            assert connection.execute(
+                "SELECT version_num FROM alembic_version"
+            ).fetchone()[0] == _REVISION_0044
+            _assert_0043_fixture_contract(connection, before)
+        return name, database, before
+    except Exception:
+        _drop_migration_database(source, name)
+        raise
+
+
+def test_0044_upgrade_preserves_0043_fixture_rows():
+    def seed(connection):
+        workspace_id, subject_id = _seed_0044_workspace_subject(connection)
+        connection.execute(
+            """INSERT INTO v4_stop_scopes(workspace_id,scope_key,changed_by,reason)
+               VALUES(%s,'workspace',%s,'0043 fixture row')""",
+            (workspace_id, subject_id),
+        )
+
+    source = os.environ["TEST_DATABASE_URL"]
+    name, database, before = _prepare_0044_database(
+        "p1_0044_fixture_preserve_", seed=seed
+    )
+    try:
+        with psycopg.connect(database) as connection:
+            _assert_0043_fixture_contract(connection, before)
+    finally:
+        _drop_migration_database(source, name)
+
+
+def test_0044_grant_mutation_advances_subject_revision():
+    source = os.environ["TEST_DATABASE_URL"]
+    name, database, _ = _prepare_0044_database(
+        "p1_0044_grant_revision_",
+        seed=lambda connection: _seed_0044_workspace_subject(connection),
+    )
+    try:
+        with psycopg.connect(database) as connection:
+            workspace_id, subject_id = connection.execute(
+                "SELECT workspace_id,id FROM identity_subjects ORDER BY id LIMIT 1"
+            ).fetchone()
+            second_workspace_id, second_subject_id = _seed_0044_workspace_subject(
+                connection
+            )
+            before_insert = connection.execute(
+                "SELECT revision FROM identity_subjects WHERE id=%s", (subject_id,)
+            ).fetchone()[0]
+            grant_id = connection.execute(
+                """INSERT INTO permission_grants(
+                          workspace_id,principal_type,principal_id,scope,effect,
+                          constraints,expires_at)
+                   VALUES(%s,'identity',%s,'publication:publish','allow','{}'::jsonb,
+                          clock_timestamp()+interval '1 hour') RETURNING id""",
+                (workspace_id, str(subject_id)),
+            ).fetchone()[0]
+            after_insert = connection.execute(
+                "SELECT revision FROM identity_subjects WHERE id=%s", (subject_id,)
+            ).fetchone()[0]
+            assert after_insert == before_insert + 1
+            connection.execute(
+                "UPDATE permission_grants SET effect='deny' WHERE id=%s", (grant_id,)
+            )
+            after_update = connection.execute(
+                "SELECT revision FROM identity_subjects WHERE id=%s", (subject_id,)
+            ).fetchone()[0]
+            assert after_update == after_insert + 1
+            second_subject_before = connection.execute(
+                "SELECT revision FROM identity_subjects WHERE id=%s",
+                (second_subject_id,),
+            ).fetchone()[0]
+            connection.execute(
+                """UPDATE permission_grants
+                   SET workspace_id=%s,principal_id=%s,scope='publication:publish:reviewed',
+                       constraints='{\"purpose\":\"reviewed\"}'::jsonb,
+                       expires_at=clock_timestamp()+interval '2 hours'
+                   WHERE id=%s""",
+                (second_workspace_id, str(second_subject_id), grant_id),
+            )
+            after_move = connection.execute(
+                "SELECT revision FROM identity_subjects WHERE id=%s", (subject_id,)
+            ).fetchone()[0]
+            second_subject_after_move = connection.execute(
+                "SELECT revision FROM identity_subjects WHERE id=%s",
+                (second_subject_id,),
+            ).fetchone()[0]
+            assert after_move == after_update + 1
+            assert second_subject_after_move == second_subject_before + 1
+            connection.execute("DELETE FROM permission_grants WHERE id=%s", (grant_id,))
+            after_delete = connection.execute(
+                "SELECT revision FROM identity_subjects WHERE id=%s",
+                (second_subject_id,),
+            ).fetchone()[0]
+            assert after_delete == second_subject_after_move + 1
+    finally:
+        _drop_migration_database(source, name)
+
+
+def test_0044_policy_and_tagged_approval_transitions_are_terminal():
+    source = os.environ["TEST_DATABASE_URL"]
+    name, database, _ = _prepare_0044_database("p1_0044_terminal_authority_")
+    try:
+        with psycopg.connect(database) as connection:
+            workspace_id, subject_id = _seed_0044_workspace_subject(connection)
+            cycle = _seed_0044_cycle(connection, workspace_id, subject_id)
+            policy_id = _seed_0044_policy(connection, workspace_id)
+            connection.execute(
+                """UPDATE policy_versions SET document=%s,document_hash=%s,
+                          effective_at=clock_timestamp(),jurisdiction_refs=%s
+                   WHERE id=%s""",
+                (
+                    Jsonb({"schema_version": "salience.p1-policy.v1", "revision": 2}),
+                    "a" * 64,
+                    Jsonb({"jurisdictions": ["fixture", "us"]}),
+                    policy_id,
+                ),
+            )
+            connection.execute(
+                "UPDATE policy_versions SET status='active' WHERE id=%s", (policy_id,)
+            )
+            with pytest.raises(psycopg.Error, match="activated policy fields are immutable"):
+                with connection.transaction():
+                    connection.execute(
+                        "UPDATE policy_versions SET document_hash=%s WHERE id=%s",
+                        ("f" * 64, policy_id),
+                    )
+            connection.execute(
+                "UPDATE policy_versions SET status='revoked' WHERE id=%s", (policy_id,)
+            )
+            with pytest.raises(
+                psycopg.Error,
+                match="non-draft policy cannot return to draft or active",
+            ):
+                with connection.transaction():
+                    connection.execute(
+                        "UPDATE policy_versions SET status='active' WHERE id=%s",
+                        (policy_id,),
+                    )
+
+            approval_policy_id = _seed_0044_policy(
+                connection, workspace_id, status="active", version="2"
+            )
+            context = _approval_context_0044(
+                workspace_id, subject_id, cycle, approval_policy_id
+            )
+            approval_id = _insert_0044_approval(
+                connection, workspace_id, approval_policy_id, context
+            )
+            decided_at = connection.execute(
+                """UPDATE approval_requests SET status='approved',decided_by='reviewer',
+                          decided_at=clock_timestamp(),decision_reason='approved exact binding'
+                   WHERE id=%s RETURNING decided_at""",
+                (approval_id,),
+            ).fetchone()[0]
+            changed_binding = dict(context)
+            changed_binding["purpose"] = "different-purpose"
+            with pytest.raises(
+                psycopg.Error, match="decided effect approval binding is immutable"
+            ):
+                with connection.transaction():
+                    connection.execute(
+                        "UPDATE approval_requests SET request_context=%s WHERE id=%s",
+                        (Jsonb(changed_binding), approval_id),
+                    )
+            with pytest.raises(psycopg.Error, match="approval revocation event required"):
+                with connection.transaction():
+                    connection.execute(
+                        "UPDATE approval_requests SET status='revoked' WHERE id=%s",
+                        (approval_id,),
+                    )
+            event_payload = {
+                "schema_version": "salience.p1-effect-approval-revocation.v1",
+                "approval_request_id": str(approval_id),
+                "operation_id": str(cycle["operation_id"]),
+                "policy_version_id": str(approval_policy_id),
+                "transaction_id": str(
+                    connection.execute("SELECT txid_current()").fetchone()[0]
+                ),
+            }
+            with connection.transaction():
+                connection.execute(
+                    """INSERT INTO v4_cycle_events(
+                              id,workspace_id,subject_id,goal_id,intent_id,cycle_id,
+                              kind,traceparent,payload)
+                       VALUES(%s,%s,%s,%s,%s,%s,'production_approval_revoked',
+                              '00-11111111111111111111111111111111-2222222222222222-01',%s)""",
+                    (
+                        uuid4(),
+                        workspace_id,
+                        subject_id,
+                        cycle["goal_id"],
+                        cycle["intent_id"],
+                        cycle["cycle_id"],
+                        Jsonb(event_payload),
+                    ),
+                )
+                connection.execute(
+                    "UPDATE approval_requests SET status='revoked' WHERE id=%s",
+                    (approval_id,),
+                )
+            assert connection.execute(
+                "SELECT decided_at FROM approval_requests WHERE id=%s", (approval_id,)
+            ).fetchone()[0] == decided_at
+            unrelated_id = connection.execute(
+                """INSERT INTO approval_requests(
+                          workspace_id,effect_type,status,request_context,requested_by)
+                   VALUES(%s,'legacy','pending','{}'::jsonb,'legacy') RETURNING id""",
+                (workspace_id,),
+            ).fetchone()[0]
+            connection.execute(
+                "UPDATE approval_requests SET status='approved' WHERE id=%s",
+                (unrelated_id,),
+            )
+    finally:
+        _drop_migration_database(source, name)
+
+
+def _insert_0044_production_permit(connection, binding, *, generation=1):
+    permit_id = uuid4()
+    route = {
+        "deployment_id": uuid4(),
+        "environment_id": uuid4(),
+        "route_id": uuid4(),
+        "slot_id": uuid4(),
+        "owner_id": uuid4(),
+        "fencing_epoch": 7,
+        "route_manifest_sha256": "d" * 64,
+        "artifact_lock_sha256": "e" * 64,
+        "route_fence_decision_id": uuid4(),
+    }
+    idempotency_key = "p1-0044-operation:" + str(binding["operation_id"])
+    request = {
+        "schema_version": "salience.p1-production-effect-permit.v1",
+        "generation": generation,
+        "workspace_id": str(binding["workspace_id"]),
+        "goal_id": str(binding["cycle"]["goal_id"]),
+        "goal_revision": 1,
+        "program_id": str(binding["cycle"]["program_id"]),
+        "intent_id": str(binding["cycle"]["intent_id"]),
+        "cycle_id": str(binding["cycle"]["cycle_id"]),
+        "context_id": str(binding["cycle"]["context_id"]),
+        "operation_id": str(binding["operation_id"]),
+        "subject_id": str(binding["subject_id"]),
+        "subject_revision": 1,
+        "grant_ids": [],
+        "policy_version_id": str(binding["policy_id"]),
+        "policy_document_hash": "b" * 64,
+        "approval_request_id": str(binding["approval_id"]),
+        "approval_expires_at": "2099-01-01T00:00:00+00:00",
+        "effect_type": "publication",
+        "purpose": "publish-approved-artifact",
+        "account_id": "production-account-1",
+        "provider_id": "production-provider-1",
+        "artifact_sha256": "c" * 64,
+        **{key: str(value) for key, value in route.items() if key != "fencing_epoch"},
+        "fencing_epoch": route["fencing_epoch"],
+        "idempotency_key": idempotency_key,
+    }
+    if binding.get("publication_request_id"):
+        request["publication_request_id"] = str(binding["publication_request_id"])
+    request.update(binding.get("publication_bindings", {}))
+    connection.execute(
+        """INSERT INTO v4_production_effect_permits(
+                  permit_id,operation_id,generation,workspace_id,goal_id,goal_revision,
+                  program_id,intent_id,cycle_id,context_id,subject_id,subject_revision,
+                  grant_ids,policy_version_id,policy_document_hash,approval_request_id,
+                  approval_expires_at,effect_type,purpose,account_id,provider_id,
+                  artifact_sha256,deployment_id,environment_id,route_id,slot_id,owner_id,
+                  fencing_epoch,route_manifest_sha256,artifact_lock_sha256,
+                  route_fence_decision_id,issued_at,expires_at,request_snapshot)
+                  VALUES(%(permit_id)s,%(operation_id)s,%(generation)s,%(workspace_id)s,
+                  %(goal_id)s,1,%(program_id)s,%(intent_id)s,%(cycle_id)s,%(context_id)s,
+                  %(subject_id)s,1,'[]'::jsonb,%(policy_version_id)s,%(policy_hash)s,
+                  %(approval_id)s,
+                  (SELECT (approval.request_context->>'expires_at')::timestamptz
+                   FROM approval_requests approval WHERE approval.id=%(approval_id)s),
+                  'publication',
+                  'publish-approved-artifact','production-account-1',
+                  'production-provider-1',%(artifact_hash)s,%(deployment_id)s,
+                  %(environment_id)s,%(route_id)s,%(slot_id)s,%(owner_id)s,
+                  %(fencing_epoch)s,%(route_manifest_sha256)s,%(artifact_lock_sha256)s,
+                  %(route_fence_decision_id)s,clock_timestamp(),
+                  clock_timestamp()+interval '30 seconds',%(request_snapshot)s)""",
+        {
+            "permit_id": permit_id,
+            "operation_id": binding["operation_id"],
+            "generation": generation,
+            "workspace_id": binding["workspace_id"],
+            "goal_id": binding["cycle"]["goal_id"],
+            "program_id": binding["cycle"]["program_id"],
+            "intent_id": binding["cycle"]["intent_id"],
+            "cycle_id": binding["cycle"]["cycle_id"],
+            "context_id": binding["cycle"]["context_id"],
+            "subject_id": binding["subject_id"],
+            "policy_version_id": binding["policy_id"],
+            "policy_hash": "b" * 64,
+            "approval_id": binding["approval_id"],
+            "artifact_hash": "c" * 64,
+            **route,
+            "request_snapshot": Jsonb(request),
+        },
+    )
+    return permit_id, idempotency_key
+
+
+def test_0044_production_claim_is_unique_and_mode_separated():
+    source = os.environ["TEST_DATABASE_URL"]
+    name, database, _ = _prepare_0044_database("p1_0044_production_claim_")
+    try:
+        with psycopg.connect(database) as connection:
+            workspace_id, subject_id = _seed_0044_workspace_subject(connection)
+            cycle = _seed_0044_cycle(connection, workspace_id, subject_id)
+            policy_id = _seed_0044_policy(connection, workspace_id, status="active")
+            approval_context = _approval_context_0044(
+                workspace_id, subject_id, cycle, policy_id
+            )
+            approval_id = _insert_0044_approval(
+                connection, workspace_id, policy_id, approval_context
+            )
+            connection.execute(
+                """UPDATE approval_requests SET status='approved',decided_by='reviewer',
+                          decided_at=clock_timestamp() WHERE id=%s""",
+                (approval_id,),
+            )
+            binding = {
+                "workspace_id": workspace_id,
+                "subject_id": subject_id,
+                "operation_id": cycle["operation_id"],
+                "cycle": cycle,
+                "policy_id": policy_id,
+                "approval_id": approval_id,
+                "publication_bindings": {
+                    "publication_request_id": str(uuid4()),
+                    "job_id": str(uuid4()),
+                    "workflow_id": "workflow-0044",
+                    "workflow_run_id": "workflow-run-0044",
+                    "run_id": "run-0044",
+                    "publication_plan_id": str(uuid4()),
+                    "publication_attempt_id": str(uuid4()),
+                    "external_effect_id": str(uuid4()),
+                    "effect_id": str(uuid4()),
+                    "remote_receipt_id": str(uuid4()),
+                    "receipt_id": str(uuid4()),
+                },
+            }
+            permit_id, idempotency_key = _insert_0044_production_permit(
+                connection, binding
+            )
+            permit_snapshot = connection.execute(
+                "SELECT request_snapshot FROM v4_production_effect_permits WHERE permit_id=%s",
+                (permit_id,),
+            ).fetchone()[0]
+            for key, value in binding["publication_bindings"].items():
+                assert permit_snapshot[key] == value
+            invalid_binding = {
+                **binding,
+                "publication_bindings": {"workflow_run_id": 17},
+            }
+            with pytest.raises(
+                psycopg.Error,
+                match="optional publication binding must be a string identifier",
+            ):
+                with connection.transaction():
+                    _insert_0044_production_permit(
+                        connection, invalid_binding, generation=2
+                    )
+            blank_binding = {
+                **binding,
+                "publication_bindings": {"workflow_run_id": "  "},
+            }
+            with pytest.raises(
+                psycopg.Error,
+                match="optional publication binding must be a string identifier",
+            ):
+                with connection.transaction():
+                    _insert_0044_production_permit(
+                        connection, blank_binding, generation=2
+                    )
+            with pytest.raises(
+                psycopg.Error,
+                match="duplicate key value violates unique constraint",
+            ):
+                with connection.transaction():
+                    _insert_0044_production_permit(connection, binding)
+            claim_id = uuid4()
+            connection.execute(
+                """INSERT INTO v4_production_effect_permit_claims(
+                          claim_id,permit_id,operation_id,generation,
+                          route_fence_decision_id)
+                   SELECT %s,permit_id,operation_id,generation,route_fence_decision_id
+                   FROM v4_production_effect_permits WHERE permit_id=%s""",
+                (claim_id, permit_id),
+            )
+            with pytest.raises(
+                psycopg.Error, match="duplicate key value violates unique constraint"
+            ):
+                with connection.transaction():
+                    connection.execute(
+                        """INSERT INTO v4_production_effect_permit_claims(
+                                  claim_id,permit_id,operation_id,generation,
+                                  route_fence_decision_id)
+                           SELECT %s,permit_id,operation_id,generation,route_fence_decision_id
+                           FROM v4_production_effect_permits WHERE permit_id=%s""",
+                        (uuid4(), permit_id),
+                    )
+            connection.execute(
+                """SELECT public.v4_advance_production_current_dispatch_v1(
+                          %s,0,%s,NULL,%s,NULL)""",
+                (cycle["operation_id"], permit_id, idempotency_key),
+            )
+            connection.execute(
+                """SELECT public.v4_advance_production_current_dispatch_v1(
+                          %s,1,%s,%s,%s,NULL)""",
+                (cycle["operation_id"], permit_id, claim_id, idempotency_key),
+            )
+            pointer = connection.execute(
+                """SELECT generation,current_permit_id,current_claim_id,idempotency_key
+                   FROM v4_production_current_dispatch WHERE operation_id=%s""",
+                (cycle["operation_id"],),
+            ).fetchone()
+            assert pointer == (1, permit_id, claim_id, idempotency_key)
+            with pytest.raises(
+                psycopg.Error,
+                match="production current dispatch may only change through v1 function",
+            ):
+                with connection.transaction():
+                    connection.execute(
+                        """UPDATE v4_production_current_dispatch
+                           SET idempotency_key='direct-write-denied'
+                           WHERE operation_id=%s""",
+                        (cycle["operation_id"],),
+                    )
+            public_write_privileges = connection.execute(
+                """SELECT count(*)
+                   FROM pg_class relation,
+                        LATERAL aclexplode(
+                          COALESCE(relation.relacl, acldefault('r',relation.relowner))
+                        ) acl
+                   WHERE relation.oid=ANY(ARRAY[
+                           'public.v4_production_effect_permits'::regclass,
+                           'public.v4_production_effect_permit_claims'::regclass,
+                           'public.v4_production_current_dispatch'::regclass
+                         ])
+                     AND acl.grantee=0
+                     AND acl.privilege_type IN ('INSERT','UPDATE','DELETE','TRUNCATE')"""
+            ).fetchone()[0]
+            assert public_write_privileges == 0
+            public_function_execute = connection.execute(
+                """SELECT count(*)
+                   FROM pg_proc function,
+                        LATERAL aclexplode(
+                          COALESCE(function.proacl,
+                                   acldefault('f',function.proowner))
+                        ) acl
+                   WHERE function.oid=ANY(ARRAY[
+                           'public.v4_validate_production_effect_permit_v1()'::regprocedure,
+                           'public.v4_reject_production_history_change_v1()'::regprocedure,
+                           'public.v4_guard_production_current_dispatch_write_v1()'::regprocedure,
+                           'public.v4_advance_production_current_dispatch_v1(uuid,integer,uuid,uuid,text,uuid)'::regprocedure,
+                           'public.v4_advance_identity_subject_revision_from_grant_v1()'::regprocedure,
+                           'public.v4_guard_policy_version_transition_v1()'::regprocedure,
+                           'public.v4_guard_effect_approval_transition_v1()'::regprocedure,
+                           'public.v4_production_policy_rollback_inventory_v1(uuid)'::regprocedure
+                         ])
+                     AND acl.grantee=0 AND acl.privilege_type='EXECUTE'"""
+            ).fetchone()[0]
+            assert public_function_execute == 0
+            second_permit, _ = _insert_0044_production_permit(
+                connection, binding, generation=2
+            )
+            with pytest.raises(
+                psycopg.Error, match="typed_no_effect_command_required"
+            ):
+                with connection.transaction():
+                    connection.execute(
+                        """SELECT public.v4_advance_production_current_dispatch_v1(
+                                  %s,1,%s,NULL,%s,NULL)""",
+                        (cycle["operation_id"], second_permit, idempotency_key),
+                    )
+            fixture_claim_id = uuid4()
+            fixture_permit_id = uuid4()
+            connection.execute(
+                """INSERT INTO v4_permit_claims(
+                          id,cycle_id,operation_id,context_id,request_fingerprint)
+                   VALUES(%s,%s,%s,%s,%s)""",
+                (
+                    fixture_claim_id,
+                    cycle["cycle_id"],
+                    cycle["operation_id"],
+                    cycle["context_id"],
+                    "1" * 64,
+                ),
+            )
+            connection.execute(
+                """INSERT INTO v4_dispatch_permits(
+                          id,claim_id,version,idempotency_key,fingerprint,subject_id,
+                          goal_revision,workspace_stop_revision,goal_stop_revision,
+                          request,expires_at,traceparent)
+                   VALUES(%s,%s,1,'fixture-key',%s,%s,1,1,1,%s,
+                          clock_timestamp()+interval '1 minute',
+                          '00-11111111111111111111111111111111-2222222222222222-01')""",
+                (
+                    fixture_permit_id,
+                    fixture_claim_id,
+                    "2" * 64,
+                    subject_id,
+                    Jsonb(
+                        {
+                            "context_id": str(cycle["context_id"]),
+                            "operation_id": str(cycle["operation_id"]),
+                            "effect": "fixture.noop",
+                            "purpose": "fixture_execution",
+                            "account_ref": "fixture-account",
+                        }
+                    ),
+                ),
+            )
+            connection.execute(
+                "UPDATE v4_permit_claims SET current_permit_id=%s,revision=2 WHERE id=%s",
+                (fixture_permit_id, fixture_claim_id),
+            )
+            with pytest.raises(psycopg.Error, match="foreign key constraint"):
+                with connection.transaction():
+                    connection.execute(
+                        """INSERT INTO v4_production_effect_permit_claims(
+                                  claim_id,permit_id,operation_id,generation,
+                                  route_fence_decision_id)
+                           VALUES(%s,%s,%s,1,%s)""",
+                        (uuid4(), fixture_permit_id, uuid4(), uuid4()),
+                    )
+            with pytest.raises(psycopg.Error, match="foreign key constraint"):
+                with connection.transaction():
+                    connection.execute(
+                        "UPDATE v4_permit_claims SET current_permit_id=%s,revision=3 WHERE id=%s",
+                        (permit_id, fixture_claim_id),
+                    )
+                    connection.execute("SET CONSTRAINTS v4_current_permit_fk IMMEDIATE")
+    finally:
+        _drop_migration_database(source, name)
+
+
+def test_0044_rollback_inventory_is_complete_and_read_only():
+    source = os.environ["TEST_DATABASE_URL"]
+    name, database, _ = _prepare_0044_database("p1_0044_rollback_inventory_")
+    try:
+        with psycopg.connect(database) as connection:
+            workspace_id, subject_id = _seed_0044_workspace_subject(connection)
+            cycle = _seed_0044_cycle(connection, workspace_id, subject_id)
+            policy_id = _seed_0044_policy(connection, workspace_id, status="active")
+            context = _approval_context_0044(workspace_id, subject_id, cycle, policy_id)
+            approval_id = _insert_0044_approval(
+                connection, workspace_id, policy_id, context
+            )
+            connection.execute(
+                """UPDATE approval_requests SET status='approved',
+                          decided_by='reviewer',decided_at=clock_timestamp()
+                   WHERE id=%s""",
+                (approval_id,),
+            )
+            binding = {
+                "workspace_id": workspace_id,
+                "subject_id": subject_id,
+                "operation_id": cycle["operation_id"],
+                "cycle": cycle,
+                "policy_id": policy_id,
+                "approval_id": approval_id,
+            }
+            production_permit_id, idempotency_key = _insert_0044_production_permit(
+                connection, binding
+            )
+            production_claim_id = uuid4()
+            connection.execute(
+                """INSERT INTO v4_production_effect_permit_claims(
+                          claim_id,permit_id,operation_id,generation,
+                          route_fence_decision_id)
+                   SELECT %s,permit_id,operation_id,generation,route_fence_decision_id
+                   FROM v4_production_effect_permits WHERE permit_id=%s""",
+                (production_claim_id, production_permit_id),
+            )
+            connection.execute(
+                """SELECT public.v4_advance_production_current_dispatch_v1(
+                          %s,0,%s,%s,%s,NULL)""",
+                (
+                    cycle["operation_id"],
+                    production_permit_id,
+                    production_claim_id,
+                    idempotency_key,
+                ),
+            )
+            fixture_claim_id = uuid4()
+            fixture_permit_id = uuid4()
+            fixture_previous_permit_id = uuid4()
+            connection.execute(
+                """INSERT INTO v4_permit_claims(
+                          id,cycle_id,operation_id,context_id,request_fingerprint)
+                   VALUES(%s,%s,%s,%s,%s)""",
+                (
+                    fixture_claim_id,
+                    cycle["cycle_id"],
+                    cycle["operation_id"],
+                    cycle["context_id"],
+                    "1" * 64,
+                ),
+            )
+            connection.execute(
+                """INSERT INTO v4_dispatch_permits(
+                          id,claim_id,version,idempotency_key,fingerprint,subject_id,
+                          goal_revision,workspace_stop_revision,goal_stop_revision,
+                          request,expires_at,traceparent)
+                   VALUES(%s,%s,1,'fixture-key-previous',%s,%s,1,1,1,%s,
+                          clock_timestamp()+interval '1 minute',
+                          '00-11111111111111111111111111111111-2222222222222222-01')""",
+                (
+                    fixture_previous_permit_id,
+                    fixture_claim_id,
+                    "3" * 64,
+                    subject_id,
+                    Jsonb(
+                        {
+                            "context_id": str(cycle["context_id"]),
+                            "operation_id": str(cycle["operation_id"]),
+                            "effect": "fixture.noop",
+                            "purpose": "fixture_execution",
+                            "account_ref": "fixture-account",
+                        }
+                    ),
+                ),
+            )
+            connection.execute(
+                """INSERT INTO v4_dispatch_permits(
+                          id,claim_id,version,idempotency_key,fingerprint,subject_id,
+                          goal_revision,workspace_stop_revision,goal_stop_revision,
+                          request,expires_at,traceparent)
+                   VALUES(%s,%s,2,'fixture-key',%s,%s,1,1,1,%s,
+                          clock_timestamp()+interval '1 minute',
+                          '00-11111111111111111111111111111111-2222222222222222-01')""",
+                (
+                    fixture_permit_id,
+                    fixture_claim_id,
+                    "2" * 64,
+                    subject_id,
+                    Jsonb(
+                        {
+                            "context_id": str(cycle["context_id"]),
+                            "operation_id": str(cycle["operation_id"]),
+                            "effect": "fixture.noop",
+                            "purpose": "fixture_execution",
+                            "account_ref": "fixture-account",
+                        }
+                    ),
+                ),
+            )
+            connection.execute(
+                """UPDATE v4_permit_claims
+                   SET current_permit_id=%s,revision=2 WHERE id=%s""",
+                (fixture_permit_id, fixture_claim_id),
+            )
+            connection.execute(
+                """INSERT INTO v4_stop_scopes(workspace_id,scope_key,revision)
+                   VALUES(%s,'workspace',3)""",
+                (workspace_id,),
+            )
+            before_rows = connection.execute(
+                """SELECT count(*) FROM v4_production_effect_permits
+                   UNION ALL SELECT count(*) FROM v4_production_effect_permit_claims
+                   UNION ALL SELECT count(*) FROM v4_production_current_dispatch
+                   UNION ALL SELECT count(*) FROM v4_cycles
+                   UNION ALL SELECT count(*) FROM v4_run_contexts
+                   UNION ALL SELECT count(*) FROM v4_cycle_events"""
+            ).fetchall()
+            inventory = connection.execute(
+                "SELECT public.v4_production_policy_rollback_inventory_v1(%s)",
+                (workspace_id,),
+            ).fetchone()[0]
+            assert (
+                inventory["schema_version"]
+                == "salience.p1-production-policy-rollback-inventory.v1"
+            )
+            assert inventory["workspace_id"] == str(workspace_id)
+            entries = inventory["inventory"]
+            assert entries == sorted(
+                entries,
+                key=lambda row: (row["source"], row["relation"], row["identity"]),
+            )
+            relations = {row["relation"] for row in entries}
+            current_v4_relations = {
+                row[0]
+                for row in connection.execute(
+                    """SELECT relation.relname
+                       FROM pg_class relation
+                       JOIN pg_namespace schema ON schema.oid=relation.relnamespace
+                       WHERE schema.nspname='public' AND relation.relkind IN ('r','p')
+                         AND left(relation.relname,3)='v4_'"""
+                ).fetchall()
+            }
+            assert current_v4_relations <= relations, sorted(
+                current_v4_relations - relations
+            )
+            assert {
+                "v4_dispatch_permits",
+                "v4_permit_claims",
+                "v4_production_effect_permits",
+                "v4_production_effect_permit_claims",
+                "v4_production_current_dispatch",
+                "v4_cycles",
+                "v4_run_contexts",
+                "v4_cycle_events",
+                "v4_cycle_outbox",
+                "v4_cycle_inbox",
+                "v4_cycle_allocations",
+                "v4_allocation_reservations",
+                "v4_cost_operations",
+                "v4_cost_commands",
+                "v4_legacy_dispatches",
+                "jobs",
+                "publication_requests",
+                "publication_plans",
+                "publication_attempts",
+                "external_effects",
+                "budget_reservations",
+                "remote_publication_receipts",
+                "v4_recovery_cases",
+                "v4_runtime_holds",
+                "v4_runtime_waits",
+                "v4_baseline_revocations",
+                "policy_versions",
+                "permission_grants",
+                "approval_requests",
+                "v4_stop_scopes",
+            } <= relations
+            indexed_rows = {
+                (row["relation"], row["source"]): row["row"]
+                for row in entries
+                if row.get("row") is not None
+            }
+            assert indexed_rows[("v4_production_effect_permits", "production")][
+                "permit_id"
+            ] == str(production_permit_id)
+            assert indexed_rows[
+                ("v4_production_effect_permit_claims", "production")
+            ]["claim_id"] == str(production_claim_id)
+            assert indexed_rows[
+                ("v4_production_current_dispatch", "production")
+            ]["current_claim_id"] == str(production_claim_id)
+            fixture_permit_rows = [
+                row["row"]["id"]
+                for row in entries
+                if row["relation"] == "v4_dispatch_permits"
+                and row["source"] == "fixture"
+                and row.get("row") is not None
+            ]
+            assert set(fixture_permit_rows) == {
+                str(fixture_previous_permit_id),
+                str(fixture_permit_id),
+            }
+            assert indexed_rows[("v4_permit_claims", "fixture")]["id"] == str(
+                fixture_claim_id
+            )
+            blocker_relations = {
+                row["relation"]
+                for row in entries
+                if row["source"] == "unavailable"
+            }
+            assert "v4_recovery_work_items" in blocker_relations
+            assert "route_fence_authority" in blocker_relations
+            assert "typed_no_effect_recovery_command" in blocker_relations
+            unavailable = {
+                row["relation"]: row
+                for row in entries
+                if row["source"] == "unavailable"
+            }
+            assert unavailable["v4_recovery_work_items"]["inventory_status"] == (
+                "future-recovery-family-absent"
+            )
+            assert unavailable["typed_no_effect_recovery_command"][
+                "inventory_status"
+            ] == "generation-advance-blocked"
+            assert connection.execute(
+                "SELECT to_regclass('public.v4_recovery_work_items') IS NULL"
+            ).fetchone()[0]
+            assert len(entries) == len(
+                {
+                    (row["source"], row["relation"], row["identity"])
+                    for row in entries
+                }
+            )
+            actual_digest = connection.execute(
+                "SELECT encode(public.digest(%s::jsonb::text,'sha256'),'hex')",
+                (Jsonb(entries),),
+            ).fetchone()[0]
+            assert inventory["inventory_sha256"] == actual_digest
+            function_contract = connection.execute(
+                """SELECT function.provolatile, function.prosecdef,
+                          EXISTS (
+                            SELECT 1 FROM LATERAL aclexplode(
+                              COALESCE(function.proacl,
+                                       acldefault('f', function.proowner))
+                            ) acl
+                            WHERE acl.grantee=0 AND acl.privilege_type='EXECUTE'
+                          )
+                   FROM pg_proc function WHERE function.oid=
+                     'public.v4_production_policy_rollback_inventory_v1(uuid)'::regprocedure"""
+            ).fetchone()
+            assert function_contract == ("s", True, False)
+            after_rows = connection.execute(
+                """SELECT count(*) FROM v4_production_effect_permits
+                   UNION ALL SELECT count(*) FROM v4_production_effect_permit_claims
+                   UNION ALL SELECT count(*) FROM v4_production_current_dispatch
+                   UNION ALL SELECT count(*) FROM v4_cycles
+                   UNION ALL SELECT count(*) FROM v4_run_contexts
+                   UNION ALL SELECT count(*) FROM v4_cycle_events"""
+            ).fetchall()
+            assert after_rows == before_rows
+    finally:
+        _drop_migration_database(source, name)
+
+
+def test_0044_populated_downgrade_refuses_without_mutation():
+    source = os.environ["TEST_DATABASE_URL"]
+    name, database, _ = _prepare_0044_database("p1_0044_populated_downgrade_")
+    try:
+        with psycopg.connect(database) as connection:
+            workspace_id, subject_id = _seed_0044_workspace_subject(connection)
+            _seed_0044_policy(connection, workspace_id)
+            connection.execute(
+                """INSERT INTO permission_grants(
+                          workspace_id,principal_type,principal_id,scope,effect)
+                   VALUES(%s,'identity',%s,'production:publish','allow')""",
+                (workspace_id, str(subject_id)),
+            )
+            connection.execute(
+                "INSERT INTO v4_stop_scopes(workspace_id,scope_key) VALUES(%s,'workspace')",
+                (workspace_id,),
+            )
+            before = connection.execute(
+                """SELECT (SELECT revision FROM identity_subjects WHERE id=%s),
+                          (SELECT count(*) FROM permission_grants),
+                          (SELECT count(*) FROM policy_versions),
+                          (SELECT count(*) FROM v4_stop_scopes),
+                          (SELECT count(*) FROM v4_production_effect_permits)""",
+                (subject_id,),
+            ).fetchone()
+        downgrade = _migration(database, "downgrade", _REVISION_0043)
+        assert downgrade.returncode != 0
+        assert "preserve production policy and revocation authority history" in (
+            downgrade.stdout + downgrade.stderr
+        )
+        with psycopg.connect(database) as connection:
+            after = connection.execute(
+                """SELECT (SELECT revision FROM identity_subjects WHERE id=%s),
+                          (SELECT count(*) FROM permission_grants),
+                          (SELECT count(*) FROM policy_versions),
+                          (SELECT count(*) FROM v4_stop_scopes),
+                          (SELECT count(*) FROM v4_production_effect_permits)""",
+                (subject_id,),
+            ).fetchone()
+            assert after == before
+            assert connection.execute(
+                "SELECT version_num FROM alembic_version"
+            ).fetchone()[0] == _REVISION_0044
+            assert connection.execute(
+                "SELECT to_regclass('public.v4_production_effect_permits') IS NOT NULL"
+            ).fetchone()[0]
+    finally:
+        _drop_migration_database(source, name)
+
+
+def test_0044_empty_downgrade_preserves_0043_fixture_contract():
+    source = os.environ["TEST_DATABASE_URL"]
+    name, database, before = _prepare_0044_database("p1_0044_empty_downgrade_")
+    try:
+        downgraded = _migration(database, "downgrade", _REVISION_0043)
+        assert downgraded.returncode == 0, downgraded.stdout + downgraded.stderr
+        with psycopg.connect(database) as connection:
+            assert connection.execute(
+                "SELECT version_num FROM alembic_version"
+            ).fetchone()[0] == _REVISION_0043
+            _assert_0043_fixture_contract(connection, before)
+            assert connection.execute(
+                "SELECT to_regclass('public.v4_production_effect_permits')"
+            ).fetchone()[0] is None
+        upgraded = _migration(database, "upgrade", _REVISION_0044)
+        assert upgraded.returncode == 0, upgraded.stdout + upgraded.stderr
+        with psycopg.connect(database) as connection:
+            assert connection.execute(
+                "SELECT version_num FROM alembic_version"
+            ).fetchone()[0] == _REVISION_0044
+            _assert_0043_fixture_contract(connection, before)
+    finally:
+        _drop_migration_database(source, name)
