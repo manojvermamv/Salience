@@ -727,25 +727,34 @@ class ProductionEffectDispatch:
                 route_request = self._route_request(
                     request.route, operation_id, permit_id, action_kind
                 )
+                preclaim_delivery = (
+                    action_kind == "delivery" and pointer["current_claim_id"] is None
+                )
                 if (
                     pointer["generation"] != 1
                     or permit["generation"] != 1
                     or pointer["current_permit_id"] != permit_id
-                    or pointer["current_claim_id"] is None
+                    or (pointer["current_claim_id"] is None and not preclaim_delivery)
                 ):
                     return self._denied_action(
                         route_request,
                         "dispatch_already_claimed",
                     )
-                claim = connection.execute(
-                    """SELECT * FROM public.v4_production_effect_permit_claims
-                       WHERE claim_id=%s AND operation_id=%s AND permit_id=%s AND generation=1
-                       FOR UPDATE""",
-                    (pointer["current_claim_id"], operation_id, permit_id),
-                ).fetchone()
-                if claim is None:
+                claim = None
+                if pointer["current_claim_id"] is not None:
+                    claim = connection.execute(
+                        """SELECT * FROM public.v4_production_effect_permit_claims
+                           WHERE claim_id=%s AND operation_id=%s AND permit_id=%s AND generation=1
+                           FOR UPDATE""",
+                        (pointer["current_claim_id"], operation_id, permit_id),
+                    ).fetchone()
+                    if claim is None:
+                        return self._denied_action(
+                            route_request, "current_operation_missing"
+                        )
+                elif not preclaim_delivery:
                     return self._denied_action(
-                        route_request, "current_operation_missing"
+                        route_request, "dispatch_already_claimed"
                     )
                 facts: _AuthorityFacts | None = None
                 try:
@@ -786,7 +795,7 @@ class ProductionEffectDispatch:
                         "production_action_authorized",
                         action=action_kind,
                         permit_id=permit_id,
-                        claim_id=claim["claim_id"],
+                        claim_id=claim["claim_id"] if claim is not None else None,
                         decision_id=decision.decision_id,
                         reason_code=decision.reason_code,
                         request=request,

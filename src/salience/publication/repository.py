@@ -5,8 +5,11 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
+from collections.abc import Mapping
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Any
+from uuid import UUID
 
 import psycopg
 
@@ -14,6 +17,12 @@ from salience.publication.contracts import (
     PublicationRequest,
     PublisherCapabilityProfile,
     PublisherWebhookEvent,
+)
+from salience.governance.production_policy import (
+    ProductionApprovalBinding,
+    ProductionPolicyVersion,
+    parse_approval_row,
+    parse_policy_row,
 )
 
 
@@ -38,6 +47,32 @@ CURRENT_PUBLICATION_AUTHORIZATION_SQL = """
                                 'territory', request.territory,
                                 'visibility', request.visibility,
                                 'capability_profile_version', request.capability_profile_version
+                           ) THEN 'approved'
+                           WHEN publication_approval.status = 'approved'
+                            AND publication_approval.workspace_id = request.workspace_id
+                            AND publication_approval.request_context->>'schema_version' =
+                                'salience.p1-effect-approval.v1'
+                            AND publication_approval.request_context->>'publication_request_id' =
+                                request.id::text
+                            AND publication_approval.request_context->>'program_id' =
+                                request.content_program_id::text
+                            AND publication_approval.request_context->>'account_id' =
+                                request.publisher_account_id::text
+                            AND publication_approval.request_context->>'provider_id' =
+                                request.publisher_id
+                            AND publication_approval.effect_type = 'write'
+                            AND publication_approval.policy_version_id =
+                                ANY(ARRAY(SELECT jsonb_array_elements_text(request.policy_references)::uuid))
+                            AND production_policy.workspace_id = request.workspace_id
+                            AND production_policy.status = 'active'
+                            AND production_policy.document @> jsonb_build_object(
+                                'publication_scope', jsonb_build_object(
+                                    'platform', request.platform,
+                                    'destination', request.destination,
+                                    'locale', request.locale,
+                                    'territory', request.territory,
+                                    'visibility', request.visibility
+                                )
                             ) THEN 'approved'
                            WHEN publication_approval.status = 'approved' THEN 'invalid_scope'
                            ELSE publication_approval.status
@@ -152,8 +187,26 @@ CURRENT_PUBLICATION_AUTHORIZATION_SQL = """
                                      AND license.id IS NULL
                                      AND restriction.id IS NULL
                                  )
-                             )
+                                 )
                        )
+                       , publication_approval.request_context,
+                       publication_approval.decided_by,
+                       publication_approval.decided_at,
+                       production_policy.id::text,
+                       production_policy.workspace_id::text,
+                       production_policy.status,
+                       production_policy.document,
+                       production_policy.document_hash,
+                       production_policy.effective_at,
+                       database_clock.database_time,
+                       request.policy_references @> jsonb_build_array(
+                           publication_approval.policy_version_id::text
+                       ),
+                       publication_approval.status,
+                       publication_approval.job_id::text,
+                       publication_budget.status,
+                       publication_approval.effect_type,
+                       publication_approval.workspace_id::text
                 FROM publication_requests request
                 JOIN ready_to_publish_packages ready ON ready.id = request.ready_package_id
                 JOIN synthetic_media_disclosures disclosure ON disclosure.id = ready.disclosure_id
@@ -181,6 +234,18 @@ CURRENT_PUBLICATION_AUTHORIZATION_SQL = """
                     ORDER BY observed_at DESC
                     LIMIT 1
                 ) profile ON TRUE
+                LEFT JOIN policy_versions production_policy
+                  ON production_policy.id = publication_approval.policy_version_id
+                LEFT JOIN LATERAL (
+                    SELECT reservation.status
+                    FROM publication_plans plan
+                    LEFT JOIN budget_reservations reservation
+                      ON reservation.id = plan.budget_reservation_id
+                    WHERE plan.publication_request_id = request.id
+                    ORDER BY plan.version DESC
+                    LIMIT 1
+                ) publication_budget ON TRUE
+                CROSS JOIN LATERAL (SELECT clock_timestamp() AS database_time) database_clock
                 WHERE request.id = %s
                 """
 
@@ -227,6 +292,78 @@ class CurrentPublicationAuthorization:
     profile: PublisherCapabilityProfile | None
     policy_allowed: bool
     rights_allowed: bool
+    policy_id: str | None = None
+    policy_document_hash: str | None = None
+    policy_status: str | None = None
+    policy_expires_at: datetime | None = None
+    production_policy: ProductionPolicyVersion | None = None
+    approval_binding: ProductionApprovalBinding | None = None
+    database_time: datetime | None = None
+    budget_status: str | None = None
+
+
+def _expected_production_approval(
+    *,
+    request: PublicationRequest,
+    policy: ProductionPolicyVersion,
+    approval_id: UUID,
+    approval_workspace_id: UUID,
+    approval_effect_type: str,
+    approval_job_id: UUID | None,
+    request_context: Mapping[str, object],
+) -> ProductionApprovalBinding:
+    def context_uuid(name: str) -> UUID:
+        return UUID(str(request_context[name]))
+
+    def context_datetime(name: str) -> datetime:
+        value = request_context[name]
+        if not isinstance(value, str):
+            raise ValueError(f"tagged approval {name} must be a string")
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        if parsed.tzinfo is None or parsed.utcoffset() is None:
+            raise ValueError(f"tagged approval {name} must be timezone-aware")
+        return parsed
+
+    scopes = request_context["required_scopes"]
+    if not isinstance(scopes, list) or any(not isinstance(scope, str) for scope in scopes):
+        raise ValueError("tagged approval scopes are malformed")
+    if request.publisher_id is None:
+        raise ValueError("tagged publication approval has no canonical publisher")
+    return ProductionApprovalBinding(
+        approval_request_id=approval_id,
+        workspace_id=approval_workspace_id,
+        program_id=UUID(request.content_program_id),
+        goal_id=context_uuid("goal_id"),
+        goal_revision=request_context["goal_revision"],
+        intent_id=context_uuid("intent_id"),
+        cycle_id=context_uuid("cycle_id"),
+        context_id=context_uuid("context_id"),
+        operation_id=context_uuid("operation_id"),
+        subject_id=context_uuid("subject_id"),
+        policy_version_id=policy.id,
+        policy_document_hash=policy.document_hash,
+        effect_type=approval_effect_type,
+        purpose=request_context["purpose"],
+        artifact_sha256=request_context["artifact_sha256"],
+        account_id=UUID(request.publisher_account_id),
+        provider_id=request.publisher_id,
+        required_scopes=tuple(scopes),
+        budget_id=context_uuid("budget_id"),
+        budget_reservation_id=context_uuid("budget_reservation_id"),
+        expires_at=context_datetime("expires_at"),
+        publication_request_id=UUID(request.id),
+        job_id=approval_job_id,
+        workflow_id=request_context["workflow_id"],
+        workflow_run_id=request_context["workflow_run_id"],
+        publication_plan_id=context_uuid("publication_plan_id"),
+        publication_attempt_id=context_uuid("publication_attempt_id"),
+        external_effect_id=context_uuid("external_effect_id")
+        if "external_effect_id" in request_context
+        else None,
+        remote_receipt_id=context_uuid("remote_receipt_id")
+        if "remote_receipt_id" in request_context
+        else None,
+    )
 
 
 @dataclass(frozen=True)
@@ -840,6 +977,78 @@ class PublicationRepository:
         if row is None:
             raise KeyError(publication_request_id)
         profile = PublisherCapabilityProfile.model_validate(row[24]) if row[24] is not None else None
+        production_tagged = (
+            len(row) > 27
+            and isinstance(row[27], Mapping)
+            and row[27].get("schema_version") == "salience.p1-effect-approval.v1"
+        )
+        production_policy = None
+        approval_binding = None
+        database_time = row[36] if len(row) > 36 else None
+        if production_tagged:
+            if (
+                not isinstance(database_time, datetime)
+                or database_time.tzinfo is None
+                or database_time.utcoffset() is None
+                or row[37] is not True
+                or row[38] != "approved"
+                or row[41] != "write"
+            ):
+                raise PermissionError("current tagged publication approval is invalid")
+            policy_row = {
+                "id": row[30],
+                "workspace_id": row[31],
+                "status": row[32],
+                "document": row[33],
+                "document_hash": row[34],
+                "effective_at": row[35],
+            }
+            try:
+                request = _publication_request_from_row(row[:15])
+                production_policy = parse_policy_row(
+                    policy_row,
+                    workspace_id=UUID(row[1]),
+                    database_time=database_time,
+                )
+                expected = _expected_production_approval(
+                    request=request,
+                    policy=production_policy,
+                    approval_id=UUID(row[12]),
+                    approval_workspace_id=UUID(row[42]),
+                    approval_effect_type=row[41],
+                    approval_job_id=UUID(row[39]) if row[39] is not None else None,
+                    request_context=row[27],
+                )
+                approval_binding = parse_approval_row(
+                    {
+                        "id": row[12],
+                        "workspace_id": row[42],
+                        "policy_version_id": row[30],
+                        "effect_type": row[41],
+                        "status": row[38],
+                        "request_context": row[27],
+                        "job_id": row[39],
+                        "decided_by": row[28],
+                        "decided_at": row[29],
+                    },
+                    expected=expected,
+                    database_time=database_time,
+                )
+            except (KeyError, TypeError, ValueError, PermissionError) as error:
+                raise PermissionError("current tagged publication approval is invalid") from error
+            if approval_binding.publication_request_id != UUID(row[0]):
+                raise PermissionError("tagged publication request mismatch")
+            if approval_binding.policy_document_hash != production_policy.document_hash:
+                raise PermissionError("tagged publication policy hash mismatch")
+        policy_document = row[33] if len(row) > 33 else None
+        policy_expires_at = None
+        if isinstance(policy_document, Mapping):
+            raw_expiry = policy_document.get("expires_at")
+            if isinstance(raw_expiry, str):
+                try:
+                    policy_expires_at = datetime.fromisoformat(raw_expiry.replace("Z", "+00:00"))
+                except ValueError:
+                    policy_expires_at = None
         return CurrentPublicationAuthorization(
             request=_publication_request_from_row(row[:15]),
             ready_package_approval_state=row[15],
@@ -854,6 +1063,14 @@ class PublicationRepository:
             profile=profile,
             policy_allowed=row[25],
             rights_allowed=row[26],
+            policy_id=row[30] if len(row) > 30 else None,
+            policy_document_hash=row[34] if len(row) > 34 else None,
+            policy_status=row[32] if len(row) > 32 else None,
+            policy_expires_at=policy_expires_at,
+            production_policy=production_policy,
+            approval_binding=approval_binding,
+            database_time=database_time,
+            budget_status=row[40] if len(row) > 40 else None,
         )
 
     @staticmethod

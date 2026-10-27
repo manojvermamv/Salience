@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
@@ -9,6 +10,7 @@ from hashlib import sha256
 import json
 import time
 from threading import Event, Thread
+from types import SimpleNamespace
 from uuid import UUID, uuid4
 
 import psycopg
@@ -28,6 +30,10 @@ from salience.cycles.production_dispatch import (
     RouteFenceRequest,
 )
 from salience.observability.production_authorization import ProductionAuthorizationMetrics
+from salience.governance.policy import EffectClass
+from salience.publication.contracts import PublicationRequest
+from salience.publication.repository import PublicationRepository
+from salience.workflows.publication import PublicationActivities, PublicationWorkflowState
 from test_v4_cycle_admission import cycles
 from test_v4_cadence_policy import policy, request as cadence_request
 from test_v4_cycle_accounting import accounting, admitted as accounting_admitted
@@ -563,6 +569,557 @@ def test_active_stop_denial_records_db_derived_stop_latency(accounting):
     assert "stop_to_denial" in repr(reader.get_metrics_data())
 
 
+class _PublicationActivityAdapter:
+    def __init__(self):
+        self.capabilities = SimpleNamespace(publisher_id="production-publisher", version="1")
+        self.submit_calls = 0
+        self.reconcile_calls = 0
+        self.delivery_calls = 0
+
+    async def submit(self, request, credential_lease):
+        self.submit_calls += 1
+        return SimpleNamespace(
+            publisher_id="production-publisher",
+            remote_id="remote-publication-1",
+            state="accepted",
+            safe_metadata_hash="a" * 64,
+            remote_url=None,
+        )
+
+    async def reconcile(self, idempotency_key):
+        self.reconcile_calls += 1
+        return SimpleNamespace(
+            publisher_id="production-publisher",
+            remote_id="remote-publication-1",
+            state="accepted",
+            safe_metadata_hash="a" * 64,
+            remote_url=None,
+        )
+
+    async def prepare_delivery(self, request, delivery_url):
+        self.delivery_calls += 1
+
+
+class _PublicationActivityStore:
+    async def begin_effect_submission(self, run, effect_key):
+        return True
+
+    async def complete_effect(self, *args, **kwargs):
+        return None
+
+
+class _PublicationActivityRepository:
+    async def create_attempt(self, **kwargs):
+        return SimpleNamespace(id=str(uuid4()))
+
+    async def record_remote_receipt(self, **kwargs):
+        return SimpleNamespace(id=str(uuid4()), remote_id=kwargs["remote_id"])
+
+    async def record_status_event(self, **kwargs):
+        return None
+
+
+class _DenyingPublicationDispatch:
+    def __init__(self, *, deny_action=None):
+        self.claim_calls = []
+        self.action_calls = []
+        self.deny_action = deny_action
+
+    def claim_permit(self, operation_id, permit_id):
+        self.claim_calls.append((operation_id, permit_id))
+        raise ProductionAuthorizationDenied("approval_invalid")
+
+    def authorize_action(self, operation_id, permit_id, action_kind):
+        self.action_calls.append((operation_id, permit_id, action_kind))
+        if action_kind == self.deny_action:
+            return SimpleNamespace(authorized=False, reason_code="route_fence_denied")
+        return SimpleNamespace(authorized=True, reason_code=None)
+
+
+def _publication_activity_case(*, dispatch=None):
+    request = PublicationRequest(
+        id=str(uuid4()),
+        workspace_id=str(uuid4()),
+        content_program_id=str(uuid4()),
+        ready_package_id=str(uuid4()),
+        publisher_account_id=str(uuid4()),
+        publication_approval_request_id=str(uuid4()),
+        platform="production-platform",
+        destination="channel:approved",
+        locale="en-US",
+        territory="US",
+        visibility="public",
+        capability_profile_version=1,
+        idempotency_key="production-publication-activity-test",
+        approval_reference="production-approval",
+        publisher_id="production-publisher",
+    )
+    adapter = _PublicationActivityAdapter()
+    lease_calls = []
+    state = PublicationWorkflowState(
+        store=_PublicationActivityStore(),
+        repository=_PublicationActivityRepository(),
+        publisher_adapters={"production-publisher": adapter},
+        credential_lease_factory=lambda publication_request: lease_calls.append(publication_request)
+        or object(),
+    )
+    if dispatch is not None:
+        state.production_dispatch = dispatch
+    activities = PublicationActivities(state)
+    run = SimpleNamespace(
+        job_id=uuid4(),
+        trace_context=SimpleNamespace(trace_id="a" * 32, span_id="b" * 16),
+    )
+
+    async def current_run():
+        return run
+
+    async def checkpoint(_name):
+        return None
+
+    async def current_authorization_denial(_request):
+        return None
+
+    activities._run = current_run
+    activities._checkpoint = checkpoint
+    activities._current_authorization_denial = current_authorization_denial
+    payload = {
+        "request": request.model_dump(mode="json"),
+        "publication_request_id": request.id,
+        "publication_plan_id": str(uuid4()),
+        "production_operation_id": str(uuid4()),
+        "production_permit_id": str(uuid4()),
+        "budget_reservation_id": str(uuid4()),
+    }
+
+    async def current_production_authorization(_request):
+        return (
+            SimpleNamespace(
+                approval_binding=SimpleNamespace(
+                    operation_id=UUID(payload["production_operation_id"])
+                )
+            ),
+            None,
+        )
+
+    activities._load_current_production_authorization = current_production_authorization
+    return activities, adapter, lease_calls, payload
+
+
+def test_production_publication_revoke_between_activities_never_submits():
+    dispatch = _DenyingPublicationDispatch()
+    activities, adapter, lease_calls, payload = _publication_activity_case(dispatch=dispatch)
+
+    result = asyncio.run(activities.submit_or_reconcile(payload))
+
+    assert adapter.submit_calls == 0
+    assert lease_calls == []
+    assert dispatch.claim_calls
+    assert result["authorization_revoked"] is True
+
+
+def test_production_publication_route_transfer_blocks_next_action():
+    dispatch = _DenyingPublicationDispatch(deny_action="delivery")
+    activities, adapter, _lease_calls, payload = _publication_activity_case(dispatch=dispatch)
+
+    result = asyncio.run(activities.delivery(payload))
+
+    assert adapter.delivery_calls == 0
+    assert dispatch.action_calls[-1][2] == "delivery"
+    assert result.get("authorization_revoked") is True
+
+
+def test_missing_production_dispatch_never_calls_nonfixture_adapter():
+    activities, adapter, lease_calls, payload = _publication_activity_case()
+
+    result = asyncio.run(activities.submit_or_reconcile(payload))
+
+    assert adapter.submit_calls == 0
+    assert lease_calls == []
+    assert result["authorization_revoked"] is True
+
+
+def test_production_submit_claims_before_lease_resolution_and_provider_dispatch():
+    events = []
+
+    class Dispatch:
+        def claim_permit(self, operation_id, permit_id):
+            events.append("claim")
+            return SimpleNamespace(dispatch_allowed=True)
+
+        def authorize_action(self, operation_id, permit_id, action_kind):
+            events.append("authorize:" + action_kind)
+            return SimpleNamespace(authorized=True, reason_code=None)
+
+    activities, adapter, _lease_calls, payload = _publication_activity_case(
+        dispatch=Dispatch()
+    )
+    activities._state.credential_lease_factory = lambda _request: events.append("lease") or object()
+    original_submit = adapter.submit
+
+    async def submit(request, lease):
+        events.append("submit")
+        return await original_submit(request, lease)
+
+    adapter.submit = submit
+
+    result = asyncio.run(activities.submit_or_reconcile(payload))
+
+    assert result["publication_state"] == "accepted"
+    assert events == ["claim", "lease", "submit"]
+
+
+def test_current_publication_authorization_projects_canonical_policy_and_approval():
+    workspace_id, program_id, package_id, account_id = (uuid4() for _ in range(4))
+    request_id, approval_id, policy_id, job_id = (uuid4() for _ in range(4))
+    operation_ids = [uuid4() for _ in range(9)]
+    now = datetime.now(timezone.utc)
+    policy_expiry = now + timedelta(hours=2)
+    approval_expiry = now + timedelta(hours=1)
+    policy_document = {
+        "schema_version": "salience.p1-production-policy.v1",
+        "allowed_effects": ["write"],
+        "approval_required_effects": ["write"],
+        "expires_at": policy_expiry.isoformat(),
+        "jurisdiction_refs": [],
+        "publication_scope": {
+            "platform": "production-platform",
+            "destination": "channel:approved",
+            "locale": "en-US",
+            "territory": "US",
+            "visibility": "public",
+        },
+    }
+    policy_hash = sha256(
+        json.dumps(policy_document, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+    approval_context = {
+        "schema_version": "salience.p1-effect-approval.v1",
+        "workspace_id": str(workspace_id),
+        "program_id": str(program_id),
+        "goal_id": str(operation_ids[0]),
+        "goal_revision": 1,
+        "intent_id": str(operation_ids[1]),
+        "cycle_id": str(operation_ids[2]),
+        "context_id": str(operation_ids[3]),
+        "operation_id": str(operation_ids[4]),
+        "subject_id": str(operation_ids[5]),
+        "policy_version_id": str(policy_id),
+        "policy_document_hash": policy_hash,
+        "effect_type": "write",
+        "purpose": "approved-publication",
+        "artifact_sha256": "a" * 64,
+        "account_id": str(account_id),
+        "provider_id": "production-publisher",
+        "required_scopes": ["publish:create"],
+        "budget_id": str(operation_ids[6]),
+        "budget_reservation_id": str(operation_ids[7]),
+        "expires_at": approval_expiry.isoformat(),
+        "publication_request_id": str(request_id),
+        "job_id": str(job_id),
+        "workflow_id": "production-publication-workflow",
+        "workflow_run_id": "production-publication-run",
+        "publication_plan_id": str(operation_ids[8]),
+        "publication_attempt_id": str(uuid4()),
+        "external_effect_id": str(uuid4()),
+    }
+    row = (
+        str(request_id),
+        str(workspace_id),
+        str(program_id),
+        str(package_id),
+        str(account_id),
+        "production-platform",
+        "channel:approved",
+        "en-US",
+        "US",
+        "public",
+        1,
+        "production-publication-key",
+        str(approval_id),
+        "production-approval",
+        "production-publisher",
+        "approved",
+        "approved",
+        "approved",
+        str(workspace_id),
+        "organization",
+        "active",
+        str(account_id),
+        "active",
+        ["publish:create"],
+        None,
+        True,
+        True,
+        approval_context,
+        "production-reviewer",
+        now,
+        str(policy_id),
+        str(workspace_id),
+        "active",
+        policy_document,
+        policy_hash,
+        now - timedelta(minutes=1),
+        now,
+        True,
+        "approved",
+        str(job_id),
+        "reserved",
+        "write",
+        str(workspace_id),
+    )
+
+    authorization = PublicationRepository._authorization_from_row(row, str(request_id))
+
+    assert authorization.policy_id == str(policy_id)
+    assert authorization.policy_document_hash == policy_hash
+    assert authorization.policy_status == "active"
+    assert authorization.production_policy is not None
+    assert authorization.production_policy.expires_at == policy_expiry
+    assert authorization.approval_binding is not None
+    assert authorization.approval_binding.operation_id == operation_ids[4]
+    assert authorization.approval_binding.publication_request_id == request_id
+
+
+def test_production_authorize_issues_one_permit_from_current_publication_binding(monkeypatch):
+    now = datetime.now(timezone.utc)
+    request = PublicationRequest(
+        id=str(uuid4()),
+        workspace_id=str(uuid4()),
+        content_program_id=str(uuid4()),
+        ready_package_id=str(uuid4()),
+        publisher_account_id=str(uuid4()),
+        publication_approval_request_id=str(uuid4()),
+        platform="production-platform",
+        destination="channel:approved",
+        locale="en-US",
+        territory="US",
+        visibility="public",
+        capability_profile_version=1,
+        idempotency_key="production-publication-authorize-test",
+        approval_reference="production-approval",
+        publisher_id="production-publisher",
+    )
+    job_id, plan_id, attempt_id, effect_id, permit_id = (uuid4() for _ in range(5))
+    operation_id = uuid4()
+    approval = SimpleNamespace(
+        approval_request_id=UUID(request.publication_approval_request_id),
+        workspace_id=UUID(request.workspace_id),
+        goal_id=uuid4(),
+        goal_revision=1,
+        program_id=UUID(request.content_program_id),
+        intent_id=uuid4(),
+        cycle_id=uuid4(),
+        context_id=uuid4(),
+        operation_id=operation_id,
+        subject_id=uuid4(),
+        policy_version_id=uuid4(),
+        policy_document_hash="a" * 64,
+        effect_type="write",
+        purpose="approved-publication",
+        artifact_sha256="b" * 64,
+        account_id=UUID(request.publisher_account_id),
+        provider_id="production-publisher",
+        required_scopes=("publish:create",),
+        budget_id=uuid4(),
+        budget_reservation_id=uuid4(),
+        expires_at=now + timedelta(hours=1),
+        publication_request_id=UUID(request.id),
+        job_id=job_id,
+        workflow_id="production-publication-workflow",
+        workflow_run_id="production-publication-run",
+        publication_plan_id=plan_id,
+        publication_attempt_id=attempt_id,
+        external_effect_id=effect_id,
+        remote_receipt_id=None,
+    )
+    policy = SimpleNamespace(
+        id=approval.policy_version_id,
+        status="active",
+        document_hash=approval.policy_document_hash,
+        expires_at=now + timedelta(hours=2),
+        allowed_effects=frozenset({EffectClass.WRITE}),
+        approval_required_effects=frozenset({EffectClass.WRITE}),
+        publication_scope=SimpleNamespace(
+            platform=request.platform,
+            destination=request.destination,
+            locale=request.locale,
+            territory=request.territory,
+            visibility=request.visibility,
+        ),
+    )
+    profile = SimpleNamespace(
+        publisher_id="production-publisher", version="1", quota_state="available"
+    )
+    current = SimpleNamespace(
+        request=request,
+        ready_package_approval_state="approved",
+        publication_approval_state="approved",
+        disclosure_status="approved",
+        account_workspace_id=request.workspace_id,
+        account_type="organization",
+        account_status="active",
+        connection_account_id=request.publisher_account_id,
+        connection_status="active",
+        connection_scopes=frozenset({"publish:create"}),
+        profile=profile,
+        policy_allowed=True,
+        rights_allowed=True,
+        policy_id=str(policy.id),
+        policy_document_hash=policy.document_hash,
+        policy_status="active",
+        production_policy=policy,
+        approval_binding=approval,
+        database_time=now,
+        budget_status="reserved",
+    )
+
+    class Store(_PublicationActivityStore):
+        async def plan_effect(self, run, effect_key):
+            return None
+
+        async def effect(self, run, effect_key):
+            return SimpleNamespace(effect_id=str(effect_id))
+
+    class Repository:
+        async def create_plan(self, **kwargs):
+            return SimpleNamespace(id=str(plan_id))
+
+        async def attach_reservation(self, **kwargs):
+            return None
+
+        async def load_current_authorization(self, publication_request_id):
+            return current
+
+        async def create_attempt(self, **kwargs):
+            return SimpleNamespace(id=str(attempt_id))
+
+    class Costs:
+        async def reserve_for_publication_effect(self, **kwargs):
+            return SimpleNamespace(
+                reservation_id=str(uuid4()), status=SimpleNamespace(value="reserved")
+            )
+
+    class Authorizer:
+        def __init__(self):
+            self.contexts = []
+
+        async def reauthorize(self, context):
+            self.contexts.append(context)
+            return SimpleNamespace(allowed=True, reasons=())
+
+    class Dispatch:
+        def __init__(self):
+            self.issue_calls = []
+
+        def issue_permit(self, permit_request):
+            self.issue_calls.append(permit_request)
+            return SimpleNamespace(permit_id=permit_id, operation_id=operation_id)
+
+    route = RouteBinding(
+        deployment_id=uuid4(),
+        environment_id=uuid4(),
+        route_id=uuid4(),
+        slot_id=uuid4(),
+        owner_id=uuid4(),
+        fencing_epoch=1,
+        route_manifest_sha256="c" * 64,
+        artifact_lock_sha256="d" * 64,
+    )
+
+    def make_permit(approved_binding, publication_binding):
+        return ProductionPermitRequest(
+            workspace_id=approved_binding.workspace_id,
+            goal_id=approved_binding.goal_id,
+            goal_revision=approved_binding.goal_revision,
+            program_id=approved_binding.program_id,
+            intent_id=approved_binding.intent_id,
+            cycle_id=approved_binding.cycle_id,
+            context_id=approved_binding.context_id,
+            operation_id=approved_binding.operation_id,
+            subject_id=approved_binding.subject_id,
+            policy_version_id=approved_binding.policy_version_id,
+            approval_request_id=approved_binding.approval_request_id,
+            required_scopes=approved_binding.required_scopes,
+            effect_type=approved_binding.effect_type,
+            purpose=approved_binding.purpose,
+            artifact_sha256=approved_binding.artifact_sha256,
+            account_id=approved_binding.account_id,
+            budget_id=approved_binding.budget_id,
+            budget_reservation_id=approved_binding.budget_reservation_id,
+            provider_id=approved_binding.provider_id,
+            idempotency_key=request.idempotency_key,
+            route=route,
+            execution_deadline=now + timedelta(minutes=10),
+            ttl_seconds=30,
+            publication_binding=publication_binding,
+        )
+
+    dispatch = Dispatch()
+    authorizer = Authorizer()
+    state = PublicationWorkflowState(
+        store=Store(),
+        repository=Repository(),
+        publisher_adapters={"production-publisher": _PublicationActivityAdapter()},
+        cost_repository=Costs(),
+        authorizer=authorizer,
+        production_dispatch=dispatch,
+        production_permit_request_factory=make_permit,
+        policy_allowed=False,
+    )
+    activities = PublicationActivities(state)
+    run = SimpleNamespace(
+        job_id=job_id,
+        trace_context=SimpleNamespace(trace_id="e" * 32, span_id="f" * 16),
+    )
+
+    async def current_run():
+        return run
+
+    async def checkpoint(_name):
+        return None
+
+    async def current_production_authorization(_request):
+        return current, None
+
+    activities._run = current_run
+    activities._checkpoint = checkpoint
+    activities._load_current_production_authorization = current_production_authorization
+    monkeypatch.setattr(
+        "salience.workflows.publication.activity.info",
+        lambda: SimpleNamespace(
+            workflow_id=approval.workflow_id,
+            workflow_run_id=approval.workflow_run_id,
+        ),
+    )
+    payload = {
+        "workflow_request": {
+            "workspace_id": request.workspace_id,
+            "content_program_id": request.content_program_id,
+            "ready_package_id": request.ready_package_id,
+            "publisher_account_id": request.publisher_account_id,
+            "publication_approval_request_id": request.publication_approval_request_id,
+            "budget_id": str(approval.budget_id),
+            "idempotency_key": request.idempotency_key,
+            "platform": request.platform,
+            "destination": request.destination,
+            "locale": request.locale,
+            "territory": request.territory,
+            "visibility": request.visibility,
+            "capability_profile_version": 1,
+        },
+        "request": request.model_dump(mode="json"),
+    }
+
+    result = asyncio.run(activities.authorize(payload))
+
+    assert result["authorized"] is True
+    assert result["production_operation_id"] == str(operation_id)
+    assert result["production_permit_id"] == str(permit_id)
+    assert len(dispatch.issue_calls) == 1
+    assert authorizer.contexts[-1].policy_allowed is True
+
+
 def test_repeated_denial_attempts_append_immutable_events(accounting):
     case = _production_case(accounting)
     with psycopg.connect(case["database"]) as connection:
@@ -1008,6 +1565,45 @@ def test_each_action_requires_a_fresh_route_decision(accounting):
     denied = case["dispatch"].authorize_action(case["operation_id"], issued.permit_id, "finalize")
     assert denied.authorized is False and denied.reason_code == "route_fence_denied"
     assert _claim_count(case["database"], case["operation_id"]) == 1
+
+
+def test_issued_permit_can_authorize_delivery_before_claim_and_records_event(accounting):
+    case = _production_case(accounting)
+    issued = case["dispatch"].issue_permit(case["request"])
+
+    decision = case["dispatch"].authorize_action(
+        case["operation_id"], issued.permit_id, "delivery"
+    )
+
+    assert decision.authorized is True
+    assert [call.action_kind for call in case["route"].calls] == ["issue", "delivery"]
+    assert _claim_count(case["database"], case["operation_id"]) == 0
+    with psycopg.connect(case["database"]) as connection:
+        event = connection.execute(
+            "SELECT payload FROM v4_cycle_events WHERE cycle_id=%s "
+            "AND kind='production_action_authorized' AND payload->>'action'='delivery'",
+            (case["cycle_id"],),
+        ).fetchone()
+    assert event is not None
+    assert event[0]["claim_id"] is None
+    assert event[0]["decision_id"] == str(decision.decision_id)
+
+
+@pytest.mark.parametrize(
+    "action_kind", ("submit", "reconcile", "await", "status", "cancel", "receipt", "finalize")
+)
+def test_provider_facing_actions_require_claim_before_route_authorization(accounting, action_kind):
+    case = _production_case(accounting)
+    issued = case["dispatch"].issue_permit(case["request"])
+
+    decision = case["dispatch"].authorize_action(
+        case["operation_id"], issued.permit_id, action_kind
+    )
+
+    assert decision.authorized is False
+    assert decision.reason_code == "dispatch_already_claimed"
+    assert [call.action_kind for call in case["route"].calls] == ["issue"]
+    assert _claim_count(case["database"], case["operation_id"]) == 0
 
 
 def test_crash_before_claim_reloads_current_authority(accounting):
