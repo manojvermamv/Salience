@@ -36,6 +36,25 @@ not_run() {
   printf 'NOT RUN: %s\n' "$1"
 }
 
+if ! source_status=$(git -C "$root" status --porcelain --untracked-files=all); then
+  fail "Source repository status could not be determined"
+  exit "$result"
+fi
+if [[ -n $source_status ]]; then
+  fail "Source repository is dirty"
+  exit "$result"
+fi
+
+if ! source_commit=$(git -C "$root" rev-parse --verify 'HEAD^{commit}'); then
+  fail "Git HEAD could not be resolved"
+  exit "$result"
+fi
+if [[ ! $source_commit =~ ^[0-9a-f]{40}$ ]]; then
+  fail "Git HEAD is not a full commit SHA"
+  exit "$result"
+fi
+printf 'SOURCE_COMMIT: %s\n' "$source_commit"
+
 if [[ -n ${PYTHON_BIN:-} ]]; then
   python_bin=$PYTHON_BIN
 else

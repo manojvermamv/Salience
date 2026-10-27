@@ -53,18 +53,38 @@ cat >"$tmp/bin/node" <<'STUB'
 exit 0
 STUB
 
-chmod +x "$tmp/bin/docker" "$tmp/bin/python-stub" "$tmp/bin/node"
+cat >"$tmp/bin/git" <<'STUB'
+#!/usr/bin/env bash
+set -euo pipefail
+printf '%s\n' "$*" >> "$VERIFY_PHASE9_GIT_LOG"
+if [[ $* == *'status --porcelain'* ]]; then
+  case ${VERIFY_PHASE9_GIT_MODE:-clean} in
+    dirty|dirty-untracked) printf '?? untracked-fixture-file\n' ;;
+    dirty-tracked) printf ' M tracked-fixture-file\n' ;;
+  esac
+elif [[ $* == *'rev-parse --verify HEAD^{commit}'* ]]; then
+  printf '%s\n' "$VERIFY_PHASE9_HEAD"
+fi
+STUB
+
+chmod +x "$tmp/bin/docker" "$tmp/bin/python-stub" "$tmp/bin/node" "$tmp/bin/git"
 
 run_verifier() {
   local mode=$1
   local output=$2
+  local git_mode=${3:-clean}
+  local head=${4:-0123456789abcdef0123456789abcdef01234567}
   : >"$tmp/docker.log"
   : >"$tmp/python.log"
+  : >"$tmp/git.log"
   if PATH="$tmp/bin:$PATH" \
     PYTHON_BIN="$tmp/bin/python-stub" \
     VERIFY_PHASE9_MODE="$mode" \
+    VERIFY_PHASE9_GIT_MODE="$git_mode" \
+    VERIFY_PHASE9_HEAD="$head" \
     VERIFY_PHASE9_DOCKER_LOG="$tmp/docker.log" \
     VERIFY_PHASE9_PYTHON_LOG="$tmp/python.log" \
+    VERIFY_PHASE9_GIT_LOG="$tmp/git.log" \
     VERIFY_PHASE9_UUID=0123456789abcdef0123456789abcdef \
     bash "$root/scripts/verify-phase-9.sh" >"$output" 2>&1; then
     return 0
@@ -72,6 +92,62 @@ run_verifier() {
     return $?
   fi
 }
+
+if ! run_verifier success "$tmp/clean.log"; then
+  printf 'Expected clean source verification to succeed\n' >&2
+  cat "$tmp/clean.log" >&2
+  exit 1
+fi
+grep -Fxq 'SOURCE_COMMIT: 0123456789abcdef0123456789abcdef01234567' \
+  "$tmp/clean.log" || {
+    printf 'Verifier did not print the exact source commit\n' >&2
+    exit 1
+  }
+source_line=$(grep -n -F 'SOURCE_COMMIT:' "$tmp/clean.log" | cut -d: -f1)
+migration_line=$(grep -n -F 'Canonical migrations apply through' "$tmp/clean.log" | cut -d: -f1)
+if (( source_line >= migration_line )); then
+  printf 'Source commit provenance was printed after migrations\n' >&2
+  exit 1
+fi
+
+if run_verifier success "$tmp/dirty.log" dirty; then
+  printf 'Expected dirty source verification to fail\n' >&2
+  exit 1
+fi
+grep -Fq 'FAIL: Source repository is dirty' "$tmp/dirty.log" || {
+  printf 'Verifier did not identify dirty source state\n' >&2
+  exit 1
+}
+if grep -Eq 'CREATE DATABASE|DROP DATABASE' "$tmp/docker.log"; then
+  printf 'Verifier touched the disposable database after dirty-source failure\n' >&2
+  exit 1
+fi
+
+if run_verifier success "$tmp/dirty-tracked.log" dirty-tracked; then
+  printf 'Expected tracked changes to fail source verification\n' >&2
+  exit 1
+fi
+grep -Fq 'FAIL: Source repository is dirty' "$tmp/dirty-tracked.log" || {
+  printf 'Verifier did not identify tracked source changes\n' >&2
+  exit 1
+}
+if grep -Eq 'CREATE DATABASE|DROP DATABASE' "$tmp/docker.log"; then
+  printf 'Verifier touched the disposable database after tracked-source failure\n' >&2
+  exit 1
+fi
+
+if run_verifier success "$tmp/invalid-sha.log" clean malformed-sha; then
+  printf 'Expected malformed source commit verification to fail\n' >&2
+  exit 1
+fi
+grep -Fq 'FAIL: Git HEAD is not a full commit SHA' "$tmp/invalid-sha.log" || {
+  printf 'Verifier did not reject malformed source commit output\n' >&2
+  exit 1
+}
+if grep -Eq 'CREATE DATABASE|DROP DATABASE' "$tmp/docker.log"; then
+  printf 'Verifier touched the disposable database after malformed SHA failure\n' >&2
+  exit 1
+fi
 
 if run_verifier create-fails "$tmp/create-fails.log"; then
   printf 'Expected database creation failure to fail verification\n' >&2
