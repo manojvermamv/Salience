@@ -701,6 +701,216 @@ class ProductionEffectDispatch:
             )
         return decision
 
+    def record_publication_liability_held(
+        self,
+        publication_request_id: UUID | str,
+        action_kind: str,
+        reason_code: str,
+    ) -> bool:
+        """Append an immutable hold event for an already claimed publication."""
+        try:
+            publication_request_id = UUID(str(publication_request_id))
+        except (TypeError, ValueError) as error:
+            raise ValueError("canonical publication request UUID required") from error
+        if not isinstance(action_kind, str) or not _ACTION.fullmatch(action_kind):
+            raise ValueError("bounded production action kind required")
+        safe_reason = reason_code if reason_code in _REASON_CODES else "other"
+        return self._record_publication_liability_held(
+            publication_request_id, action_kind, safe_reason
+        )
+
+    def _record_publication_liability_held(
+        self,
+        publication_request_id: UUID,
+        action_kind: str,
+        reason_code: str,
+    ) -> bool:
+        with psycopg.connect(self.database_url, row_factory=dict_row) as connection:
+            with connection.transaction():
+                candidates = connection.execute(
+                    """SELECT pointer.operation_id
+                       FROM public.v4_production_current_dispatch pointer
+                       JOIN public.v4_production_effect_permits permit
+                         ON permit.operation_id=pointer.operation_id
+                        AND permit.permit_id=pointer.current_permit_id
+                       WHERE permit.request_snapshot->>'publication_request_id'=%s
+                       ORDER BY pointer.operation_id""",
+                    (str(publication_request_id),),
+                ).fetchall()
+                if not candidates:
+                    return False
+                if len(candidates) != 1:
+                    raise ProductionAuthorizationDenied("invalid_binding")
+                operation_id = candidates[0]["operation_id"]
+                self._lock_operation(connection, operation_id)
+                pointer = connection.execute(
+                    """SELECT * FROM public.v4_production_current_dispatch
+                       WHERE operation_id=%s FOR UPDATE""",
+                    (operation_id,),
+                ).fetchone()
+                if pointer is None or pointer["current_claim_id"] is None:
+                    return False
+                permit_id = pointer["current_permit_id"]
+                permit = connection.execute(
+                    """SELECT * FROM public.v4_production_effect_permits
+                       WHERE operation_id=%s AND permit_id=%s FOR UPDATE""",
+                    (operation_id, permit_id),
+                ).fetchone()
+                if pointer is None or permit is None:
+                    raise ProductionAuthorizationDenied("permit_missing")
+                if (
+                    pointer["generation"] != permit["generation"]
+                    or pointer["current_permit_id"] != permit_id
+                ):
+                    raise ProductionAuthorizationDenied("current_operation_missing")
+                claim_id = pointer["current_claim_id"]
+                if claim_id is None:
+                    return False
+                claim = connection.execute(
+                    """SELECT claim_id FROM public.v4_production_effect_permit_claims
+                       WHERE claim_id=%s AND operation_id=%s AND permit_id=%s
+                         AND generation=%s FOR UPDATE""",
+                    (claim_id, operation_id, permit_id, pointer["generation"]),
+                ).fetchone()
+                if claim is None:
+                    raise ProductionAuthorizationDenied("current_operation_missing")
+                request = self._request_from_snapshot(permit["request_snapshot"])
+                binding = request.publication_binding
+                if binding is None or binding.publication_request_id != publication_request_id:
+                    raise ProductionAuthorizationDenied("invalid_binding")
+
+                request_row = connection.execute(
+                    """SELECT id FROM public.publication_requests
+                       WHERE id=%s FOR UPDATE""",
+                    (binding.publication_request_id,),
+                ).fetchone()
+                current_plan = connection.execute(
+                    """SELECT id,external_effect_id FROM public.publication_plans
+                       WHERE publication_request_id=%s
+                       ORDER BY version DESC LIMIT 1 FOR UPDATE""",
+                    (binding.publication_request_id,),
+                ).fetchone()
+                plan = connection.execute(
+                    """SELECT id,external_effect_id FROM public.publication_plans
+                       WHERE id=%s AND publication_request_id=%s FOR UPDATE""",
+                    (binding.publication_plan_id, binding.publication_request_id),
+                ).fetchone()
+                attempt = connection.execute(
+                    """SELECT id FROM public.publication_attempts
+                       WHERE id=%s AND publication_plan_id=%s FOR UPDATE""",
+                    (binding.publication_attempt_id, binding.publication_plan_id),
+                ).fetchone()
+                effect_id = plan["external_effect_id"] if plan is not None else None
+                if effect_id is not None:
+                    connection.execute(
+                        "SELECT id FROM public.external_effects WHERE id=%s FOR UPDATE",
+                        (effect_id,),
+                    ).fetchone()
+                receipt = None
+                publication = None
+                if attempt is not None:
+                    receipt = connection.execute(
+                        """SELECT id,remote_id,state FROM public.remote_publication_receipts
+                           WHERE publication_attempt_id=%s FOR UPDATE""",
+                        (binding.publication_attempt_id,),
+                    ).fetchone()
+                    if receipt is not None:
+                        publication = connection.execute(
+                            """SELECT id FROM public.publications
+                               WHERE remote_publication_receipt_id=%s FOR UPDATE""",
+                            (receipt["id"],),
+                        ).fetchone()
+                cycle = connection.execute(
+                    """SELECT cycle.id AS cycle_id,cycle.intent_id,goal.workspace_id,
+                              goal.id AS goal_id,context.payload->>'traceparent' AS traceparent
+                       FROM public.v4_cycles cycle
+                       JOIN public.v4_cycle_intents intent ON intent.id=cycle.intent_id
+                       JOIN public.v4_goals goal ON goal.id=intent.goal_id
+                       JOIN public.v4_run_contexts context ON context.id=cycle.context_id
+                       WHERE cycle.operation_id=%s""",
+                    (operation_id,),
+                ).fetchone()
+                if cycle is None:
+                    raise ProductionAuthorizationDenied("current_operation_missing")
+
+                payload = {
+                    "schema_version": "salience.p1-production-publication-liability-held.v1",
+                    "operation_id": str(operation_id),
+                    "permit_id": str(permit_id),
+                    "claim_id": str(claim_id),
+                    "action": action_kind,
+                    "reason_code": reason_code,
+                    "approval_request_id": str(permit["approval_request_id"]),
+                    "policy_version_id": str(permit["policy_version_id"]),
+                    "policy_document_hash": permit["policy_document_hash"],
+                    "account_id": permit["account_id"],
+                    "provider_id": permit["provider_id"],
+                    "budget_id": str(request.budget_id),
+                    "budget_reservation_id": str(request.budget_reservation_id),
+                    "idempotency_key": request.idempotency_key,
+                    "publication_request_id": str(binding.publication_request_id),
+                    "job_id": str(binding.job_id),
+                    "publication_plan_id": str(binding.publication_plan_id),
+                    "publication_attempt_id": str(binding.publication_attempt_id),
+                    "external_effect_id": str(binding.external_effect_id),
+                    "current_publication_plan_id": (
+                        str(current_plan["id"]) if current_plan is not None else None
+                    ),
+                    "current_external_effect_id": (
+                        str(current_plan["external_effect_id"])
+                        if current_plan is not None and current_plan["external_effect_id"] is not None
+                        else None
+                    ),
+                    "publication_request_present": request_row is not None,
+                    "publication_plan_present": plan is not None,
+                    "publication_attempt_present": attempt is not None,
+                    "remote_receipt_id": str(receipt["id"]) if receipt is not None else None,
+                    "remote_id": receipt["remote_id"] if receipt is not None else None,
+                    "remote_receipt_state": receipt["state"] if receipt is not None else None,
+                    "publication_id": str(publication["id"]) if publication is not None else None,
+                    "held_at": self._database_time(connection).astimezone(timezone.utc).isoformat(),
+                }
+                prior = connection.execute(
+                    """SELECT id FROM public.v4_cycle_events
+                       WHERE cycle_id=%s AND kind='production_publication_liability_held'
+                         AND payload->>'operation_id'=%s
+                         AND payload->>'permit_id'=%s
+                         AND payload->>'claim_id'=%s
+                         AND payload->>'action'=%s
+                         AND payload->>'reason_code'=%s
+                       LIMIT 1""",
+                    (
+                        cycle["cycle_id"],
+                        str(operation_id),
+                        str(permit_id),
+                        str(claim_id),
+                        action_kind,
+                        reason_code,
+                    ),
+                ).fetchone()
+                if prior is not None:
+                    return True
+                traceparent = cycle["traceparent"] or (
+                    f"00-{operation_id.hex}-{permit_id.hex[:16]}-01"
+                )
+                connection.execute(
+                    """INSERT INTO public.v4_cycle_events(
+                              id,workspace_id,subject_id,goal_id,intent_id,cycle_id,kind,
+                              traceparent,payload)
+                       VALUES(%s,%s,%s,%s,%s,%s,'production_publication_liability_held',%s,%s)""",
+                    (
+                        uuid4(),
+                        cycle["workspace_id"],
+                        permit["subject_id"],
+                        cycle["goal_id"],
+                        cycle["intent_id"],
+                        cycle["cycle_id"],
+                        traceparent,
+                        Jsonb(payload),
+                    ),
+                )
+                return True
+
     def _authorize_action(
         self, operation_id: UUID, permit_id: UUID, action_kind: str
     ) -> RouteFenceDecision:
@@ -1349,7 +1559,10 @@ class ProductionEffectDispatch:
                       plan.budget_reservation_id AS plan_budget_reservation_id,
                       plan.state AS plan_state,attempt.id AS attempt_id,
                       attempt.publication_plan_id AS attempt_plan_id,
-                      attempt.state AS attempt_state,account.platform AS account_platform,
+                      attempt.state AS attempt_state,attempt.attempt_number,
+                      publication_effect.job_id AS effect_job_id,
+                      publication_effect.status AS external_effect_state,
+                      account.platform AS account_platform,
                       account.status AS account_status,profile.publisher_account_id AS profile_account_id,
                       profile.publisher_id AS profile_publisher_id,profile.platform AS profile_platform,
                       profile.audit_state,profile.expires_at AS profile_expires_at,
@@ -1366,12 +1579,24 @@ class ProductionEffectDispatch:
                  ON plan.id=%s AND plan.publication_request_id=publication_request.id
                JOIN public.publication_attempts attempt
                  ON attempt.id=%s AND attempt.publication_plan_id=plan.id
+                AND NOT EXISTS (
+                    SELECT 1 FROM public.publication_attempts newer_attempt
+                    WHERE newer_attempt.publication_plan_id=attempt.publication_plan_id
+                      AND newer_attempt.attempt_number>attempt.attempt_number
+                )
+               JOIN public.external_effects publication_effect
+                 ON publication_effect.id=plan.external_effect_id
                JOIN public.jobs job ON job.id=%s
                JOIN public.approval_requests publication_approval
                  ON publication_approval.id=publication_request.publication_approval_request_id
                WHERE publication_request.id=%s
+                 AND NOT EXISTS (
+                    SELECT 1 FROM public.publication_plans newer_plan
+                    WHERE newer_plan.publication_request_id=plan.publication_request_id
+                      AND newer_plan.version>plan.version
+                 )
                FOR UPDATE OF publication_request,plan,attempt,account,profile,job,
-                             publication_approval""",
+                             publication_approval,publication_effect""",
             (
                 binding.publication_plan_id,
                 binding.publication_attempt_id,
@@ -1393,6 +1618,10 @@ class ProductionEffectDispatch:
             or row["plan_request_id"] != binding.publication_request_id
             or row["plan_publisher_id"] != request.provider_id
             or row["external_effect_id"] != binding.external_effect_id
+            or row["effect_job_id"] != binding.job_id
+            or row["external_effect_state"] not in {
+                "planned", "submitting", "unknown", "accepted", "completed"
+            }
             or row["plan_budget_reservation_id"] != request.budget_reservation_id
             or row["attempt_id"] != binding.publication_attempt_id
             or row["attempt_plan_id"] != binding.publication_plan_id

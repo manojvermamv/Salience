@@ -405,6 +405,8 @@ def test_publication_current_facts_must_match_every_policy_scope_field() -> None
         "plan_request_id": binding.publication_request_id,
         "plan_publisher_id": "publisher-id",
         "external_effect_id": binding.external_effect_id,
+        "effect_job_id": binding.job_id,
+        "external_effect_state": "planned",
         "plan_budget_reservation_id": budget_reservation_id,
         "plan_state": "planned",
         "attempt_id": binding.publication_attempt_id,

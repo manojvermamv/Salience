@@ -206,7 +206,21 @@ CURRENT_PUBLICATION_AUTHORIZATION_SQL = """
                        publication_approval.job_id::text,
                        publication_budget.status,
                        publication_approval.effect_type,
-                       publication_approval.workspace_id::text
+                       publication_approval.workspace_id::text,
+                       publication_target.plan_id::text,
+                       publication_target.plan_state,
+                       publication_target.external_effect_id::text,
+                       publication_target.external_effect_state,
+                       publication_target.attempt_id::text,
+                       publication_target.attempt_state,
+                       publication_target.receipt_id::text,
+                       publication_target.remote_id,
+                       publication_target.receipt_state,
+                       publication_target.publication_id::text,
+                       publication_job.id::text,
+                       publication_job.state,
+                       publication_target.budget_reservation_id::text,
+                       publication_target.publication_state
                 FROM publication_requests request
                 JOIN ready_to_publish_packages ready ON ready.id = request.ready_package_id
                 JOIN synthetic_media_disclosures disclosure ON disclosure.id = ready.disclosure_id
@@ -245,6 +259,33 @@ CURRENT_PUBLICATION_AUTHORIZATION_SQL = """
                     ORDER BY plan.version DESC
                     LIMIT 1
                 ) publication_budget ON TRUE
+                LEFT JOIN LATERAL (
+                    SELECT plan.id AS plan_id, plan.state AS plan_state,
+                           plan.external_effect_id, plan.budget_reservation_id,
+                           effect.status AS external_effect_state,
+                           attempt.id AS attempt_id, attempt.state AS attempt_state,
+                           receipt.id AS receipt_id, receipt.remote_id,
+                           receipt.state AS receipt_state, publication.id AS publication_id,
+                           publication.state AS publication_state
+                    FROM publication_plans plan
+                    LEFT JOIN external_effects effect ON effect.id = plan.external_effect_id
+                    LEFT JOIN LATERAL (
+                        SELECT attempt.id, attempt.state
+                        FROM publication_attempts attempt
+                        WHERE attempt.publication_plan_id = plan.id
+                        ORDER BY attempt.attempt_number DESC
+                        LIMIT 1
+                    ) attempt ON TRUE
+                    LEFT JOIN remote_publication_receipts receipt
+                      ON receipt.publication_attempt_id = attempt.id
+                    LEFT JOIN publications publication
+                      ON publication.remote_publication_receipt_id = receipt.id
+                    WHERE plan.publication_request_id = request.id
+                    ORDER BY plan.version DESC
+                    LIMIT 1
+                ) publication_target ON TRUE
+                LEFT JOIN jobs publication_job
+                  ON publication_job.id = publication_approval.job_id
                 CROSS JOIN LATERAL (SELECT clock_timestamp() AS database_time) database_clock
                 WHERE request.id = %s
                 """
@@ -300,6 +341,20 @@ class CurrentPublicationAuthorization:
     approval_binding: ProductionApprovalBinding | None = None
     database_time: datetime | None = None
     budget_status: str | None = None
+    publication_plan_id: str | None = None
+    publication_plan_state: str | None = None
+    external_effect_id: str | None = None
+    external_effect_state: str | None = None
+    publication_attempt_id: str | None = None
+    publication_attempt_state: str | None = None
+    remote_receipt_id: str | None = None
+    remote_id: str | None = None
+    remote_receipt_state: str | None = None
+    publication_id: str | None = None
+    job_id: str | None = None
+    job_state: str | None = None
+    budget_reservation_id: str | None = None
+    publication_state: str | None = None
 
 
 def _expected_production_approval(
@@ -928,12 +983,63 @@ class PublicationRepository:
         self, publication_request_id: str
     ) -> CurrentPublicationAuthorization:
         with self._connect() as connection, connection.cursor() as cursor:
-            cursor.execute(
-                CURRENT_PUBLICATION_AUTHORIZATION_SQL,
-                (publication_request_id,),
-            )
-            row = cursor.fetchone()
+            with connection.transaction():
+                self._lock_current_authorization_targets(cursor, publication_request_id)
+                cursor.execute(CURRENT_PUBLICATION_AUTHORIZATION_SQL, (publication_request_id,))
+                row = cursor.fetchone()
         return self._authorization_from_row(row, publication_request_id)
+
+    @staticmethod
+    def _lock_current_authorization_targets(cursor, publication_request_id: str) -> None:
+        """Serialize the canonical publication target projection against target changes."""
+        cursor.execute(
+            "SELECT id FROM publication_requests WHERE id=%s FOR UPDATE",
+            (publication_request_id,),
+        )
+        if cursor.fetchone() is None:
+            return
+        cursor.execute(
+            """SELECT id, external_effect_id FROM publication_plans
+               WHERE publication_request_id=%s ORDER BY version DESC LIMIT 1 FOR UPDATE""",
+            (publication_request_id,),
+        )
+        plan = cursor.fetchone()
+        if plan is None:
+            return
+        plan_id, external_effect_id = plan
+        cursor.execute(
+            """SELECT id FROM publication_attempts WHERE publication_plan_id=%s
+               ORDER BY attempt_number DESC LIMIT 1 FOR UPDATE""",
+            (plan_id,),
+        )
+        attempt = cursor.fetchone()
+        attempt_id = attempt[0] if attempt is not None else None
+        if external_effect_id is not None:
+            cursor.execute(
+                "SELECT id FROM external_effects WHERE id=%s FOR UPDATE",
+                (external_effect_id,),
+            )
+            cursor.fetchone()
+        if attempt_id is not None:
+            cursor.execute(
+                "SELECT id FROM remote_publication_receipts WHERE publication_attempt_id=%s FOR UPDATE",
+                (attempt_id,),
+            )
+            receipt = cursor.fetchone()
+            if receipt is not None:
+                cursor.execute(
+                    "SELECT id FROM publications WHERE remote_publication_receipt_id=%s FOR UPDATE",
+                    (receipt[0],),
+                )
+                cursor.fetchone()
+        cursor.execute(
+            """SELECT job.id FROM jobs job JOIN approval_requests approval ON approval.job_id=job.id
+               JOIN publication_requests request
+                 ON request.publication_approval_request_id=approval.id
+               WHERE request.id=%s FOR UPDATE OF job""",
+            (publication_request_id,),
+        )
+        cursor.fetchone()
 
     def proposed_authorization(self, connection, payload: dict[str, Any]) -> CurrentPublicationAuthorization:
         """Read current native facts for an unpersisted proposal; reserve nothing.
@@ -1071,6 +1177,20 @@ class PublicationRepository:
             approval_binding=approval_binding,
             database_time=database_time,
             budget_status=row[40] if len(row) > 40 else None,
+            publication_plan_id=row[43] if len(row) > 43 else None,
+            publication_plan_state=row[44] if len(row) > 44 else None,
+            external_effect_id=row[45] if len(row) > 45 else None,
+            external_effect_state=row[46] if len(row) > 46 else None,
+            publication_attempt_id=row[47] if len(row) > 47 else None,
+            publication_attempt_state=row[48] if len(row) > 48 else None,
+            remote_receipt_id=row[49] if len(row) > 49 else None,
+            remote_id=row[50] if len(row) > 50 else None,
+            remote_receipt_state=row[51] if len(row) > 51 else None,
+            publication_id=row[52] if len(row) > 52 else None,
+            job_id=row[53] if len(row) > 53 else None,
+            job_state=row[54] if len(row) > 54 else None,
+            budget_reservation_id=row[55] if len(row) > 55 else None,
+            publication_state=row[56] if len(row) > 56 else None,
         )
 
     @staticmethod

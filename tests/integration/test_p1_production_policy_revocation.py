@@ -18,6 +18,7 @@ from psycopg.types.json import Jsonb
 import pytest
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import InMemoryMetricReader
+from temporalio.exceptions import ApplicationError
 
 from salience.cycles.governance import CycleGovernance
 from salience.cycles.production_dispatch import (
@@ -30,6 +31,7 @@ from salience.cycles.production_dispatch import (
     RouteFenceRequest,
 )
 from salience.observability.production_authorization import ProductionAuthorizationMetrics
+from salience.governance.costs import CostSettlementStatus
 from salience.governance.policy import EffectClass
 from salience.publication.contracts import PublicationRequest
 from salience.publication.repository import PublicationRepository
@@ -113,6 +115,7 @@ def _production_case(
     production_budget_ttl_seconds=3600,
     publication_scope=None,
     publication_binding=None,
+    seed_publication_rows=False,
 ):
     service, goal_id, spec, database = accounting
     with psycopg.connect(database) as connection:
@@ -221,8 +224,30 @@ def _production_case(
                       profile_version,platform,audit_state,observed_at,source_reference,
                       capability_facts,compatibility,expires_at)
                VALUES(%s,%s,%s,'1',1,'p1-local','verified',clock_timestamp(),
-                      'fixture://capability-profile','{}','{}',clock_timestamp()+interval '1 hour')""",
-            (workspace_id, account_id, provider_id),
+                      'fixture://capability-profile',%s,'{}',clock_timestamp()+interval '1 hour')""",
+            (
+                workspace_id,
+                account_id,
+                provider_id,
+                Jsonb({
+                    "publisher_id": provider_id,
+                    "version": "1",
+                    "platform": "p1-local",
+                    "account_types": ["organization"],
+                    "contract_compatibility": {"publication": "v1"},
+                    "enabled": True,
+                    "audit_state": "verified",
+                    "granted_scopes": ["effects:write"],
+                    "supported_content_types": ["video"],
+                    "supported_visibilities": ["private", "unlisted", "public"],
+                    "disclosure_support": True,
+                    "scheduling_support": True,
+                    "cancellation_support": True,
+                    "reconciliation_support": True,
+                    "quota_state": "available",
+                    "health_state": "healthy",
+                }),
+            ),
         )
         production_budget_id, production_reservation_id = uuid4(), uuid4()
         connection.execute(
@@ -248,13 +273,18 @@ def _production_case(
                           task_queue,idempotency_key,input_payload,dry_run,trace_id)
                    VALUES(%s,%s,%s,'publication','queued',%s,'p1-local',%s,'{}',TRUE,%s)""",
                 (
-                    publication_binding.job_id,
-                    workspace_id,
-                    program_id,
-                    publication_binding.workflow_run_id,
-                    "p1-publication-" + str(operation_id),
-                    "a" * 32,
-                ),
+                publication_binding.job_id,
+                workspace_id,
+                program_id,
+                publication_binding.workflow_run_id,
+                "p1-publication-" + str(operation_id),
+                "a" * 32,
+            ),
+        )
+        if publication_binding is not None:
+            connection.execute(
+                "UPDATE jobs SET input_payload=%s WHERE id=%s",
+                (Jsonb({"workflow_id": publication_binding.workflow_id}), publication_binding.job_id),
             )
         connection.execute(
             """INSERT INTO budget_reservations(
@@ -329,6 +359,22 @@ def _production_case(
                       decided_at=clock_timestamp() WHERE id=%s""",
             (approval_id,),
         )
+        publication_rows = None
+        if seed_publication_rows:
+            if publication_binding is None:
+                raise ValueError("canonical publication rows require a publication binding")
+            publication_rows = _seed_production_publication_rows(
+                connection,
+                binding=publication_binding,
+                workspace_id=workspace_id,
+                program_id=program_id,
+                policy_id=policy_id,
+                account_id=account_id,
+                publisher_id=provider_id,
+                approval_id=approval_id,
+                production_reservation_id=production_reservation_id,
+                operation_id=operation_id,
+            )
 
     request = ProductionPermitRequest(
         workspace_id=workspace_id,
@@ -372,6 +418,172 @@ def _production_case(
         "production_budget_id": production_budget_id,
         "production_reservation_id": production_reservation_id,
         "publication_binding": publication_binding,
+        "publication_rows": publication_rows,
+    }
+
+
+def _seed_production_publication_rows(
+    connection,
+    *,
+    binding,
+    workspace_id,
+    program_id,
+    policy_id,
+    account_id,
+    publisher_id,
+    approval_id,
+    production_reservation_id,
+    operation_id,
+):
+    topic_id, strategic_id, brief_id, script_id, platform_profile_id, package_id, disclosure_id, ready_id = (
+        uuid4() for _ in range(8)
+    )
+    profile_id = connection.execute(
+        "SELECT id FROM publisher_capability_profiles WHERE publisher_account_id=%s AND publisher_id=%s",
+        (account_id, publisher_id),
+    ).fetchone()[0]
+    connection.execute(
+        """INSERT INTO topic_opportunities(
+                  id,workspace_id,content_program_id,fingerprint,topic,status,score,explanation)
+           VALUES(%s,%s,%s,%s,'approved publication fixture','selected',1,'canonical binding test')""",
+        (topic_id, workspace_id, program_id, "topic-" + str(operation_id)),
+    )
+    connection.execute(
+        """INSERT INTO strategic_packages(
+                  id,workspace_id,content_program_id,topic_opportunity_id,diversity_fingerprint,
+                  status,package)
+           VALUES(%s,%s,%s,%s,%s,'selected','{}')""",
+        (strategic_id, workspace_id, program_id, topic_id, "strategic-" + str(operation_id)),
+    )
+    connection.execute(
+        """INSERT INTO content_brief_versions(
+                  id,workspace_id,content_program_id,brief_key,version,topic_opportunity_id,
+                  strategic_package_id,content)
+           VALUES(%s,%s,%s,%s,1,%s,%s,'{}')""",
+        (brief_id, workspace_id, program_id, "brief-" + str(operation_id), topic_id, strategic_id),
+    )
+    connection.execute(
+        """INSERT INTO script_versions(
+                  id,workspace_id,content_program_id,content_brief_id,script_key,version,status,
+                  target_format,target_duration_seconds,script)
+           VALUES(%s,%s,%s,%s,%s,1,'approved','video',30,'{}')""",
+        (script_id, workspace_id, program_id, brief_id, "script-" + str(operation_id)),
+    )
+    connection.execute(
+        """INSERT INTO platform_profiles(
+                  id,workspace_id,content_program_id,profile_key,version,target_platform,rules,status)
+           VALUES(%s,%s,%s,%s,1,'p1-local','{}','active')""",
+        (platform_profile_id, workspace_id, program_id, "platform-" + str(operation_id)),
+    )
+    connection.execute(
+        """INSERT INTO distribution_packages(
+                  id,workspace_id,content_program_id,content_brief_id,script_version_id,
+                  platform_profile_id,package_key,version,locale,metadata,status)
+           VALUES(%s,%s,%s,%s,%s,%s,%s,1,'en-US','{}','ready')""",
+        (
+            package_id,
+            workspace_id,
+            program_id,
+            brief_id,
+            script_id,
+            platform_profile_id,
+            "distribution-" + str(operation_id),
+        ),
+    )
+    connection.execute(
+        """INSERT INTO synthetic_media_disclosures(distribution_package_id,decision,status)
+           VALUES(%s,'{}','approved') RETURNING id""",
+        (package_id,),
+    )
+    disclosure_id = connection.execute(
+        "SELECT id FROM synthetic_media_disclosures WHERE distribution_package_id=%s",
+        (package_id,),
+    ).fetchone()[0]
+    connection.execute(
+        """INSERT INTO ready_to_publish_packages(
+                  id,workspace_id,content_program_id,content_brief_id,script_version_id,
+                  distribution_package_id,platform_profile_id,disclosure_id,ready_package_key,
+                  version,approval_state,verifier_results,policy_versions,lineage)
+           VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,1,'approved','{}',%s,'{}')""",
+        (
+            ready_id,
+            workspace_id,
+            program_id,
+            brief_id,
+            script_id,
+            package_id,
+            platform_profile_id,
+            disclosure_id,
+            "ready-" + str(operation_id),
+            Jsonb([str(policy_id)]),
+        ),
+    )
+    connection.execute(
+        """INSERT INTO publication_requests(
+                  id,workspace_id,content_program_id,ready_package_id,publisher_account_id,
+                  publisher_capability_profile_id,publication_approval_request_id,request_key,
+                  version,publisher_id,platform,destination,locale,territory,visibility,
+                  capability_profile_version,approval_reference,state,request_fingerprint,
+                  disclosure_projection,policy_references,rights_references)
+           VALUES(%s,%s,%s,%s,%s,%s,%s,%s,1,%s,'p1-local','channel:approved','en-US','US',
+                  'public',1,'production-approval','planned',%s,'{}',%s,'[]')""",
+        (
+            binding.publication_request_id,
+            workspace_id,
+            program_id,
+            ready_id,
+            account_id,
+            profile_id,
+            approval_id,
+            "request-" + str(operation_id),
+            publisher_id,
+            "f" * 64,
+            Jsonb([str(policy_id)]),
+        ),
+    )
+    connection.execute(
+        """INSERT INTO external_effects(
+                  id,workspace_id,job_id,effect_type,effect_classification,idempotency_key,
+                  status,request_fingerprint,reconciliation_state)
+           VALUES(%s,%s,%s,'publication','write',%s,'planned',%s,'{}')""",
+        (
+            binding.external_effect_id,
+            workspace_id,
+            binding.job_id,
+            "publication-effect-" + str(operation_id),
+            "a" * 64,
+        ),
+    )
+    connection.execute(
+        """INSERT INTO publication_plans(
+                  id,publication_request_id,version,publisher_id,publisher_version,
+                  external_effect_id,budget_reservation_id,state)
+           VALUES(%s,%s,1,%s,'1',%s,%s,'planned')""",
+        (
+            binding.publication_plan_id,
+            binding.publication_request_id,
+            publisher_id,
+            binding.external_effect_id,
+            production_reservation_id,
+        ),
+    )
+    connection.execute(
+        """INSERT INTO publication_attempts(
+                  id,publication_plan_id,attempt_number,idempotency_key,state,request_fingerprint)
+           VALUES(%s,%s,1,%s,'planned',%s)""",
+        (
+            binding.publication_attempt_id,
+            binding.publication_plan_id,
+            "publication-attempt-" + str(operation_id),
+            "b" * 64,
+        ),
+    )
+    return {
+        "publication_request_id": binding.publication_request_id,
+        "publication_plan_id": binding.publication_plan_id,
+        "publication_attempt_id": binding.publication_attempt_id,
+        "external_effect_id": binding.external_effect_id,
+        "ready_package_id": ready_id,
     }
 
 
@@ -514,6 +726,173 @@ def test_publication_binding_requires_current_canonical_publication_rows(account
     assert _permit_count(case["database"], case["operation_id"]) == 0
 
 
+def test_postclaim_reconcile_authority_denial_holds_canonical_publication_liability_in_postgres(accounting):
+    scope = {
+        "platform": "p1-local",
+        "destination": "channel:approved",
+        "locale": "en-US",
+        "territory": "US",
+        "visibility": "public",
+    }
+    binding = PublicationEffectBinding(
+        publication_request_id=uuid4(),
+        job_id=uuid4(),
+        workflow_id="p1-publication-workflow",
+        workflow_run_id="p1-publication-run-" + uuid4().hex,
+        publication_plan_id=uuid4(),
+        publication_attempt_id=uuid4(),
+        external_effect_id=uuid4(),
+    )
+    case = _production_case(
+        accounting,
+        publication_scope=scope,
+        publication_binding=binding,
+        seed_publication_rows=True,
+    )
+    dispatch = case["dispatch"]
+    issued = dispatch.issue_permit(case["request"])
+    claim = dispatch.claim_permit(case["operation_id"], issued.permit_id)
+    repository = PublicationRepository(case["database"])
+    current = asyncio.run(
+        repository.load_current_authorization(str(binding.publication_request_id))
+    )
+
+    assert current.publication_plan_id == str(binding.publication_plan_id)
+    assert current.publication_attempt_id == str(binding.publication_attempt_id)
+    assert current.external_effect_id == str(binding.external_effect_id)
+    assert current.budget_reservation_id == str(case["production_reservation_id"])
+    assert current.remote_receipt_id is None
+
+    known_remote_id = "p1-known-" + uuid4().hex
+    receipt = asyncio.run(
+        repository.record_remote_receipt(
+            publication_attempt_id=str(binding.publication_attempt_id),
+            publisher_id=case["request"].provider_id,
+            remote_id=known_remote_id,
+            state="accepted",
+            safe_metadata_hash="c" * 64,
+            remote_url=None,
+        )
+    )
+    current_with_receipt = asyncio.run(
+        repository.load_current_authorization(str(binding.publication_request_id))
+    )
+    assert current_with_receipt.remote_receipt_id == receipt.id
+    assert current_with_receipt.remote_id == known_remote_id
+    publication = asyncio.run(
+        repository.record_publication(
+            publication_request_id=str(binding.publication_request_id),
+            remote_receipt_id=receipt.id,
+            state="published",
+        )
+    )
+    current_with_publication = asyncio.run(
+        repository.load_current_authorization(str(binding.publication_request_id))
+    )
+    assert current_with_publication.publication_id == publication.id
+    assert current_with_publication.publication_state == "published"
+
+    replacement_plan_id = uuid4()
+    replacement_reservation_id = uuid4()
+    with psycopg.connect(case["database"]) as connection:
+        connection.execute(
+            """INSERT INTO budget_reservations(
+                      id,budget_id,reservation_key,estimated_amount,reserved_amount,status,expires_at)
+               VALUES(%s,%s,%s,0.100000,0.100000,'reserved',
+                      clock_timestamp()+interval '1 hour')""",
+            (
+                replacement_reservation_id,
+                case["production_budget_id"],
+                "p1-replacement-" + uuid4().hex,
+            ),
+        )
+        connection.execute(
+            """INSERT INTO publication_plans(
+                      id,publication_request_id,version,publisher_id,publisher_version,
+                      budget_reservation_id,state)
+               VALUES(%s,%s,2,%s,'1',%s,'planned')""",
+            (
+                replacement_plan_id,
+                binding.publication_request_id,
+                case["request"].provider_id,
+                replacement_reservation_id,
+            ),
+        )
+    current_with_new_plan = asyncio.run(
+        repository.load_current_authorization(str(binding.publication_request_id))
+    )
+    assert current_with_new_plan.publication_plan_id == str(replacement_plan_id)
+    assert current_with_new_plan.publication_attempt_id is None
+    assert current_with_new_plan.external_effect_id is None
+
+    route_calls_before_denial = len(case["route"].calls)
+    with psycopg.connect(case["database"]) as connection:
+        connection.execute(
+            "UPDATE permission_grants SET effect='deny' "
+            "WHERE workspace_id=%s AND principal_id=%s AND scope='effects:write'",
+            (case["workspace_id"], str(case["subject_id"])),
+        )
+    denial = dispatch.authorize_action(case["operation_id"], issued.permit_id, "reconcile")
+    assert denial.authorized is False
+    assert denial.reason_code == "stale_revision"
+    assert len(case["route"].calls) == route_calls_before_denial
+
+    assert dispatch.record_publication_liability_held(
+        binding.publication_request_id, "reconcile", denial.reason_code
+    ) is True
+
+    with psycopg.connect(case["database"]) as connection:
+        event = connection.execute(
+            """SELECT id, payload FROM v4_cycle_events
+               WHERE cycle_id=%s AND kind='production_publication_liability_held'""",
+            (case["cycle_id"],),
+        ).fetchone()
+        reservation = connection.execute(
+            "SELECT status FROM budget_reservations WHERE id=%s",
+            (case["production_reservation_id"],),
+        ).fetchone()[0]
+        job_state = connection.execute(
+            "SELECT state FROM jobs WHERE id=%s", (binding.job_id,)
+        ).fetchone()[0]
+        effect_state = connection.execute(
+            "SELECT status FROM external_effects WHERE id=%s",
+            (binding.external_effect_id,),
+        ).fetchone()[0]
+        attempt_state = connection.execute(
+            "SELECT state FROM publication_attempts WHERE id=%s",
+            (binding.publication_attempt_id,),
+        ).fetchone()[0]
+
+    assert event is not None
+    event_payload = event[1]
+    assert event_payload["operation_id"] == str(case["operation_id"])
+    assert event_payload["permit_id"] == str(issued.permit_id)
+    assert event_payload["claim_id"] == str(claim.claim_id)
+    assert event_payload["publication_request_id"] == str(binding.publication_request_id)
+    assert event_payload["publication_plan_id"] == str(binding.publication_plan_id)
+    assert event_payload["publication_attempt_id"] == str(binding.publication_attempt_id)
+    assert event_payload["external_effect_id"] == str(binding.external_effect_id)
+    assert event_payload["action"] == "reconcile"
+    assert event_payload["reason_code"] == "stale_revision"
+    assert event_payload["current_publication_plan_id"] == str(replacement_plan_id)
+    assert event_payload["current_external_effect_id"] is None
+    assert event_payload["remote_receipt_id"] == receipt.id
+    assert event_payload["remote_id"] == known_remote_id
+    assert event_payload["publication_id"] == publication.id
+    assert reservation == "reserved"
+    assert job_state == "queued"
+    assert effect_state == "planned"
+    assert attempt_state == "planned"
+    assert _permit_count(case["database"], case["operation_id"]) == 1
+    assert _claim_count(case["database"], case["operation_id"]) == 1
+
+    with pytest.raises(psycopg.Error):
+        with psycopg.connect(case["database"]) as connection:
+            connection.execute(
+                "UPDATE v4_cycle_events SET payload='{}' WHERE id=%s", (event[0],)
+            )
+
+
 def test_production_budget_binding_is_current_and_account_scoped(accounting):
     case = _production_case(accounting)
     with psycopg.connect(case["database"]) as connection:
@@ -575,6 +954,11 @@ class _PublicationActivityAdapter:
         self.submit_calls = 0
         self.reconcile_calls = 0
         self.delivery_calls = 0
+        self.status_calls = 0
+        self.cancel_calls = 0
+        self.status_targets = []
+        self.cancel_targets = []
+        self.status_state = "processing"
 
     async def submit(self, request, credential_lease):
         self.submit_calls += 1
@@ -599,41 +983,106 @@ class _PublicationActivityAdapter:
     async def prepare_delivery(self, request, delivery_url):
         self.delivery_calls += 1
 
+    async def status(self, remote_id):
+        self.status_calls += 1
+        self.status_targets.append(remote_id)
+        return SimpleNamespace(
+            publisher_id="production-publisher",
+            remote_id=remote_id,
+            state=self.status_state,
+            safe_metadata_hash="b" * 64,
+            remote_url=None,
+        )
+
+    async def cancel(self, remote_id):
+        self.cancel_calls += 1
+        self.cancel_targets.append(remote_id)
+        return SimpleNamespace(
+            publisher_id="production-publisher",
+            remote_id=remote_id,
+            state="cancelled",
+            safe_metadata_hash="c" * 64,
+            remote_url=None,
+        )
+
 
 class _PublicationActivityStore:
+    def __init__(self, submit_decisions=None):
+        self.submit_decisions = list(submit_decisions or [True])
+        self.begin_calls = []
+        self.completed_effects = []
+        self.completed_outputs = []
+        self.terminal_states = []
+        self.effect_state = "planned"
+
+    async def effect(self, run, effect_key):
+        return SimpleNamespace(effect_id="canonical-effect", status=self.effect_state)
+
     async def begin_effect_submission(self, run, effect_key):
-        return True
+        self.begin_calls.append(effect_key)
+        if len(self.submit_decisions) > 1:
+            return self.submit_decisions.pop(0)
+        return self.submit_decisions[0]
 
     async def complete_effect(self, *args, **kwargs):
+        self.completed_effects.append((args, kwargs))
         return None
+
+    async def complete_with_output(self, *args, **kwargs):
+        self.completed_outputs.append((args, kwargs))
+
+    async def terminal(self, run, state):
+        self.terminal_states.append(state)
 
 
 class _PublicationActivityRepository:
+    def __init__(self, *, attempt_id=None, receipt_id=None):
+        self.attempt_id = str(attempt_id or uuid4())
+        self.receipt_id = str(receipt_id or uuid4())
+        self.attempt_calls = []
+        self.status_events = []
+        self.publications = []
+
     async def create_attempt(self, **kwargs):
-        return SimpleNamespace(id=str(uuid4()))
+        self.attempt_calls.append(kwargs)
+        return SimpleNamespace(id=self.attempt_id)
 
     async def record_remote_receipt(self, **kwargs):
-        return SimpleNamespace(id=str(uuid4()), remote_id=kwargs["remote_id"])
+        return SimpleNamespace(id=self.receipt_id, remote_id=kwargs["remote_id"])
 
     async def record_status_event(self, **kwargs):
+        self.status_events.append(kwargs)
         return None
+
+    async def record_publication(self, **kwargs):
+        self.publications.append(kwargs)
+        return SimpleNamespace(id="canonical-publication-1")
 
 
 class _DenyingPublicationDispatch:
-    def __init__(self, *, deny_action=None):
+    def __init__(self, *, deny_action=None, deny_claim=True, claim_reason="approval_invalid"):
         self.claim_calls = []
         self.action_calls = []
         self.deny_action = deny_action
+        self.deny_claim = deny_claim
+        self.claim_reason = claim_reason
 
     def claim_permit(self, operation_id, permit_id):
         self.claim_calls.append((operation_id, permit_id))
-        raise ProductionAuthorizationDenied("approval_invalid")
+        if self.deny_claim:
+            raise ProductionAuthorizationDenied(self.claim_reason)
+        return SimpleNamespace(dispatch_allowed=True, claim_id=uuid4())
 
     def authorize_action(self, operation_id, permit_id, action_kind):
         self.action_calls.append((operation_id, permit_id, action_kind))
         if action_kind == self.deny_action:
             return SimpleNamespace(authorized=False, reason_code="route_fence_denied")
         return SimpleNamespace(authorized=True, reason_code=None)
+
+    def record_publication_liability_held(
+        self, publication_request_id, action_kind, reason_code
+    ):
+        return False
 
 
 def _publication_activity_case(*, dispatch=None):
@@ -654,15 +1103,33 @@ def _publication_activity_case(*, dispatch=None):
         approval_reference="production-approval",
         publisher_id="production-publisher",
     )
+    plan_id, attempt_id, effect_id, receipt_id, operation_id, permit_id, reservation_id = (
+        uuid4() for _ in range(7)
+    )
     adapter = _PublicationActivityAdapter()
     lease_calls = []
+    store = _PublicationActivityStore()
+    repository = _PublicationActivityRepository(
+        attempt_id=attempt_id, receipt_id=receipt_id
+    )
     state = PublicationWorkflowState(
-        store=_PublicationActivityStore(),
-        repository=_PublicationActivityRepository(),
+        store=store,
+        repository=repository,
         publisher_adapters={"production-publisher": adapter},
         credential_lease_factory=lambda publication_request: lease_calls.append(publication_request)
         or object(),
+        cost_repository=None,
     )
+    cost_calls = {"settle": [], "release": []}
+
+    async def settle(reservation_id, *, actual_micros):
+        cost_calls["settle"].append((reservation_id, actual_micros))
+        return SimpleNamespace(status=CostSettlementStatus.SETTLED)
+
+    async def release_unused(reservation_id):
+        cost_calls["release"].append(reservation_id)
+
+    state.cost_repository = SimpleNamespace(settle=settle, release_unused=release_unused)
     if dispatch is not None:
         state.production_dispatch = dispatch
     activities = PublicationActivities(state)
@@ -686,23 +1153,49 @@ def _publication_activity_case(*, dispatch=None):
     payload = {
         "request": request.model_dump(mode="json"),
         "publication_request_id": request.id,
-        "publication_plan_id": str(uuid4()),
-        "production_operation_id": str(uuid4()),
-        "production_permit_id": str(uuid4()),
-        "budget_reservation_id": str(uuid4()),
+        "publication_plan_id": str(plan_id),
+        "publication_attempt_id": str(attempt_id),
+        "external_effect_id": str(effect_id),
+        "production_operation_id": str(operation_id),
+        "production_permit_id": str(permit_id),
+        "budget_reservation_id": str(reservation_id),
     }
 
+    canonical = SimpleNamespace(
+        request=request,
+        job_id=run.job_id,
+        publication_plan_id=str(plan_id),
+        publication_plan_state="authorized",
+        publication_attempt_id=str(attempt_id),
+        publication_attempt_state="authorized",
+        external_effect_id=str(effect_id),
+        external_effect_state="submitting",
+        remote_receipt_id=None,
+        remote_id=None,
+        remote_receipt_state=None,
+        publication_id=None,
+        publication_state=None,
+        budget_reservation_id=str(reservation_id),
+        approval_binding=SimpleNamespace(
+            operation_id=UUID(payload["production_operation_id"]),
+            publication_request_id=UUID(request.id),
+            job_id=run.job_id,
+            publication_plan_id=plan_id,
+            publication_attempt_id=attempt_id,
+            external_effect_id=effect_id,
+            remote_receipt_id=None,
+            budget_reservation_id=reservation_id,
+        ),
+    )
+
     async def current_production_authorization(_request):
-        return (
-            SimpleNamespace(
-                approval_binding=SimpleNamespace(
-                    operation_id=UUID(payload["production_operation_id"])
-                )
-            ),
-            None,
-        )
+        return canonical, None
 
     activities._load_current_production_authorization = current_production_authorization
+    activities._publication_test_canonical = canonical
+    activities._publication_test_store = store
+    activities._publication_test_repository = repository
+    activities._publication_test_cost_calls = cost_calls
     return activities, adapter, lease_calls, payload
 
 
@@ -729,6 +1222,21 @@ def test_production_publication_route_transfer_blocks_next_action():
     assert result.get("authorization_revoked") is True
 
 
+def test_successful_production_delivery_then_route_transfer_blocks_submit():
+    dispatch = _DenyingPublicationDispatch(claim_reason="route_fence_denied")
+    activities, adapter, lease_calls, payload = _publication_activity_case(dispatch=dispatch)
+
+    delivered = asyncio.run(activities.delivery(payload))
+    result = asyncio.run(activities.submit_or_reconcile(delivered))
+
+    assert adapter.delivery_calls == 1
+    assert dispatch.action_calls[-1][2] == "delivery"
+    assert dispatch.claim_calls
+    assert adapter.submit_calls == 0
+    assert lease_calls == []
+    assert result.get("authorization_revoked") is True
+
+
 def test_missing_production_dispatch_never_calls_nonfixture_adapter():
     activities, adapter, lease_calls, payload = _publication_activity_case()
 
@@ -737,6 +1245,264 @@ def test_missing_production_dispatch_never_calls_nonfixture_adapter():
     assert adapter.submit_calls == 0
     assert lease_calls == []
     assert result["authorization_revoked"] is True
+
+
+@pytest.mark.parametrize(
+    "target_field",
+    ["publication_plan_id", "publication_attempt_id", "external_effect_id"],
+)
+def test_production_submit_rejects_workflow_target_mismatch_before_write_or_claim(target_field):
+    dispatch = _DenyingPublicationDispatch()
+    activities, adapter, lease_calls, payload = _publication_activity_case(dispatch=dispatch)
+    payload[target_field] = str(uuid4())
+
+    result = asyncio.run(activities.submit_or_reconcile(payload))
+
+    assert result.get("authorization_revoked") is True
+    assert activities._publication_test_repository.attempt_calls == []
+    assert activities._publication_test_store.begin_calls == []
+    assert dispatch.claim_calls == []
+    assert adapter.submit_calls == 0
+    assert lease_calls == []
+
+
+@pytest.mark.parametrize(
+    ("activity_name", "target_field"),
+    [
+        ("await_publication", "remote_id"),
+        ("await_publication", "publication_attempt_id"),
+        ("await_publication", "remote_receipt_id"),
+        ("cancel", "remote_id"),
+        ("cancel", "publication_attempt_id"),
+        ("cancel", "remote_receipt_id"),
+    ],
+)
+def test_production_activity_rejects_mismatched_remote_attempt_or_receipt_before_provider_io(
+    activity_name, target_field
+):
+    dispatch = _DenyingPublicationDispatch()
+    activities, adapter, _lease_calls, payload = _publication_activity_case(dispatch=dispatch)
+    canonical = activities._publication_test_canonical
+    canonical.remote_receipt_id = activities._publication_test_repository.receipt_id
+    canonical.remote_id = "canonical-remote-1"
+    canonical.remote_receipt_state = "accepted"
+    canonical.approval_binding.remote_receipt_id = UUID(canonical.remote_receipt_id)
+    payload.update(
+        {
+            "remote_receipt_id": canonical.remote_receipt_id,
+            "remote_id": canonical.remote_id,
+        }
+    )
+    payload[target_field] = str(uuid4())
+
+    if activity_name == "await_publication":
+        result = asyncio.run(activities.await_publication(payload))
+        assert result.get("authorization_revoked") is True
+    else:
+        result = asyncio.run(activities.cancel(payload))
+        assert result.publication_state == "ambiguous_requires_reconciliation"
+
+    assert adapter.status_calls == 0
+    assert adapter.cancel_calls == 0
+    assert activities._publication_test_repository.status_events == []
+    assert activities._publication_test_repository.publications == []
+
+
+@pytest.mark.parametrize(
+    "binding_field",
+    ["publication_plan_id", "publication_attempt_id", "external_effect_id"],
+)
+def test_production_action_rejects_approval_binding_mismatch_before_route_or_provider_io(
+    binding_field,
+):
+    dispatch = _DenyingPublicationDispatch()
+    activities, adapter, _lease_calls, payload = _publication_activity_case(dispatch=dispatch)
+    canonical = activities._publication_test_canonical
+    canonical.remote_receipt_id = activities._publication_test_repository.receipt_id
+    canonical.remote_id = "canonical-remote-1"
+    canonical.remote_receipt_state = "accepted"
+    canonical.approval_binding.remote_receipt_id = UUID(canonical.remote_receipt_id)
+    payload.update(
+        {
+            "remote_receipt_id": canonical.remote_receipt_id,
+            "remote_id": canonical.remote_id,
+        }
+    )
+    setattr(canonical.approval_binding, binding_field, uuid4())
+
+    result = asyncio.run(activities.await_publication(payload))
+
+    assert result.get("authorization_revoked") is True
+    assert dispatch.action_calls == []
+    assert adapter.status_calls == 0
+    assert activities._publication_test_repository.status_events == []
+
+
+class _HoldingPublicationDispatch(_DenyingPublicationDispatch):
+    def __init__(self, *, deny_action=None):
+        super().__init__(deny_action=deny_action)
+        self.hold_calls = []
+
+    def claim_permit(self, operation_id, permit_id):
+        self.claim_calls.append((operation_id, permit_id))
+        return SimpleNamespace(dispatch_allowed=True, claim_id=uuid4())
+
+    def record_publication_liability_held(
+        self, publication_request_id, action_kind, reason_code
+    ):
+        self.hold_calls.append((publication_request_id, action_kind, reason_code))
+        return True
+
+
+class _RevokeOnSecondReconcileDispatch(_HoldingPublicationDispatch):
+    def authorize_action(self, operation_id, permit_id, action_kind):
+        self.action_calls.append((operation_id, permit_id, action_kind))
+        matching = [call for call in self.action_calls if call[2] == "reconcile"]
+        if action_kind == "reconcile" and len(matching) == 2:
+            return SimpleNamespace(authorized=False, reason_code="route_fence_denied")
+        return SimpleNamespace(authorized=True, reason_code=None)
+
+
+def test_reconcile_rechecks_current_authority_immediately_before_provider_dispatch():
+    dispatch = _RevokeOnSecondReconcileDispatch()
+    activities, adapter, _lease_calls, payload = _publication_activity_case(dispatch=dispatch)
+    activities._publication_test_store.submit_decisions = [False]
+    activities._publication_test_store.effect_state = "submitting"
+
+    with pytest.raises(ApplicationError) as raised:
+        asyncio.run(activities.submit_or_reconcile(payload))
+
+    assert raised.value.type == "ProductionPublicationLiabilityHeld"
+    assert [call[2] for call in dispatch.action_calls] == ["reconcile", "reconcile"]
+    assert dispatch.hold_calls[0][1] == "reconcile"
+    assert adapter.reconcile_calls == 0
+
+
+@pytest.mark.parametrize("denial_source", ["route", "current_authority"])
+@pytest.mark.parametrize("action_name", ["reconcile", "await", "cancel", "finalize"])
+def test_postclaim_publication_denial_persists_hold_and_is_nonretryable(
+    denial_source, action_name
+):
+    denied_action = {
+        "reconcile": "reconcile",
+        "await": "await",
+        "cancel": "cancel",
+        "finalize": "finalize",
+    }[action_name]
+    dispatch = _HoldingPublicationDispatch(
+        deny_action=denied_action if denial_source == "route" else None
+    )
+    activities, adapter, _lease_calls, payload = _publication_activity_case(dispatch=dispatch)
+    canonical = activities._publication_test_canonical
+    repository = activities._publication_test_repository
+    canonical.remote_receipt_id = repository.receipt_id
+    canonical.remote_id = "canonical-remote-1"
+    canonical.remote_receipt_state = "accepted"
+    canonical.approval_binding.remote_receipt_id = UUID(canonical.remote_receipt_id)
+    payload.update(
+        {
+            "remote_receipt_id": canonical.remote_receipt_id,
+            "remote_id": canonical.remote_id,
+            "publication_state": "published",
+            "publication_id": "canonical-publication-1",
+        }
+    )
+    if denial_source == "current_authority":
+        async def missing_current_authority(_request):
+            return None, "canonical_production_authority_invalid"
+        activities._load_current_production_authorization = missing_current_authority
+    if action_name == "finalize":
+        canonical.remote_receipt_state = "accepted"
+        canonical.publication_id = "canonical-publication-1"
+        canonical.publication_state = "published"
+
+    async def run_action():
+        if action_name == "reconcile":
+            activities._publication_test_store.submit_decisions = [False]
+            activities._publication_test_store.effect_state = "submitting"
+            return await activities.submit_or_reconcile(payload)
+        if action_name == "await":
+            return await activities.await_publication(payload)
+        if action_name == "cancel":
+            return await activities.cancel(payload)
+        return await activities.complete(payload)
+
+    with pytest.raises(ApplicationError) as raised:
+        asyncio.run(run_action())
+
+    assert raised.value.type == "ProductionPublicationLiabilityHeld"
+    assert raised.value.non_retryable is True
+    assert len(dispatch.hold_calls) == 1
+    assert dispatch.hold_calls[0][1] == denied_action
+    assert adapter.reconcile_calls == 0
+    assert adapter.status_calls == 0
+    assert adapter.cancel_calls == 0
+    assert activities._publication_test_store.completed_outputs == []
+    assert activities._publication_test_store.terminal_states == []
+    assert activities._publication_test_repository.status_events == []
+
+
+def test_production_complete_requires_fresh_finalize_authorization():
+    dispatch = _DenyingPublicationDispatch()
+    activities, _adapter, _lease_calls, payload = _publication_activity_case(dispatch=dispatch)
+    canonical = activities._publication_test_canonical
+    canonical.remote_receipt_id = activities._publication_test_repository.receipt_id
+    canonical.remote_id = "canonical-remote-1"
+    canonical.remote_receipt_state = "accepted"
+    canonical.publication_id = "canonical-publication-1"
+    canonical.publication_state = "published"
+    canonical.approval_binding.remote_receipt_id = UUID(canonical.remote_receipt_id)
+    payload.update(
+        {
+            "remote_receipt_id": canonical.remote_receipt_id,
+            "remote_id": canonical.remote_id,
+            "publication_state": "published",
+            "publication_id": canonical.publication_id,
+        }
+    )
+
+    result = asyncio.run(activities.complete(payload))
+
+    assert dispatch.action_calls[-1][2] == "finalize"
+    assert len(activities._publication_test_store.completed_outputs) == 1
+    assert activities._publication_test_cost_calls["settle"] == [
+        (payload["budget_reservation_id"], 0)
+    ]
+    assert result.publication_state == "published"
+
+
+def test_revoked_finalize_preserves_published_result_and_reserved_liability():
+    dispatch = _HoldingPublicationDispatch(deny_action="finalize")
+    activities, adapter, _lease_calls, payload = _publication_activity_case(dispatch=dispatch)
+    canonical = activities._publication_test_canonical
+    canonical.remote_receipt_id = activities._publication_test_repository.receipt_id
+    canonical.remote_id = "canonical-remote-1"
+    canonical.remote_receipt_state = "accepted"
+    canonical.approval_binding.remote_receipt_id = UUID(canonical.remote_receipt_id)
+    payload.update(
+        {
+            "remote_receipt_id": canonical.remote_receipt_id,
+            "remote_id": canonical.remote_id,
+            "publication_state": "accepted",
+        }
+    )
+    adapter.status_state = "published"
+
+    observed = asyncio.run(activities.await_publication(payload))
+    canonical.remote_receipt_state = "accepted"
+    canonical.publication_id = "canonical-publication-1"
+    canonical.publication_state = "published"
+    observed["publication_id"] = canonical.publication_id
+
+    with pytest.raises(ApplicationError) as raised:
+        asyncio.run(activities.complete(observed))
+
+    assert raised.value.type == "ProductionPublicationLiabilityHeld"
+    assert observed["publication_state"] == "published"
+    assert activities._publication_test_cost_calls["settle"] == []
+    assert activities._publication_test_store.completed_outputs == []
+    assert activities._publication_test_store.terminal_states == []
+    assert dispatch.hold_calls[-1][1] == "finalize"
 
 
 def test_production_submit_claims_before_lease_resolution_and_provider_dispatch():
@@ -767,6 +1533,32 @@ def test_production_submit_claims_before_lease_resolution_and_provider_dispatch(
 
     assert result["publication_state"] == "accepted"
     assert events == ["claim", "lease", "submit"]
+
+
+def test_claimed_publication_route_revocation_holds_known_receipt_without_resubmit():
+    dispatch = _HoldingPublicationDispatch(deny_action="await")
+    activities, adapter, lease_calls, payload = _publication_activity_case(dispatch=dispatch)
+
+    accepted = asyncio.run(activities.submit_or_reconcile(payload))
+    canonical = activities._publication_test_canonical
+    canonical.remote_receipt_id = accepted["remote_receipt_id"]
+    canonical.remote_id = accepted["remote_id"]
+    canonical.remote_receipt_state = accepted["publication_state"]
+    accepted["publication_state"] = "accepted"
+
+    with pytest.raises(ApplicationError) as raised:
+        asyncio.run(activities.await_publication(accepted))
+
+    assert raised.value.type == "ProductionPublicationLiabilityHeld"
+    assert raised.value.non_retryable is True
+    assert adapter.submit_calls == 1
+    assert adapter.status_calls == 0
+    assert adapter.reconcile_calls == 0
+    assert len(lease_calls) == 1
+    assert len(dispatch.hold_calls) == 1
+    assert dispatch.hold_calls[0][1] == "await"
+    assert activities._publication_test_store.terminal_states == []
+    assert activities._publication_test_store.completed_outputs == []
 
 
 def test_current_publication_authorization_projects_canonical_policy_and_approval():
@@ -972,6 +1764,19 @@ def test_production_authorize_issues_one_permit_from_current_publication_binding
         approval_binding=approval,
         database_time=now,
         budget_status="reserved",
+        publication_plan_id=str(plan_id),
+        publication_plan_state="planned",
+        external_effect_id=str(effect_id),
+        external_effect_state="planned",
+        publication_attempt_id=str(attempt_id),
+        publication_attempt_state="planned",
+        remote_receipt_id=None,
+        remote_id=None,
+        remote_receipt_state=None,
+        publication_id=None,
+        job_id=str(job_id),
+        job_state="queued",
+        budget_reservation_id=str(approval.budget_reservation_id),
     )
 
     class Store(_PublicationActivityStore):
@@ -997,7 +1802,8 @@ def test_production_authorize_issues_one_permit_from_current_publication_binding
     class Costs:
         async def reserve_for_publication_effect(self, **kwargs):
             return SimpleNamespace(
-                reservation_id=str(uuid4()), status=SimpleNamespace(value="reserved")
+                reservation_id=str(approval.budget_reservation_id),
+                status=SimpleNamespace(value="reserved"),
             )
 
     class Authorizer:
