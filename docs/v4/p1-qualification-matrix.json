@@ -223,6 +223,17 @@
         ],
         "artifact": "docs/v4/p1-rg0-rg1-initial-gap-audit.json",
         "phase_split_reference": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/7"
+      },
+      "policy_revocation_fixture_extension": {
+        "scope": "fixture",
+        "application_commit": "3cd1e28d6358d1432e9e90a51a4fc58faeeb5c1d",
+        "evidence_path": "docs/v4/p1-production-policy-revocation-evidence.json",
+        "evidence_sha256": "f38f7aeb39391a4f76e4d1e89eeb1be6fc4a302b1f936dc6a21def1874f02faf",
+        "fixture_status": "PASS_FIXTURE_ONLY",
+        "production_status": "HELD",
+        "test_command_id": "task6-final-focused-fixture-suite",
+        "fixture_coverage": "Fixture authority checks bind the approved baseline and current goal revision; production baseline eligibility remains required.",
+        "migration_head": "0045_production_policy_approval_guard_repair"
       }
     },
     {
@@ -367,6 +378,17 @@
         ],
         "artifact": "docs/v4/p1-rg0-rg1-initial-gap-audit.json",
         "phase_split_reference": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/9"
+      },
+      "policy_revocation_fixture_extension": {
+        "scope": "fixture",
+        "application_commit": "3cd1e28d6358d1432e9e90a51a4fc58faeeb5c1d",
+        "evidence_path": "docs/v4/p1-production-policy-revocation-evidence.json",
+        "evidence_sha256": "f38f7aeb39391a4f76e4d1e89eeb1be6fc4a302b1f936dc6a21def1874f02faf",
+        "fixture_status": "PASS_FIXTURE_ONLY",
+        "production_status": "HELD",
+        "test_command_id": "task6-final-focused-fixture-suite",
+        "fixture_coverage": "Fixture admission and permit tests bind current admission, context, and goal revision; production admission qualification remains required.",
+        "migration_head": "0045_production_policy_approval_guard_repair"
       }
     },
     {
@@ -558,6 +580,17 @@
         ],
         "artifact": "docs/v4/p1-rg0-rg1-initial-gap-audit.json",
         "phase_split_reference": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/12"
+      },
+      "policy_revocation_fixture_extension": {
+        "scope": "fixture",
+        "application_commit": "3cd1e28d6358d1432e9e90a51a4fc58faeeb5c1d",
+        "evidence_path": "docs/v4/p1-production-policy-revocation-evidence.json",
+        "evidence_sha256": "f38f7aeb39391a4f76e4d1e89eeb1be6fc4a302b1f936dc6a21def1874f02faf",
+        "fixture_status": "PASS_FIXTURE_ONLY",
+        "production_status": "HELD",
+        "test_command_id": "task6-final-focused-fixture-suite",
+        "fixture_coverage": "Fixture tests retain immutable context and exact operation bindings; full candidate and production effect integration remain required.",
+        "migration_head": "0045_production_policy_approval_guard_repair"
       }
     },
     {
@@ -619,6 +652,17 @@
         ],
         "artifact": "docs/v4/p1-rg0-rg1-initial-gap-audit.json",
         "phase_split_reference": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/13"
+      },
+      "policy_revocation_fixture_extension": {
+        "scope": "fixture",
+        "application_commit": "3cd1e28d6358d1432e9e90a51a4fc58faeeb5c1d",
+        "evidence_path": "docs/v4/p1-production-policy-revocation-evidence.json",
+        "evidence_sha256": "f38f7aeb39391a4f76e4d1e89eeb1be6fc4a302b1f936dc6a21def1874f02faf",
+        "fixture_status": "PASS_FIXTURE_ONLY",
+        "production_status": "HELD",
+        "test_command_id": "task6-final-focused-fixture-suite",
+        "fixture_coverage": "Fixture tests cover grant/policy revocation and subject revision advancement; cross-service production revocation remains required.",
+        "migration_head": "0045_production_policy_approval_guard_repair"
       }
     },
     {
@@ -690,6 +734,17 @@
         ],
         "artifact": "docs/v4/p1-rg0-rg1-initial-gap-audit.json",
         "phase_split_reference": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/14"
+      },
+      "policy_revocation_fixture_extension": {
+        "scope": "fixture",
+        "application_commit": "3cd1e28d6358d1432e9e90a51a4fc58faeeb5c1d",
+        "evidence_path": "docs/v4/p1-production-policy-revocation-evidence.json",
+        "evidence_sha256": "f38f7aeb39391a4f76e4d1e89eeb1be6fc4a302b1f936dc6a21def1874f02faf",
+        "fixture_status": "PASS_FIXTURE_ONLY",
+        "production_status": "HELD",
+        "test_command_id": "task6-final-focused-fixture-suite",
+        "fixture_coverage": "Fixture tests cover versioned policy, approval binding, and failure behavior; production policy/approval producers and effect gate remain required.",
+        "migration_head": "0045_production_policy_approval_guard_repair"
       }
     },
     {
@@ -767,6 +822,17 @@
         ],
         "artifact": "docs/v4/p1-rg0-rg1-initial-gap-audit.json",
         "phase_split_reference": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/15"
+      },
+      "policy_revocation_fixture_extension": {
+        "scope": "fixture",
+        "application_commit": "3cd1e28d6358d1432e9e90a51a4fc58faeeb5c1d",
+        "evidence_path": "docs/v4/p1-production-policy-revocation-evidence.json",
+        "evidence_sha256": "f38f7aeb39391a4f76e4d1e89eeb1be6fc4a302b1f936dc6a21def1874f02faf",
+        "fixture_status": "PASS_FIXTURE_ONLY",
+        "production_status": "HELD",
+        "test_command_id": "task6-final-focused-fixture-suite",
+        "fixture_coverage": "Fixture tests cover serialized issue/claim, stop ordering, duplicate claims, and per-action local route decisions; platform route-fence qualification remains required.",
+        "migration_head": "0045_production_policy_approval_guard_repair"
       }
     },
     {
@@ -883,6 +949,17 @@
         "deferred_phase_owned_work": [],
         "artifact": "docs/v4/p1-rg0-rg1-initial-gap-audit.json",
         "phase_split_reference": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/16"
+      },
+      "policy_revocation_fixture_extension": {
+        "scope": "fixture",
+        "application_commit": "3cd1e28d6358d1432e9e90a51a4fc58faeeb5c1d",
+        "evidence_path": "docs/v4/p1-production-policy-revocation-evidence.json",
+        "evidence_sha256": "f38f7aeb39391a4f76e4d1e89eeb1be6fc4a302b1f936dc6a21def1874f02faf",
+        "fixture_status": "PASS_FIXTURE_ONLY",
+        "production_status": "HELD",
+        "test_command_id": "task6-final-focused-fixture-suite",
+        "fixture_coverage": "Fixture tests cover authority outage, restart, no resubmit, and liability retention; production recovery and independent readback remain required.",
+        "migration_head": "0045_production_policy_approval_guard_repair"
       }
     },
     {
@@ -1852,7 +1929,18 @@
           "Preserve default-deny provider routing and prove every substitution path remains rejected unless separately authorized."
         ],
         "deferred_phase_owned_work": [],
-        "phase_split_reference": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/4"
+        "phase_split_reference": "docs/v4/p1-rg0-rg1-initial-gap-audit.json#/requirements/4",
+        "policy_revocation_fixture_extension": {
+          "scope": "fixture",
+          "application_commit": "3cd1e28d6358d1432e9e90a51a4fc58faeeb5c1d",
+          "evidence_path": "docs/v4/p1-production-policy-revocation-evidence.json",
+          "evidence_sha256": "f38f7aeb39391a4f76e4d1e89eeb1be6fc4a302b1f936dc6a21def1874f02faf",
+          "fixture_status": "PASS_FIXTURE_ONLY",
+          "production_status": "HELD",
+          "test_command_id": "task6-final-focused-fixture-suite",
+          "fixture_coverage": "Fixture tests preserve default deny for missing policy/route/account and provider substitution; production effect dispatch remains disabled.",
+          "migration_head": "0045_production_policy_approval_guard_repair"
+        }
       },
       "R02": {
         "status": "HELD",
@@ -2270,5 +2358,39 @@
     ],
     "final_exact_candidate_environment_p1_rg0_rg1_audit": "NOT RUN",
     "final_exact_candidate_environment_audit_gate": "BLOCKED"
+  },
+  "p1_production_policy_revocation_fixture_extension": {
+    "scope": "fixture",
+    "application_commit": "3cd1e28d6358d1432e9e90a51a4fc58faeeb5c1d",
+    "evidence_path": "docs/v4/p1-production-policy-revocation-evidence.json",
+    "evidence_sha256": "f38f7aeb39391a4f76e4d1e89eeb1be6fc4a302b1f936dc6a21def1874f02faf",
+    "fixture_status": "PASS_FIXTURE_ONLY",
+    "production_status": "HELD",
+    "test_command_id": "task6-final-focused-fixture-suite",
+    "applicable_rows": [
+      "R05",
+      "R07",
+      "R10",
+      "R13",
+      "R15",
+      "R17",
+      "R18",
+      "R23F"
+    ],
+    "fixture_result": {
+      "passed": 153,
+      "failed": 0,
+      "skipped": 0,
+      "errors": 0,
+      "elapsed_seconds": 322.56
+    },
+    "production_release_status": "HELD",
+    "gate_disposition": {
+      "RG0": "HELD",
+      "RG1": "HELD",
+      "P2": "BLOCKED"
+    },
+    "remaining_acceptance": "Named production owners, primary/failover consistency, policy and approval producers, production effect-dispatch entry point, platform route-fence ordering, typed no-effect reissue, and independent production no-effects acceptance remain open. The fixture route-fence fake is local contract evidence only.",
+    "migration_head": "0045_production_policy_approval_guard_repair"
   }
 }

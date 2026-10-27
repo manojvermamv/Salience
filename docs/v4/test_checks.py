@@ -592,7 +592,7 @@ class GateChecks(unittest.TestCase):
 
         rows = audit["files"]
         paths = [row["path"] for row in rows]
-        self.assertEqual(len(rows), 283)
+        self.assertEqual(len(rows), len(expected_paths))
         self.assertEqual(paths, sorted(paths))
         self.assertEqual(len(paths), len(set(paths)))
         self.assertEqual(set(paths), expected_paths)
@@ -638,6 +638,111 @@ class GateChecks(unittest.TestCase):
         for path, expected_sha256 in audit["summary"]["current_handoff_hashes"].items():
             current = hashlib.sha256((CHECK.ROOT / path).read_bytes()).hexdigest()
             self.assertEqual(expected_sha256, current, path)
+
+    def test_policy_revocation_evidence_is_fixture_scoped_and_gate_held(self):
+        evidence_path = CHECK.ROOT / "docs/v4/p1-production-policy-revocation-evidence.json"
+        evidence = json.loads(evidence_path.read_text())
+        self.assertEqual(
+            evidence["schema_version"],
+            "salience.p1-production-policy-revocation-evidence.v1",
+        )
+        self.assertEqual(evidence["scope"], "fixture")
+        self.assertEqual(evidence["status"], "PASS_FIXTURE_ONLY")
+        self.assertEqual(
+            evidence["application_candidate"]["commit"],
+            "3cd1e28d6358d1432e9e90a51a4fc58faeeb5c1d",
+        )
+        artifact = evidence["application_candidate"]["artifact_or_image"]
+        self.assertTrue(
+            re.fullmatch(r"[a-f0-9]{64}", artifact.get("sha256") or "")
+            or artifact.get("unavailable_reason"),
+            artifact,
+        )
+        self.assertEqual(evidence["migration_head"], "0045_production_policy_approval_guard_repair")
+
+        environment = evidence["environment"]
+        self.assertEqual(environment["scope"], "fixture")
+        self.assertTrue(environment["name"])
+        self.assertRegex(environment["manifest"]["sha256"], r"^[a-f0-9]{64}$")
+        issuer_audience = evidence["issuer_audience"]
+        self.assertTrue(issuer_audience["issuer_identifier"])
+        self.assertTrue(issuer_audience["audience_identifier"])
+        self.assertNotIn("key", issuer_audience)
+        self.assertNotIn("token", issuer_audience)
+
+        self.assertRegex(evidence["started_at_utc"], r"^\d{4}-\d{2}-\d{2}T")
+        self.assertRegex(evidence["finished_at_utc"], r"^\d{4}-\d{2}-\d{2}T")
+        self.assertTrue(evidence["operator"]["identifier"])
+        self.assertEqual(evidence["operator"]["status"], "EXECUTED")
+        self.assertEqual(evidence["reviewer"]["status"], "NOT INDEPENDENTLY REVIEWED")
+
+        commands = evidence["test_commands"]
+        self.assertGreater(len(commands), 0)
+        self.assertTrue(all(command["scope"] == "fixture" for command in commands))
+        migration_command = next(
+            command for command in commands if command["id"] == "task6-migration-upgrade-head"
+        )
+        self.assertEqual(migration_command["result"]["exit_code"], 0)
+        self.assertEqual(
+            migration_command["result"]["migration_head"],
+            "0045_production_policy_approval_guard_repair",
+        )
+        self.assertRegex(migration_command["log"]["sha256"], r"^[a-f0-9]{64}$")
+        application_command = next(
+            command for command in commands if command["id"] == "task6-final-focused-fixture-suite"
+        )
+        result = application_command["result"]
+        self.assertEqual(result["exit_code"], 0)
+        self.assertGreater(result["passed"], 0)
+        for field in ["failed", "skipped", "errors"]:
+            self.assertEqual(result[field], 0)
+        self.assertRegex(application_command["log"]["sha256"], r"^[a-f0-9]{64}$")
+        self.assertRegex(evidence["database_readback"]["sha256"], r"^[a-f0-9]{64}$")
+        self.assertRegex(evidence["application_run"]["sha256"], r"^[a-f0-9]{64}$")
+        self.assertFalse(application_command["junit"]["available"])
+        self.assertTrue(application_command["junit"]["unavailable_reason"])
+        self.assertIn(
+            "tests/integration/test_v4_migrations.py::test_0045_repairs_stale_approval_guard_without_weakening_v1_binding",
+            application_command["command"],
+        )
+        self.assertIn(
+            "tests/integration/test_p1_production_policy_revocation.py::test_issue_denies_missing_or_wrong_current_authority",
+            application_command["included_regression_cases"],
+        )
+
+        self.assertEqual(evidence["production"]["target_configuration"], "NOT RUN")
+        self.assertEqual(evidence["production"]["acceptance"], "NOT RUN")
+        self.assertFalse(evidence["production"]["effects_enabled"])
+        self.assertEqual(evidence["production"]["route_fence_platform_acceptance"], "NOT RUN")
+        self.assertEqual(evidence["gates"]["RG0"], "HELD")
+        self.assertEqual(evidence["gates"]["RG1"], "HELD")
+        self.assertEqual(evidence["gates"]["P2"], "BLOCKED")
+        self.assertFalse(evidence["gates"]["main_merged"])
+
+        matrix = json.loads(Path(__file__).with_name("p1-qualification-matrix.json").read_text())
+        extension = matrix["p1_production_policy_revocation_fixture_extension"]
+        self.assertEqual(extension["scope"], "fixture")
+        self.assertEqual(extension["application_commit"], evidence["application_candidate"]["commit"])
+        self.assertEqual(extension["evidence_path"], "docs/v4/p1-production-policy-revocation-evidence.json")
+        self.assertEqual(
+            extension["evidence_sha256"],
+            hashlib.sha256(evidence_path.read_bytes()).hexdigest(),
+        )
+        self.assertEqual(extension["production_release_status"], "HELD")
+        self.assertEqual(extension["gate_disposition"], {"RG0": "HELD", "RG1": "HELD", "P2": "BLOCKED"})
+        expected_rows = {"R05", "R07", "R10", "R13", "R15", "R17", "R18", "R23F"}
+        self.assertEqual(set(extension["applicable_rows"]), expected_rows)
+        requirements = {row["id"]: row for row in matrix["requirements"]}
+        for row_id in expected_rows - {"R23F"}:
+            with self.subTest(requirement=row_id):
+                row = requirements[row_id]
+                self.assertEqual(row["production_release_status"], "HELD")
+                self.assertEqual(row["policy_revocation_fixture_extension"]["evidence_path"], extension["evidence_path"])
+                self.assertEqual(row["policy_revocation_fixture_extension"]["scope"], "fixture")
+        r23f = matrix["initial_commit_bound_gap_audit"]["rows"]["R23F"]
+        self.assertEqual(r23f["status"], "HELD")
+        self.assertEqual(r23f["policy_revocation_fixture_extension"]["evidence_path"], extension["evidence_path"])
+        self.assertEqual(r23f["policy_revocation_fixture_extension"]["scope"], "fixture")
 
 
 if __name__ == "__main__":

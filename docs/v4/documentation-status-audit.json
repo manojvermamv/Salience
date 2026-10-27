@@ -1,11 +1,13 @@
 {
-  "audited_at": "2026-10-27T05:13:10Z",
+  "audited_at": "2026-10-27T13:55:31Z",
   "base_commit": "7c1ddcda280b510048ad61106c406171edd64f18",
   "scope": "Current status records the frozen initial P1/RG0/RG1 residual audit and five-spec design review as COMPLETE_REVIEWED for source 7c1ddcda280b510048ad61106c406171edd64f18 and environment manifest 18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436. Exact-source Actions run 40443346020 passed verify and p0-regression. Five bounded increments are required; implementation and target qualification remain NOT RUN. All 22 final-entry rows remain non-PASS; RG0/RG1 are HELD; P2 and Slice 7 are BLOCKED. Production effects are disabled and main is unmerged. The current documentation candidate is an uncommitted worktree and requires its own exact-head CI after push. Application qualification remains bound to 182c4e4; prior whole-branch review and CI remain bound to their historical exact heads.",
-  "tracked_markdown_files": 111,
-  "documentation_artifacts": 283,
+  "tracked_markdown_files": 112,
+  "documentation_artifacts": 285,
   "summary": {
     "current_handoff_hashes": {
+      "docs/README.md": "94b888b864ca12058fba96ee51c51a7478f21fdc8b99542018dcce426c9f66b0",
+      "docs/superpowers/plans/2026-10-27-p1-production-policy-and-revocation.md": "c1564a7ec7d09f63b5aba105678c8b5929619fecc49e5b4bb3e415ed1340672e",
       "docs/superpowers/plans/2026-10-27-p1-rg0-rg1-initial-gap-audit.md": "5d1dd8a86718184d03324144643dfb009cb36243a5bd0c0f14c46844eb3c5cd4",
       "docs/superpowers/specs/2026-10-13-p1-live-schedule-fencing-design.md": "04ed59e2ed61ca17dc2c01df3a2964e1569e03e79f0aef2bbfe2ca2d96d5129a",
       "docs/superpowers/specs/2026-10-13-p1-production-policy-and-revocation-design.md": "6be8f5ec6c48491a45a734510cc20af98e2cd7554fdc0409e77c6d9667d42fe2",
@@ -15,25 +17,29 @@
       "docs/v4/IMPLEMENTATION-BLUEPRINT.md": "6e717aae30c9eb3714d760d5e04f8689a33db0b5e0a3d8dcb4e8e63137c7c58b",
       "docs/v4/evidence-lock.json": "472d603c1110a0ebe8082f598b7d02a892e6591a9f6b400c48979321551af674",
       "docs/v4/p0-release.json": "5038fa02bd73d176cbad6df99a66537fb25cdebc0f8c972f33419070e1145757",
-      "docs/v4/p1-qualification-matrix.json": "c36bca335575d0b128d8d2232b1b50c741566d2d2a6d8fbb43d404e2ad5e3237",
-      "docs/v4/p1-rg0-rg1-audit-and-spec-review.md": "ba131347a6918be208d4a690c3f4e7c31bbf2af167862a117b8b274f85a95c05",
+      "docs/v4/p1-production-policy-revocation-evidence.json": "f38f7aeb39391a4f76e4d1e89eeb1be6fc4a302b1f936dc6a21def1874f02faf",
+      "docs/v4/p1-qualification-matrix.json": "db149716ecdf76fc22638a4dba54e6be9190854769ba72046474fc42e2a02177",
+      "docs/v4/p1-rg0-rg1-audit-and-spec-review.md": "787c69f5e61ef545f1666e39e16c6fa99b4d61771dc88f2920e716210ba0a988",
       "docs/v4/p1-rg0-rg1-initial-gap-audit.json": "33fe485384dcf60e36df8d48ace6394c80bce0d1bd9e6b9b39c7a905d65676b1",
       "docs/v4/p1-rg0-rg1-initial-gap-audit.md": "62aab5afb39f7c47e355a68ccf56e319a72955247515dfbdba8913fd797a5944",
-      "docs/v4/progress.md": "63bbb93983b1b93af53a10fc75a2051605ee278daa1fab826f303be1909f54d0",
+      "docs/v4/progress.md": "a7c067414e59f62781a98c42ba17f5ff933c8574eb15a24db5c24fb9559f670e",
       "docs/v4/publication-recovery-hold-evidence.json": "3cce88e4d692f726be710c1f4db46b1428c9546561424a2ab0ad120363becc66",
       "docs/v4/publication-recovery-hold-successor-evidence.json": "4baef4a2328b26a47abc150f4b2ba47aa7c3d3afa6260c651986142b110054c1",
-      "docs/v4/repository-enforcement-evidence.json": "389886f670654a65848d5f43d61215562d53a95969906e5a44722a4ab7dbc006"
+      "docs/v4/repository-enforcement-evidence.json": "389886f670654a65848d5f43d61215562d53a95969906e5a44722a4ab7dbc006",
+      "docs/v4/test_checks.py": "b50ac5152794d78dbfbd135acd3998bed50a41e38a4d650c6a76239d4f8bddd0",
+      "docs/v4/validation.md": "93826b04fbeab265a349598e32da45f7c73fd9c711e7d9071ed027c9b603d430"
     },
     "tracked_markdown_disposition_counts": {
-      "tracked_markdown_paths": 111,
+      "tracked_markdown_paths": 112,
       "update_now_paths": 79,
-      "non_update_paths_preserved": 32,
+      "non_update_paths_preserved": 33,
       "historical_immutable": 19,
       "generated_vendor": 12,
-      "already_current": 1,
+      "already_current": 2,
       "dispositions": {
         "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged": 79,
         "active user-authored project instructions; preserved verbatim": 1,
+        "already current approved Task 6 implementation plan": 1,
         "preserved YouTube-agent reference research": 4,
         "preserved dated design specification": 3,
         "preserved dated independent item7 qualification report": 1,
@@ -48,13 +54,14 @@
     "preserved plugin instructions, references and examples; independent skill scope": 57,
     "preserved dated qualification report": 17,
     "active user-authored project instructions; preserved verbatim": 1,
-    "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged": 79,
+    "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged": 80,
     "preserved original design source or historical diagram": 7,
     "preserved immutable historical snapshot; bytes retained verbatim": 1,
     "preserved immutable historical snapshot": 62,
     "preserved YouTube-agent reference research": 5,
     "preserved historical architecture visual": 8,
     "preserved dated preparation plan": 3,
+    "already current approved Task 6 implementation plan": 1,
     "preserved dated design specification": 3,
     "preserved dated initial P1/RG0/RG1 subaudit report": 3,
     "preserved unscanned P1 policy-routing subaudit payload": 1,
@@ -114,7 +121,7 @@
     "independent_reviewers": 3,
     "reviewed_p1_rows": 17,
     "independent_review_scope": "The historical GPT-6.1/GPT-5.6 whole-branch review remains scoped to pushed feature head 6f5edc77edbfe189e46de4254c2fdb21c5652bce (run 38592066455 passed its required jobs). The initial commit-bound audit and five-spec design review are COMPLETE_REVIEWED for 7c1ddcda280b510048ad61106c406171edd64f18 and environment 18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436; exact-source CI run 40443346020 passed verify and p0-regression. The separate whole-change documentation review is PASS_AFTER_FIX_ROUND_1 for candidate manifest cafa0bd46ede2cc8aef51058f46541068a07cd031774c8b5501270bc2385ee9a, after F1-F3 fixes and a clean scoped rereview. This documentation review is not the final exact-candidate/environment P1/RG0/RG1 audit, which remains NOT RUN and BLOCKED pending required implementations and current external acceptance evidence for one frozen final pair. The current uncommitted documentation candidate requires exact-head CI after push. Application qualification remains bound to 182c4e4; production gates remain held.",
-    "tracked_markdown_files": 111,
+    "tracked_markdown_files": 112,
     "active_project_markdown_files": 79,
     "active_integration_contracts": 1,
     "tracked_markdown_paths": [
@@ -193,6 +200,7 @@
       "docs/superpowers/plans/2026-10-13-agenttube-immutable-reference-guard.md",
       "docs/superpowers/plans/2026-10-13-agenttube-reference-adoption.md",
       "docs/superpowers/plans/2026-10-13-p1-publication-recovery-floor-repair.md",
+      "docs/superpowers/plans/2026-10-27-p1-production-policy-and-revocation.md",
       "docs/superpowers/plans/2026-10-27-p1-rg0-rg1-initial-gap-audit.md",
       "docs/superpowers/reviews/2026-09-13-phase-7-8-release-gate.md",
       "docs/superpowers/reviews/2026-09-13-phase-9-independent-review.md",
@@ -417,7 +425,46 @@
     "current_candidate_runtime_manifest_sha256": "3d58423ee9119db38c9a670c726c83692bef126d402e69f2a9ad98e05377b644",
     "current_independent_review_scope": "The historical GPT-6.1/GPT-5.6 whole-branch review remains scoped to pushed feature head 6f5edc77edbfe189e46de4254c2fdb21c5652bce (run 38592066455 passed its required jobs). The initial commit-bound audit and five-spec design review are COMPLETE_REVIEWED for 7c1ddcda280b510048ad61106c406171edd64f18 and environment 18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436; exact-source CI run 40443346020 passed verify and p0-regression. The separate whole-change documentation review is PASS_AFTER_FIX_ROUND_1 for candidate manifest cafa0bd46ede2cc8aef51058f46541068a07cd031774c8b5501270bc2385ee9a, after F1-F3 fixes and a clean scoped rereview. This documentation review is not the final exact-candidate/environment P1/RG0/RG1 audit, which remains NOT RUN and BLOCKED pending required implementations and current external acceptance evidence for one frozen final pair. The current uncommitted documentation candidate requires exact-head CI after push. Application qualification remains bound to 182c4e4; production gates remain held.",
     "current_documentation_artifacts": 283,
-    "mermaid_source_blocks_updated": 1
+    "mermaid_source_blocks_updated": 1,
+    "current_task6_fixture_checkpoint": {
+      "scope": "fixture",
+      "application_commit": "3cd1e28d6358d1432e9e90a51a4fc58faeeb5c1d",
+      "fixture_status": "PASS_FIXTURE_ONLY",
+      "migration_head": "0045_production_policy_approval_guard_repair",
+      "passed": 153,
+      "failed": 0,
+      "skipped": 0,
+      "errors": 0,
+      "elapsed_seconds": 322.56,
+      "manifest_sha256": "e639d2ea16601a4da2e157d814af9f93bc613ba6ef583c1e471cb948ed436ec8",
+      "migration_log_sha256": "10e74e899b8a30cba1eddc1db174d29385253be16dfdee374106f118cbd6854d",
+      "log_sha256": "344aed943cbaf672f6132f9c71cc7c9bacacc496270b2b02239ad6cf6545a523",
+      "application_run_sha256": "d0a2b4b4d9ea2eb0cf0d23b0f37ec9ba371ff51ccc4c7b2c229629661e5e5c4d",
+      "database_readback_sha256": "9acf9d5f0061ba35d07a79ee3ecee9ec2744aba8e2b4209df562943d1f4852ac",
+      "evidence_sha256": "f38f7aeb39391a4f76e4d1e89eeb1be6fc4a302b1f936dc6a21def1874f02faf",
+      "artifact_or_image": "UNAVAILABLE; the bounded fixture command did not build, pull, or produce an artifact or image",
+      "junit": "UNAVAILABLE; the approved combined fixture command emitted no JUnit artifact",
+      "database_cleanup": "DROPPED",
+      "production_target_configuration": "NOT RUN",
+      "production_acceptance": "NOT RUN",
+      "production_effects_enabled": false,
+      "RG0": "HELD",
+      "RG1": "HELD",
+      "RG1_scope": "full",
+      "P2": "BLOCKED",
+      "main": "UNMERGED",
+      "current_documentation_artifacts": 285,
+      "current_markdown_paths": 112,
+      "candidate_documentation_ci": "REQUIRED_AFTER_PUSH"
+    },
+    "task6_documentation_checks": {
+      "docs_v4_test_checks": "PENDING",
+      "phase9_documentation_contract": "PENDING",
+      "verify_phase9": "PENDING",
+      "verify_phase9_cleanup_contract": "PENDING",
+      "bash_syntax": "PENDING",
+      "diff_check": "PENDING"
+    }
   },
   "files": [
     {
@@ -768,7 +815,7 @@
     {
       "path": "docs/README.md",
       "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "2c2ff50f38b4d5924e7a23fa3b3586acac18528b7a69df0dcc540c71ed1c42f5"
+      "sha256": "94b888b864ca12058fba96ee51c51a7478f21fdc8b99542018dcce426c9f66b0"
     },
     {
       "path": "docs/adr/0001-durable-runtime.md",
@@ -1396,6 +1443,11 @@
       "sha256": "fbb80a6214ae41ae04fbbf153e2fe6dcce20922a4301de42e53a46377479f276"
     },
     {
+      "path": "docs/superpowers/plans/2026-10-27-p1-production-policy-and-revocation.md",
+      "disposition": "already current approved Task 6 implementation plan",
+      "sha256": "c1564a7ec7d09f63b5aba105678c8b5929619fecc49e5b4bb3e415ed1340672e"
+    },
+    {
       "path": "docs/superpowers/plans/2026-10-27-p1-rg0-rg1-initial-gap-audit.md",
       "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
       "sha256": "5d1dd8a86718184d03324144643dfb009cb36243a5bd0c0f14c46844eb3c5cd4"
@@ -1691,14 +1743,19 @@
       "sha256": "0ff2183c8993d72b05832db167e82433c2bced74e047b3609574877701ac591f"
     },
     {
+      "path": "docs/v4/p1-production-policy-revocation-evidence.json",
+      "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
+      "sha256": "f38f7aeb39391a4f76e4d1e89eeb1be6fc4a302b1f936dc6a21def1874f02faf"
+    },
+    {
       "path": "docs/v4/p1-qualification-matrix.json",
       "disposition": "Current P1 matrix keeps application scope frozen, exact review and documentation CI heads distinct, and current candidate CI pending; production holds retained",
-      "sha256": "c36bca335575d0b128d8d2232b1b50c741566d2d2a6d8fbb43d404e2ad5e3237"
+      "sha256": "db149716ecdf76fc22638a4dba54e6be9190854769ba72046474fc42e2a02177"
     },
     {
       "path": "docs/v4/p1-rg0-rg1-audit-and-spec-review.md",
       "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "ba131347a6918be208d4a690c3f4e7c31bbf2af167862a117b8b274f85a95c05"
+      "sha256": "787c69f5e61ef545f1666e39e16c6fa99b4d61771dc88f2920e716210ba0a988"
     },
     {
       "path": "docs/v4/p1-rg0-rg1-initial-gap-audit.json",
@@ -1723,7 +1780,7 @@
     {
       "path": "docs/v4/progress.md",
       "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "63bbb93983b1b93af53a10fc75a2051605ee278daa1fab826f303be1909f54d0"
+      "sha256": "a7c067414e59f62781a98c42ba17f5ff933c8574eb15a24db5c24fb9559f670e"
     },
     {
       "path": "docs/v4/publication-recovery-hold-evidence.json",
@@ -1793,7 +1850,7 @@
     {
       "path": "docs/v4/validation.md",
       "disposition": "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged",
-      "sha256": "4afc4def5a5e4df09b1a0ba0f061f073f974fa719072f4bfe33f7d7438d1021d"
+      "sha256": "93826b04fbeab265a349598e32da45f7c73fd9c711e7d9071ed027c9b603d430"
     },
     {
       "path": "docs/verification.md",
@@ -1919,6 +1976,7 @@
     "docs/superpowers/plans/2026-10-13-agenttube-immutable-reference-guard.md",
     "docs/superpowers/plans/2026-10-13-agenttube-reference-adoption.md",
     "docs/superpowers/plans/2026-10-13-p1-publication-recovery-floor-repair.md",
+    "docs/superpowers/plans/2026-10-27-p1-production-policy-and-revocation.md",
     "docs/superpowers/plans/2026-10-27-p1-rg0-rg1-initial-gap-audit.md",
     "docs/superpowers/reviews/2026-09-13-phase-7-8-release-gate.md",
     "docs/superpowers/reviews/2026-09-13-phase-9-independent-review.md",
@@ -2377,6 +2435,8 @@
     "current_independent_review_scope": "Successor 182c4e4 fresh independent review/meta-review and exact-head CI remain pending; Task 11 findings stay scoped to 5cb5791 and corrected-publication rereview stays scoped to A4/d031172."
   },
   "current_handoff_hashes": {
+    "docs/README.md": "94b888b864ca12058fba96ee51c51a7478f21fdc8b99542018dcce426c9f66b0",
+    "docs/superpowers/plans/2026-10-27-p1-production-policy-and-revocation.md": "c1564a7ec7d09f63b5aba105678c8b5929619fecc49e5b4bb3e415ed1340672e",
     "docs/superpowers/plans/2026-10-27-p1-rg0-rg1-initial-gap-audit.md": "5d1dd8a86718184d03324144643dfb009cb36243a5bd0c0f14c46844eb3c5cd4",
     "docs/superpowers/specs/2026-10-13-p1-live-schedule-fencing-design.md": "04ed59e2ed61ca17dc2c01df3a2964e1569e03e79f0aef2bbfe2ca2d96d5129a",
     "docs/superpowers/specs/2026-10-13-p1-production-policy-and-revocation-design.md": "6be8f5ec6c48491a45a734510cc20af98e2cd7554fdc0409e77c6d9667d42fe2",
@@ -2386,14 +2446,17 @@
     "docs/v4/IMPLEMENTATION-BLUEPRINT.md": "6e717aae30c9eb3714d760d5e04f8689a33db0b5e0a3d8dcb4e8e63137c7c58b",
     "docs/v4/evidence-lock.json": "472d603c1110a0ebe8082f598b7d02a892e6591a9f6b400c48979321551af674",
     "docs/v4/p0-release.json": "5038fa02bd73d176cbad6df99a66537fb25cdebc0f8c972f33419070e1145757",
-    "docs/v4/p1-qualification-matrix.json": "c36bca335575d0b128d8d2232b1b50c741566d2d2a6d8fbb43d404e2ad5e3237",
-    "docs/v4/p1-rg0-rg1-audit-and-spec-review.md": "ba131347a6918be208d4a690c3f4e7c31bbf2af167862a117b8b274f85a95c05",
+    "docs/v4/p1-production-policy-revocation-evidence.json": "f38f7aeb39391a4f76e4d1e89eeb1be6fc4a302b1f936dc6a21def1874f02faf",
+    "docs/v4/p1-qualification-matrix.json": "db149716ecdf76fc22638a4dba54e6be9190854769ba72046474fc42e2a02177",
+    "docs/v4/p1-rg0-rg1-audit-and-spec-review.md": "787c69f5e61ef545f1666e39e16c6fa99b4d61771dc88f2920e716210ba0a988",
     "docs/v4/p1-rg0-rg1-initial-gap-audit.json": "33fe485384dcf60e36df8d48ace6394c80bce0d1bd9e6b9b39c7a905d65676b1",
     "docs/v4/p1-rg0-rg1-initial-gap-audit.md": "62aab5afb39f7c47e355a68ccf56e319a72955247515dfbdba8913fd797a5944",
-    "docs/v4/progress.md": "63bbb93983b1b93af53a10fc75a2051605ee278daa1fab826f303be1909f54d0",
+    "docs/v4/progress.md": "a7c067414e59f62781a98c42ba17f5ff933c8574eb15a24db5c24fb9559f670e",
     "docs/v4/publication-recovery-hold-evidence.json": "3cce88e4d692f726be710c1f4db46b1428c9546561424a2ab0ad120363becc66",
     "docs/v4/publication-recovery-hold-successor-evidence.json": "4baef4a2328b26a47abc150f4b2ba47aa7c3d3afa6260c651986142b110054c1",
-    "docs/v4/repository-enforcement-evidence.json": "389886f670654a65848d5f43d61215562d53a95969906e5a44722a4ab7dbc006"
+    "docs/v4/repository-enforcement-evidence.json": "389886f670654a65848d5f43d61215562d53a95969906e5a44722a4ab7dbc006",
+    "docs/v4/test_checks.py": "b50ac5152794d78dbfbd135acd3998bed50a41e38a4d650c6a76239d4f8bddd0",
+    "docs/v4/validation.md": "93826b04fbeab265a349598e32da45f7c73fd9c711e7d9071ed027c9b603d430"
   },
   "current_documentation_refresh": {
     "plan_task": "docs/superpowers/plans/2026-10-27-p1-rg0-rg1-initial-gap-audit.md",
@@ -2460,24 +2523,25 @@
     ]
   },
   "tracked_markdown_disposition_counts": {
-    "tracked_markdown_paths": 111,
+    "tracked_markdown_paths": 112,
     "update_now_paths": 79,
-    "non_update_paths_preserved": 32,
+    "non_update_paths_preserved": 33,
     "historical_immutable": 19,
     "generated_vendor": 12,
-    "already_current": 1,
+    "already_current": 2,
     "dispositions": {
-      "preserved plugin instructions, references and examples; independent skill scope": 12,
-      "preserved dated qualification report": 2,
-      "active user-authored project instructions; preserved verbatim": 1,
       "active documentation aligned to frozen application 182c4e4 and reviewed initial P1/RG0/RG1 audit source 7c1ddcd (environment 18b15955; exact-source CI 40443346020 PASS); five designs COMPLETE_REVIEWED; implementation/target qualification NOT RUN; final candidate CI REQUIRED_AFTER_PUSH; 22 final-entry rows non-PASS; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged": 79,
-      "preserved original design source or historical diagram": 2,
-      "preserved immutable historical snapshot; bytes retained verbatim": 1,
+      "active user-authored project instructions; preserved verbatim": 1,
+      "already current approved Task 6 implementation plan": 1,
       "preserved YouTube-agent reference research": 4,
-      "preserved dated preparation plan": 3,
       "preserved dated design specification": 3,
+      "preserved dated independent item7 qualification report": 1,
       "preserved dated initial P1/RG0/RG1 subaudit report": 3,
-      "preserved dated independent item7 qualification report": 1
+      "preserved dated preparation plan": 3,
+      "preserved dated qualification report": 2,
+      "preserved immutable historical snapshot; bytes retained verbatim": 1,
+      "preserved original design source or historical diagram": 2,
+      "preserved plugin instructions, references and examples; independent skill scope": 12
     }
   },
   "current_branch_review_and_ci": {
@@ -2585,5 +2649,36 @@
   "Slice7": "BLOCKED",
   "final_entry_audit_status": "NOT RUN",
   "main_merge": "UNMERGED",
-  "current_documentation_artifacts": 283
+  "current_documentation_artifacts": 285,
+  "current_task6_fixture_checkpoint": {
+    "scope": "fixture",
+    "application_commit": "3cd1e28d6358d1432e9e90a51a4fc58faeeb5c1d",
+    "fixture_status": "PASS_FIXTURE_ONLY",
+    "migration_head": "0045_production_policy_approval_guard_repair",
+    "passed": 153,
+    "failed": 0,
+    "skipped": 0,
+    "errors": 0,
+    "elapsed_seconds": 322.56,
+    "manifest_sha256": "e639d2ea16601a4da2e157d814af9f93bc613ba6ef583c1e471cb948ed436ec8",
+    "migration_log_sha256": "10e74e899b8a30cba1eddc1db174d29385253be16dfdee374106f118cbd6854d",
+    "log_sha256": "344aed943cbaf672f6132f9c71cc7c9bacacc496270b2b02239ad6cf6545a523",
+    "application_run_sha256": "d0a2b4b4d9ea2eb0cf0d23b0f37ec9ba371ff51ccc4c7b2c229629661e5e5c4d",
+    "database_readback_sha256": "9acf9d5f0061ba35d07a79ee3ecee9ec2744aba8e2b4209df562943d1f4852ac",
+    "evidence_sha256": "f38f7aeb39391a4f76e4d1e89eeb1be6fc4a302b1f936dc6a21def1874f02faf",
+    "artifact_or_image": "UNAVAILABLE; the bounded fixture command did not build, pull, or produce an artifact or image",
+    "junit": "UNAVAILABLE; the approved combined fixture command emitted no JUnit artifact",
+    "database_cleanup": "DROPPED",
+    "production_target_configuration": "NOT RUN",
+    "production_acceptance": "NOT RUN",
+    "production_effects_enabled": false,
+    "RG0": "HELD",
+    "RG1": "HELD",
+    "RG1_scope": "full",
+    "P2": "BLOCKED",
+    "main": "UNMERGED",
+    "current_documentation_artifacts": 285,
+    "current_markdown_paths": 112,
+    "candidate_documentation_ci": "REQUIRED_AFTER_PUSH"
+  }
 }

@@ -119,3 +119,27 @@ This whole-change verdict applies only to the exact reviewer-reported documentat
 The findings were technically valid. The row-level corrections and seven cross-spec corrections close the reported gaps, and the reviewed interfaces are internally consistent across policy, routing, schedules, recovery, and external evidence. The schedule increment remains bounded and independently passing. The audit and its traceable row assignments support exactly five required increments; no sixth increment is required by this review chain.
 
 This orchestrator meta-review accepts only the completed initial audit/spec design evaluation. It does **not** approve implementation, live qualification, production enablement, RG0/RG1 release, P2, merge, or release. Implementation and target qualification remain NOT RUN; all 22 final-entry rows remain non-PASS; RG0/RG1 remain HELD; Slice 7/P2 remain BLOCKED; production remains disabled and `main` remains unmerged. The separate whole-change documentation review is PASS_AFTER_FIX_ROUND_1 for the manifest recorded above; the final exact-candidate/environment P1/RG0/RG1 audit remains NOT RUN and BLOCKED.
+
+## Current-content hash addendum — Slice 2 Task 6
+
+This append-only index binds the current documentation and test contents after the fixture-only policy/revocation checkpoint. The review decisions and frozen initial-audit evidence above remain scoped to their recorded source and candidate.
+
+| Path | SHA-256 |
+| --- | --- |
+| `docs/v4/p1-rg0-rg1-initial-gap-audit.json` | `33fe485384dcf60e36df8d48ace6394c80bce0d1bd9e6b9b39c7a905d65676b1` |
+| `docs/v4/p1-rg0-rg1-initial-gap-audit.md` | `62aab5afb39f7c47e355a68ccf56e319a72955247515dfbdba8913fd797a5944` |
+| `docs/v4/p0-release.json` | `5038fa02bd73d176cbad6df99a66537fb25cdebc0f8c972f33419070e1145757` |
+| `docs/v4/p1-qualification-matrix.json` | `db149716ecdf76fc22638a4dba54e6be9190854769ba72046474fc42e2a02177` |
+| `docs/superpowers/specs/2026-10-13-p1-production-policy-and-revocation-design.md` | `6be8f5ec6c48491a45a734510cc20af98e2cd7554fdc0409e77c6d9667d42fe2` |
+| `docs/superpowers/specs/2026-10-13-p1-production-routing-and-worker-fencing-design.md` | `d4d2c06a1f0925d2826b29a4e2c053f7f7773f660397fe986883c370aee78f67` |
+| `docs/superpowers/specs/2026-10-13-p1-live-schedule-fencing-design.md` | `04ed59e2ed61ca17dc2c01df3a2964e1569e03e79f0aef2bbfe2ca2d96d5129a` |
+| `docs/superpowers/specs/2026-10-13-p1-production-recovery-and-alerts-design.md` | `1c731ee595be6582902aa79f9ebb52d520f6fd18ad6054ca304709ce16aea61c` |
+| `docs/superpowers/specs/2026-10-13-rg0-rg1-external-acceptance-design.md` | `2a5d6cff0dd44070b1942e79f073906527b8e2650b62b3473d63542f00bfbcd8` |
+| `docs/v4/test_checks.py` | `b50ac5152794d78dbfbd135acd3998bed50a41e38a4d650c6a76239d4f8bddd0` |
+| `README.md` | `3f672a0e4bd804a0cc2280c7a57b2a350dbde4991a3ae4e941e3380b16ee3d44` |
+| `docs/README.md` | `94b888b864ca12058fba96ee51c51a7478f21fdc8b99542018dcce426c9f66b0` |
+| `docs/v4/IMPLEMENTATION-BLUEPRINT.md` | `6e717aae30c9eb3714d760d5e04f8689a33db0b5e0a3d8dcb4e8e63137c7c58b` |
+| `docs/v4/progress.md` | `a7c067414e59f62781a98c42ba17f5ff933c8574eb15a24db5c24fb9559f670e` |
+| `docs/v4/validation.md` | `93826b04fbeab265a349598e32da45f7c73fd9c711e7d9071ed027c9b603d430` |
+| `docs/superpowers/specs/2026-10-13-v4-multiplatform-autonomy-program-sequence.md` | `ba64032ca707c4348c97651fa06beced3df90d1612c38c56de50fed1558947ca` |
+| `docs/superpowers/plans/2026-10-27-p1-rg0-rg1-initial-gap-audit.md` | `5d1dd8a86718184d03324144643dfb009cb36243a5bd0c0f14c46844eb3c5cd4` |
