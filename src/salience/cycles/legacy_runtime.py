@@ -44,7 +44,11 @@ def require_current_stage(outbox, binding):
     require_fixture()
     service = CycleGovernance(outbox.database_url,workspace_id=outbox.workspace_id,subject_id=binding["actor_id"])
     with service._command("cycles:permit") as connection:
-        service._eligible_cycle(connection, binding["cycle_id"])
+        service._eligible_cycle(
+            connection,
+            binding["cycle_id"],
+            allow_unrelated_grant_changes=True,
+        )
         if binding.get("stage") in {"dummy", "creative", "publication"}:
             from salience.cycles.authority import current_authority
             current_authority(connection, outbox.workspace_id, binding["actor_id"], "legacy:"+binding["stage"])
@@ -82,7 +86,11 @@ def require_expired_publication_permit(outbox, binding):
         subject_id=binding["actor_id"],
     )
     with service._command("cycles:permit") as connection:
-        service._eligible_cycle(connection, binding["cycle_id"])
+        service._eligible_cycle(
+            connection,
+            binding["cycle_id"],
+            allow_unrelated_grant_changes=True,
+        )
         from salience.cycles.authority import current_authority
         current_authority(
             connection,

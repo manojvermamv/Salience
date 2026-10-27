@@ -422,6 +422,84 @@ async def test_legacy_adapter_lost_ack_holds_original_without_second_start(legac
         assert connection.execute("SELECT state FROM v4_permit_claims WHERE cycle_id=%s",(result["cycle_id"],)).fetchone()[0] == "unknown"
 
 
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("changed_scope", "expected_state", "expected_start"),
+    [
+        ("cycles:reconcile", "recorded", True),
+        ("cycles:write", "held", False),
+    ],
+)
+async def test_fixture_cycle_start_rechecks_only_its_current_start_authority(
+    legacy, changed_scope, expected_state, expected_start
+):
+    from salience.cycles.legacy_runtime import (
+        LegacyCycleActivities,
+        LegacyIntelligenceAdapter,
+    )
+    from salience.cycles.outbox import CycleOutbox
+
+    bridge, command, service, database = legacy
+    submitted = bridge.submit(command)
+    with psycopg.connect(database) as connection:
+        if changed_scope == "cycles:write":
+            connection.execute(
+                "UPDATE permission_grants SET effect='deny' "
+                "WHERE workspace_id=%s AND principal_id=%s AND scope=%s",
+                (service.workspace_id, str(service.subject_id), changed_scope),
+            )
+        else:
+            connection.execute(
+                "INSERT INTO permission_grants "
+                "(workspace_id,principal_type,principal_id,scope,effect,constraints,expires_at) "
+                "VALUES(%s,'identity',%s,%s,'allow','{}',now()+interval '1 hour')",
+                (service.workspace_id, str(service.subject_id), changed_scope),
+            )
+
+    outbox = CycleOutbox(
+        database, workspace_id=service.workspace_id, delivery_lane="legacy"
+    )
+    message = outbox.claim()
+
+    class RecordingTemporalClient:
+        def __init__(self):
+            self.started = []
+
+        async def start_workflow(self, workflow, payload, **options):
+            self.started.append((options["id"], options["task_queue"]))
+
+    client = RecordingTemporalClient()
+    adapter = LegacyIntelligenceAdapter(
+        client, outbox, task_queue=bridge.task_queue
+    )
+    activities = LegacyCycleActivities(outbox, adapter=adapter)
+    result = await activities.consume(
+        {
+            "message_id": str(message["id"]),
+            "cycle_id": str(submitted["cycle_id"]),
+            "kind": "start",
+            "traceparent": message["traceparent"],
+        }
+    )
+
+    assert result["state"] == expected_state
+    assert client.started == (
+        [("salience-v4-legacy-operation:" + submitted["operation_id"], bridge.task_queue)]
+        if expected_start
+        else []
+    )
+    with psycopg.connect(database) as connection:
+        assert connection.execute(
+            "SELECT state FROM v4_cycle_inbox WHERE message_id=%s",
+            (message["id"],),
+        ).fetchone()[0] == expected_state
+        claim = connection.execute(
+            "SELECT state FROM v4_permit_claims WHERE cycle_id=%s",
+            (submitted["cycle_id"],),
+        ).fetchone()
+    assert (claim[0] if claim else None) == ("claimed" if expected_start else None)
+
+
 def test_legacy_stage_guard_rechecks_stop_after_claim(legacy):
     from hashlib import sha256
     from salience.cycles.governance import CycleGovernance, PermitRequest

@@ -159,13 +159,31 @@ class CycleCostLedger:
         self._authority(scope)
         return result
 
-    def _require_current(self, cycle, allocation):
+    def _require_current(
+        self, cycle, allocation, *, allow_unrelated_grant_changes=False
+    ):
         now = self._query("SELECT clock_timestamp() AS now").fetchone()["now"]
         if cycle["state"] == "closed" or cycle["goal_state"] != "active" or cycle["goal_revision"] != cycle["revision"] or not allocation["period_start"] <= now < allocation["period_end"]:
             raise ValueError("current open cycle and allocation period required")
         context = self._query("SELECT payload FROM v4_run_contexts WHERE id=%s", (cycle["context_id"],)).fetchone()
         with self.connection.cursor(row_factory=dict_row) as cursor:
-            if not context or not context_authorized(cursor,context["payload"],self.workspace_id,self.subject_id) or resolve_baseline(cursor,cycle["goal_id"],cycle["revision"],approval_id=context["payload"]["baseline_approval_id"]) is None:
+            if (
+                not context
+                or not context_authorized(
+                    cursor,
+                    context["payload"],
+                    self.workspace_id,
+                    self.subject_id,
+                    allow_unrelated_grant_changes=allow_unrelated_grant_changes,
+                )
+                or resolve_baseline(
+                    cursor,
+                    cycle["goal_id"],
+                    cycle["revision"],
+                    approval_id=context["payload"]["baseline_approval_id"],
+                )
+                is None
+            ):
                 raise PermissionError("current frozen authority and baseline required")
 
     def transfer(self, cycle_id, *, operation_id, idempotency_key, estimated_micros, reserved_micros, category):
@@ -205,7 +223,18 @@ class CycleCostLedger:
     def release_closed(self, cycle_id):
         return self._command(cycle_id,operation_id=None,action="release_allocation",idempotency_key="cycle-close",proof_ref="fixture-receipt:canonical-cycle-close",scope="cycles:write")
 
-    def _command(self, cycle_id, *, operation_id, action, idempotency_key, proof_ref, actual_micros=None, scope):
+    def _command(
+        self,
+        cycle_id,
+        *,
+        operation_id,
+        action,
+        idempotency_key,
+        proof_ref,
+        actual_micros=None,
+        scope,
+        allow_unrelated_grant_changes=False,
+    ):
         if scope == "cycles:accounting" and idempotency_key == "cycle-close":
             raise ValueError("reserved closure command key")
         if action not in {"dispatch","unknown","settle","release","release_allocation"} or not isinstance(proof_ref,str) or not proof_ref.startswith("fixture-receipt:") or len(proof_ref)>256:
@@ -246,7 +275,11 @@ class CycleCostLedger:
             if terminal or operation_id is None:
                 raise ValueError("released or settled operation cannot dispatch")
             if action == "dispatch":
-                self._require_current(cycle, allocation)
+                self._require_current(
+                    cycle,
+                    allocation,
+                    allow_unrelated_grant_changes=allow_unrelated_grant_changes,
+                )
                 if any(budget["status"] != "active" for budget in budgets):
                     raise BudgetExceeded("budget is inactive")
             state = "pending_actual"

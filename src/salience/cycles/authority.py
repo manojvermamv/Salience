@@ -27,7 +27,14 @@ def require_program(connection, workspace_id, program_id):
         raise PermissionError("active fixture program in current workspace required")
 
 
-def context_authorized(connection, payload, workspace_id, subject_id):
+def context_authorized(
+    connection,
+    payload,
+    workspace_id,
+    subject_id,
+    *,
+    allow_unrelated_grant_changes=False,
+):
     if payload.get("schema_version") == "GoalSpec.local.v1":
         try:
             GoalSpec.model_validate({key:value for key,value in payload.items() if key in GoalSpec.model_fields})
@@ -42,6 +49,14 @@ def context_authorized(connection, payload, workspace_id, subject_id):
         require_program(connection, workspace_id, context.content_program_id)
         authority = current_authority(connection, workspace_id, subject_id)
         now = connection.execute("SELECT clock_timestamp() AS now").fetchone()["now"]
-        return AuthoritySnapshot.model_validate(authority) == context.authority and now < context.execution_deadline
+        current = AuthoritySnapshot.model_validate(authority)
+        if allow_unrelated_grant_changes:
+            excluded = {"identity_revision", "fingerprint"}
+            same_scope_authority = current.model_dump(
+                mode="json", exclude=excluded
+            ) == context.authority.model_dump(mode="json", exclude=excluded)
+        else:
+            same_scope_authority = current == context.authority
+        return same_scope_authority and now < context.execution_deadline
     except (PermissionError, ValidationError):
         return False

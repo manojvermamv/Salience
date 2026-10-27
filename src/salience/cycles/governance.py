@@ -100,7 +100,14 @@ class CycleGovernance(CycleAdmission):
             connection.execute("INSERT INTO v4_stop_commands (id,workspace_id,scope_key,idempotency_key,fingerprint,actor_id,resulting_revision,stopped,traceparent) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)",(uuid4(),self.workspace_id,scope_key,idempotency_key,fingerprint,self.subject_id,revision,stopped,self.trace.to_carrier()["traceparent"]))
             return {"scope_key":scope_key,"revision":revision,"stopped":stopped}
 
-    def _eligible_cycle(self, connection, cycle_id, request=None):
+    def _eligible_cycle(
+        self,
+        connection,
+        cycle_id,
+        request=None,
+        *,
+        allow_unrelated_grant_changes=False,
+    ):
         goal,spec,intent,cycle = self._cycle(connection,cycle_id)
         if connection.execute("SELECT 1 FROM v4_runtime_holds WHERE cycle_id=%s",(cycle_id,)).fetchone():
             raise PermissionError("runtime hold requires owner closure; original context cannot dispatch")
@@ -110,7 +117,13 @@ class CycleGovernance(CycleAdmission):
             raise ValueError("current runnable V2 or V3 cycle required")
         if connection.execute("SELECT 1 FROM v4_recovery_cases WHERE target_cycle_id=%s AND state NOT IN ('resolved','terminal')",(cycle_id,)).fetchone():
             raise PermissionError("active recovery case requires its bound resume command")
-        if not context_authorized(connection,context["payload"],self.workspace_id,self.subject_id):
+        if not context_authorized(
+            connection,
+            context["payload"],
+            self.workspace_id,
+            self.subject_id,
+            allow_unrelated_grant_changes=allow_unrelated_grant_changes,
+        ):
             raise PermissionError("current frozen context authority required")
         baseline_id = context["payload"].get("baseline_approval_id")
         if baseline_id is None or resolve_baseline(connection,goal["id"],goal["revision"],approval_id=baseline_id) is None:
@@ -136,7 +149,12 @@ class CycleGovernance(CycleAdmission):
                 prior = connection.execute("SELECT * FROM v4_dispatch_permits WHERE claim_id=%s AND idempotency_key=%s",(claim["id"],idempotency_key)).fetchone()
                 if prior:
                     return self._permit_result(prior,claim)
-            goal,spec,intent,cycle,context,now = self._eligible_cycle(connection,cycle_id,request)
+            goal,spec,intent,cycle,context,now = self._eligible_cycle(
+                connection,
+                cycle_id,
+                request,
+                allow_unrelated_grant_changes=True,
+            )
             workspace_stop,goal_stop = self._require_running(connection,goal["id"])
             now = connection.execute("SELECT clock_timestamp() AS now").fetchone()["now"]
             if now >= datetime.fromisoformat(context["execution_deadline"]):
@@ -185,7 +203,11 @@ class CycleGovernance(CycleAdmission):
                 raise PermissionError("permit subject binding mismatch")
             if permit["id"] == claim["current_permit_id"] and claim["state"] in {"claimed","unknown"}:
                 return self._permit_result(permit,claim) | {"dispatch_allowed":False,"state":claim["state"]}
-            goal,spec,intent,cycle,_,now = self._eligible_cycle(connection,identity["cycle_id"])
+            goal,spec,intent,cycle,_,now = self._eligible_cycle(
+                connection,
+                identity["cycle_id"],
+                allow_unrelated_grant_changes=True,
+            )
             workspace_stop,goal_stop = self._require_running(connection,goal["id"])
             now = connection.execute("SELECT clock_timestamp() AS now").fetchone()["now"]
             if permit["id"] != claim["current_permit_id"] or now >= permit["expires_at"] or permit["goal_revision"] != goal["revision"] or (permit["workspace_stop_revision"],permit["goal_stop_revision"]) != (workspace_stop["revision"],goal_stop["revision"]):
@@ -193,7 +215,15 @@ class CycleGovernance(CycleAdmission):
             if claim["state"] != "issued":
                 raise PermissionError("uncertain or resolved claim cannot dispatch")
             if isinstance(spec,GoalSpecV3):
-                self._cost_ledger(connection)._command(cycle["id"],operation_id=cycle["operation_id"],action="dispatch",idempotency_key="permit-dispatch:"+str(permit_id),proof_ref="fixture-receipt:permit-claim:"+str(permit_id),scope="cycles:permit")
+                self._cost_ledger(connection)._command(
+                    cycle["id"],
+                    operation_id=cycle["operation_id"],
+                    action="dispatch",
+                    idempotency_key="permit-dispatch:"+str(permit_id),
+                    proof_ref="fixture-receipt:permit-claim:"+str(permit_id),
+                    scope="cycles:permit",
+                    allow_unrelated_grant_changes=True,
+                )
             if connection.execute("SELECT clock_timestamp() AS now").fetchone()["now"] >= permit["expires_at"]:
                 raise PermissionError("permit expired before claim commit")
             connection.execute("UPDATE v4_permit_claims SET state='claimed',claimed_at=clock_timestamp(),revision=revision+1 WHERE id=%s",(claim["id"],))

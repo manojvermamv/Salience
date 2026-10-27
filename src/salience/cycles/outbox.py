@@ -326,7 +326,13 @@ class CycleOutbox:
             effects = {row["effect"] for row in grants}
             authorized = authorized and "allow" in effects and "deny" not in effects
             payload = current["payload"]
-            authorized = authorized and context_authorized(connection, payload, self.workspace_id, message["subject_id"])
+            authorized = authorized and context_authorized(
+                connection,
+                payload,
+                self.workspace_id,
+                message["subject_id"],
+                allow_unrelated_grant_changes=True,
+            )
             if payload.get("schema_version") == "RunContext.local.v2":
                 from datetime import datetime
                 now = connection.execute("SELECT clock_timestamp() AS now").fetchone()["now"]
