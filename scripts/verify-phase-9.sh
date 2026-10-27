@@ -4,14 +4,21 @@ set -euo pipefail
 root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 result=0
 test_database_name=
+test_database_created=0
 
 cleanup_test_database() {
-  if [[ -n $test_database_name ]]; then
-    docker compose exec -T postgres psql -U salience -d postgres \
+  local exit_status=$?
+  if (( test_database_created )); then
+    if ! docker compose exec -T postgres psql -U salience -d postgres \
       -v ON_ERROR_STOP=1 \
       -c "DROP DATABASE IF EXISTS ${test_database_name} WITH (FORCE)" \
-      >/dev/null 2>&1 || true
+      >/dev/null 2>&1; then
+      printf 'FAIL: Disposable Phase 9 test database cleanup failed: %s\n' \
+        "$test_database_name" >&2
+      exit_status=1
+    fi
   fi
+  exit "$exit_status"
 }
 
 trap cleanup_test_database EXIT
@@ -90,12 +97,18 @@ if [[ -z $temporal_ip ]]; then
   exit "$result"
 fi
 
-test_database_name="salience_phase9_${$}_${RANDOM}"
+test_database_suffix=$("$python_bin" -c 'import secrets; print(secrets.token_hex(16))')
+if [[ ! $test_database_suffix =~ ^[0-9a-f]{32}$ ]]; then
+  fail "A collision-resistant disposable test database name could not be generated"
+  exit "$result"
+fi
+test_database_name="salience_phase9_${test_database_suffix}"
 test_database_url="postgresql://salience:salience@${postgres_ip}:5432/${test_database_name}"
 test_temporal_target="${temporal_ip}:7233"
 database_url="postgresql+asyncpg://salience:salience@${postgres_ip}:5432/${test_database_name}"
 if docker compose exec -T postgres psql -U salience -d postgres \
   -v ON_ERROR_STOP=1 -c "CREATE DATABASE ${test_database_name}"; then
+  test_database_created=1
   pass "Disposable Phase 9 test database was created"
 else
   fail "Disposable Phase 9 test database could not be created"
