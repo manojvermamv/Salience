@@ -21,6 +21,7 @@ from salience.cycles.governance import CycleGovernance
 from salience.cycles.production_dispatch import (
     ProductionAuthorizationDenied,
     ProductionEffectDispatch,
+    PublicationEffectBinding,
     ProductionPermitRequest,
     RouteBinding,
     RouteFenceDecision,
@@ -28,7 +29,7 @@ from salience.cycles.production_dispatch import (
 )
 from salience.observability.production_authorization import ProductionAuthorizationMetrics
 from test_v4_cycle_admission import cycles
-from test_v4_cadence_policy import policy
+from test_v4_cadence_policy import policy, request as cadence_request
 from test_v4_cycle_accounting import accounting, admitted as accounting_admitted
 
 
@@ -39,6 +40,7 @@ class LocalRouteFence:
         self.calls: list[RouteFenceRequest] = []
         self.block_entered: Event | None = None
         self.block_release: Event | None = None
+        self.delay_seconds = 0.0
         self.deny = False
 
     def authorize_action(self, request: RouteFenceRequest) -> RouteFenceDecision:
@@ -47,6 +49,8 @@ class LocalRouteFence:
             self.block_entered.set()
             assert self.block_release is not None
             assert self.block_release.wait(timeout=5)
+        if self.delay_seconds:
+            time.sleep(self.delay_seconds)
         return RouteFenceDecision(
             authorized=not self.deny,
             decision_id=uuid4() if not self.deny else None,
@@ -55,7 +59,9 @@ class LocalRouteFence:
         )
 
 
-def _active_policy(connection, workspace_id: UUID, policy_id: UUID) -> tuple[dict, str]:
+def _active_policy(
+    connection, workspace_id: UUID, policy_id: UUID, *, publication_scope=None
+) -> tuple[dict, str]:
     expires_at = datetime.now(timezone.utc) + timedelta(hours=2)
     document = {
         "schema_version": "salience.p1-production-policy.v1",
@@ -64,6 +70,8 @@ def _active_policy(connection, workspace_id: UUID, policy_id: UUID) -> tuple[dic
         "expires_at": expires_at.isoformat(),
         "jurisdiction_refs": [],
     }
+    if publication_scope is not None:
+        document["publication_scope"] = publication_scope
     document_hash = sha256(
         json.dumps(document, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
     ).hexdigest()
@@ -80,7 +88,16 @@ def _active_policy(connection, workspace_id: UUID, policy_id: UUID) -> tuple[dic
     return document, document_hash
 
 
-def _production_case(accounting, *, create_stops=True, approval_ttl_seconds=3600):
+def _production_case(
+    accounting,
+    *,
+    create_stops=True,
+    approval_ttl_seconds=3600,
+    intent_ttl_seconds=None,
+    production_budget_ttl_seconds=3600,
+    publication_scope=None,
+    publication_binding=None,
+):
     service, goal_id, spec, database = accounting
     with psycopg.connect(database) as connection:
         for scope in ("effects:write", "cycles:stop"):
@@ -90,7 +107,40 @@ def _production_case(accounting, *, create_stops=True, approval_ttl_seconds=3600
                    VALUES(%s,'identity',%s,%s,'allow','{}',clock_timestamp()+interval '1 hour')""",
                 (service.workspace_id, str(service.subject_id), scope),
             )
-    cycle_id = accounting_admitted(accounting)
+    if intent_ttl_seconds is None:
+        cycle_id = accounting_admitted(accounting)
+    else:
+        # Produce a short-lived intent through the supported cadence path. V4
+        # intent identity is immutable, so tests must not rewrite expires_at.
+        short_cadence = spec.cadence.model_copy(
+            update={
+                "interval_seconds": 1,
+                "stale_after_seconds": 4,
+                "backfill_seconds": 4,
+                "intent_ttl_seconds": 5,
+            }
+        )
+        spec = spec.model_copy(update={"cadence": short_cadence})
+        service.revise_goal(
+            goal_id,
+            spec,
+            expected_revision=1,
+            idempotency_key="production-deadline-cadence",
+            reason="Bound the fixture intent deadline for route-fence testing",
+        )
+        service.approve_baseline(
+            goal_id,
+            expected_revision=2,
+            expires_at=spec.horizon_end,
+            reason="Approve the bounded production-deadline fixture revision",
+        )
+        command = cadence_request(spec, key="production-deadline-cycle").model_copy(
+            update={
+                "expected_revision": 2,
+                "slot_time": datetime.now(timezone.utc).replace(microsecond=0),
+            }
+        )
+        cycle_id = service.admit(service.request_cycle(goal_id, command))["cycle_id"]
     workspace_id, intent_id, context_id, operation_id, context, goal_revision = _read_cycle(
         database, cycle_id
     )
@@ -121,7 +171,12 @@ def _production_case(accounting, *, create_stops=True, approval_ttl_seconds=3600
                     "INSERT INTO v4_stop_scopes(workspace_id,scope_key) VALUES(%s,%s)",
                     (workspace_id, scope_key),
                 )
-        _, document_hash = _active_policy(connection, workspace_id, policy_id)
+        _, document_hash = _active_policy(
+            connection,
+            workspace_id,
+            policy_id,
+            publication_scope=publication_scope,
+        )
         connection.execute(
             """INSERT INTO publisher_accounts(
                       id,workspace_id,content_program_id,platform,account_key,account_type,
@@ -153,6 +208,50 @@ def _production_case(accounting, *, create_stops=True, approval_ttl_seconds=3600
                       'fixture://capability-profile','{}','{}',clock_timestamp()+interval '1 hour')""",
             (workspace_id, account_id, provider_id),
         )
+        production_budget_id, production_reservation_id = uuid4(), uuid4()
+        connection.execute(
+            """INSERT INTO budgets(
+                      id,workspace_id,content_program_id,name,scope,currency,limit_amount,
+                      period_start,period_end,status)
+               VALUES(%s,%s,%s,%s,%s,'USD',1.000000,
+                      clock_timestamp()-interval '1 hour',
+                      clock_timestamp()+(%s * interval '1 second'),'active')""",
+            (
+                production_budget_id,
+                workspace_id,
+                program_id,
+                "p1-production-" + str(account_id),
+                "publisher_account:" + str(account_id),
+                production_budget_ttl_seconds,
+            ),
+        )
+        if publication_binding is not None:
+            connection.execute(
+                """INSERT INTO jobs(
+                          id,workspace_id,content_program_id,job_type,state,workflow_run_id,
+                          task_queue,idempotency_key,input_payload,dry_run,trace_id)
+                   VALUES(%s,%s,%s,'publication','queued',%s,'p1-local',%s,'{}',TRUE,%s)""",
+                (
+                    publication_binding.job_id,
+                    workspace_id,
+                    program_id,
+                    publication_binding.workflow_run_id,
+                    "p1-publication-" + str(operation_id),
+                    "a" * 32,
+                ),
+            )
+        connection.execute(
+            """INSERT INTO budget_reservations(
+                      id,budget_id,reservation_key,estimated_amount,reserved_amount,status,expires_at)
+               VALUES(%s,%s,%s,0.100000,0.100000,'reserved',
+                      clock_timestamp()+(%s * interval '1 second'))""",
+            (
+                production_reservation_id,
+                production_budget_id,
+                "p1-production-" + str(operation_id),
+                production_budget_ttl_seconds,
+            ),
+        )
         approval_context = {
             "schema_version": "salience.p1-effect-approval.v1",
             "workspace_id": str(workspace_id),
@@ -171,14 +270,43 @@ def _production_case(accounting, *, create_stops=True, approval_ttl_seconds=3600
             "artifact_sha256": artifact_sha256,
             "account_id": str(account_id),
             "provider_id": provider_id,
+            "required_scopes": list(required_scopes),
+            "budget_id": str(production_budget_id),
+            "budget_reservation_id": str(production_reservation_id),
             "expires_at": approval_expires_at.isoformat(),
         }
+        if publication_binding is not None:
+            approval_context.update(
+                {
+                    "publication_request_id": str(
+                        publication_binding.publication_request_id
+                    ),
+                    "job_id": str(publication_binding.job_id),
+                    "workflow_id": publication_binding.workflow_id,
+                    "workflow_run_id": publication_binding.workflow_run_id,
+                    "publication_plan_id": str(
+                        publication_binding.publication_plan_id
+                    ),
+                    "publication_attempt_id": str(
+                        publication_binding.publication_attempt_id
+                    ),
+                    "external_effect_id": str(
+                        publication_binding.external_effect_id
+                    ),
+                }
+            )
         connection.execute(
             """INSERT INTO approval_requests(
                       id,workspace_id,policy_version_id,effect_type,status,request_context,
-                      requested_by)
-               VALUES(%s,%s,%s,'write','pending',%s,'p1-local-reviewer')""",
-            (approval_id, workspace_id, policy_id, Jsonb(approval_context)),
+                      requested_by,job_id)
+               VALUES(%s,%s,%s,'write','pending',%s,'p1-local-reviewer',%s)""",
+            (
+                approval_id,
+                workspace_id,
+                policy_id,
+                Jsonb(approval_context),
+                publication_binding.job_id if publication_binding else None,
+            ),
         )
         connection.execute(
             """UPDATE approval_requests SET status='approved',decided_by='p1-local-reviewer',
@@ -204,10 +332,13 @@ def _production_case(accounting, *, create_stops=True, approval_ttl_seconds=3600
         artifact_sha256=artifact_sha256,
         account_id=account_id,
         provider_id=provider_id,
+        budget_id=production_budget_id,
+        budget_reservation_id=production_reservation_id,
         idempotency_key="p1-local-effect:" + str(operation_id),
         route=route,
         execution_deadline=datetime.fromisoformat(context["execution_deadline"]),
         ttl_seconds=30,
+        publication_binding=publication_binding,
     )
     dispatch = ProductionEffectDispatch(database, route_fence)
     return {
@@ -222,6 +353,9 @@ def _production_case(accounting, *, create_stops=True, approval_ttl_seconds=3600
         "subject_id": subject_id,
         "service": service,
         "account_id": account_id,
+        "production_budget_id": production_budget_id,
+        "production_reservation_id": production_reservation_id,
+        "publication_binding": publication_binding,
     }
 
 
@@ -268,6 +402,166 @@ def test_issue_denies_missing_or_wrong_current_authority(accounting):
         dispatch.issue_permit(request)
     assert route.calls == []
     assert _permit_count(case["database"], case["operation_id"]) == 0
+    with psycopg.connect(case["database"]) as connection:
+        event = connection.execute(
+            "SELECT payload FROM v4_cycle_events WHERE cycle_id=%s "
+            "AND kind='production_authorization_denied' ORDER BY created_at DESC LIMIT 1",
+            (case["cycle_id"],),
+        ).fetchone()
+    assert event is not None
+    assert event[0]["action"] == "issue"
+    assert event[0]["required_scopes"] == ["effects:write"]
+
+
+def test_request_cannot_substitute_or_omit_approved_effect_scopes(accounting):
+    case = _production_case(accounting)
+    for scopes in (("cycles:write",), ("effects:write", "cycles:write")):
+        changed = replace(case["request"], required_scopes=scopes)
+        with pytest.raises(ProductionAuthorizationDenied):
+            case["dispatch"].issue_permit(changed)
+        assert case["route"].calls == []
+        assert _permit_count(case["database"], case["operation_id"]) == 0
+
+
+@pytest.mark.parametrize("deadline", ("intent", "production_budget"))
+@pytest.mark.parametrize("boundary", ("issue", "claim", "action"))
+def test_route_fence_return_after_authority_deadline_denies(accounting, deadline, boundary):
+    kwargs = {
+        "intent_ttl_seconds": 5 if deadline == "intent" else None,
+        "production_budget_ttl_seconds": 1.0 if deadline == "production_budget" else 3600,
+    }
+    case = _production_case(accounting, **kwargs)
+    dispatch, request, route = case["dispatch"], case["request"], case["route"]
+
+    if boundary == "issue":
+        route.delay_seconds = 5.2 if deadline == "intent" else 1.2
+        with pytest.raises(ProductionAuthorizationDenied, match="permit_expired"):
+            dispatch.issue_permit(request)
+        assert _permit_count(case["database"], case["operation_id"]) == 0
+        return
+
+    issued = dispatch.issue_permit(request)
+    if boundary == "claim":
+        route.delay_seconds = 5.2 if deadline == "intent" else 1.2
+        with pytest.raises(ProductionAuthorizationDenied, match="permit_expired"):
+            dispatch.claim_permit(case["operation_id"], issued.permit_id)
+        assert _claim_count(case["database"], case["operation_id"]) == 0
+        return
+
+    dispatch.claim_permit(case["operation_id"], issued.permit_id)
+    route.delay_seconds = 5.2 if deadline == "intent" else 1.2
+    decision = dispatch.authorize_action(case["operation_id"], issued.permit_id, "submit")
+    assert decision.authorized is False
+    assert decision.reason_code == "permit_expired"
+
+
+def test_publication_scope_requires_a_publication_binding(accounting):
+    scope = {
+        "platform": "p1-local",
+        "destination": "channel:approved",
+        "locale": "en-US",
+        "territory": "US",
+        "visibility": "public",
+    }
+    case = _production_case(accounting, publication_scope=scope)
+    with pytest.raises(ProductionAuthorizationDenied):
+        case["dispatch"].issue_permit(case["request"])
+    assert case["route"].calls == []
+    assert _permit_count(case["database"], case["operation_id"]) == 0
+
+
+def test_publication_binding_requires_current_canonical_publication_rows(accounting):
+    scope = {
+        "platform": "p1-local",
+        "destination": "channel:approved",
+        "locale": "en-US",
+        "territory": "US",
+        "visibility": "public",
+    }
+    binding = PublicationEffectBinding(
+        publication_request_id=uuid4(),
+        job_id=uuid4(),
+        workflow_id="p1-publication-workflow",
+        workflow_run_id="p1-publication-run-" + uuid4().hex,
+        publication_plan_id=uuid4(),
+        publication_attempt_id=uuid4(),
+        external_effect_id=uuid4(),
+    )
+    case = _production_case(
+        accounting,
+        publication_scope=scope,
+        publication_binding=binding,
+    )
+    with pytest.raises(ProductionAuthorizationDenied):
+        case["dispatch"].issue_permit(case["request"])
+    assert case["route"].calls == []
+    assert _permit_count(case["database"], case["operation_id"]) == 0
+
+
+def test_production_budget_binding_is_current_and_account_scoped(accounting):
+    case = _production_case(accounting)
+    with psycopg.connect(case["database"]) as connection:
+        connection.execute(
+            "UPDATE budgets SET scope='account:fixture-account' WHERE id=%s",
+            (case["production_budget_id"],),
+        )
+    with pytest.raises(ProductionAuthorizationDenied):
+        case["dispatch"].issue_permit(case["request"])
+    assert case["route"].calls == []
+    assert _permit_count(case["database"], case["operation_id"]) == 0
+
+
+def test_dispatch_records_bounded_decisions_and_duplicate_claim_denial(accounting):
+    reader = InMemoryMetricReader()
+    provider = MeterProvider(metric_readers=[reader])
+    metrics = ProductionAuthorizationMetrics(provider.get_meter("p1-dispatch-test"))
+    case = _production_case(accounting)
+    dispatch = ProductionEffectDispatch(case["database"], case["route"], metrics=metrics)
+    issued = dispatch.issue_permit(case["request"])
+    claimed = dispatch.claim_permit(case["operation_id"], issued.permit_id)
+    assert claimed.claim_id is not None
+    assert dispatch.authorize_action(case["operation_id"], issued.permit_id, "submit").authorized
+    with pytest.raises(ProductionAuthorizationDenied, match="dispatch_already_claimed"):
+        dispatch.claim_permit(case["operation_id"], issued.permit_id)
+
+    data = reader.get_metrics_data()
+    encoded = repr(data)
+    for private_id in (str(case["operation_id"]), str(issued.permit_id), str(case["account_id"])):
+        assert private_id not in encoded
+    metric_names = {
+        metric.name
+        for resource in data.resource_metrics
+        for scope_metrics in resource.scope_metrics
+        for metric in scope_metrics.metrics
+    }
+    assert "salience.production.authorization.decisions" in metric_names
+    assert "salience.production.authorization.incidents" in metric_names
+    assert _claim_count(case["database"], case["operation_id"]) == 1
+    with psycopg.connect(case["database"]) as connection:
+        event = connection.execute(
+            "SELECT payload FROM v4_cycle_events WHERE cycle_id=%s "
+            "AND kind='production_authorization_denied' ORDER BY created_at DESC LIMIT 1",
+            (case["cycle_id"],),
+        ).fetchone()
+    assert event is not None and event[0]["action"] == "claim"
+    assert event[0]["reason_code"] == "dispatch_already_claimed"
+    assert event[0]["required_scopes"] == ["effects:write"]
+
+
+def test_primary_outage_emits_bounded_metrics(accounting):
+    reader = InMemoryMetricReader()
+    provider = MeterProvider(metric_readers=[reader])
+    metrics = ProductionAuthorizationMetrics(provider.get_meter("p1-outage-test"))
+    route = LocalRouteFence()
+    dispatch = ProductionEffectDispatch(
+        "postgresql://127.0.0.1:1/unreachable?connect_timeout=1",
+        route,
+        metrics=metrics,
+    )
+    with pytest.raises((psycopg.OperationalError, ProductionAuthorizationDenied)):
+        dispatch.authorize_action(uuid4(), uuid4(), "submit")
+    data = reader.get_metrics_data()
+    assert "primary_outage" in repr(data)
 
 
 @pytest.mark.parametrize(

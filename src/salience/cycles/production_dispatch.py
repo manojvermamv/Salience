@@ -36,6 +36,7 @@ from salience.governance.production_policy import (
     parse_approval_row,
     parse_policy_row,
 )
+from salience.observability.production_authorization import ProductionAuthorizationMetrics
 
 
 _SHA256 = re.compile(r"[0-9a-f]{64}\Z")
@@ -253,6 +254,8 @@ class ProductionPermitRequest:
     purpose: str
     artifact_sha256: str
     account_id: UUID
+    budget_id: UUID
+    budget_reservation_id: UUID
     provider_id: str
     idempotency_key: str
     route: RouteBinding
@@ -273,6 +276,8 @@ class ProductionPermitRequest:
             "policy_version_id",
             "approval_request_id",
             "account_id",
+            "budget_id",
+            "budget_reservation_id",
         ):
             if not isinstance(getattr(self, field), UUID):
                 raise ValueError(f"production permit {field} UUID required")
@@ -362,15 +367,41 @@ class _AuthorityFacts:
 class ProductionEffectDispatch:
     """Synchronous primary-database permit, claim and action barriers."""
 
-    def __init__(self, database_url: str, route_fence: RouteFenceAuthority) -> None:
+    def __init__(
+        self,
+        database_url: str,
+        route_fence: RouteFenceAuthority,
+        *,
+        metrics: ProductionAuthorizationMetrics | None = None,
+    ) -> None:
         if not isinstance(database_url, str) or not database_url.strip():
             raise ValueError("production dispatch database URL required")
         if not callable(getattr(route_fence, "authorize_action", None)):
             raise ValueError("route-fence authority must implement authorize_action")
         self.database_url = database_url
         self.route_fence = route_fence
+        self.metrics = metrics
 
     def issue_permit(self, request: ProductionPermitRequest) -> ProductionPermitResult:
+        try:
+            result = self._issue_permit(request)
+        except ProductionAuthorizationDenied as denial:
+            self._record_decision("issue", getattr(request, "effect_type", "other"), "deny", denial.reason_code)
+            self._persist_denial_event(
+                request.operation_id,
+                "issue",
+                denial.reason_code,
+                permit_id=None,
+                request=request if isinstance(request, ProductionPermitRequest) else None,
+            )
+            raise
+        except psycopg.OperationalError:
+            self._record_primary_outage("issue", getattr(request, "effect_type", "other"))
+            raise
+        self._record_decision("issue", request.effect_type, "allow", "none")
+        return result
+
+    def _issue_permit(self, request: ProductionPermitRequest) -> ProductionPermitResult:
         if not isinstance(request, ProductionPermitRequest):
             raise ValueError("typed production permit request required")
         permit_id = uuid4()
@@ -433,7 +464,7 @@ class ProductionEffectDispatch:
                 except ProductionAuthorizationDenied as error:
                     denial = error
                 now = self._database_time(connection)
-                if denial is None and expiry <= now:
+                if denial is None and (expiry <= now or facts.expires_at <= now):
                     denial = ProductionAuthorizationDenied("permit_expired")
                 if denial is not None:
                     self._write_event(
@@ -529,6 +560,26 @@ class ProductionEffectDispatch:
         return result
 
     def claim_permit(self, operation_id: UUID, permit_id: UUID) -> ProductionPermitResult:
+        effect = self._permit_effect(operation_id, permit_id)
+        try:
+            result = self._claim_permit(operation_id, permit_id)
+        except ProductionAuthorizationDenied as denial:
+            self._record_decision("claim", effect, "deny", denial.reason_code)
+            self._persist_denial_event(
+                operation_id,
+                "claim",
+                denial.reason_code,
+                permit_id=permit_id,
+                request=None,
+            )
+            raise
+        except psycopg.OperationalError:
+            self._record_primary_outage("claim", effect)
+            raise
+        self._record_decision("claim", effect, "allow", "none")
+        return result
+
+    def _claim_permit(self, operation_id: UUID, permit_id: UUID) -> ProductionPermitResult:
         if not isinstance(operation_id, UUID) or not isinstance(permit_id, UUID):
             raise ValueError("production operation and permit UUIDs are required")
         denial: ProductionAuthorizationDenied | None = None
@@ -657,6 +708,38 @@ class ProductionEffectDispatch:
         return result
 
     def authorize_action(
+        self, operation_id: UUID, permit_id: UUID, action_kind: str
+    ) -> RouteFenceDecision:
+        effect = self._permit_effect(operation_id, permit_id)
+        try:
+            decision = self._authorize_action(operation_id, permit_id, action_kind)
+        except ProductionAuthorizationDenied as denial:
+            self._record_decision("authorize_action", effect, "deny", denial.reason_code)
+            self._persist_denial_event(
+                operation_id,
+                action_kind,
+                denial.reason_code,
+                permit_id=permit_id,
+                request=None,
+            )
+            raise
+        except psycopg.OperationalError:
+            self._record_primary_outage("authorize_action", effect)
+            raise
+        outcome = "allow" if decision.authorized else "deny"
+        reason_code = decision.reason_code or "none"
+        self._record_decision("authorize_action", effect, outcome, reason_code)
+        if not decision.authorized:
+            self._persist_denial_event(
+                operation_id,
+                action_kind,
+                decision.reason_code or "other",
+                permit_id=permit_id,
+                request=None,
+            )
+        return decision
+
+    def _authorize_action(
         self, operation_id: UUID, permit_id: UUID, action_kind: str
     ) -> RouteFenceDecision:
         if not isinstance(operation_id, UUID) or not isinstance(permit_id, UUID):
@@ -995,6 +1078,20 @@ class ProductionEffectDispatch:
             raise ProductionAuthorizationDenied("effect_not_allowed")
         if not policy.jurisdiction_refs.issubset(set(context.jurisdiction_policy_refs)):
             raise ProductionAuthorizationDenied("policy_invalid")
+        if request.publication_binding is None:
+            if policy.publication_scope is not None:
+                raise ProductionAuthorizationDenied("invalid_binding")
+        else:
+            if policy.publication_scope is None:
+                raise ProductionAuthorizationDenied("invalid_binding")
+            self._lock_publication(
+                connection,
+                request,
+                context.workspace_id,
+                context.content_program_id,
+                policy.publication_scope,
+                now,
+            )
 
         approval_row = connection.execute(
             """SELECT id,workspace_id,policy_version_id,effect_type,status,request_context,
@@ -1029,6 +1126,9 @@ class ProductionEffectDispatch:
                 artifact_sha256=request.artifact_sha256,
                 account_id=request.account_id,
                 provider_id=request.provider_id,
+                required_scopes=request.required_scopes,
+                budget_id=request.budget_id,
+                budget_reservation_id=request.budget_reservation_id,
                 expires_at=approval_expires_at,
                 publication_request_id=(
                     request.publication_binding.publication_request_id
@@ -1062,13 +1162,20 @@ class ProductionEffectDispatch:
                 expected=expected,
                 database_time=now,
             )
+            if request.required_scopes != approval.required_scopes:
+                raise ProductionAuthorizationDenied("invalid_binding")
         except (PermissionError, ValidationError, ValueError, TypeError) as error:
             error_text = str(error)
             code = "approval_expired" if "expired" in error_text else "approval_invalid"
             raise ProductionAuthorizationDenied(code) from error
 
+        production_budget_expiries = self._lock_production_budget(
+            connection, request, context.workspace_id, context.content_program_id, now
+        )
+
         expires = [
             subject["expires_at"],
+            operation["intent_expires_at"],
             *(grant["expires_at"] for matching in grants_by_scope.values() for grant in matching),
             policy.expires_at,
             approval.expires_at,
@@ -1077,6 +1184,7 @@ class ProductionEffectDispatch:
             goal_spec.horizon_end,
             allocation["period_end"],
             *budget_expiries,
+            *production_budget_expiries,
             *account_expiries,
         ]
         if any(not isinstance(value, datetime) or value.tzinfo is None for value in expires):
@@ -1171,10 +1279,58 @@ class ProductionEffectDispatch:
             allocation,
             tuple(by_budget[budget_id]["id"] for budget_id in expected_budget_ids),
             tuple(
+                row["period_end"] for row in budget_rows if row["period_end"] is not None
+            )
+            + tuple(
                 by_budget[budget_id]["expires_at"]
                 for budget_id in expected_budget_ids
                 if by_budget[budget_id]["expires_at"] is not None
             ),
+        )
+
+    @staticmethod
+    def _lock_production_budget(
+        connection,
+        request: ProductionPermitRequest,
+        workspace_id: UUID,
+        program_id: UUID,
+        now: datetime,
+    ) -> tuple[datetime, ...]:
+        """Lock the separately approved publisher-account budget reservation."""
+        row = connection.execute(
+            """SELECT reservation.id AS reservation_id,reservation.budget_id,
+                      reservation.status AS reservation_status,reservation.expires_at,
+                      reservation.reserved_amount,budget.id AS current_budget_id,
+                      budget.workspace_id,budget.content_program_id,budget.scope,
+                      budget.status AS budget_status,budget.period_start,budget.period_end
+               FROM public.budget_reservations reservation
+               JOIN public.budgets budget ON budget.id=reservation.budget_id
+               WHERE reservation.id=%s AND budget.id=%s
+               FOR UPDATE OF reservation,budget""",
+            (request.budget_reservation_id, request.budget_id),
+        ).fetchone()
+        if row is None:
+            raise ProductionAuthorizationDenied("budget_missing")
+        if (
+            row["reservation_id"] != request.budget_reservation_id
+            or row["budget_id"] != request.budget_id
+            or row["current_budget_id"] != request.budget_id
+            or row["workspace_id"] != workspace_id
+            or row["content_program_id"] != program_id
+            or row["scope"] != "publisher_account:" + str(request.account_id)
+            or row["budget_status"] != "active"
+            or row["reservation_status"] != "reserved"
+            or row["reserved_amount"] <= 0
+            or row["expires_at"] is None
+            or row["expires_at"] <= now
+            or (row["period_start"] is not None and row["period_start"] > now)
+            or (row["period_end"] is not None and row["period_end"] <= now)
+        ):
+            raise ProductionAuthorizationDenied("budget_unavailable")
+        return tuple(
+            expiry
+            for expiry in (row["expires_at"], row["period_end"])
+            if expiry is not None
         )
 
     def _lock_account(self, connection, request, workspace_id, program_id, now):
@@ -1230,9 +1386,318 @@ class ProductionEffectDispatch:
         return tuple(expiry for expiry in account_expiries if expiry is not None)
 
     @staticmethod
+    def _lock_publication(
+        connection,
+        request: ProductionPermitRequest,
+        workspace_id: UUID,
+        program_id: UUID,
+        policy_scope,
+        now: datetime,
+    ) -> None:
+        binding = request.publication_binding
+        assert binding is not None
+        row = connection.execute(
+            """SELECT publication_request.id AS publication_request_id,
+                      publication_request.workspace_id,publication_request.content_program_id,
+                      publication_request.publisher_account_id,
+                      publication_request.publisher_capability_profile_id,
+                      publication_request.publisher_id AS request_publisher_id,
+                      publication_request.platform,publication_request.destination,
+                      publication_request.locale,publication_request.territory,
+                      publication_request.visibility,publication_request.state AS request_state,
+                      plan.id AS plan_id,plan.publication_request_id AS plan_request_id,
+                      plan.publisher_id AS plan_publisher_id,plan.external_effect_id,
+                      plan.budget_reservation_id AS plan_budget_reservation_id,
+                      plan.state AS plan_state,attempt.id AS attempt_id,
+                      attempt.publication_plan_id AS attempt_plan_id,
+                      attempt.state AS attempt_state,account.platform AS account_platform,
+                      account.status AS account_status,profile.publisher_account_id AS profile_account_id,
+                      profile.publisher_id AS profile_publisher_id,profile.platform AS profile_platform,
+                      profile.audit_state,profile.expires_at AS profile_expires_at,
+                      job.id AS job_id,job.workspace_id AS job_workspace_id,
+                      job.content_program_id AS job_program_id,job.job_type,job.state AS job_state,
+                      job.workflow_run_id,job.input_payload,
+                      publication_approval.status AS publication_approval_status
+               FROM public.publication_requests publication_request
+               JOIN public.publisher_accounts account
+                 ON account.id=publication_request.publisher_account_id
+               JOIN public.publisher_capability_profiles profile
+                 ON profile.id=publication_request.publisher_capability_profile_id
+               JOIN public.publication_plans plan
+                 ON plan.id=%s AND plan.publication_request_id=publication_request.id
+               JOIN public.publication_attempts attempt
+                 ON attempt.id=%s AND attempt.publication_plan_id=plan.id
+               JOIN public.jobs job ON job.id=%s
+               JOIN public.approval_requests publication_approval
+                 ON publication_approval.id=publication_request.publication_approval_request_id
+               WHERE publication_request.id=%s
+               FOR UPDATE OF publication_request,plan,attempt,account,profile,job,
+                             publication_approval""",
+            (
+                binding.publication_plan_id,
+                binding.publication_attempt_id,
+                binding.job_id,
+                binding.publication_request_id,
+            ),
+        ).fetchone()
+        if row is None:
+            raise ProductionAuthorizationDenied("invalid_binding")
+        workflow_payload = row["input_payload"]
+        if (
+            row["publication_request_id"] != binding.publication_request_id
+            or row["workspace_id"] != workspace_id
+            or row["content_program_id"] != program_id
+            or row["publisher_account_id"] != request.account_id
+            or row["publisher_capability_profile_id"] is None
+            or row["request_publisher_id"] != request.provider_id
+            or row["plan_id"] != binding.publication_plan_id
+            or row["plan_request_id"] != binding.publication_request_id
+            or row["plan_publisher_id"] != request.provider_id
+            or row["external_effect_id"] != binding.external_effect_id
+            or row["plan_budget_reservation_id"] != request.budget_reservation_id
+            or row["attempt_id"] != binding.publication_attempt_id
+            or row["attempt_plan_id"] != binding.publication_plan_id
+            or row["job_id"] != binding.job_id
+            or row["job_workspace_id"] != workspace_id
+            or row["job_program_id"] != program_id
+            or row["job_type"] != "publication"
+            or row["workflow_run_id"] != binding.workflow_run_id
+            or not isinstance(workflow_payload, Mapping)
+            or workflow_payload.get("workflow_id") != binding.workflow_id
+            or row["publication_approval_status"] != "approved"
+            or row["request_state"] not in {"planned", "authorized"}
+            or row["plan_state"] not in {"planned", "authorized"}
+            or row["attempt_state"] not in {"planned", "authorized"}
+            or row["job_state"] not in {"queued", "running"}
+            or row["account_status"] != "active"
+            or row["account_platform"] != row["platform"]
+            or row["profile_account_id"] != request.account_id
+            or row["profile_publisher_id"] != request.provider_id
+            or row["profile_platform"] != row["platform"]
+            or row["audit_state"] != "verified"
+            or (
+                row["profile_expires_at"] is not None
+                and row["profile_expires_at"] <= now
+            )
+            or row["platform"] != policy_scope.platform
+            or row["destination"] != policy_scope.destination
+            or row["locale"] != policy_scope.locale
+            or row["territory"] != policy_scope.territory
+            or row["visibility"] != policy_scope.visibility
+        ):
+            raise ProductionAuthorizationDenied("invalid_binding")
+
+    @staticmethod
     def _database_time(connection) -> datetime:
         row = connection.execute("SELECT clock_timestamp() AS now").fetchone()
         return row["now"]
+
+    def _permit_effect(self, operation_id: UUID, permit_id: UUID) -> str:
+        if not isinstance(operation_id, UUID) or not isinstance(permit_id, UUID):
+            return "other"
+        try:
+            with psycopg.connect(self.database_url, row_factory=dict_row) as connection:
+                row = connection.execute(
+                    """SELECT request_snapshot->>'effect_type' AS effect_type
+                       FROM public.v4_production_effect_permits
+                       WHERE operation_id=%s AND permit_id=%s""",
+                    (operation_id, permit_id),
+                ).fetchone()
+            return row["effect_type"] if row is not None else "other"
+        except psycopg.Error:
+            return "other"
+
+    def _record_decision(
+        self, action: str, effect: str, outcome: str, reason_code: str
+    ) -> None:
+        if self.metrics is None:
+            return
+        self.metrics.record_decision(
+            action=action,
+            effect=effect,
+            outcome=outcome,
+            reason_code=reason_code,
+        )
+        if outcome != "deny":
+            return
+        if reason_code == "stale_revision":
+            self.metrics.record_stale_revision()
+        if reason_code in {
+            "approval_expired",
+            "grant_expired",
+            "identity_expired",
+            "permit_expired",
+            "policy_expired",
+        }:
+            self.metrics.record_expiry()
+        if reason_code == "dispatch_already_claimed":
+            self.metrics.record_duplicate_claim()
+
+    def _record_primary_outage(self, action: str, effect: str) -> None:
+        if self.metrics is None:
+            return
+        self.metrics.record_decision(
+            action=action,
+            effect=effect,
+            outcome="deny",
+            reason_code="primary_unavailable",
+        )
+        self.metrics.record_primary_outage()
+
+    def _persist_denial_event(
+        self,
+        operation_id: UUID,
+        action: str,
+        reason_code: str,
+        *,
+        permit_id: UUID | None,
+        request: ProductionPermitRequest | None,
+    ) -> None:
+        """Append redacted denial evidence through a separate committed transaction."""
+        if not isinstance(operation_id, UUID):
+            return
+        try:
+            with psycopg.connect(self.database_url, row_factory=dict_row) as connection:
+                with connection.transaction():
+                    cycle = connection.execute(
+                        """SELECT workspace.id AS workspace_id,goal.id AS goal_id,
+                                  intent.id AS intent_id,intent.goal_revision,
+                                  cycle.id AS cycle_id,cycle.context_id,cycle.operation_id,
+                                  context.payload AS context_payload,
+                                  clock_timestamp() AS database_time
+                           FROM public.v4_cycles cycle
+                           JOIN public.v4_cycle_intents intent ON intent.id=cycle.intent_id
+                           JOIN public.v4_goals goal ON goal.id=intent.goal_id
+                           JOIN public.workspaces workspace ON workspace.id=goal.workspace_id
+                           JOIN public.v4_run_contexts context
+                             ON context.id=cycle.context_id AND context.cycle_id=cycle.id
+                           WHERE cycle.operation_id=%s""",
+                        (operation_id,),
+                    ).fetchone()
+                    if cycle is None:
+                        return
+                    approval_id = (
+                        request.approval_request_id if request is not None else None
+                    )
+                    if permit_id is not None:
+                        permit = connection.execute(
+                            """SELECT request_snapshot->>'approval_request_id' AS approval_id
+                               FROM public.v4_production_effect_permits
+                               WHERE operation_id=%s AND permit_id=%s""",
+                            (operation_id, permit_id),
+                        ).fetchone()
+                        if permit is not None and permit["approval_id"]:
+                            approval_id = UUID(permit["approval_id"])
+                    if approval_id is None:
+                        return
+                    approval = connection.execute(
+                        """SELECT request_context->'required_scopes' AS required_scopes
+                           FROM public.approval_requests
+                           WHERE id=%s AND workspace_id=%s""",
+                        (approval_id, cycle["workspace_id"]),
+                    ).fetchone()
+                    if approval is None:
+                        return
+                    scopes = approval["required_scopes"]
+                    if (
+                        not isinstance(scopes, list)
+                        or not scopes
+                        or any(not isinstance(scope, str) for scope in scopes)
+                    ):
+                        return
+                    snapshot = None
+                    if permit_id is not None:
+                        snapshot_row = connection.execute(
+                            """SELECT request_snapshot
+                               FROM public.v4_production_effect_permits
+                               WHERE operation_id=%s AND permit_id=%s""",
+                            (operation_id, permit_id),
+                        ).fetchone()
+                        if snapshot_row is not None:
+                            snapshot = snapshot_row["request_snapshot"]
+                    if snapshot is None and request is not None:
+                        snapshot = {
+                            "approval_request_id": str(request.approval_request_id),
+                            "effect_type": request.effect_type,
+                            "account_id": str(request.account_id),
+                        }
+                    if not isinstance(snapshot, Mapping):
+                        snapshot = {}
+                    context_payload = cycle["context_payload"]
+                    subject_value = (
+                        context_payload.get("subject_id")
+                        if isinstance(context_payload, Mapping)
+                        else None
+                    )
+                    if not isinstance(subject_value, str):
+                        return
+                    subject_id = UUID(subject_value)
+                    pointer = connection.execute(
+                        """SELECT current_claim_id
+                           FROM public.v4_production_current_dispatch
+                           WHERE operation_id=%s""",
+                        (operation_id,),
+                    ).fetchone()
+                    claim_id = pointer["current_claim_id"] if pointer is not None else None
+                    existing = connection.execute(
+                        """SELECT 1 FROM public.v4_cycle_events
+                           WHERE cycle_id=%s AND kind='production_authorization_denied'
+                             AND payload->>'operation_id'=%s
+                             AND payload->>'action'=%s
+                             AND payload->>'reason_code'=%s
+                             AND payload->>'permit_id' IS NOT DISTINCT FROM %s
+                           LIMIT 1""",
+                        (
+                            cycle["cycle_id"],
+                            str(operation_id),
+                            action,
+                            reason_code,
+                            str(permit_id) if permit_id is not None else None,
+                        ),
+                    ).fetchone()
+                    if existing is not None:
+                        return
+                    payload = {
+                        "schema_version": "salience.p1-production-authorization-event.v1",
+                        "action": action,
+                        "outcome": "deny",
+                        "operation_id": str(operation_id),
+                        "permit_id": str(permit_id) if permit_id is not None else None,
+                        "claim_id": str(claim_id) if claim_id is not None else None,
+                        "decision_id": None,
+                        "reason_code": reason_code,
+                        "workspace_id": str(cycle["workspace_id"]),
+                        "goal_id": str(cycle["goal_id"]),
+                        "goal_revision": cycle["goal_revision"],
+                        "intent_id": str(cycle["intent_id"]),
+                        "cycle_id": str(cycle["cycle_id"]),
+                        "context_id": str(cycle["context_id"]),
+                        "subject_id": str(subject_id),
+                        "approval_request_id": str(approval_id),
+                        "required_scopes": scopes,
+                        "effect_type": snapshot.get("effect_type"),
+                        "account_id": snapshot.get("account_id"),
+                        "database_time": cycle["database_time"].astimezone(timezone.utc).isoformat(),
+                    }
+                    connection.execute(
+                        """INSERT INTO public.v4_cycle_events(
+                                  id,workspace_id,subject_id,goal_id,intent_id,cycle_id,kind,
+                                  traceparent,payload)
+                           VALUES(%s,%s,%s,%s,%s,%s,'production_authorization_denied',%s,%s)""",
+                        (
+                            uuid4(),
+                            cycle["workspace_id"],
+                            subject_id,
+                            cycle["goal_id"],
+                            cycle["intent_id"],
+                            cycle["cycle_id"],
+                            context_payload.get("traceparent"),
+                            Jsonb(payload),
+                        ),
+                    )
+        except (psycopg.Error, TypeError, ValueError):
+            if self.metrics is not None:
+                self.metrics.record_primary_outage()
 
     @staticmethod
     def _parse_aware_datetime(value: object) -> datetime:
@@ -1305,6 +1770,8 @@ class ProductionEffectDispatch:
             "purpose": request.purpose,
             "artifact_sha256": request.artifact_sha256,
             "account_id": str(request.account_id),
+            "budget_id": str(request.budget_id),
+            "budget_reservation_id": str(request.budget_reservation_id),
             "provider_id": request.provider_id,
             "idempotency_key": request.idempotency_key,
             "execution_deadline": request.execution_deadline.isoformat(),
@@ -1358,6 +1825,8 @@ class ProductionEffectDispatch:
                     "purpose",
                     "artifact_sha256",
                     "account_id",
+                    "budget_id",
+                    "budget_reservation_id",
                     "provider_id",
                     "idempotency_key",
                     "execution_deadline",
@@ -1422,6 +1891,8 @@ class ProductionEffectDispatch:
                 purpose=value["purpose"],
                 artifact_sha256=value["artifact_sha256"],
                 account_id=UUID(str(value["account_id"])),
+                budget_id=UUID(str(value["budget_id"])),
+                budget_reservation_id=UUID(str(value["budget_reservation_id"])),
                 provider_id=value["provider_id"],
                 idempotency_key=value["idempotency_key"],
                 route=route,
@@ -1532,10 +2003,13 @@ class ProductionEffectDispatch:
             "policy_document_hash": facts.policy.document_hash,
             "approval_request_id": str(facts.approval.approval_request_id),
             "approval_expires_at": facts.approval.expires_at.isoformat(),
+            "required_scopes": list(facts.approval.required_scopes),
             "effect_type": request.effect_type,
             "purpose": request.purpose,
             "artifact_sha256": request.artifact_sha256,
             "account_id": str(request.account_id),
+            "budget_id": str(request.budget_id),
+            "budget_reservation_id": str(request.budget_reservation_id),
             "provider_id": request.provider_id,
             "idempotency_key": request.idempotency_key,
             "workspace_stop_revision": facts.workspace_stop_revision,
