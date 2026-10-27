@@ -361,7 +361,7 @@ def test_installed_alembic_config_resolves_inside_runtime_root(task5_worker_imag
         timeout=60,
     )
     assert resolved_heads.returncode == 0, resolved_heads.stdout + resolved_heads.stderr
-    assert _REVISION_0043 in resolved_heads.stdout
+    assert _REVISION_0045 in resolved_heads.stdout
     assert "(head)" in resolved_heads.stdout
 
     compose = yaml.safe_load((_MIGRATION_ROOT / "compose.yaml").read_text(encoding="utf-8"))
@@ -374,7 +374,7 @@ def test_installed_alembic_config_resolves_inside_runtime_root(task5_worker_imag
     ]
 
 
-def test_installed_image_migrates_disposable_database_to_0043(task5_worker_image):
+def test_installed_image_migrates_disposable_database_to_0045(task5_worker_image):
     import yaml
 
     compose = yaml.safe_load((_MIGRATION_ROOT / "compose.yaml").read_text(encoding="utf-8"))
@@ -551,7 +551,7 @@ def test_installed_image_migrates_disposable_database_to_0043(task5_worker_image
         with psycopg.connect(database) as connection:
             assert connection.execute(
                 "SELECT version_num FROM alembic_version"
-            ).fetchall() == [(_REVISION_0043,)]
+            ).fetchall() == [(_REVISION_0045,)]
             assert _alembic_version_num_type(connection) == ("character varying", 64)
             roles_after = [
                 row[0]
@@ -1616,6 +1616,15 @@ def test_clean_upgrade_empty_rollback_and_populated_preservation():
             def migrate(direction, target):
                 return subprocess.run([sys.executable, "-m", "alembic", "-x", f"database_url={database}", direction, target], capture_output=True, text=True)
 
+            def preserved(result, older_guard):
+                return result.returncode != 0 and any(
+                    message in result.stderr
+                    for message in (
+                        older_guard,
+                        "preserve production policy and revocation authority history",
+                    )
+                )
+
             assert migrate("upgrade", "head").returncode == 0
             assert migrate("downgrade", "0030_v4_schedule_cutover").returncode == 0
             assert migrate("upgrade", "head").returncode == 0
@@ -1632,15 +1641,13 @@ def test_clean_upgrade_empty_rollback_and_populated_preservation():
                 connection.execute("INSERT INTO workspaces (id,slug,display_name) VALUES (%s,%s,'preservation')", (workspace, str(workspace)))
                 connection.execute("INSERT INTO object_inventory (storage_key,workspace_id,content_hash,byte_size,content_type,retain_until) VALUES (%s,%s,%s,1,'text/plain',now())", (str(workspace) + "/key", workspace, "a" * 64))
             result = migrate("downgrade", "0012_publication_profile_scope")
-            assert result.returncode != 0
-            assert "preserve object identity" in result.stderr
+            assert preserved(result, "preserve object identity")
             with psycopg.connect(database) as connection:
                 assert connection.execute("SELECT count(*) FROM object_inventory").fetchone()[0] == 1
                 assert connection.execute("SELECT version_num FROM alembic_version").fetchone()[0] == expected_revision
                 connection.execute("INSERT INTO v4_goals (id,workspace_id,state) VALUES (%s,%s,'active')", (uuid4(),workspace))
             result = migrate("downgrade", "0015_identity_lock")
-            assert result.returncode != 0
-            assert "preserve V4 cycle guards" in result.stderr
+            assert preserved(result, "preserve V4 cycle guards")
             with psycopg.connect(database) as connection:
                 assert connection.execute("SELECT count(*) FROM v4_goals").fetchone()[0] == 1
                 assert connection.execute("SELECT version_num FROM alembic_version").fetchone()[0] == expected_revision
@@ -1651,46 +1658,44 @@ def test_clean_upgrade_empty_rollback_and_populated_preservation():
                 connection.execute("UPDATE v4_goals SET revision=2 WHERE id=%s",(goal,))
                 connection.execute("INSERT INTO v4_goal_commands (goal_id,idempotency_key,subject_id,fingerprint,expected_revision,resulting_revision,reason) VALUES (%s,'fixture',%s,'fixture',1,2,'rollback preservation')",(goal,subject))
             result=migrate("downgrade","0018_cycle_outbox")
-            assert result.returncode!=0
-            assert "preserve goal revision command history" in result.stderr
+            assert preserved(result, "preserve goal revision command history")
             with psycopg.connect(database) as connection:
                 assert connection.execute("SELECT count(*) FROM v4_goal_commands").fetchone()[0]==1
                 assert connection.execute("SELECT revision FROM v4_goals WHERE id=%s",(goal,)).fetchone()[0]==2
                 assert connection.execute("SELECT version_num FROM alembic_version").fetchone()[0]==expected_revision
                 connection.execute("INSERT INTO v4_goal_baselines (approval_id,goal_id,goal_revision,subject_id,bundle,expires_at,reason,traceparent) VALUES (%s,%s,2,%s,'{}',now()+interval '1 hour','preservation','fixture')",(uuid4(),goal,subject))
             result=migrate("downgrade","0019_goal_revision_commands")
-            assert result.returncode!=0
-            assert "preserve baseline approval and revocation history" in result.stderr
+            assert preserved(result, "preserve baseline approval and revocation history")
             with psycopg.connect(database) as connection:
                 assert connection.execute("SELECT count(*) FROM v4_goal_baselines").fetchone()[0]==1
                 assert connection.execute("SELECT version_num FROM alembic_version").fetchone()[0]==expected_revision
                 connection.execute("INSERT INTO v4_goal_revisions (goal_id,revision,schema_version,payload) VALUES (%s,3,'GoalSpec.local.v2','{\"schema_version\":\"GoalSpec.local.v2\"}')", (goal,))
             result = migrate("downgrade", "0020_goal_baselines")
-            assert result.returncode != 0 and "preserve V2 policy and context history" in result.stderr
+            assert preserved(result, "preserve V2 policy and context history")
             with psycopg.connect(database) as connection:
                 assert connection.execute("SELECT count(*) FROM v4_goal_revisions WHERE revision=3").fetchone()[0] == 1
                 assert connection.execute("SELECT version_num FROM alembic_version").fetchone()[0] == expected_revision
                 connection.execute("INSERT INTO v4_goal_revisions (goal_id,revision,schema_version,payload) VALUES (%s,4,'GoalSpec.local.v3','{\"schema_version\":\"GoalSpec.local.v3\"}')", (goal,))
             result = migrate("downgrade", "0022_program_policy_lock")
-            assert result.returncode != 0 and "preserve V3" in result.stderr
+            assert preserved(result, "preserve V3")
             with psycopg.connect(database) as connection:
                 assert connection.execute("SELECT count(*) FROM v4_goal_revisions WHERE revision=4").fetchone()[0] == 1
                 assert connection.execute("SELECT version_num FROM alembic_version").fetchone()[0] == expected_revision
                 connection.execute("INSERT INTO v4_stop_scopes (workspace_id,scope_key,stopped) VALUES (%s,'workspace',true)", (workspace,))
             result = migrate("downgrade", "0025_accounting_categories")
-            assert result.returncode != 0 and "preserve V4 stop, permit and case history" in result.stderr
+            assert preserved(result, "preserve V4 stop, permit and case history")
             with psycopg.connect(database) as connection:
                 assert connection.execute("SELECT stopped FROM v4_stop_scopes WHERE workspace_id=%s", (workspace,)).fetchone()[0] is True
                 assert connection.execute("SELECT version_num FROM alembic_version").fetchone()[0] == expected_revision
                 connection.execute("INSERT INTO v4_cycle_events (id,workspace_id,subject_id,goal_id,kind,traceparent,payload) VALUES (%s,%s,%s,%s,'outbox_dead_letter',%s,%s)", (uuid4(),workspace,subject,goal,"00-"+"a"*32+"-"+"b"*16+"-01",'{"message_id":"fixture"}'))
             result = migrate("downgrade", "0026_cycle_governance")
-            assert result.returncode != 0 and "preserve V4 outbox dead-letter escalation history" in result.stderr
+            assert preserved(result, "preserve V4 outbox dead-letter escalation history")
             with psycopg.connect(database) as connection:
                 assert connection.execute("SELECT count(*) FROM v4_cycle_events WHERE kind='outbox_dead_letter'").fetchone()[0] == 1
                 assert connection.execute("SELECT version_num FROM alembic_version").fetchone()[0] == expected_revision
                 connection.execute("INSERT INTO v4_cycle_events (id,workspace_id,subject_id,goal_id,kind,traceparent,payload) VALUES (%s,%s,%s,%s,'fixture_adapter_accepted',%s,%s)", (uuid4(),workspace,subject,goal,"00-"+"a"*32+"-"+"b"*16+"-01",'{"message_id":"fixture"}'))
             result = migrate("downgrade", "0027_auto_dispatch_escalation")
-            assert result.returncode != 0 and "preserve V4 fixture adapter acceptance history" in result.stderr
+            assert preserved(result, "preserve V4 fixture adapter acceptance history")
             with psycopg.connect(database) as connection:
                 assert connection.execute("SELECT count(*) FROM v4_cycle_events WHERE kind='fixture_adapter_accepted'").fetchone()[0] == 1
                 assert connection.execute("SELECT version_num FROM alembic_version").fetchone()[0] == expected_revision
@@ -1706,7 +1711,7 @@ def test_clean_upgrade_empty_rollback_and_populated_preservation():
                     connection.execute("UPDATE v4_goal_create_commands SET fingerprint=%s WHERE goal_id=%s", ("b"*64,goal))
                 final_revision = connection.execute("SELECT version_num FROM alembic_version").fetchone()[0]
             result = migrate("downgrade", "0028_fixture_adapter_receipts")
-            assert result.returncode != 0 and "preserve exact V4 goal creation receipts" in result.stderr
+            assert preserved(result, "preserve exact V4 goal creation receipts")
             with psycopg.connect(database) as connection:
                 assert connection.execute("SELECT count(*) FROM v4_goal_create_commands WHERE goal_id=%s", (goal,)).fetchone()[0] == 1
                 assert connection.execute("SELECT version_num FROM alembic_version").fetchone()[0] == final_revision
@@ -1720,7 +1725,7 @@ def test_clean_upgrade_empty_rollback_and_populated_preservation():
                 with pytest.raises(psycopg.Error, match="immutable"), connection.transaction():
                     connection.execute("UPDATE v4_schedule_cutovers SET fingerprint=%s WHERE goal_id=%s", ("b"*64,goal))
             result = migrate("downgrade", "0029_goal_create_receipts")
-            assert result.returncode != 0 and "preserve V4 schedule cutover history" in result.stderr
+            assert preserved(result, "preserve V4 schedule cutover history")
             with psycopg.connect(database) as connection:
                 assert connection.execute("SELECT state FROM v4_schedule_cutovers WHERE goal_id=%s", (goal,)).fetchone()[0] == "pending"
                 assert connection.execute("SELECT version_num FROM alembic_version").fetchone()[0] == final_revision

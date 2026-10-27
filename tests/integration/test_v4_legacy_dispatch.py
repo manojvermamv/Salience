@@ -349,11 +349,18 @@ def test_legacy_migration_empty_rollback_and_populated_history_preservation(lega
             isolated=CycleAdmission(database,workspace_id=service.workspace_id,subject_id=service.subject_id)
             goal=approved_goal(isolated,parse_goal(spec))
             binding=LegacyDispatch(database,workspace_id=service.workspace_id,subject_id=service.subject_id,task_queue=bridge.task_queue).submit(command.model_copy(update={"goal_id":goal}))
+            with psycopg.connect(database) as c:
+                binding_snapshot=c.execute("SELECT to_jsonb(dispatch) FROM v4_legacy_dispatches dispatch WHERE job_id=%s",(binding["job_id"],)).fetchone()[0]
+                job_snapshot=c.execute("SELECT to_jsonb(job) FROM jobs job WHERE id=%s",(binding["job_id"],)).fetchone()[0]
             rolled=migrate("downgrade","0035_parallel_agent_teams")
-            assert rolled.returncode!=0 and "preserve legacy dispatch" in rolled.stderr
+            assert rolled.returncode!=0 and any(message in rolled.stderr for message in (
+                "preserve legacy dispatch",
+                "preserve production policy and revocation authority history",
+            ))
             with psycopg.connect(database) as c:
                 assert c.execute("SELECT version_num FROM alembic_version").fetchone()[0]==head_revision
-                assert str(c.execute("SELECT operation_id FROM v4_legacy_dispatches WHERE job_id=%s",(binding["job_id"],)).fetchone()[0])==binding["operation_id"]
+                assert c.execute("SELECT to_jsonb(dispatch) FROM v4_legacy_dispatches dispatch WHERE job_id=%s",(binding["job_id"],)).fetchone()[0] == binding_snapshot
+                assert c.execute("SELECT to_jsonb(job) FROM jobs job WHERE id=%s",(binding["job_id"],)).fetchone()[0] == job_snapshot
         finally:
             admin.execute(psycopg.sql.SQL("DROP DATABASE {} WITH (FORCE)").format(psycopg.sql.Identifier(name)))
 

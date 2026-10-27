@@ -175,11 +175,12 @@ def test_wait_binding_and_receipts_cannot_be_rewritten_or_destructively_downgrad
                 connection.execute(sql,(job["id"],))
     with psycopg.connect(database) as connection:
         version = connection.execute("SELECT version_num FROM alembic_version").fetchone()[0]
+        wait_snapshot = connection.execute("SELECT to_jsonb(wait) FROM v4_runtime_waits wait WHERE id=%s",(job["id"],)).fetchone()[0]
     rollback = subprocess.run([sys.executable,"-m","alembic","-x","database_url="+database,"downgrade","0030_v4_schedule_cutover"],capture_output=True,text=True)
-    assert rollback.returncode != 0 and any(message in rollback.stderr for message in ("preserve durable waits","preserve runtime hold owner binding","preserve canonical delivery scope","preserve parallel agent execution history","preserve legacy dispatch identity","preserve original native schedule history","preserve original native publication schedule history","preserve original legacy publication history","preserve original legacy stage history","preserve original legacy creative history"))
+    assert rollback.returncode != 0 and any(message in rollback.stderr for message in ("preserve durable waits","preserve runtime hold owner binding","preserve canonical delivery scope","preserve parallel agent execution history","preserve legacy dispatch identity","preserve original native schedule history","preserve original native publication schedule history","preserve original legacy publication history","preserve original legacy stage history","preserve original legacy creative history","preserve production policy and revocation authority history"))
     with psycopg.connect(database) as connection:
         assert connection.execute("SELECT version_num FROM alembic_version").fetchone()[0] == version
-        assert connection.execute("SELECT state FROM v4_runtime_waits WHERE id=%s",(job["id"],)).fetchone()[0] == "pending"
+        assert connection.execute("SELECT to_jsonb(wait) FROM v4_runtime_waits wait WHERE id=%s",(job["id"],)).fetchone()[0] == wait_snapshot
     time.sleep(.25)
     assert waits.fire(job["id"])["state"] == "suspended"
 
@@ -359,9 +360,10 @@ def test_populated_owner_binding_cannot_be_rolled_back(governed):
         connection.execute("""INSERT INTO v4_runtime_holds(cycle_id,context_id,operation_id,workspace_id,owner_id,reason)
             VALUES(%s,%s,%s,%s,%s,'held_timeout')""",(cycle,context,operation,service.workspace_id,service.subject_id))
         version = connection.execute("SELECT version_num FROM alembic_version").fetchone()[0]
+        hold_snapshot = connection.execute("SELECT to_jsonb(hold) FROM v4_runtime_holds hold WHERE cycle_id=%s",(cycle,)).fetchone()[0]
     rollback = subprocess.run([sys.executable,"-m","alembic","-x","database_url="+database,"downgrade","0031_runtime_waits"],capture_output=True,text=True)
-    assert rollback.returncode != 0 and any(message in rollback.stderr for message in ("preserve runtime hold owner binding","preserve canonical delivery scope","preserve parallel agent execution history","preserve legacy dispatch identity","preserve original native schedule history","preserve original native publication schedule history","preserve original legacy publication history","preserve original legacy stage history","preserve original legacy creative history"))
+    assert rollback.returncode != 0 and any(message in rollback.stderr for message in ("preserve runtime hold owner binding","preserve canonical delivery scope","preserve parallel agent execution history","preserve legacy dispatch identity","preserve original native schedule history","preserve original native publication schedule history","preserve original legacy publication history","preserve original legacy stage history","preserve original legacy creative history","preserve production policy and revocation authority history"))
     with psycopg.connect(database) as connection:
         assert connection.execute("SELECT version_num FROM alembic_version").fetchone()[0] == version
-        assert connection.execute("SELECT owner_id FROM v4_runtime_holds WHERE cycle_id=%s",(cycle,)).fetchone()[0] == service.subject_id
+        assert connection.execute("SELECT to_jsonb(hold) FROM v4_runtime_holds hold WHERE cycle_id=%s",(cycle,)).fetchone()[0] == hold_snapshot
         assert connection.execute("SELECT count(*) FROM pg_trigger WHERE tgrelid='v4_runtime_holds'::regclass AND tgname='owner_binding'").fetchone()[0] == 1

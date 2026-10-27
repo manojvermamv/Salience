@@ -530,6 +530,53 @@ async def published_cancelled_recovery_case(monkeypatch, tmp_path):
         _drop_database(source, name)
 
 
+@pytest_asyncio.fixture
+async def legacy_hold_published_cancelled_recovery_case(monkeypatch, tmp_path):
+    """Create the legacy row at 0042 before upgrading its schema to 0043."""
+    source = os.environ["TEST_DATABASE_URL"]
+    name, database = _create_database(source, "recovery_legacy_0042_")
+    monkeypatch.setenv("SALIENCE_DEPLOYMENT_MODE", "fixture")
+    monkeypatch.setenv("SALIENCE_EFFECTS_ENABLED", "false")
+    monkeypatch.setenv("TEST_DATABASE_URL", database)
+    try:
+        before_holds = _migrate(database, "upgrade", "0041_native_publication_sources")
+        assert before_holds.returncode == 0, before_holds.stderr
+        created_holds = _migrate(database, "upgrade", REVISION)
+        assert created_holds.returncode == 0, created_holds.stderr
+
+        fixture, submitted = await _create_published_cancelled_recovery_operation(
+            database, tmp_path
+        )
+        with psycopg.connect(database) as connection:
+            assert connection.execute(
+                "SELECT version_num FROM alembic_version"
+            ).fetchone()[0] == REVISION
+            connection.execute(
+                _INSERT_SQL,
+                _hold_values(
+                    connection,
+                    submitted["operation_id"],
+                    reason="published_during_cancel",
+                ),
+            )
+
+        upgraded = _migrate(database, "upgrade", REVISION_0043)
+        assert upgraded.returncode == 0, upgraded.stderr
+        with psycopg.connect(database) as connection:
+            assert connection.execute(
+                "SELECT version_num FROM alembic_version"
+            ).fetchone()[0] == REVISION_0043
+        yield fixture, submitted
+    finally:
+        _drop_database(source, name)
+
+
+@pytest.fixture
+def selected_published_recovery_case(request):
+    """Resolve one async case fixture during setup, before an async test runs."""
+    return request.getfixturevalue(request.param)
+
+
 async def _create_published_cancelled_recovery_operation(
     database, tmp_path, *, reference_fixture=None
 ):
@@ -1223,9 +1270,29 @@ async def test_exact_hold_replay_returns_stable_id(published_cancelled_recovery_
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("evidence_state", ["legacy", "incomplete", "changed"])
+@pytest.mark.parametrize(
+    "evidence_state,selected_published_recovery_case",
+    (
+        pytest.param(
+            "legacy",
+            "legacy_hold_published_cancelled_recovery_case",
+            id="legacy",
+        ),
+        pytest.param(
+            "incomplete",
+            "published_cancelled_recovery_case",
+            id="incomplete",
+        ),
+        pytest.param(
+            "changed",
+            "published_cancelled_recovery_case",
+            id="changed",
+        ),
+    ),
+    indirect=["selected_published_recovery_case"],
+)
 async def test_cancel_activity_rejects_unreplayable_hold_before_adapter(
-    published_cancelled_recovery_case, monkeypatch, evidence_state
+    selected_published_recovery_case, monkeypatch, evidence_state
 ):
     from types import SimpleNamespace
 
@@ -1240,24 +1307,11 @@ async def test_cancel_activity_rejects_unreplayable_hold_before_adapter(
     from salience.publication.contracts import PublicationRequest
     from salience.workflows.publication import _workflow_request_payload
 
-    fixture, submitted = published_cancelled_recovery_case
+    fixture, submitted = selected_published_recovery_case
     database = fixture["database"]
     operation_id = UUID(submitted["operation_id"])
 
     if evidence_state == "legacy":
-        downgraded = _migrate(database, "downgrade", REVISION)
-        assert downgraded.returncode == 0, downgraded.stderr
-        with psycopg.connect(database) as connection:
-            connection.execute(
-                _INSERT_SQL,
-                _hold_values(
-                    connection,
-                    operation_id,
-                    reason="published_during_cancel",
-                ),
-            )
-        upgraded = _migrate(database, "upgrade", REVISION_0043)
-        assert upgraded.returncode == 0, upgraded.stderr
         expected = "complete.*v1 evidence"
     else:
         record_publication_recovery_hold(
@@ -2770,7 +2824,7 @@ async def test_record_replay_verifier_share_atomic_v1_snapshot(
 
 @pytest.mark.asyncio
 async def test_legacy_null_v1_hold_is_inspectable_but_not_replayable_or_verifiable(
-    published_cancelled_recovery_case, monkeypatch, tmp_path
+    legacy_hold_published_cancelled_recovery_case, monkeypatch, tmp_path
 ):
     from salience.cycles.publication_recovery import (
         PublicationRecoveryConflictError,
@@ -2780,7 +2834,7 @@ async def test_legacy_null_v1_hold_is_inspectable_but_not_replayable_or_verifiab
         verify_publication_recovery_rollback,
     )
 
-    fixture, cancelled = published_cancelled_recovery_case
+    fixture, cancelled = legacy_hold_published_cancelled_recovery_case
     database = fixture["database"]
     workspace_id = fixture["workspace_id"]
     cancelled_operation_id = UUID(cancelled["operation_id"])
@@ -2797,20 +2851,6 @@ async def test_legacy_null_v1_hold_is_inspectable_but_not_replayable_or_verifiab
         TemporalCycleTransport(client, task_queue=fixture["queue"])
     )
     before_cancelled = _liability_snapshot(database, cancelled_operation_id)
-
-    downgraded = _migrate(database, "downgrade", REVISION)
-    assert downgraded.returncode == 0, downgraded.stderr
-    with psycopg.connect(database) as connection:
-        connection.execute(
-            _INSERT_SQL,
-            _hold_values(
-                connection,
-                cancelled_operation_id,
-                reason="published_during_cancel",
-            ),
-        )
-    upgraded = _migrate(database, "upgrade", REVISION_0043)
-    assert upgraded.returncode == 0, upgraded.stderr
 
     with psycopg.connect(database) as connection:
         legacy_columns = connection.execute(

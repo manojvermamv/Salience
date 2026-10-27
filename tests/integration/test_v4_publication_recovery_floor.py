@@ -1038,7 +1038,7 @@ def test_worker_floor_rejects_unknown_pre_floor_and_ambiguous_lineages_before_re
     "case,database_revision",
     (
         ("exact-0043", "0043_complete_publication_recovery_liabilities"),
-        ("qualified-descendant", "0044_qualified_descendant"),
+        ("qualified-descendant", "0046_qualified_descendant"),
     ),
     ids=("exact-0043", "qualified-descendant"),
 )
@@ -1049,10 +1049,10 @@ def test_worker_floor_accepts_0043_and_qualified_descendant(
     if case == "qualified-descendant":
         lock = _add_migration_source(
             lock,
-            "0044_qualified_descendant.py",
+            "0046_qualified_descendant.py",
             {
-                "revision": "0044_qualified_descendant",
-                "down_revision": "0043_complete_publication_recovery_liabilities",
+                "revision": "0046_qualified_descendant",
+                "down_revision": "0045_production_policy_approval_guard_repair",
             },
         )
     register_worker, database_reads, registered = _compatibility_registration_probe(
@@ -1424,14 +1424,16 @@ def test_every_current_numbered_migration_has_safe_import_surface():
     migration_paths = sorted(
         path for path in migration_dir.glob("[0-9][0-9][0-9][0-9]_*.py")
     )
-    assert [int(path.name[:4]) for path in migration_paths] == list(range(1, 44))
+    migration_numbers = [int(path.name[:4]) for path in migration_paths]
+    assert migration_numbers == list(range(1, len(migration_paths) + 1))
 
     parsed = [
         compatibility._parse_revision_metadata(path.relative_to(ROOT).as_posix(), path.read_bytes())
         for path in migration_paths
     ]
 
-    assert len({revision for revision, _parents in parsed}) == 43
+    assert len(parsed) == len(migration_paths)
+    assert len({revision for revision, _parents in parsed}) == len(migration_paths)
 
 
 def _synthetic_builder_inputs(tmp_path, *, extra_migrations=()):
@@ -1604,7 +1606,7 @@ def test_publication_worker_launch_lock_builder_accepts_valid_wheel_and_installe
     assert lock.pin.distribution_record_sha256 == _sha256(record_path.read_bytes())
 
 
-def test_publication_worker_launch_lock_builder_accepts_real_synthetic_0044_descendant(
+def test_publication_worker_launch_lock_builder_accepts_real_synthetic_0045_descendant(
     tmp_path, monkeypatch
 ):
     builder = _lock_builder_module()
@@ -1612,10 +1614,10 @@ def test_publication_worker_launch_lock_builder_accepts_real_synthetic_0044_desc
         tmp_path,
         extra_migrations=(
             (
-                "0044_qualified_builder_descendant.py",
+                "0046_qualified_builder_descendant.py",
                 {
-                    "revision": "0044_qualified_builder_descendant",
-                    "down_revision": "0043_complete_publication_recovery_liabilities",
+                    "revision": "0046_qualified_builder_descendant",
+                    "down_revision": "0045_production_policy_approval_guard_repair",
                 },
             ),
         ),
@@ -1630,7 +1632,7 @@ def test_publication_worker_launch_lock_builder_accepts_real_synthetic_0044_desc
 
     assert lock.pin.application_commit == application_commit
     assert any(
-        item.path == "migrations/versions/0044_qualified_builder_descendant.py"
+        item.path == "migrations/versions/0046_qualified_builder_descendant.py"
         for item in lock.pin.source_files
     )
 
@@ -5802,9 +5804,9 @@ def test_authenticated_migration_graph_resolves_inside_site_packages(tmp_path, m
 
     revisions, heads = compatibility._migration_graph(verified_source_files)
 
-    assert "0043_complete_publication_recovery_liabilities" in revisions
-    assert heads == {"0043_complete_publication_recovery_liabilities"}
-    assert (runtime_root / "migrations/versions/0043_complete_publication_recovery_liabilities.py").is_file()
+    assert "0045_production_policy_approval_guard_repair" in revisions
+    assert heads == {"0045_production_policy_approval_guard_repair"}
+    assert (runtime_root / "migrations/versions/0045_production_policy_approval_guard_repair.py").is_file()
 
 
 def test_inprocess_gate_wraps_malformed_rollback_environment_as_compatibility_error(

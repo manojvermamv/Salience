@@ -72,8 +72,12 @@ def test_nonowner_authorization_without_authority_edit_privileges(restricted_bou
 
 def test_restricted_identity_lock_serializes_revocation(restricted_boundary):
     _, _, claims, workspace, subject, database, restricted = restricted_boundary
+    with psycopg.connect(database) as admin:
+        expected_revision = admin.execute(
+            "SELECT revision FROM identity_subjects WHERE id=%s", (subject,)
+        ).fetchone()[0]
     with psycopg.connect(restricted) as reader:
-        assert reader.execute("SELECT * FROM p0_lock_identity(%s,%s,%s)", (claims["iss"], claims["sub"], workspace)).fetchone() == (subject, 1)
+        assert reader.execute("SELECT * FROM p0_lock_identity(%s,%s,%s)", (claims["iss"], claims["sub"], workspace)).fetchone() == (subject, expected_revision)
         with psycopg.connect(database) as admin:
             with pytest.raises(psycopg.errors.LockNotAvailable), admin.transaction():
                 admin.execute("SET LOCAL lock_timeout='100ms'")

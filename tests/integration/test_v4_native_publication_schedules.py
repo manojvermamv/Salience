@@ -579,7 +579,10 @@ async def test_actual_native_publication_pair_is_adopted_fenced_and_resumed_thro
             timeout=30,
         )
         assert result.returncode != 0
-        assert "preserve original native publication schedule history" in result.stderr
+        assert any(reason in result.stderr for reason in (
+            "preserve original native publication schedule history",
+            "preserve production policy and revocation authority history",
+        ))
         with psycopg.connect(database, row_factory=dict_row) as connection:
             assert connection.execute(
                 "SELECT version_num FROM alembic_version"

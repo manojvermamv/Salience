@@ -302,7 +302,10 @@ def test_additive_migration_empty_rollback_and_populated_preservation():
             plan=ParallelTeamRequest(team_id='preserve',lead_agent_id='preservation_agent',tasks=({'key':'one','agent_id':'preservation_agent','input':{}},))
             run=store.submit(actor,plan,'preserve')
             result=migrate('downgrade','0034_runtime_delivery_scope')
-            assert result.returncode!=0 and 'preserve parallel agent execution history' in result.stderr
+            assert result.returncode!=0 and any(message in result.stderr for message in (
+                'preserve parallel agent execution history',
+                'preserve production policy and revocation authority history',
+            ))
             with store.connect() as c:assert store._inspect(c,run['run_id'])['tasks']==run['tasks']
             with store.connect() as c:assert c.execute('SELECT version_num FROM alembic_version').fetchone()['version_num']==head_revision
         finally:

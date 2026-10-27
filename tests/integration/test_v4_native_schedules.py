@@ -115,6 +115,8 @@ async def test_native_adoption_atomic_replay_scope_and_identity(policy, monkeypa
                 connection.execute("UPDATE job_schedules SET name='Changed' WHERE id=%s", (n["schedule_id"],))
         with psycopg.connect(database) as connection:
             head_revision=connection.execute("SELECT version_num FROM alembic_version").fetchone()[0]
+            source_snapshot=connection.execute("SELECT to_jsonb(source) FROM v4_native_schedule_sources source WHERE schedule_id=%s", (n["schedule_id"],)).fetchone()[0]
+            progress_snapshot=connection.execute("SELECT to_jsonb(progress) FROM v4_native_schedule_progress progress WHERE schedule_id=%s", (n["schedule_id"],)).fetchone()[0]
         result = await asyncio.to_thread(subprocess.run, [sys.executable, "-m", "alembic", "-x", "database_url="+database,
             "downgrade", "0036_legacy_cycle_dispatch"], capture_output=True, text=True)
         assert result.returncode != 0 and any(reason in result.stderr for reason in (
@@ -123,10 +125,12 @@ async def test_native_adoption_atomic_replay_scope_and_identity(policy, monkeypa
             "preserve original native schedule history",
             "preserve original legacy stage history",
             "preserve original legacy creative history",
+            "preserve production policy and revocation authority history",
         ))
         with psycopg.connect(database) as connection:
             assert connection.execute("SELECT version_num FROM alembic_version").fetchone()[0] == head_revision
-            assert connection.execute("SELECT count(*) FROM v4_native_schedule_sources WHERE schedule_id=%s", (n["schedule_id"],)).fetchone()[0] == 1
+            assert connection.execute("SELECT to_jsonb(source) FROM v4_native_schedule_sources source WHERE schedule_id=%s", (n["schedule_id"],)).fetchone()[0] == source_snapshot
+            assert connection.execute("SELECT to_jsonb(progress) FROM v4_native_schedule_progress progress WHERE schedule_id=%s", (n["schedule_id"],)).fetchone()[0] == progress_snapshot
         with psycopg.connect(database) as connection:
             connection.execute("UPDATE identity_subjects SET enabled=false WHERE id=%s", (service.subject_id,))
         with pytest.raises(PermissionError, match="subject authority"):
