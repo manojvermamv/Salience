@@ -771,6 +771,7 @@ class GateChecks(unittest.TestCase):
         scoped_checkpoint_lines = [
             ("docs/README.md", "**Current checkpoint — 2026-10-27:**"),
             ("docs/README.md", "P0 and DG1 remain locally qualified."),
+            ("docs/README.md", "The [initial audit]"),
             ("docs/v4/validation.md", "**Current checkpoint — 2026-10-27:**"),
             ("docs/v4/validation.md", "See the [audit report]"),
             ("docs/v4/progress.md", "**Current checkpoint — 2026-10-27:**"),

@@ -136,9 +136,9 @@ This append-only index binds the current documentation and test contents after t
 | `docs/superpowers/specs/2026-10-13-p1-live-schedule-fencing-design.md` | `04ed59e2ed61ca17dc2c01df3a2964e1569e03e79f0aef2bbfe2ca2d96d5129a` |
 | `docs/superpowers/specs/2026-10-13-p1-production-recovery-and-alerts-design.md` | `1c731ee595be6582902aa79f9ebb52d520f6fd18ad6054ca304709ce16aea61c` |
 | `docs/superpowers/specs/2026-10-13-rg0-rg1-external-acceptance-design.md` | `2a5d6cff0dd44070b1942e79f073906527b8e2650b62b3473d63542f00bfbcd8` |
-| `docs/v4/test_checks.py` | `99055fa88345b125d0661d2b73a8055f3ce95eb83295b237177a7d9b980ec4f7` |
+| `docs/v4/test_checks.py` | `e12d7056d10333d18a2f90d6104a0610793d90fcf5113634753dd167fe7cbdb5` |
 | `README.md` | `3f672a0e4bd804a0cc2280c7a57b2a350dbde4991a3ae4e941e3380b16ee3d44` |
-| `docs/README.md` | `bede37c4e5853bfb844248675b77976103aae6a0921ff1a7f62b4f802b0063d9` |
+| `docs/README.md` | `956fff1ee80e569dd6ce0cde8a8e08a74aacc26c221ddaa36cb9e55932f5b2c9` |
 | `docs/v4/IMPLEMENTATION-BLUEPRINT.md` | `6e717aae30c9eb3714d760d5e04f8689a33db0b5e0a3d8dcb4e8e63137c7c58b` |
 | `docs/v4/progress.md` | `e5ab68f09879d5c06b5eb6827413cfe2c771319c85d3a50f3cba88a58e3cce60` |
 | `docs/v4/validation.md` | `72bd84feb01691e89f97aae36b43ed16e8d1ec736cfada7c7ee0e76d723368f1` |
