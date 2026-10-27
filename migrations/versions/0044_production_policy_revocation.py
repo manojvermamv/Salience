@@ -615,6 +615,10 @@ def upgrade() -> None:
                    AND NEW.request_context->>'job_id' IS DISTINCT FROM NEW.job_id::text) THEN
                 RAISE EXCEPTION 'tagged effect approval job binding mismatch';
             END IF;
+            IF NEW.request_context->>'expires_at'
+                   !~* '(Z|[+-][0-9]{2}:[0-9]{2})$' THEN
+                RAISE EXCEPTION 'tagged effect approval expiry must be timezone-aware';
+            END IF;
             BEGIN
                 approval_expiry := (NEW.request_context->>'expires_at')::timestamptz;
             EXCEPTION WHEN others THEN

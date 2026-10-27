@@ -2236,6 +2236,21 @@ def test_0044_policy_and_tagged_approval_transitions_are_terminal():
                         approval_policy_id,
                         mismatched_job_context,
                     )
+            naive_expiry_context = {
+                **context,
+                "expires_at": "2099-01-01T00:00:00",
+            }
+            with pytest.raises(
+                psycopg.Error,
+                match="tagged effect approval expiry must be timezone-aware",
+            ):
+                with connection.transaction():
+                    _insert_0044_approval(
+                        connection,
+                        workspace_id,
+                        approval_policy_id,
+                        naive_expiry_context,
+                    )
             approval_id = _insert_0044_approval(
                 connection, workspace_id, approval_policy_id, context
             )
