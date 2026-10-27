@@ -56,15 +56,15 @@ def _policy_row(
 
 
 class _Result:
-    def __init__(self, row: dict[str, object] | None) -> None:
+    def __init__(self, row: object | None) -> None:
         self._row = row
 
-    def fetchone(self) -> dict[str, object] | None:
+    def fetchone(self) -> object | None:
         return self._row
 
 
 class _Connection:
-    def __init__(self, row: dict[str, object] | None) -> None:
+    def __init__(self, row: object | None) -> None:
         self.row = row
         self.statement = ""
         self.parameters: tuple[object, ...] = ()
@@ -185,6 +185,31 @@ def test_policy_loader_fails_closed_on_unknown_or_legacy_shapes() -> None:
             workspace_id=workspace_id,
             policy_version_id=policy_id,
         )
+
+
+def test_policy_loader_accepts_default_psycopg_tuple_rows() -> None:
+    workspace_id = UUID("00000000-0000-0000-0000-000000000002")
+    policy_id = UUID("00000000-0000-0000-0000-000000000001")
+    policy_row = _policy_row(workspace_id=workspace_id)
+    selected_columns = (
+        "id",
+        "workspace_id",
+        "status",
+        "document",
+        "document_hash",
+        "effective_at",
+        "database_time",
+    )
+    default_psycopg_row = tuple(policy_row[column] for column in selected_columns)
+
+    loaded = load_policy(
+        _Connection(default_psycopg_row),
+        workspace_id=workspace_id,
+        policy_version_id=policy_id,
+    )
+
+    assert isinstance(default_psycopg_row, tuple)
+    assert loaded.id == policy_id
 
 
 def _approval_fixture() -> tuple[dict[str, object], ProductionApprovalBinding]:

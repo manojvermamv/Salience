@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, replace
 from datetime import datetime
 from hashlib import sha256
 import json
 import re
-from typing import Mapping
 from uuid import UUID
 
 from salience.governance.policy import EffectClass
@@ -55,6 +55,15 @@ _PUBLICATION_BINDING_KEYS = (
     "publication_attempt_id",
 )
 _OPTIONAL_PUBLICATION_IDENTITY_KEYS = ("external_effect_id", "remote_receipt_id")
+_POLICY_ROW_COLUMNS = (
+    "id",
+    "workspace_id",
+    "status",
+    "document",
+    "document_hash",
+    "effective_at",
+    "database_time",
+)
 _SHA256_PATTERN = re.compile(r"[0-9a-f]{64}\Z")
 
 
@@ -205,8 +214,16 @@ def load_policy(
         """,
         (workspace_id, policy_version_id),
     )
-    row = result.fetchone()
-    if not isinstance(row, Mapping):
+    fetched_row = result.fetchone()
+    if isinstance(fetched_row, Mapping):
+        row = fetched_row
+    elif (
+        isinstance(fetched_row, Sequence)
+        and not isinstance(fetched_row, (str, bytes, bytearray))
+        and len(fetched_row) == len(_POLICY_ROW_COLUMNS)
+    ):
+        row = dict(zip(_POLICY_ROW_COLUMNS, fetched_row, strict=True))
+    else:
         raise PermissionError("canonical production policy required")
     if _uuid(row.get("id"), "id") != policy_version_id:
         raise PermissionError("canonical production policy identity mismatch")
