@@ -51,7 +51,10 @@ def upgrade() -> None:
             CONSTRAINT uq_v4_production_effect_permits_identity
                 UNIQUE (permit_id, operation_id, generation),
             CONSTRAINT ck_v4_production_effect_permits_expiry
-                CHECK (expires_at > issued_at),
+                CHECK (
+                    expires_at > issued_at
+                    AND expires_at <= issued_at + interval '60 seconds'
+                ),
             CONSTRAINT ck_v4_production_effect_permits_snapshot
                 CHECK (
                     jsonb_typeof(request_snapshot) = 'object'
@@ -120,6 +123,7 @@ def upgrade() -> None:
         DECLARE
             snapshot jsonb;
             optional_identifier_key text;
+            approval_expiry timestamptz;
         BEGIN
             IF TG_RELID <> 'public.v4_production_effect_permits'::regclass
                OR TG_TABLE_SCHEMA <> 'public'
@@ -128,6 +132,9 @@ def upgrade() -> None:
             END IF;
             IF TG_OP <> 'INSERT' THEN
                 RAISE EXCEPTION 'production effect permits are immutable';
+            END IF;
+            IF NEW.expires_at > NEW.issued_at + interval '60 seconds' THEN
+                RAISE EXCEPTION 'production permit expiry must not exceed 60 seconds';
             END IF;
             snapshot := NEW.request_snapshot;
             IF jsonb_typeof(snapshot) IS DISTINCT FROM 'object'
@@ -197,6 +204,22 @@ def upgrade() -> None:
                         'optional publication binding must be a string identifier';
                 END IF;
             END LOOP;
+            SELECT (approval.request_context->>'expires_at')::timestamptz
+            INTO approval_expiry
+            FROM public.approval_requests approval
+            WHERE approval.id = NEW.approval_request_id
+              AND approval.workspace_id = NEW.workspace_id
+              AND approval.policy_version_id = NEW.policy_version_id
+              AND approval.effect_type = NEW.effect_type
+              AND approval.status = 'approved'
+              AND approval.request_context->>'schema_version' =
+                  'salience.p1-effect-approval.v1';
+            IF NOT FOUND
+               OR approval_expiry IS DISTINCT FROM NEW.approval_expires_at
+               OR NEW.expires_at > approval_expiry THEN
+                RAISE EXCEPTION
+                    'production permit cannot expire after canonical approval';
+            END IF;
             RETURN NEW;
         END
         $$"""
@@ -233,8 +256,10 @@ def upgrade() -> None:
     )
     op.execute(
         """CREATE FUNCTION public.v4_guard_production_current_dispatch_write_v1()
-        RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER
+        RETURNS trigger LANGUAGE plpgsql SECURITY INVOKER
         SET search_path = pg_catalog, public AS $$
+        DECLARE
+            advance_function_owner text;
         BEGIN
             IF TG_RELID <> 'public.v4_production_current_dispatch'::regclass
                OR TG_TABLE_SCHEMA <> 'public'
@@ -244,6 +269,17 @@ def upgrade() -> None:
             IF current_setting('salience.production_current_dispatch_v1', true)
                  IS DISTINCT FROM 'advance' THEN
                 RAISE EXCEPTION 'production current dispatch may only change through v1 function';
+            END IF;
+            SELECT pg_catalog.pg_get_userbyid(function.proowner)
+            INTO advance_function_owner
+            FROM pg_catalog.pg_proc function
+            WHERE function.oid = pg_catalog.to_regprocedure(
+                'public.v4_advance_production_current_dispatch_v1(uuid,integer,uuid,uuid,text,uuid)'
+            );
+            IF advance_function_owner IS NULL
+               OR current_user IS DISTINCT FROM advance_function_owner THEN
+                RAISE EXCEPTION
+                    'production current dispatch writes require the v1 function owner';
             END IF;
             IF TG_OP = 'DELETE' THEN
                 RAISE EXCEPTION 'production current dispatch cannot be deleted';
@@ -294,6 +330,9 @@ def upgrade() -> None:
             IF permit_row.request_snapshot->>'idempotency_key'
                  IS DISTINCT FROM idempotency_key THEN
                 RAISE EXCEPTION 'original production idempotency key required';
+            END IF;
+            IF permit_row.expires_at <= clock_timestamp() THEN
+                RAISE EXCEPTION 'production permit has expired';
             END IF;
             IF claim_id IS NOT NULL THEN
                 SELECT claim.* INTO claim_row
@@ -548,6 +587,13 @@ def upgrade() -> None:
             tagged := NEW.request_context->>'schema_version' IS NOT DISTINCT FROM
                       'salience.p1-effect-approval.v1';
             IF TG_OP = 'UPDATE'
+               AND OLD.request_context->>'schema_version'
+                   IS DISTINCT FROM 'salience.p1-effect-approval.v1'
+               AND tagged THEN
+                RAISE EXCEPTION
+                    'tagged effect approval cannot be added to an existing row';
+            END IF;
+            IF TG_OP = 'UPDATE'
                AND OLD.request_context->>'schema_version' =
                    'salience.p1-effect-approval.v1'
                AND NOT tagged THEN
@@ -678,14 +724,26 @@ def upgrade() -> None:
                         END IF;
                     END IF;
                 ELSE
+                    IF NEW.status = 'pending'
+                       AND (NEW.decided_by IS NOT NULL
+                            OR NEW.decided_at IS NOT NULL
+                            OR NEW.decision_reason IS NOT NULL) THEN
+                        RAISE EXCEPTION
+                            'tagged effect approval decision requires pending-to-terminal transition';
+                    END IF;
                     IF NEW.status <> 'pending'
                        AND (NEW.decided_by IS NULL OR NEW.decided_at IS NULL) THEN
                         RAISE EXCEPTION 'effect approval decision actor and time required';
                     END IF;
                 END IF;
-            ELSIF TG_OP = 'INSERT' AND NEW.status <> 'pending'
-               AND (NEW.decided_by IS NULL OR NEW.decided_at IS NULL) THEN
-                RAISE EXCEPTION 'effect approval decision actor and time required';
+            ELSIF TG_OP = 'INSERT' THEN
+                IF NEW.status <> 'pending'
+                   OR NEW.decided_by IS NOT NULL
+                   OR NEW.decided_at IS NOT NULL
+                   OR NEW.decision_reason IS NOT NULL THEN
+                    RAISE EXCEPTION
+                        'tagged effect approval must be inserted pending and undecided';
+                END IF;
             END IF;
             RETURN NEW;
         END

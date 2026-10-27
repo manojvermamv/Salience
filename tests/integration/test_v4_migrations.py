@@ -2056,16 +2056,48 @@ def _approval_context_0044(workspace_id, subject_id, cycle, policy_id):
     }
 
 
-def _insert_0044_approval(connection, workspace_id, policy_id, context):
+def _insert_0044_approval(
+    connection,
+    workspace_id,
+    policy_id,
+    context,
+    *,
+    status="pending",
+    decided_by=None,
+    decided_at=None,
+):
     approval_id = uuid4()
     connection.execute(
         """INSERT INTO approval_requests(
                   id,workspace_id,policy_version_id,effect_type,status,
-                  request_context,requested_by)
-           VALUES(%s,%s,%s,'publication','pending',%s,'policy-owner')""",
-        (approval_id, workspace_id, policy_id, Jsonb(context)),
+                  request_context,requested_by,decided_by,decided_at)
+           VALUES(%s,%s,%s,'publication',%s,%s,'policy-owner',%s,%s)""",
+        (
+            approval_id,
+            workspace_id,
+            policy_id,
+            status,
+            Jsonb(context),
+            decided_by,
+            decided_at,
+        ),
     )
     return approval_id
+
+
+def _postgres_statement_rejected(connection, error_pattern, statement):
+    class RollbackProbe(Exception):
+        pass
+
+    try:
+        with connection.transaction():
+            statement()
+            raise RollbackProbe()
+    except RollbackProbe:
+        return False
+    except psycopg.Error as error:
+        assert re.search(error_pattern, str(error)), str(error)
+        return True
 
 
 def _prepare_0044_database(prefix, *, seed=None):
@@ -2309,6 +2341,43 @@ def test_0044_policy_and_tagged_approval_transitions_are_terminal():
             assert connection.execute(
                 "SELECT decided_at FROM approval_requests WHERE id=%s", (approval_id,)
             ).fetchone()[0] == decided_at
+
+            untagged_approved_id = connection.execute(
+                """INSERT INTO approval_requests(
+                          workspace_id,policy_version_id,effect_type,status,
+                          request_context,requested_by,decided_by,decided_at)
+                   VALUES(%s,%s,'publication','approved','{}'::jsonb,
+                          'legacy-owner','legacy-reviewer',clock_timestamp())
+                   RETURNING id""",
+                (workspace_id, approval_policy_id),
+            ).fetchone()[0]
+            missing_approval_guards = []
+            if not _postgres_statement_rejected(
+                connection,
+                "tagged effect approval cannot be added to an existing row",
+                lambda: connection.execute(
+                    "UPDATE approval_requests SET request_context=%s WHERE id=%s",
+                    (Jsonb(context), untagged_approved_id),
+                ),
+            ):
+                missing_approval_guards.append("retroactive tagging of an approved row")
+            if not _postgres_statement_rejected(
+                connection,
+                "tagged effect approval must be inserted pending and undecided",
+                lambda: _insert_0044_approval(
+                    connection,
+                    workspace_id,
+                    approval_policy_id,
+                    context,
+                    status="approved",
+                    decided_by="reviewer",
+                    decided_at=datetime.now(timezone.utc),
+                ),
+            ):
+                missing_approval_guards.append("preapproved tagged insert")
+            assert not missing_approval_guards, (
+                "missing tagged approval guards: " + ", ".join(missing_approval_guards)
+            )
             unrelated_id = connection.execute(
                 """INSERT INTO approval_requests(
                           workspace_id,effect_type,status,request_context,requested_by)
@@ -2323,7 +2392,14 @@ def test_0044_policy_and_tagged_approval_transitions_are_terminal():
         _drop_migration_database(source, name)
 
 
-def _insert_0044_production_permit(connection, binding, *, generation=1):
+def _insert_0044_production_permit(
+    connection,
+    binding,
+    *,
+    generation=1,
+    issued_offset="0 seconds",
+    expires_offset="30 seconds",
+):
     permit_id = uuid4()
     route = {
         "deployment_id": uuid4(),
@@ -2354,7 +2430,9 @@ def _insert_0044_production_permit(connection, binding, *, generation=1):
         "policy_version_id": str(binding["policy_id"]),
         "policy_document_hash": "b" * 64,
         "approval_request_id": str(binding["approval_id"]),
-        "approval_expires_at": "2099-01-01T00:00:00+00:00",
+        "approval_expires_at": binding.get(
+            "approval_expires_at", "2099-01-01T00:00:00+00:00"
+        ),
         "effect_type": "publication",
         "purpose": "publish-approved-artifact",
         "account_id": "production-account-1",
@@ -2387,8 +2465,10 @@ def _insert_0044_production_permit(connection, binding, *, generation=1):
                   'production-provider-1',%(artifact_hash)s,%(deployment_id)s,
                   %(environment_id)s,%(route_id)s,%(slot_id)s,%(owner_id)s,
                   %(fencing_epoch)s,%(route_manifest_sha256)s,%(artifact_lock_sha256)s,
-                  %(route_fence_decision_id)s,clock_timestamp(),
-                  clock_timestamp()+interval '30 seconds',%(request_snapshot)s)""",
+                  %(route_fence_decision_id)s,
+                  clock_timestamp()+%(issued_offset)s::interval,
+                  clock_timestamp()+%(expires_offset)s::interval,
+                  %(request_snapshot)s)""",
         {
             "permit_id": permit_id,
             "operation_id": binding["operation_id"],
@@ -2403,6 +2483,8 @@ def _insert_0044_production_permit(connection, binding, *, generation=1):
             "policy_version_id": binding["policy_id"],
             "policy_hash": "b" * 64,
             "approval_id": binding["approval_id"],
+            "issued_offset": issued_offset,
+            "expires_offset": expires_offset,
             "artifact_hash": "c" * 64,
             **route,
             "request_snapshot": Jsonb(request),
@@ -2414,6 +2496,7 @@ def _insert_0044_production_permit(connection, binding, *, generation=1):
 def test_0044_production_claim_is_unique_and_mode_separated():
     source = os.environ["TEST_DATABASE_URL"]
     name, database, _ = _prepare_0044_database("p1_0044_production_claim_")
+    pointer_writer_role = "p1_0044_pointer_writer_" + uuid4().hex[:12]
     try:
         with psycopg.connect(database) as connection:
             workspace_id, subject_id = _seed_0044_workspace_subject(connection)
@@ -2451,6 +2534,55 @@ def test_0044_production_claim_is_unique_and_mode_separated():
                     "receipt_id": str(uuid4()),
                 },
             }
+            missing_permit_guards = []
+            if not _postgres_statement_rejected(
+                connection,
+                "production permit expiry must not exceed 60 seconds",
+                lambda: _insert_0044_production_permit(
+                    connection,
+                    binding,
+                    generation=2,
+                    expires_offset="61 seconds",
+                ),
+            ):
+                missing_permit_guards.append("permit expiry longer than 60 seconds")
+
+            near_expiry = connection.execute(
+                "SELECT clock_timestamp()+interval '10 seconds'"
+            ).fetchone()[0]
+            near_expiry_context = {
+                **approval_context,
+                "expires_at": near_expiry.isoformat(),
+            }
+            near_expiry_approval_id = _insert_0044_approval(
+                connection,
+                workspace_id,
+                policy_id,
+                near_expiry_context,
+            )
+            connection.execute(
+                """UPDATE approval_requests SET status='approved',
+                          decided_by='reviewer',decided_at=clock_timestamp()
+                   WHERE id=%s""",
+                (near_expiry_approval_id,),
+            )
+            late_permit_binding = {
+                **binding,
+                "approval_id": near_expiry_approval_id,
+                "approval_expires_at": near_expiry.isoformat(),
+            }
+            if not _postgres_statement_rejected(
+                connection,
+                "production permit cannot expire after canonical approval",
+                lambda: _insert_0044_production_permit(
+                    connection,
+                    late_permit_binding,
+                    generation=2,
+                    expires_offset="30 seconds",
+                ),
+            ):
+                missing_permit_guards.append("permit expiry later than approval expiry")
+
             permit_id, idempotency_key = _insert_0044_production_permit(
                 connection, binding
             )
@@ -2538,6 +2670,37 @@ def test_0044_production_claim_is_unique_and_mode_separated():
                            WHERE operation_id=%s""",
                         (cycle["operation_id"],),
                     )
+            connection.execute(
+                psycopg.sql.SQL("CREATE ROLE {} NOLOGIN").format(
+                    psycopg.sql.Identifier(pointer_writer_role)
+                )
+            )
+            connection.execute(
+                psycopg.sql.SQL(
+                    "GRANT SELECT, UPDATE ON TABLE "
+                    "public.v4_production_current_dispatch TO {}"
+                ).format(psycopg.sql.Identifier(pointer_writer_role))
+            )
+            connection.execute(
+                psycopg.sql.SQL("SET ROLE {}").format(
+                    psycopg.sql.Identifier(pointer_writer_role)
+                )
+            )
+            connection.execute(
+                "SELECT set_config('salience.production_current_dispatch_v1', 'advance', true)"
+            )
+            if not _postgres_statement_rejected(
+                connection,
+                "production current dispatch writes require the v1 function owner",
+                lambda: connection.execute(
+                    """UPDATE v4_production_current_dispatch
+                       SET idempotency_key='spoofed-guc-write'
+                       WHERE operation_id=%s""",
+                    (cycle["operation_id"],),
+                ),
+            ):
+                missing_permit_guards.append("GUC spoof by non-owner DML role")
+            connection.execute("RESET ROLE")
             public_write_privileges = connection.execute(
                 """SELECT count(*)
                    FROM pg_class relation,
@@ -2585,6 +2748,48 @@ def test_0044_production_claim_is_unique_and_mode_separated():
                                   %s,1,%s,NULL,%s,NULL)""",
                         (cycle["operation_id"], second_permit, idempotency_key),
                     )
+
+            expired_binding = {**binding, "operation_id": uuid4()}
+            expired_permit_id, expired_idempotency_key = (
+                _insert_0044_production_permit(
+                    connection,
+                    expired_binding,
+                    expires_offset="1 second",
+                )
+            )
+            expired_claim_id = uuid4()
+            connection.execute(
+                """INSERT INTO v4_production_effect_permit_claims(
+                          claim_id,permit_id,operation_id,generation,
+                          route_fence_decision_id)
+                   SELECT %s,permit_id,operation_id,generation,route_fence_decision_id
+                   FROM v4_production_effect_permits WHERE permit_id=%s""",
+                (expired_claim_id, expired_permit_id),
+            )
+            time.sleep(1.1)
+            if not _postgres_statement_rejected(
+                connection,
+                "production permit has expired",
+                lambda: connection.execute(
+                    """SELECT public.v4_advance_production_current_dispatch_v1(
+                              %s,0,%s,%s,%s,NULL)""",
+                    (
+                        expired_binding["operation_id"],
+                        expired_permit_id,
+                        expired_claim_id,
+                        expired_idempotency_key,
+                    ),
+                ),
+            ):
+                missing_permit_guards.append("claim through an expired permit")
+            assert connection.execute(
+                """SELECT count(*) FROM v4_production_current_dispatch
+                   WHERE operation_id=%s""",
+                (expired_binding["operation_id"],),
+            ).fetchone()[0] == 0
+            assert not missing_permit_guards, (
+                "missing production dispatch guards: " + ", ".join(missing_permit_guards)
+            )
             fixture_claim_id = uuid4()
             fixture_permit_id = uuid4()
             connection.execute(
@@ -2644,7 +2849,7 @@ def test_0044_production_claim_is_unique_and_mode_separated():
                     )
                     connection.execute("SET CONSTRAINTS v4_current_permit_fk IMMEDIATE")
     finally:
-        _drop_migration_database(source, name)
+        _drop_migration_database(source, name, role=pointer_writer_role)
 
 
 def test_0044_rollback_inventory_is_complete_and_read_only():
