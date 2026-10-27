@@ -3,7 +3,7 @@
   "requirements": [
     {
       "id": "R02",
-      "requirement": "§1: deterministic activities, compatible workflow upgrades and bounded histories",
+      "requirement": "\u00a71: deterministic activities, compatible workflow upgrades and bounded histories",
       "phase": "P1",
       "dependencies": "P0,R01",
       "acceptance": "Replay captured old histories on compatible worker; external I/O absent from coordinator; Continue-As-New preserves cycle/context/operation and finite history limits.",
@@ -67,7 +67,7 @@
     },
     {
       "id": "R03",
-      "requirement": "§1: atomic business transition/outbox, acknowledged ordered delivery and deduplication",
+      "requirement": "\u00a71: atomic business transition/outbox, acknowledged ordered delivery and deduplication",
       "phase": "P1",
       "dependencies": "P0,R01",
       "acceptance": "Local test_v4_outbox, test_v4_auto_dispatch and test_v4_outbox_recovery prove atomic enqueue, ordered bounded fixture dispatch, final-attempt escalation, consumer-ack loss, killed-worker restart and deduplication; item-5a public fixture admission/closure uses the same outbox, and item-5c cutover poll reuses it without a direct Temporal start. Root-qualified isolated publication start/outbox plus original native publication schedule resumed ingress are recorded in legacy-publication-evidence.json; production dispatch and live legacy routing remain unqualified.",
@@ -77,7 +77,7 @@
       "local_verifier_status": "PASS; covers implemented local fixtures, not unimplemented production acceptance",
       "independent_review_status": "PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE; production acceptance remains HELD",
       "production_release_status": "HELD",
-      "remaining_acceptance": "Production routing/worker ownership, live schedule inventory/fencing, scoped remote reconciliation, and complete RG1 acceptance remain unqualified. The corrected-publication rereview applies only to historical application A4/d031172; 7878208 is the earlier Task 1–8 application candidate, while this audit separately freezes local application 182c4e4 and audit source 7c1ddcd.",
+      "remaining_acceptance": "Production routing/worker ownership, live schedule inventory/fencing, scoped remote reconciliation, and complete RG1 acceptance remain unqualified. The corrected-publication rereview applies only to historical application A4/d031172; 7878208 is the earlier Task 1\u20138 application candidate, while this audit separately freezes local application 182c4e4 and audit source 7c1ddcd.",
       "independent_review_evidence": [
         "docs/v4/item7-runtime-review.json"
       ],
@@ -172,10 +172,10 @@
     },
     {
       "id": "R05",
-      "requirement": "§2: versioned GoalSpec, complete scope/metric/cadence/budget/stop fields and approved baseline",
+      "requirement": "\u00a72: versioned GoalSpec, complete scope/metric/cadence/budget/stop fields and approved baseline",
       "phase": "P1",
       "dependencies": "P0,R01",
-      "acceptance": "Local revision/baseline and test_v4_cadence_policy prove V2 program/account/channel/policy/resource/stop envelopes, exact retries, explicit fixture approval and no implicit trial; test_v4_cycle_accounting adds immutable V3 allocation policy and fixture G0 caps; items 5a–5b verify exact signed goal creation, revision/state and baseline revocation; production baseline qualification remains required. The isolated publication extension binds a fixture account to the approved goal revision/baseline and rechecks exact account scope/current native authorization; general registry and production baseline eligibility remain required.",
+      "acceptance": "Local revision/baseline and test_v4_cadence_policy prove V2 program/account/channel/policy/resource/stop envelopes, exact retries, explicit fixture approval and no implicit trial; test_v4_cycle_accounting adds immutable V3 allocation policy and fixture G0 caps; items 5a\u20135b verify exact signed goal creation, revision/state and baseline revocation; production baseline qualification remains required. The isolated publication extension binds a fixture account to the approved goal revision/baseline and rechecks exact account scope/current native authorization; general registry and production baseline eligibility remain required.",
       "migration_rollback": "M1: new revisions, no authority inferred from program rows; disable new goals on rollback.",
       "gate": "RG1",
       "executed_verifier_cases": 97,
@@ -238,7 +238,7 @@
     },
     {
       "id": "R06",
-      "requirement": "§2: stable CycleIntent/cycle ID, slots and manual/event idempotency across revisions",
+      "requirement": "\u00a72: stable CycleIntent/cycle ID, slots and manual/event idempotency across revisions",
       "phase": "P1",
       "dependencies": "R03,R05",
       "acceptance": "Local cadence tests prove concurrent manual/event/scheduled coalescing, bounded source-event identity, stable cross-revision/interval retries and crash rollback; V1/V2 worker-kill replay preserves canonical IDs. Items 5a/5c signed requests and scoped schedule cutover preserve one intent/cycle/context/outbox across competing origins and restart; actual original native publication schedule conversion and resumed canonical outbox ingress are locally qualified in the effects-disabled fixture; production conversion remains gated. Actual resumed publication ticks preserve the distinct original job/publication schedule identities and atomically commit one canonical outbox operation under the original goal/cycle/context.",
@@ -337,7 +337,7 @@
     },
     {
       "id": "R07",
-      "requirement": "§2: single G0 checks scope, goal, freshness/due time, overlap, capacity, quota, budget and trial eligibility",
+      "requirement": "\u00a72: single G0 checks scope, goal, freshness/due time, overlap, capacity, quota, budget and trial eligibility",
       "phase": "P1",
       "dependencies": "R05,R06",
       "acceptance": "Local cadence/admission races enforce current scope, G0 freshness, due time, overlap, current-revision pending caps, quota and review without duplicate cycles. Fixture G0 canonical allocations add scoped period/currency caps; item-5a public and item-5c fixture-auto admission invoke this same gate after a committed schedule batch, with crash recovery but no stage-start bypass. Production and trial eligibility remain later gates.",
@@ -393,7 +393,7 @@
     },
     {
       "id": "R08",
-      "requirement": "§2: bounded overlap/catch-up/stale/backfill policies and independent cadence",
+      "requirement": "\u00a72: bounded overlap/catch-up/stale/backfill policies and independent cadence",
       "phase": "P1",
       "dependencies": "R07",
       "acceptance": "Local cadence tests prove bounded skip/latest/catch-up, stale-slot denial, scoped reviewed backfill, overlap and capacity-aware coalescing. Item-5c opt-in independent fixture poller uses a durable first-V4 watermark, pause/readback and rollback fence; original native intelligence and paired governed-publication schedules now have separate root-qualified no-effects SDK conversion/rollback reports; production inventory, routing, fencing and observation-independent execution remain required.",
@@ -467,7 +467,7 @@
     },
     {
       "id": "R09",
-      "requirement": "§2: strategic defer/abstain closes cycle; pre-admission deferral and recovery retain their own identities",
+      "requirement": "\u00a72: strategic defer/abstain closes cycle; pre-admission deferral and recovery retain their own identities",
       "phase": "P1",
       "dependencies": "R07,R08",
       "acceptance": "test_v4_cycle_admission proves pre-admission wake reuses intent without an earlier cycle, retry/reconcile retains cycle/operation, and strategic closure needs an authorized coalesced successor; item-6 real Temporal timers and PostgreSQL tests exercise all three identities through restart and finite expiry; production qualification remains required.",
@@ -522,7 +522,7 @@
     },
     {
       "id": "R10",
-      "requirement": "§3: authoritative immutable context resolved after admission and before affected work",
+      "requirement": "\u00a73: authoritative immutable context resolved after admission and before affected work",
       "phase": "P1",
       "dependencies": "R07",
       "acceptance": "Local V2 tests validate typed immutable RunContext with canonical scope/IDs, current grant snapshot, approved bundle, trace/lineage, evidence cutoff and resource deadline; no assignment or fallback. Full candidate/plan and effect integration remain gated.",
@@ -595,10 +595,10 @@
     },
     {
       "id": "R13",
-      "requirement": "§3: current revocation constrains pinned context; revisions invalidate approvals",
+      "requirement": "\u00a73: current revocation constrains pinned context; revisions invalidate approvals",
       "phase": "P1",
       "dependencies": "R10",
-      "acceptance": "Local V2 non-owner/race tests serialize grant and program revocation, pin current authority, reject stale/expired recovery and hold consumption without rewriting context; item-3 fixture permits/reviews recheck current authority, baseline and frozen binding. Items 5a–5c signed public fixture commands and restricted non-owner roles recheck separate current schedule/review grants without authority UPDATE privilege; a revoked cutover actor auto-polls nothing. Full version revocation remains required.",
+      "acceptance": "Local V2 non-owner/race tests serialize grant and program revocation, pin current authority, reject stale/expired recovery and hold consumption without rewriting context; item-3 fixture permits/reviews recheck current authority, baseline and frozen binding. Items 5a\u20135c signed public fixture commands and restricted non-owner roles recheck separate current schedule/review grants without authority UPDATE privilege; a revoked cutover actor auto-polls nothing. Full version revocation remains required.",
       "migration_rollback": "M1: append linked revisions/invalidations; do not restore revoked approval on rollback.",
       "gate": "RG1",
       "executed_verifier_cases": 123,
@@ -667,7 +667,7 @@
     },
     {
       "id": "R15",
-      "requirement": "§4: one versioned policy model, exact approval purpose/effect/artifact/account/expiry binding",
+      "requirement": "\u00a74: one versioned policy model, exact approval purpose/effect/artifact/account/expiry binding",
       "phase": "P1",
       "dependencies": "P0,R05",
       "acceptance": "Item-3 fixture review DTO and item-5b signed review route reject wrong context/operation/hash/account/purpose/version/expiry and store immutable decisions; a general versioned policy model, LLM-text denial and production effect gates remain to be qualified. The publication fixture path also revalidates native profile, disclosure, policy, rights, approval, exact account and zero budget at bind/intake/activity/reconciliation boundaries; this is not a general policy model or production effect gate.",
@@ -749,7 +749,7 @@
     },
     {
       "id": "R17",
-      "requirement": "§4: atomically claim one bounded dispatch permit with serialized stop/revocation",
+      "requirement": "\u00a74: atomically claim one bounded dispatch permit with serialized stop/revocation",
       "phase": "P1",
       "dependencies": "R03,R15",
       "acceptance": "Item-3 PostgreSQL races prove stop-before-claim denial and one claim-before-stop send authority; item-4 mock adapter invokes only after the true claim, never on duplicate activity or uncertain outcome. V3 liability changes share the claim transaction; actual providers remain gated.",
@@ -837,15 +837,15 @@
     },
     {
       "id": "R18",
-      "requirement": "§4: emergency stop and policy outage fail closed; independent read reconciliation allowed only with scope",
+      "requirement": "\u00a74: emergency stop and policy outage fail closed; independent read reconciliation allowed only with scope",
       "phase": "P1",
       "dependencies": "R17",
-      "acceptance": "Item-3 workspace/goal stop and item-5b signed stop commands deny new fixture claims/recovery under revoked authority; unavailable authority DB issues no permit. Item-5c fixture activation, auto poll and legacy resume hold on current stop; production live-scheduler cancellation and production remote read-only reconciliation remain unqualified. The isolated publication fixture permits receipt readback after permit expiry only under a separate exact account reconciliation grant, only for an immutable already-accepted receipt, and then holds for typed recovery; no second submit, blind status progression or fabricated close-race projection is authorized. Task 1–8 and Task 10 additionally qualify immutable durable hold creation/replay, both-reason read-only pre-restart verification and preserved liabilities in the local fixture; production-wide revocation and live schedule fencing remain unqualified.",
+      "acceptance": "Item-3 workspace/goal stop and item-5b signed stop commands deny new fixture claims/recovery under revoked authority; unavailable authority DB issues no permit. Item-5c fixture activation, auto poll and legacy resume hold on current stop; production live-scheduler cancellation and production remote read-only reconciliation remain unqualified. The isolated publication fixture permits receipt readback after permit expiry only under a separate exact account reconciliation grant, only for an immutable already-accepted receipt, and then holds for typed recovery; no second submit, blind status progression or fabricated close-race projection is authorized. Task 1\u20138 and Task 10 additionally qualify immutable durable hold creation/replay, both-reason read-only pre-restart verification and preserved liabilities in the local fixture; production-wide revocation and live schedule fencing remain unqualified.",
       "migration_rollback": "M1: stop revision persists across restart/rollback; renewed authority required to resume.",
       "gate": "RG1",
       "executed_verifier_cases": 76,
       "local_verifier_status": "HISTORICAL_0043 local fixture evidence for application 182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f: final non-live result 796 passed, 17 skipped, 3 warnings; the 9-test replay-focused gate and 12-test exact-image matrix also passed. These historical results do not describe or replace current Slice 2 fixture evidence; production acceptance remains HELD.",
-      "independent_review_status": "Historical GPT-6.1/GPT-5.6 whole-branch review and Actions run 38592066455 remain scoped to pushed head 6f5edc77edbfe189e46de4254c2fdb21c5652bce. Historical docs runs 38610329330 and 40443346020 passed their recorded required jobs, but do not review or qualify current Slice 2 application candidate ec12763e38143f52f1af2661e00932158982f11a. The final documentation commit requires its own exact-head CI after push; production remains HELD.",
+      "independent_review_status": "Historical GPT-6.1/GPT-5.6 whole-branch review and Actions run 38592066455 remain scoped to pushed head 6f5edc77edbfe189e46de4254c2fdb21c5652bce. Historical docs runs 38610329330 and 40443346020 passed their recorded required jobs, but do not review or qualify current Slice 2 application candidate ec12763e38143f52f1af2661e00932158982f11a. Pushed documentation/evidence head 62b5a5e passed exact-head Actions run 40553244096; the next status-only record commit requires its own exact-head CI after push; production remains HELD.",
       "production_release_status": "HELD",
       "remaining_acceptance": "Production live schedule stop/cancellation/fencing, production-wide cross-service revocation, typed recovery workers and independently scoped remote reconciliation beyond the isolated fixture receipt-only hold.",
       "independent_review_evidence": [
@@ -923,7 +923,7 @@
       "successor_candidate_evidence": {
         "application_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
         "evidence": "docs/v4/publication-recovery-hold-successor-evidence.json",
-        "evidence_sha256": "4baef4a2328b26a47abc150f4b2ba47aa7c3d3afa6260c651986142b110054c1",
+        "evidence_sha256": "6bb3ce696cffec2629838f5f30b8eea4acb837cbb81c1bcbc1b4de4f19e8764a",
         "production_release_status": "HELD"
       },
       "initial_commit_bound_gap_audit": {
@@ -964,15 +964,15 @@
     },
     {
       "id": "R32",
-      "requirement": "§6: typed recovery states/actions, failure records, ownership and limits",
+      "requirement": "\u00a76: typed recovery states/actions, failure records, ownership and limits",
       "phase": "P1",
       "dependencies": "R03,R15",
-      "acceptance": "Item-3 fixture cases and item-5b scoped signed case commands persist retry_due/reconciling/rework_due/awaiting_review/suspended/terminal/resolved with owner, deadline and bounded actions; reconciliation/rework cannot masquerade as retry, and pre-admission review targets the same intent. Item-6 fixture timers suspend existing cases at bounded deadlines; production recovery workers remain required. Expired publication permits with no durable receipt deny before provider readback; exact accepted receipts can be read back only under the separately scoped account grant and then remain held for typed recovery. Task 1–8 and Task 10 additionally qualify durable publication recovery-hold ownership, exact replay, crash recovery and two-reason read-only verification plus the Task 10 retained-wheel actual-image rehearsal in local fixtures; production recovery workers and external delivery remain unqualified.",
+      "acceptance": "Item-3 fixture cases and item-5b scoped signed case commands persist retry_due/reconciling/rework_due/awaiting_review/suspended/terminal/resolved with owner, deadline and bounded actions; reconciliation/rework cannot masquerade as retry, and pre-admission review targets the same intent. Item-6 fixture timers suspend existing cases at bounded deadlines; production recovery workers remain required. Expired publication permits with no durable receipt deny before provider readback; exact accepted receipts can be read back only under the separately scoped account grant and then remain held for typed recovery. Task 1\u20138 and Task 10 additionally qualify durable publication recovery-hold ownership, exact replay, crash recovery and two-reason read-only verification plus the Task 10 retained-wheel actual-image rehearsal in local fixtures; production recovery workers and external delivery remain unqualified.",
       "migration_rollback": "M1: cases reference existing identities; terminal cases stay closed on rollback.",
       "gate": "RG1",
       "executed_verifier_cases": 81,
       "local_verifier_status": "HISTORICAL_0043 local fixture evidence for application 182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f: final non-live result 796 passed, 17 skipped, 3 warnings; the 9-test replay-focused gate and 12-test exact-image matrix also passed. These historical results do not describe or replace current Slice 2 fixture evidence; production acceptance remains HELD.",
-      "independent_review_status": "Historical GPT-6.1/GPT-5.6 whole-branch review and Actions run 38592066455 remain scoped to pushed head 6f5edc77edbfe189e46de4254c2fdb21c5652bce. Historical docs runs 38610329330 and 40443346020 passed their recorded required jobs, but do not review or qualify current Slice 2 application candidate ec12763e38143f52f1af2661e00932158982f11a. The final documentation commit requires its own exact-head CI after push; production remains HELD.",
+      "independent_review_status": "Historical GPT-6.1/GPT-5.6 whole-branch review and Actions run 38592066455 remain scoped to pushed head 6f5edc77edbfe189e46de4254c2fdb21c5652bce. Historical docs runs 38610329330 and 40443346020 passed their recorded required jobs, but do not review or qualify current Slice 2 application candidate ec12763e38143f52f1af2661e00932158982f11a. Pushed documentation/evidence head 62b5a5e passed exact-head Actions run 40553244096; the next status-only record commit requires its own exact-head CI after push; production remains HELD.",
       "production_release_status": "HELD",
       "remaining_acceptance": "Production typed recovery state transitions, durable recovery worker and external failure delivery beyond the local publication receipt-only recovery hold.",
       "independent_review_evidence": [
@@ -1002,7 +1002,7 @@
       "successor_candidate_evidence": {
         "application_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
         "evidence": "docs/v4/publication-recovery-hold-successor-evidence.json",
-        "evidence_sha256": "4baef4a2328b26a47abc150f4b2ba47aa7c3d3afa6260c651986142b110054c1",
+        "evidence_sha256": "6bb3ce696cffec2629838f5f30b8eea4acb837cbb81c1bcbc1b4de4f19e8764a",
         "production_release_status": "HELD"
       },
       "initial_commit_bound_gap_audit": {
@@ -1030,7 +1030,7 @@
     },
     {
       "id": "R33",
-      "requirement": "§6: exact idempotent resume command and current stage reauthorization",
+      "requirement": "\u00a76: exact idempotent resume command and current stage reauthorization",
       "phase": "P1",
       "dependencies": "R17,R32",
       "acceptance": "Item-3 command CAS and item-5b signed resume route reject stale case/context/operation and resumes only the original intent revision or cycle/operation, with case state and recovery outbox atomic under injected crash; delivery and stage-specific production gate remain required.",
@@ -1070,7 +1070,7 @@
     },
     {
       "id": "R34",
-      "requirement": "§6: authorized bound review with expiry, deduplicated notification/ack/escalation",
+      "requirement": "\u00a76: authorized bound review with expiry, deduplicated notification/ack/escalation",
       "phase": "P1",
       "dependencies": "R32,R33",
       "acceptance": "Item-3 owner/scope/revision/artifact binding and item-5b signed review/ack parity, immutable decision, deadline escalation and deduplicated acknowledgment pass PostgreSQL tests; item-6 durable fixture timers, deduplicated database notification acceptance and process-crash redelivery are qualified separately; external alert delivery remains required.",
@@ -1110,7 +1110,7 @@
     },
     {
       "id": "R35",
-      "requirement": "§6: durable idempotent archive with reason/evidence/retention and no implicit reuse",
+      "requirement": "\u00a76: durable idempotent archive with reason/evidence/retention and no implicit reuse",
       "phase": "P1",
       "dependencies": "R32",
       "acceptance": "Item-3 archive and item-5b signed archive route reject pre-disposition calls, deduplicates committed reason/evidence/retention and preserves immutable history; rights-filtered discovery and later record families remain to qualify.",
@@ -1155,17 +1155,17 @@
     },
     {
       "id": "R53",
-      "requirement": "§10: schema envelope, unique business/events, superseding correction and audited mutable pointers",
+      "requirement": "\u00a710: schema envelope, unique business/events, superseding correction and audited mutable pointers",
       "phase": "P1",
       "dependencies": "P0,R03",
-      "acceptance": "Local V2/V3 DTO/SQL tests enforce immutable context and accounting receipts; migrations 0026–0034 add scoped stop/permit/case, cutover-transition and runtime-wait guards, unique dead-letter/fixture-acceptance events, immutable goal-create/state/runtime-hold/notification receipts and canonical delivery scope and populated rollback refusal. Later record families still require envelope tests. M0040 adds immutable publication stage/account/receipt guards and M0041 adds separate immutable original native publication schedule source/progress/plan guards; empty downgrade preserves prior guards and populated history refuses destructive rollback.",
+      "acceptance": "Local V2/V3 DTO/SQL tests enforce immutable context and accounting receipts; migrations 0026\u20130034 add scoped stop/permit/case, cutover-transition and runtime-wait guards, unique dead-letter/fixture-acceptance events, immutable goal-create/state/runtime-hold/notification receipts and canonical delivery scope and populated rollback refusal. Later record families still require envelope tests. M0040 adds immutable publication stage/account/receipt guards and M0041 adds separate immutable original native publication schedule source/progress/plan guards; empty downgrade preserves prior guards and populated history refuses destructive rollback.",
       "migration_rollback": "M1: additive common envelope and exact-match migration; never invent historical scope.",
       "gate": "RG1",
       "executed_verifier_cases": 146,
       "local_verifier_status": "PASS; covers implemented local fixtures, not unimplemented production acceptance",
       "independent_review_status": "PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE; production acceptance remains HELD",
       "production_release_status": "HELD",
-      "remaining_acceptance": "Current P1 envelopes, immutable state/other command receipts, canonical delivery scope and additive 0032–0034 ownership/rollback guards are independently reviewed and locally tested; later record families require envelope tests in their assigned phases.",
+      "remaining_acceptance": "Current P1 envelopes, immutable state/other command receipts, canonical delivery scope and additive 0032\u20130034 ownership/rollback guards are independently reviewed and locally tested; later record families require envelope tests in their assigned phases.",
       "independent_review_evidence": [
         "docs/v4/item7-admission-review.json",
         "docs/v4/item7-governance-review.json",
@@ -1222,7 +1222,7 @@
       }
     }
   ],
-  "review_status": "PASS_FIXTURE_ONLY_SLICE2_EC12763_QUALIFICATION; HISTORICAL_0043_182C4E4_796_17_3; HISTORICAL_REVIEW_AND_CI_AT_6F5EDC7; DOCUMENTATION_COMMIT_EXACT_HEAD_CI_REQUIRED_AFTER_PUSH; PRODUCTION_RELEASE_HELD.",
+  "review_status": "PASS_FIXTURE_ONLY_SLICE2_EC12763_QUALIFICATION; HISTORICAL_0043_182C4E4_796_17_3; HISTORICAL_REVIEW_AND_CI_AT_6F5EDC7; DOCUMENTATION_CI_PASS_FOR_62B5A5E_RUN_40553244096; NEXT_STATUS_ONLY_COMMIT_CI_REQUIRED_AFTER_PUSH; PRODUCTION_RELEASE_HELD.",
   "production_effects_enabled": false,
   "RG0": "HELD",
   "RG1": "HELD",
@@ -1416,7 +1416,7 @@
     "status": "PASS root-reviewed bounded parallel-agent local extension; historical item7 independent review retained; RG0/RG1/RG5 HELD",
     "qualified_application_commit": "2653d2ecb3f0d5bb8ea6560de274137dd6032a96"
   },
-  "current_independent_review_scope": "Historical GPT-6.1/GPT-5.6 whole-branch review and Actions run 38592066455 remain scoped to pushed feature head 6f5edc77edbfe189e46de4254c2fdb21c5652bce; the initial commit-bound audit and five-spec design review remain COMPLETE_REVIEWED for source 7c1ddcda280b510048ad61106c406171edd64f18 and environment 18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436. Those review and CI results do not cover the current Slice 2 candidate ec12763. The final documentation commit requires its own exact-head CI after push. The 0043 182c4e4/796/17/3 artifact qualification remains historical; production gates remain held.",
+  "current_independent_review_scope": "Historical GPT-6.1/GPT-5.6 whole-branch review and Actions run 38592066455 remain scoped to pushed feature head 6f5edc77edbfe189e46de4254c2fdb21c5652bce; the initial commit-bound audit and five-spec design review remain COMPLETE_REVIEWED for source 7c1ddcda280b510048ad61106c406171edd64f18 and environment 18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436. Those review and CI results do not cover the current Slice 2 candidate ec12763. Pushed documentation/evidence head 62b5a5e passed run 40553244096; the next status-only record commit requires its own exact-head CI after push. The 0043 182c4e4/796/17/3 artifact qualification remains historical; production gates remain held.",
   "historical_legacy_intelligence_qualification": {
     "evidence": "docs/v4/legacy-dispatch-evidence.json",
     "full_non_live_tests": 556,
@@ -1620,7 +1620,7 @@
     "focused_tests": 21,
     "full_non_live_tests": 604,
     "source_files": 352,
-    "status": "HISTORICAL_A4 fixture qualification; 21 focused / 604 full non-live / 352 source hashes. Corrected-publication rereview completed only for A4/d031172; it predates the historical Task 1–8 application candidate 7878208 and the later local application candidate 182c4e4, and does not review either candidate. The initial residual audit separately uses source 7c1ddcd. RG0/RG1 HELD.",
+    "status": "HISTORICAL_A4 fixture qualification; 21 focused / 604 full non-live / 352 source hashes. Corrected-publication rereview completed only for A4/d031172; it predates the historical Task 1\u20138 application candidate 7878208 and the later local application candidate 182c4e4, and does not review either candidate. The initial residual audit separately uses source 7c1ddcd. RG0/RG1 HELD.",
     "qualified_application_commit": "a4b2368cdb463939d093020224a5b5667392aee6",
     "source_lock_sha256": "a972dfadd0f72bdf86c52969a55c94c2fa17ff29a07b4cf8c8d21ff9dc55b08c",
     "base_commit": "5683cfab4a3a8f20cb83506de5debb0b5692f010",
@@ -1700,7 +1700,7 @@
     "qualification_report": ".superpowers/sdd/2026-10-13-p1-publication-recovery-floor-repair/task-8-report.md",
     "qualification_results": "Exact-candidate command outcomes are recorded in the referenced Task 8 report. This pin record does not transfer counts from Task 10, 9e4f2aa, 7878208, or superseded artifact builds."
   },
-  "superseded_386d_qualified_application_commit_scope": "Task 10 local fixture results remain historical at 5cb5791; Task 11 found floor/evidence gaps, so that candidate is unsupported as the rollback floor. The exact 0043 candidate at 386d4bc7cc5acb794858d3c3c14400a0659a83ef has a built and authenticated wheel/image/lock recorded in .superpowers/sdd/2026-10-13-p1-publication-recovery-floor-repair/task-8-report.md. Its candidate-specific qualification results are reported there; no counts transfer from 5cb5791 or 7878208. Final independent review/meta-review and exact-head CI remain required; production acceptance, RG0/full RG1 remain HELD and P2–P7 gated.",
+  "superseded_386d_qualified_application_commit_scope": "Task 10 local fixture results remain historical at 5cb5791; Task 11 found floor/evidence gaps, so that candidate is unsupported as the rollback floor. The exact 0043 candidate at 386d4bc7cc5acb794858d3c3c14400a0659a83ef has a built and authenticated wheel/image/lock recorded in .superpowers/sdd/2026-10-13-p1-publication-recovery-floor-repair/task-8-report.md. Its candidate-specific qualification results are reported there; no counts transfer from 5cb5791 or 7878208. Final independent review/meta-review and exact-head CI remain required; production acceptance, RG0/full RG1 remain HELD and P2\u2013P7 gated.",
   "superseded_task10_source_lock_sha256": "62fa6a44498d891bcc8ff6911f243a65573174ff44b6985bdbdc26097fd10fe0",
   "superseded_386d_review_status": "Task 8 recovery-hold evidence review PASS with zero findings for its bounded fixture scope. Corrected-publication rereview/meta-review accepted the A4 fixture-correction slice only (application a4b2368; documentation/observed HEAD d031172); it predates and does not review 7878208. RG0/RG1 remain HELD.",
   "historical_branch_review_and_ci": {
@@ -1747,19 +1747,43 @@
       }
     },
     "latest_pushed_documentation_head_ci": {
-      "head_commit": "7c1ddcda280b510048ad61106c406171edd64f18",
-      "workflow_run_id": 40443346020,
-      "workflow_run_url": "https://github.com/manojvermamv/Salience/actions/runs/40443346020",
+      "head_commit": "62b5a5e6afc8bd6477bbd14a951166edc97ea683",
+      "short_head": "62b5a5e",
+      "workflow_run_id": 40553244096,
+      "workflow_run_url": "https://github.com/manojvermamv/Salience/actions/runs/40553244096",
+      "event": "push",
+      "workflow": "V4 documentation contract",
+      "created_at": "2026-10-27T17:43:21Z",
+      "updated_at": "2026-10-27T18:02:44Z",
       "status": "completed",
       "conclusion": "success",
       "required_jobs": {
-        "verify": "success",
-        "p0-regression": "success"
-      }
+        "verify": {
+          "job_id": 122362339840,
+          "conclusion": "success",
+          "started_at": "2026-10-27T17:43:24Z",
+          "completed_at": "2026-10-27T17:43:32Z"
+        },
+        "p0-regression": {
+          "job_id": 122362339085,
+          "conclusion": "success",
+          "started_at": "2026-10-27T17:43:23Z",
+          "completed_at": "2026-10-27T18:02:43Z"
+        }
+      },
+      "hosted_suite_summary": {
+        "migration_head": "0046_production_policy_approval_id_immutability",
+        "passed": 908,
+        "skipped": 26,
+        "warnings": 3,
+        "elapsed_seconds": 1082.53
+      },
+      "scope": "Exact pushed documentation/evidence head; no application candidate or production qualification transfer."
     },
     "historical_docs_only_head_ci": "PASS_FOR_7C1DDCD; exact audit-head verify and p0-regression succeeded",
     "historical_candidate_post_push_exact_head_ci": "PASS_FOR_DOCUMENTATION_HEAD_7C1DDCD; application qualification remains separately bound to 182C4E4",
-    "current_documentation_candidate_post_push_exact_head_ci": "REQUIRED_AFTER_PUSH; the documentation commit for current Slice 2 evidence is distinct from application candidate ec12763e38143f52f1af2661e00932158982f11a."
+    "current_documentation_candidate_post_push_exact_head_ci": "PASS_FOR_62B5A5E (run 40553244096); NEXT_STATUS_ONLY_COMMIT_CI_REQUIRED_AFTER_PUSH",
+    "record_scope": "The historical branch review and its CI remain scoped to their recorded feature head. Documentation CI passes for exact pushed head 62b5a5e; this does not qualify application candidate ec12763 or any production target. The next status-only record commit requires its own exact-head CI after push."
   },
   "initial_commit_bound_gap_audit": {
     "status": "COMPLETE_REVIEWED",
@@ -2401,7 +2425,7 @@
   },
   "current_qualification": {
     "record_kind": "current_slice2_fixture_qualification",
-    "status": "PASS_FIXTURE_ONLY_SLICE2_EC12763; DOCUMENTATION_COMMIT_DISTINCT; EXACT_HEAD_CI_REQUIRED_AFTER_PUSH; PRODUCTION_RELEASE_HELD",
+    "status": "PASS_FIXTURE_ONLY_SLICE2_EC12763; DOCUMENTATION_CI_PASS_FOR_62B5A5E_RUN_40553244096; NEXT_STATUS_ONLY_COMMIT_CI_REQUIRED_AFTER_PUSH; PRODUCTION_RELEASE_HELD",
     "application_commit": "ec12763e38143f52f1af2661e00932158982f11a",
     "qualified_application_commit": "ec12763e38143f52f1af2661e00932158982f11a",
     "application_commit_source": "SOURCE_COMMIT in the SHA-256-bound sanitized final verifier log.",
@@ -2424,8 +2448,8 @@
     "full_non_live_rerun_on_candidate": true,
     "full_non_live_seconds": 1438.43,
     "documentation_commit_relationship": "The documentation commit carrying this evidence is later than and distinct from application_candidate.commit; it records the result and does not replace the verified application/source candidate.",
-    "documentation_candidate_post_push_exact_head_ci": "REQUIRED/PENDING",
-    "status_summary": "Current Slice 2 application/source candidate ec12763e38143f52f1af2661e00932158982f11a passed the final effects-disabled local verifier through migration 0046_production_policy_approval_id_immutability: Phase 9 gate 60 passed, full non-live 908 passed / 26 skipped / 3 warnings. The hashed log begins with SOURCE_COMMIT: ec12763e38143f52f1af2661e00932158982f11a; its SHA-256 is c643740f100210bad8428433db31ecd2852a538b26ad702224cd28c3f5432020. The eventual documentation commit is distinct and needs exact-head CI after push. Production effects remain disabled; RG0/full RG1 remain HELD; P2 remains BLOCKED.",
+    "documentation_candidate_post_push_exact_head_ci": "PASS_FOR_62B5A5E (run 40553244096); NEXT_STATUS_ONLY_COMMIT_CI_REQUIRED_AFTER_PUSH",
+    "status_summary": "Current Slice 2 application/source candidate ec12763e38143f52f1af2661e00932158982f11a passed the final effects-disabled local verifier through migration 0046_production_policy_approval_id_immutability: Phase 9 gate 60 passed, full non-live 908 passed / 26 skipped / 3 warnings. The hashed log begins with SOURCE_COMMIT: ec12763e38143f52f1af2661e00932158982f11a; its SHA-256 is c643740f100210bad8428433db31ecd2852a538b26ad702224cd28c3f5432020. Pushed documentation/evidence head 62b5a5e passed both required jobs in Actions run 40553244096; this docs-only run does not change the application result. The next status-only commit requires its own exact-head CI after push. Production effects remain disabled; RG0/full RG1 remain HELD; P2 remains BLOCKED.",
     "approved_program_sequence": {
       "status": "APPROVED",
       "spec": "docs/superpowers/specs/2026-10-13-v4-multiplatform-autonomy-program-sequence.md",
@@ -2434,5 +2458,40 @@
       "authority": "Navigation only; production and phase release gates remain unchanged."
     }
   },
-  "source_lock_scope": "Top-level source_lock_sha256 is retained for the historical 0043 artifact qualification at application 182c4e4; it is not a source lock for the current Slice 2 candidate."
+  "source_lock_scope": "Top-level source_lock_sha256 is retained for the historical 0043 artifact qualification at application 182c4e4; it is not a source lock for the current Slice 2 candidate.",
+  "current_documentation_ci": {
+    "head_commit": "62b5a5e6afc8bd6477bbd14a951166edc97ea683",
+    "short_head": "62b5a5e",
+    "workflow_run_id": 40553244096,
+    "workflow_run_url": "https://github.com/manojvermamv/Salience/actions/runs/40553244096",
+    "event": "push",
+    "workflow": "V4 documentation contract",
+    "created_at": "2026-10-27T17:43:21Z",
+    "updated_at": "2026-10-27T18:02:44Z",
+    "status": "completed",
+    "conclusion": "success",
+    "required_jobs": {
+      "verify": {
+        "job_id": 122362339840,
+        "conclusion": "success",
+        "started_at": "2026-10-27T17:43:24Z",
+        "completed_at": "2026-10-27T17:43:32Z"
+      },
+      "p0-regression": {
+        "job_id": 122362339085,
+        "conclusion": "success",
+        "started_at": "2026-10-27T17:43:23Z",
+        "completed_at": "2026-10-27T18:02:43Z"
+      }
+    },
+    "hosted_suite_summary": {
+      "migration_head": "0046_production_policy_approval_id_immutability",
+      "passed": 908,
+      "skipped": 26,
+      "warnings": 3,
+      "elapsed_seconds": 1082.53
+    },
+    "scope": "Exact pushed documentation/evidence head; no application candidate or production qualification transfer.",
+    "next_status_only_commit_ci": "REQUIRED_AFTER_PUSH"
+  }
 }

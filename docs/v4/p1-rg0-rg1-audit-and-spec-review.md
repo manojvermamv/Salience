@@ -206,3 +206,35 @@ This append-only addendum preserves the prior application provenance snapshot an
 | --- | --- |
 | `docs/v4/evidence-lock.json` | `b44978d42ed635c8a8b59f2df2bd988a871c47eff3afd3a770d92290a39a771e` |
 | `docs/v4/progress.md` | `3fc60a980f20ced6f16372d59acf220a4e8a5caa5e7129578515d536fe81bd68` |
+
+
+## Hosted documentation/evidence CI reconciliation — 2026-10-27
+
+Actions run [40553244096](https://github.com/manojvermamv/Salience/actions/runs/40553244096) passed for exact pushed documentation/evidence head `62b5a5e6afc8bd6477bbd14a951166edc97ea683`. The `verify` job (122362339840) passed 17:43:24–17:43:32Z; `p0-regression` (122362339085) passed 17:43:23–18:02:43Z. The hosted suite reached migration `0046_production_policy_approval_id_immutability` and reported 908 passed / 26 skipped / 3 warnings in 1082.53 seconds. This result is documentation-head CI and does not replace the local application/source candidate `ec12763e38143f52f1af2661e00932158982f11a` or its verifier-log binding. The active 376-file application lock remains unchanged at SHA-256 `b44978d42ed635c8a8b59f2df2bd988a871c47eff3afd3a770d92290a39a771e`; the preserved verifier log remains byte-identical at SHA-256 `c643740f100210bad8428433db31ecd2852a538b26ad702224cd28c3f5432020`. The next status-only record commit has no self-referential CI run to record and remains `REQUIRED_AFTER_PUSH` until its exact head is externally verified. Production/provider acceptance remains NOT RUN, production effects remain disabled, RG0/full RG1 remain HELD, P2 remains BLOCKED, and `main` remains unmerged. This addendum does not extend historical review or application qualification. The status audit intentionally omits its own digest to avoid recursive hashing.
+
+| Path | SHA-256 |
+| --- | --- |
+| `docs/v4/evidence-lock.json` | `b44978d42ed635c8a8b59f2df2bd988a871c47eff3afd3a770d92290a39a771e` |
+| `docs/README.md` | `a4a4ecf415eb38c9947d7632b4ffccbe03dc4629c8ce6b6988082b4386db2c39` |
+| `docs/v4/IMPLEMENTATION-BLUEPRINT.md` | `8ceb85b83e452c10d4b323a709ac6706935013c2d9193bd1bff2b1b8c83d2703` |
+| `docs/v4/p0-release.json` | `46b842dd5883ec44d9ffbfb28fd0e575eb3685e59951830d17bab70b77133222` |
+| `docs/v4/p1-production-policy-revocation-evidence.json` | `e5a5a3d424157479cacaf00eae39614a5abe12ecdb04ac38af0c95692dbd982b` |
+| `docs/v4/p1-qualification-matrix.json` | `0779b0838e50d77dca569b1e5d4cdb1c56e639560e070d75e2639c55d26c6be6` |
+| `docs/v4/progress.md` | `5bf02b6110af159e5680b68de1ac5ee49d28152a44cdd1be82e40d9e98cc5a69` |
+| `docs/v4/publication-recovery-hold-successor-evidence.json` | `6bb3ce696cffec2629838f5f30b8eea4acb837cbb81c1bcbc1b4de4f19e8764a` |
+| `docs/v4/repository-enforcement-evidence.json` | `fc69f901036971bd64588cf3247d1701939e7525442f196daeab7f1919de11a2` |
+| `docs/v4/test_checks.py` | `9a47bd271004526c020b6b27a31fe7433421e14486ca6728ace428d547bcbf9c` |
+| `docs/v4/validation.md` | `64c021233a1fcaa423c21e33ba8553b2a9cdef69c6f6d565436dd15fdb180fd2` |
+
+## Current live successor-evidence digest reconciliation — 2026-10-27
+
+This append-only documentation reconciliation updates the digest on the live successor-evidence pointers only. The current artifact `docs/v4/publication-recovery-hold-successor-evidence.json` hashes to `6bb3ce696cffec2629838f5f30b8eea4acb837cbb81c1bcbc1b4de4f19e8764a`; the P0 release ledger and both current matrix `successor_candidate_evidence` entries now bind that digest. The matrix's `historical_0043_qualification` and the initial audit's historical evidence snapshots retain their original `4baef4a2328b26a47abc150f4b2ba47aa7c3d3afa6260c651986142b110054c1` pin. This is a pointer and test-coverage repair only; it does not change the application candidate, verifier-log binding, hosted CI scope, or qualification. Provider/production acceptance remains NOT RUN, production effects remain disabled, RG0/full RG1 remain HELD, P2 remains BLOCKED, and `main` remains unmerged.
+
+The focused documentation test recomputes the current artifact SHA-256, checks the P0 pointer and every current matrix successor pointer, and asserts that the historical 0043 snapshot pin remains distinct. The status audit records the updated handoff hashes. Its own digest remains omitted to avoid recursion; this wrapper's digest is recorded by the status audit and is therefore not included below.
+
+| Path | SHA-256 |
+| --- | --- |
+| `docs/v4/p0-release.json` | `0a0f1969e0497cbec535fb3f854b51cef870a4746eb92f8a67a127566dc9ff75` |
+| `docs/v4/p1-qualification-matrix.json` | `7bd051023bb9dc6af4f491fc88984ca5a37de27b4b4533078881c112ef66655b` |
+| `docs/v4/publication-recovery-hold-successor-evidence.json` | `6bb3ce696cffec2629838f5f30b8eea4acb837cbb81c1bcbc1b4de4f19e8764a` |
+| `docs/v4/test_checks.py` | `c915b137417c53b3b3f773eacbfcfea3d62584a21ca11df8288e0c2b4281cf6e` |

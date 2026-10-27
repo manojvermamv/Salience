@@ -314,8 +314,17 @@ class GateChecks(unittest.TestCase):
         self.assertIn("historical_candidate_post_push_exact_head_ci", matrix["historical_branch_review_and_ci"])
         self.assertEqual(
             current["documentation_candidate_post_push_exact_head_ci"],
-            "REQUIRED/PENDING",
+            "PASS_FOR_62B5A5E (run 40553244096); NEXT_STATUS_ONLY_COMMIT_CI_REQUIRED_AFTER_PUSH",
         )
+        hosted_docs_ci = matrix["current_documentation_ci"]
+        self.assertEqual(hosted_docs_ci["head_commit"], "62b5a5e6afc8bd6477bbd14a951166edc97ea683")
+        self.assertEqual(hosted_docs_ci["workflow_run_id"], 40553244096)
+        self.assertEqual(
+            {name: job["conclusion"] for name, job in hosted_docs_ci["required_jobs"].items()},
+            {"verify": "success", "p0-regression": "success"},
+        )
+        self.assertEqual(hosted_docs_ci["hosted_suite_summary"]["passed"], 908)
+        self.assertEqual(hosted_docs_ci["next_status_only_commit_ci"], "REQUIRED_AFTER_PUSH")
         self.assertNotIn("superseded_task_10_current_qualification", matrix)
         self.assertEqual(
             current["evidence"],
@@ -325,6 +334,32 @@ class GateChecks(unittest.TestCase):
             current["verifier_log_sha256"],
             "c643740f100210bad8428433db31ecd2852a538b26ad702224cd28c3f5432020",
         )
+
+    def test_live_successor_evidence_hash_pointers_match_current_artifact(self):
+        evidence_path = Path(__file__).with_name("publication-recovery-hold-successor-evidence.json")
+        current_digest = hashlib.sha256(evidence_path.read_bytes()).hexdigest()
+        release = json.loads(Path(__file__).with_name("p0-release.json").read_text())
+        matrix = json.loads(Path(__file__).with_name("p1-qualification-matrix.json").read_text())
+
+        current_successor = release["p1_increment"]["publication_recovery_holds"]
+        evidence_path_string = "docs/v4/publication-recovery-hold-successor-evidence.json"
+        self.assertEqual(current_successor["current_successor_evidence"], evidence_path_string)
+        self.assertEqual(current_successor["current_successor_evidence_sha256"], current_digest)
+
+        live_successor_entries = [
+            requirement["successor_candidate_evidence"]
+            for requirement in matrix["requirements"]
+            if "successor_candidate_evidence" in requirement
+        ]
+        self.assertEqual(len(live_successor_entries), 2)
+        for entry in live_successor_entries:
+            with self.subTest(application_commit=entry["application_commit"]):
+                self.assertEqual(entry["evidence"], evidence_path_string)
+                self.assertEqual(entry["evidence_sha256"], current_digest)
+
+        historical = matrix["historical_0043_qualification"]
+        self.assertEqual(historical["evidence_sha256"], "4baef4a2328b26a47abc150f4b2ba47aa7c3d3afa6260c651986142b110054c1")
+        self.assertNotEqual(historical["evidence_sha256"], current_digest)
 
     def test_corrected_blueprint_is_acyclic(self):
         self.assertEqual(CHECK.gate_errors(BLUEPRINT), [])

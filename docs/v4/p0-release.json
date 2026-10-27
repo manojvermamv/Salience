@@ -388,7 +388,7 @@
     }
   ],
   "later_phase_boundaries": {
-    "P1": "Frozen local 0043 application candidate 182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f remains qualified at 796 passed / 17 skipped / 3 warnings. GPT-6.1/GPT-5.6 review and required CI are historical at pushed feature head 6f5edc77edbfe189e46de4254c2fdb21c5652bce (run 38592066455). Exact pushed documentation head 67effe8c9c176c0bd1c17fdef20b841c0e14b6de passed both required jobs in run 38610329330. Current unpublished candidate post-push CI remains REQUIRED/PENDING. The user-approved sequence records Slice 1 audit/design COMPLETE_REVIEWED at frozen source 7c1ddcda280b510048ad61106c406171edd64f18; five required designs COMPLETE_REVIEWED; implementation and target qualification NOT RUN. Production acceptance remains HELD; effects stay disabled and P2-P7 gated.",
+    "P1": "Frozen local 0043 application candidate 182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f remains qualified at 796 passed / 17 skipped / 3 warnings. GPT-6.1/GPT-5.6 review and required CI are historical at pushed feature head 6f5edc77edbfe189e46de4254c2fdb21c5652bce (run 38592066455). Exact pushed documentation/evidence head 62b5a5e6afc8bd6477bbd14a951166edc97ea683 passed both required jobs in run 40553244096; hosted migration-0046 suite was 908 passed / 26 skipped / 3 warnings in 1082.53s. The next status-only commit requires its own exact-head CI after push. The user-approved sequence records Slice 1 audit/design COMPLETE_REVIEWED at frozen source 7c1ddcda280b510048ad61106c406171edd64f18; five required designs COMPLETE_REVIEWED; implementation and target qualification NOT RUN. Production acceptance remains HELD; effects stay disabled and P2-P7 gated.",
     "P2": "Production G1 provider charge/effect integration using the fixture-qualified allocation transfer contract, ready-package reference/outbox integration and enabled provider qualification",
     "P3": "Trial/evaluation isolation and separate strategy/capability namespaces",
     "P4": "Promotion/invalidation serialization; mandatory typed learning proposals with optional qualified semantic analyst",
@@ -427,7 +427,7 @@
     ]
   },
   "p1_increment": {
-    "name": "Local P1 fixture stages through publication recovery holds; frozen 0043 application 182c4e4 remains qualified at 796 passed / 17 skipped / 3 warnings. Historical review and CI scopes remain bound to 6f5edc7; docs-head run 38610329330 passed on 67effe8; current unpublished candidate CI is REQUIRED/PENDING.",
+    "name": "Local P1 fixture stages through publication recovery holds; frozen 0043 application 182c4e4 remains qualified at 796 passed / 17 skipped / 3 warnings. Historical review and CI scopes remain bound to 6f5edc7; docs-head run 40553244096 passed on 62b5a5e; the next status-only commit CI is REQUIRED_AFTER_PUSH.",
     "local_status": "PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE",
     "release_gate": "RG1",
     "release_status": "HELD",
@@ -474,7 +474,7 @@
     ],
     "next_queue_item": null,
     "next_action": "The initial commit-bound P1/RG0/RG1 audit and five bounded design evaluations are COMPLETE_REVIEWED for frozen source 7c1ddcda280b510048ad61106c406171edd64f18 and environment manifest 18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436. All five increments are REQUIRED; implementation and target qualification are NOT RUN. The next gated action is a separately approved implementation scope. Keep production effects disabled, publication budget zero, RG0/RG1 HELD, P2-P7 gated, P6 disabled, formal PR approval NOT RUN, and main unmerged.",
-    "independent_review": "The frozen local application candidate remains 182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f with 796 passed / 17 skipped / 3 warnings. GPT-6.1 reviewed pushed branch head 6f5edc77edbfe189e46de4254c2fdb21c5652bce across 59 commits / 38 changed files with 0 Critical / 0 Important / 1 nonblocking Minor; GPT-5.6 accepted the assessment. That original review finding is preserved in the dated report; Task 1 commit 7c3f382 later tightened the two test diagnostics, with closure recorded in the successor evidence. Actions run 38592066455 passed both required jobs on 6f5edc7; separately, run 38610329330 passed both required jobs for pushed docs head 67effe8c9c176c0bd1c17fdef20b841c0e14b6de. No hosted count transfers to the application or current unpublished candidate; the latter exact-head CI remains REQUIRED/PENDING. Production acceptance stays HELD.",
+    "independent_review": "The frozen local application candidate remains 182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f with 796 passed / 17 skipped / 3 warnings. GPT-6.1 reviewed pushed branch head 6f5edc77edbfe189e46de4254c2fdb21c5652bce across 59 commits / 38 changed files with 0 Critical / 0 Important / 1 nonblocking Minor; GPT-5.6 accepted the assessment. That original review finding is preserved in the dated report; Task 1 commit 7c3f382 later tightened the two test diagnostics, with closure recorded in the successor evidence. Actions run 38592066455 passed both required jobs on 6f5edc7; separately, run 38610329330 passed both required jobs for pushed docs head 67effe8c9c176c0bd1c17fdef20b841c0e14b6de. No hosted count transfers to the application. Documentation/evidence head 62b5a5e passed run 40553244096; the next status-only record commit requires its own exact-head CI after push. Production acceptance stays HELD.",
     "completed_implementation_tasks": [
       1,
       2,
@@ -491,11 +491,29 @@
     "task_10_qualification_harness_commit": "14801007310232f59708566ca9a3eefb80bfea87",
     "task_10_status": "PASS_LOCAL_FIXTURE_CANDIDATE; TASK_11_REVIEW_COMPLETE_FINDINGS_FOUND; 5CB5791_UNSUPPORTED_AS_ROLLBACK_FLOOR",
     "publication_recovery_holds": {
-      "scope": "Task 10 candidate 5cb5791 remains unsupported as the rollback floor; no earlier candidate count transfers. The frozen exact 0043 application candidate is 182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f with its local 796/17/3 result and artifact pins. Whole-branch review and CI remain scoped to pushed head 6f5edc77edbfe189e46de4254c2fdb21c5652bce; docs-only run 38610329330 passed for pushed head 67effe8c9c176c0bd1c17fdef20b841c0e14b6de. Current unpublished candidate post-push exact-head CI is REQUIRED/PENDING. Continue remaining production obligations under existing gates; production remains HELD.",
+      "scope": "Task 10 candidate 5cb5791 remains unsupported as the rollback floor; no earlier candidate count transfers. The frozen exact 0043 application candidate is 182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f with its local 796/17/3 result and artifact pins. Whole-branch review and CI remain scoped to pushed head 6f5edc77edbfe189e46de4254c2fdb21c5652bce; Exact pushed documentation/evidence head 62b5a5e6afc8bd6477bbd14a951166edc97ea683 passed both required jobs in run 40553244096; hosted migration-0046 suite was 908 passed / 26 skipped / 3 warnings in 1082.53s. The next status-only commit requires its own exact-head CI after push. Continue remaining production obligations under existing gates; production remains HELD.",
       "evidence": "docs/v4/publication-recovery-hold-evidence.json",
       "evidence_sha256": "3cce88e4d692f726be710c1f4db46b1428c9546561424a2ab0ad120363becc66",
       "current_successor_evidence": "docs/v4/publication-recovery-hold-successor-evidence.json",
-      "current_successor_evidence_sha256": "4baef4a2328b26a47abc150f4b2ba47aa7c3d3afa6260c651986142b110054c1"
+      "current_successor_evidence_sha256": "6bb3ce696cffec2629838f5f30b8eea4acb837cbb81c1bcbc1b4de4f19e8764a"
+    },
+    "current_documentation_ci": {
+      "head_commit": "62b5a5e6afc8bd6477bbd14a951166edc97ea683",
+      "workflow_run_id": 40553244096,
+      "workflow_run_url": "https://github.com/manojvermamv/Salience/actions/runs/40553244096",
+      "conclusion": "success",
+      "required_jobs": {
+        "verify": "success",
+        "p0-regression": "success"
+      },
+      "hosted_suite_summary": {
+        "migration_head": "0046_production_policy_approval_id_immutability",
+        "passed": 908,
+        "skipped": 26,
+        "warnings": 3,
+        "elapsed_seconds": 1082.53
+      },
+      "next_status_only_commit_ci": "REQUIRED_AFTER_PUSH"
     }
   },
   "documentation_refresh": {
@@ -722,8 +740,8 @@
     "restored_from_own_output_at": "2026-10-04T02:44:31.946Z",
     "base_commit": "380416d35cffb6e4bf33003cb6e8df0638874436",
     "direction": "The initial commit-bound P1/RG0/RG1 audit and five bounded design evaluations are COMPLETE_REVIEWED at frozen source 7c1ddcda280b510048ad61106c406171edd64f18 and environment 18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436. All five required designs COMPLETE_REVIEWED; implementation and target qualification NOT RUN. Continue only with the separately approved bounded implementation scope and existing release gates.",
-    "current_increment": "Initial Slice 1 audit/design is COMPLETE_REVIEWED: five required designs COMPLETE_REVIEWED; implementation and target qualification NOT RUN. The 280-artifact documentation manifest is refreshed and the 366-file evidence lock is unchanged. The current documentation candidate still requires its own post-push exact-head CI; production remains disabled, RG0/RG1 HELD, P2 BLOCKED, and main unmerged.",
-    "qualification": "PASS_LOCAL_SUCCESSOR_182C4E4_FIXTURE_SCOPE; 6F5EDC7_REVIEW_AND_CI_HISTORICAL; 67EFFE8_DOCUMENTATION_CI_PASS; CURRENT_UNPUBLISHED_CANDIDATE_CI_REQUIRED_PENDING; PRODUCTION_RELEASE_HELD",
+    "current_increment": "Initial Slice 1 audit/design is COMPLETE_REVIEWED: five required designs COMPLETE_REVIEWED; implementation and target qualification NOT RUN. The 280-artifact documentation manifest is refreshed and the 366-file evidence lock is unchanged. Pushed documentation/evidence head 62b5a5e passed exact-head Actions run 40553244096; the next status-only record commit requires its own post-push exact-head CI; production remains disabled, RG0/RG1 HELD, P2 BLOCKED, and main unmerged.",
+    "qualification": "PASS_LOCAL_SUCCESSOR_182C4E4_FIXTURE_SCOPE; 6F5EDC7_REVIEW_AND_CI_HISTORICAL; 62B5A5E_DOCUMENTATION_CI_PASS_RUN_40553244096; NEXT_STATUS_ONLY_COMMIT_CI_REQUIRED_PENDING; PRODUCTION_RELEASE_HELD",
     "remaining_scope": [
       "deployment-specific supported routing, live schedule inventory, fencing, drain, rollback and operator recovery",
       "general versioned policy/registry eligibility and production account/provider qualification",
@@ -742,7 +760,7 @@
     "evidence": "docs/v4/publication-recovery-hold-successor-evidence.json",
     "publication": "Fixture-only current recovery-hold evidence; production effects disabled, RG0/RG1 HELD, P2\u2013P7 gated, optional P6 disabled, main unmerged.",
     "source_lock_sha256": "472d603c1110a0ebe8082f598b7d02a892e6591a9f6b400c48979321551af674",
-    "review_scope": "GPT-6.1/GPT-5.6 review and run 38592066455 apply to pushed feature head 6f5edc77edbfe189e46de4254c2fdb21c5652bce; Actions run 38610329330 applies only to pushed documentation head 67effe8c9c176c0bd1c17fdef20b841c0e14b6de. The application-local test counts remain bound only to 182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f. Task 1 commit 7c3f3822c81faba37b4b07a09e0f5a950f9f1256 tightens diagnostic assertions; the original GPT-6.1 finding remains historical and its closure is in successor evidence. The current unpublished candidate needs its own exact-head CI after push. Production acceptance remains HELD.",
+    "review_scope": "GPT-6.1/GPT-5.6 review and run 38592066455 apply to pushed feature head 6f5edc77edbfe189e46de4254c2fdb21c5652bce; Actions run 38610329330 applies only to earlier pushed documentation head 67effe8c9c176c0bd1c17fdef20b841c0e14b6de; later documentation/evidence head 62b5a5e passed exact-head run 40553244096. The application-local test counts remain bound only to 182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f. Task 1 commit 7c3f3822c81faba37b4b07a09e0f5a950f9f1256 tightens diagnostic assertions; the original GPT-6.1 finding remains historical and its closure is in successor evidence. The next status-only record commit needs its own exact-head CI after push. Production acceptance remains HELD.",
     "exact_image_matrix_tests": 12,
     "actual_retry_producer_tests": 1,
     "compose_restart_tests": 1,
@@ -754,7 +772,42 @@
       "application_candidate_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
       "latest_pushed_documentation_head": "67effe8c9c176c0bd1c17fdef20b841c0e14b6de",
       "latest_pushed_documentation_ci_run": 38610329330,
-      "post_push_exact_head_ci": "REQUIRED/PENDING for the current unpublished candidate; no result claimed."
+      "post_push_exact_head_ci": "PASS for exact pushed documentation/evidence head 62b5a5e (run 40553244096); the next status-only commit requires its own exact-head CI after push.",
+      "latest_pushed_documentation_head_ci": {
+        "head_commit": "62b5a5e6afc8bd6477bbd14a951166edc97ea683",
+        "short_head": "62b5a5e",
+        "workflow_run_id": 40553244096,
+        "workflow_run_url": "https://github.com/manojvermamv/Salience/actions/runs/40553244096",
+        "event": "push",
+        "workflow": "V4 documentation contract",
+        "created_at": "2026-10-27T17:43:21Z",
+        "updated_at": "2026-10-27T18:02:44Z",
+        "status": "completed",
+        "conclusion": "success",
+        "required_jobs": {
+          "verify": {
+            "job_id": 122362339840,
+            "conclusion": "success",
+            "started_at": "2026-10-27T17:43:24Z",
+            "completed_at": "2026-10-27T17:43:32Z"
+          },
+          "p0-regression": {
+            "job_id": 122362339085,
+            "conclusion": "success",
+            "started_at": "2026-10-27T17:43:23Z",
+            "completed_at": "2026-10-27T18:02:43Z"
+          }
+        },
+        "hosted_suite_summary": {
+          "migration_head": "0046_production_policy_approval_id_immutability",
+          "passed": 908,
+          "skipped": 26,
+          "warnings": 3,
+          "elapsed_seconds": 1082.53
+        },
+        "scope": "Exact pushed documentation/evidence head; no application candidate or production qualification transfer."
+      },
+      "next_status_only_commit_ci": "REQUIRED_AFTER_PUSH"
     },
     "program_sequence": {
       "status": "APPROVED",

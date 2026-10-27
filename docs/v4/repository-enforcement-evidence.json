@@ -359,34 +359,87 @@
     },
     "current_documentation_refresh": {
       "starting_commit": "7c3f3822c81faba37b4b07a09e0f5a950f9f1256",
-      "scope": "Current status and evidence reconciliation; application qualification unchanged.",
+      "scope": "Historical 2026-10-14 repository readback snapshot; exact documentation CI is superseded by the root current_documentation_ci_reconciliation record.",
       "latest_pushed_documentation_head": "67effe8c9c176c0bd1c17fdef20b841c0e14b6de",
       "latest_pushed_documentation_ci_run": 38610329330,
-      "current_unpublished_candidate_post_push_exact_head_ci": "REQUIRED/PENDING"
+      "current_unpublished_candidate_post_push_exact_head_ci": "REQUIRED/PENDING",
+      "superseded_by_current_exact_head_ci": "62b5a5e / run 40553244096; next status-only commit CI is REQUIRED_AFTER_PUSH."
     },
     "formal_pr_approval": "NOT RUN",
     "main_merge": "UNMERGED"
   },
   "latest_pushed_documentation_head_ci": {
-    "head_commit": "67effe8c9c176c0bd1c17fdef20b841c0e14b6de",
-    "workflow_run_id": 38610329330,
-    "workflow_run_url": "https://github.com/manojvermamv/Salience/actions/runs/38610329330",
+    "head_commit": "62b5a5e6afc8bd6477bbd14a951166edc97ea683",
+    "short_head": "62b5a5e",
+    "workflow_run_id": 40553244096,
+    "workflow_run_url": "https://github.com/manojvermamv/Salience/actions/runs/40553244096",
+    "event": "push",
+    "workflow": "V4 documentation contract",
+    "created_at": "2026-10-27T17:43:21Z",
+    "updated_at": "2026-10-27T18:02:44Z",
     "status": "completed",
     "conclusion": "success",
     "required_jobs": {
-      "verify": "success",
-      "p0-regression": "success"
+      "verify": {
+        "job_id": 122362339840,
+        "conclusion": "success",
+        "started_at": "2026-10-27T17:43:24Z",
+        "completed_at": "2026-10-27T17:43:32Z"
+      },
+      "p0-regression": {
+        "job_id": 122362339085,
+        "conclusion": "success",
+        "started_at": "2026-10-27T17:43:23Z",
+        "completed_at": "2026-10-27T18:02:43Z"
+      }
     },
-    "scope": "Exact pushed documentation head; no application counts attributed."
+    "hosted_suite_summary": {
+      "migration_head": "0046_production_policy_approval_id_immutability",
+      "passed": 908,
+      "skipped": 26,
+      "warnings": 3,
+      "elapsed_seconds": 1082.53
+    },
+    "scope": "Exact pushed documentation/evidence head; no application candidate or production qualification transfer."
   },
-  "current_unpublished_candidate_post_push_exact_head_ci": "REQUIRED/PENDING",
+  "current_unpublished_candidate_post_push_exact_head_ci": "REQUIRED_AFTER_PUSH; the next status-only evidence commit has no exact-head run until pushed.",
   "current_documentation_ci_reconciliation": {
-    "prior_exact_pushed_docs_head": "67effe8c9c176c0bd1c17fdef20b841c0e14b6de",
-    "prior_exact_head_ci_run": 38610329330,
-    "current_unpublished_candidate_includes": [
-      "bbd617fba5db7a7c8ad02baa5f721cce0f167f99",
-      "7c3f3822c81faba37b4b07a09e0f5a950f9f1256"
-    ],
-    "current_candidate_post_push_exact_head_ci": "REQUIRED/PENDING"
+    "prior_exact_pushed_docs_head": "62b5a5e6afc8bd6477bbd14a951166edc97ea683",
+    "prior_exact_head_ci_run": 40553244096,
+    "exact_head_ci": {
+      "head_commit": "62b5a5e6afc8bd6477bbd14a951166edc97ea683",
+      "short_head": "62b5a5e",
+      "workflow_run_id": 40553244096,
+      "workflow_run_url": "https://github.com/manojvermamv/Salience/actions/runs/40553244096",
+      "event": "push",
+      "workflow": "V4 documentation contract",
+      "created_at": "2026-10-27T17:43:21Z",
+      "updated_at": "2026-10-27T18:02:44Z",
+      "status": "completed",
+      "conclusion": "success",
+      "required_jobs": {
+        "verify": {
+          "job_id": 122362339840,
+          "conclusion": "success",
+          "started_at": "2026-10-27T17:43:24Z",
+          "completed_at": "2026-10-27T17:43:32Z"
+        },
+        "p0-regression": {
+          "job_id": 122362339085,
+          "conclusion": "success",
+          "started_at": "2026-10-27T17:43:23Z",
+          "completed_at": "2026-10-27T18:02:43Z"
+        }
+      },
+      "hosted_suite_summary": {
+        "migration_head": "0046_production_policy_approval_id_immutability",
+        "passed": 908,
+        "skipped": 26,
+        "warnings": 3,
+        "elapsed_seconds": 1082.53
+      },
+      "scope": "Exact pushed documentation/evidence head; no application candidate or production qualification transfer."
+    },
+    "current_candidate_post_push_exact_head_ci": "REQUIRED_AFTER_PUSH for the next status-only evidence commit; no run exists until pushed."
   }
 }

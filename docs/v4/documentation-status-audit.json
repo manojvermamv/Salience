@@ -1,12 +1,12 @@
 {
   "audited_at": "2026-10-27T17:40:10Z",
   "base_commit": "7c1ddcda280b510048ad61106c406171edd64f18",
-  "scope": "The initial P1/RG0/RG1 residual audit and five-spec design review remain COMPLETE_REVIEWED only for source 7c1ddcda280b510048ad61106c406171edd64f18 and environment manifest 18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436; exact-source Actions run 40443346020 passed verify and p0-regression. Five bounded increments remain required. Current Slice 2 application/source candidate ec12763e38143f52f1af2661e00932158982f11a passed final fixture-only verification through migration 0046_production_policy_approval_id_immutability (60 Phase 9 tests; 908 passed / 26 skipped / 3 warnings; log SHA-256 c643740f100210bad8428433db31ecd2852a538b26ad702224cd28c3f5432020); this does not qualify a production target. Production target qualification remains NOT RUN; all 22 final-entry rows remain non-PASS; RG0/full RG1 are HELD; P2 and Slice 7 are BLOCKED; production effects are disabled; main is unmerged. The later documentation commit is a distinct SHA and requires exact-head CI after push.",
+  "scope": "The initial P1/RG0/RG1 residual audit and five-spec design review remain COMPLETE_REVIEWED only for source 7c1ddcda280b510048ad61106c406171edd64f18 and environment manifest 18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436; exact-source Actions run 40443346020 passed verify and p0-regression. Five bounded increments remain required. Current Slice 2 application/source candidate ec12763e38143f52f1af2661e00932158982f11a passed final fixture-only verification through migration 0046_production_policy_approval_id_immutability (60 Phase 9 tests; 908 passed / 26 skipped / 3 warnings; log SHA-256 c643740f100210bad8428433db31ecd2852a538b26ad702224cd28c3f5432020); this does not qualify a production target. Production target qualification remains NOT RUN; all 22 final-entry rows remain non-PASS; RG0/full RG1 are HELD; P2 and Slice 7 are BLOCKED; production effects are disabled; main is unmerged. Pushed documentation/evidence head 62b5a5e6afc8bd6477bbd14a951166edc97ea683 passed both required jobs in Actions run 40553244096. The next status-only record commit has a distinct SHA and needs its own exact-head CI after push.",
   "tracked_markdown_files": 115,
   "documentation_artifacts": 288,
   "summary": {
     "current_handoff_hashes": {
-      "docs/README.md": "f122208f915838df3c58baa1574ea64b04237fa58babac3c02df256c0e0988d4",
+      "docs/README.md": "a4a4ecf415eb38c9947d7632b4ffccbe03dc4629c8ce6b6988082b4386db2c39",
       "docs/superpowers/plans/2026-10-27-p1-production-policy-and-revocation.md": "c1564a7ec7d09f63b5aba105678c8b5929619fecc49e5b4bb3e415ed1340672e",
       "docs/superpowers/plans/2026-10-27-p1-rg0-rg1-initial-gap-audit.md": "5d1dd8a86718184d03324144643dfb009cb36243a5bd0c0f14c46844eb3c5cd4",
       "docs/superpowers/specs/2026-10-13-p1-live-schedule-fencing-design.md": "04ed59e2ed61ca17dc2c01df3a2964e1569e03e79f0aef2bbfe2ca2d96d5129a",
@@ -14,20 +14,20 @@
       "docs/superpowers/specs/2026-10-13-p1-production-recovery-and-alerts-design.md": "1c731ee595be6582902aa79f9ebb52d520f6fd18ad6054ca304709ce16aea61c",
       "docs/superpowers/specs/2026-10-13-p1-production-routing-and-worker-fencing-design.md": "d4d2c06a1f0925d2826b29a4e2c053f7f7773f660397fe986883c370aee78f67",
       "docs/superpowers/specs/2026-10-13-rg0-rg1-external-acceptance-design.md": "2a5d6cff0dd44070b1942e79f073906527b8e2650b62b3473d63542f00bfbcd8",
-      "docs/v4/IMPLEMENTATION-BLUEPRINT.md": "6e717aae30c9eb3714d760d5e04f8689a33db0b5e0a3d8dcb4e8e63137c7c58b",
+      "docs/v4/IMPLEMENTATION-BLUEPRINT.md": "8ceb85b83e452c10d4b323a709ac6706935013c2d9193bd1bff2b1b8c83d2703",
       "docs/v4/evidence-lock.json": "b44978d42ed635c8a8b59f2df2bd988a871c47eff3afd3a770d92290a39a771e",
-      "docs/v4/p0-release.json": "5038fa02bd73d176cbad6df99a66537fb25cdebc0f8c972f33419070e1145757",
+      "docs/v4/p0-release.json": "0a0f1969e0497cbec535fb3f854b51cef870a4746eb92f8a67a127566dc9ff75",
       "docs/v4/p1-production-policy-revocation-evidence.json": "e5a5a3d424157479cacaf00eae39614a5abe12ecdb04ac38af0c95692dbd982b",
-      "docs/v4/p1-qualification-matrix.json": "3506caa0164280e136d0cffb0e095946057d42560648d1a75b5f70f690a5e186",
-      "docs/v4/p1-rg0-rg1-audit-and-spec-review.md": "8adf910a9607cfb74ab0dcba0bce249b8deff0c50b0bbd38849f092e06ae81f6",
+      "docs/v4/p1-qualification-matrix.json": "7bd051023bb9dc6af4f491fc88984ca5a37de27b4b4533078881c112ef66655b",
+      "docs/v4/p1-rg0-rg1-audit-and-spec-review.md": "fa399efde0d60ba3343424e9e12adbaa0423fbfecb9c1ae4272c0ed83eca308a",
       "docs/v4/p1-rg0-rg1-initial-gap-audit.json": "33fe485384dcf60e36df8d48ace6394c80bce0d1bd9e6b9b39c7a905d65676b1",
       "docs/v4/p1-rg0-rg1-initial-gap-audit.md": "62aab5afb39f7c47e355a68ccf56e319a72955247515dfbdba8913fd797a5944",
-      "docs/v4/progress.md": "3fc60a980f20ced6f16372d59acf220a4e8a5caa5e7129578515d536fe81bd68",
+      "docs/v4/progress.md": "5bf02b6110af159e5680b68de1ac5ee49d28152a44cdd1be82e40d9e98cc5a69",
       "docs/v4/publication-recovery-hold-evidence.json": "3cce88e4d692f726be710c1f4db46b1428c9546561424a2ab0ad120363becc66",
-      "docs/v4/publication-recovery-hold-successor-evidence.json": "4baef4a2328b26a47abc150f4b2ba47aa7c3d3afa6260c651986142b110054c1",
-      "docs/v4/repository-enforcement-evidence.json": "389886f670654a65848d5f43d61215562d53a95969906e5a44722a4ab7dbc006",
-      "docs/v4/test_checks.py": "8528619dfb28073bd30f0b344ad1c37e39b8b7d23838bd1af519309948db0655",
-      "docs/v4/validation.md": "c784063df50f1a9a83d3c6a5cf31b09a393c184aec35c318b9ef6efa5d21839c",
+      "docs/v4/publication-recovery-hold-successor-evidence.json": "6bb3ce696cffec2629838f5f30b8eea4acb837cbb81c1bcbc1b4de4f19e8764a",
+      "docs/v4/repository-enforcement-evidence.json": "fc69f901036971bd64588cf3247d1701939e7525442f196daeab7f1919de11a2",
+      "docs/v4/test_checks.py": "c915b137417c53b3b3f773eacbfcfea3d62584a21ca11df8288e0c2b4281cf6e",
+      "docs/v4/validation.md": "64c021233a1fcaa423c21e33ba8553b2a9cdef69c6f6d565436dd15fdb180fd2",
       ".superpowers/sdd/2026-10-27-p1-production-policy-and-revocation/final-evidence-report.md": "551c40b4d6852ab3ab4f42bc2cd26ffd1a0339fa03a5f7c2c0f0d39814d05307"
     },
     "tracked_markdown_disposition_counts": {
@@ -79,14 +79,14 @@
     "historical A4 publication qualification with current recovery-hold evidence pointer and exact A4/d031172 rereview scope": 1,
     "preserved dated legacy brief and scheduled ingress qualification report": 1,
     "preserved dated original native schedule qualification report": 1,
-    "Current release ledger records frozen application scope, exact pushed documentation CI, approved sequence navigation, and pending current-candidate CI; release gates retained": 1,
-    "Current P1 matrix keeps application scope frozen, exact review and documentation CI heads distinct, and current candidate CI pending; production holds retained": 1,
     "current initial commit-bound P1/RG0/RG1 audit evidence; COMPLETE_REVIEWED at source 7c1ddcd; 22 rows non-PASS; implementation/target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2 BLOCKED": 1,
     "preserved dated parallel qualification report": 1,
     "preserved historical Task 10 publication recovery-hold evidence and original P0-pinned bytes": 1,
-    "Current successor evidence preserves frozen application result and historical review, adds exact pushed docs CI and Task 1 diagnostic-assertion closure, and keeps current candidate CI pending": 1,
-    "Historical exact feature-head readback preserved; exact pushed documentation CI and current unpublished candidate pending status recorded separately": 1,
-    "preserved durable P1 audit/spec review and repair report payload": 10
+    "preserved durable P1 audit/spec review and repair report payload": 10,
+    "Current release ledger preserves frozen application scope and records exact pushed documentation/evidence CI PASS for 62b5a5e/run 40553244096; next status-only commit CI pending after push; release gates retained": 1,
+    "Current P1 matrix keeps application scope frozen, records exact documentation CI PASS for 62b5a5e/run 40553244096, and marks only the next status-only commit CI pending; production holds retained": 1,
+    "Successor evidence preserves frozen application result and historical review, records exact documentation CI PASS for 62b5a5e/run 40553244096, and marks only the next status-only commit CI pending": 1,
+    "Historical exact feature-head readback preserved; exact pushed documentation/evidence CI PASS for 62b5a5e/run 40553244096 and next status-only candidate pending recorded separately": 1
   },
   "application_source_files_verified": 369,
   "prior_application_files_preserved": 347,
@@ -109,21 +109,21 @@
   ],
   "mermaid_source_blocks_preserved": 12,
   "item7_status": "COMPLETE_IMPLEMENTED_LOCAL_FIXTURE_QUALIFICATION; historical item7 scope preserved",
-  "independent_review": "The historical GPT-6.1/GPT-5.6 whole-branch review remains scoped to pushed feature head 6f5edc77edbfe189e46de4254c2fdb21c5652bce (run 38592066455 passed its required jobs). The initial commit-bound audit and five-spec design review are COMPLETE_REVIEWED for 7c1ddcda280b510048ad61106c406171edd64f18 and environment 18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436; exact-source CI run 40443346020 passed verify and p0-regression. That design evaluation is not the final whole-change review. The current Slice 2 application/source candidate is ec12763e38143f52f1af2661e00932158982f11a and is not covered by those prior reviews or CI. The distinct documentation commit requires exact-head CI after push. The 182c4e4 / 796/17/3 qualification is historical; production gates remain held.",
+  "independent_review": "The historical GPT-6.1/GPT-5.6 whole-branch review remains scoped to pushed feature head 6f5edc77edbfe189e46de4254c2fdb21c5652bce (run 38592066455 passed its required jobs). The initial commit-bound audit and five-spec design review are COMPLETE_REVIEWED for 7c1ddcda280b510048ad61106c406171edd64f18 and environment 18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436; exact-source CI run 40443346020 passed verify and p0-regression. That design evaluation is not the final whole-change review. The current Slice 2 application/source candidate is ec12763e38143f52f1af2661e00932158982f11a and is not covered by those prior reviews or CI. Pushed documentation/evidence head 62b5a5e passed run 40553244096; the next status-only record commit requires exact-head CI after push. The 182c4e4 / 796/17/3 qualification is historical; production gates remain held.",
   "next_queue_item": "production_policy_and_cross_service_revocation",
   "production_effects_enabled": false,
   "RG0": "HELD",
   "RG1": "HELD",
   "verification": {
     "status": "PASS_FINAL_WHOLE_CHANGE_DOCUMENTATION_REVIEW_AFTER_F1_F3; FINAL_EXACT_CANDIDATE_AUDIT_BLOCKED; ALL_PRODUCTION_AND_RELEASE_GATES_HELD",
-    "documentation_tests": "PASS: .venv/bin/python docs/v4/test_checks.py (24 tests) and bash tests/scripts/test_phase_9_documentation.sh; git diff --check passed. Final application evidence is bound to ec12763e38143f52f1af2661e00932158982f11a and verifier-log SHA-256 c643740f100210bad8428433db31ecd2852a538b26ad702224cd28c3f5432020; documentation commit exact-head CI remains required after push.",
+    "documentation_tests": "PASS: .venv/bin/python docs/v4/test_checks.py (24 tests) and bash tests/scripts/test_phase_9_documentation.sh; git diff --check passed. Final application evidence is bound to ec12763e38143f52f1af2661e00932158982f11a and verifier-log SHA-256 c643740f100210bad8428433db31ecd2852a538b26ad702224cd28c3f5432020; documentation/evidence head 62b5a5e passed Actions run 40553244096; this next status-only record commit requires its own exact-head CI after push.",
     "mapped_obligations": 75,
     "negative_controls": 6,
     "documentation_shell_contracts": 4,
     "preserved_documentation_artifacts": 168,
     "independent_reviewers": 3,
     "reviewed_p1_rows": 17,
-    "independent_review_scope": "The historical GPT-6.1/GPT-5.6 whole-branch review remains scoped to pushed feature head 6f5edc77edbfe189e46de4254c2fdb21c5652bce (run 38592066455 passed its required jobs). The initial commit-bound audit and five-spec design review are COMPLETE_REVIEWED for 7c1ddcda280b510048ad61106c406171edd64f18 and environment 18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436; exact-source CI run 40443346020 passed verify and p0-regression. The separate whole-change documentation review is PASS_AFTER_FIX_ROUND_1 for candidate manifest cafa0bd46ede2cc8aef51058f46541068a07cd031774c8b5501270bc2385ee9a, after F1-F3 fixes and a clean scoped rereview. This documentation review is not the final exact-candidate/environment P1/RG0/RG1 audit, which remains NOT RUN and BLOCKED pending required implementations and current external acceptance evidence for one frozen final pair. The current Slice 2 application/source candidate is ec12763e38143f52f1af2661e00932158982f11a and is not covered by those prior reviews or CI. The distinct documentation commit requires exact-head CI after push. The 182c4e4 / 796/17/3 qualification is historical; production gates remain held.",
+    "independent_review_scope": "The historical GPT-6.1/GPT-5.6 whole-branch review remains scoped to pushed feature head 6f5edc77edbfe189e46de4254c2fdb21c5652bce (run 38592066455 passed its required jobs). The initial commit-bound audit and five-spec design review are COMPLETE_REVIEWED for 7c1ddcda280b510048ad61106c406171edd64f18 and environment 18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436; exact-source CI run 40443346020 passed verify and p0-regression. The separate whole-change documentation review is PASS_AFTER_FIX_ROUND_1 for candidate manifest cafa0bd46ede2cc8aef51058f46541068a07cd031774c8b5501270bc2385ee9a, after F1-F3 fixes and a clean scoped rereview. This documentation review is not the final exact-candidate/environment P1/RG0/RG1 audit, which remains NOT RUN and BLOCKED pending required implementations and current external acceptance evidence for one frozen final pair. The current Slice 2 application/source candidate is ec12763e38143f52f1af2661e00932158982f11a and is not covered by those prior reviews or CI. Pushed documentation/evidence head 62b5a5e passed run 40553244096; the next status-only record commit requires exact-head CI after push. The 182c4e4 / 796/17/3 qualification is historical; production gates remain held.",
     "tracked_markdown_files": 115,
     "active_project_markdown_files": 93,
     "active_integration_contracts": 1,
@@ -237,11 +237,11 @@
       "docs/v4/validation.md",
       "docs/verification.md",
       "docs/workflows.md",
-      "prompts/Build Creative Production Loop — Phases 7–8 End-to-End.md",
-      "prompts/Build Phase 10 — Multi-Platform Production Publishing, Analytics, Attribution & Experiments.md",
-      "prompts/Build Phases 1–4 End-to-End.md",
-      "prompts/Build Real Intelligence Loop — Pre-Phase 5 + Phases 5–6 End-to-End.md",
-      "prompts/Complete Phase 7–8 Release Gate, Then Build Phase 9 Governed Publishing.md",
+      "prompts/Build Creative Production Loop \u2014 Phases 7\u20138 End-to-End.md",
+      "prompts/Build Phase 10 \u2014 Multi-Platform Production Publishing, Analytics, Attribution & Experiments.md",
+      "prompts/Build Phases 1\u20134 End-to-End.md",
+      "prompts/Build Real Intelligence Loop \u2014 Pre-Phase 5 + Phases 5\u20136 End-to-End.md",
+      "prompts/Complete Phase 7\u20138 Release Gate, Then Build Phase 9 Governed Publishing.md",
       "prompts/Install and Verify Browser Evidence on Linux EC2.md"
     ],
     "mermaid_source_blocks_preserved": 12,
@@ -250,7 +250,7 @@
     "current_local_application_commit": "ec12763e38143f52f1af2661e00932158982f11a",
     "current_focused_tests": 60,
     "current_full_non_live_tests": 908,
-    "published_base_ci_protection_status": "PASS for historical published base 20be781; whole-branch review remains scoped to 6f5edc7; exact initial-audit source 7c1ddcd passed run 40443346020; current documentation candidate carrying final evidence CI REQUIRED_AFTER_PUSH.",
+    "published_base_ci_protection_status": "PASS for historical published base 20be781; whole-branch review remains scoped to 6f5edc7; exact initial-audit source 7c1ddcd passed run 40443346020; documentation/evidence head 62b5a5e passed run 40553244096; the next status-only record commit requires exact-head CI after push.",
     "published_base_commit": "20be7815d5e5c95fea2161c908ce8ac5cae88ce6",
     "current_qualification_application": "ec12763e38143f52f1af2661e00932158982f11a",
     "focused_tests": 21,
@@ -424,7 +424,7 @@
     },
     "current_full_non_live_application_commit": "ec12763e38143f52f1af2661e00932158982f11a",
     "current_full_non_live_status": "908 passed, 26 skipped, 3 warnings in 1438.43s; application/source candidate ec12763e38143f52f1af2661e00932158982f11a; migration 0046_production_policy_approval_id_immutability; log SHA-256 c643740f100210bad8428433db31ecd2852a538b26ad702224cd28c3f5432020",
-    "current_independent_review_scope": "The historical 182c4e4/796/17/3 artifact qualification and prior branch review/CI remain bound to their recorded sources. Current local Slice 2 evidence is bound to application/source candidate ec12763e38143f52f1af2661e00932158982f11a; it is not independently reviewed or production qualified. The later documentation commit requires exact-head CI after push. Production acceptance remains NOT RUN and RG0/full RG1 remain HELD.",
+    "current_independent_review_scope": "The historical 182c4e4/796/17/3 artifact qualification and prior branch review/CI remain bound to their recorded sources. Current local Slice 2 evidence is bound to application/source candidate ec12763e38143f52f1af2661e00932158982f11a; it is not independently reviewed or production qualified. Pushed documentation/evidence head 62b5a5e passed run 40553244096; the next status-only record commit requires exact-head CI after push. Production acceptance remains NOT RUN and RG0/full RG1 remain HELD.",
     "current_documentation_artifacts": 288,
     "mermaid_source_blocks_updated": 1,
     "current_task6_fixture_checkpoint": {
@@ -467,7 +467,7 @@
       "main": "UNMERGED",
       "current_documentation_artifacts": 288,
       "current_markdown_paths": 115,
-      "candidate_documentation_ci": "REQUIRED_AFTER_PUSH",
+      "candidate_documentation_ci": "PASS_FOR_62B5A5E (run 40553244096); NEXT_STATUS_ONLY_COMMIT_CI_REQUIRED_AFTER_PUSH",
       "documentation_commit_relationship": "The documentation commit carrying this record is distinct from application_commit and does not replace the tested application/source candidate."
     },
     "task6_documentation_checks": {
@@ -872,7 +872,7 @@
     },
     {
       "path": "docs/README.md",
-      "sha256": "f122208f915838df3c58baa1574ea64b04237fa58babac3c02df256c0e0988d4",
+      "sha256": "a4a4ecf415eb38c9947d7632b4ffccbe03dc4629c8ce6b6988082b4386db2c39",
       "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
@@ -1206,27 +1206,27 @@
       "disposition": "preserved immutable historical snapshot"
     },
     {
-      "path": "docs/archive/2026-09-22/prompts/Build Creative Production Loop — Phases 7–8 End-to-End.md.snapshot.b64",
+      "path": "docs/archive/2026-09-22/prompts/Build Creative Production Loop \u2014 Phases 7\u20138 End-to-End.md.snapshot.b64",
       "sha256": "968ff9305b92e00907c7a2b7e493959b8f66c64f05bc431c975c1ca97d75b9e0",
       "disposition": "preserved immutable historical snapshot"
     },
     {
-      "path": "docs/archive/2026-09-22/prompts/Build Phase 10 — Multi-Platform Production Publishing, Analytics, Attribution & Experiments.md.snapshot.b64",
+      "path": "docs/archive/2026-09-22/prompts/Build Phase 10 \u2014 Multi-Platform Production Publishing, Analytics, Attribution & Experiments.md.snapshot.b64",
       "sha256": "bb7ee354bb59b4f599aeef44e0a18b17f1f672826454621ed56b0f1055aa55ed",
       "disposition": "preserved immutable historical snapshot"
     },
     {
-      "path": "docs/archive/2026-09-22/prompts/Build Phases 1–4 End-to-End.md.snapshot",
+      "path": "docs/archive/2026-09-22/prompts/Build Phases 1\u20134 End-to-End.md.snapshot",
       "sha256": "4486a0868585423a951e1a874eb55714cd35242963f9a0f47c9d53420d7c101a",
       "disposition": "preserved immutable historical snapshot"
     },
     {
-      "path": "docs/archive/2026-09-22/prompts/Build Real Intelligence Loop — Pre-Phase 5 + Phases 5–6 End-to-End.md.snapshot.b64",
+      "path": "docs/archive/2026-09-22/prompts/Build Real Intelligence Loop \u2014 Pre-Phase 5 + Phases 5\u20136 End-to-End.md.snapshot.b64",
       "sha256": "d009ce7b7d6b309591554a39a9841afaf8b470ff63a366d134a9535fdf977a93",
       "disposition": "preserved immutable historical snapshot"
     },
     {
-      "path": "docs/archive/2026-09-22/prompts/Complete Phase 7–8 Release Gate, Then Build Phase 9 Governed Publishing.md.snapshot.b64",
+      "path": "docs/archive/2026-09-22/prompts/Complete Phase 7\u20138 Release Gate, Then Build Phase 9 Governed Publishing.md.snapshot.b64",
       "sha256": "6f3bd7a20b4831fc95da3583d636ea6f4b6cccfa3e270425027cec63a6bcec95",
       "disposition": "preserved immutable historical snapshot"
     },
@@ -1592,7 +1592,7 @@
     },
     {
       "path": "docs/v4/IMPLEMENTATION-BLUEPRINT.md",
-      "sha256": "6e717aae30c9eb3714d760d5e04f8689a33db0b5e0a3d8dcb4e8e63137c7c58b",
+      "sha256": "8ceb85b83e452c10d4b323a709ac6706935013c2d9193bd1bff2b1b8c83d2703",
       "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
@@ -1792,8 +1792,8 @@
     },
     {
       "path": "docs/v4/p0-release.json",
-      "sha256": "5038fa02bd73d176cbad6df99a66537fb25cdebc0f8c972f33419070e1145757",
-      "disposition": "Current release ledger records frozen application scope, exact pushed documentation CI, approved sequence navigation, and pending current-candidate CI; release gates retained"
+      "sha256": "0a0f1969e0497cbec535fb3f854b51cef870a4746eb92f8a67a127566dc9ff75",
+      "disposition": "Current release ledger preserves frozen application scope and records exact pushed documentation/evidence CI PASS for 62b5a5e/run 40553244096; next status-only commit CI pending after push; release gates retained"
     },
     {
       "path": "docs/v4/p1-increment-evidence.json",
@@ -1807,12 +1807,12 @@
     },
     {
       "path": "docs/v4/p1-qualification-matrix.json",
-      "sha256": "3506caa0164280e136d0cffb0e095946057d42560648d1a75b5f70f690a5e186",
-      "disposition": "Current P1 matrix keeps application scope frozen, exact review and documentation CI heads distinct, and current candidate CI pending; production holds retained"
+      "sha256": "7bd051023bb9dc6af4f491fc88984ca5a37de27b4b4533078881c112ef66655b",
+      "disposition": "Current P1 matrix keeps application scope frozen, records exact documentation CI PASS for 62b5a5e/run 40553244096, and marks only the next status-only commit CI pending; production holds retained"
     },
     {
       "path": "docs/v4/p1-rg0-rg1-audit-and-spec-review.md",
-      "sha256": "8adf910a9607cfb74ab0dcba0bce249b8deff0c50b0bbd38849f092e06ae81f6",
+      "sha256": "fa399efde0d60ba3343424e9e12adbaa0423fbfecb9c1ae4272c0ed83eca308a",
       "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
@@ -1837,7 +1837,7 @@
     },
     {
       "path": "docs/v4/progress.md",
-      "sha256": "3fc60a980f20ced6f16372d59acf220a4e8a5caa5e7129578515d536fe81bd68",
+      "sha256": "5bf02b6110af159e5680b68de1ac5ee49d28152a44cdd1be82e40d9e98cc5a69",
       "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
@@ -1847,13 +1847,13 @@
     },
     {
       "path": "docs/v4/publication-recovery-hold-successor-evidence.json",
-      "sha256": "4baef4a2328b26a47abc150f4b2ba47aa7c3d3afa6260c651986142b110054c1",
-      "disposition": "Current successor evidence preserves frozen application result and historical review, adds exact pushed docs CI and Task 1 diagnostic-assertion closure, and keeps current candidate CI pending"
+      "sha256": "6bb3ce696cffec2629838f5f30b8eea4acb837cbb81c1bcbc1b4de4f19e8764a",
+      "disposition": "Successor evidence preserves frozen application result and historical review, records exact documentation CI PASS for 62b5a5e/run 40553244096, and marks only the next status-only commit CI pending"
     },
     {
       "path": "docs/v4/repository-enforcement-evidence.json",
-      "sha256": "389886f670654a65848d5f43d61215562d53a95969906e5a44722a4ab7dbc006",
-      "disposition": "Historical exact feature-head readback preserved; exact pushed documentation CI and current unpublished candidate pending status recorded separately"
+      "sha256": "fc69f901036971bd64588cf3247d1701939e7525442f196daeab7f1919de11a2",
+      "disposition": "Historical exact feature-head readback preserved; exact pushed documentation/evidence CI PASS for 62b5a5e/run 40553244096 and next status-only candidate pending recorded separately"
     },
     {
       "path": "docs/v4/reviews/final-whole-change-fix.md.txt",
@@ -1907,7 +1907,7 @@
     },
     {
       "path": "docs/v4/validation.md",
-      "sha256": "c784063df50f1a9a83d3c6a5cf31b09a393c184aec35c318b9ef6efa5d21839c",
+      "sha256": "64c021233a1fcaa423c21e33ba8553b2a9cdef69c6f6d565436dd15fdb180fd2",
       "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
@@ -1921,27 +1921,27 @@
       "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
-      "path": "prompts/Build Creative Production Loop — Phases 7–8 End-to-End.md",
+      "path": "prompts/Build Creative Production Loop \u2014 Phases 7\u20138 End-to-End.md",
       "sha256": "6d77d56568933cdcd79b5ab5723efa2312d72bd57f12547664772618b700cc4b",
       "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
-      "path": "prompts/Build Phase 10 — Multi-Platform Production Publishing, Analytics, Attribution & Experiments.md",
+      "path": "prompts/Build Phase 10 \u2014 Multi-Platform Production Publishing, Analytics, Attribution & Experiments.md",
       "sha256": "756651d83b0e132c22bdd0ecdcf9de218dd00922570c29b30ca912a3cee46b00",
       "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
-      "path": "prompts/Build Phases 1–4 End-to-End.md",
+      "path": "prompts/Build Phases 1\u20134 End-to-End.md",
       "sha256": "cfb5fca0452db58c216b889786eb42b91641730fa0e27dca6fc57535ea5ba88c",
       "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
-      "path": "prompts/Build Real Intelligence Loop — Pre-Phase 5 + Phases 5–6 End-to-End.md",
+      "path": "prompts/Build Real Intelligence Loop \u2014 Pre-Phase 5 + Phases 5\u20136 End-to-End.md",
       "sha256": "93621fa3332bf11c3f2e9ab24cf27a7b3381353aaa80634ea864f30d3253dfea",
       "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
-      "path": "prompts/Complete Phase 7–8 Release Gate, Then Build Phase 9 Governed Publishing.md",
+      "path": "prompts/Complete Phase 7\u20138 Release Gate, Then Build Phase 9 Governed Publishing.md",
       "sha256": "cab9fb272101f8011067c79c5ac0611c0809d66cb066ce5a6f2023ff1d465af0",
       "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
@@ -1952,12 +1952,12 @@
     }
   ],
   "qualified_application_commit": "ec12763e38143f52f1af2661e00932158982f11a",
-  "next_action": "Initial audit and five-spec design review remain COMPLETE_REVIEWED only for source 7c1ddcda280b510048ad61106c406171edd64f18 and environment manifest 18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436; source CI run 40443346020 passed both required jobs. Current local Slice 2 fixture evidence is bound to application/source candidate ec12763e38143f52f1af2661e00932158982f11a; the 0043 artifact candidate 182c4e4 / 796/17/3 is historical. Continue the five required increments in approved sequence order. Production target qualification remains NOT RUN; all 22 final-entry rows remain non-PASS; RG0/full RG1 HELD; P2/Slice 7 BLOCKED; production disabled; main unmerged. The documentation commit requires exact-head CI after push. The final exact-candidate/environment P1/RG0/RG1 audit remains NOT RUN and BLOCKED until required increments and current external acceptance evidence are complete for one frozen candidate/environment.",
+  "next_action": "Initial audit and five-spec design review remain COMPLETE_REVIEWED only for source 7c1ddcda280b510048ad61106c406171edd64f18 and environment manifest 18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436; source CI run 40443346020 passed both required jobs. Current local Slice 2 fixture evidence is bound to application/source candidate ec12763e38143f52f1af2661e00932158982f11a; the 0043 artifact candidate 182c4e4 / 796/17/3 is historical. Continue the five required increments in approved sequence order. Production target qualification remains NOT RUN; all 22 final-entry rows remain non-PASS; RG0/full RG1 HELD; P2/Slice 7 BLOCKED; production disabled; main unmerged. Pushed documentation/evidence head 62b5a5e passed run 40553244096; the next status-only record commit requires exact-head CI after push. The final exact-candidate/environment P1/RG0/RG1 audit remains NOT RUN and BLOCKED until required increments and current external acceptance evidence are complete for one frozen candidate/environment.",
   "parallel_agents_status": "PASS_IMPLEMENTED_LOCAL_PARALLEL_AGENT_FIXTURE_SCOPE",
   "parallel_qualified_application_commit": "2653d2ecb3f0d5bb8ea6560de274137dd6032a96",
   "legacy_intelligence_status": "PASS_LOCAL_LEGACY_INTELLIGENCE_AND_PUBLICATION_FIXTURE_STAGES; ORIGINAL_NATIVE_INTELLIGENCE_AND_PUBLICATION_SCHEDULES_QUALIFIED",
   "goal_status": "ACTIVE",
-  "independent_review_scope": "The historical GPT-6.1/GPT-5.6 whole-branch review remains scoped to pushed feature head 6f5edc77edbfe189e46de4254c2fdb21c5652bce (run 38592066455 passed its required jobs). The initial commit-bound audit and five-spec design review are COMPLETE_REVIEWED for 7c1ddcda280b510048ad61106c406171edd64f18 and environment 18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436; exact-source CI run 40443346020 passed verify and p0-regression. The separate whole-change documentation review is PASS_AFTER_FIX_ROUND_1 for candidate manifest cafa0bd46ede2cc8aef51058f46541068a07cd031774c8b5501270bc2385ee9a, after F1-F3 fixes and a clean scoped rereview. This documentation review is not the final exact-candidate/environment P1/RG0/RG1 audit, which remains NOT RUN and BLOCKED pending required implementations and current external acceptance evidence for one frozen final pair. The current Slice 2 application/source candidate is ec12763e38143f52f1af2661e00932158982f11a and is not covered by those prior reviews or CI. The distinct documentation commit requires exact-head CI after push. The 182c4e4 / 796/17/3 qualification is historical; production gates remain held.",
+  "independent_review_scope": "The historical GPT-6.1/GPT-5.6 whole-branch review remains scoped to pushed feature head 6f5edc77edbfe189e46de4254c2fdb21c5652bce (run 38592066455 passed its required jobs). The initial commit-bound audit and five-spec design review are COMPLETE_REVIEWED for 7c1ddcda280b510048ad61106c406171edd64f18 and environment 18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436; exact-source CI run 40443346020 passed verify and p0-regression. The separate whole-change documentation review is PASS_AFTER_FIX_ROUND_1 for candidate manifest cafa0bd46ede2cc8aef51058f46541068a07cd031774c8b5501270bc2385ee9a, after F1-F3 fixes and a clean scoped rereview. This documentation review is not the final exact-candidate/environment P1/RG0/RG1 audit, which remains NOT RUN and BLOCKED pending required implementations and current external acceptance evidence for one frozen final pair. The current Slice 2 application/source candidate is ec12763e38143f52f1af2661e00932158982f11a and is not covered by those prior reviews or CI. Pushed documentation/evidence head 62b5a5e passed run 40553244096; the next status-only record commit requires exact-head CI after push. The 182c4e4 / 796/17/3 qualification is historical; production gates remain held.",
   "tracked_markdown_paths": [
     ".agents/skills/archify/SKILL.md",
     ".agents/skills/archify/THIRD_PARTY_NOTICES.md",
@@ -2068,11 +2068,11 @@
     "docs/v4/validation.md",
     "docs/verification.md",
     "docs/workflows.md",
-    "prompts/Build Creative Production Loop — Phases 7–8 End-to-End.md",
-    "prompts/Build Phase 10 — Multi-Platform Production Publishing, Analytics, Attribution & Experiments.md",
-    "prompts/Build Phases 1–4 End-to-End.md",
-    "prompts/Build Real Intelligence Loop — Pre-Phase 5 + Phases 5–6 End-to-End.md",
-    "prompts/Complete Phase 7–8 Release Gate, Then Build Phase 9 Governed Publishing.md",
+    "prompts/Build Creative Production Loop \u2014 Phases 7\u20138 End-to-End.md",
+    "prompts/Build Phase 10 \u2014 Multi-Platform Production Publishing, Analytics, Attribution & Experiments.md",
+    "prompts/Build Phases 1\u20134 End-to-End.md",
+    "prompts/Build Real Intelligence Loop \u2014 Pre-Phase 5 + Phases 5\u20136 End-to-End.md",
+    "prompts/Complete Phase 7\u20138 Release Gate, Then Build Phase 9 Governed Publishing.md",
     "prompts/Install and Verify Browser Evidence on Linux EC2.md"
   ],
   "historical_repository_readback": {
@@ -2081,7 +2081,7 @@
     "status": "Historical published-base protection and prior review snapshot recorded at 2026-10-27T05:11:43Z. Initial-audit source/feature ref 7c1ddcda280b510048ad61106c406171edd64f18 passed exact-source Actions run 40443346020. This snapshot does not establish CI for the final documentation commit or formal PR approval.",
     "artifact": "artifacts/v4-legacy-creative-qualified-head.json",
     "historical_feature_application_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
-    "historical_feature_head_ci": "PASS for feature head 6f5edc77edbfe189e46de4254c2fdb21c5652bce: run 38592066455 passed verify and p0-regression (hosted 787/26/3). Separately, pushed docs head 67effe8c9c176c0bd1c17fdef20b841c0e14b6de passed both required jobs in run 38610329330; final documentation commit exact-head CI is REQUIRED/PENDING.",
+    "historical_feature_head_ci": "PASS for feature head 6f5edc77edbfe189e46de4254c2fdb21c5652bce: run 38592066455 passed verify and p0-regression (hosted 787/26/3). Separately, pushed docs head 67effe8c9c176c0bd1c17fdef20b841c0e14b6de passed both required jobs in run 38610329330; documentation/evidence head 62b5a5e passed both required jobs in run 40553244096; the next status-only record commit requires its own exact-head CI after push.",
     "formal_pr_approval": "NOT RUN",
     "historical_feature_branch_head": "7c1ddcda280b510048ad61106c406171edd64f18",
     "historical_feature_ci_run_id": 40443346020,
@@ -2339,11 +2339,11 @@
       "docs/v4/validation.md",
       "docs/verification.md",
       "docs/workflows.md",
-      "prompts/Build Creative Production Loop — Phases 7–8 End-to-End.md",
-      "prompts/Build Phase 10 — Multi-Platform Production Publishing, Analytics, Attribution & Experiments.md",
-      "prompts/Build Phases 1–4 End-to-End.md",
-      "prompts/Build Real Intelligence Loop — Pre-Phase 5 + Phases 5–6 End-to-End.md",
-      "prompts/Complete Phase 7–8 Release Gate, Then Build Phase 9 Governed Publishing.md",
+      "prompts/Build Creative Production Loop \u2014 Phases 7\u20138 End-to-End.md",
+      "prompts/Build Phase 10 \u2014 Multi-Platform Production Publishing, Analytics, Attribution & Experiments.md",
+      "prompts/Build Phases 1\u20134 End-to-End.md",
+      "prompts/Build Real Intelligence Loop \u2014 Pre-Phase 5 + Phases 5\u20136 End-to-End.md",
+      "prompts/Complete Phase 7\u20138 Release Gate, Then Build Phase 9 Governed Publishing.md",
       "prompts/Install and Verify Browser Evidence on Linux EC2.md"
     ],
     "mermaid_source_blocks_preserved": 13,
@@ -2380,7 +2380,7 @@
     "record_scope": "HISTORICAL_0043_ARTIFACT_FIXTURE_QUALIFICATION_AT_182C4E4; not current Slice 2 evidence."
   },
   "current_handoff_hashes": {
-    "docs/README.md": "810e735b69988dd567af50870b5d76d12196971f510680755872d8825f2a0b14",
+    "docs/README.md": "a4a4ecf415eb38c9947d7632b4ffccbe03dc4629c8ce6b6988082b4386db2c39",
     "docs/superpowers/plans/2026-10-27-p1-production-policy-and-revocation.md": "c1564a7ec7d09f63b5aba105678c8b5929619fecc49e5b4bb3e415ed1340672e",
     "docs/superpowers/plans/2026-10-27-p1-rg0-rg1-initial-gap-audit.md": "5d1dd8a86718184d03324144643dfb009cb36243a5bd0c0f14c46844eb3c5cd4",
     "docs/superpowers/specs/2026-10-13-p1-live-schedule-fencing-design.md": "04ed59e2ed61ca17dc2c01df3a2964e1569e03e79f0aef2bbfe2ca2d96d5129a",
@@ -2388,21 +2388,21 @@
     "docs/superpowers/specs/2026-10-13-p1-production-recovery-and-alerts-design.md": "1c731ee595be6582902aa79f9ebb52d520f6fd18ad6054ca304709ce16aea61c",
     "docs/superpowers/specs/2026-10-13-p1-production-routing-and-worker-fencing-design.md": "d4d2c06a1f0925d2826b29a4e2c053f7f7773f660397fe986883c370aee78f67",
     "docs/superpowers/specs/2026-10-13-rg0-rg1-external-acceptance-design.md": "2a5d6cff0dd44070b1942e79f073906527b8e2650b62b3473d63542f00bfbcd8",
-    "docs/v4/IMPLEMENTATION-BLUEPRINT.md": "6e717aae30c9eb3714d760d5e04f8689a33db0b5e0a3d8dcb4e8e63137c7c58b",
+    "docs/v4/IMPLEMENTATION-BLUEPRINT.md": "8ceb85b83e452c10d4b323a709ac6706935013c2d9193bd1bff2b1b8c83d2703",
     "docs/v4/evidence-lock.json": "b44978d42ed635c8a8b59f2df2bd988a871c47eff3afd3a770d92290a39a771e",
-    "docs/v4/p0-release.json": "5038fa02bd73d176cbad6df99a66537fb25cdebc0f8c972f33419070e1145757",
-    "docs/v4/p1-production-policy-revocation-evidence.json": "7d27f58fb21b9cf06c8098ffbd0c2aa29b647d54d6643a1767845ebf475deb53",
-    "docs/v4/p1-qualification-matrix.json": "d52f8e5cd39497d17511d11f571370be05e602e6822da508d9164023caf117da",
-    "docs/v4/p1-rg0-rg1-audit-and-spec-review.md": "8adf910a9607cfb74ab0dcba0bce249b8deff0c50b0bbd38849f092e06ae81f6",
+    "docs/v4/p0-release.json": "0a0f1969e0497cbec535fb3f854b51cef870a4746eb92f8a67a127566dc9ff75",
+    "docs/v4/p1-production-policy-revocation-evidence.json": "e5a5a3d424157479cacaf00eae39614a5abe12ecdb04ac38af0c95692dbd982b",
+    "docs/v4/p1-qualification-matrix.json": "7bd051023bb9dc6af4f491fc88984ca5a37de27b4b4533078881c112ef66655b",
+    "docs/v4/p1-rg0-rg1-audit-and-spec-review.md": "fa399efde0d60ba3343424e9e12adbaa0423fbfecb9c1ae4272c0ed83eca308a",
     "docs/v4/p1-rg0-rg1-initial-gap-audit.json": "33fe485384dcf60e36df8d48ace6394c80bce0d1bd9e6b9b39c7a905d65676b1",
     "docs/v4/p1-rg0-rg1-initial-gap-audit.md": "62aab5afb39f7c47e355a68ccf56e319a72955247515dfbdba8913fd797a5944",
-    "docs/v4/progress.md": "3fc60a980f20ced6f16372d59acf220a4e8a5caa5e7129578515d536fe81bd68",
+    "docs/v4/progress.md": "5bf02b6110af159e5680b68de1ac5ee49d28152a44cdd1be82e40d9e98cc5a69",
     "docs/v4/publication-recovery-hold-evidence.json": "3cce88e4d692f726be710c1f4db46b1428c9546561424a2ab0ad120363becc66",
-    "docs/v4/publication-recovery-hold-successor-evidence.json": "4baef4a2328b26a47abc150f4b2ba47aa7c3d3afa6260c651986142b110054c1",
-    "docs/v4/repository-enforcement-evidence.json": "389886f670654a65848d5f43d61215562d53a95969906e5a44722a4ab7dbc006",
-    "docs/v4/test_checks.py": "9d9b20c78a934957cd3b23acb566357a0b5155dd9b03c72395c2aa14bbe74e5a",
-    "docs/v4/validation.md": "308c9b6a054708bd359cbf7e3f12a4164f7885c21382f033c9f7f2a23febafdf",
-    ".superpowers/sdd/2026-10-27-p1-production-policy-and-revocation/final-evidence-report.md": "22b88cec0f18cc3f9ac2a8007b5ee015ee571483aa5e4ce5468dac9fc7b1a1f8"
+    "docs/v4/publication-recovery-hold-successor-evidence.json": "6bb3ce696cffec2629838f5f30b8eea4acb837cbb81c1bcbc1b4de4f19e8764a",
+    "docs/v4/repository-enforcement-evidence.json": "fc69f901036971bd64588cf3247d1701939e7525442f196daeab7f1919de11a2",
+    "docs/v4/test_checks.py": "c915b137417c53b3b3f773eacbfcfea3d62584a21ca11df8288e0c2b4281cf6e",
+    "docs/v4/validation.md": "64c021233a1fcaa423c21e33ba8553b2a9cdef69c6f6d565436dd15fdb180fd2",
+    ".superpowers/sdd/2026-10-27-p1-production-policy-and-revocation/final-evidence-report.md": "551c40b4d6852ab3ab4f42bc2cd26ffd1a0339fa03a5f7c2c0f0d39814d05307"
   },
   "historical_documentation_refresh": {
     "plan_task": "docs/superpowers/plans/2026-10-27-p1-rg0-rg1-initial-gap-audit.md",
@@ -2593,7 +2593,7 @@
     "main": "UNMERGED",
     "current_documentation_artifacts": 288,
     "current_markdown_paths": 115,
-    "candidate_documentation_ci": "REQUIRED_AFTER_PUSH",
+    "candidate_documentation_ci": "PASS_FOR_62B5A5E (run 40553244096); NEXT_STATUS_ONLY_COMMIT_CI_REQUIRED_AFTER_PUSH",
     "documentation_commit_relationship": "The documentation commit carrying this record is distinct from application_commit and does not replace the tested application/source candidate."
   },
   "historical_task6_fixture_checkpoint": {
@@ -2629,7 +2629,7 @@
   },
   "active_project_markdown_files": 93,
   "current_application_artifact_status": "No application image, JUnit artifact, source manifest, or source lock was produced by this verifier run.",
-  "current_independent_review_scope": "The historical 182c4e4/796/17/3 artifact qualification and prior branch review/CI remain bound to their recorded sources. Current local Slice 2 evidence is bound to application/source candidate ec12763e38143f52f1af2661e00932158982f11a; it is not independently reviewed or production qualified. The later documentation commit requires exact-head CI after push. Production acceptance remains NOT RUN and RG0/full RG1 remain HELD.",
+  "current_independent_review_scope": "The historical 182c4e4/796/17/3 artifact qualification and prior branch review/CI remain bound to their recorded sources. Current local Slice 2 evidence is bound to application/source candidate ec12763e38143f52f1af2661e00932158982f11a; it is not independently reviewed or production qualified. Pushed documentation/evidence head 62b5a5e passed run 40553244096; the next status-only record commit requires exact-head CI after push. Production acceptance remains NOT RUN and RG0/full RG1 remain HELD.",
   "historical_0043_candidate_artifact_pins": {
     "application_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
     "scope": "HISTORICAL_0043_ARTIFACT_FIXTURE_QUALIFICATION",
@@ -2786,18 +2786,40 @@
     },
     "historical_docs_only_head_ci": "Historical: PASS_FOR_67EFFE8 (run 38610329330); initial-audit source 7C1DDCD passed run 40443346020.",
     "latest_pushed_documentation_head_ci": {
-      "head_commit": "67effe8c9c176c0bd1c17fdef20b841c0e14b6de",
-      "workflow_run_id": 38610329330,
-      "workflow_run_url": "https://github.com/manojvermamv/Salience/actions/runs/38610329330",
+      "head_commit": "62b5a5e6afc8bd6477bbd14a951166edc97ea683",
+      "short_head": "62b5a5e",
+      "workflow_run_id": 40553244096,
+      "workflow_run_url": "https://github.com/manojvermamv/Salience/actions/runs/40553244096",
+      "event": "push",
+      "workflow": "V4 documentation contract",
+      "created_at": "2026-10-27T17:43:21Z",
+      "updated_at": "2026-10-27T18:02:44Z",
       "status": "completed",
       "conclusion": "success",
       "required_jobs": {
-        "verify": "success",
-        "p0-regression": "success"
+        "verify": {
+          "job_id": 122362339840,
+          "conclusion": "success",
+          "started_at": "2026-10-27T17:43:24Z",
+          "completed_at": "2026-10-27T17:43:32Z"
+        },
+        "p0-regression": {
+          "job_id": 122362339085,
+          "conclusion": "success",
+          "started_at": "2026-10-27T17:43:23Z",
+          "completed_at": "2026-10-27T18:02:43Z"
+        }
       },
-      "scope": "Documentation-only; no application result counts attributed."
+      "hosted_suite_summary": {
+        "migration_head": "0046_production_policy_approval_id_immutability",
+        "passed": 908,
+        "skipped": 26,
+        "warnings": 3,
+        "elapsed_seconds": 1082.53
+      },
+      "scope": "Exact pushed documentation/evidence head; no application candidate or production qualification transfer."
     },
-    "current_documentation_candidate_post_push_exact_head_ci": "REQUIRED_AFTER_PUSH; the documentation commit carrying Slice 2 evidence is distinct from application candidate ec12763e38143f52f1af2661e00932158982f11a; no exact-head run is recorded.",
+    "current_documentation_candidate_post_push_exact_head_ci": "PASS_FOR_62B5A5E (run 40553244096); NEXT_STATUS_ONLY_COMMIT_CI_REQUIRED_AFTER_PUSH",
     "initial_audit_source_ci": {
       "head_commit": "7c1ddcda280b510048ad61106c406171edd64f18",
       "run_id": 40443346020,
@@ -2811,7 +2833,7 @@
       },
       "scope": "Exact frozen initial-audit source commit; result does not transfer to the documentation candidate carrying final evidence."
     },
-    "record_scope": "Historical branch review and CI scopes; no review or CI result transfers to the current Slice 2 candidate or later documentation commit."
+    "record_scope": "Historical feature review and CI remain scoped to their recorded head. Exact documentation/evidence CI passes for pushed head 62b5a5e; this does not transfer application qualification. The next status-only record commit requires exact-head CI after push."
   },
   "current_slice2_documentation_ci_repair": {
     "scope": "Slice 2 documentation evidence lock only; no application behavior changed",
@@ -2851,7 +2873,7 @@
       "path": "docs/v4/audits/p1-policy-revocation-ec12763-verifier.log",
       "sha256": "c643740f100210bad8428433db31ecd2852a538b26ad702224cd28c3f5432020"
     },
-    "repair_commit_ci": "REQUIRED_AFTER_PUSH",
+    "repair_commit_ci": "PASS_FOR_EXACT_PUSHED_HEAD_62B5A5E_RUN_40553244096; NEXT_STATUS_ONLY_COMMIT_CI_REQUIRED_AFTER_PUSH",
     "production_effects_enabled": false,
     "provider_acceptance": "NOT RUN",
     "production_acceptance": "NOT RUN",
@@ -2886,6 +2908,41 @@
       }
     ],
     "git_diff_check": "PASS",
-    "audit_artifact_and_handoff_hashes": "PASS"
+    "audit_artifact_and_handoff_hashes": "PASS",
+    "hosted_success": {
+      "head_commit": "62b5a5e6afc8bd6477bbd14a951166edc97ea683",
+      "short_head": "62b5a5e",
+      "workflow_run_id": 40553244096,
+      "workflow_run_url": "https://github.com/manojvermamv/Salience/actions/runs/40553244096",
+      "event": "push",
+      "workflow": "V4 documentation contract",
+      "created_at": "2026-10-27T17:43:21Z",
+      "updated_at": "2026-10-27T18:02:44Z",
+      "status": "completed",
+      "conclusion": "success",
+      "required_jobs": {
+        "verify": {
+          "job_id": 122362339840,
+          "conclusion": "success",
+          "started_at": "2026-10-27T17:43:24Z",
+          "completed_at": "2026-10-27T17:43:32Z"
+        },
+        "p0-regression": {
+          "job_id": 122362339085,
+          "conclusion": "success",
+          "started_at": "2026-10-27T17:43:23Z",
+          "completed_at": "2026-10-27T18:02:43Z"
+        }
+      },
+      "hosted_suite_summary": {
+        "migration_head": "0046_production_policy_approval_id_immutability",
+        "passed": 908,
+        "skipped": 26,
+        "warnings": 3,
+        "elapsed_seconds": 1082.53
+      },
+      "scope": "Exact pushed documentation/evidence head; no application candidate or production qualification transfer."
+    },
+    "next_status_only_commit_ci": "REQUIRED_AFTER_PUSH; the future run ID cannot be recorded before this status-only commit is pushed."
   }
 }
