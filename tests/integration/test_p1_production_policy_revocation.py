@@ -59,6 +59,16 @@ class LocalRouteFence:
         )
 
 
+class RecordingAuthorizationMetrics(ProductionAuthorizationMetrics):
+    def __init__(self, meter):
+        super().__init__(meter)
+        self.stop_to_denial_seconds: list[float] = []
+
+    def record_stop_to_denial(self, seconds: float) -> None:
+        self.stop_to_denial_seconds.append(seconds)
+        super().record_stop_to_denial(seconds)
+
+
 def _active_policy(
     connection, workspace_id: UUID, policy_id: UUID, *, publication_scope=None
 ) -> tuple[dict, str]:
@@ -509,6 +519,147 @@ def test_production_budget_binding_is_current_and_account_scoped(accounting):
         case["dispatch"].issue_permit(case["request"])
     assert case["route"].calls == []
     assert _permit_count(case["database"], case["operation_id"]) == 0
+
+
+def test_active_stop_denial_records_db_derived_stop_latency(accounting):
+    case = _production_case(accounting)
+    governance = CycleGovernance(
+        case["database"], workspace_id=case["workspace_id"], subject_id=case["subject_id"]
+    )
+    governance.set_stop(
+        goal_id=case["goal_id"],
+        stopped=True,
+        expected_revision=1,
+        idempotency_key="p1-stop-latency",
+        reason="measure time from stop to denial",
+    )
+    with psycopg.connect(case["database"]) as connection:
+        changed_at = connection.execute(
+            "SELECT changed_at FROM v4_stop_scopes "
+            "WHERE workspace_id=%s AND scope_key=%s AND stopped",
+            (case["workspace_id"], "goal:" + str(case["goal_id"])),
+        ).fetchone()[0]
+    time.sleep(0.15)
+
+    reader = InMemoryMetricReader()
+    provider = MeterProvider(metric_readers=[reader])
+    metrics = RecordingAuthorizationMetrics(
+        provider.get_meter("p1-stop-latency-test")
+    )
+    dispatch = ProductionEffectDispatch(case["database"], case["route"], metrics=metrics)
+    with pytest.raises(ProductionAuthorizationDenied, match="stop_active"):
+        dispatch.issue_permit(case["request"])
+
+    assert len(metrics.stop_to_denial_seconds) == 1
+    latency = metrics.stop_to_denial_seconds[0]
+    with psycopg.connect(case["database"]) as connection:
+        elapsed_at_read = float(connection.execute(
+            "SELECT extract(epoch FROM clock_timestamp() - %s::timestamptz)",
+            (changed_at,),
+        ).fetchone()[0])
+    assert 0.1 <= latency <= 86_400
+    assert 0 <= elapsed_at_read - latency < 0.5
+    assert case["route"].calls == []
+    assert "stop_to_denial" in repr(reader.get_metrics_data())
+
+
+def test_repeated_denial_attempts_append_immutable_events(accounting):
+    case = _production_case(accounting)
+    with psycopg.connect(case["database"]) as connection:
+        connection.execute(
+            "UPDATE permission_grants SET effect='deny' "
+            "WHERE workspace_id=%s AND principal_id=%s AND scope='effects:write'",
+            (case["workspace_id"], str(case["subject_id"])),
+        )
+    for _ in range(2):
+        with pytest.raises(ProductionAuthorizationDenied, match="stale_revision"):
+            case["dispatch"].issue_permit(case["request"])
+
+    with psycopg.connect(case["database"]) as connection:
+        events = connection.execute(
+            "SELECT id,payload FROM v4_cycle_events WHERE cycle_id=%s "
+            "AND kind='production_authorization_denied' "
+            "AND payload->>'action'='issue' AND payload->>'reason_code'='stale_revision' "
+            "ORDER BY created_at",
+            (case["cycle_id"],),
+        ).fetchall()
+        assert len(events) == 2
+        assert events[0][0] != events[1][0]
+        assert (
+            events[0][1]["authorization_attempt_id"]
+            != events[1][1]["authorization_attempt_id"]
+        )
+        with pytest.raises(psycopg.errors.RaiseException, match="immutable"):
+            connection.execute(
+                "UPDATE v4_cycle_events SET payload='{}' WHERE id=%s",
+                (events[0][0],),
+            )
+
+
+def test_missing_permit_claim_records_event_without_approval_reference(accounting):
+    case = _production_case(accounting)
+    missing_permit_id = uuid4()
+    with pytest.raises(ProductionAuthorizationDenied, match="permit_missing"):
+        case["dispatch"].claim_permit(case["operation_id"], missing_permit_id)
+
+    with psycopg.connect(case["database"]) as connection:
+        event = connection.execute(
+            "SELECT payload FROM v4_cycle_events WHERE cycle_id=%s "
+            "AND kind='production_authorization_denied' "
+            "AND payload->>'action'='claim' AND payload->>'permit_id'=%s",
+            (case["cycle_id"], str(missing_permit_id)),
+        ).fetchone()
+    assert event is not None
+    assert event[0]["reason_code"] == "permit_missing"
+    assert event[0]["approval_request_id"] is None
+
+
+def test_unrelated_same_workspace_approval_is_not_attached_to_denial(accounting):
+    case = _production_case(accounting)
+    unrelated_approval_id = uuid4()
+    with psycopg.connect(case["database"]) as connection:
+        canonical_context = connection.execute(
+            "SELECT request_context FROM approval_requests WHERE id=%s",
+            (case["request"].approval_request_id,),
+        ).fetchone()[0]
+        unrelated_context = dict(canonical_context)
+        for field in ("operation_id", "cycle_id", "intent_id", "context_id"):
+            unrelated_context[field] = str(uuid4())
+        connection.execute(
+            """INSERT INTO approval_requests(
+                      id,workspace_id,policy_version_id,effect_type,status,request_context,
+                      requested_by,decided_by,decided_at)
+               VALUES(%s,%s,%s,'write','pending',%s,'p1-local-reviewer',NULL,NULL)""",
+            (
+                unrelated_approval_id,
+                case["workspace_id"],
+                case["request"].policy_version_id,
+                Jsonb(unrelated_context),
+            ),
+        )
+        connection.execute(
+            "UPDATE approval_requests SET status='approved',"
+            "decided_by='p1-local-reviewer',decided_at=clock_timestamp() WHERE id=%s",
+            (unrelated_approval_id,),
+        )
+
+    untrusted_request = replace(
+        case["request"], approval_request_id=unrelated_approval_id
+    )
+    with pytest.raises(ProductionAuthorizationDenied, match="approval_invalid"):
+        case["dispatch"].issue_permit(untrusted_request)
+    assert case["route"].calls == []
+
+    with psycopg.connect(case["database"]) as connection:
+        event = connection.execute(
+            "SELECT payload FROM v4_cycle_events WHERE cycle_id=%s "
+            "AND kind='production_authorization_denied' "
+            "AND payload->>'action'='issue' ORDER BY created_at DESC LIMIT 1",
+            (case["cycle_id"],),
+        ).fetchone()
+    assert event is not None
+    assert event[0]["approval_request_id"] is None
+    assert str(unrelated_approval_id) not in repr(event[0])
 
 
 def test_dispatch_records_bounded_decisions_and_duplicate_claim_denial(accounting):

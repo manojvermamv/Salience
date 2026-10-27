@@ -383,6 +383,7 @@ class ProductionEffectDispatch:
         self.metrics = metrics
 
     def issue_permit(self, request: ProductionPermitRequest) -> ProductionPermitResult:
+        attempt_id = uuid4()
         try:
             result = self._issue_permit(request)
         except ProductionAuthorizationDenied as denial:
@@ -393,6 +394,7 @@ class ProductionEffectDispatch:
                 denial.reason_code,
                 permit_id=None,
                 request=request if isinstance(request, ProductionPermitRequest) else None,
+                attempt_id=attempt_id,
             )
             raise
         except psycopg.OperationalError:
@@ -466,22 +468,7 @@ class ProductionEffectDispatch:
                 now = self._database_time(connection)
                 if denial is None and (expiry <= now or facts.expires_at <= now):
                     denial = ProductionAuthorizationDenied("permit_expired")
-                if denial is not None:
-                    self._write_event(
-                        connection,
-                        facts,
-                        "production_authorization_denied",
-                        action="issue",
-                        permit_id=permit_id,
-                        claim_id=None,
-                        decision_id=(
-                            decision.decision_id if decision is not None else None
-                        ),
-                        reason_code=denial.reason_code,
-                        request=request,
-                        database_time=now,
-                    )
-                else:
+                if denial is None:
                     assert decision is not None and decision.decision_id is not None
                     snapshot = self._permit_snapshot(request, facts, decision.decision_id)
                     connection.execute(
@@ -560,6 +547,7 @@ class ProductionEffectDispatch:
         return result
 
     def claim_permit(self, operation_id: UUID, permit_id: UUID) -> ProductionPermitResult:
+        attempt_id = uuid4()
         effect = self._permit_effect(operation_id, permit_id)
         try:
             result = self._claim_permit(operation_id, permit_id)
@@ -571,6 +559,7 @@ class ProductionEffectDispatch:
                 denial.reason_code,
                 permit_id=permit_id,
                 request=None,
+                attempt_id=attempt_id,
             )
             raise
         except psycopg.OperationalError:
@@ -622,21 +611,6 @@ class ProductionEffectDispatch:
                         self._validate_permit_row(permit, request, facts)
                 except ProductionAuthorizationDenied as error:
                     denial = error
-                    now = self._database_time(connection)
-                    self._write_event(
-                        connection,
-                        facts,
-                        "production_authorization_denied",
-                        action="claim",
-                        permit_id=permit_id,
-                        claim_id=None,
-                        decision_id=(
-                            decision.decision_id if decision is not None else None
-                        ),
-                        reason_code=denial.reason_code,
-                        request=request,
-                        database_time=now,
-                    )
                 if denial is None:
                     route_request = self._route_request(
                         request.route, operation_id, permit_id, "claim"
@@ -654,22 +628,7 @@ class ProductionEffectDispatch:
                         permit["expires_at"] <= now or facts.expires_at <= now
                     ):
                         denial = ProductionAuthorizationDenied("permit_expired")
-                    if denial is not None:
-                        self._write_event(
-                            connection,
-                            facts,
-                            "production_authorization_denied",
-                            action="claim",
-                            permit_id=permit_id,
-                            claim_id=None,
-                            decision_id=(
-                                decision.decision_id if decision is not None else None
-                            ),
-                            reason_code=denial.reason_code,
-                            request=request,
-                            database_time=now,
-                        )
-                    else:
+                    if denial is None:
                         assert decision is not None and decision.decision_id is not None
                         claim_id = uuid4()
                         connection.execute(
@@ -710,6 +669,7 @@ class ProductionEffectDispatch:
     def authorize_action(
         self, operation_id: UUID, permit_id: UUID, action_kind: str
     ) -> RouteFenceDecision:
+        attempt_id = uuid4()
         effect = self._permit_effect(operation_id, permit_id)
         try:
             decision = self._authorize_action(operation_id, permit_id, action_kind)
@@ -721,6 +681,7 @@ class ProductionEffectDispatch:
                 denial.reason_code,
                 permit_id=permit_id,
                 request=None,
+                attempt_id=attempt_id,
             )
             raise
         except psycopg.OperationalError:
@@ -736,6 +697,7 @@ class ProductionEffectDispatch:
                 decision.reason_code or "other",
                 permit_id=permit_id,
                 request=None,
+                attempt_id=attempt_id,
             )
         return decision
 
@@ -772,10 +734,7 @@ class ProductionEffectDispatch:
                     or pointer["current_claim_id"] is None
                 ):
                     return self._denied_action(
-                        connection,
                         route_request,
-                        request,
-                        permit,
                         "dispatch_already_claimed",
                     )
                 claim = connection.execute(
@@ -786,7 +745,7 @@ class ProductionEffectDispatch:
                 ).fetchone()
                 if claim is None:
                     return self._denied_action(
-                        connection, route_request, request, permit, "current_operation_missing"
+                        route_request, "current_operation_missing"
                     )
                 facts: _AuthorityFacts | None = None
                 try:
@@ -795,35 +754,20 @@ class ProductionEffectDispatch:
                     now = self._database_time(connection)
                     if permit["expires_at"] <= now or facts.expires_at <= now:
                         return self._denied_action(
-                            connection,
                             route_request,
-                            request,
-                            permit,
                             "permit_expired",
-                            facts,
-                            claim_id=claim["claim_id"],
                         )
                 except ProductionAuthorizationDenied as denial:
                     return self._denied_action(
-                        connection,
                         route_request,
-                        request,
-                        permit,
                         denial.reason_code,
-                        facts,
-                        claim_id=claim["claim_id"],
                     )
                 try:
                     decision = self._route_decision(route_request)
                 except ProductionAuthorizationDenied as denial:
                     return self._denied_action(
-                        connection,
                         route_request,
-                        request,
-                        permit,
                         denial.reason_code,
-                        facts,
-                        claim_id=claim["claim_id"],
                     )
                 now = self._database_time(connection)
                 if decision.authorized and (
@@ -835,46 +779,27 @@ class ProductionEffectDispatch:
                         reason_code="permit_expired",
                         request=route_request,
                     )
-                self._write_event(
-                    connection,
-                    facts,
-                    "production_action_authorized"
-                    if decision.authorized
-                    else "production_authorization_denied",
-                    action=action_kind,
-                    permit_id=permit_id,
-                    claim_id=claim["claim_id"],
-                    decision_id=decision.decision_id,
-                    reason_code=decision.reason_code,
-                    request=request,
-                    database_time=now,
-                )
+                if decision.authorized:
+                    self._write_event(
+                        connection,
+                        facts,
+                        "production_action_authorized",
+                        action=action_kind,
+                        permit_id=permit_id,
+                        claim_id=claim["claim_id"],
+                        decision_id=decision.decision_id,
+                        reason_code=decision.reason_code,
+                        request=request,
+                        database_time=now,
+                    )
                 return decision
 
     def _denied_action(
         self,
-        connection,
         route_request: RouteFenceRequest,
-        request: ProductionPermitRequest,
-        permit,
         reason_code: str,
-        facts: _AuthorityFacts | None = None,
-        claim_id: UUID | None = None,
     ) -> RouteFenceDecision:
         safe_reason = reason_code if reason_code in _REASON_CODES else "other"
-        if facts is not None:
-            self._write_event(
-                connection,
-                facts,
-                "production_authorization_denied",
-                action=route_request.action_kind,
-                permit_id=permit["permit_id"],
-                claim_id=claim_id,
-                decision_id=None,
-                reason_code=safe_reason,
-                request=request,
-                database_time=self._database_time(connection),
-            )
         return RouteFenceDecision(
             authorized=False,
             decision_id=None,
@@ -1018,7 +943,7 @@ class ProductionEffectDispatch:
             raise ProductionAuthorizationDenied("operation_not_runnable")
 
         stop_rows = connection.execute(
-            """SELECT scope_key,revision,stopped FROM public.v4_stop_scopes
+            """SELECT scope_key,revision,stopped,changed_at FROM public.v4_stop_scopes
                WHERE workspace_id=%s AND scope_key=ANY(%s)
                ORDER BY scope_key FOR UPDATE""",
             (
@@ -1029,7 +954,12 @@ class ProductionEffectDispatch:
         stops = {row["scope_key"]: row for row in stop_rows}
         if "workspace" not in stops or "goal:" + str(context.goal_id) not in stops:
             raise ProductionAuthorizationDenied("stop_scope_missing")
-        if stops["workspace"]["stopped"] or stops["goal:" + str(context.goal_id)]["stopped"]:
+        active_stops = [stop for stop in stops.values() if stop["stopped"]]
+        if active_stops:
+            if self.metrics is not None:
+                changed_at = min(stop["changed_at"] for stop in active_stops)
+                latency = max(0.0, (now - changed_at).total_seconds())
+                self.metrics.record_stop_to_denial(min(latency, 86_400.0))
             raise ProductionAuthorizationDenied("stop_active")
 
         baseline_row = connection.execute(
@@ -1552,8 +1482,9 @@ class ProductionEffectDispatch:
         *,
         permit_id: UUID | None,
         request: ProductionPermitRequest | None,
+        attempt_id: UUID,
     ) -> None:
-        """Append redacted denial evidence through a separate committed transaction."""
+        """Append one redacted denial event for this attempt in a safe transaction."""
         if not isinstance(operation_id, UUID):
             return
         try:
@@ -1576,53 +1507,6 @@ class ProductionEffectDispatch:
                     ).fetchone()
                     if cycle is None:
                         return
-                    approval_id = (
-                        request.approval_request_id if request is not None else None
-                    )
-                    if permit_id is not None:
-                        permit = connection.execute(
-                            """SELECT request_snapshot->>'approval_request_id' AS approval_id
-                               FROM public.v4_production_effect_permits
-                               WHERE operation_id=%s AND permit_id=%s""",
-                            (operation_id, permit_id),
-                        ).fetchone()
-                        if permit is not None and permit["approval_id"]:
-                            approval_id = UUID(permit["approval_id"])
-                    if approval_id is None:
-                        return
-                    approval = connection.execute(
-                        """SELECT request_context->'required_scopes' AS required_scopes
-                           FROM public.approval_requests
-                           WHERE id=%s AND workspace_id=%s""",
-                        (approval_id, cycle["workspace_id"]),
-                    ).fetchone()
-                    if approval is None:
-                        return
-                    scopes = approval["required_scopes"]
-                    if (
-                        not isinstance(scopes, list)
-                        or not scopes
-                        or any(not isinstance(scope, str) for scope in scopes)
-                    ):
-                        return
-                    snapshot = None
-                    if permit_id is not None:
-                        snapshot_row = connection.execute(
-                            """SELECT request_snapshot
-                               FROM public.v4_production_effect_permits
-                               WHERE operation_id=%s AND permit_id=%s""",
-                            (operation_id, permit_id),
-                        ).fetchone()
-                        if snapshot_row is not None:
-                            snapshot = snapshot_row["request_snapshot"]
-                    if snapshot is None and request is not None:
-                        snapshot = {
-                            "approval_request_id": str(request.approval_request_id),
-                            "effect_type": request.effect_type,
-                            "account_id": str(request.account_id),
-                        }
-                    if not isinstance(snapshot, Mapping):
-                        snapshot = {}
                     context_payload = cycle["context_payload"]
                     subject_value = (
                         context_payload.get("subject_id")
@@ -1632,6 +1516,85 @@ class ProductionEffectDispatch:
                     if not isinstance(subject_value, str):
                         return
                     subject_id = UUID(subject_value)
+                    candidate_approval_id = (
+                        request.approval_request_id if request is not None else None
+                    )
+                    snapshot = None
+                    if permit_id is not None:
+                        permit = connection.execute(
+                            """SELECT request_snapshot
+                               FROM public.v4_production_effect_permits
+                               WHERE operation_id=%s AND permit_id=%s""",
+                            (operation_id, permit_id),
+                        ).fetchone()
+                        if permit is not None:
+                            snapshot = permit["request_snapshot"]
+                            snapshot_approval_id = (
+                                snapshot.get("approval_request_id")
+                                if isinstance(snapshot, Mapping)
+                                else None
+                            )
+                            if isinstance(snapshot_approval_id, str):
+                                candidate_approval_id = UUID(snapshot_approval_id)
+
+                    approval_id = None
+                    scopes: list[str] = []
+                    if candidate_approval_id is not None:
+                        approval = connection.execute(
+                            """SELECT workspace_id,request_context
+                           FROM public.approval_requests
+                           WHERE id=%s AND workspace_id=%s""",
+                            (candidate_approval_id, cycle["workspace_id"]),
+                        ).fetchone()
+                        approval_context = (
+                            approval["request_context"] if approval is not None else None
+                        )
+                        expected_context_bindings = {
+                            "workspace_id": str(cycle["workspace_id"]),
+                            "goal_id": str(cycle["goal_id"]),
+                            "intent_id": str(cycle["intent_id"]),
+                            "cycle_id": str(cycle["cycle_id"]),
+                            "context_id": str(cycle["context_id"]),
+                            "operation_id": str(cycle["operation_id"]),
+                            "subject_id": str(subject_id),
+                        }
+                        if (
+                            approval is not None
+                            and approval["workspace_id"] == cycle["workspace_id"]
+                            and isinstance(approval_context, Mapping)
+                            and approval_context.get("schema_version")
+                            == "salience.p1-effect-approval.v1"
+                            and all(
+                                approval_context.get(key) == value
+                                for key, value in expected_context_bindings.items()
+                            )
+                        ):
+                            candidate_scopes = approval_context.get("required_scopes")
+                            if (
+                                isinstance(candidate_scopes, list)
+                                and candidate_scopes
+                                and all(
+                                    isinstance(scope, str)
+                                    and scope.strip()
+                                    and len(scope) <= 128
+                                    for scope in candidate_scopes
+                                )
+                                and len(candidate_scopes) == len(set(candidate_scopes))
+                            ):
+                                approval_id = candidate_approval_id
+                                scopes = candidate_scopes
+
+                    if permit_id is not None:
+                        snapshot_row = connection.execute(
+                            """SELECT request_snapshot
+                               FROM public.v4_production_effect_permits
+                               WHERE operation_id=%s AND permit_id=%s""",
+                            (operation_id, permit_id),
+                        ).fetchone()
+                        if snapshot_row is not None:
+                            snapshot = snapshot_row["request_snapshot"]
+                    if not isinstance(snapshot, Mapping):
+                        snapshot = {}
                     pointer = connection.execute(
                         """SELECT current_claim_id
                            FROM public.v4_production_current_dispatch
@@ -1639,26 +1602,9 @@ class ProductionEffectDispatch:
                         (operation_id,),
                     ).fetchone()
                     claim_id = pointer["current_claim_id"] if pointer is not None else None
-                    existing = connection.execute(
-                        """SELECT 1 FROM public.v4_cycle_events
-                           WHERE cycle_id=%s AND kind='production_authorization_denied'
-                             AND payload->>'operation_id'=%s
-                             AND payload->>'action'=%s
-                             AND payload->>'reason_code'=%s
-                             AND payload->>'permit_id' IS NOT DISTINCT FROM %s
-                           LIMIT 1""",
-                        (
-                            cycle["cycle_id"],
-                            str(operation_id),
-                            action,
-                            reason_code,
-                            str(permit_id) if permit_id is not None else None,
-                        ),
-                    ).fetchone()
-                    if existing is not None:
-                        return
                     payload = {
                         "schema_version": "salience.p1-production-authorization-event.v1",
+                        "authorization_attempt_id": str(attempt_id),
                         "action": action,
                         "outcome": "deny",
                         "operation_id": str(operation_id),
@@ -1673,7 +1619,9 @@ class ProductionEffectDispatch:
                         "cycle_id": str(cycle["cycle_id"]),
                         "context_id": str(cycle["context_id"]),
                         "subject_id": str(subject_id),
-                        "approval_request_id": str(approval_id),
+                        "approval_request_id": (
+                            str(approval_id) if approval_id is not None else None
+                        ),
                         "required_scopes": scopes,
                         "effect_type": snapshot.get("effect_type"),
                         "account_id": snapshot.get("account_id"),
@@ -1691,7 +1639,9 @@ class ProductionEffectDispatch:
                             cycle["goal_id"],
                             cycle["intent_id"],
                             cycle["cycle_id"],
-                            context_payload.get("traceparent"),
+                            context_payload.get("traceparent")
+                            if isinstance(context_payload, Mapping)
+                            else None,
                             Jsonb(payload),
                         ),
                     )
