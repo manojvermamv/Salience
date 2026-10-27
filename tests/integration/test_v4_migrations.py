@@ -2684,6 +2684,18 @@ def test_0044_production_claim_is_unique_and_mode_separated():
                     _insert_0044_production_permit(connection, binding)
             claim_id = uuid4()
             connection.execute(
+                """SELECT public.v4_advance_production_current_dispatch_v1(
+                          %s,0,%s,NULL,%s,NULL)""",
+                (cycle["operation_id"], permit_id, idempotency_key),
+            )
+            pointer_without_claim = connection.execute(
+                """SELECT generation,current_permit_id,current_claim_id
+                   FROM v4_production_current_dispatch WHERE operation_id=%s""",
+                (cycle["operation_id"],),
+            ).fetchone()
+            assert pointer_without_claim == (1, permit_id, None)
+            # The claim history arrives after initial issue and fills this pointer.
+            connection.execute(
                 """INSERT INTO v4_production_effect_permit_claims(
                           claim_id,permit_id,operation_id,generation,
                           route_fence_decision_id)
@@ -2703,11 +2715,6 @@ def test_0044_production_claim_is_unique_and_mode_separated():
                            FROM v4_production_effect_permits WHERE permit_id=%s""",
                         (uuid4(), permit_id),
                     )
-            connection.execute(
-                """SELECT public.v4_advance_production_current_dispatch_v1(
-                          %s,0,%s,NULL,%s,NULL)""",
-                (cycle["operation_id"], permit_id, idempotency_key),
-            )
             connection.execute(
                 """SELECT public.v4_advance_production_current_dispatch_v1(
                           %s,1,%s,%s,%s,NULL)""",
