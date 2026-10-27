@@ -2547,6 +2547,66 @@ def test_0044_production_claim_is_unique_and_mode_separated():
             ):
                 missing_permit_guards.append("permit expiry longer than 60 seconds")
 
+            future_binding = {**binding, "operation_id": uuid4()}
+            future_attempt = {}
+
+            def claim_future_permit():
+                future_permit_id, future_idempotency_key = (
+                    _insert_0044_production_permit(
+                        connection,
+                        future_binding,
+                        issued_offset="61 seconds",
+                        expires_offset="91 seconds",
+                    )
+                )
+                future_claim_id = uuid4()
+                connection.execute(
+                    """INSERT INTO v4_production_effect_permit_claims(
+                              claim_id,permit_id,operation_id,generation,
+                              route_fence_decision_id)
+                       SELECT %s,permit_id,operation_id,generation,route_fence_decision_id
+                       FROM v4_production_effect_permits WHERE permit_id=%s""",
+                    (future_claim_id, future_permit_id),
+                )
+                connection.execute(
+                    """SELECT public.v4_advance_production_current_dispatch_v1(
+                              %s,0,%s,%s,%s,NULL)""",
+                    (
+                        future_binding["operation_id"],
+                        future_permit_id,
+                        future_claim_id,
+                        future_idempotency_key,
+                    ),
+                )
+                future_attempt["pointer"] = connection.execute(
+                    """SELECT generation,current_permit_id,current_claim_id
+                       FROM v4_production_current_dispatch WHERE operation_id=%s""",
+                    (future_binding["operation_id"],),
+                ).fetchone()
+
+            if not _postgres_statement_rejected(
+                connection,
+                "production permit issued_at cannot be in the future",
+                claim_future_permit,
+            ):
+                missing_permit_guards.append("future-dated permit could be claimed")
+            assert "pointer" not in future_attempt, (
+                "future-dated production permit became claimable: "
+                f"{future_attempt.get('pointer')}"
+            )
+            assert connection.execute(
+                "SELECT count(*) FROM v4_production_effect_permits WHERE operation_id=%s",
+                (future_binding["operation_id"],),
+            ).fetchone()[0] == 0
+            assert connection.execute(
+                "SELECT count(*) FROM v4_production_effect_permit_claims WHERE operation_id=%s",
+                (future_binding["operation_id"],),
+            ).fetchone()[0] == 0
+            assert connection.execute(
+                "SELECT count(*) FROM v4_production_current_dispatch WHERE operation_id=%s",
+                (future_binding["operation_id"],),
+            ).fetchone()[0] == 0
+
             near_expiry = connection.execute(
                 "SELECT clock_timestamp()+interval '10 seconds'"
             ).fetchone()[0]

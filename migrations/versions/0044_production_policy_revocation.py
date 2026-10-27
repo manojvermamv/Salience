@@ -133,6 +133,9 @@ def upgrade() -> None:
             IF TG_OP <> 'INSERT' THEN
                 RAISE EXCEPTION 'production effect permits are immutable';
             END IF;
+            IF NEW.issued_at > clock_timestamp() THEN
+                RAISE EXCEPTION 'production permit issued_at cannot be in the future';
+            END IF;
             IF NEW.expires_at > NEW.issued_at + interval '60 seconds' THEN
                 RAISE EXCEPTION 'production permit expiry must not exceed 60 seconds';
             END IF;
