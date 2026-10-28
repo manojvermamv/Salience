@@ -4929,6 +4929,14 @@ def test_0047_snapshot_lookup_rejects_unresolved_scope_and_binding_ids():
             plan_id, other_plan_id = uuid4(), uuid4()
             attempt_id, other_attempt_id = uuid4(), uuid4()
             external_effect_id = uuid4()
+            foreign_workspace_effect_id = uuid4()
+            wrong_job_effect_id = uuid4()
+            unrelated_effect_id = uuid4()
+            valid_budget_id, foreign_budget_id = uuid4(), uuid4()
+            valid_reservation_id = uuid4()
+            foreign_workspace_reservation_id = uuid4()
+            wrong_job_reservation_id = uuid4()
+            wrong_effect_reservation_id = uuid4()
             other_workspace_id, _ = _seed_0044_workspace_subject(connection)
             program_id = authority["cycle"]["program_id"]
 
@@ -4976,21 +4984,58 @@ def test_0047_snapshot_lookup_rejects_unresolved_scope_and_binding_ids():
                 """INSERT INTO external_effects(
                           id,workspace_id,job_id,effect_type,effect_classification,
                           idempotency_key,request_fingerprint)
-                   VALUES(%s,%s,%s,'publication','write','snapshot-effect',%s)""",
+                   VALUES(%s,%s,%s,'publication','write','snapshot-effect',%s),
+                         (%s,%s,%s,'publication','write','foreign-workspace-effect',%s),
+                         (%s,%s,%s,'publication','write','wrong-job-effect',%s),
+                         (%s,%s,%s,'publication','write','unrelated-effect',%s)""",
                 (
-                    external_effect_id,
+                    external_effect_id, authority["workspace_id"], job_id, "c" * 64,
+                    foreign_workspace_effect_id, other_workspace_id, job_id, "d" * 64,
+                    wrong_job_effect_id, authority["workspace_id"], foreign_job_id, "e" * 64,
+                    unrelated_effect_id, authority["workspace_id"], job_id, "f" * 64,
+                ),
+            )
+            connection.execute(
+                """INSERT INTO budgets(
+                          id,workspace_id,content_program_id,name,scope,limit_amount)
+                   VALUES(%s,%s,%s,'snapshot-valid-budget','program',100),
+                         (%s,%s,NULL,'snapshot-foreign-budget','workspace',100)""",
+                (
+                    valid_budget_id,
                     authority["workspace_id"],
-                    job_id,
-                    "c" * 64,
+                    program_id,
+                    foreign_budget_id,
+                    other_workspace_id,
+                ),
+            )
+            connection.execute(
+                """INSERT INTO budget_reservations(
+                          id,budget_id,job_id,external_effect_id,reservation_key,
+                          estimated_amount,reserved_amount)
+                   VALUES(%s,%s,%s,%s,'snapshot-valid-reservation',1,1),
+                         (%s,%s,%s,%s,'snapshot-foreign-workspace-reservation',1,1),
+                         (%s,%s,%s,%s,'snapshot-wrong-job-reservation',1,1),
+                         (%s,%s,%s,%s,'snapshot-wrong-effect-reservation',1,1)""",
+                (
+                    valid_reservation_id, valid_budget_id, job_id, external_effect_id,
+                    foreign_workspace_reservation_id, foreign_budget_id, job_id,
+                    external_effect_id,
+                    wrong_job_reservation_id, valid_budget_id, foreign_job_id,
+                    external_effect_id,
+                    wrong_effect_reservation_id, valid_budget_id, job_id,
+                    unrelated_effect_id,
                 ),
             )
             connection.execute(
                 """INSERT INTO publication_plans(
                           id,publication_request_id,version,publisher_id,
-                          publisher_version,external_effect_id,state)
-                   VALUES(%s,%s,1,'p1-local','1',%s,'planned'),
-                         (%s,%s,2,'p1-local','1',NULL,'planned')""",
-                (plan_id, request_id, external_effect_id, other_plan_id, request_id),
+                          publisher_version,external_effect_id,budget_reservation_id,state)
+                   VALUES(%s,%s,1,'p1-local','1',%s,%s,'planned'),
+                         (%s,%s,2,'p1-local','1',NULL,NULL,'planned')""",
+                (
+                    plan_id, request_id, external_effect_id, valid_reservation_id,
+                    other_plan_id, request_id,
+                ),
             )
             connection.execute(
                 """INSERT INTO publication_attempts(
@@ -5039,6 +5084,25 @@ def test_0047_snapshot_lookup_rejects_unresolved_scope_and_binding_ids():
             assert valid["publication_request"]["id"] == str(request_id)
             assert valid["publication_plan"]["id"] == str(plan_id)
             assert valid["publication_attempt"]["id"] == str(attempt_id)
+            assert valid["external_effect"]["id"] == str(external_effect_id)
+            assert valid["budget_reservation"]["id"] == str(valid_reservation_id)
+
+            # job_id remains optional, but its omission must not bypass validation of
+            # the linked effect or budget reservation.
+            plan_without_job_id = dict(base_snapshot)
+            del plan_without_job_id["job_id"]
+            replace_request_snapshot(plan_without_job_id)
+            plan_without_job_snapshot = connection.execute(
+                "SELECT v4_production_recovery_publication_snapshot_v1(%s)",
+                (authority["operation_id"],),
+            ).fetchone()[0]
+            assert plan_without_job_snapshot["job"] is None
+            assert plan_without_job_snapshot["external_effect"]["id"] == str(
+                external_effect_id
+            )
+            assert plan_without_job_snapshot["budget_reservation"]["id"] == str(
+                valid_reservation_id
+            )
 
             uppercase_identifiers = dict(
                 base_snapshot,
@@ -5115,10 +5179,142 @@ def test_0047_snapshot_lookup_rejects_unresolved_scope_and_binding_ids():
             mismatched_job_plan = dict(
                 base_snapshot, publication_plan_id=str(other_plan_id)
             )
+            del mismatched_job_plan["publication_attempt_id"]
             replace_request_snapshot(mismatched_job_plan)
             assert _postgres_statement_rejected(
                 connection,
                 "job_id.*external effect",
+                lambda: connection.execute(
+                    "SELECT v4_production_recovery_publication_snapshot_v1(%s)",
+                    (authority["operation_id"],),
+                ).fetchone(),
+            )
+
+            request_selected_plan = dict(base_snapshot)
+            del request_selected_plan["publication_plan_id"]
+            del request_selected_plan["publication_attempt_id"]
+            replace_request_snapshot(request_selected_plan)
+            assert _postgres_statement_rejected(
+                connection,
+                "job_id.*external effect",
+                lambda: connection.execute(
+                    "SELECT v4_production_recovery_publication_snapshot_v1(%s)",
+                    (authority["operation_id"],),
+                ).fetchone(),
+            )
+
+            # Omitting job_id must not skip effect/job/workspace validation.
+            plan_without_job_id = dict(base_snapshot)
+            del plan_without_job_id["job_id"]
+            for bad_effect_id in (foreign_workspace_effect_id, wrong_job_effect_id):
+                connection.execute(
+                    "UPDATE publication_plans SET external_effect_id=%s,"
+                    "budget_reservation_id=NULL WHERE id=%s",
+                    (bad_effect_id, plan_id),
+                )
+                replace_request_snapshot(plan_without_job_id)
+                assert _postgres_statement_rejected(
+                    connection,
+                    "external effect.*workspace|external effect.*job|snapshot.*effect",
+                    lambda: connection.execute(
+                        "SELECT v4_production_recovery_publication_snapshot_v1(%s)",
+                        (authority["operation_id"],),
+                    ).fetchone(),
+                )
+            connection.execute(
+                "UPDATE publication_plans SET external_effect_id=%s WHERE id=%s",
+                (external_effect_id, plan_id),
+            )
+
+            explicit_wrong_effect = dict(
+                base_snapshot, external_effect_id=str(unrelated_effect_id)
+            )
+            replace_request_snapshot(explicit_wrong_effect)
+            assert _postgres_statement_rejected(
+                connection,
+                "external_effect_id.*plan|external effect.*binding",
+                lambda: connection.execute(
+                    "SELECT v4_production_recovery_publication_snapshot_v1(%s)",
+                    (authority["operation_id"],),
+                ).fetchone(),
+            )
+            unbound_explicit_effect = dict(
+                base_snapshot,
+                external_effect_id=str(external_effect_id),
+            )
+            del unbound_explicit_effect["publication_plan_id"]
+            del unbound_explicit_effect["publication_attempt_id"]
+            replace_request_snapshot(unbound_explicit_effect)
+            assert _postgres_statement_rejected(
+                connection,
+                "external_effect_id.*plan|cannot resolve.*external effect",
+                lambda: connection.execute(
+                    "SELECT v4_production_recovery_publication_snapshot_v1(%s)",
+                    (authority["operation_id"],),
+                ).fetchone(),
+            )
+
+            # The reservation must resolve through a same-workspace budget and
+            # carry the exact plan effect and its job.
+            for bad_reservation_id in (
+                foreign_workspace_reservation_id,
+                wrong_job_reservation_id,
+                wrong_effect_reservation_id,
+            ):
+                connection.execute(
+                    "UPDATE publication_plans SET budget_reservation_id=%s WHERE id=%s",
+                    (bad_reservation_id, plan_id),
+                )
+                replace_request_snapshot(base_snapshot)
+                assert _postgres_statement_rejected(
+                    connection,
+                    "budget reservation.*workspace|budget reservation.*job|budget reservation.*effect",
+                    lambda: connection.execute(
+                        "SELECT v4_production_recovery_publication_snapshot_v1(%s)",
+                        (authority["operation_id"],),
+                    ).fetchone(),
+                )
+            connection.execute(
+                "UPDATE publication_plans SET budget_reservation_id=%s WHERE id=%s",
+                (valid_reservation_id, plan_id),
+            )
+            explicit_wrong_reservation = dict(
+                base_snapshot,
+                budget_reservation_id=str(foreign_workspace_reservation_id),
+            )
+            replace_request_snapshot(explicit_wrong_reservation)
+            assert _postgres_statement_rejected(
+                connection,
+                "budget_reservation_id.*plan|budget reservation.*binding",
+                lambda: connection.execute(
+                    "SELECT v4_production_recovery_publication_snapshot_v1(%s)",
+                    (authority["operation_id"],),
+                ).fetchone(),
+            )
+
+            unbound_explicit_reservation = dict(
+                base_snapshot,
+                budget_reservation_id=str(valid_reservation_id),
+            )
+            del unbound_explicit_reservation["publication_plan_id"]
+            del unbound_explicit_reservation["publication_attempt_id"]
+            replace_request_snapshot(unbound_explicit_reservation)
+            assert _postgres_statement_rejected(
+                connection,
+                "budget_reservation_id.*plan|cannot resolve.*budget reservation",
+                lambda: connection.execute(
+                    "SELECT v4_production_recovery_publication_snapshot_v1(%s)",
+                    (authority["operation_id"],),
+                ).fetchone(),
+            )
+
+            wrong_budget_binding = dict(
+                base_snapshot, budget_id=str(foreign_budget_id)
+            )
+            replace_request_snapshot(wrong_budget_binding)
+            assert _postgres_statement_rejected(
+                connection,
+                "budget_id.*reservation",
                 lambda: connection.execute(
                     "SELECT v4_production_recovery_publication_snapshot_v1(%s)",
                     (authority["operation_id"],),

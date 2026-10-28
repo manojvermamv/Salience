@@ -251,6 +251,8 @@ def upgrade() -> None:
         SET search_path = pg_catalog, public AS $$
         DECLARE
             validation_binding record;
+            snapshot_graph record;
+            expected_job_id uuid;
             snapshot_result jsonb;
         BEGIN
             SELECT dispatch.operation_id, dispatch.generation,
@@ -339,23 +341,6 @@ def upgrade() -> None:
                 END IF;
             END IF;
 
-            IF validation_binding.request_snapshot ? 'job_id'
-               AND validation_binding.request_snapshot ? 'publication_plan_id'
-               AND NOT EXISTS (
-                   SELECT 1
-                   FROM public.publication_plans plan_row
-                   JOIN public.external_effects effect_row
-                     ON effect_row.id = plan_row.external_effect_id
-                   WHERE plan_row.id =
-                             (validation_binding.request_snapshot->>'publication_plan_id')::uuid
-                     AND effect_row.job_id =
-                             (validation_binding.request_snapshot->>'job_id')::uuid
-                     AND effect_row.workspace_id = validation_binding.workspace_id
-               ) THEN
-                RAISE EXCEPTION
-                    'production snapshot job_id does not match its publication plan external effect';
-            END IF;
-
             IF validation_binding.request_snapshot ? 'publication_attempt_id' THEN
                 IF jsonb_typeof(
                        validation_binding.request_snapshot->'publication_attempt_id'
@@ -385,6 +370,173 @@ def upgrade() -> None:
                    ) THEN
                     RAISE EXCEPTION
                         'production snapshot publication_attempt_id is unresolved for its publication_plan_id';
+                END IF;
+            END IF;
+
+            IF validation_binding.request_snapshot ? 'external_effect_id' THEN
+                IF jsonb_typeof(validation_binding.request_snapshot->'external_effect_id')
+                       IS DISTINCT FROM 'string'
+                   OR validation_binding.request_snapshot->>'external_effect_id'
+                       !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' THEN
+                    RAISE EXCEPTION
+                        'malformed production snapshot external_effect_id';
+                END IF;
+            END IF;
+
+            IF validation_binding.request_snapshot ? 'budget_reservation_id' THEN
+                IF jsonb_typeof(validation_binding.request_snapshot->'budget_reservation_id')
+                       IS DISTINCT FROM 'string'
+                   OR validation_binding.request_snapshot->>'budget_reservation_id'
+                       !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' THEN
+                    RAISE EXCEPTION
+                        'malformed production snapshot budget_reservation_id';
+                END IF;
+            END IF;
+
+            IF validation_binding.request_snapshot ? 'budget_id' THEN
+                IF jsonb_typeof(validation_binding.request_snapshot->'budget_id')
+                       IS DISTINCT FROM 'string'
+                   OR validation_binding.request_snapshot->>'budget_id'
+                       !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' THEN
+                    RAISE EXCEPTION
+                        'malformed production snapshot budget_id';
+                END IF;
+            END IF;
+
+            IF (validation_binding.request_snapshot ? 'external_effect_id'
+                OR validation_binding.request_snapshot ? 'budget_reservation_id'
+                OR validation_binding.request_snapshot ? 'budget_id')
+               AND NOT (validation_binding.request_snapshot ? 'publication_request_id') THEN
+                RAISE EXCEPTION
+                    'production snapshot effect or budget binding cannot resolve without publication_request_id';
+            END IF;
+
+            IF validation_binding.request_snapshot ? 'publication_request_id' THEN
+                SELECT plan_row.id AS plan_id,
+                       plan_row.external_effect_id,
+                       plan_row.budget_reservation_id,
+                       effect_row.id AS resolved_effect_id,
+                       effect_row.workspace_id AS effect_workspace_id,
+                       effect_row.job_id AS effect_job_id,
+                       effect_job.workspace_id AS effect_job_workspace_id,
+                       reservation.id AS resolved_reservation_id,
+                       reservation.job_id AS reservation_job_id,
+                       reservation.external_effect_id AS reservation_effect_id,
+                       reservation.budget_id AS reservation_budget_id,
+                       budget.workspace_id AS budget_workspace_id,
+                       budget.content_program_id AS budget_program_id
+                INTO snapshot_graph
+                FROM public.publication_requests request_row
+                LEFT JOIN LATERAL (
+                    SELECT candidate_plan.*
+                    FROM public.publication_plans candidate_plan
+                    WHERE candidate_plan.publication_request_id = request_row.id
+                      AND (validation_binding.request_snapshot->>'publication_plan_id' IS NULL
+                           OR candidate_plan.id = CASE
+                               WHEN validation_binding.request_snapshot->>'publication_plan_id'
+                                    ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+                               THEN (validation_binding.request_snapshot->>'publication_plan_id')::uuid
+                           END)
+                    ORDER BY candidate_plan.version DESC, candidate_plan.id
+                    LIMIT 1
+                ) plan_row ON true
+                LEFT JOIN public.external_effects effect_row
+                  ON effect_row.id = plan_row.external_effect_id
+                LEFT JOIN public.jobs effect_job
+                  ON effect_job.id = effect_row.job_id
+                LEFT JOIN public.budget_reservations reservation
+                  ON reservation.id = plan_row.budget_reservation_id
+                LEFT JOIN public.budgets budget
+                  ON budget.id = reservation.budget_id
+                WHERE request_row.id =
+                          (validation_binding.request_snapshot->>'publication_request_id')::uuid
+                  AND request_row.workspace_id = validation_binding.workspace_id
+                  AND request_row.content_program_id = validation_binding.program_id;
+
+                IF snapshot_graph.plan_id IS NULL THEN
+                    IF validation_binding.request_snapshot ? 'external_effect_id'
+                       OR validation_binding.request_snapshot ? 'budget_reservation_id'
+                       OR validation_binding.request_snapshot ? 'budget_id' THEN
+                        RAISE EXCEPTION
+                            'production snapshot effect or budget binding has no publication plan';
+                    END IF;
+                ELSE
+                    IF validation_binding.request_snapshot ? 'external_effect_id'
+                       AND snapshot_graph.external_effect_id IS DISTINCT FROM
+                           (validation_binding.request_snapshot->>'external_effect_id')::uuid THEN
+                        RAISE EXCEPTION
+                            'production snapshot external_effect_id does not match its publication plan';
+                    END IF;
+                    IF validation_binding.request_snapshot ? 'budget_reservation_id'
+                       AND snapshot_graph.budget_reservation_id IS DISTINCT FROM
+                           (validation_binding.request_snapshot->>'budget_reservation_id')::uuid THEN
+                        RAISE EXCEPTION
+                            'production snapshot budget_reservation_id does not match its publication plan';
+                    END IF;
+
+                    IF validation_binding.request_snapshot ? 'job_id'
+                       AND snapshot_graph.external_effect_id IS NULL THEN
+                        RAISE EXCEPTION
+                            'production snapshot job_id does not match its publication plan external effect';
+                    END IF;
+
+                    IF snapshot_graph.external_effect_id IS NOT NULL THEN
+                        IF snapshot_graph.resolved_effect_id IS NULL
+                           OR snapshot_graph.effect_workspace_id IS DISTINCT FROM
+                              validation_binding.workspace_id
+                           OR snapshot_graph.effect_job_id IS NULL
+                           OR snapshot_graph.effect_job_workspace_id IS DISTINCT FROM
+                              validation_binding.workspace_id THEN
+                            RAISE EXCEPTION
+                                'production snapshot publication plan external effect is unresolved outside its workspace/job';
+                        END IF;
+                    END IF;
+
+                    IF validation_binding.request_snapshot ? 'job_id' THEN
+                        expected_job_id :=
+                            (validation_binding.request_snapshot->>'job_id')::uuid;
+                    ELSE
+                        expected_job_id := COALESCE(
+                            snapshot_graph.effect_job_id,
+                            snapshot_graph.reservation_job_id
+                        );
+                    END IF;
+
+                    IF snapshot_graph.external_effect_id IS NOT NULL
+                       AND snapshot_graph.effect_job_id IS DISTINCT FROM expected_job_id THEN
+                        RAISE EXCEPTION
+                            'production snapshot job_id does not match its publication plan external effect';
+                    END IF;
+
+                    IF snapshot_graph.budget_reservation_id IS NOT NULL THEN
+                        IF snapshot_graph.resolved_reservation_id IS NULL
+                           OR snapshot_graph.budget_workspace_id IS DISTINCT FROM
+                              validation_binding.workspace_id
+                           OR (snapshot_graph.budget_program_id IS NOT NULL
+                               AND snapshot_graph.budget_program_id IS DISTINCT FROM
+                                   validation_binding.program_id)
+                           OR snapshot_graph.reservation_effect_id IS DISTINCT FROM
+                              snapshot_graph.external_effect_id
+                           OR snapshot_graph.reservation_job_id IS DISTINCT FROM
+                              expected_job_id
+                           OR (snapshot_graph.reservation_job_id IS NOT NULL
+                               AND NOT EXISTS (
+                                   SELECT 1 FROM public.jobs reservation_job
+                                   WHERE reservation_job.id = snapshot_graph.reservation_job_id
+                                     AND reservation_job.workspace_id =
+                                         validation_binding.workspace_id
+                               )) THEN
+                            RAISE EXCEPTION
+                                'production snapshot budget reservation does not match its publication plan workspace/job/effect/budget';
+                        END IF;
+                    END IF;
+
+                    IF validation_binding.request_snapshot ? 'budget_id'
+                       AND snapshot_graph.reservation_budget_id IS DISTINCT FROM
+                           (validation_binding.request_snapshot->>'budget_id')::uuid THEN
+                        RAISE EXCEPTION
+                            'production snapshot budget_id does not match its publication plan reservation';
+                    END IF;
                 END IF;
             END IF;
 
@@ -486,12 +638,6 @@ def upgrade() -> None:
         JOIN public.v4_cycle_intents intent ON intent.id = binding.intent_id
         JOIN public.v4_cycles cycle ON cycle.id = binding.cycle_id
         JOIN public.v4_run_contexts context ON context.id = binding.context_id
-        LEFT JOIN public.jobs job_row
-          ON job_row.id = CASE
-               WHEN binding.request_snapshot->>'job_id'
-                    ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
-               THEN (binding.request_snapshot->>'job_id')::uuid END
-         AND job_row.workspace_id = binding.workspace_id
         LEFT JOIN public.publication_requests publication_request
           ON publication_request.id = CASE
                WHEN binding.request_snapshot->>'publication_request_id'
@@ -527,8 +673,55 @@ def upgrade() -> None:
         ) publication_attempt ON true
         LEFT JOIN public.external_effects external_effect
           ON external_effect.id = publication_plan.external_effect_id
+         AND external_effect.workspace_id = binding.workspace_id
+         AND EXISTS (
+             SELECT 1 FROM public.jobs effect_job
+             WHERE effect_job.id = external_effect.job_id
+               AND effect_job.workspace_id = binding.workspace_id
+         )
+         AND (binding.request_snapshot->>'job_id' IS NULL
+              OR external_effect.job_id = CASE
+                  WHEN binding.request_snapshot->>'job_id'
+                       ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+                  THEN (binding.request_snapshot->>'job_id')::uuid
+              END)
         LEFT JOIN public.budget_reservations budget_reservation
           ON budget_reservation.id = publication_plan.budget_reservation_id
+         AND budget_reservation.external_effect_id IS NOT DISTINCT FROM
+             publication_plan.external_effect_id
+         AND (binding.request_snapshot->>'job_id' IS NULL
+              OR budget_reservation.job_id = CASE
+                  WHEN binding.request_snapshot->>'job_id'
+                       ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+                  THEN (binding.request_snapshot->>'job_id')::uuid
+              END)
+         AND EXISTS (
+             SELECT 1
+             FROM public.budgets reservation_budget
+             WHERE reservation_budget.id = budget_reservation.budget_id
+               AND reservation_budget.workspace_id = binding.workspace_id
+               AND (reservation_budget.content_program_id IS NULL
+                    OR reservation_budget.content_program_id = validation_binding.program_id)
+         )
+         AND budget_reservation.job_id IS NOT DISTINCT FROM CASE
+             WHEN binding.request_snapshot->>'job_id' IS NOT NULL
+                  AND binding.request_snapshot->>'job_id'
+                      ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+             THEN (binding.request_snapshot->>'job_id')::uuid
+             WHEN external_effect.id IS NOT NULL THEN external_effect.job_id
+             ELSE budget_reservation.job_id
+         END
+         AND (budget_reservation.job_id IS NULL OR EXISTS (
+             SELECT 1 FROM public.jobs reservation_job
+             WHERE reservation_job.id = budget_reservation.job_id
+               AND reservation_job.workspace_id = binding.workspace_id
+         ))
+        LEFT JOIN public.jobs job_row
+          ON job_row.id = CASE
+               WHEN binding.request_snapshot->>'job_id'
+                    ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+               THEN (binding.request_snapshot->>'job_id')::uuid END
+         AND job_row.workspace_id = binding.workspace_id
         WHERE binding.operation_id = p_operation_id
             ;
             RETURN snapshot_result;
