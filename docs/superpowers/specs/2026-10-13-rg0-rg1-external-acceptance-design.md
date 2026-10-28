@@ -2,6 +2,8 @@
 
 **Status:** COMPLETE_REVIEWED — bounded design reviewed; implementation and target qualification NOT RUN. No external acceptance has run. Production remains disabled; RG0/RG1 HELD; P2 BLOCKED. This document does not authorize production probing, provider effects, a gate change, or work on `main`.
 
+**Development currentization — 2026-10-28:** Historical audit scope and statuses remain frozen. The current plan baseline is `0763702bbedda7ffc99c3b526a5d018340e63aae` on `arch`, with actual migration head `0046_production_policy_approval_id_immutability`; 0043 remains the fixture floor and future production migrations extend 0046. The local acceptance-package schema, assembler, checker, and deterministic negative-control tests may be implemented under the remaining development plan. They must preserve the exact 22-row contract and report unavailable target evidence as `NOT RUN` or `HELD`. They cannot perform external procedures, supply owners/credentials/targets, enable effects, change gate state, or declare an external row `PASS`.
+
 ## Audit basis and decision
 
 The initial audit is bound to source commit `7c1ddcda280b510048ad61106c406171edd64f18`, tree `af010fba37debad65b9494abc3b70db0a6a2f915`, and the effects-disabled development-host manifest digest `18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436`. That host has local PostgreSQL and Temporal fixtures, no configured production target, no production effects, and no named production owners. It cannot produce this design's external acceptance evidence.
@@ -10,7 +12,7 @@ The initial audit decision marks `external_rg0_rg1_acceptance` **REQUIRED** for 
 
 The local application qualification (`182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f`, 796 passed / 17 skipped / 3 warnings) is fixture-only. Actions run `40443346020` is an exact-head CI result for the audit commit, not production acceptance or formal approval. The repository-enforcement readback in `repository-enforcement-evidence.json` is from `4bbffb61338d27a9da59ec07154e67794007e8cb` and is stale for the candidate under review. `p0-release.json` records the five external checks as `NOT RUN`, RG0 as `HELD`, and production effects disabled; the P1 matrix records RG1 as `HELD`. No value in this paragraph is a transferable acceptance result.
 
-The external acceptance package consumes the separately required policy/revocation, routing/worker-fencing, live-schedule, and recovery/remote-read/alert increments. It verifies their exact deployed outcomes; it does not implement or replace those increments. Program-sequence Slice 6 is REQUIRED by the frozen initial audit because the existing records lack a complete row-level external evidence contract. Its design consumes the separately reviewed contracts in Slices 2–5; a later source change may update the requirement decision only through a new commit-bound gap audit before implementation or execution. The final exact-candidate/environment P1/RG0/RG1 audit remains a separate, later gate and the only audit allowed to declare applicable RG0/RG1 entry conditions passed.
+The external acceptance package consumes the separately required policy/revocation, routing/worker-fencing, live-schedule, and recovery/remote-read/alert increments. It verifies their exact deployed outcomes; it does not implement or replace those increments. Program-sequence Slice 6 is REQUIRED by the frozen initial audit because the existing records lack a complete row-level external evidence contract. Its package/checker may be implemented and tested locally under the current effects-disabled development plan; the resulting fixture package is not external acceptance. The design consumes the separately reviewed contracts in Slices 2–5; a later source change may update the requirement decision only through a new commit-bound gap audit before any external execution. The final exact-candidate/environment P1/RG0/RG1 audit remains a separate, later gate and the only audit allowed to declare applicable RG0/RG1 entry conditions passed.
 
 ## Intent, goals, and exclusions
 
@@ -34,7 +36,7 @@ The package does not grant production authority, turn on effect dispatch, create
 
 One acceptance run has a cryptographically hashed, append-only `manifest.json`, 22 row records under `rows/<row-id>/`, and an artifact digest index. The proposed evidence bundle location is `artifacts/v4/p1-rg0-rg1-external-acceptance/<run-id>/`; if raw material requires restricted retention, it may live in an approved immutable evidence store, with the exact URI and SHA-256 recorded in the repository index. A missing URI, mutable-only location, or missing digest is a blocker. Secrets, tokens, private keys, and raw sensitive payloads are never retained; redacted evidence is hashed after redaction, and the redaction method is recorded.
 
-The manifest and every row record must contain the following fields. Fields may not be blank or silently inherited from a different run.
+The manifest and every row record must contain the following fields. Fields may not be blank or silently inherited from a different run. Route identity uses the stable UUID `route_id` already used by Slice 2; the canonical `route_tuple_sha256` is separate authenticated manifest evidence and the manifest digest binds both values.
 
 | Field group | Required contents |
 | --- | --- |
@@ -150,7 +152,7 @@ The package checker must refuse to combine child evidence with differing candida
 
 ## Package/checker acceptance tests
 
-These are acceptance tests for the future evidence-package/checker implementation. They do not authorize implementation now and do not replace the runtime acceptance procedures above.
+These are development acceptance tests for the evidence-package/checker implementation. Their passing result proves only local package/checker behavior; it does not replace or satisfy the external runtime acceptance procedures above.
 
 1. `test_package_requires_exact_candidate_tree_artifacts_deployment_and_environment`: missing/short commit, artifact digest, deployment ID, environment digest, or migration head is rejected.
 2. `test_package_requires_exact_row_set_once`: the five RG0 and 17 P1/RG1 IDs appear exactly once; missing, duplicate, unknown, or wrongly gated IDs fail validation.
@@ -177,7 +179,7 @@ These are acceptance tests for the future evidence-package/checker implementatio
 
 No application migration is needed by default. Keep packages as immutable external evidence plus a small repository index containing run ID, exact candidate/deployment/environment bindings, row status summaries, URI and hashes. If an implementation later demonstrates that an existing immutable artifact store cannot retain a required acceptance fact, stop and write a separate bounded migration design; do not add tables or relax fixture guards as part of this spec.
 
-No implementation is authorized here. Production is disabled, fixture publication budget remains zero, and the initial host has no production target, account or named owners. The external procedures cannot be executed until the relevant bounded increments, target-specific runbooks, numeric freshness rules, approvals, owners and exact final deployment exist. Rollback preserves immutable evidence and liabilities; it never rewrites a historical row or treats restored code/configuration as proof that an external operation did not occur.
+The local package/checker implementation is within the remaining effects-disabled development boundary. Production remains disabled, fixture publication budget remains zero, and the initial host has no production target, account, credentials, alert destination, or named owners. The external procedures cannot be executed until the relevant bounded increments, target-specific runbooks, numeric freshness rules, approvals, owners and exact final deployment exist. The checker must retain their status as `NOT RUN` or `HELD`. Rollback preserves immutable evidence and liabilities; it never rewrites a historical row or treats restored code/configuration as proof that an external operation did not occur.
 
 ## Source references
 

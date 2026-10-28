@@ -238,3 +238,14 @@ The focused documentation test recomputes the current artifact SHA-256, checks t
 | `docs/v4/p1-qualification-matrix.json` | `7bd051023bb9dc6af4f491fc88984ca5a37de27b4b4533078881c112ef66655b` |
 | `docs/v4/publication-recovery-hold-successor-evidence.json` | `6bb3ce696cffec2629838f5f30b8eea4acb837cbb81c1bcbc1b4de4f19e8764a` |
 | `docs/v4/test_checks.py` | `c915b137417c53b3b3f773eacbfcfea3d62584a21ca11df8288e0c2b4281cf6e` |
+
+## Development currentization — 2026-10-28
+
+This append-only digest note records the current text of the four reviewed specs after development-boundary clarifications and the route-identity correction. The review-chain digests and verdicts above remain bound to the exact historical texts and candidates they reviewed. These new hashes are inventory/current-text bindings only; they do not extend the historical review or qualify production.
+
+| File | SHA-256 |
+| --- | --- |
+| `docs/superpowers/specs/2026-10-13-p1-production-routing-and-worker-fencing-design.md` | `244e914ce0a24b869f5d360fdd0129d6773787ed0e49cb60d08a1fda49918830` |
+| `docs/superpowers/specs/2026-10-13-p1-live-schedule-fencing-design.md` | `17126661384a5c8e7e46f316919f361f86cbc99792f7095e4e8eb714735ee269` |
+| `docs/superpowers/specs/2026-10-13-p1-production-recovery-and-alerts-design.md` | `4a9b88bf864dda3df939eb50868dca10b671e76056b016ee3eb2180f9dad1d7f` |
+| `docs/superpowers/specs/2026-10-13-rg0-rg1-external-acceptance-design.md` | `692fb6900dd1f95179ca923574a692da42fb80e55bfd99d7dd044c3f136abd29` |
