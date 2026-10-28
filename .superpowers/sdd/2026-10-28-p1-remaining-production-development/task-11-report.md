@@ -126,3 +126,9 @@ Commands and exact pytest results (all exit 0):
 Compose startup exited 0 in 6.82s; Alembic upgrade to 0051 exited 0 in 1.78s; Alembic current exited 0 in 0.79s and returned 0051 as head. Full per-command output is retained in `/tmp/salience-p1-task11-review-20261028210012-2771713.log`. Cleanup exited 0, removed the unique Compose project and temp tree, and follow-up `compose ps -a` was empty.
 
 The package checker was rerun after these tests and returned the expected exit 1 with `VALID` / `NO_GO` / `UNCHANGED`, 22 rows. The v1 lock hash remains `1c8ac4ff92e589e27dc0af2c6dd0bc69c4295435df5a318174a2c77f3b1f2c9c`; the v2 lock remains `04514285da583fe4b32feb0ae2e710a55da6c9bdbf40d853c9454c0105fd8221`. No package/evidence JSON, product, migration, or checker changes were made for this follow-up.
+
+## Evidence commit reference — append-only
+
+evidence_commit: `f0e7de0681ab7d18531e65ffc1337380e3b58fbc`
+
+This separately identifies the preceding focused-results/report commit; it does not alter the evidence JSON.

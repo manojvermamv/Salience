@@ -147,3 +147,9 @@ Compose startup exited 0 in 6.82 seconds. Alembic upgrade to `0051_p1_recovery_r
    Exit 0; 45 passed in 189.82 seconds (runner elapsed 190.16 seconds).
 
 After the focused run, the package CLI again exited 1 with `structural_status: VALID`, `disposition: NO_GO`, and `gate_state: UNCHANGED` for 22 rows; this is the expected synthetic no-go result. The v1 lock SHA-256 remained `1c8ac4ff92e589e27dc0af2c6dd0bc69c4295435df5a318174a2c77f3b1f2c9c`. The v2 lock SHA-256 remained `04514285da583fe4b32feb0ae2e710a55da6c9bdbf40d853c9454c0105fd8221`, and the evidence JSON was unchanged. The cleanup trap exited 0, removed the exact Compose project and temporary tree, and a follow-up `compose ps -a` showed no services. No full suite was rerun.
+
+## Evidence commit reference — append-only
+
+evidence_commit: `f0e7de0681ab7d18531e65ffc1337380e3b58fbc`
+
+This is the report/results commit that records the seven focused verification groups. The evidence JSON remains unchanged and does not contain a self-referential commit hash.

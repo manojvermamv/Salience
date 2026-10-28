@@ -281,3 +281,7 @@ The plan traces all 17 Slice 2 policy/revocation acceptance cases, all 7 routing
   7. `tests/unit/test_p1_external_acceptance.py` — 45 passed, 189.82s (runner 190.16s).
 - Post-run package checker: exit 1 as expected, `structural_status=VALID`, `disposition=NO_GO`, `gate_state=UNCHANGED`, 22 rows. v1 fixture lock SHA stayed `1c8ac4ff92e589e27dc0af2c6dd0bc69c4295435df5a318174a2c77f3b1f2c9c`; v2 lock SHA stayed `04514285da583fe4b32feb0ae2e710a55da6c9bdbf40d853c9454c0105fd8221`.
 - Cleanup trap exit 0 removed the exact Compose project and temporary tree; subsequent project listing was empty. External rows/gates remain held; no live path, push, or merge.
+
+## Evidence commit reference — append-only
+
+- `evidence_commit`: `f0e7de0681ab7d18531e65ffc1337380e3b58fbc` (focused-results/report commit). This reference is appended in a later commit; the evidence JSON remains unchanged and does not self-hash.
