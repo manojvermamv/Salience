@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Protocol
+from typing import Literal, Protocol
 from uuid import UUID
 
 
@@ -67,6 +67,54 @@ class WorkerReadback:
             raise ValueError("worker readback observation time must be timezone-aware")
         if type(self.complete) is not bool:
             raise ValueError("worker readback completeness must be explicit")
+
+
+@dataclass(frozen=True, slots=True)
+class WorkerDrainReceipt:
+    """Route-bound evidence of the worker drain boundary and its readback."""
+
+    status: Literal["lease_lost", "stopped"]
+    route_id: UUID
+    slot_id: UUID
+    owner_id: UUID
+    fencing_epoch: int
+    route_manifest_sha256: str
+    artifact_lock_sha256: str
+    route_tuple_sha256: str
+    boundary_at: datetime
+    readback_observed_at: datetime
+
+    def __post_init__(self) -> None:
+        if self.status not in {"lease_lost", "stopped"}:
+            raise ValueError("worker drain receipt status is unsupported")
+        if any(
+            not isinstance(value, UUID)
+            for value in (self.route_id, self.slot_id, self.owner_id)
+        ):
+            raise ValueError("worker drain receipt route, slot, and owner UUIDs are required")
+        if type(self.fencing_epoch) is not int or self.fencing_epoch < 1:
+            raise ValueError("worker drain receipt needs a positive route fencing epoch")
+        for value in (
+            self.route_manifest_sha256,
+            self.artifact_lock_sha256,
+            self.route_tuple_sha256,
+        ):
+            if (
+                not isinstance(value, str)
+                or len(value) != 64
+                or any(character not in "0123456789abcdef" for character in value)
+            ):
+                raise ValueError("worker drain receipt digests must be lowercase SHA-256")
+        for name in ("boundary_at", "readback_observed_at"):
+            value = getattr(self, name)
+            if (
+                not isinstance(value, datetime)
+                or value.tzinfo is None
+                or value.utcoffset() is None
+            ):
+                raise ValueError(f"worker drain receipt {name} must be timezone-aware")
+        if self.readback_observed_at < self.boundary_at:
+            raise ValueError("worker drain receipt readback predates its drain boundary")
 
 
 class TemporalWorkerReadback(Protocol):

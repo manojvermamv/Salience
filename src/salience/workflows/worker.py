@@ -67,7 +67,11 @@ from salience.cycles.production_routing import (
     route_manifest_sha256,
 )
 from salience.governance.production_policy import ProductionApprovalBinding
-from salience.workflows.temporal_readback import TemporalWorkerReadback, WorkerReadback
+from salience.workflows.temporal_readback import (
+    TemporalWorkerReadback,
+    WorkerDrainReceipt,
+    WorkerReadback,
+)
 
 
 @dataclass(frozen=True)
@@ -375,6 +379,9 @@ def _require_exact_drained_readback(
     readback: WorkerReadback,
     route: ProductionRouteManifestV1,
     lease: RouteLease,
+    *,
+    boundary_at: datetime,
+    observed_no_later_than: datetime,
 ) -> None:
     expected_workflows = frozenset(route.route_tuple.workflow_types)
     expected_activities = frozenset(route.route_tuple.activity_types)
@@ -394,9 +401,12 @@ def _require_exact_drained_readback(
         or readback.registered_activity_types != expected_activities
         or readback.poller_count != 0
         or readback.active_task_count != 0
+        or readback.observed_at < boundary_at
+        or readback.observed_at > observed_no_later_than
     ):
         raise PermissionError(
-            "Temporal worker readback is incomplete or does not match the drained route"
+            "Temporal worker readback is incomplete, stale, future-dated, "
+            "or does not match the drained route"
         )
 
 
@@ -404,10 +414,20 @@ async def _read_and_require_drained(
     temporal_readback: TemporalWorkerReadback,
     route: ProductionRouteManifestV1,
     lease: RouteLease,
-) -> None:
+    *,
+    boundary_at: datetime,
+    now: Callable[[], datetime],
+) -> WorkerReadback:
     result = temporal_readback.read_worker(route.route_id, lease.slot_id)
     readback = await result if inspect.isawaitable(result) else result
-    _require_exact_drained_readback(readback, route, lease)
+    _require_exact_drained_readback(
+        readback,
+        route,
+        lease,
+        boundary_at=boundary_at,
+        observed_no_later_than=now(),
+    )
+    return readback
 
 
 async def _await_worker_shutdown(worker: Worker) -> None:
@@ -438,9 +458,12 @@ async def _shutdown_drain_and_readback(
     temporal_readback: TemporalWorkerReadback,
     route: ProductionRouteManifestV1,
     lease: RouteLease,
-) -> BaseException | None:
+    now: Callable[[], datetime],
+) -> tuple[BaseException | None, datetime, datetime]:
     did_shutdown = shutdown_requested
+    boundary_at: datetime | None = None
     if did_shutdown:
+        boundary_at = now()
         await _await_worker_shutdown(worker)
 
     run_error: BaseException | None = None
@@ -451,10 +474,21 @@ async def _shutdown_drain_and_readback(
     except BaseException as error:
         run_error = error
         if not did_shutdown:
+            boundary_at = now()
             await _await_worker_shutdown(worker)
+    if boundary_at is None:
+        # Natural completion is the drain boundary when no explicit shutdown
+        # request was needed.
+        boundary_at = now()
 
-    await _read_and_require_drained(temporal_readback, route, lease)
-    return run_error
+    readback = await _read_and_require_drained(
+        temporal_readback,
+        route,
+        lease,
+        boundary_at=boundary_at,
+        now=now,
+    )
+    return run_error, boundary_at, readback.observed_at
 
 
 async def run_routed_worker(
@@ -466,7 +500,7 @@ async def run_routed_worker(
     temporal_readback: TemporalWorkerReadback,
     sleep: Callable[[float], object] = asyncio.sleep,
     now: Callable[[], datetime] = lambda: datetime.now(timezone.utc),
-) -> str:
+) -> WorkerDrainReceipt:
     """Renew a slot at one third of its remaining TTL and drain on lease loss."""
     current = lease
     _validate_routed_lease(route, current, route_authority, now=now())
@@ -511,6 +545,7 @@ async def run_routed_worker(
             temporal_readback=temporal_readback,
             route=route,
             lease=current,
+            now=now,
         )
     )
     try:
@@ -526,7 +561,7 @@ async def run_routed_worker(
             "routed worker shutdown, drain, and readback exceeded lease expiry"
         )
     try:
-        run_error = drain_task.result()
+        run_error, boundary_at, readback_observed_at = drain_task.result()
     except BaseException:
         _cancel_and_consume_task(run_task)
         raise
@@ -534,23 +569,58 @@ async def run_routed_worker(
         raise run_error
     if cancellation is not None:
         raise cancellation
-    return "lease_lost" if lease_lost else "stopped"
+    return WorkerDrainReceipt(
+        status="lease_lost" if lease_lost else "stopped",
+        route_id=route.route_id,
+        slot_id=current.slot_id,
+        owner_id=current.owner_id,
+        fencing_epoch=current.fencing_epoch,
+        route_manifest_sha256=current.route_manifest_sha256,
+        artifact_lock_sha256=current.artifact_lock_sha256,
+        route_tuple_sha256=route.route_tuple_sha256,
+        boundary_at=boundary_at,
+        readback_observed_at=readback_observed_at,
+    )
 
 
 def transfer_routed_worker(
     *,
     route: ProductionRouteManifestV1,
     lease: RouteLease,
+    drain_receipt: WorkerDrainReceipt,
     route_authority: RouteLeaseAuthority,
     temporal_readback: TemporalWorkerReadback,
     now: Callable[[], datetime] = lambda: datetime.now(timezone.utc),
 ):
-    """Release a routed slot only after exact, complete zero-work readback."""
+    """Release a routed slot only after a fresh readback follows its drain receipt."""
     _validate_routed_lease(route, lease, route_authority, now=now())
+    if (
+        not isinstance(drain_receipt, WorkerDrainReceipt)
+        or drain_receipt.route_id != route.route_id
+        or drain_receipt.slot_id != lease.slot_id
+        or drain_receipt.owner_id != lease.owner_id
+        or drain_receipt.fencing_epoch != lease.fencing_epoch
+        or drain_receipt.route_manifest_sha256 != lease.route_manifest_sha256
+        or drain_receipt.artifact_lock_sha256 != lease.artifact_lock_sha256
+        or drain_receipt.route_tuple_sha256 != route.route_tuple_sha256
+    ):
+        raise PermissionError("worker drain receipt does not match the exact routed lease")
     readback = temporal_readback.read_worker(route.route_id, lease.slot_id)
     if inspect.isawaitable(readback):
         raise TypeError("synchronous route transfer requires synchronous Temporal readback")
-    _require_exact_drained_readback(readback, route, lease)
+    release_boundary_at = now()
+    if (
+        drain_receipt.boundary_at > release_boundary_at
+        or drain_receipt.readback_observed_at > release_boundary_at
+    ):
+        raise PermissionError("worker drain receipt is future-dated at route release")
+    _require_exact_drained_readback(
+        readback,
+        route,
+        lease,
+        boundary_at=drain_receipt.boundary_at,
+        observed_no_later_than=release_boundary_at,
+    )
     released = route_authority.release_slot(lease)
     if (
         not released.available

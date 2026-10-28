@@ -1071,6 +1071,14 @@ def _alert_request(repository, module, work, policy):
     )
 
 
+def _alert_event_time(database, request):
+    with psycopg.connect(database) as connection:
+        return connection.execute(
+            "SELECT occurred_at FROM v4_production_recovery_events WHERE event_id=%s",
+            (request.alert_event_id,),
+        ).fetchone()[0]
+
+
 def test_alert_delivery_and_acknowledgment():
     module = import_module("salience.cycles.production_recovery")
     schedule_tests = import_module("test_p1_production_schedule_fencing")
@@ -1096,6 +1104,7 @@ def test_alert_delivery_and_acknowledgment():
             recipient_profile=request.recipient_profile,
             retry_policy=request.retry_policy,
             wait=lambda _delay: None,
+            now=repository._now,
             schedule_hold_target=lambda *args: hold_calls.append(args),
         )
         schedule_contracts = import_module("salience.cycles._production_schedule_contracts")
@@ -1132,6 +1141,178 @@ def test_alert_delivery_and_acknowledgment():
             ).fetchone()[0] == 1
 
 
+def test_alert_request_rejects_escalation_before_policy_due():
+    module = import_module("salience.cycles.production_recovery")
+    schedule_tests = import_module("test_p1_production_schedule_fencing")
+    with schedule_tests._production_enrollment_fixture("task7_alert_early_escalation_") as (
+        database,
+        control,
+        binding,
+        key,
+        _authority,
+        _route_authority,
+    ):
+        _enroll_production_intent(control, binding, key)
+        repository = module.ProductionRecoveryWorkRepository(database)
+        policy = _recovery_policy(module)
+        work = repository.bind_pre_admission_intent(key.intent_id, policy=policy)
+        initial = _alert_request(repository, module, work, policy)
+        initial_at = _alert_event_time(database, initial)
+        clock_value = [initial_at + timedelta(minutes=2) - timedelta(microseconds=1)]
+        repository = module.ProductionRecoveryWorkRepository(
+            database, now=lambda: clock_value[0]
+        )
+        event_key = f"alert-intent:{work.work_id}:{work.source_revision}:1"
+
+        with pytest.raises(ValueError, match="not due"):
+            repository.alert_request(
+                work.work_id,
+                severity="high",
+                escalation_level=1,
+                recipient_profile=initial.recipient_profile,
+                retry_policy=initial.retry_policy,
+                policy_decision_id=initial.policy_decision_id,
+            )
+
+        with psycopg.connect(database) as connection:
+            assert connection.execute(
+                "SELECT count(*) FROM v4_production_recovery_events WHERE event_key=%s",
+                (event_key,),
+            ).fetchone()[0] == 0
+
+
+def test_due_escalation_routes_to_on_call_and_replays_same_delivery():
+    from dataclasses import replace
+
+    module = import_module("salience.cycles.production_recovery")
+    schedule_tests = import_module("test_p1_production_schedule_fencing")
+    with schedule_tests._production_enrollment_fixture("task7_alert_due_escalation_") as (
+        database,
+        control,
+        binding,
+        key,
+        _authority,
+        _route_authority,
+    ):
+        _enroll_production_intent(control, binding, key)
+        repository = module.ProductionRecoveryWorkRepository(database)
+        policy = _recovery_policy(module)
+        work = repository.bind_pre_admission_intent(key.intent_id, policy=policy)
+        initial = _alert_request(repository, module, work, policy)
+        initial_at = _alert_event_time(database, initial)
+        retry = replace(
+            initial.retry_policy,
+            escalation_after=(timedelta(minutes=2), timedelta(minutes=5)),
+        )
+        first_due_at = initial_at + timedelta(minutes=2)
+        second_due_at = initial_at + timedelta(minutes=5)
+        clock_value = [first_due_at]
+        repository = module.ProductionRecoveryWorkRepository(
+            database, now=lambda: clock_value[0]
+        )
+        first_request = repository.alert_request(
+            work.work_id,
+            severity="high",
+            escalation_level=1,
+            recipient_profile=initial.recipient_profile,
+            retry_policy=retry,
+            policy_decision_id=initial.policy_decision_id,
+        )
+        channel = _AlertTarget(module)
+        alerts = module.ProductionRecoveryAlerts(
+            repository,
+            target=channel,
+            authority=_RecoveryAuthority(module),
+            recipient_profile=first_request.recipient_profile,
+            retry_policy=first_request.retry_policy,
+            wait=lambda _delay: None,
+            now=repository._now,
+            schedule_hold_target=lambda *_args: None,
+        )
+
+        first_receipt = alerts.send(first_request)
+        clock_value[0] = second_due_at
+        second_request = repository.alert_request(
+            work.work_id,
+            severity="high",
+            escalation_level=2,
+            recipient_profile=initial.recipient_profile,
+            retry_policy=retry,
+            policy_decision_id=initial.policy_decision_id,
+        )
+
+        with pytest.raises(module.RecoveryIdentityConflict, match="recipient tier"):
+            alerts.send(replace(second_request, recipient_tier="owner"))
+        clock_value[0] = second_due_at - timedelta(microseconds=1)
+        with pytest.raises(ValueError, match="not due"):
+            alerts.send(second_request)
+        assert len(channel.calls) == 1
+        clock_value[0] = second_due_at
+        second_receipt = alerts.send(second_request)
+        replay_request = repository.alert_request(
+            work.work_id,
+            severity="high",
+            escalation_level=2,
+            recipient_profile=initial.recipient_profile,
+            retry_policy=retry,
+            policy_decision_id=initial.policy_decision_id,
+        )
+        replay_receipt = alerts.send(replay_request)
+
+        assert first_request.recipient_tier == "on_call"
+        assert second_request.recipient_tier == "on_call"
+        assert [call[0].recipient_tier for call in channel.calls] == [
+            "on_call",
+            "on_call",
+        ]
+        assert replay_request.alert_event_id == second_request.alert_event_id
+        assert replay_receipt == second_receipt
+        assert len(channel.calls) == 2
+        assert channel.calls[0][1] == first_request.idempotency_key
+        assert channel.calls[1][1] == second_request.idempotency_key
+        assert first_receipt.status == second_receipt.status == "accepted"
+
+
+def test_escalation_without_configured_on_call_group_is_rejected_before_intent():
+    from dataclasses import replace
+
+    module = import_module("salience.cycles.production_recovery")
+    schedule_tests = import_module("test_p1_production_schedule_fencing")
+    with schedule_tests._production_enrollment_fixture("task7_alert_no_on_call_") as (
+        database,
+        control,
+        binding,
+        key,
+        _authority,
+        _route_authority,
+    ):
+        _enroll_production_intent(control, binding, key)
+        repository = module.ProductionRecoveryWorkRepository(database)
+        policy = _recovery_policy(module)
+        work = repository.bind_pre_admission_intent(key.intent_id, policy=policy)
+        initial = _alert_request(repository, module, work, policy)
+        profile_without_on_call = replace(
+            initial.recipient_profile, on_call_group_ids=()
+        )
+        event_key = f"alert-intent:{work.work_id}:{work.source_revision}:1"
+
+        with pytest.raises(ValueError, match="on-call"):
+            repository.alert_request(
+                work.work_id,
+                severity="high",
+                escalation_level=1,
+                recipient_profile=profile_without_on_call,
+                retry_policy=initial.retry_policy,
+                policy_decision_id=initial.policy_decision_id,
+            )
+
+        with psycopg.connect(database) as connection:
+            assert connection.execute(
+                "SELECT count(*) FROM v4_production_recovery_events WHERE event_key=%s",
+                (event_key,),
+            ).fetchone()[0] == 0
+
+
 def test_alert_acceptance_crash_replays_same_key(monkeypatch):
     module = import_module("salience.cycles.production_recovery")
     schedule_tests = import_module("test_p1_production_schedule_fencing")
@@ -1156,6 +1337,7 @@ def test_alert_acceptance_crash_replays_same_key(monkeypatch):
             recipient_profile=request.recipient_profile,
             retry_policy=request.retry_policy,
             wait=lambda _delay: None,
+            now=repository._now,
             schedule_hold_target=lambda *_args: None,
         )
         append = repository._append_event
@@ -1225,6 +1407,7 @@ def test_concurrent_duplicate_alert_send_is_one_local_delivery():
             recipient_profile=request.recipient_profile,
             retry_policy=request.retry_policy,
             wait=lambda _delay: None,
+            now=repository._now,
             schedule_hold_target=lambda *_args: None,
         )
         with ThreadPoolExecutor(max_workers=2) as pool:
@@ -1301,6 +1484,7 @@ def test_owner_and_outage_escalation():
             recipient_profile=profile,
             retry_policy=retry,
             wait=lambda _delay: None,
+            now=repository._now,
             schedule_hold_target=lambda *_args: None,
         )
         result = alerts.send(request)

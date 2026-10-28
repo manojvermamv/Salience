@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
-from datetime import datetime
+from collections.abc import Callable, Mapping
+from datetime import datetime, timezone
 from hashlib import sha256
 from uuid import UUID, uuid4
 
@@ -22,10 +22,18 @@ from salience.cycles._production_recovery_contracts import (
 class ProductionRecoveryWorkRepository:
     """Exact enrollment-bound source binding and append-only evidence access."""
 
-    def __init__(self, database_url: str) -> None:
+    def __init__(
+        self,
+        database_url: str,
+        *,
+        now: Callable[[], datetime] | None = None,
+    ) -> None:
         if not isinstance(database_url, str) or not database_url.strip():
             raise ValueError("recovery database URL required")
+        if now is not None and not callable(now):
+            raise ValueError("recovery repository clock must be callable")
         self.database_url = database_url
+        self._now = now or (lambda: datetime.now(timezone.utc))
 
     def _connect(self):
         return psycopg.connect(self.database_url, row_factory=dict_row, connect_timeout=5)
@@ -709,6 +717,13 @@ class ProductionRecoveryWorkRepository:
         if not isinstance(retry_policy, ProductionAlertRetryPolicy):
             raise ValueError("explicit versioned retry policy required")
         _require_uuid(policy_decision_id, "current alert policy decision ID")
+        if type(escalation_level) is not int or escalation_level < 0:
+            raise ValueError("nonnegative explicit escalation level required")
+        if escalation_level > len(retry_policy.escalation_after):
+            raise ValueError("escalation level exceeds the explicit retry policy")
+        recipient_tier = "owner" if escalation_level == 0 else "on_call"
+        if escalation_level > 0 and not recipient_profile.on_call_group_ids:
+            raise ValueError("configured on-call recipients are required for escalation")
         with self._connect() as connection:
             with connection.transaction():
                 row = connection.execute(
@@ -735,16 +750,25 @@ class ProductionRecoveryWorkRepository:
                     recipient_profile, retry_policy
                 )
                 if (
-                    initial["payload"].get("recipient_profile_revision") != recipient_profile.revision
+                    initial["payload"].get("recipient_profile_revision")
+                    != recipient_profile.revision
                     or initial["payload"].get("policy_revision") != retry_policy.revision
                     or initial["payload"].get("evidence_sha256") != binding_sha
                 ):
-                    raise RecoveryIdentityConflict("recipient or retry policy digest differs from work binding")
-                if escalation_level > len(retry_policy.escalation_after):
-                    raise ValueError("escalation level exceeds the explicit retry policy")
+                    raise RecoveryIdentityConflict(
+                        "recipient or retry policy digest differs from work binding"
+                    )
                 if escalation_level == 0:
                     alert_event = self._event(initial)
                 else:
+                    initial_event = self._event(initial)
+                    due_at = production_alert_escalation_due_at(
+                        initial_event, retry_policy, escalation_level
+                    )
+                    if _require_aware(
+                        self._now(), "alert escalation time"
+                    ) < due_at:
+                        raise ValueError("production alert escalation is not due")
                     payload = {
                         "schema_version": "salience.p1-production-recovery-alert.v1",
                         "work_id": str(work.work_id),
@@ -768,7 +792,10 @@ class ProductionRecoveryWorkRepository:
                     alert_event = self._append_event(
                         connection,
                         work,
-                        event_key=f"alert-intent:{work.work_id}:{work.source_revision}:{escalation_level}",
+                        event_key=(
+                            f"alert-intent:{work.work_id}:"
+                            f"{work.source_revision}:{escalation_level}"
+                        ),
                         event_kind="alert_intent",
                         policy_decision_id=policy_decision_id,
                         payload=payload,
@@ -786,7 +813,7 @@ class ProductionRecoveryWorkRepository:
                     target_alias=work.target_alias,
                     severity=severity,
                     escalation_level=escalation_level,
-                    recipient_tier="owner",
+                    recipient_tier=recipient_tier,
                     recipient_profile=recipient_profile,
                     retry_policy=retry_policy,
                     policy_decision_id=policy_decision_id,
@@ -807,3 +834,23 @@ class ProductionRecoveryWorkRepository:
             )
         )
         return sha256(material.encode("utf-8")).hexdigest()
+
+
+def production_alert_escalation_due_at(
+    initial_intent: ProductionRecoveryEvent,
+    retry_policy: ProductionAlertRetryPolicy,
+    escalation_level: int,
+) -> datetime:
+    """Return the immutable initial-intent offset for one approved level."""
+    if not isinstance(initial_intent, ProductionRecoveryEvent):
+        raise ValueError("initial production alert intent is required")
+    if not isinstance(retry_policy, ProductionAlertRetryPolicy):
+        raise ValueError("explicit versioned retry policy is required")
+    if (
+        type(escalation_level) is not int
+        or not 1 <= escalation_level <= len(retry_policy.escalation_after)
+    ):
+        raise ValueError("escalation level exceeds the explicit retry policy")
+    return initial_intent.occurred_at + retry_policy.escalation_after[
+        escalation_level - 1
+    ]

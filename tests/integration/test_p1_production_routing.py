@@ -443,7 +443,14 @@ def _permit_factory(route, lease):
     return create
 
 
-def _worker_readback(route, lease, *, poller_count=0, active_task_count=0):
+def _worker_readback(
+    route,
+    lease,
+    *,
+    poller_count=0,
+    active_task_count=0,
+    observed_at=None,
+):
     from datetime import datetime, timezone
 
     from salience.workflows.worker import WorkerReadback
@@ -462,9 +469,182 @@ def _worker_readback(route, lease, *, poller_count=0, active_task_count=0):
         registered_activity_types=frozenset(route.route_tuple.activity_types),
         poller_count=poller_count,
         active_task_count=active_task_count,
-        observed_at=datetime.now(timezone.utc),
+        observed_at=observed_at or datetime.now(timezone.utc),
         complete=True,
     )
+
+
+def _worker_drain_receipt(route, lease, *, boundary_at, readback_observed_at=None):
+    from salience.workflows.temporal_readback import WorkerDrainReceipt
+
+    return WorkerDrainReceipt(
+        status="stopped",
+        route_id=route.route_id,
+        slot_id=lease.slot_id,
+        owner_id=lease.owner_id,
+        fencing_epoch=lease.fencing_epoch,
+        route_manifest_sha256=lease.route_manifest_sha256,
+        artifact_lock_sha256=lease.artifact_lock_sha256,
+        route_tuple_sha256=route.route_tuple_sha256,
+        boundary_at=boundary_at,
+        readback_observed_at=readback_observed_at or boundary_at,
+    )
+
+
+def test_route_transfer_rejects_stale_pre_drain_readback_without_release(monkeypatch):
+    from dataclasses import replace
+
+    from salience.workflows import worker
+
+    clock = _Clock(datetime(2026, 10, 28, 12, 0, tzinfo=timezone.utc))
+    authority = _authority(clock)
+    route = _publication_route()
+    lease = _route_lease(authority, route)
+    release_calls = []
+    release_slot = authority.release_slot
+
+    def record_release(current):
+        release_calls.append(current)
+        return release_slot(current)
+
+    monkeypatch.setattr(authority, "release_slot", record_release)
+
+    stale = replace(
+        _worker_readback(route, lease),
+        observed_at=clock() - timedelta(seconds=1),
+    )
+
+    with pytest.raises(PermissionError, match="readback"):
+        worker.transfer_routed_worker(
+            route=route,
+            lease=lease,
+            drain_receipt=_worker_drain_receipt(
+                route, lease, boundary_at=clock()
+            ),
+            route_authority=authority,
+            temporal_readback=SimpleNamespace(
+                read_worker=lambda route_id, slot_id: stale
+            ),
+            now=clock,
+        )
+
+    assert release_calls == []
+
+
+def test_route_transfer_rejects_future_readback_without_release(monkeypatch):
+    from dataclasses import replace
+
+    from salience.workflows import worker
+
+    clock = _Clock(datetime(2026, 10, 28, 12, 0, tzinfo=timezone.utc))
+    authority = _authority(clock)
+    route = _publication_route()
+    lease = _route_lease(authority, route)
+    release_calls = []
+    release_slot = authority.release_slot
+
+    def record_release(current):
+        release_calls.append(current)
+        return release_slot(current)
+
+    monkeypatch.setattr(authority, "release_slot", record_release)
+
+    future = replace(
+        _worker_readback(route, lease),
+        observed_at=clock() + timedelta(seconds=1),
+    )
+
+    with pytest.raises(PermissionError, match="readback"):
+        worker.transfer_routed_worker(
+            route=route,
+            lease=lease,
+            drain_receipt=_worker_drain_receipt(
+                route, lease, boundary_at=clock()
+            ),
+            route_authority=authority,
+            temporal_readback=SimpleNamespace(
+                read_worker=lambda route_id, slot_id: future
+            ),
+            now=clock,
+        )
+
+    assert release_calls == []
+
+
+def test_route_transfer_accepts_readback_at_both_boundary_equalities(monkeypatch):
+    from salience.workflows import worker
+
+    clock = _Clock(datetime(2026, 10, 28, 12, 0, tzinfo=timezone.utc))
+    authority = _authority(clock)
+    route = _publication_route()
+    lease = _route_lease(authority, route)
+    release_calls = []
+    release_slot = authority.release_slot
+
+    def record_release(current):
+        release_calls.append(current)
+        return release_slot(current)
+
+    monkeypatch.setattr(authority, "release_slot", record_release)
+
+    released = worker.transfer_routed_worker(
+        route=route,
+        lease=lease,
+        drain_receipt=_worker_drain_receipt(
+            route, lease, boundary_at=clock(), readback_observed_at=clock()
+        ),
+        route_authority=authority,
+        temporal_readback=SimpleNamespace(
+            read_worker=lambda route_id, slot_id: _worker_readback(
+                route, lease, observed_at=clock()
+            )
+        ),
+        now=clock,
+    )
+
+    assert released.state == "released"
+    assert release_calls == [lease]
+
+
+def test_route_transfer_rejects_receipt_identity_mismatch_without_release(monkeypatch):
+    from dataclasses import replace
+
+    from salience.workflows import worker
+
+    clock = _Clock(datetime(2026, 10, 28, 12, 0, tzinfo=timezone.utc))
+    authority = _authority(clock)
+    route = _publication_route()
+    lease = _route_lease(authority, route)
+    receipt = replace(
+        _worker_drain_receipt(route, lease, boundary_at=clock()),
+        fencing_epoch=lease.fencing_epoch + 1,
+    )
+    readback_calls = []
+    release_calls = []
+    release_slot = authority.release_slot
+
+    def record_release(current):
+        release_calls.append(current)
+        return release_slot(current)
+
+    monkeypatch.setattr(authority, "release_slot", record_release)
+
+    with pytest.raises(PermissionError, match="drain receipt"):
+        worker.transfer_routed_worker(
+            route=route,
+            lease=lease,
+            drain_receipt=receipt,
+            route_authority=authority,
+            temporal_readback=SimpleNamespace(
+                read_worker=lambda route_id, slot_id: readback_calls.append(
+                    (route_id, slot_id)
+                )
+            ),
+            now=clock,
+        )
+
+    assert readback_calls == []
+    assert release_calls == []
 
 
 @pytest.mark.asyncio
@@ -721,7 +901,7 @@ async def test_route_renewal_loss_drains_before_expiry_and_preserves_identity():
 
     class Readback:
         def read_worker(self, route_id, slot_id):
-            result = _worker_readback(route, lease)
+            result = _worker_readback(route, lease, observed_at=clock())
             readbacks.append((route_id, slot_id, result))
             return result
 
@@ -735,7 +915,9 @@ async def test_route_renewal_loss_drains_before_expiry_and_preserves_identity():
         now=clock,
     )
 
-    assert result == "lease_lost"
+    assert result.status == "lease_lost"
+    assert result.boundary_at == shutdown_at[0]
+    assert result.readback_observed_at >= result.boundary_at
     assert shutdown_called.is_set()
     assert renewal_intervals and renewal_intervals[0] <= 10
     assert shutdown_at[0] < original_expiry
@@ -1067,13 +1249,17 @@ def test_restart_preserves_workflow_cycle_and_operation_identity(monkeypatch):
     first_request = state.production_permit_request_factory(approval, publication)
     incorrect_readback = SimpleNamespace(
         read_worker=lambda route_id, slot_id: replace(
-            _worker_readback(route, first_lease), namespace="wrong-namespace"
+            _worker_readback(route, first_lease, observed_at=clock()),
+            namespace="wrong-namespace",
         )
     )
     with pytest.raises(PermissionError, match="readback"):
         worker.transfer_routed_worker(
             route=route,
             lease=first_lease,
+            drain_receipt=_worker_drain_receipt(
+                route, first_lease, boundary_at=clock()
+            ),
             route_authority=authority,
             temporal_readback=incorrect_readback,
             now=clock,
@@ -1082,9 +1268,14 @@ def test_restart_preserves_workflow_cycle_and_operation_identity(monkeypatch):
     released = worker.transfer_routed_worker(
         route=route,
         lease=first_lease,
+        drain_receipt=_worker_drain_receipt(
+            route, first_lease, boundary_at=clock()
+        ),
         route_authority=authority,
         temporal_readback=SimpleNamespace(
-            read_worker=lambda route_id, slot_id: _worker_readback(route, first_lease)
+            read_worker=lambda route_id, slot_id: _worker_readback(
+                route, first_lease, observed_at=clock()
+            )
         ),
         now=clock,
     )

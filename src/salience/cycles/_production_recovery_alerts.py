@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import replace
-from datetime import timedelta
+from datetime import datetime, timedelta
 from hashlib import sha256
 from uuid import UUID
 
@@ -13,9 +13,12 @@ from salience.cycles._production_recovery_contracts import (
     ProductionAlertRetryPolicy, ProductionAlertTarget, ProductionRecipientProfile,
     ProductionRecoveryAuthority, ProductionRecoveryDecision, ProductionRecoveryEvent,
     ProductionRecoveryWork, RecoveryEventConflict, RecoveryIdentityConflict,
-    RecoveryInventoryGap, _require_sha256, _require_uuid, _safe_code,
+    RecoveryInventoryGap, _require_aware, _require_sha256, _require_uuid, _safe_code,
 )
-from salience.cycles._production_recovery_work import ProductionRecoveryWorkRepository
+from salience.cycles._production_recovery_work import (
+    ProductionRecoveryWorkRepository,
+    production_alert_escalation_due_at,
+)
 
 
 class ProductionRecoveryAlerts:
@@ -30,6 +33,7 @@ class ProductionRecoveryAlerts:
         recipient_profile: ProductionRecipientProfile,
         retry_policy: ProductionAlertRetryPolicy,
         wait: Callable[[timedelta], None],
+        now: Callable[[], datetime],
         schedule_hold_target: Callable[[UUID, UUID, str, str], None],
     ) -> None:
         if not isinstance(repository, ProductionRecoveryWorkRepository):
@@ -48,6 +52,8 @@ class ProductionRecoveryAlerts:
             raise ValueError("explicit versioned bounded retry policy required")
         if not callable(wait):
             raise ValueError("explicit deterministic or qualified retry wait required")
+        if not callable(now):
+            raise ValueError("explicit deterministic or qualified alert clock required")
         if not callable(schedule_hold_target):
             raise ValueError("explicit schedule hold alert sink required")
         self.repository = repository
@@ -56,6 +62,7 @@ class ProductionRecoveryAlerts:
         self.recipient_profile = recipient_profile
         self.retry_policy = retry_policy
         self.wait = wait
+        self.now = now
         self.schedule_hold_target = schedule_hold_target
 
     def emit_hold(
@@ -178,6 +185,74 @@ class ProductionRecoveryAlerts:
                 (work.owner_id, work.workspace_id),
             ).fetchone() is not None
 
+    def _validate_intent_timing_and_tier(
+        self,
+        connection,
+        work: ProductionRecoveryWork,
+        alert: ProductionAlertRequest,
+        intent,
+    ) -> None:
+        level = alert.escalation_level
+        if level > len(alert.retry_policy.escalation_after):
+            raise ValueError("escalation level exceeds the explicit retry policy")
+        expected_tier = "owner" if level == 0 else "on_call"
+        if alert.recipient_tier != expected_tier:
+            raise RecoveryIdentityConflict(
+                "alert recipient tier does not match its escalation level"
+            )
+        if level > 0 and not alert.recipient_profile.on_call_group_ids:
+            raise ValueError("configured on-call recipients are required for escalation")
+
+        expected_key = (
+            f"alert-intent:{work.work_id}:initial"
+            if level == 0
+            else f"alert-intent:{work.work_id}:{work.source_revision}:{level}"
+        )
+        if intent["event_key"] != expected_key:
+            raise RecoveryIdentityConflict(
+                "alert request is bound to a different escalation intent"
+            )
+
+        payload = intent["payload"]
+        expected_common = {
+            "work_id": str(work.work_id),
+            "source_id": str(work.source_id),
+            "reason": work.reason,
+            "state": work.state,
+            "deadline": work.deadline.isoformat(),
+            "recipient_profile_revision": alert.recipient_profile.revision,
+            "policy_revision": alert.retry_policy.revision,
+            "evidence_sha256": ProductionRecoveryWorkRepository._policy_evidence_from_profile(
+                alert.recipient_profile, alert.retry_policy
+            ),
+        }
+        if any(payload.get(name) != value for name, value in expected_common.items()):
+            raise RecoveryIdentityConflict("alert intent does not match the exact request policy")
+        if level == 0:
+            return
+        if (
+            payload.get("escalation_level") != level
+            or payload.get("severity") != alert.severity
+        ):
+            raise RecoveryIdentityConflict(
+                "alert intent does not match the exact escalation request"
+            )
+
+        initial = connection.execute(
+            """SELECT * FROM v4_production_recovery_events
+               WHERE work_id=%s AND event_kind='alert_intent'
+                 AND event_key=%s""",
+            (work.work_id, f"alert-intent:{work.work_id}:initial"),
+        ).fetchone()
+        if initial is None:
+            raise RecoveryInventoryGap("initial alert intent is missing")
+        initial_event = self.repository._event(initial)
+        due_at = production_alert_escalation_due_at(
+            initial_event, alert.retry_policy, level
+        )
+        if _require_aware(self.now(), "alert delivery time") < due_at:
+            raise ValueError("production alert escalation is not due")
+
     def _held_receipt(
         self,
         work: ProductionRecoveryWork,
@@ -287,6 +362,9 @@ class ProductionRecoveryAlerts:
             ).fetchone()
             if intent is None:
                 raise RecoveryInventoryGap("alert request lacks its committed alert intent")
+            self._validate_intent_timing_and_tier(
+                connection, work, alert, intent
+            )
             local_receipt = connection.execute(
                 """SELECT * FROM v4_production_recovery_events
                    WHERE event_key=%s AND work_id=%s AND event_kind='delivery_receipt'""",
