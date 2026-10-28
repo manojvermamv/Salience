@@ -273,3 +273,19 @@ This append-only note records the corrected current schedule specification and i
 | `docs/superpowers/plans/2026-10-28-p1-remaining-production-development.md` | `a7f6613972d716d78a158f6fce2ffa3b991506071e9d4afb54d060c119d2aa9d` |
 | `.superpowers/sdd/2026-10-28-p1-remaining-production-development/planning-report.md` | `b3f9f7190569ba9218804364bbcc74a7353f573af94e58a1164cc62de23e58aa` |
 | `.superpowers/sdd/2026-10-28-p1-remaining-production-development/progress.md` | `4230b34c327dae6284ff1767019bc24d50978407c84d9760838b51f007f4bf37` |
+
+## Migration-lineage currentization — 2026-10-28
+
+This append-only note supersedes the current-plan migration mapping above while preserving the historical review digests and verdicts. Reviewer verification established that unchanged 0047 rejects Task 7's split-stop and typed deadline-command event evidence. The current additive chain from the original 0046 baseline is 0047 recovery work/events, 0048 schedule bindings, 0049 recovery decision evidence, 0050 typed dispatch reissue, and 0051 rollback verifier v2. Task 7 owns 0049; Task 8 owns 0050; Task 9 owns 0051 and pins the authenticated launcher v2 candidate to exact head `0051_p1_recovery_rollback_v2` and verifier ABI v2. Task 9's 0051 downgrade test proves schema inventory/fingerprint and `alembic_version` remain unchanged after attempted downgrade. Historical Task 9 notes pinning 0050 remain historical only. This correction does not modify migration 0047 or migrations 0044–0048, extend any prior review verdict, or qualify production. Effects remain disabled, external target/owner/credential evidence remains `NOT RUN`/`HELD`, RG0/full RG1 remain `HELD`, P2 remains `BLOCKED`, and `main` remains unmerged.
+
+The following hashes bind the current spec/plan/report/ledger text only. The status audit records these hashes separately; the frozen review chain remains unchanged.
+
+| File | SHA-256 |
+| --- | --- |
+| `docs/superpowers/specs/2026-10-13-p1-production-routing-and-worker-fencing-design.md` | `76921a085e352f86ae77895c824917832a49847c306b76bc56ae2c7e44a23e90` |
+| `docs/superpowers/specs/2026-10-13-p1-live-schedule-fencing-design.md` | `de5e961bbd1ea756a98e5694b5f079982c5d7958c4b71a86a2de680189717e99` |
+| `docs/superpowers/specs/2026-10-13-p1-production-recovery-and-alerts-design.md` | `4d7076fd968c28d78307678fa0b186d446dff6e3f3a88d5507646a828b2605cc` |
+| `docs/superpowers/specs/2026-10-13-rg0-rg1-external-acceptance-design.md` | `7334364e5417cbb29143877334a80ea90125e9ce61bff71f67de77a86f61069e` |
+| `docs/superpowers/plans/2026-10-28-p1-remaining-production-development.md` | `98142a4720b483e4cc04254e7482cdbbec3240e1bc992c230d921c7aaaea6a04` |
+| `.superpowers/sdd/2026-10-28-p1-remaining-production-development/planning-report.md` | `5ead73f3b32307f59fd4887c353c17616c2024f4d55cb6e3e55a1483e58359a6` |
+| `.superpowers/sdd/2026-10-28-p1-remaining-production-development/progress.md` | `93b4e00185656d0e0431bbd3c5a1b6725c9622d0ffae76c48152e366156797d2` |
