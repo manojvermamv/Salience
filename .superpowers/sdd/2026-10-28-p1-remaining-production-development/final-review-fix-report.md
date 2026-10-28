@@ -73,3 +73,13 @@ PYTHONPATH=src .venv/bin/pytest -q tests/integration/test_p1_production_recovery
 .venv/bin/python -m compileall -q src/salience/cycles/_production_recovery_alerts.py tests/integration/test_p1_production_recovery.py
 git diff --check
 ```
+
+## Exact-candidate Task 11 confirmation — 2026-10-28
+
+The reviewed alert replay correction is included in exact implementation source `b4865d115c225c828e54777024f1de726fa4cd86` and was measured with generated artifact commit `3c62a4f01e974d97225100bb2afc3a3665ef601d`. The complete recovery module passed 47 tests, including both committed-receipt and provider-acceptance replay cases after clock rollback. Policy/revocation passed 124 cases, and the single complete non-live suite passed 1,129 tests with 26 historical Task 8 fixture skips and three Alembic configuration deprecation warnings. The local disposable PostgreSQL and Temporal project was removed after the run.
+
+This confirms the fix against local contracts and does not establish provider, alert-target, production-database, or external route behavior. The exact synthetic package continues to hold all RG0/RG1 rows, leaves all identities unverified, disables effects, and reports `NO_GO`/`UNCHANGED`. The detailed commands and digests are in [`task-11-report.md`](task-11-report.md) and [`final-evidence-report.md`](final-evidence-report.md).
+
+The source/package consistency check found the current source tree, generated lock, wheel, image, route tuple, authenticated route-manifest digest, and migration head agree across the lock and evidence package. No Critical or Important mismatch was found in that local scope. This was not an independent rereview; the parent agent's scoped rereview remains pending.
+
+The active documentation metadata was also currentized for the final exact-source records. `docs/v4/test_checks.py` passes 25/25 after restoring the 300-path/125-Markdown inventory and the append-only progress digest. The normal docs validator modes still return 1 against the preserved earlier application evidence lock; no historical lock or audit source was altered. Detailed command outcomes are in `task-11-report.md`.

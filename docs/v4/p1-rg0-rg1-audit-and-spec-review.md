@@ -289,3 +289,17 @@ The following hashes bind the current spec/plan/report/ledger text only. The sta
 | `docs/superpowers/plans/2026-10-28-p1-remaining-production-development.md` | `98142a4720b483e4cc04254e7482cdbbec3240e1bc992c230d921c7aaaea6a04` |
 | `.superpowers/sdd/2026-10-28-p1-remaining-production-development/planning-report.md` | `5ead73f3b32307f59fd4887c353c17616c2024f4d55cb6e3e55a1483e58359a6` |
 | `.superpowers/sdd/2026-10-28-p1-remaining-production-development/progress.md` | `93b4e00185656d0e0431bbd3c5a1b6725c9622d0ffae76c48152e366156797d2` |
+
+## Task 11 current documentation inventory refresh — 2026-10-28
+
+This append-only note refreshes the active documentation path/hash inventory after the exact-source Task 11 report, synthetic evidence package, and progress checkpoint were added. The inventory now covers 300 documentation artifacts and 125 Markdown files; `docs/v4/test_checks.py` passes 25/25 after this refresh. The initial audit's source commit, environment manifest, row findings, review digests, and `COMPLETE_REVIEWED` decision above remain frozen to their recorded scope. This current hash index does not extend that review or qualify a production target.
+
+The preserved `docs/v4/check.py` evidence lock still describes the earlier 376-file/360-inventory application snapshot. Both checker modes return exit 1 on the later candidate's changed source pins and added 0047–0051 paths; no historical application lock was rewritten. The current exact-source results and local-only scope are recorded in [`Task 11 report`](../../.superpowers/sdd/2026-10-28-p1-remaining-production-development/task-11-report.md). RG0/RG1 remain HELD, P2 remains BLOCKED, effects remain disabled, and this note does not claim external qualification.
+
+| Current file | SHA-256 |
+| --- | --- |
+| `docs/v4/progress.md` | `58713c94c861d781062b33774dbc10ae8aeef87895e217524b747053a8119efe` |
+| `docs/v4/p1-remaining-production-development-evidence.json` | `a6e97ad749a121c0498057dae82f3a8dbfbe8f70aecab8a43de2c57314021f64` |
+| `.superpowers/sdd/2026-10-28-p1-remaining-production-development/task-11-report.md` | `c722351383d9ba935128cb634ceac79ffc2f45cd9173de0a91675a6895a14ad2` |
+| `.superpowers/sdd/2026-10-28-p1-remaining-production-development/final-evidence-report.md` | `062d622171e1a6b8c05392592c49569ba564f5f4b141bec28dba3d927f5787e9` |
+| `.superpowers/sdd/2026-10-28-p1-remaining-production-development/final-review-fix-report.md` | `14b4ee16ba0e71c59313104632c939ce3f0d5df3a04568226d1ac0c5b77ae8a4` |
