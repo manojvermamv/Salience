@@ -262,3 +262,14 @@ The recovery design and implementation plan now agree on exact source IDs and re
 | `docs/superpowers/plans/2026-10-28-p1-remaining-production-development.md` | `9cc14b0611961da5758b934263a032a9364da3fe595ef45fcd1f4ff2c4ffccac` |
 | `.superpowers/sdd/2026-10-28-p1-remaining-production-development/planning-report.md` | `0332b1767cc49000cf6a3009bec65e51edd36c1de48ff1cac0a5f3b4e35fb9b0` |
 | `.superpowers/sdd/2026-10-28-p1-remaining-production-development/progress.md` | `37b53aab85310e83c730c70b08152311baaa6b8b69d2a7642f5d280d8269d888` |
+
+## Task 3 schedule inventory currentization — 2026-10-28
+
+This append-only note records the corrected current schedule specification and implementation plan. The earlier schedule review digest and `COMPLETE_REVIEWED` verdict remain historical and bind only to the exact text and candidate originally reviewed. These current-text hashes do not extend that verdict or qualify live production. The active application evidence lock and frozen initial audit are unchanged; the status audit omits its own digest to avoid recursion.
+
+| File | SHA-256 |
+| --- | --- |
+| `docs/superpowers/specs/2026-10-13-p1-live-schedule-fencing-design.md` | `13ab87aedf31493bed8511a0c7d6d985882fcec3e189b5b6e769516d8c85eae7` |
+| `docs/superpowers/plans/2026-10-28-p1-remaining-production-development.md` | `a7f6613972d716d78a158f6fce2ffa3b991506071e9d4afb54d060c119d2aa9d` |
+| `.superpowers/sdd/2026-10-28-p1-remaining-production-development/planning-report.md` | `b3f9f7190569ba9218804364bbcc74a7353f573af94e58a1164cc62de23e58aa` |
+| `.superpowers/sdd/2026-10-28-p1-remaining-production-development/progress.md` | `4230b34c327dae6284ff1767019bc24d50978407c84d9760838b51f007f4bf37` |

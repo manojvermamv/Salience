@@ -7,13 +7,13 @@
   "summary": {
     "current_handoff_hashes": {
       ".superpowers/sdd/2026-10-27-p1-production-policy-and-revocation/final-evidence-report.md": "551c40b4d6852ab3ab4f42bc2cd26ffd1a0339fa03a5f7c2c0f0d39814d05307",
-      ".superpowers/sdd/2026-10-28-p1-remaining-production-development/planning-report.md": "0332b1767cc49000cf6a3009bec65e51edd36c1de48ff1cac0a5f3b4e35fb9b0",
-      ".superpowers/sdd/2026-10-28-p1-remaining-production-development/progress.md": "37b53aab85310e83c730c70b08152311baaa6b8b69d2a7642f5d280d8269d888",
+      ".superpowers/sdd/2026-10-28-p1-remaining-production-development/planning-report.md": "b3f9f7190569ba9218804364bbcc74a7353f573af94e58a1164cc62de23e58aa",
+      ".superpowers/sdd/2026-10-28-p1-remaining-production-development/progress.md": "4230b34c327dae6284ff1767019bc24d50978407c84d9760838b51f007f4bf37",
       "docs/README.md": "a4a4ecf415eb38c9947d7632b4ffccbe03dc4629c8ce6b6988082b4386db2c39",
       "docs/superpowers/plans/2026-10-27-p1-production-policy-and-revocation.md": "c1564a7ec7d09f63b5aba105678c8b5929619fecc49e5b4bb3e415ed1340672e",
       "docs/superpowers/plans/2026-10-27-p1-rg0-rg1-initial-gap-audit.md": "5d1dd8a86718184d03324144643dfb009cb36243a5bd0c0f14c46844eb3c5cd4",
-      "docs/superpowers/plans/2026-10-28-p1-remaining-production-development.md": "9cc14b0611961da5758b934263a032a9364da3fe595ef45fcd1f4ff2c4ffccac",
-      "docs/superpowers/specs/2026-10-13-p1-live-schedule-fencing-design.md": "17126661384a5c8e7e46f316919f361f86cbc99792f7095e4e8eb714735ee269",
+      "docs/superpowers/plans/2026-10-28-p1-remaining-production-development.md": "a7f6613972d716d78a158f6fce2ffa3b991506071e9d4afb54d060c119d2aa9d",
+      "docs/superpowers/specs/2026-10-13-p1-live-schedule-fencing-design.md": "13ab87aedf31493bed8511a0c7d6d985882fcec3e189b5b6e769516d8c85eae7",
       "docs/superpowers/specs/2026-10-13-p1-production-policy-and-revocation-design.md": "6be8f5ec6c48491a45a734510cc20af98e2cd7554fdc0409e77c6d9667d42fe2",
       "docs/superpowers/specs/2026-10-13-p1-production-recovery-and-alerts-design.md": "bbddebd8731a6119367a72776bcd0be47849436232419f6e95da4e613447a3c1",
       "docs/superpowers/specs/2026-10-13-p1-production-routing-and-worker-fencing-design.md": "244e914ce0a24b869f5d360fdd0129d6773787ed0e49cb60d08a1fda49918830",
@@ -23,7 +23,7 @@
       "docs/v4/p0-release.json": "0a0f1969e0497cbec535fb3f854b51cef870a4746eb92f8a67a127566dc9ff75",
       "docs/v4/p1-production-policy-revocation-evidence.json": "e5a5a3d424157479cacaf00eae39614a5abe12ecdb04ac38af0c95692dbd982b",
       "docs/v4/p1-qualification-matrix.json": "7bd051023bb9dc6af4f491fc88984ca5a37de27b4b4533078881c112ef66655b",
-      "docs/v4/p1-rg0-rg1-audit-and-spec-review.md": "ea6cb332e0d226daccfdc946ad3b1a8e0c3f239064ebeedab24f9ecd7e6d60e7",
+      "docs/v4/p1-rg0-rg1-audit-and-spec-review.md": "f0e2e68274031c46ed45ed2bae475edcd76822e58cd1f5d04bb8866de7c19922",
       "docs/v4/p1-rg0-rg1-initial-gap-audit.json": "33fe485384dcf60e36df8d48ace6394c80bce0d1bd9e6b9b39c7a905d65676b1",
       "docs/v4/p1-rg0-rg1-initial-gap-audit.md": "62aab5afb39f7c47e355a68ccf56e319a72955247515dfbdba8913fd797a5944",
       "docs/v4/progress.md": "5bf02b6110af159e5680b68de1ac5ee49d28152a44cdd1be82e40d9e98cc5a69",
@@ -829,12 +829,12 @@
     },
     {
       "path": ".superpowers/sdd/2026-10-28-p1-remaining-production-development/planning-report.md",
-      "sha256": "0332b1767cc49000cf6a3009bec65e51edd36c1de48ff1cac0a5f3b4e35fb9b0",
+      "sha256": "b3f9f7190569ba9218804364bbcc74a7353f573af94e58a1164cc62de23e58aa",
       "disposition": "current effects-disabled P1 remaining-production planning artifacts; external qualification remains NOT RUN/HELD"
     },
     {
       "path": ".superpowers/sdd/2026-10-28-p1-remaining-production-development/progress.md",
-      "sha256": "37b53aab85310e83c730c70b08152311baaa6b8b69d2a7642f5d280d8269d888",
+      "sha256": "4230b34c327dae6284ff1767019bc24d50978407c84d9760838b51f007f4bf37",
       "disposition": "current effects-disabled P1 remaining-production planning artifacts; external qualification remains NOT RUN/HELD"
     },
     {
@@ -1529,7 +1529,7 @@
     },
     {
       "path": "docs/superpowers/plans/2026-10-28-p1-remaining-production-development.md",
-      "sha256": "9cc14b0611961da5758b934263a032a9364da3fe595ef45fcd1f4ff2c4ffccac",
+      "sha256": "a7f6613972d716d78a158f6fce2ffa3b991506071e9d4afb54d060c119d2aa9d",
       "disposition": "current effects-disabled P1 remaining-production planning artifacts; external qualification remains NOT RUN/HELD"
     },
     {
@@ -1574,7 +1574,7 @@
     },
     {
       "path": "docs/superpowers/specs/2026-10-13-p1-live-schedule-fencing-design.md",
-      "sha256": "17126661384a5c8e7e46f316919f361f86cbc99792f7095e4e8eb714735ee269",
+      "sha256": "13ab87aedf31493bed8511a0c7d6d985882fcec3e189b5b6e769516d8c85eae7",
       "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
@@ -1834,7 +1834,7 @@
     },
     {
       "path": "docs/v4/p1-rg0-rg1-audit-and-spec-review.md",
-      "sha256": "ea6cb332e0d226daccfdc946ad3b1a8e0c3f239064ebeedab24f9ecd7e6d60e7",
+      "sha256": "f0e2e68274031c46ed45ed2bae475edcd76822e58cd1f5d04bb8866de7c19922",
       "disposition": "active documentation aligned to frozen initial audit source 7c1ddcd; current Slice 2 application candidate ec12763 / migration 0046 passed 60 Phase 9 gate and 908 full non-live tests (26 skipped, 3 warnings); production target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2/Slice 7 BLOCKED; main unmerged"
     },
     {
@@ -2158,8 +2158,8 @@
   "corrected_head_rereview": "COMPLETE only for application `a4b2368cdb463939d093020224a5b5667392aee6` with documentation/observed HEAD `d0311725686d81b7b4747c2d6225986e5ea3a524`; it does not cover `7878208` or `5cb5791`.",
   "documentation_tests": {
     "status": "PASS",
-    "command": ".venv/bin/python docs/v4/test_checks.py",
-    "passed": 24
+    "command": "python3 docs/v4/test_checks.py",
+    "passed": 25
   },
   "task_8_exact_candidate_artifact_build": {
     "status": "SUCCESSOR_EXACT_CANDIDATE_ARTIFACT_BUILD_AND_LOCAL_QUALIFICATION_RECORDED",
