@@ -131,7 +131,7 @@ def _enroll_production_intent(control, binding, key):
 
 
 @contextmanager
-def _production_recovery_operation(prefix="task7_recovery_"):
+def _production_recovery_operation(prefix="task7_recovery_", *, task8_dispatch=False):
     migration_tests = import_module("test_v4_migrations")
     source = os.environ["TEST_DATABASE_URL"]
     name, database, _before, fixture, authority = (
@@ -139,7 +139,13 @@ def _production_recovery_operation(prefix="task7_recovery_"):
     )
     try:
         upgraded = migration_tests._migration(
-            database, "upgrade", "0049_p1_production_recovery_decision_evidence"
+            database,
+            "upgrade",
+            (
+                "0050_p1_production_dispatch_reissue"
+                if task8_dispatch
+                else "0049_p1_production_recovery_decision_evidence"
+            ),
         )
         assert upgraded.returncode == 0, upgraded.stdout + upgraded.stderr
         with psycopg.connect(database) as connection:
@@ -1893,7 +1899,9 @@ def test_pre_admission_intent_never_constructs_remote_client():
 
 def test_no_effect_command_binds_same_operation_key_and_revision():
     module = import_module("salience.cycles.production_recovery")
-    with _production_recovery_operation("task7_no_effect_command_") as (
+    with _production_recovery_operation(
+        "task7_no_effect_command_", task8_dispatch=True
+    ) as (
         database,
         _fixture,
         authority,
@@ -2010,3 +2018,184 @@ def test_no_effect_command_binds_same_operation_key_and_revision():
             assert event["workspace_stop_revision"] == 3
             assert event["goal_stop_revision"] == 5
             assert event["route_decision_id"] == str(command.route_decision_id)
+            assert event["observation_event_id"] == str(command.observation_event_id)
+            assert event["observation_sha256"] == command.observation_sha256
+
+
+@pytest.mark.parametrize(
+    "result_class,remote_state",
+    (
+        ("unknown", "unknown"),
+        ("in_progress", "in_progress"),
+        ("terminal_success", "succeeded"),
+        ("terminal_success", "accepted"),
+        ("unknown", "conflicting"),
+    ),
+)
+def test_no_effect_command_rejects_superseded_remote_observation(
+    result_class, remote_state
+):
+    module = import_module("salience.cycles.production_recovery")
+    with _production_recovery_operation("task7_no_effect_superseded_") as (
+        database,
+        _fixture,
+        authority,
+        _enrollment,
+    ):
+        repository = module.ProductionRecoveryWorkRepository(database)
+        work = _case_work(repository, authority, module)
+        context = _read_context(repository, module, work)
+        observation = _exact_observation(module, work, context, result="not_found")
+        coordinator = module.ProductionRecoveryCoordinator(
+            repository,
+            remote_target_factory=lambda _provider: _ReadTarget(observation),
+            authority=_RecoveryAuthority(module),
+            provider_contracts={work.target_alias: context.provider_contract},
+        )
+        selected = coordinator.reconcile(work.work_id)
+        with psycopg.connect(database, row_factory=dict_row) as connection:
+            selected_row = connection.execute(
+                "SELECT payload,policy_decision_id FROM v4_production_recovery_events "
+                "WHERE event_id=%s",
+                (selected.event_id,),
+            ).fetchone()
+            later_payload = dict(selected_row["payload"])
+            later_payload.update(
+                {
+                    "reason_code": "remote_observation",
+                    "result_class": result_class,
+                    "remote_state": remote_state,
+                    "evidence_sha256": "e" * 64,
+                }
+            )
+            repository._append_event(
+                connection,
+                work,
+                event_key="superseding-remote-read:" + str(work.work_id),
+                event_kind="remote_read_observation",
+                policy_decision_id=selected_row["policy_decision_id"],
+                payload=later_payload,
+            )
+        command = module.NoEffectGenerationReissueCommand(
+            work_id=work.work_id,
+            case_id=work.case_id,
+            expected_case_revision=1,
+            observation_event_id=selected.event_id,
+            observation_sha256=selected.payload_sha256,
+            operation_id=work.operation_id,
+            request_fingerprint=work.request_fingerprint,
+            original_idempotency_key=context.idempotency_key,
+            stage_decision_id=uuid4(),
+            policy_decision_id=uuid4(),
+            workspace_stop_revision=3,
+            goal_stop_revision=5,
+            route_decision_id=uuid4(),
+            idempotency_key="reissue:" + str(work.case_id) + ":superseded",
+        )
+        controller = module.ProductionRecoveryCaseController(
+            repository,
+            authority=_RecoveryAuthority(module),
+            commands=object(),
+        )
+        with pytest.raises(ValueError, match="latest remote observation"):
+            controller.authorize_no_effect_generation_reissue(command)
+        with psycopg.connect(database) as connection:
+            assert connection.execute(
+                """SELECT count(*) FROM v4_production_recovery_events
+                   WHERE work_id=%s AND event_kind='same_operation_no_effect_reissue'""",
+                (work.work_id,),
+            ).fetchone()[0] == 0
+
+
+def test_recovery_event_validator_rejects_superseded_observation_binding():
+    module = import_module("salience.cycles.production_recovery")
+    with _production_recovery_operation(
+        "task8_event_validator_superseded_", task8_dispatch=True
+    ) as (database, _fixture, authority, _enrollment):
+        repository = module.ProductionRecoveryWorkRepository(database)
+        work = _case_work(repository, authority, module)
+        context = _read_context(repository, module, work)
+        observation = _exact_observation(module, work, context, result="not_found")
+        coordinator = module.ProductionRecoveryCoordinator(
+            repository,
+            remote_target_factory=lambda _provider: _ReadTarget(observation),
+            authority=_RecoveryAuthority(module),
+            provider_contracts={work.target_alias: context.provider_contract},
+        )
+        selected = coordinator.reconcile(work.work_id)
+        with psycopg.connect(database, row_factory=dict_row) as connection:
+            selected_row = connection.execute(
+                """SELECT payload,policy_decision_id
+                   FROM v4_production_recovery_events WHERE event_id=%s""",
+                (selected.event_id,),
+            ).fetchone()
+            later_payload = dict(selected_row["payload"])
+            later_payload.update(
+                {
+                    "reason_code": "remote_observation",
+                    "result_class": "unknown",
+                    "remote_state": "unknown",
+                    "evidence_sha256": "f" * 64,
+                }
+            )
+            repository._append_event(
+                connection,
+                work,
+                event_key="superseding-before-command:" + str(work.work_id),
+                event_kind="remote_read_observation",
+                policy_decision_id=selected_row["policy_decision_id"],
+                payload=later_payload,
+            )
+
+            event_key = "reissue-validator:" + str(work.work_id)
+            remote_identity = sha256(
+                f"{work.operation_id}:{context.idempotency_key}".encode("utf-8")
+            ).hexdigest()
+            decision_ids = (uuid4(), uuid4(), uuid4())
+            proof = ":".join(
+                (
+                    str(selected.event_id),
+                    selected.payload_sha256,
+                    work.request_fingerprint,
+                    remote_identity,
+                    str(decision_ids[0]),
+                    str(decision_ids[1]),
+                    "3",
+                    "5",
+                    str(decision_ids[2]),
+                )
+            )
+            event_payload = {
+                "schema_version": "salience.p1-same-operation-no-effect.v1",
+                "reason_code": "authoritative_no_effect",
+                "evidence_sha256": sha256(proof.encode("utf-8")).hexdigest(),
+                "remote_identity_sha256": remote_identity,
+                "request_fingerprint": work.request_fingerprint,
+                "operation_id": str(work.operation_id),
+                "case_id": str(work.case_id),
+                "work_id": str(work.work_id),
+                "source_id": str(work.source_id),
+                "state": work.state,
+                "result_class": "authoritative_no_effect",
+                "event_key": event_key,
+                "stage_decision_id": str(decision_ids[0]),
+                "policy_decision_id": str(decision_ids[1]),
+                "workspace_stop_revision": 3,
+                "goal_stop_revision": 5,
+                "route_decision_id": str(decision_ids[2]),
+                "observation_event_id": str(selected.event_id),
+                "observation_sha256": selected.payload_sha256,
+            }
+            with pytest.raises(
+                psycopg.errors.RaiseException,
+                match="latest exact no-effect observation",
+            ):
+                with connection.transaction():
+                    repository._append_event(
+                        connection,
+                        work,
+                        event_key=event_key,
+                        event_kind="same_operation_no_effect_reissue",
+                        policy_decision_id=decision_ids[1],
+                        payload=event_payload,
+                    )

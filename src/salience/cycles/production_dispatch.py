@@ -514,6 +514,7 @@ class ProductionEffectDispatch:
         result: ProductionPermitResult | None = None
         with psycopg.connect(self.database_url, row_factory=dict_row) as connection:
             with connection.transaction():
+                recovery_work_id = self._prelock_recovery_work(connection, request)
                 self._lock_operation(connection, request.operation_id)
                 facts = self._load_authority(connection, request)
                 pointer = connection.execute(
@@ -521,6 +522,14 @@ class ProductionEffectDispatch:
                     "WHERE operation_id=%s FOR UPDATE",
                     (request.operation_id,),
                 ).fetchone()
+                if (
+                    pointer is not None
+                    and pointer["generation"] + 1 == request.generation
+                    and request.recovery_command_id is not None
+                ):
+                    self._lock_recovery_case_and_cycle(
+                        connection, request, recovery_work_id
+                    )
                 if pointer is not None:
                     existing = connection.execute(
                         "SELECT * FROM public.v4_production_effect_permits "
@@ -2294,6 +2303,83 @@ class ProductionEffectDispatch:
             "SELECT pg_advisory_xact_lock(hashtextextended(%s,0))",
             (str(operation_id),),
         )
+
+    @staticmethod
+    def _prelock_recovery_work(connection, request: ProductionPermitRequest) -> UUID | None:
+        if request.generation < 2 or request.recovery_command_id is None:
+            return None
+        pointer = connection.execute(
+            """SELECT generation FROM public.v4_production_current_dispatch
+               WHERE operation_id=%s""",
+            (request.operation_id,),
+        ).fetchone()
+        if pointer is None or pointer["generation"] + 1 != request.generation:
+            return None
+        row = connection.execute(
+            """SELECT work.work_id
+               FROM public.v4_production_recovery_events event
+               JOIN public.v4_production_recovery_work work
+                 ON work.work_id=event.work_id
+               WHERE event.event_id=%s
+                 AND event.event_kind='same_operation_no_effect_reissue'
+               FOR SHARE OF work""",
+            (request.recovery_command_id,),
+        ).fetchone()
+        return row["work_id"] if row is not None else None
+
+    @staticmethod
+    def _lock_recovery_case_and_cycle(
+        connection, request: ProductionPermitRequest, work_id: UUID | None
+    ) -> None:
+        if work_id is None:
+            return
+        cycle = connection.execute(
+            """SELECT recovery.id
+               FROM public.v4_production_recovery_work work
+               JOIN public.v4_recovery_cases recovery
+                 ON recovery.id=work.source_id
+               JOIN public.v4_cycles cycle
+                 ON cycle.id=recovery.target_cycle_id
+               WHERE work.work_id=%s
+                 AND work.source_discriminant='cycle_case'
+                 AND work.operation_id=%s
+                 AND recovery.workspace_id=work.workspace_id
+                 AND recovery.goal_id=work.goal_id
+                 AND recovery.target_cycle_id=work.cycle_id
+                 AND recovery.context_id=work.context_id
+                 AND recovery.operation_id=work.operation_id
+               FOR SHARE OF cycle""",
+            (work_id, request.operation_id),
+        ).fetchone()
+        if cycle is None:
+            raise ProductionAuthorizationDenied("generation_advance_required")
+        case = connection.execute(
+            """SELECT recovery.id,recovery.revision,recovery.state,
+                      recovery.target_cycle_id,cycle.state AS cycle_state,
+                      work.case_revision,work.state AS work_state
+               FROM public.v4_production_recovery_work work
+               JOIN public.v4_recovery_cases recovery
+                 ON recovery.id=work.source_id
+               JOIN public.v4_cycles cycle
+                 ON cycle.id=recovery.target_cycle_id
+               WHERE work.work_id=%s
+                 AND work.source_discriminant='cycle_case'
+                 AND work.operation_id=%s
+                 AND recovery.workspace_id=work.workspace_id
+                 AND recovery.goal_id=work.goal_id
+                 AND recovery.target_cycle_id=work.cycle_id
+                 AND recovery.context_id=work.context_id
+                 AND recovery.operation_id=work.operation_id
+               FOR SHARE OF recovery""",
+            (work_id, request.operation_id),
+        ).fetchone()
+        if (
+            case is None
+            or case["revision"] != case["case_revision"]
+            or case["state"] != case["work_state"]
+            or case["cycle_state"] == "closed"
+        ):
+            raise ProductionAuthorizationDenied("generation_advance_required")
 
     def _route_decision(self, request: RouteFenceRequest) -> RouteFenceDecision:
         try:

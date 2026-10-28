@@ -317,6 +317,16 @@ class ProductionRecoveryCaseController:
             if observation is None:
                 raise ValueError("committed remote observation is missing from the exact work")
             payload = observation["payload"]
+            superseding_observation = connection.execute(
+                """SELECT event_id
+                   FROM v4_production_recovery_events
+                   WHERE work_id=%s AND event_kind='remote_read_observation'
+                     AND event_id<>%s AND occurred_at >= %s
+                   LIMIT 1""",
+                (work.work_id, observation["event_id"], observation["occurred_at"]),
+            ).fetchone()
+            if superseding_observation is not None:
+                raise ValueError("selected remote observation is not the latest remote observation")
             if (
                 observation["payload_sha256"] != command.observation_sha256
                 or payload.get("result_class") != "authoritative_no_effect"
@@ -333,16 +343,31 @@ class ProductionRecoveryCaseController:
             )
             if observation["occurred_at"] < visibility_boundary:
                 raise ValueError("no-effect observation predates the provider visibility boundary")
-            case = connection.execute(
-                """SELECT recovery.id,recovery.revision,recovery.state,
-                          recovery.operation_id,recovery.context_id,recovery.deadline,
-                          cycle.state AS cycle_state
+            canonical_cycle = connection.execute(
+                """SELECT cycle.id,cycle.state
                    FROM v4_recovery_cases recovery
                    JOIN v4_cycles cycle ON cycle.id=recovery.target_cycle_id
                    WHERE recovery.id=%s AND recovery.target_cycle_id=%s
                      AND recovery.context_id=%s AND recovery.operation_id=%s
                      AND recovery.workspace_id=%s AND recovery.goal_id=%s
-                   FOR UPDATE OF recovery,cycle""",
+                   FOR UPDATE OF cycle""",
+                (
+                    work.source_id,
+                    work.cycle_id,
+                    work.context_id,
+                    work.operation_id,
+                    work.workspace_id,
+                    work.goal_id,
+                ),
+            ).fetchone()
+            case = connection.execute(
+                """SELECT recovery.id,recovery.revision,recovery.state,
+                          recovery.operation_id,recovery.context_id,recovery.deadline
+                   FROM v4_recovery_cases recovery
+                   WHERE recovery.id=%s AND recovery.target_cycle_id=%s
+                     AND recovery.context_id=%s AND recovery.operation_id=%s
+                     AND recovery.workspace_id=%s AND recovery.goal_id=%s
+                   FOR UPDATE OF recovery""",
                 (
                     work.source_id,
                     work.cycle_id,
@@ -353,10 +378,11 @@ class ProductionRecoveryCaseController:
                 ),
             ).fetchone()
             if (
-                case is None
+                canonical_cycle is None
+                or case is None
                 or case["revision"] != command.expected_case_revision
                 or case["state"] != work.state
-                or case["cycle_state"] == "closed"
+                or canonical_cycle["state"] == "closed"
             ):
                 raise ValueError("current production case revision or open-cycle binding changed")
             dispatch = connection.execute(
@@ -386,6 +412,7 @@ class ProductionRecoveryCaseController:
             ).hexdigest()
             proof_material = ":".join(
                 (
+                    str(command.observation_event_id),
                     command.observation_sha256,
                     command.request_fingerprint,
                     remote_identity_sha256,
@@ -415,6 +442,8 @@ class ProductionRecoveryCaseController:
                 "workspace_stop_revision": command.workspace_stop_revision,
                 "goal_stop_revision": command.goal_stop_revision,
                 "route_decision_id": str(command.route_decision_id),
+                "observation_event_id": str(command.observation_event_id),
+                "observation_sha256": command.observation_sha256,
             }
             if prior is not None:
                 if (

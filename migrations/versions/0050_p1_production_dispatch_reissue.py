@@ -120,6 +120,104 @@ def upgrade() -> None:
             definition text;
         BEGIN
             definition := pg_get_functiondef(
+                'public.v4_validate_production_recovery_event_v2()'::regprocedure
+            );
+            definition := replace(
+                definition,
+                'v4_validate_production_recovery_event_v2',
+                'v4_validate_production_recovery_event_v3'
+            );
+            definition := replace(
+                definition,
+                '            FROM public.v4_production_recovery_work work'
+                || E'\n            WHERE work.work_id = NEW.work_id;',
+                '            FROM public.v4_production_recovery_work work'
+                || E'\n            WHERE work.work_id = NEW.work_id'
+                || E'\n            FOR UPDATE;'
+            );
+            definition := replace(
+                definition,
+                '''route_decision_id'',''command_id'', ',
+                '''route_decision_id'',''command_id'', '
+                '''observation_event_id'',''observation_sha256'', '
+            );
+            definition := replace(
+                definition,
+                'IF NEW.payload_sha256 IS DISTINCT FROM',
+                $validation$
+            IF NEW.event_kind = 'same_operation_no_effect_reissue' AND (
+                   jsonb_typeof(NEW.payload->'observation_event_id') IS DISTINCT FROM 'string'
+                   OR NEW.payload->>'observation_event_id' !~
+                      '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+                   OR jsonb_typeof(NEW.payload->'observation_sha256') IS DISTINCT FROM 'string'
+                   OR NEW.payload->>'observation_sha256' !~ '^[0-9a-f]{64}$'
+                   OR NOT EXISTS (
+                       SELECT 1
+                       FROM public.v4_production_recovery_events observation
+                       WHERE observation.event_id =
+                                 (NEW.payload->>'observation_event_id')::uuid
+                         AND observation.work_id = NEW.work_id
+                         AND observation.event_kind = 'remote_read_observation'
+                         AND observation.payload_sha256 =
+                                 NEW.payload->>'observation_sha256'
+                         AND observation.payload->>'result_class' =
+                                 'authoritative_no_effect'
+                         AND observation.payload->>'remote_state' = 'not_found'
+                         AND observation.payload->>'operation_id' =
+                                 work_row.operation_id::text
+                         AND observation.payload->>'work_id' = work_row.work_id::text
+                         AND observation.payload->>'source_id' = work_row.source_id::text
+                         AND observation.payload->>'case_id' = work_row.source_id::text
+                         AND observation.payload->>'request_fingerprint' =
+                                 work_row.request_fingerprint
+                         AND observation.payload->>'event_key' = (
+                             SELECT dispatch.idempotency_key
+                             FROM public.v4_production_current_dispatch dispatch
+                             WHERE dispatch.operation_id = work_row.operation_id
+                         )
+                         AND observation.payload->>'deadline' IS NOT NULL
+                         AND observation.occurred_at >=
+                                 (observation.payload->>'deadline')::timestamptz
+                         AND NOT EXISTS (
+                             SELECT 1
+                             FROM public.v4_production_recovery_events later
+                             WHERE later.work_id = NEW.work_id
+                               AND later.event_kind = 'remote_read_observation'
+                               AND later.event_id <> observation.event_id
+                               AND later.occurred_at >= observation.occurred_at
+                         )
+                   )
+               ) THEN
+                RAISE EXCEPTION 'same-operation no-effect event requires the latest exact no-effect observation';
+            END IF;
+            IF NEW.payload_sha256 IS DISTINCT FROM$validation$
+            );
+            IF definition = pg_get_functiondef(
+                    'public.v4_validate_production_recovery_event_v2()'::regprocedure
+               )
+               OR position('observation_event_id' IN definition) = 0
+               OR position('same-operation no-effect event requires the latest exact' IN definition) = 0
+               OR position('FOR UPDATE;' IN definition) = 0 THEN
+                RAISE EXCEPTION 'failed to extend production recovery event validator';
+            END IF;
+            EXECUTE definition;
+            DROP TRIGGER validate_v4_production_recovery_event_v2
+                ON public.v4_production_recovery_events;
+            CREATE TRIGGER validate_v4_production_recovery_event_v3
+                BEFORE INSERT ON public.v4_production_recovery_events
+                FOR EACH ROW
+                EXECUTE FUNCTION public.v4_validate_production_recovery_event_v3();
+            REVOKE ALL ON FUNCTION
+                public.v4_validate_production_recovery_event_v3() FROM PUBLIC;
+        END
+        $$"""
+    )
+    op.execute(
+        """DO $$
+        DECLARE
+            definition text;
+        BEGIN
+            definition := pg_get_functiondef(
                 'public.v4_advance_production_current_dispatch_v1(uuid,integer,uuid,uuid,text,uuid)'::regprocedure
             );
             IF to_regprocedure(
@@ -144,6 +242,7 @@ def upgrade() -> None:
                 || E'\n            prior_claim_row public.v4_production_effect_permit_claims%ROWTYPE;'
                 || E'\n            recovery_event_row public.v4_production_recovery_events%ROWTYPE;'
                 || E'\n            recovery_work_row public.v4_production_recovery_work%ROWTYPE;'
+                || E'\n            recovery_observation_row public.v4_production_recovery_events%ROWTYPE;'
             );
             definition := replace(
                 definition,
@@ -203,9 +302,49 @@ def upgrade() -> None:
                   AND work.request_fingerprint = encode(
                       public.digest(prior_permit_row.request_snapshot::text, 'sha256'), 'hex'
                   )
+                FOR SHARE;
+                IF recovery_event_row.event_id IS NULL
+                   OR recovery_work_row.work_id IS NULL THEN
+                    RAISE EXCEPTION 'typed_no_effect_command_required';
+                END IF;
+                SELECT observation.* INTO recovery_observation_row
+                FROM public.v4_production_recovery_events observation
+                WHERE observation.event_id =
+                          (recovery_event_row.payload->>'observation_event_id')::uuid
+                  AND observation.work_id = recovery_work_row.work_id
+                  AND observation.event_kind = 'remote_read_observation'
                 FOR KEY SHARE;
-                IF NOT FOUND
-                   OR recovery_event_row.payload->>'schema_version'
+                IF recovery_observation_row.event_id IS NULL THEN
+                    RAISE EXCEPTION 'typed_no_effect_command_required';
+                END IF;
+                PERFORM 1
+                FROM public.v4_recovery_cases recovery
+                JOIN public.v4_cycles cycle
+                  ON cycle.id = recovery.target_cycle_id
+                WHERE recovery.id = recovery_work_row.source_id
+                  AND recovery.workspace_id = recovery_work_row.workspace_id
+                  AND recovery.goal_id = recovery_work_row.goal_id
+                  AND recovery.target_cycle_id = recovery_work_row.cycle_id
+                  AND recovery.context_id = recovery_work_row.context_id
+                  AND recovery.operation_id = recovery_work_row.operation_id
+                  AND cycle.state <> 'closed'
+                FOR SHARE OF cycle;
+                IF NOT FOUND THEN
+                    RAISE EXCEPTION 'typed_no_effect_command_required';
+                END IF;
+                PERFORM 1
+                FROM public.v4_recovery_cases recovery
+                WHERE recovery.id = recovery_work_row.source_id
+                  AND recovery.workspace_id = recovery_work_row.workspace_id
+                  AND recovery.goal_id = recovery_work_row.goal_id
+                  AND recovery.target_cycle_id = recovery_work_row.cycle_id
+                  AND recovery.context_id = recovery_work_row.context_id
+                  AND recovery.operation_id = recovery_work_row.operation_id
+                FOR SHARE OF recovery;
+                IF NOT FOUND THEN
+                    RAISE EXCEPTION 'typed_no_effect_command_required';
+                END IF;
+                IF recovery_event_row.payload->>'schema_version'
                         IS DISTINCT FROM 'salience.p1-same-operation-no-effect.v1'
                    OR recovery_event_row.payload->>'reason_code'
                         IS DISTINCT FROM 'authoritative_no_effect'
@@ -235,6 +374,10 @@ def upgrade() -> None:
                         )
                    OR recovery_event_row.payload->>'policy_decision_id'
                         IS DISTINCT FROM recovery_event_row.policy_decision_id::text
+                   OR recovery_event_row.payload->>'observation_event_id'
+                        IS DISTINCT FROM recovery_observation_row.event_id::text
+                   OR recovery_event_row.payload->>'observation_sha256'
+                        IS DISTINCT FROM recovery_observation_row.payload_sha256
                    OR permit_row.request_snapshot->>'idempotency_key'
                         IS DISTINCT FROM current_row.idempotency_key
                    OR NOT EXISTS (
@@ -253,12 +396,32 @@ def upgrade() -> None:
                          AND recovery.state = recovery_work_row.state
                          AND cycle.state <> 'closed'
                    )
+                   OR recovery_observation_row.payload->>'result_class'
+                        IS DISTINCT FROM 'authoritative_no_effect'
+                   OR recovery_observation_row.payload->>'remote_state'
+                        IS DISTINCT FROM 'not_found'
+                   OR recovery_observation_row.payload->>'operation_id'
+                        IS DISTINCT FROM recovery_work_row.operation_id::text
+                   OR recovery_observation_row.payload->>'work_id'
+                        IS DISTINCT FROM recovery_work_row.work_id::text
+                   OR recovery_observation_row.payload->>'source_id'
+                        IS DISTINCT FROM recovery_work_row.source_id::text
+                   OR recovery_observation_row.payload->>'case_id'
+                        IS DISTINCT FROM recovery_work_row.source_id::text
+                   OR recovery_observation_row.payload->>'request_fingerprint'
+                        IS DISTINCT FROM recovery_work_row.request_fingerprint
+                   OR recovery_observation_row.payload->>'event_key'
+                        IS DISTINCT FROM idempotency_key
+                   OR recovery_observation_row.payload->>'deadline' IS NULL
+                   OR recovery_observation_row.occurred_at <
+                        (recovery_observation_row.payload->>'deadline')::timestamptz
                    OR EXISTS (
                        SELECT 1
                        FROM public.v4_production_recovery_events later
                        WHERE later.work_id = recovery_work_row.work_id
                          AND later.event_kind = 'remote_read_observation'
-                         AND later.occurred_at > recovery_event_row.occurred_at
+                         AND later.event_id <> recovery_observation_row.event_id
+                         AND later.occurred_at >= recovery_observation_row.occurred_at
                    ) THEN
                     RAISE EXCEPTION 'typed_no_effect_command_required';
                 END IF;
@@ -313,8 +476,23 @@ def downgrade() -> None:
     op.execute("SET LOCAL lock_timeout='3s'")
     op.execute(
         """LOCK TABLE public.v4_production_effect_permits,
-                         public.v4_production_current_dispatch
+                         public.v4_production_current_dispatch,
+                         public.v4_production_recovery_events
            IN ACCESS EXCLUSIVE MODE"""
+    )
+    op.execute(
+        """DO $$
+        BEGIN
+            IF EXISTS (
+                SELECT 1 FROM public.v4_production_recovery_events
+                WHERE event_kind = 'same_operation_no_effect_reissue'
+                  AND (payload ? 'observation_event_id'
+                       OR payload ? 'observation_sha256')
+            ) THEN
+                RAISE EXCEPTION 'preserve production recovery observation binding history';
+            END IF;
+        END
+        $$"""
     )
     op.execute(
         """DO $$
@@ -336,6 +514,19 @@ def downgrade() -> None:
     )
     op.execute(
         """DROP FUNCTION public.v4_validate_production_effect_permit_v2()"""
+    )
+    op.execute(
+        """DROP TRIGGER validate_v4_production_recovery_event_v3
+           ON public.v4_production_recovery_events"""
+    )
+    op.execute(
+        """DROP FUNCTION public.v4_validate_production_recovery_event_v3()"""
+    )
+    op.execute(
+        """CREATE TRIGGER validate_v4_production_recovery_event_v2
+           BEFORE INSERT ON public.v4_production_recovery_events
+           FOR EACH ROW
+           EXECUTE FUNCTION public.v4_validate_production_recovery_event_v2()"""
     )
     op.execute(
         """DO $$

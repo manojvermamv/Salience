@@ -12,6 +12,7 @@ import re
 import time
 from threading import Event, Thread
 from types import SimpleNamespace
+from psycopg.conninfo import make_conninfo
 from uuid import UUID, uuid4
 
 import psycopg
@@ -634,7 +635,52 @@ def _claim_count(database, operation_id):
         ).fetchone()[0]
 
 
-def _insert_task7_no_effect_command(case, request, *, later_result=None):
+def _wait_for_pg_lock(database, application_name, timeout=3.0):
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        with psycopg.connect(database) as connection:
+            waiting = connection.execute(
+                """SELECT wait_event_type='Lock'
+                   FROM pg_stat_activity
+                   WHERE application_name=%s AND state='active'""",
+                (application_name,),
+            ).fetchone()
+        if waiting and waiting[0]:
+            return True
+        time.sleep(0.02)
+    return False
+
+
+def _start_due_case_transition(case, proof, application_name, entered, release):
+    service = CycleGovernance(
+        make_conninfo(case["database"], application_name=application_name),
+        workspace_id=case["workspace_id"],
+        subject_id=case["subject_id"],
+    )
+
+    def transition():
+        # Hold the canonical case transition's transaction open after its update
+        # so dispatch must serialize against the case and cycle rows.
+        with psycopg.connect(
+            make_conninfo(case["database"], application_name=application_name),
+            row_factory=dict_row,
+        ) as connection:
+            result = service._escalate_due(connection, proof["case_id"])
+            entered.set()
+            assert release.wait(timeout=5)
+            return result
+
+    return transition
+
+
+def _insert_task7_no_effect_command(
+    case,
+    request,
+    *,
+    later_result=None,
+    superseding_before_command=None,
+    case_deadline=None,
+):
     """Seed a migration-valid Task 7 event payload for a focused dispatch test."""
     work_id, case_id, event_id = uuid4(), uuid4(), uuid4()
     observation_id = uuid4()
@@ -689,7 +735,7 @@ def _insert_task7_no_effect_command(case, request, *, later_result=None):
                       reason,deadline,max_actions)
                VALUES(%s,%s,%s,NULL,%s,%s,%s,'reconciliation',%s,'unknown_effect',
                       'reconciling',1,%s,'Task 8 typed no-effect dispatch fixture',
-                      clock_timestamp()+interval '1 day',5)""",
+                      %s,5)""",
             (
                 case_id,
                 case["workspace_id"],
@@ -699,6 +745,7 @@ def _insert_task7_no_effect_command(case, request, *, later_result=None):
                 request.operation_id,
                 "3" * 64,
                 request.subject_id,
+                case_deadline or (datetime.now(timezone.utc) + timedelta(days=1)),
             ),
         )
         connection.execute(
@@ -728,7 +775,24 @@ def _insert_task7_no_effect_command(case, request, *, later_result=None):
                 "3" * 64,
             ),
         )
-        observation_payload = Jsonb({"result_class": "authoritative_no_effect"})
+        observation_payload = Jsonb(
+            {
+                "schema_version": "salience.p1-production-recovery-read.v1",
+                "reason_code": "remote_observation",
+                "result_class": "authoritative_no_effect",
+                "evidence_sha256": "2" * 64,
+                "remote_identity_sha256": "3" * 64,
+                "request_fingerprint": fingerprint,
+                "operation_id": str(request.operation_id),
+                "intent_id": str(request.intent_id),
+                "work_id": str(work_id),
+                "source_id": str(case_id),
+                "case_id": str(case_id),
+                "remote_state": "not_found",
+                "event_key": current["idempotency_key"],
+                "deadline": (datetime.now(timezone.utc) - timedelta(seconds=3)).isoformat(),
+            }
+        )
         observation_hash = connection.execute(
             "SELECT encode(public.digest(%s::jsonb::text,'sha256'),'hex') AS value",
             (observation_payload,),
@@ -746,8 +810,54 @@ def _insert_task7_no_effect_command(case, request, *, later_result=None):
                 request.subject_id,
                 policy_decision_id,
                 observation_payload,
-                observation_hash,
-            ),
+            observation_hash,
+        ),
+    )
+        if superseding_before_command is not None:
+            result_class, remote_state = superseding_before_command
+            later_payload = Jsonb(
+                {
+                    "schema_version": "salience.p1-production-recovery-read.v1",
+                    "reason_code": "remote_observation",
+                    "result_class": result_class,
+                    "evidence_sha256": "4" * 64,
+                    "remote_identity_sha256": "5" * 64,
+                    "request_fingerprint": fingerprint,
+                    "operation_id": str(request.operation_id),
+                    "intent_id": str(request.intent_id),
+                    "work_id": str(work_id),
+                    "source_id": str(case_id),
+                    "case_id": str(case_id),
+                    "remote_state": remote_state,
+                    "event_key": current["idempotency_key"],
+                    "deadline": (datetime.now(timezone.utc) - timedelta(seconds=3)).isoformat(),
+                }
+            )
+            later_hash = connection.execute(
+                "SELECT encode(public.digest(%s::jsonb::text,'sha256'),'hex') AS value",
+                (later_payload,),
+            ).fetchone()["value"]
+            connection.execute(
+                """INSERT INTO v4_production_recovery_events(
+                          event_id,work_id,event_key,event_kind,actor_id,
+                          policy_decision_id,payload,payload_sha256,occurred_at)
+                   VALUES(%s,%s,%s,'remote_read_observation',%s,%s,%s,%s,
+                          clock_timestamp()-interval '1 second')""",
+                (
+                    uuid4(),
+                    work_id,
+                    "superseding-observation:" + str(uuid4()),
+                    request.subject_id,
+                    policy_decision_id,
+                    later_payload,
+                    later_hash,
+                ),
+            )
+        payload.update(
+            {
+                "observation_event_id": str(observation_id),
+                "observation_sha256": observation_hash,
+            }
         )
         payload_json = Jsonb(payload)
         payload_hash = connection.execute(
@@ -770,7 +880,13 @@ def _insert_task7_no_effect_command(case, request, *, later_result=None):
             ),
         )
         if later_result is not None:
-            later_payload = Jsonb({"result_class": later_result})
+            if isinstance(later_result, tuple):
+                later_class, later_state = later_result
+            else:
+                later_class, later_state = later_result, "unknown"
+            later_payload = Jsonb(
+                {"result_class": later_class, "remote_state": later_state}
+            )
             later_hash = connection.execute(
                 "SELECT encode(public.digest(%s::jsonb::text,'sha256'),'hex') AS value",
                 (later_payload,),
@@ -792,6 +908,7 @@ def _insert_task7_no_effect_command(case, request, *, later_result=None):
             )
     return {
         "event_id": event_id,
+        "payload": payload,
         "work_id": work_id,
         "case_id": case_id,
         "observation_event_id": observation_id,
@@ -946,7 +1063,17 @@ def test_no_effect_command_cannot_be_replayed_or_cross_operation(accounting):
     assert reissued.operation_id == case["operation_id"]
 
 
-@pytest.mark.parametrize("later_result", ("unknown", "accepted"))
+@pytest.mark.parametrize(
+    "later_result",
+    (
+        "unknown",
+        "accepted",
+        ("in_progress", "in_progress"),
+        ("terminal_success", "succeeded"),
+        ("terminal_success", "accepted"),
+        ("unknown", "conflicting"),
+    ),
+)
 def test_unknown_or_accepted_generation_cannot_be_reissued(accounting, later_result):
     case = _production_case(accounting)
     original = case["dispatch"].issue_permit(case["request"])
@@ -959,6 +1086,117 @@ def test_unknown_or_accepted_generation_cannot_be_reissued(accounting, later_res
             replace(case["request"], generation=2, recovery_command_id=proof["event_id"])
         )
     assert _permit_count(case["database"], case["operation_id"]) == 1
+
+
+@pytest.mark.parametrize(
+    "result_class,remote_state",
+    (
+        ("unknown", "unknown"),
+        ("in_progress", "in_progress"),
+        ("terminal_success", "succeeded"),
+        ("terminal_success", "accepted"),
+        ("unknown", "conflicting"),
+    ),
+)
+def test_superseding_remote_observation_before_command_blocks_reissue(
+    accounting, result_class, remote_state
+):
+    case = _production_case(accounting)
+    original = case["dispatch"].issue_permit(case["request"])
+    case["dispatch"].claim_permit(case["operation_id"], original.permit_id)
+    proof = _insert_task7_no_effect_command(
+        case,
+        case["request"],
+        superseding_before_command=(result_class, remote_state),
+    )
+    with pytest.raises(ProductionAuthorizationDenied):
+        case["dispatch"].issue_permit(
+            replace(case["request"], generation=2, recovery_command_id=proof["event_id"])
+        )
+    assert _permit_count(case["database"], case["operation_id"]) == 1
+
+
+def _reissue_case_race(accounting, suffix):
+    case = _production_case(accounting)
+    original = case["dispatch"].issue_permit(case["request"])
+    case["dispatch"].claim_permit(case["operation_id"], original.permit_id)
+    proof = _insert_task7_no_effect_command(
+        case,
+        case["request"],
+        case_deadline=datetime.now(timezone.utc) - timedelta(seconds=1),
+    )
+    app_name = "p1-reissue-" + suffix + "-" + uuid4().hex[:8]
+    request = replace(
+        case["request"], generation=2, recovery_command_id=proof["event_id"]
+    )
+    dispatch = ProductionEffectDispatch(
+        make_conninfo(case["database"], application_name=app_name), case["route"]
+    )
+    return case, proof, request, dispatch, app_name
+
+
+def test_case_transition_wins_before_generation_reissue(accounting):
+    case, proof, request, dispatch, app_name = _reissue_case_race(
+        accounting, "transition-wins"
+    )
+    transition_entered, release_transition = Event(), Event()
+    transition_name = "p1-case-transition-wins-" + uuid4().hex[:8]
+    transition = _start_due_case_transition(
+        case, proof, transition_name, transition_entered, release_transition
+    )
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        transition_future = pool.submit(transition)
+        assert transition_entered.wait(timeout=3)
+        issue_future = pool.submit(dispatch.issue_permit, request)
+        waited = _wait_for_pg_lock(case["database"], app_name)
+        release_transition.set()
+        transition_future.result(timeout=5)
+        with pytest.raises(ProductionAuthorizationDenied):
+            issue_future.result(timeout=5)
+    assert waited, "reissue did not wait for the in-flight case transition"
+    assert _permit_count(case["database"], case["operation_id"]) == 1
+    with psycopg.connect(case["database"]) as connection:
+        assert connection.execute(
+            "SELECT state,revision FROM v4_recovery_cases WHERE id=%s",
+            (proof["case_id"],),
+        ).fetchone() == ("suspended", 2)
+
+
+def test_generation_reissue_holds_case_lock_through_pointer_advance(accounting):
+    case, proof, request, dispatch, app_name = _reissue_case_race(
+        accounting, "reissue-wins"
+    )
+    route_entered, route_release = Event(), Event()
+    case["route"].block_entered = route_entered
+    case["route"].block_release = route_release
+    transition_entered, release_transition = Event(), Event()
+    transition_name = "p1-case-transition-after-reissue-" + uuid4().hex[:8]
+    transition = _start_due_case_transition(
+        case, proof, transition_name, transition_entered, release_transition
+    )
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        issue_future = pool.submit(dispatch.issue_permit, request)
+        assert route_entered.wait(timeout=3), repr(issue_future.exception(timeout=1))
+        transition_future = pool.submit(transition)
+        try:
+            waited = _wait_for_pg_lock(case["database"], transition_name)
+        finally:
+            route_release.set()
+        issued = issue_future.result(timeout=5)
+        release_transition.set()
+        transition_future.result(timeout=5)
+    assert waited, "case transition bypassed the generation pointer transaction"
+    assert issued.generation == 2
+    assert _permit_count(case["database"], case["operation_id"]) == 2
+    with psycopg.connect(case["database"]) as connection:
+        assert connection.execute(
+            "SELECT generation FROM v4_production_current_dispatch WHERE operation_id=%s",
+            (case["operation_id"],),
+        ).fetchone()[0] == 2
+        assert connection.execute(
+            "SELECT state,revision FROM v4_recovery_cases WHERE id=%s",
+            (proof["case_id"],),
+        ).fetchone() == ("suspended", 2)
 
 
 def test_generation_advance_preserves_original_operation_fingerprint_and_key(accounting):

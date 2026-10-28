@@ -7185,6 +7185,14 @@ def _capture_0050_predecessor_dispatch_contract(connection):
                WHERE tgrelid='public.v4_production_effect_permits'::regclass
                  AND tgname='validate_v4_production_effect_permit_v1'"""
         ).fetchone(),
+        "recovery_event_validator": connection.execute(
+            "SELECT pg_get_functiondef('public.v4_validate_production_recovery_event_v2()'::regprocedure)"
+        ).fetchone()[0],
+        "recovery_event_trigger": connection.execute(
+            """SELECT tgname,pg_get_triggerdef(oid) FROM pg_trigger
+               WHERE tgrelid='public.v4_production_recovery_events'::regclass
+                 AND tgname='validate_v4_production_recovery_event_v2'"""
+        ).fetchone(),
     }
 
 
@@ -7213,6 +7221,31 @@ def test_0050_preserves_all_predecessor_history():
                 "WHERE request_snapshot->>'schema_version'="
                 "'salience.p1-production-effect-permit.v1'"
             ).fetchone()[0] == len(before["permit_snapshots"])
+            recovery_validator = connection.execute(
+                "SELECT pg_get_functiondef('public.v4_validate_production_recovery_event_v3()'::regprocedure)"
+            ).fetchone()[0]
+            assert "observation_event_id" in recovery_validator
+            assert "observation_sha256" in recovery_validator
+            assert "FOR UPDATE;" in recovery_validator
+            assert connection.execute(
+                """SELECT tgname FROM pg_trigger
+                   WHERE tgrelid='public.v4_production_recovery_events'::regclass
+                     AND tgname='validate_v4_production_recovery_event_v3'"""
+            ).fetchone()[0] == "validate_v4_production_recovery_event_v3"
+            dispatch_advance = connection.execute(
+                """SELECT pg_get_functiondef(
+                       'public.v4_advance_production_current_dispatch_v1(uuid,integer,uuid,uuid,text,uuid)'::regprocedure
+                   )"""
+            ).fetchone()[0]
+            cycle_lock = dispatch_advance.index("FOR SHARE OF cycle")
+            case_lock = dispatch_advance.index("FOR SHARE OF recovery")
+            pointer_advance = dispatch_advance.index(
+                "UPDATE public.v4_production_current_dispatch AS dispatch"
+            )
+            assert cycle_lock < case_lock < pointer_advance
+            assert "observation_event_id" in dispatch_advance
+            assert "observation_sha256" in dispatch_advance
+            assert "occurred_at >= recovery_observation_row.occurred_at" in dispatch_advance
     finally:
         _drop_migration_database(source, name)
 
@@ -7307,5 +7340,8 @@ def test_0050_empty_downgrade_restores_0049_contract():
             assert _capture_0050_predecessor_dispatch_contract(
                 connection
             ) == predecessor_contract
+            assert connection.execute(
+                "SELECT to_regprocedure('public.v4_validate_production_recovery_event_v3()')"
+            ).fetchone()[0] is None
     finally:
         _drop_migration_database(source, name)
