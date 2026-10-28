@@ -219,8 +219,11 @@ def upgrade() -> None:
                 END IF;
                 RETURN OLD;
             END IF;
-            tagged := NEW.request_context->>'schema_version' =
-                      'salience.p1-production-schedule-binding-approval.v1';
+            tagged := COALESCE(
+                NEW.request_context->>'schema_version' =
+                    'salience.p1-production-schedule-binding-approval.v1',
+                false
+            );
             IF TG_OP = 'UPDATE'
                AND OLD.request_context->>'schema_version' IS DISTINCT FROM
                    'salience.p1-production-schedule-binding-approval.v1' AND tagged THEN

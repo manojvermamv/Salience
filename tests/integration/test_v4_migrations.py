@@ -6853,6 +6853,58 @@ def test_0048_schedule_approval_shape_and_decided_identity_are_immutable():
         _drop_migration_database(source, name)
 
 
+def test_0048_untyped_approval_missing_or_null_schema_version_is_ignored():
+    source = os.environ["TEST_DATABASE_URL"]
+    name, database, _, _, authority = _prepare_0048_database(
+        "p1_0048_untyped_approval_tag_"
+    )
+    try:
+        _upgrade_0048_or_fail(database)
+        with psycopg.connect(database) as connection:
+            adopted = _build_0048_inventory(
+                connection, authority, include_binding=False, finalize=False
+            )
+            base = connection.execute(
+                """SELECT workspace_id,policy_version_id,request_context,requested_by
+                   FROM approval_requests WHERE id=%s""",
+                (adopted["approval_id"],),
+            ).fetchone()
+            for tag_state in ("absent", "json-null"):
+                for effect_type, should_reject in (
+                    ("creative_distribution", False),
+                    ("production_schedule_binding", True),
+                ):
+                    context = dict(base[2])
+                    if tag_state == "absent":
+                        context.pop("schema_version")
+                    else:
+                        context["schema_version"] = None
+                    rejected = _postgres_statement_rejected(
+                        connection,
+                        "production schedule approval",
+                        lambda: connection.execute(
+                            """INSERT INTO approval_requests(
+                                      id,workspace_id,policy_version_id,effect_type,status,
+                                      request_context,requested_by)
+                               VALUES(%s,%s,%s,%s,'pending',%s,%s)""",
+                            (
+                                uuid4(),
+                                base[0],
+                                base[1],
+                                effect_type,
+                                Jsonb(context),
+                                base[3],
+                            ),
+                        ),
+                    )
+                    assert rejected is should_reject, (
+                        f"{effect_type} with {tag_state} schema_version: "
+                        f"expected rejection={should_reject}, got {rejected}"
+                    )
+    finally:
+        _drop_migration_database(source, name)
+
+
 @pytest.mark.parametrize(
     ("field", "value"),
     (
