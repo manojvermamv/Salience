@@ -339,20 +339,17 @@ def build_routed_worker(
     )
     if getattr(client, "namespace", None) != route.route_tuple.namespace:
         raise PermissionError("Temporal client namespace does not match the authenticated route")
-    if (
-        hasattr(client, "route_endpoint_id")
-        and client.route_endpoint_id != route.route_tuple.temporal_endpoint_id
-    ):
-        raise PermissionError("Temporal client target does not match the authenticated route")
-    if hasattr(client, "route_build_id") and client.route_build_id != route.worker_build_id:
-        raise PermissionError("worker build does not match the authenticated route")
-    if (
-        hasattr(client, "route_artifact_sha256")
-        and client.route_artifact_sha256 != route.artifact_sha256
-    ):
-        raise PermissionError("worker artifact does not match the authenticated route")
-    if hasattr(client, "route_image_sha256") and client.route_image_sha256 != route.image_sha256:
-        raise PermissionError("worker image does not match the authenticated route")
+    required_attestations = (
+        ("route_endpoint_id", route.route_tuple.temporal_endpoint_id),
+        ("route_build_id", route.worker_build_id),
+        ("route_artifact_sha256", route.artifact_sha256),
+        ("route_image_sha256", route.image_sha256),
+    )
+    for name, expected in required_attestations:
+        if getattr(client, name, None) != expected:
+            raise PermissionError(
+                f"Temporal client {name} attestation does not match the authenticated route"
+            )
     if not isinstance(publication_state, PublicationWorkflowState):
         raise ValueError("routed publication workflow state is required")
     if not callable(permit_request_factory):
@@ -484,6 +481,53 @@ async def _read_and_require_drained(
     _require_exact_drained_readback(readback, route, lease)
 
 
+async def _await_worker_shutdown(worker: Worker) -> None:
+    """Honor async Temporal SDK shutdown while accepting synchronous test fakes."""
+    result = worker.shutdown()
+    if inspect.isawaitable(result):
+        await result
+
+
+def _consume_task_exception(task: asyncio.Task[None]) -> None:
+    try:
+        task.exception()
+    except BaseException:
+        pass
+
+
+def _cancel_and_consume_task(task: asyncio.Task[None]) -> None:
+    if not task.done():
+        task.cancel()
+    task.add_done_callback(_consume_task_exception)
+
+
+async def _shutdown_drain_and_readback(
+    worker: Worker,
+    run_task: asyncio.Task[None],
+    *,
+    shutdown_requested: bool,
+    temporal_readback: TemporalWorkerReadback,
+    route: ProductionRouteManifestV1,
+    lease: RouteLease,
+) -> BaseException | None:
+    did_shutdown = shutdown_requested
+    if did_shutdown:
+        await _await_worker_shutdown(worker)
+
+    run_error: BaseException | None = None
+    try:
+        await asyncio.shield(run_task)
+    except asyncio.CancelledError:
+        raise
+    except BaseException as error:
+        run_error = error
+        if not did_shutdown:
+            await _await_worker_shutdown(worker)
+
+    await _read_and_require_drained(temporal_readback, route, lease)
+    return run_error
+
+
 async def run_routed_worker(
     worker: Worker,
     *,
@@ -499,7 +543,6 @@ async def run_routed_worker(
     _validate_routed_lease(route, current, route_authority, now=now())
     run_task = asyncio.create_task(worker.run())
     lease_lost = False
-    run_error: BaseException | None = None
     cancellation: asyncio.CancelledError | None = None
     try:
         while not run_task.done():
@@ -524,14 +567,40 @@ async def run_routed_worker(
         cancellation = error
     except Exception:
         lease_lost = True
-    if lease_lost or cancellation is not None:
-        worker.shutdown()
+    remaining = (current.expires_at - now()).total_seconds()
+    if remaining <= 0:
+        _cancel_and_consume_task(run_task)
+        raise TimeoutError(
+            "routed worker shutdown, drain, and readback exceeded lease expiry"
+        )
+
+    drain_task = asyncio.create_task(
+        _shutdown_drain_and_readback(
+            worker,
+            run_task,
+            shutdown_requested=lease_lost or cancellation is not None,
+            temporal_readback=temporal_readback,
+            route=route,
+            lease=current,
+        )
+    )
     try:
-        await run_task
-    except BaseException as error:
-        run_error = error
-        worker.shutdown()
-    await _read_and_require_drained(temporal_readback, route, current)
+        done, _pending = await asyncio.wait((drain_task,), timeout=remaining)
+    except asyncio.CancelledError:
+        _cancel_and_consume_task(drain_task)
+        _cancel_and_consume_task(run_task)
+        raise
+    if not done:
+        _cancel_and_consume_task(drain_task)
+        _cancel_and_consume_task(run_task)
+        raise TimeoutError(
+            "routed worker shutdown, drain, and readback exceeded lease expiry"
+        )
+    try:
+        run_error = drain_task.result()
+    except BaseException:
+        _cancel_and_consume_task(run_task)
+        raise
     if run_error is not None:
         raise run_error
     if cancellation is not None:

@@ -69,12 +69,14 @@ def _authority(
     clock: _Clock | None = None,
     *,
     decision_ttl: timedelta = timedelta(seconds=1),
+    lease_ttl: timedelta = timedelta(seconds=30),
 ):
     contract = _route_contract()
     fake = _fake_module()
     authority = fake.FakeRouteLeaseAuthority(
         clock=clock if clock is not None else _Clock(),
         decision_ttl=decision_ttl,
+        lease_ttl=lease_ttl,
     )
     assert isinstance(authority, contract.RouteLeaseAuthority)
     assert authority.protocol_version == "salience.p1-route-fence.v1"
@@ -604,6 +606,62 @@ def test_worker_registers_exact_route_allowlists_and_namespace(monkeypatch):
     assert request.route.route_tuple_sha256 == route.route_tuple_sha256
 
 
+@pytest.mark.parametrize(
+    ("attestation", "mismatch"),
+    [
+        ("route_endpoint_id", False),
+        ("route_endpoint_id", True),
+        ("route_build_id", False),
+        ("route_build_id", True),
+        ("route_artifact_sha256", False),
+        ("route_artifact_sha256", True),
+        ("route_image_sha256", False),
+        ("route_image_sha256", True),
+    ],
+)
+def test_worker_requires_all_route_attestations_before_registration(
+    monkeypatch, attestation, mismatch
+):
+    from salience.workflows import worker
+
+    route = _publication_route()
+    authority = _authority()
+    lease = _route_lease(authority, route)
+    expected = {
+        "route_endpoint_id": route.route_tuple.temporal_endpoint_id,
+        "route_build_id": route.worker_build_id,
+        "route_artifact_sha256": route.artifact_sha256,
+        "route_image_sha256": route.image_sha256,
+    }
+    attestations = {
+        name: (f"wrong-{value}" if name == attestation and mismatch else value)
+        for name, value in expected.items()
+        if name != attestation or mismatch
+    }
+    client = SimpleNamespace(namespace=route.route_tuple.namespace, **attestations)
+    registrations = []
+    monkeypatch.setattr(
+        worker,
+        "Worker",
+        lambda *args, **kwargs: registrations.append((args, kwargs)),
+    )
+    state = _publication_state()
+
+    with pytest.raises(PermissionError, match="attestation"):
+        worker.build_routed_worker(
+            client,
+            route=route,
+            lease=lease,
+            route_authority=authority,
+            database_url="postgresql://primary/salience",
+            publication_state=state,
+            permit_request_factory=_permit_factory(route, lease),
+        )
+
+    assert registrations == []
+    assert state.production_dispatch is None
+
+
 @pytest.mark.asyncio
 async def test_route_renewal_loss_drains_before_expiry_and_preserves_identity():
     from datetime import timedelta
@@ -618,6 +676,7 @@ async def test_route_renewal_loss_drains_before_expiry_and_preserves_identity():
     shutdown_at = []
     renewal_intervals = []
     worker_stopped = asyncio.Event()
+    shutdown_called = asyncio.Event()
 
     class LossAuthority:
         protocol_version = authority.protocol_version
@@ -642,10 +701,14 @@ async def test_route_renewal_loss_drains_before_expiry_and_preserves_identity():
 
     class RunningWorker:
         async def run(self):
-            await worker_stopped.wait()
+            try:
+                await asyncio.wait_for(worker_stopped.wait(), timeout=0.25)
+            except asyncio.TimeoutError:
+                pass
 
-        def shutdown(self):
+        async def shutdown(self):
             shutdown_at.append(clock())
+            shutdown_called.set()
             worker_stopped.set()
 
     async def wait_for_renewal(interval):
@@ -671,10 +734,128 @@ async def test_route_renewal_loss_drains_before_expiry_and_preserves_identity():
     )
 
     assert result == "lease_lost"
+    assert shutdown_called.is_set()
     assert renewal_intervals and renewal_intervals[0] <= 10
     assert shutdown_at[0] < original_expiry
     assert readbacks[0][2].poller_count == 0
     assert readbacks[0][2].active_task_count == 0
+    current = authority.read_slot(route.route_id, lease.slot_id)
+    assert current.state == "leased"
+    assert current.lease == lease
+    assert current.fencing_epoch == lease.fencing_epoch
+
+
+@pytest.mark.asyncio
+async def test_route_run_error_awaits_async_shutdown_before_readback():
+    from salience.workflows import worker
+
+    route = _publication_route()
+    authority = _authority()
+    lease = _route_lease(authority, route)
+    shutdown_called = asyncio.Event()
+    readbacks = []
+
+    class FailedWorker:
+        async def run(self):
+            raise RuntimeError("synthetic worker failure")
+
+        async def shutdown(self):
+            shutdown_called.set()
+
+    class Readback:
+        def read_worker(self, route_id, slot_id):
+            readbacks.append((route_id, slot_id))
+            return _worker_readback(route, lease)
+
+    async def let_worker_run(_interval):
+        await asyncio.sleep(0)
+
+    with pytest.raises(RuntimeError, match="synthetic worker failure"):
+        await worker.run_routed_worker(
+            FailedWorker(),
+            route=route,
+            lease=lease,
+            route_authority=authority,
+            temporal_readback=Readback(),
+            sleep=let_worker_run,
+        )
+
+    assert shutdown_called.is_set()
+    assert readbacks == [(route.route_id, lease.slot_id)]
+
+
+@pytest.mark.asyncio
+async def test_hung_route_drain_fails_closed_at_lease_expiry_without_transfer():
+    from salience.workflows import worker
+
+    clock = _Clock()
+    authority = _authority(clock, lease_ttl=timedelta(milliseconds=120))
+    route = _publication_route()
+    lease = _route_lease(authority, route)
+    loop = asyncio.get_running_loop()
+    started_at = loop.time()
+    shutdown_called = asyncio.Event()
+    worker_cancelled = asyncio.Event()
+    readbacks = []
+    releases = []
+
+    class LossAuthority:
+        protocol_version = authority.protocol_version
+
+        def read_slot(self, route_id, slot_id):
+            return authority.read_slot(route_id, slot_id)
+
+        def renew_slot(self, current):
+            raise PermissionError("synthetic route renewal loss")
+
+        def release_slot(self, current):
+            releases.append(current)
+            return authority.release_slot(current)
+
+        def claim_slot(self, request):
+            return authority.claim_slot(request)
+
+        def authorize_action(self, request):
+            return authority.authorize_action(request)
+
+        def terminate_slot(self, current):
+            return authority.terminate_slot(current)
+
+    class HungWorker:
+        async def run(self):
+            try:
+                await asyncio.sleep(0.25)
+            finally:
+                worker_cancelled.set()
+
+        async def shutdown(self):
+            shutdown_called.set()
+
+    class Readback:
+        def read_worker(self, route_id, slot_id):
+            readbacks.append((route_id, slot_id))
+            return _worker_readback(route, lease)
+
+    def now():
+        return clock() + timedelta(seconds=loop.time() - started_at)
+
+    with pytest.raises(TimeoutError, match="lease expiry"):
+        await worker.run_routed_worker(
+            HungWorker(),
+            route=route,
+            lease=lease,
+            route_authority=LossAuthority(),
+            temporal_readback=Readback(),
+            now=now,
+        )
+
+    await asyncio.sleep(0)
+    assert shutdown_called.is_set()
+    assert worker_cancelled.is_set()
+    assert now() >= lease.expires_at - timedelta(milliseconds=20)
+    assert now() <= lease.expires_at + timedelta(milliseconds=50)
+    assert readbacks == []
+    assert releases == []
     current = authority.read_slot(route.route_id, lease.slot_id)
     assert current.state == "leased"
     assert current.lease == lease
