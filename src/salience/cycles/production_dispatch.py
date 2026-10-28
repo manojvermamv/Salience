@@ -352,9 +352,17 @@ class ProductionRecoveryCommandReference:
     original_idempotency_key: str
     case_id: UUID
     case_revision: int
+    stage_decision_id: UUID
+    policy_decision_id: UUID
+    workspace_stop_revision: int
+    goal_stop_revision: int
+    route_decision_id: UUID
 
     def __post_init__(self) -> None:
-        for name in ("event_id", "work_id", "operation_id", "case_id"):
+        for name in (
+            "event_id", "work_id", "operation_id", "case_id",
+            "stage_decision_id", "policy_decision_id", "route_decision_id",
+        ):
             if not isinstance(getattr(self, name), UUID):
                 raise ValueError(f"recovery command reference {name} UUID required")
         if not isinstance(self.request_fingerprint, str) or not _SHA256.fullmatch(
@@ -369,6 +377,9 @@ class ProductionRecoveryCommandReference:
             raise ValueError("original bounded idempotency key required")
         if type(self.case_revision) is not int or self.case_revision < 1:
             raise ValueError("positive recovery case revision required")
+        for name in ("workspace_stop_revision", "goal_stop_revision"):
+            if type(getattr(self, name)) is not int or getattr(self, name) < 1:
+                raise ValueError(f"positive {name} required")
 
 
 @dataclass(frozen=True, slots=True)

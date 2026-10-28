@@ -9,8 +9,9 @@ from hashlib import sha256
 import os
 import subprocess
 import sys
+import time
 from threading import Event, Lock
-from uuid import UUID, uuid4
+from uuid import NAMESPACE_URL, UUID, uuid4, uuid5
 
 import psycopg
 from psycopg.rows import dict_row
@@ -137,7 +138,10 @@ def _production_recovery_operation(prefix="task7_recovery_"):
         migration_tests._prepare_0047_0046_database(prefix)
     )
     try:
-        migration_tests._upgrade_0047_or_fail(database)
+        upgraded = migration_tests._migration(
+            database, "upgrade", "0049_p1_production_recovery_decision_evidence"
+        )
+        assert upgraded.returncode == 0, upgraded.stdout + upgraded.stderr
         with psycopg.connect(database) as connection:
             enrollment = migration_tests._insert_0047_enrollment(
                 connection, authority
@@ -213,6 +217,7 @@ class _RecoveryAuthority:
         return self.module.ProductionRecoveryDecision(
             allowed=True,
             decision_id=uuid4(),
+            route_decision_id=uuid4(),
             policy_revision=9,
             stop_revision=3,
         )
@@ -224,17 +229,19 @@ class _RecoveryAuthority:
         return self.module.ProductionRecoveryDecision(
             allowed=True,
             decision_id=command.policy_decision_id,
+            route_decision_id=uuid4(),
             policy_revision=9,
             stop_revision=3,
         )
 
-    def authorize_deadline_wake(self, work, source, action_kind):
+    def authorize_deadline_wake(self, work, source, action_kind, idempotency_key):
         self.calls.append(("authorize_deadline_wake", work.work_id))
         if self.deny_at == "deadline":
             raise PermissionError("current deadline authority unavailable")
         return self.module.ProductionRecoveryDecision(
             allowed=True,
-            decision_id=uuid4(),
+            decision_id=uuid5(NAMESPACE_URL, "deadline-policy:" + idempotency_key),
+            route_decision_id=uuid5(NAMESPACE_URL, "deadline-route:" + idempotency_key),
             policy_revision=9,
             stop_revision=3,
         )
@@ -246,7 +253,8 @@ class _RecoveryAuthority:
         return self.module.ProductionNoEffectAuthorization(
             stage_decision_id=command.stage_decision_id,
             policy_decision_id=command.policy_decision_id,
-            stop_revision=command.stop_revision,
+            workspace_stop_revision=command.workspace_stop_revision,
+            goal_stop_revision=command.goal_stop_revision,
             route_decision_id=command.route_decision_id,
         )
 
@@ -759,6 +767,278 @@ def test_production_case_command_and_deadline_controller():
             ).fetchone()[0] == 0
 
 
+def test_deadline_command_replay_precedes_changed_case_source_after_crash():
+    module = import_module("salience.cycles.production_recovery")
+    with _production_recovery_operation("task7_deadline_case_replay_") as (
+        database,
+        _fixture,
+        authority,
+        _enrollment,
+    ):
+        repository = module.ProductionRecoveryWorkRepository(database)
+        work = _case_work(
+            repository,
+            authority,
+            module,
+            deadline=datetime.now(timezone.utc) - timedelta(seconds=5),
+        )
+
+        class DurableCaseCommandPath:
+            def __init__(self):
+                self.calls = []
+
+            def suspend_case(self, connection, command):
+                self.calls.append(command)
+                fingerprint = sha256(
+                    f"{command.case_id}:{command.expected_revision}:{command.idempotency_key}".encode()
+                ).hexdigest()
+                prior = connection.execute(
+                    """SELECT id,fingerprint,result FROM v4_case_commands
+                       WHERE case_id=%s AND idempotency_key=%s""",
+                    (command.case_id, command.idempotency_key),
+                ).fetchone()
+                if prior:
+                    assert prior["fingerprint"] == fingerprint
+                    return module.TypedCaseCommandReceipt(
+                        case_id=command.case_id,
+                        action="deadline_suspend",
+                        resulting_revision=prior["result"]["resulting_revision"],
+                        command_id=prior["id"],
+                    )
+                current = connection.execute(
+                    "SELECT revision,state FROM v4_recovery_cases WHERE id=%s FOR UPDATE",
+                    (command.case_id,),
+                ).fetchone()
+                assert current == {"revision": command.expected_revision, "state": "reconciling"}
+                next_revision = command.expected_revision + 1
+                command_id = uuid4()
+                result = {"resulting_revision": next_revision}
+                connection.execute(
+                    """INSERT INTO v4_case_events(
+                               id,case_id,case_revision,action,actor_id,traceparent,payload)
+                       VALUES(%s,%s,%s,'escalated',%s,%s,%s)""",
+                    (
+                        uuid4(),
+                        command.case_id,
+                        next_revision,
+                        authority["subject_id"],
+                        "00-" + uuid4().hex + "-" + uuid4().hex[:16] + "-01",
+                        Jsonb({"case_id": str(command.case_id), "state": "suspended"}),
+                    ),
+                )
+                connection.execute(
+                    "UPDATE v4_recovery_cases SET state='suspended',revision=%s WHERE id=%s",
+                    (next_revision, command.case_id),
+                )
+                connection.execute(
+                    """INSERT INTO v4_case_commands(
+                               id,case_id,idempotency_key,fingerprint,action,actor_id,result)
+                       VALUES(%s,%s,%s,%s,'deadline_suspend',%s,%s)""",
+                    (
+                        command_id,
+                        command.case_id,
+                        command.idempotency_key,
+                        fingerprint,
+                        authority["subject_id"],
+                        Jsonb(result),
+                    ),
+                )
+                # Model the separately committed canonical typed command boundary.
+                connection.commit()
+                return module.TypedCaseCommandReceipt(
+                    case_id=command.case_id,
+                    action="deadline_suspend",
+                    resulting_revision=next_revision,
+                    command_id=command_id,
+                )
+
+        commands = DurableCaseCommandPath()
+        controller = module.ProductionRecoveryCaseController(
+            repository,
+            authority=_RecoveryAuthority(module),
+            commands=commands,
+        )
+        append = repository._append_event
+        failed = [False]
+
+        def crash_after_command_before_event(*args, **kwargs):
+            if kwargs.get("event_kind") == "escalation" and not failed[0]:
+                failed[0] = True
+                raise RuntimeError("simulated crash after canonical case command")
+            return append(*args, **kwargs)
+
+        repository._append_event = crash_after_command_before_event
+        with pytest.raises(RuntimeError, match="after canonical case command"):
+            controller.wake_deadline(work.work_id)
+        repository._append_event = append
+        with psycopg.connect(database) as connection:
+            assert connection.execute(
+                "SELECT state,revision FROM v4_recovery_cases WHERE id=%s",
+                (work.case_id,),
+            ).fetchone() == ("suspended", 2)
+            assert connection.execute(
+                "SELECT count(*) FROM v4_production_recovery_events WHERE work_id=%s AND event_kind='escalation'",
+                (work.work_id,),
+            ).fetchone()[0] == 0
+
+        replay = controller.wake_deadline(work.work_id)
+        committed_replay = controller.wake_deadline(work.work_id)
+        assert replay.event_id == committed_replay.event_id
+        assert replay.command_result == committed_replay.command_result
+        assert len(commands.calls) == 2
+        assert commands.calls[0] == commands.calls[1]
+        assert replay.command_result.resulting_revision == 2
+        with psycopg.connect(database) as connection:
+            assert connection.execute(
+                "SELECT count(*) FROM v4_case_commands WHERE case_id=%s",
+                (work.case_id,),
+            ).fetchone()[0] == 1
+            assert connection.execute(
+                "SELECT count(*) FROM v4_production_recovery_events WHERE work_id=%s AND event_kind='escalation'",
+                (work.work_id,),
+            ).fetchone()[0] == 1
+
+
+def test_deadline_command_replay_precedes_changed_pre_admission_source_after_crash():
+    schedule_tests = import_module("test_p1_production_schedule_fencing")
+    module = import_module("salience.cycles.production_recovery")
+    admission_module = import_module("salience.cycles.admission")
+    with schedule_tests._production_enrollment_fixture("task7_deadline_intent_replay_") as (
+        database,
+        control,
+        binding,
+        key,
+        authority,
+        _route_authority,
+    ):
+        upgraded = import_module("test_v4_migrations")._migration(
+            database, "upgrade", "0049_p1_production_recovery_decision_evidence"
+        )
+        assert upgraded.returncode == 0, upgraded.stdout + upgraded.stderr
+        _enroll_production_intent(control, binding, key)
+        repository = module.ProductionRecoveryWorkRepository(database)
+        work = repository.bind_pre_admission_intent(
+            key.intent_id, policy=_recovery_policy(module)
+        )
+
+        class DurableIntentCommandPath:
+            def __init__(self):
+                self.calls = []
+
+            def wake_intent(self, connection, command):
+                self.calls.append(command)
+                prior = connection.execute(
+                    """SELECT payload FROM v4_cycle_events
+                       WHERE intent_id=%s AND kind='production_recovery_intent_wake_command'
+                         AND payload->>'idempotency_key'=%s""",
+                    (command.intent_id, command.idempotency_key),
+                ).fetchone()
+                if prior:
+                    payload = prior["payload"]
+                    assert payload["expected_revision"] == command.expected_revision
+                    return module.TypedIntentWakeReceipt(
+                        intent_id=command.intent_id,
+                        eligibility_revision=payload["expected_revision"],
+                        disposition=payload["disposition"],
+                        cycle_id=None,
+                    )
+                current = connection.execute(
+                    "SELECT eligibility_revision FROM v4_cycle_intents WHERE id=%s FOR UPDATE",
+                    (command.intent_id,),
+                ).fetchone()["eligibility_revision"]
+                assert current == command.expected_revision
+                service = admission_module.CycleAdmission(
+                    database,
+                    workspace_id=binding.workspace_id,
+                    subject_id=authority["subject_id"],
+                )
+                service._wake(
+                    connection,
+                    command.intent_id,
+                    expected_revision=command.expected_revision,
+                    review=True,
+                )
+                connection.execute(
+                    """INSERT INTO v4_cycle_events(
+                               id,workspace_id,subject_id,goal_id,intent_id,kind,
+                               traceparent,payload)
+                       VALUES(%s,%s,%s,%s,%s,'production_recovery_intent_wake_command',%s,%s)""",
+                    (
+                        uuid4(),
+                        binding.workspace_id,
+                        authority["subject_id"],
+                        binding.goal_id,
+                        command.intent_id,
+                        "00-" + uuid4().hex + "-" + uuid4().hex[:16] + "-01",
+                        Jsonb(
+                            {
+                                "idempotency_key": command.idempotency_key,
+                                "expected_revision": command.expected_revision,
+                                "disposition": "woken",
+                            }
+                        ),
+                    ),
+                )
+                connection.commit()
+                return module.TypedIntentWakeReceipt(
+                    intent_id=command.intent_id,
+                    eligibility_revision=command.expected_revision,
+                    disposition="woken",
+                    cycle_id=None,
+                )
+
+        commands = DurableIntentCommandPath()
+        controller = module.ProductionRecoveryCaseController(
+            repository,
+            authority=_RecoveryAuthority(module),
+            commands=commands,
+        )
+        append = repository._append_event
+        failed = [False]
+
+        def crash_after_command_before_event(*args, **kwargs):
+            if kwargs.get("event_kind") == "escalation" and not failed[0]:
+                failed[0] = True
+                raise RuntimeError("simulated crash after canonical intent command")
+            return append(*args, **kwargs)
+
+        repository._append_event = crash_after_command_before_event
+        with pytest.raises(RuntimeError, match="after canonical intent command"):
+            controller.wake_deadline(work.work_id)
+        repository._append_event = append
+        with psycopg.connect(database) as connection:
+            assert connection.execute(
+                "SELECT eligibility_revision FROM v4_cycle_intents WHERE id=%s",
+                (work.intent_id,),
+            ).fetchone()[0] == work.eligibility_revision + 1
+            assert connection.execute(
+                "SELECT count(*) FROM v4_cycles WHERE intent_id=%s",
+                (work.intent_id,),
+            ).fetchone()[0] == 0
+            assert connection.execute(
+                "SELECT count(*) FROM v4_production_recovery_events WHERE work_id=%s AND event_kind='escalation'",
+                (work.work_id,),
+            ).fetchone()[0] == 0
+
+        replay = controller.wake_deadline(work.work_id)
+        committed_replay = controller.wake_deadline(work.work_id)
+        assert replay.event_id == committed_replay.event_id
+        assert replay.command_result == committed_replay.command_result
+        assert len(commands.calls) == 2
+        assert commands.calls[0] == commands.calls[1]
+        assert replay.command_result.eligibility_revision == work.eligibility_revision
+        assert replay.command_result.disposition == "woken"
+        with psycopg.connect(database) as connection:
+            assert connection.execute(
+                "SELECT count(*) FROM v4_cycle_events WHERE intent_id=%s AND kind='intent_wake'",
+                (work.intent_id,),
+            ).fetchone()[0] == 1
+            assert connection.execute(
+                "SELECT count(*) FROM v4_production_recovery_events WHERE work_id=%s AND event_kind='escalation'",
+                (work.work_id,),
+            ).fetchone()[0] == 1
+
+
 def _alert_request(repository, module, work, policy):
     return repository.alert_request(
         work.work_id,
@@ -1183,7 +1463,7 @@ def test_schema_and_migration_safety():
         with psycopg.connect(database) as connection:
             assert connection.execute(
                 "SELECT version_num FROM alembic_version"
-            ).fetchone()[0] == "0047_p1_production_recovery_work_events"
+            ).fetchone()[0] == "0049_p1_production_recovery_decision_evidence"
             assert connection.execute(
                 "SELECT count(*) FROM v4_legacy_publication_recovery_holds WHERE id=%s",
                 (fixture["fixture_hold_id"],),
@@ -1211,6 +1491,13 @@ def test_schema_and_migration_safety():
                    WHERE tgrelid='public.v4_production_recovery_work'::regclass
                      AND tgname='immutable_v4_production_recovery_work_v1'"""
             ).fetchone()[0] == 1
+            assert connection.execute(
+                """SELECT count(*) FROM pg_trigger
+                   WHERE tgrelid='public.v4_production_recovery_events'::regclass
+                     AND tgname IN (
+                       'validate_v4_production_recovery_event_v2',
+                       'validate_v4_production_recovery_deadline_evidence_v1')"""
+            ).fetchone()[0] == 2
 
 
 def test_remote_read_not_found_without_authoritative_window_stays_held():
@@ -1241,6 +1528,140 @@ def test_remote_read_not_found_without_authoritative_window_stays_held():
                 "SELECT state FROM v4_recovery_cases WHERE id=%s",
                 (work.case_id,),
             ).fetchone()[0] == "reconciling"
+
+
+def test_preliminary_not_found_allows_one_post_visibility_authoritative_read():
+    module = import_module("salience.cycles.production_recovery")
+    with _production_recovery_operation("task7_read_visibility_phases_") as (
+        database,
+        _fixture,
+        authority,
+        _enrollment,
+    ):
+        repository = module.ProductionRecoveryWorkRepository(database)
+        work = _case_work(repository, authority, module)
+        first_context = _read_context(repository, module, work)
+        with psycopg.connect(database) as connection:
+            database_now = connection.execute("SELECT clock_timestamp()").fetchone()[0]
+        # Place the positive boundary two seconds ahead of the first read while
+        # respecting the immutable operation claim timestamp.
+        window = database_now - first_context.operation_started_at + timedelta(seconds=2)
+        contract = module.ProductionProviderReadContract(
+            provider_id=work.target_alias,
+            exact_idempotency_lookup=True,
+            authoritative_visibility_window=window,
+        )
+        context = _read_context(repository, module, work, visibility_window=window)
+        class Target:
+            def __init__(self):
+                self.requests = []
+
+            def read_operation(self, request):
+                self.requests.append(request)
+                return _exact_observation(
+                    module, work, context, result="not_found",
+                    observed_at=datetime.now(timezone.utc),
+                )
+
+        target = Target()
+        coordinator = module.ProductionRecoveryCoordinator(
+            repository,
+            remote_target_factory=lambda _provider: target,
+            authority=_RecoveryAuthority(module),
+            provider_contracts={work.target_alias: contract},
+        )
+        append = repository._append_event
+        failed = [False]
+
+        def crash_before_preliminary_commit(*args, **kwargs):
+            if kwargs.get("event_kind") == "remote_read_observation" and not failed[0]:
+                failed[0] = True
+                raise RuntimeError("simulated crash before pre-visibility event commit")
+            return append(*args, **kwargs)
+
+        repository._append_event = crash_before_preliminary_commit
+        with pytest.raises(RuntimeError, match="before pre-visibility event commit"):
+            coordinator.reconcile(work.work_id)
+        repository._append_event = append
+        preliminary = coordinator.reconcile(work.work_id)
+        assert preliminary.result_class == "unknown"
+        assert preliminary.remote_state == "not_found"
+        assert len(target.requests) == 2
+        time.sleep(2.1)
+
+        authoritative = coordinator.reconcile(work.work_id)
+        replay = coordinator.reconcile(work.work_id)
+        assert authoritative.result_class == "authoritative_no_effect"
+        assert authoritative.event_id == replay.event_id
+        assert preliminary.event_id != authoritative.event_id
+        assert len(target.requests) == 3
+        assert len({request.idempotency_key for request in target.requests}) == 1
+        with psycopg.connect(database) as connection:
+            events = connection.execute(
+                """SELECT event_key,payload->>'result_class',payload->>'remote_state'
+                   FROM v4_production_recovery_events
+                   WHERE work_id=%s AND event_kind='remote_read_observation'
+                   ORDER BY occurred_at,event_id""",
+                (work.work_id,),
+            ).fetchall()
+            assert len(events) == 2
+            assert events[0][1:] == ("unknown", "not_found")
+            assert events[1][1:] == ("authoritative_no_effect", "not_found")
+            assert events[0][0] != events[1][0]
+
+
+def test_pre_visibility_read_finishing_after_boundary_stays_unknown():
+    module = import_module("salience.cycles.production_recovery")
+    with _production_recovery_operation("task7_read_crosses_visibility_boundary_") as (
+        database,
+        _fixture,
+        authority,
+        _enrollment,
+    ):
+        repository = module.ProductionRecoveryWorkRepository(database)
+        work = _case_work(repository, authority, module)
+        first_context = _read_context(repository, module, work)
+        with psycopg.connect(database) as connection:
+            database_now = connection.execute("SELECT clock_timestamp()").fetchone()[0]
+        window = database_now - first_context.operation_started_at + timedelta(seconds=0.7)
+        contract = module.ProductionProviderReadContract(
+            provider_id=work.target_alias,
+            exact_idempotency_lookup=True,
+            authoritative_visibility_window=window,
+        )
+        context = _read_context(repository, module, work, visibility_window=window)
+
+        class Target:
+            def __init__(self):
+                self.requests = []
+
+            def read_operation(self, request):
+                self.requests.append(request)
+                if len(self.requests) == 1:
+                    time.sleep(0.9)
+                return _exact_observation(
+                    module,
+                    work,
+                    context,
+                    result="not_found",
+                    observed_at=datetime.now(timezone.utc),
+                )
+
+        target = Target()
+        coordinator = module.ProductionRecoveryCoordinator(
+            repository,
+            remote_target_factory=lambda _provider: target,
+            authority=_RecoveryAuthority(module),
+            provider_contracts={work.target_alias: contract},
+        )
+        preliminary = coordinator.reconcile(work.work_id)
+        assert preliminary.result_class == "unknown"
+        assert preliminary.remote_state == "not_found"
+
+        authoritative = coordinator.reconcile(work.work_id)
+        assert authoritative.result_class == "authoritative_no_effect"
+        assert preliminary.event_id != authoritative.event_id
+        assert len(target.requests) == 2
 
 
 def test_pre_admission_intent_never_constructs_remote_client():
@@ -1304,7 +1725,8 @@ def test_no_effect_command_binds_same_operation_key_and_revision():
             original_idempotency_key=context.idempotency_key,
             stage_decision_id=uuid4(),
             policy_decision_id=uuid4(),
-            stop_revision=3,
+            workspace_stop_revision=3,
+            goal_stop_revision=5,
             route_decision_id=uuid4(),
             idempotency_key="reissue:" + str(work.case_id) + ":1",
         )
@@ -1319,6 +1741,11 @@ def test_no_effect_command_binds_same_operation_key_and_revision():
         assert receipt.operation_id == work.operation_id
         assert receipt.idempotency_key == context.idempotency_key
         assert receipt.case_revision == 1
+        assert receipt.command_reference.stage_decision_id == command.stage_decision_id
+        assert receipt.command_reference.policy_decision_id == command.policy_decision_id
+        assert receipt.command_reference.workspace_stop_revision == 3
+        assert receipt.command_reference.goal_stop_revision == 5
+        assert receipt.command_reference.route_decision_id == command.route_decision_id
         changed = {
             field.name: (
                 "changed-operation-key"
@@ -1331,6 +1758,35 @@ def test_no_effect_command_binds_same_operation_key_and_revision():
             controller.authorize_no_effect_generation_reissue(
                 module.NoEffectGenerationReissueCommand(**changed)
             )
+
+        class SplitStopAuthority(_RecoveryAuthority):
+            def authorize_no_effect_reissue(self, _work, proposed, _observation):
+                return module.ProductionNoEffectAuthorization(
+                    stage_decision_id=proposed.stage_decision_id,
+                    policy_decision_id=proposed.policy_decision_id,
+                    workspace_stop_revision=3,
+                    goal_stop_revision=5,
+                    route_decision_id=proposed.route_decision_id,
+                )
+
+        for field_name, changed_revision in (
+            ("workspace_stop_revision", 4),
+            ("goal_stop_revision", 6),
+        ):
+            fields_changed = {
+                field.name: getattr(command, field.name) for field in fields(command)
+            }
+            fields_changed[field_name] = changed_revision
+            fields_changed["idempotency_key"] += ":" + field_name
+            mismatched = module.NoEffectGenerationReissueCommand(**fields_changed)
+            mismatch_controller = module.ProductionRecoveryCaseController(
+                repository,
+                authority=SplitStopAuthority(module),
+                commands=object(),
+            )
+            with pytest.raises(PermissionError, match="stop, or route"):
+                mismatch_controller.authorize_no_effect_generation_reissue(mismatched)
+
         with psycopg.connect(database) as connection:
             assert connection.execute(
                 "SELECT state,revision FROM v4_recovery_cases WHERE id=%s",
@@ -1345,3 +1801,13 @@ def test_no_effect_command_binds_same_operation_key_and_revision():
                    WHERE work_id=%s AND event_kind='same_operation_no_effect_reissue'""",
                 (work.work_id,),
             ).fetchone()[0] == 1
+            event = connection.execute(
+                """SELECT payload FROM v4_production_recovery_events
+                   WHERE event_id=%s""",
+                (receipt.event_id,),
+            ).fetchone()[0]
+            assert event["stage_decision_id"] == str(command.stage_decision_id)
+            assert event["policy_decision_id"] == str(command.policy_decision_id)
+            assert event["workspace_stop_revision"] == 3
+            assert event["goal_stop_revision"] == 5
+            assert event["route_decision_id"] == str(command.route_decision_id)

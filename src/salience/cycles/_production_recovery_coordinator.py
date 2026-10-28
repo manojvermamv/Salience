@@ -110,15 +110,6 @@ class ProductionRecoveryCoordinator:
                 "cycle_case", "production_publication_hold"
             } or work.operation_id is None or work.target_alias is None or work.remote_account_id is None:
                 raise RecoveryProviderReadDenied("source lacks an exact original operation read scope")
-            event_key = f"remote-read:{work.work_id}:initial"
-            prior = connection.execute(
-                """SELECT * FROM v4_production_recovery_events
-                   WHERE work_id=%s AND event_key=%s""",
-                (work.work_id, event_key),
-            ).fetchone()
-            if prior is not None:
-                return self._read_event_result(self.repository._event(prior))
-
             dispatch = connection.execute(
                 """SELECT dispatch.generation,dispatch.current_permit_id,
                           dispatch.current_claim_id,permit.provider_id AS target_alias,
@@ -161,6 +152,49 @@ class ProductionRecoveryCoordinator:
             ):
                 raise RecoveryProviderReadDenied("provider has no exact idempotency-bound read contract")
             now = connection.execute("SELECT clock_timestamp() AS now").fetchone()["now"]
+            visibility_boundary = (
+                context.operation_started_at + contract.authoritative_visibility_window
+                if contract.authoritative_visibility_window is not None
+                else None
+            )
+            if visibility_boundary is None:
+                phase = "no-visibility-window"
+            elif now < visibility_boundary:
+                phase = "pre-visibility"
+            else:
+                phase = "visibility-elapsed"
+            event_key = f"remote-read:{work.work_id}:{phase}"
+
+            # A pre-window not-found is useful evidence, but it is not proof of
+            # absence. It gets one replay-stable identity; after its boundary,
+            # one separate authoritative read is permitted under a second key.
+            prior = connection.execute(
+                """SELECT * FROM v4_production_recovery_events
+                   WHERE work_id=%s AND event_key=%s""",
+                (work.work_id, event_key),
+            ).fetchone()
+            if prior is not None:
+                return self._read_event_result(self.repository._event(prior))
+            elapsed = connection.execute(
+                """SELECT * FROM v4_production_recovery_events
+                   WHERE work_id=%s AND event_key=%s""",
+                (work.work_id, f"remote-read:{work.work_id}:visibility-elapsed"),
+            ).fetchone()
+            if elapsed is not None:
+                return self._read_event_result(self.repository._event(elapsed))
+            preliminary = connection.execute(
+                """SELECT * FROM v4_production_recovery_events
+                   WHERE work_id=%s AND event_key=%s""",
+                (work.work_id, f"remote-read:{work.work_id}:pre-visibility"),
+            ).fetchone()
+            if phase == "visibility-elapsed" and preliminary is not None:
+                previous = preliminary["payload"]
+                if not (
+                    previous.get("result_class") == "unknown"
+                    and previous.get("remote_state") == "not_found"
+                ):
+                    return self._read_event_result(self.repository._event(preliminary))
+
             grant = self.authority.authorize_remote_read(work, context)
             if not isinstance(grant, ProductionScopedReadGrant):
                 raise PermissionError("typed exact read grant required")
@@ -236,7 +270,6 @@ class ProductionRecoveryCoordinator:
             result_class = "unknown"
             remote_state = "unavailable" if read_error or observation is None else "unknown"
             evidence_sha256 = self._identity_digest(observation if isinstance(observation, ProductionRemoteObservation) else None)
-            visibility_boundary = None
             if isinstance(observation, ProductionRemoteObservation):
                 remote_state = observation.remote_state
                 evidence_sha256 = observation.response_sha256
@@ -246,13 +279,13 @@ class ProductionRecoveryCoordinator:
                     elif observation.result == "succeeded":
                         result_class = "terminal_success"
                     elif observation.result == "not_found":
-                        if contract.authoritative_visibility_window is not None:
-                            visibility_boundary = (
-                                context.operation_started_at
-                                + contract.authoritative_visibility_window
-                            )
-                            if current_time >= visibility_boundary and observed_at >= visibility_boundary:
-                                result_class = "authoritative_no_effect"
+                        if (
+                            phase == "visibility-elapsed"
+                            and visibility_boundary is not None
+                            and current_time >= visibility_boundary
+                            and observed_at >= visibility_boundary
+                        ):
+                            result_class = "authoritative_no_effect"
                     elif observation.result == "unknown":
                         result_class = "unknown"
             payload = {

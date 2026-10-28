@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from hashlib import sha256
-from uuid import UUID, uuid4
+from uuid import UUID
 
 from salience.cycles._production_recovery_contracts import (
     NoEffectGenerationReissueCommand, ProductionCaseDeadlineCommand,
@@ -50,7 +50,7 @@ class ProductionRecoveryCaseController:
                 case_id=UUID(str(payload["case_id"])),
                 action="deadline_suspend",
                 resulting_revision=int(payload["attempt"]),
-                command_id=event.event_id,
+                command_id=UUID(str(payload["command_id"])),
             )
         else:
             cycle_id = payload.get("result_class")
@@ -83,9 +83,35 @@ class ProductionRecoveryCaseController:
                 raise RecoveryProviderReadDenied(
                     "immutable publication holds do not dispatch case or intent commands"
                 )
-            now = connection.execute("SELECT clock_timestamp() AS now").fetchone()["now"]
             if work.source_discriminant == "cycle_case":
-                source = connection.execute(
+                due_at = work.deadline
+                action_kind = "deadline_suspend"
+            elif work.source_discriminant == "pre_admission_intent_case":
+                due_at = work.due_at
+                action_kind = "wake_intent"
+            else:
+                raise RecoveryProviderReadDenied("unsupported production recovery command source")
+
+            # Work identity and its canonical due time are immutable. Find the
+            # recorded wake before checking mutable source revision/state so a
+            # committed typed command can survive a crash at the ledger boundary.
+            event_key = (
+                f"deadline-wake:{work.source_discriminant}:{work.source_id}:"
+                f"{work.source_revision}:{due_at.isoformat()}:{action_kind}"
+            )
+            replay = connection.execute(
+                "SELECT * FROM v4_production_recovery_events WHERE event_key=%s",
+                (event_key,),
+            ).fetchone()
+            if replay is not None:
+                return self._deadline_replay(self.repository, connection, replay)
+
+            now = connection.execute("SELECT clock_timestamp() AS now").fetchone()["now"]
+            if now < due_at:
+                raise RecoveryDeadlineNotDue("canonical recovery deadline is not due")
+
+            if action_kind == "deadline_suspend":
+                current = connection.execute(
                     """SELECT recovery.id AS case_id,recovery.revision,recovery.state,
                               recovery.deadline,recovery.workspace_id,recovery.goal_id,
                               recovery.owner_id,recovery.operation_id,recovery.context_id,
@@ -105,76 +131,85 @@ class ProductionRecoveryCaseController:
                         work.operation_id,
                     ),
                 ).fetchone()
-                if source is None or source["revision"] != work.case_revision or source["state"] != work.state:
-                    raise RecoveryIdentityConflict("canonical case revision or state changed")
-                due_at = source["deadline"]
-                if now < due_at:
-                    raise RecoveryDeadlineNotDue("canonical case deadline is not due")
-                action_kind = "deadline_suspend"
-            elif work.source_discriminant == "pre_admission_intent_case":
-                source = connection.execute(
-                    """SELECT intent.id AS intent_id,intent.eligibility_revision,
-                              intent.due_at,intent.expires_at,admission.disposition,
-                              admission.cycle_id
-                       FROM v4_cycle_intents intent
-                       JOIN v4_admissions admission
-                         ON admission.intent_id=intent.id
-                        AND admission.eligibility_revision=intent.eligibility_revision
-                       JOIN v4_production_intent_enrollments enrollment
-                         ON enrollment.intent_id=intent.id
-                        AND enrollment.eligibility_revision=intent.eligibility_revision
-                        AND enrollment.workspace_id=intent.workspace_id
-                        AND enrollment.goal_id=intent.goal_id
-                       WHERE intent.id=%s AND intent.eligibility_revision=%s
-                         AND admission.cycle_id IS NULL
-                       FOR UPDATE OF intent,admission""",
-                    (work.intent_id, work.eligibility_revision),
-                ).fetchone()
-                if source is None or source["eligibility_revision"] != work.source_revision:
-                    raise RecoveryIdentityConflict("pre-admission intent eligibility changed")
-                due_at = source["due_at"]
-                if now < due_at:
-                    raise RecoveryDeadlineNotDue("canonical intent due time is not due")
-                if now >= source["expires_at"]:
-                    raise RecoveryIdentityConflict("expired intent cannot be woken into admission")
-                action_kind = "wake_intent"
+                if current is None or (
+                    current["workspace_id"] != work.workspace_id
+                    or current["goal_id"] != work.goal_id
+                    or current["operation_id"] != work.operation_id
+                    or current["context_id"] != work.context_id
+                    or current["deadline"] != work.deadline
+                ):
+                    raise RecoveryIdentityConflict("canonical case identity or deadline changed")
+                # The typed command owns stale-revision rejection and exact
+                # idempotency replay if it committed before the recovery event.
+                source = {
+                    "case_id": work.source_id,
+                    "revision": work.case_revision,
+                    "state": work.state,
+                    "deadline": work.deadline,
+                    "workspace_id": work.workspace_id,
+                    "goal_id": work.goal_id,
+                    "owner_id": work.owner_id,
+                    "operation_id": work.operation_id,
+                    "context_id": work.context_id,
+                    "cycle_state": current["cycle_state"],
+                }
             else:
-                raise RecoveryProviderReadDenied("unsupported production recovery command source")
-
-            event_key = (
-                f"deadline-wake:{work.source_discriminant}:{work.source_id}:"
-                f"{work.source_revision}:{due_at.isoformat()}:{action_kind}"
+                current = connection.execute(
+                    """SELECT intent.id AS intent_id,intent.goal_id,
+                              intent.eligibility_revision,intent.due_at,intent.expires_at,
+                              goal.workspace_id,admission.disposition,admission.cycle_id
+                       FROM v4_cycle_intents intent
+                       JOIN v4_goals goal ON goal.id=intent.goal_id
+                       LEFT JOIN v4_admissions admission
+                         ON admission.intent_id=intent.id
+                        AND admission.eligibility_revision=%s
+                       WHERE intent.id=%s
+                       FOR UPDATE OF intent""",
+                    (work.eligibility_revision, work.intent_id),
+                ).fetchone()
+                if current is None or (
+                    current["workspace_id"] != work.workspace_id
+                    or current["goal_id"] != work.goal_id
+                    or current["due_at"] != work.due_at
+                    or current["expires_at"] != work.expires_at
+                ):
+                    raise RecoveryIdentityConflict("canonical intent identity or deadline changed")
+                disposition = {
+                    "admission_deferred": "deferred",
+                    "admission_review_required": "review_required",
+                }[work.reason]
+                source = {
+                    "intent_id": work.intent_id,
+                    "eligibility_revision": work.source_revision,
+                    "due_at": work.due_at,
+                    "expires_at": work.expires_at,
+                    "disposition": disposition,
+                    "cycle_id": None,
+                }
+            decision = self.authority.authorize_deadline_wake(
+                work, source, action_kind, event_key
             )
-            replay = connection.execute(
-                "SELECT * FROM v4_production_recovery_events WHERE event_key=%s",
-                (event_key,),
-            ).fetchone()
-            if replay is not None:
-                return self._deadline_replay(self.repository, connection, replay)
-            decision = self.authority.authorize_deadline_wake(work, source, action_kind)
             if not isinstance(decision, ProductionRecoveryDecision) or not decision.allowed:
                 raise PermissionError("current deadline command authority denied")
             if action_kind == "deadline_suspend":
                 if not callable(getattr(self.commands, "suspend_case", None)):
                     raise PermissionError("existing typed case suspension command is unavailable")
-                if source["cycle_state"] == "closed":
-                    raise RecoveryIdentityConflict("closed cycle cannot receive a deadline case command")
                 command = ProductionCaseDeadlineCommand(
                     case_id=work.source_id,
-                    expected_revision=source["revision"],
+                    expected_revision=work.case_revision,
                     operation_id=work.operation_id,
                     context_id=work.context_id,
                     deadline=source["deadline"],
                     idempotency_key=event_key,
                     policy_decision_id=decision.decision_id,
                     stop_revision=decision.stop_revision,
-                    route_decision_id=uuid4(),
+                    route_decision_id=decision.route_decision_id,
                 )
                 receipt = self.commands.suspend_case(connection, command)
                 if not isinstance(receipt, TypedCaseCommandReceipt) or (
                     receipt.case_id != work.source_id
                     or receipt.action != "deadline_suspend"
-                    or receipt.resulting_revision != source["revision"] + 1
+                    or receipt.resulting_revision != work.case_revision + 1
                 ):
                     raise ValueError("typed deadline suspension receipt does not match its source revision")
                 payload = {
@@ -182,6 +217,7 @@ class ProductionRecoveryCaseController:
                     "status": "deadline_suspend",
                     "result_class": "suspended",
                     "attempt": receipt.resulting_revision,
+                    "command_id": str(receipt.command_id),
                     "case_id": str(work.source_id),
                     "work_id": str(work.work_id),
                     "source_id": str(work.source_id),
@@ -189,24 +225,26 @@ class ProductionRecoveryCaseController:
                     "operation_id": str(work.operation_id),
                     "deadline": due_at.isoformat(),
                     "event_key": event_key,
+                    "policy_decision_id": str(decision.decision_id),
+                    "route_decision_id": str(decision.route_decision_id),
                 }
             else:
                 if not callable(getattr(self.commands, "wake_intent", None)):
                     raise PermissionError("existing typed intent wake command is unavailable")
                 command = ProductionIntentDeadlineCommand(
                     intent_id=work.intent_id,
-                    expected_revision=source["eligibility_revision"],
-                    due_at=source["due_at"],
-                    expires_at=source["expires_at"],
+                    expected_revision=work.eligibility_revision,
+                    due_at=work.due_at,
+                    expires_at=work.expires_at,
                     idempotency_key=event_key,
                     policy_decision_id=decision.decision_id,
                     stop_revision=decision.stop_revision,
-                    route_decision_id=uuid4(),
+                    route_decision_id=decision.route_decision_id,
                 )
                 receipt = self.commands.wake_intent(connection, command)
                 if not isinstance(receipt, TypedIntentWakeReceipt) or (
                     receipt.intent_id != work.intent_id
-                    or receipt.eligibility_revision != source["eligibility_revision"]
+                    or receipt.eligibility_revision != work.eligibility_revision
                 ):
                     raise ValueError("typed intent wake receipt does not match its enrollment revision")
                 payload = {
@@ -219,6 +257,8 @@ class ProductionRecoveryCaseController:
                     "source_id": str(work.source_id),
                     "deadline": due_at.isoformat(),
                     "event_key": event_key,
+                    "policy_decision_id": str(decision.decision_id),
+                    "route_decision_id": str(decision.route_decision_id),
                 }
             event = self.repository._append_event(
                 connection,
@@ -345,7 +385,8 @@ class ProductionRecoveryCaseController:
                     remote_identity_sha256,
                     str(command.stage_decision_id),
                     str(command.policy_decision_id),
-                    str(command.stop_revision),
+                    str(command.workspace_stop_revision),
+                    str(command.goal_stop_revision),
                     str(command.route_decision_id),
                 )
             )
@@ -363,6 +404,11 @@ class ProductionRecoveryCaseController:
                 "state": work.state,
                 "result_class": "authoritative_no_effect",
                 "event_key": key,
+                "stage_decision_id": str(command.stage_decision_id),
+                "policy_decision_id": str(command.policy_decision_id),
+                "workspace_stop_revision": command.workspace_stop_revision,
+                "goal_stop_revision": command.goal_stop_revision,
+                "route_decision_id": str(command.route_decision_id),
             }
             if prior is not None:
                 if (
@@ -379,7 +425,8 @@ class ProductionRecoveryCaseController:
                 if not isinstance(authorization, ProductionNoEffectAuthorization) or (
                     authorization.stage_decision_id != command.stage_decision_id
                     or authorization.policy_decision_id != command.policy_decision_id
-                    or authorization.stop_revision != command.stop_revision
+                    or authorization.workspace_stop_revision != command.workspace_stop_revision
+                    or authorization.goal_stop_revision != command.goal_stop_revision
                     or authorization.route_decision_id != command.route_decision_id
                 ):
                     raise PermissionError("stage, policy, stop, or route authorization changed")
@@ -399,6 +446,11 @@ class ProductionRecoveryCaseController:
                 original_idempotency_key=command.original_idempotency_key,
                 case_id=work.source_id,
                 case_revision=command.expected_case_revision,
+                stage_decision_id=command.stage_decision_id,
+                policy_decision_id=command.policy_decision_id,
+                workspace_stop_revision=command.workspace_stop_revision,
+                goal_stop_revision=command.goal_stop_revision,
+                route_decision_id=command.route_decision_id,
             )
             return ProductionNoEffectReissueReceipt(
                 event_id=event.event_id,

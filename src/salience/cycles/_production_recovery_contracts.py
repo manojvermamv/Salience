@@ -287,6 +287,7 @@ class ProductionRecoveryReadContext:
 class ProductionRecoveryDecision:
     allowed: bool
     decision_id: UUID
+    route_decision_id: UUID
     policy_revision: int
     stop_revision: int
 
@@ -294,6 +295,7 @@ class ProductionRecoveryDecision:
         if type(self.allowed) is not bool:
             raise ValueError("explicit recovery decision required")
         _require_uuid(self.decision_id, "decision ID")
+        _require_uuid(self.route_decision_id, "route decision ID")
         if type(self.policy_revision) is not int or self.policy_revision < 1:
             raise ValueError("positive policy revision required")
         if type(self.stop_revision) is not int or self.stop_revision < 1:
@@ -304,14 +306,16 @@ class ProductionRecoveryDecision:
 class ProductionNoEffectAuthorization:
     stage_decision_id: UUID
     policy_decision_id: UUID
-    stop_revision: int
+    workspace_stop_revision: int
+    goal_stop_revision: int
     route_decision_id: UUID
 
     def __post_init__(self) -> None:
         for name in ("stage_decision_id", "policy_decision_id", "route_decision_id"):
             _require_uuid(getattr(self, name), name)
-        if type(self.stop_revision) is not int or self.stop_revision < 1:
-            raise ValueError("positive stop revision required")
+        for name in ("workspace_stop_revision", "goal_stop_revision"):
+            if type(getattr(self, name)) is not int or getattr(self, name) < 1:
+                raise ValueError(f"positive {name} required")
 
 
 class ProductionRecoveryAuthority(Protocol):
@@ -332,7 +336,11 @@ class ProductionRecoveryAuthority(Protocol):
     ) -> ProductionRecoveryDecision: ...
 
     def authorize_deadline_wake(
-        self, work: ProductionRecoveryWork, source: Mapping[str, object], action_kind: str
+        self,
+        work: ProductionRecoveryWork,
+        source: Mapping[str, object],
+        action_kind: str,
+        idempotency_key: str,
     ) -> ProductionRecoveryDecision: ...
 
     def authorize_no_effect_reissue(
@@ -554,7 +562,8 @@ class NoEffectGenerationReissueCommand:
     original_idempotency_key: str
     stage_decision_id: UUID
     policy_decision_id: UUID
-    stop_revision: int
+    workspace_stop_revision: int
+    goal_stop_revision: int
     route_decision_id: UUID
     idempotency_key: str
 
@@ -566,8 +575,9 @@ class NoEffectGenerationReissueCommand:
             _require_uuid(getattr(self, name), name)
         if type(self.expected_case_revision) is not int or self.expected_case_revision < 1:
             raise ValueError("positive expected case revision required")
-        if type(self.stop_revision) is not int or self.stop_revision < 1:
-            raise ValueError("positive stop revision required")
+        for name in ("workspace_stop_revision", "goal_stop_revision"):
+            if type(getattr(self, name)) is not int or getattr(self, name) < 1:
+                raise ValueError(f"positive {name} required")
         _require_sha256(self.observation_sha256, "observation payload SHA-256")
         _require_sha256(self.request_fingerprint, "request fingerprint")
         for name in ("original_idempotency_key", "idempotency_key"):
