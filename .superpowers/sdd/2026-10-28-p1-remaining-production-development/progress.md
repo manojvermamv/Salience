@@ -96,6 +96,13 @@ The plan traces all 17 Slice 2 policy/revocation acceptance cases, all 7 routing
 
 - Preflight result: no unresolved contradiction blocks Task 1. Every implementation task uses red-first tests, commits once focused green, and receives an independent task review before the next task.
 
+## Task execution
+
+- Task 1 BASE: `08f0230098873774cc76a869fc8362edccb9471e`; implementer `/root/p1_task1_route_manifest` (GPT-6 Luna Max); report `task-1-report.md`.
+- Task 1 ruling: the authenticated manifest wire payload has exact schema `salience.p1-production-route-manifest.v1` and keys `schema_version`, `route_id`, `route_tuple`, `route_tuple_sha256`, `worker_build_id`, `slots`, `artifact_sha256`, and `image_sha256`; bundle schema is `salience.p1-production-route-bundle.v1` with exact keys `schema_version` and `routes`. `worker_build_id` is required by the routing spec at manifest level and remains outside the tuple digest. The verified outer artifact-lock digest is runtime context, excluded from the embedded payload and manifest digest. Queue selection exists only at authenticated `route_tuple.task_queue`; exact-key parsing rejects overrides and Task 5 must expose no separate queue selection. Cost if wrong: Task 5 launcher compatibility and production route evidence would require a versioned manifest-contract correction.
+- Task 1 TDD: RED was the expected missing `salience.cycles.production_routing` import. GREEN passed 4 route tests, 5 existing production-policy unit tests, and 105 policy/revocation integration tests on a fresh current-source disposable database; combined result 114 passed. The pre-existing reusable local database contained a stale stored 0044 dispatch function despite an 0046 marker, so it was not accepted as valid regression evidence.
+- Task 1: complete (commits `08f0230..b095c91`, review clean). Reviewer `/root/p1_task1_route_review` returned spec PASS, quality PASS, no Critical/Important/Minor findings; no tests were repeated by the reviewer.
+
 ## Task 9 plan review clarification
 
 - Add an explicit finalization step for the authenticated launcher v2 candidate payload: the builder regenerates it with exact `production_migration_head = "0050_p1_recovery_rollback_v2"` and rollback verifier ABI v2. `test_launcher_v2_lock_builder_binds_exact_final_migration_head_0050_and_verifier_abi` in `tests/integration/test_v4_publication_recovery_floor.py` pins this. The generated candidate remains development-only; the external production trust digest, endpoint, and credentials remain absent, and the tracked fixture v1 lock is preserved.
