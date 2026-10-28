@@ -1,0 +1,535 @@
+"""Versioned alert delivery, readback, acknowledgment, and hold sink."""
+
+from __future__ import annotations
+
+from collections.abc import Callable
+from dataclasses import replace
+from datetime import timedelta
+from hashlib import sha256
+from uuid import UUID
+
+from salience.cycles._production_recovery_contracts import (
+    ProductionAlertAcknowledgment, ProductionAlertReceipt, ProductionAlertRequest,
+    ProductionAlertRetryPolicy, ProductionAlertTarget, ProductionRecipientProfile,
+    ProductionRecoveryAuthority, ProductionRecoveryDecision, ProductionRecoveryEvent,
+    ProductionRecoveryWork, RecoveryEventConflict, RecoveryIdentityConflict,
+    RecoveryInventoryGap, _require_sha256, _require_uuid, _safe_code,
+)
+from salience.cycles._production_recovery_work import ProductionRecoveryWorkRepository
+
+
+class ProductionRecoveryAlerts:
+    """Explicit versioned alert delivery, readback, acknowledgment, and hold sink."""
+
+    def __init__(
+        self,
+        repository: ProductionRecoveryWorkRepository,
+        *,
+        target: ProductionAlertTarget,
+        authority: ProductionRecoveryAuthority,
+        recipient_profile: ProductionRecipientProfile,
+        retry_policy: ProductionAlertRetryPolicy,
+        wait: Callable[[timedelta], None],
+        schedule_hold_target: Callable[[UUID, UUID, str, str], None],
+    ) -> None:
+        if not isinstance(repository, ProductionRecoveryWorkRepository):
+            raise ValueError("production recovery work repository required")
+        if not callable(getattr(target, "send", None)) or not callable(
+            getattr(target, "lookup", None)
+        ):
+            raise ValueError("alert target must support same-key send and read-only lookup")
+        if not callable(getattr(authority, "authorize_alert", None)) or not callable(
+            getattr(authority, "authorize_acknowledgment", None)
+        ):
+            raise ValueError("current alert and acknowledgment authority required")
+        if not isinstance(recipient_profile, ProductionRecipientProfile):
+            raise ValueError("explicit versioned recipient profile required")
+        if not isinstance(retry_policy, ProductionAlertRetryPolicy):
+            raise ValueError("explicit versioned bounded retry policy required")
+        if not callable(wait):
+            raise ValueError("explicit deterministic or qualified retry wait required")
+        if not callable(schedule_hold_target):
+            raise ValueError("explicit schedule hold alert sink required")
+        self.repository = repository
+        self.target = target
+        self.authority = authority
+        self.recipient_profile = recipient_profile
+        self.retry_policy = retry_policy
+        self.wait = wait
+        self.schedule_hold_target = schedule_hold_target
+
+    def emit_hold(
+        self,
+        workspace_id: UUID,
+        source_id: UUID,
+        reason_code: str,
+        evidence_sha256: str,
+    ) -> None:
+        """Implement Task 6 ScheduleAlertSink through an explicit injected sink."""
+        _require_uuid(workspace_id, "hold workspace ID")
+        _require_uuid(source_id, "hold source ID")
+        _safe_code(reason_code, "hold reason code")
+        _require_sha256(evidence_sha256, "hold evidence SHA-256")
+        self.schedule_hold_target(
+            workspace_id, source_id, reason_code, evidence_sha256
+        )
+
+    @staticmethod
+    def _event_payload(
+        work: ProductionRecoveryWork,
+        request: ProductionAlertRequest,
+        *,
+        status: str,
+        attempt: int | None = None,
+        delivery_id: str | None = None,
+        error_code: str | None = None,
+        retry_at: datetime | None = None,
+    ) -> dict[str, object]:
+        payload: dict[str, object] = {
+            "schema_version": "salience.p1-production-recovery-alert.v1",
+            "status": status,
+            "reason": work.reason,
+            "state": work.state,
+            "source_id": str(work.source_id),
+            "work_id": str(work.work_id),
+            "intent_id": str(work.intent_id),
+            "deadline": work.deadline.isoformat(),
+            "severity": request.severity,
+            "escalation_level": request.escalation_level,
+            "recipient_profile_revision": request.recipient_profile.revision,
+            "policy_revision": request.retry_policy.revision,
+            "evidence_sha256": ProductionRecoveryWorkRepository._policy_evidence_from_profile(
+                request.recipient_profile, request.retry_policy
+            ),
+            "event_key": request.idempotency_key,
+        }
+        if work.operation_id is not None:
+            payload["operation_id"] = str(work.operation_id)
+        if work.case_id is not None:
+            payload["case_id"] = str(work.case_id)
+        if work.target_alias is not None:
+            payload["target_alias"] = work.target_alias
+        if request.recipient_tier == "owner":
+            payload["owner_id"] = str(request.recipient_profile.owner_subject_id)
+        if attempt is not None:
+            payload["attempt"] = attempt
+        if delivery_id is not None:
+            payload["delivery_id"] = delivery_id
+        if error_code is not None:
+            payload["error_code"] = error_code
+        if retry_at is not None:
+            payload["retry_at"] = retry_at.isoformat()
+        return payload
+
+    def _receipt_event(
+        self,
+        connection,
+        work: ProductionRecoveryWork,
+        request: ProductionAlertRequest,
+        receipt: ProductionAlertReceipt,
+        *,
+        policy_decision_id: UUID,
+        actor_id: UUID | None = None,
+    ) -> ProductionRecoveryEvent:
+        if (
+            receipt.alert_event_id != request.alert_event_id
+            or receipt.idempotency_key != request.idempotency_key
+            or receipt.status != "accepted"
+            or receipt.provider_message_id is None
+            or receipt.accepted_at is None
+        ):
+            raise ValueError("provider alert receipt is not bound to the exact intent")
+        payload = self._event_payload(
+            work,
+            request,
+            status="accepted",
+            delivery_id=receipt.provider_message_id,
+        )
+        return self.repository._append_event(
+            connection,
+            work,
+            event_key=f"delivery-receipt:{request.alert_event_id}",
+            event_kind="delivery_receipt",
+            policy_decision_id=policy_decision_id,
+            payload=payload,
+            actor_id=actor_id,
+        )
+
+    @staticmethod
+    def _receipt_from_event(
+        event: ProductionRecoveryEvent, request: ProductionAlertRequest
+    ) -> ProductionAlertReceipt:
+        delivery_id = event.payload.get("delivery_id")
+        status = str(event.payload.get("status"))
+        return ProductionAlertReceipt(
+            alert_event_id=request.alert_event_id,
+            idempotency_key=request.idempotency_key,
+            provider_message_id=str(delivery_id) if delivery_id else None,
+            status=status,
+            accepted_at=event.occurred_at if status == "accepted" else None,
+        )
+
+    def _owner_is_current(self, work: ProductionRecoveryWork) -> bool:
+        with self.repository._connect() as connection:
+            return connection.execute(
+                """SELECT 1 FROM identity_subjects
+                   WHERE id=%s AND workspace_id=%s AND enabled
+                     AND expires_at>clock_timestamp()""",
+                (work.owner_id, work.workspace_id),
+            ).fetchone() is not None
+
+    def _held_receipt(
+        self,
+        work: ProductionRecoveryWork,
+        request: ProductionAlertRequest,
+        *,
+        reason_code: str,
+        policy_decision_id: UUID,
+    ) -> ProductionAlertReceipt:
+        with self.repository._connect() as connection:
+            self._record_owner_unavailable(
+                connection, work, request, reason_code, policy_decision_id
+            )
+            self.repository._append_event(
+                connection,
+                work,
+                event_key=f"held-alert:{request.alert_event_id}",
+                event_kind="held_conflict",
+                policy_decision_id=policy_decision_id,
+                payload=self._event_payload(
+                    work,
+                    request,
+                    status="held",
+                    error_code=reason_code,
+                    attempt=0,
+                ),
+            )
+        return ProductionAlertReceipt(
+            alert_event_id=request.alert_event_id,
+            idempotency_key=request.idempotency_key,
+            provider_message_id=None,
+            status="held",
+            accepted_at=None,
+        )
+
+    def _record_owner_unavailable(
+        self,
+        connection,
+        work: ProductionRecoveryWork,
+        request: ProductionAlertRequest,
+        reason_code: str,
+        policy_decision_id: UUID,
+    ) -> None:
+        event_key = f"owner-unavailable:{request.alert_event_id}"
+        existing = connection.execute(
+            "SELECT work_id FROM v4_production_recovery_events WHERE event_key=%s",
+            (event_key,),
+        ).fetchone()
+        if existing is not None:
+            if existing["work_id"] != work.work_id:
+                raise RecoveryEventConflict("owner-unavailable event is bound to different work")
+            return
+        self.repository._append_event(
+            connection,
+            work,
+            event_key=event_key,
+            event_kind="owner_unavailable",
+            policy_decision_id=policy_decision_id,
+            payload=self._event_payload(
+                work,
+                request,
+                status="owner_unavailable",
+                error_code=reason_code,
+            ),
+        )
+
+    def send(self, alert: ProductionAlertRequest) -> ProductionAlertReceipt:
+        if not isinstance(alert, ProductionAlertRequest):
+            raise ValueError("typed production alert request required")
+        # Serialize local intent/replay checks around the external same-key
+        # delivery. The target still provides provider-side idempotency, while
+        # the database lock prevents parallel workers from colliding on the
+        # same append-only attempt and receipt identities.
+        lock_identity = f"production-alert-send:{alert.idempotency_key}"
+        with self.repository._connect() as lock_connection:
+            with lock_connection.transaction():
+                lock_connection.execute(
+                    "SELECT pg_advisory_xact_lock(hashtextextended(%s,0))",
+                    (lock_identity,),
+                )
+                return self._send_locked(alert)
+
+    def _send_locked(self, alert: ProductionAlertRequest) -> ProductionAlertReceipt:
+        if not isinstance(alert, ProductionAlertRequest):
+            raise ValueError("typed production alert request required")
+        if alert.recipient_profile != self.recipient_profile or alert.retry_policy != self.retry_policy:
+            raise RecoveryIdentityConflict("alert request policy differs from explicit configured revisions")
+        work = self.repository.get_work(alert.work_id)
+        if (
+            alert.workspace_id != work.workspace_id
+            or alert.source_id != work.source_id
+            or alert.operation_id != work.operation_id
+            or alert.case_id != work.case_id
+            or alert.reason != work.reason
+            or alert.state != work.state
+            or alert.deadline != work.deadline
+            or alert.target_alias != work.target_alias
+            or alert.recipient_profile.owner_subject_id != work.owner_id
+            or alert.recipient_profile.revision != work.recipient_profile_revision
+        ):
+            raise RecoveryIdentityConflict("alert request is not bound to the exact work source")
+
+        with self.repository._connect() as connection:
+            intent = connection.execute(
+                """SELECT * FROM v4_production_recovery_events
+                   WHERE event_id=%s AND work_id=%s AND event_kind='alert_intent'""",
+                (alert.alert_event_id, alert.work_id),
+            ).fetchone()
+            if intent is None:
+                raise RecoveryInventoryGap("alert request lacks its committed alert intent")
+            local_receipt = connection.execute(
+                """SELECT * FROM v4_production_recovery_events
+                   WHERE event_key=%s AND work_id=%s AND event_kind='delivery_receipt'""",
+                (f"delivery-receipt:{alert.alert_event_id}", alert.work_id),
+            ).fetchone()
+            if local_receipt is not None:
+                return self._receipt_from_event(self.repository._event(local_receipt), alert)
+            held_receipt = connection.execute(
+                """SELECT * FROM v4_production_recovery_events
+                   WHERE event_key=%s AND work_id=%s AND event_kind='held_conflict'""",
+                (f"held-alert:{alert.alert_event_id}", alert.work_id),
+            ).fetchone()
+            if held_receipt is not None:
+                return self._receipt_from_event(self.repository._event(held_receipt), alert)
+
+        decision = self.authority.authorize_alert(work, alert)
+        if not isinstance(decision, ProductionRecoveryDecision) or not decision.allowed:
+            raise PermissionError("current alert delivery authority denied")
+        if not self._owner_is_current(work):
+            if not alert.recipient_profile.on_call_group_ids:
+                return self._held_receipt(
+                    work,
+                    alert,
+                    reason_code="owner_unavailable_no_backup",
+                    policy_decision_id=decision.decision_id,
+                )
+            with self.repository._connect() as connection:
+                self._record_owner_unavailable(
+                    connection,
+                    work,
+                    alert,
+                    "owner_unavailable_escalated",
+                    decision.decision_id,
+                )
+            alert = replace(alert, recipient_tier="on_call")
+
+        key = alert.idempotency_key
+        # A readback is required before any repeated send. The same idempotency
+        # key remains in every path, including process-restart recovery.
+        try:
+            readback = self.target.lookup(key)
+        except Exception:
+            readback = None
+        if readback is not None:
+            with self.repository._connect() as connection:
+                event = self._receipt_event(
+                    connection,
+                    work,
+                    alert,
+                    readback,
+                    policy_decision_id=decision.decision_id,
+                )
+                return self._receipt_from_event(event, alert)
+
+        with self.repository._connect() as connection:
+            attempts = connection.execute(
+                """SELECT count(*) AS count
+                   FROM v4_production_recovery_events
+                   WHERE work_id=%s AND event_kind='delivery_attempt'
+                     AND payload->>'event_key'=%s""",
+                (work.work_id, key),
+            ).fetchone()["count"]
+        next_attempt = attempts + 1
+        for attempt in range(next_attempt, alert.retry_policy.maximum_attempts + 1):
+            current = self.authority.authorize_alert(work, alert)
+            if not isinstance(current, ProductionRecoveryDecision) or not current.allowed:
+                raise PermissionError("alert authority changed before a delivery attempt")
+            if alert.recipient_tier == "owner" and not self._owner_is_current(work):
+                if not alert.recipient_profile.on_call_group_ids:
+                    return self._held_receipt(
+                        work,
+                        alert,
+                        reason_code="owner_unavailable_no_backup",
+                        policy_decision_id=current.decision_id,
+                    )
+                with self.repository._connect() as connection:
+                    self._record_owner_unavailable(
+                        connection,
+                        work,
+                        alert,
+                        "owner_unavailable_escalated",
+                        current.decision_id,
+                    )
+                alert = replace(alert, recipient_tier="on_call")
+            payload = self._event_payload(
+                work, alert, status="attempting", attempt=attempt
+            )
+            with self.repository._connect() as connection:
+                self.repository._append_event(
+                    connection,
+                    work,
+                    event_key=f"delivery-attempt:{alert.alert_event_id}:{attempt}",
+                    event_kind="delivery_attempt",
+                    policy_decision_id=current.decision_id,
+                    payload=payload,
+                )
+            try:
+                receipt = self.target.send(alert, key)
+            except Exception:
+                try:
+                    receipt = self.target.lookup(key)
+                except Exception:
+                    receipt = None
+            if receipt is not None and receipt.status == "accepted":
+                with self.repository._connect() as connection:
+                    event = self._receipt_event(
+                        connection,
+                        work,
+                        alert,
+                        receipt,
+                        policy_decision_id=current.decision_id,
+                    )
+                    return self._receipt_from_event(event, alert)
+            if attempt < alert.retry_policy.maximum_attempts:
+                delay = alert.retry_policy.retry_intervals[attempt - 1]
+                with self.repository._connect() as connection:
+                    now = connection.execute(
+                        "SELECT clock_timestamp() AS now"
+                    ).fetchone()["now"]
+                    self.repository._append_event(
+                        connection,
+                        work,
+                        event_key=f"retry-scheduled:{alert.alert_event_id}:{attempt}",
+                        event_kind="retry_scheduled",
+                        policy_decision_id=current.decision_id,
+                        payload=self._event_payload(
+                            work,
+                            alert,
+                            status="retry_scheduled",
+                            attempt=attempt + 1,
+                            error_code="target_unavailable",
+                            retry_at=now + delay,
+                        ),
+                    )
+                self.wait(delay)
+        with self.repository._connect() as connection:
+            last_decision = self.authority.authorize_alert(work, alert)
+            if not isinstance(last_decision, ProductionRecoveryDecision) or not last_decision.allowed:
+                raise PermissionError("current alert authority denied held evidence")
+            self.repository._append_event(
+                connection,
+                work,
+                event_key=f"held-alert:{alert.alert_event_id}",
+                event_kind="held_conflict",
+                policy_decision_id=last_decision.decision_id,
+                payload=self._event_payload(
+                    work,
+                    alert,
+                    status="held",
+                    attempt=alert.retry_policy.maximum_attempts,
+                    error_code="retry_exhausted",
+                ),
+            )
+        return ProductionAlertReceipt(
+            alert_event_id=alert.alert_event_id,
+            idempotency_key=key,
+            provider_message_id=None,
+            status="held",
+            accepted_at=None,
+        )
+
+    def lookup(self, idempotency_key: str) -> ProductionAlertReceipt | None:
+        if not isinstance(idempotency_key, str) or not idempotency_key:
+            raise ValueError("stable alert idempotency key required")
+        return self.target.lookup(idempotency_key)
+
+    def acknowledge(
+        self, command: ProductionAlertAcknowledgment
+    ) -> ProductionRecoveryEvent:
+        if not isinstance(command, ProductionAlertAcknowledgment):
+            raise ValueError("typed production alert acknowledgment required")
+        work = self.repository.get_work(command.work_id)
+        if work.source_id != command.source_id:
+            raise ValueError("acknowledgment source differs from exact work binding")
+        with self.repository._connect() as connection:
+            intent = connection.execute(
+                """SELECT event.* FROM v4_production_recovery_events event
+                   WHERE event.event_id=%s AND event.work_id=%s
+                     AND event.event_kind='alert_intent'""",
+                (command.alert_event_id, work.work_id),
+            ).fetchone()
+            receipt = connection.execute(
+                """SELECT event.* FROM v4_production_recovery_events event
+                   WHERE event.event_key=%s AND event.work_id=%s
+                     AND event.event_kind='delivery_receipt'
+                     AND event.payload->>'delivery_id'=%s""",
+                (
+                    f"delivery-receipt:{command.alert_event_id}",
+                    work.work_id,
+                    command.delivery_id,
+                ),
+            ).fetchone()
+            if intent is None or receipt is None:
+                raise ValueError("acknowledgment must bind the exact alert intent and provider receipt")
+            subject = connection.execute(
+                """SELECT workspace_id,enabled,expires_at
+                   FROM identity_subjects WHERE id=%s""",
+                (command.actor_id,),
+            ).fetchone()
+            if (
+                subject is None
+                or subject["workspace_id"] != work.workspace_id
+                or not subject["enabled"]
+                or subject["expires_at"] <= connection.execute(
+                    "SELECT clock_timestamp() AS now"
+                ).fetchone()["now"]
+            ):
+                raise PermissionError("acknowledgment actor must be a current same-workspace identity")
+            payload = {
+                "schema_version": "salience.p1-production-recovery-ack.v1",
+                "status": "received",
+                "work_id": str(work.work_id),
+                "source_id": str(work.source_id),
+                "intent_id": str(work.intent_id),
+                "delivery_id": command.delivery_id,
+                "acknowledged_by": str(command.actor_id),
+                "event_key": command.idempotency_key,
+                "evidence_sha256": sha256(
+                    f"{command.alert_event_id}:{command.delivery_id}:{command.actor_id}".encode("utf-8")
+                ).hexdigest(),
+            }
+            if work.operation_id is not None:
+                payload["operation_id"] = str(work.operation_id)
+            if work.case_id is not None:
+                payload["case_id"] = str(work.case_id)
+            prior = connection.execute(
+                "SELECT * FROM v4_production_recovery_events WHERE event_key=%s",
+                (command.idempotency_key,),
+            ).fetchone()
+            if prior is not None:
+                if prior["work_id"] != work.work_id or prior["payload"] != payload:
+                    raise RecoveryEventConflict("acknowledgment idempotency key conflicts")
+                return self.repository._event(prior)
+        decision = self.authority.authorize_acknowledgment(work, command)
+        if not isinstance(decision, ProductionRecoveryDecision) or not decision.allowed:
+            raise PermissionError("current acknowledgment authority denied")
+        with self.repository._connect() as connection:
+            return self.repository._append_event(
+                connection,
+                work,
+                event_key=command.idempotency_key,
+                event_kind="acknowledgment",
+                policy_decision_id=decision.decision_id,
+                payload=payload,
+                actor_id=command.actor_id,
+            )

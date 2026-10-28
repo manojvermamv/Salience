@@ -342,6 +342,36 @@ class ProductionPermitRequest:
 
 
 @dataclass(frozen=True, slots=True)
+class ProductionRecoveryCommandReference:
+    """Typed Task 7 evidence reference consumed by same-operation Task 8 paths."""
+
+    event_id: UUID
+    work_id: UUID
+    operation_id: UUID
+    request_fingerprint: str
+    original_idempotency_key: str
+    case_id: UUID
+    case_revision: int
+
+    def __post_init__(self) -> None:
+        for name in ("event_id", "work_id", "operation_id", "case_id"):
+            if not isinstance(getattr(self, name), UUID):
+                raise ValueError(f"recovery command reference {name} UUID required")
+        if not isinstance(self.request_fingerprint, str) or not _SHA256.fullmatch(
+            self.request_fingerprint
+        ):
+            raise ValueError("recovery command reference request fingerprint required")
+        if (
+            not isinstance(self.original_idempotency_key, str)
+            or not self.original_idempotency_key.strip()
+            or len(self.original_idempotency_key) > 256
+        ):
+            raise ValueError("original bounded idempotency key required")
+        if type(self.case_revision) is not int or self.case_revision < 1:
+            raise ValueError("positive recovery case revision required")
+
+
+@dataclass(frozen=True, slots=True)
 class ProductionPermitResult:
     permit_id: UUID
     operation_id: UUID
