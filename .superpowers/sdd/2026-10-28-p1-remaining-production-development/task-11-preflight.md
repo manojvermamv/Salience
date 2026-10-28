@@ -1,0 +1,12 @@
+# Task 11 preflight — exact-candidate development acceptance
+
+- Planning worker: `/root/p1_task11_preflight` (GPT-6 Luna Max, read-only).
+- Candidate implementation base is the clean `arch` commit containing this preflight and the completed Task 10 ledger; record its full commit and tree immediately before artifact regeneration.
+- Task 10 is integrated into `arch`; its temporary worktree and branch are removed.
+- The tracked development launcher v2 lock still identifies the earlier Task 9 source. Regenerate the development wheel/lock for the exact committed candidate before measuring final evidence. Preserve the historical v1 artifact byte-for-byte and keep the external production trust digest unprovisioned.
+- Use one unique Compose project name and only its `postgres` and `temporal` services. Export the discovered container addresses as `TEST_DATABASE_URL` and `TEST_TEMPORAL_TARGET`; upgrade the isolated database to `0051_p1_recovery_rollback_v2`; always remove that exact project with volumes and orphans on exit.
+- Never run `scripts/verify-phase-9.sh`: it uses the default Compose project and includes live-smoke and `-m live` paths. Run the named focused suites serially, then one full `-m 'not live'` suite. Do not repeat the long Task 9 four-file suite after the full regression.
+- Run compile and documentation checks separately. The acceptance checker is closed-world: schema-valid development evidence must contain exactly 22 external rows, remain `SYNTHETIC`, effects disabled, fixture publication budget zero, final audit `NOT RUN`, aggregate `NO_GO`, and all external rows `NOT RUN` or `HELD`. Checker exit 1 is the expected schema-valid `NO_GO`; exit 2 means invalid evidence.
+- Bind local results to the full candidate source commit/tree, generated wheel and lock digests, companion-lock agreement, canonical route manifest digests, exact migration head, exact commands/exits/counts/durations, and fixture/fake scope. Keep local verification distinct from external acceptance.
+- Avoid self-hashing: `candidate_source_commit` identifies the implementation source used to build artifacts; artifact/evidence commits are separate. Record an evidence commit only in a later append-only update if needed.
+- Independent review covers migration continuity/downgrades 0047–0051, route UUID/digests, one-use same-operation no-effect reissue, complete read-only rollback inventory, fixture guards, evidence scope/digests, and unchanged gates. It is not external target qualification.
