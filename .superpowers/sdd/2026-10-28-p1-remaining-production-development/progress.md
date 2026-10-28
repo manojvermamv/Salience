@@ -1,4 +1,6 @@
-# Planning ledger — P1 remaining production development
+# SDD ledger — plan: docs/superpowers/plans/2026-10-28-p1-remaining-production-development.md
+
+Planning and implementation ledger for P1 remaining production development.
 
 Plan: `docs/superpowers/plans/2026-10-28-p1-remaining-production-development.md`
 Planning baseline: branch `arch`, commit `0763702bbedda7ffc99c3b526a5d018340e63aae`; initial working tree clean.
@@ -42,6 +44,57 @@ The plan traces all 17 Slice 2 policy/revocation acceptance cases, all 7 routing
 - Validation: the first `docs/v4/test_checks.py` run exposed two current-index gaps (new Markdown paths and current spec hashes). The append-only wrapper digest addendum and live inventory refresh resolved them without changing the frozen initial audit or prior review verdicts. The final docs-only run passed: `docs/v4/test_checks.py` 25 tests; `docs/v4/check.py --self-test` and normal mode, each 75 requirements / 376 evidence files / 360 inventory files / 110 Markdown files / 4 HTML files, with 6 negative controls in self-test; all five `tests/scripts/*.sh` contracts; changed JSON parsing; and staged/unstaged `git diff --check`.
 - Cost through validation: one planning agent; zero delegated agents, application-code changes, application/migration tests, heavy tests, live/external requests, or provider/production access. Docs-only checks comprised 25 unit checks, 6 validator negative controls, 5 shell contracts, JSON parsing, and whitespace checks.
 - Current status: planning artifacts are complete in one local documentation commit; its SHA is reported in the handoff. No push or merge.
+
+## Execution resume — 2026-10-28
+
+- Resume HEAD: `dccb6f34dc121e2407c26d39ae3eeb7c3ea8b32d`; implementation baseline before Task 1 will be recorded separately.
+- Workspace ruling: `/home/admin/Salience` is the single normal checkout on the dedicated `arch` feature branch. The user previously required abandoned worktrees to be reconciled and development to continue on this branch; creating another linked worktree would contradict that direction. `main` remains unmerged.
+- Baseline ruling: the application baseline at `0763702bbedda7ffc99c3b526a5d018340e63aae` passed exact-head CI and the full non-live suite in the preceding goal. Commits through `dccb6f3` are documentation-only and passed the repository documentation checks. Do not repeat the heavy suite before Task 1; every implementation task runs its focused red/green checks and Task 11 runs the full exact-candidate suite.
+- Plan review: READY with no Critical findings. Two Important Task 9 clarifications and one Minor file-ownership clarification were corrected in `dccb6f3`: launcher payload pins exact head 0050 and verifier ABI v2; 0050 downgrade raises before schema or Alembic-version mutation; exact Task 9 test files are named.
+
+### Preflight shared-file and interface scan
+
+| Tasks | Producer / consumer relationship | Finding / ruling |
+|---|---|---|
+| 1 → 4 | Task 1 creates canonical route manifest and tuple evidence; Task 4 extends the same module with lease/action authority. | Clean; Task 4 must reuse the canonical hash and UUID route ID, not create another route identity. |
+| 1 → 5 | Task 5 authenticated worker startup consumes Task 1 manifest. | Clean; production startup stays fail-closed when manifest or authority is absent. |
+| 1 → 8 | Task 8 permit snapshot v2 consumes `route_tuple_sha256`. | Clean; historical snapshot v1 stays readable and new rows require v2 after 0049. |
+| 2 → 3 | 0047 is the parent of 0048. | Clean; one linear additive migration chain. |
+| 2 → 7 | Task 2 produces recovery work/events tables; Task 7 implements their repository and coordinator. | Clean; Task 7 reuses existing case transitions and does not add a second state machine. |
+| 2 → 8 | Task 8 consumes a one-use typed event from Task 2/7 through an FK. | Clean; command evidence is append-only and cannot authorize multiple permits. |
+| 2 → 9 | Task 9 inventories recovery work/events. | Clean; inventory is read-only and self-discovered. |
+| 3 → 6 | Task 3 creates immutable schedule source bindings; Task 6 implements the controller. | Clean; fixture schedule guards remain unchanged. |
+| 3 → 8 | 0048 is the parent of 0049. | Clean; no rewrite of earlier migrations. |
+| 3 → 9 | Task 9 inventories production schedule bindings. | Clean; missing or incomplete bindings deny rollback. |
+| 4 → 5 | Task 5 consumes route lease, action, slot, and readback contracts from Task 4. | Clean; Task 5 owns lifecycle wiring, Task 4 owns authority semantics. |
+| 4 → 6 | Task 6 consumes route authority for each schedule action. | Clean; the schedule adapter has no provider-effect authority. |
+| 4 → 9 | Task 9 consumes complete route readback. | Clean; unavailable/unknown authority denies prior-code restart. |
+| 5 → 9 | Task 9 evolves the same launcher/lock and consumes worker readback. | Resolved in `dccb6f3`: Task 9 must regenerate/finalize the authenticated payload for exact migration head 0050 and verifier ABI v2. |
+| 6 → 7 | Task 6 defines `ScheduleAlertSink`; Task 7's alert adapter implements it. | Clean; acknowledgment remains receipt-only and cannot clear holds. |
+| 6 → 9 | Task 9 inventories schedule bindings and Temporal registration/drain readback. | Clean; later-slot readback is mandatory before prior-route restart. |
+| 7 → 8 | Task 7 writes the typed no-effect command; Task 8 consumes it for same-operation generation advance. | Clean; operation, request fingerprint, and provider idempotency key remain unchanged. |
+| 7 → 9 | Task 9 inventories recovery events, liabilities, and unresolved work. | Clean; no recovery action mutates fixture holds. |
+| 8 → 9 | 0049 is the parent of 0050; Task 9 inventories permits, claims, and current pointers. | Clean; 0050 downgrade is an explicit fail-before-mutation operation, avoiding a false Alembic head. |
+| 10 → 11 | Task 10 creates the local package checker; Task 11 runs it against development evidence. | Clean; structural validation cannot create external PASS or release gates. |
+| 1–10 → 11 | Task 11 verifies and records the exact combined candidate. | Clean; any FAIL, NOT RUN, HELD, stale evidence, or candidate/environment mismatch keeps P2 blocked. |
+
+### Preflight task self-consistency scan
+
+| Task | Tests against implementation/files | Finding / ruling |
+|---|---|---|
+| 1 | Unit route hashing plus existing policy fixture builder; new module and dispatch snapshot fields. | Clean; optional tuple field reads legacy bindings while new manifests require it. |
+| 2 | Migration tests cover schema, append-only behavior, exact replay, and safe downgrade. | Clean; migration follows actual head 0046. |
+| 3 | Migration tests cover target/namespace identity, immutable binding, and safe downgrade. | Clean; migration follows 0047. |
+| 4 | Integration tests cover acquire/renew/CAS/drain/readback through deterministic fake. | Clean; provider-neutral protocol only. |
+| 5 | Launcher and worker tests cover authenticated v2 route keys while preserving fixture v1. | Clean; default/unconfigured production remains disabled. |
+| 6 | Twelve schedule acceptance tests exercise injected fake and existing cutover state machine. | Clean; no create/update/cadence-selection authority exists. |
+| 7 | Recovery tests cover source adoption, scoped reads, alerts, deadlines, concurrency, and no-effect command. | Clean; pre-admission work never constructs a remote client. |
+| 8 | Migration and dispatch tests cover snapshot v2 and one-use same-operation reissue. | Clean; generation 1 historical path remains readable. |
+| 9 | Exact named migration, launcher, routing/readback, and recovery test files cover inventory and ABI v2. | Clean after `dccb6f3`; downgrade must raise with schema and `alembic_version` unchanged at 0050. |
+| 10 | Twenty unit tests cover exactly 22 rows, digests, scope, freshness, rollback, and non-mutation. | Clean; CLI has no external client or gate mutation method. |
+| 11 | Focused, full non-live, docs, checker, evidence, and exact-candidate checks. | Clean; live/external procedures remain NOT RUN/HELD and cannot be inferred from local results. |
+
+- Preflight result: no unresolved contradiction blocks Task 1. Every implementation task uses red-first tests, commits once focused green, and receives an independent task review before the next task.
 
 ## Task 9 plan review clarification
 
