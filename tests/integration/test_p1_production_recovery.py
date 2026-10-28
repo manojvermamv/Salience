@@ -2199,3 +2199,534 @@ def test_recovery_event_validator_rejects_superseded_observation_binding():
                         policy_decision_id=decision_ids[1],
                         payload=event_payload,
                     )
+
+
+def test_rollback_v2_requires_complete_two_reason_source_inventory_before_exec():
+    module = import_module("salience.cycles.p1_recovery_rollback")
+    assert module.ROLLBACK_VERIFIER_ABI_V2 == "salience.p1-recovery-rollback-verifier.v2"
+    with _rollback_v2_valid_operation("task9_complete_inventory_") as (
+        database,
+        authority,
+        enrollment,
+        work,
+        route_authority,
+    ):
+        inventory = module.read_p1_recovery_rollback_inventory_v2(
+            database, workspace_id=authority["workspace_id"]
+        )
+        route_authority, temporal_readback = _rollback_v2_readbacks(
+            inventory.route_claims
+        )
+        verified = module.verify_p1_recovery_rollback_v2(
+            database,
+            workspace_id=authority["workspace_id"],
+            route_authority=route_authority,
+            temporal_readback=temporal_readback,
+        )
+        assert verified.digest == inventory.digest
+        assert verified.inventory["enrollments"]
+        assert any(
+            row["intent_id"] == str(enrollment["intent_id"])
+            for row in verified.inventory["enrollments"]
+        )
+        assert any(row["work_id"] == str(work.work_id) for row in verified.inventory["recovery_work"])
+        assert any(row["work_id"] == str(work.work_id) for row in verified.inventory["recovery_events"])
+        assert set(verified.reason_counts) == {
+            "expired_permit_receipt",
+            "published_during_cancel",
+        }
+        assert verified.reason_counts == {
+            "expired_permit_receipt": {"production_work": 0, "fixture_holds": 0},
+            "published_during_cancel": {"production_work": 0, "fixture_holds": 0},
+        }
+
+
+def test_rollback_v2_checks_zero_one_and_many_rows_for_each_reason():
+    module = import_module("salience.cycles.p1_recovery_rollback")
+    migration_tests = import_module("test_v4_migrations")
+    with _production_recovery_operation(
+        "task9_reason_counts_", task8_dispatch=True
+    ) as (database, fixture, _authority, _enrollment):
+        upgraded = migration_tests._migration(
+            database, "upgrade", "0051_p1_recovery_rollback_v2"
+        )
+        assert upgraded.returncode == 0, upgraded.stdout + upgraded.stderr
+        empty_workspace = uuid4()
+        with psycopg.connect(database) as connection:
+            empty = connection.execute(
+                "SELECT public.v4_p1_recovery_rollback_inventory_v2(%s)",
+                (empty_workspace,),
+            ).fetchone()[0]
+            assert empty["reason_counts"] == {
+                "expired_permit_receipt": {"production_work": 0, "fixture_holds": 0},
+                "published_during_cancel": {"production_work": 0, "fixture_holds": 0},
+            }
+
+            one = connection.execute(
+                "SELECT public.v4_p1_recovery_rollback_inventory_v2(%s)",
+                (fixture["workspace_id"],),
+            ).fetchone()[0]
+            assert one["reason_counts"]["expired_permit_receipt"] == {
+                "production_work": 0,
+                "fixture_holds": 1,
+            }
+            assert one["reason_counts"]["published_during_cancel"] == {
+                "production_work": 0,
+                "fixture_holds": 0,
+            }
+
+            connection.execute("SET session_replication_role=replica")
+            connection.execute(
+                """INSERT INTO v4_legacy_publication_recovery_holds(
+                          id,operation_id,workspace_id,goal_id,intent_id,cycle_id,
+                          context_id,job_id,publication_attempt_id,permit_id,owner_id,
+                          execution_deadline,permit_expires_at,request_fingerprint,
+                          receipt_fingerprint,liability_fingerprint,remote_id,remote_state,
+                          reason,state,liability_snapshot,liability_snapshot_version,
+                          liability_snapshot_v1,liability_fingerprint_v1)
+                   SELECT gen_random_uuid(),gen_random_uuid(),workspace_id,goal_id,
+                          intent_id,cycle_id,context_id,job_id,publication_attempt_id,
+                          permit_id,owner_id,execution_deadline,permit_expires_at,
+                          request_fingerprint,receipt_fingerprint,liability_fingerprint,
+                          remote_id,remote_state,'published_during_cancel',state,
+                          liability_snapshot,liability_snapshot_version,
+                          liability_snapshot_v1,liability_fingerprint_v1
+                   FROM v4_legacy_publication_recovery_holds
+                   WHERE id=%s""",
+                (fixture["fixture_hold_id"],),
+            )
+            one_published = connection.execute(
+                "SELECT public.v4_p1_recovery_rollback_inventory_v2(%s)",
+                (fixture["workspace_id"],),
+            ).fetchone()[0]
+            assert one_published["reason_counts"]["published_during_cancel"] == {
+                "production_work": 0,
+                "fixture_holds": 1,
+            }
+            connection.execute(
+                """INSERT INTO v4_legacy_publication_recovery_holds(
+                          id,operation_id,workspace_id,goal_id,intent_id,cycle_id,
+                          context_id,job_id,publication_attempt_id,permit_id,owner_id,
+                          execution_deadline,permit_expires_at,request_fingerprint,
+                          receipt_fingerprint,liability_fingerprint,remote_id,remote_state,
+                          reason,state,liability_snapshot,liability_snapshot_version,
+                          liability_snapshot_v1,liability_fingerprint_v1)
+                   SELECT gen_random_uuid(),gen_random_uuid(),workspace_id,goal_id,
+                          intent_id,cycle_id,context_id,job_id,publication_attempt_id,
+                          permit_id,owner_id,execution_deadline,permit_expires_at,
+                          request_fingerprint,receipt_fingerprint,liability_fingerprint,
+                          remote_id,remote_state,'expired_permit_receipt',state,
+                          liability_snapshot,liability_snapshot_version,
+                          liability_snapshot_v1,liability_fingerprint_v1
+                   FROM v4_legacy_publication_recovery_holds
+                   WHERE id=%s""",
+                (fixture["fixture_hold_id"],),
+            )
+            connection.execute(
+                """INSERT INTO v4_legacy_publication_recovery_holds(
+                          id,operation_id,workspace_id,goal_id,intent_id,cycle_id,
+                          context_id,job_id,publication_attempt_id,permit_id,owner_id,
+                          execution_deadline,permit_expires_at,request_fingerprint,
+                          receipt_fingerprint,liability_fingerprint,remote_id,remote_state,
+                          reason,state,liability_snapshot,liability_snapshot_version,
+                          liability_snapshot_v1,liability_fingerprint_v1)
+                   SELECT gen_random_uuid(),gen_random_uuid(),workspace_id,goal_id,
+                          intent_id,cycle_id,context_id,job_id,publication_attempt_id,
+                          permit_id,owner_id,execution_deadline,permit_expires_at,
+                          request_fingerprint,receipt_fingerprint,liability_fingerprint,
+                          remote_id,remote_state,'published_during_cancel',state,
+                          liability_snapshot,liability_snapshot_version,
+                          liability_snapshot_v1,liability_fingerprint_v1
+                   FROM v4_legacy_publication_recovery_holds
+                   WHERE id=%s""",
+                (fixture["fixture_hold_id"],),
+            )
+            connection.execute("SET session_replication_role=origin")
+            many = connection.execute(
+                "SELECT public.v4_p1_recovery_rollback_inventory_v2(%s)",
+                (fixture["workspace_id"],),
+            ).fetchone()[0]
+            assert many["reason_counts"]["expired_permit_receipt"] == {
+                "production_work": 0,
+                "fixture_holds": 2,
+            }
+            assert many["reason_counts"]["published_during_cancel"] == {
+                "production_work": 0,
+                "fixture_holds": 2,
+            }
+
+
+def test_rollback_v2_rejects_partial_inventory_and_omitted_rows():
+    module = import_module("salience.cycles.p1_recovery_rollback")
+    from copy import deepcopy
+
+    with _rollback_v2_valid_operation("task9_partial_inventory_") as (
+        database,
+        authority,
+        _enrollment,
+        _work,
+        _route_authority,
+    ):
+        inventory = module.read_p1_recovery_rollback_inventory_v2(
+            database, workspace_id=authority["workspace_id"]
+        )
+        partial = deepcopy(inventory.inventory)
+        partial["enrollments"].clear()
+        with pytest.raises(module.RecoveryRollbackVerificationError, match="partial"):
+            module.validate_recovery_rollback_inventory_v2(
+                partial, workspace_id=authority["workspace_id"]
+            )
+        omitted = deepcopy(inventory.inventory)
+        del omitted["reason_counts"]["published_during_cancel"]
+        with pytest.raises(module.RecoveryRollbackVerificationError, match="both hold reasons"):
+            module.validate_recovery_rollback_inventory_v2(
+                omitted, workspace_id=authority["workspace_id"]
+            )
+
+
+def test_rollback_v2_rejects_snapshot_or_liability_change():
+    module = import_module("salience.cycles.p1_recovery_rollback")
+    migration_tests = import_module("test_v4_migrations")
+    recovery = import_module("salience.cycles.production_recovery")
+    with _production_recovery_operation(
+        "task9_liability_change_", task8_dispatch=True
+    ) as (database, _fixture, authority, _enrollment):
+        repository = recovery.ProductionRecoveryWorkRepository(database)
+        repository.bind_production_publication_hold(
+            authority["operation_id"],
+            reason="expired_permit_receipt",
+            deadline=datetime.now(timezone.utc) + timedelta(days=1),
+            policy=_recovery_policy(recovery),
+        )
+        upgraded = migration_tests._migration(
+            database, "upgrade", "0051_p1_recovery_rollback_v2"
+        )
+        assert upgraded.returncode == 0, upgraded.stdout + upgraded.stderr
+        with psycopg.connect(database) as connection:
+            before = connection.execute(
+                "SELECT public.v4_p1_recovery_rollback_inventory_v2(%s)",
+                (authority["workspace_id"],),
+            ).fetchone()[0]
+            assert before["production_liabilities"]
+            connection.execute("SET session_replication_role=replica")
+            connection.execute(
+                """UPDATE v4_production_effect_permits
+                   SET request_snapshot=request_snapshot || '{\"changed\":true}'::jsonb
+                   WHERE operation_id=%s""",
+                (authority["operation_id"],),
+            )
+            connection.execute("SET session_replication_role=origin")
+            after = connection.execute(
+                "SELECT public.v4_p1_recovery_rollback_inventory_v2(%s)",
+                (authority["workspace_id"],),
+            ).fetchone()[0]
+        assert any(
+            blocker["kind"] == "production_liability_changed"
+            for blocker in after["blockers"]
+        )
+        assert after["blockers"] != before["blockers"]
+        with pytest.raises(
+            module.RecoveryRollbackVerificationError,
+            match="blockers|liability changed",
+        ):
+            module.read_p1_recovery_rollback_inventory_v2(
+                database, workspace_id=authority["workspace_id"]
+            )
+
+
+def test_rollback_v2_rejects_unknown_route_claim_and_unavailable_readback():
+    module = import_module("salience.cycles.p1_recovery_rollback")
+    with _rollback_v2_valid_operation("task9_unknown_route_") as (
+        database,
+        authority,
+        _enrollment,
+        _work,
+        _route_authority,
+    ):
+        inventory = module.read_p1_recovery_rollback_inventory_v2(
+            database, workspace_id=authority["workspace_id"]
+        )
+        route_authority, temporal_readback = _rollback_v2_readbacks(
+            inventory.route_claims
+        )
+        route_authority.unavailable = True
+        with pytest.raises(module.RecoveryRollbackVerificationError, match="route claim"):
+            module.verify_p1_recovery_rollback_v2(
+                database,
+                workspace_id=authority["workspace_id"],
+                route_authority=route_authority,
+                temporal_readback=temporal_readback,
+            )
+        route_authority.unavailable = False
+        temporal_readback.unavailable = True
+        with pytest.raises(module.RecoveryRollbackVerificationError, match="Temporal"):
+            module.verify_p1_recovery_rollback_v2(
+                database,
+                workspace_id=authority["workspace_id"],
+                route_authority=route_authority,
+                temporal_readback=temporal_readback,
+            )
+
+
+def test_rollback_v2_inventory_and_schedule_validation_are_read_only():
+    module = import_module("salience.cycles.p1_recovery_rollback")
+    with _rollback_v2_valid_operation("task9_read_only_inventory_") as (
+        database,
+        authority,
+        _enrollment,
+        _work,
+        _route_authority,
+    ):
+        with psycopg.connect(database) as connection:
+            connection.execute(
+                "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY"
+            )
+            schedule_id = connection.execute(
+                "SELECT inventory_id FROM v4_production_schedule_inventories ORDER BY inventory_id LIMIT 1"
+            ).fetchone()[0]
+            assert connection.execute(
+                "SELECT public.v4_validate_production_schedule_inventory_v1(%s)",
+                (schedule_id,),
+            ).fetchone()[0] == ""
+            inventory = connection.execute(
+                "SELECT public.v4_p1_recovery_rollback_inventory_v2(%s)",
+                (authority["workspace_id"],),
+            ).fetchone()[0]
+            assert inventory["complete"] is True
+            assert inventory["blockers"] == []
+            assert inventory["migration_head"] == "0051_p1_recovery_rollback_v2"
+
+            with pytest.raises(
+                psycopg.errors.RaiseException,
+                match="production schedule inventory does not exist",
+            ):
+                with connection.transaction():
+                    connection.execute(
+                        "SELECT public.v4_validate_production_schedule_inventory_v1(%s)",
+                        (uuid4(),),
+                    )
+            with pytest.raises(
+                psycopg.errors.ReadOnlySqlTransaction,
+                match="cannot execute SELECT FOR UPDATE",
+            ):
+                with connection.transaction():
+                    connection.execute(
+                        "SELECT public.v4_finalize_production_schedule_inventory_v1(%s)",
+                        (schedule_id,),
+                    )
+
+        read_inventory = module.read_p1_recovery_rollback_inventory_v2(
+            database, workspace_id=authority["workspace_id"]
+        )
+        assert read_inventory.inventory["workspace_id"] == str(
+            authority["workspace_id"]
+        )
+
+
+@contextmanager
+def _rollback_v2_operation(prefix):
+    migration_tests = import_module("test_v4_migrations")
+    with _production_recovery_operation(prefix, task8_dispatch=True) as (
+        database,
+        _fixture,
+        authority,
+        enrollment,
+    ):
+        upgraded = migration_tests._migration(
+            database, "upgrade", "0051_p1_recovery_rollback_v2"
+        )
+        assert upgraded.returncode == 0, upgraded.stdout + upgraded.stderr
+        yield database, authority, enrollment
+
+
+@contextmanager
+def _rollback_v2_valid_operation(prefix):
+    migration_tests = import_module("test_v4_migrations")
+    schedule_tests = import_module("test_p1_production_schedule_fencing")
+    with schedule_tests._production_enrollment_fixture(prefix) as (
+        database,
+        _control,
+        _binding,
+        _key,
+        _fixture_authority,
+        _fixture_route_authority,
+    ):
+        upgraded = migration_tests._migration(
+            database, "upgrade", "0050_p1_production_dispatch_reissue"
+        )
+        assert upgraded.returncode == 0, upgraded.stdout + upgraded.stderr
+        with psycopg.connect(database) as connection:
+            workspace_id, subject_id = migration_tests._seed_0044_workspace_subject(
+                connection
+            )
+            goal_id = uuid4()
+            intent_id = uuid4()
+            policy_id = migration_tests._seed_0044_policy(
+                connection, workspace_id, status="active"
+            )
+            grant_id = connection.execute(
+                """INSERT INTO permission_grants(
+                           workspace_id,principal_type,principal_id,scope,effect,
+                           constraints,expires_at)
+                   VALUES(%s,'identity',%s,'production:recovery','allow','{}',
+                          clock_timestamp()+interval '1 day') RETURNING id""",
+                (workspace_id, str(subject_id)),
+            ).fetchone()[0]
+            subject_revision = connection.execute(
+                "SELECT revision FROM identity_subjects WHERE id=%s",
+                (subject_id,),
+            ).fetchone()[0]
+            connection.execute(
+                "INSERT INTO v4_goals(id,workspace_id,state) VALUES(%s,%s,'active')",
+                (goal_id, workspace_id),
+            )
+            connection.execute(
+                """INSERT INTO v4_goal_revisions(goal_id,revision,payload)
+                   VALUES(%s,1,%s)""",
+                (goal_id, Jsonb({"schema_version": "GoalSpec.local.v1"})),
+            )
+            connection.execute(
+                """INSERT INTO v4_cycle_intents(
+                           id,goal_id,goal_revision,slot,fingerprint,due_at,expires_at)
+                   VALUES(%s,%s,1,%s,%s,clock_timestamp()-interval '1 minute',
+                          clock_timestamp()+interval '1 day')""",
+                (intent_id, goal_id, "task9-slot-" + str(intent_id), "a" * 64),
+            )
+            connection.execute(
+                """INSERT INTO v4_stop_scopes(
+                           workspace_id,scope_key,revision,stopped,changed_by,reason)
+                   VALUES(%s,'workspace',1,false,%s,'task9 active workspace'),
+                         (%s,%s,1,false,%s,'task9 active goal')""",
+                (
+                    workspace_id,
+                    subject_id,
+                    workspace_id,
+                    "goal:" + str(goal_id),
+                    subject_id,
+                ),
+            )
+            connection.execute(
+                """INSERT INTO v4_admissions(
+                           id,intent_id,eligibility_revision,disposition,reason,cycle_id)
+                   VALUES(%s,%s,1,'review_required','task9 enrolled review',NULL)""",
+                (uuid4(), intent_id),
+            )
+            authority = {
+                "workspace_id": workspace_id,
+                "subject_id": subject_id,
+                "subject_revision": subject_revision,
+                "policy_id": policy_id,
+                "grant_id": grant_id,
+                "cycle": {"goal_id": goal_id, "intent_id": intent_id},
+            }
+            enrollment = migration_tests._insert_0047_enrollment(
+                connection, authority, intent_id=intent_id
+            )
+        recovery = import_module("salience.cycles.production_recovery")
+        repository = recovery.ProductionRecoveryWorkRepository(database)
+        work = repository.bind_pre_admission_intent(
+            intent_id, policy=_recovery_policy(recovery)
+        )
+        with repository._connect() as connection:
+            with connection.transaction():
+                repository._append_event(
+                    connection,
+                    work,
+                    event_key="task9-inventory:" + str(work.work_id),
+                    event_kind="remote_read_observation",
+                    policy_decision_id=uuid4(),
+                    payload={
+                        "reason_code": "task9_inventory_fixture",
+                        "evidence_sha256": "a" * 64,
+                        "result_class": "not_found",
+                        "remote_state": "not_found",
+                        "intent_id": str(intent_id),
+                        "source_id": str(intent_id),
+                        "work_id": str(work.work_id),
+                    },
+                )
+        upgraded = migration_tests._migration(
+            database, "upgrade", "0051_p1_recovery_rollback_v2"
+        )
+        assert upgraded.returncode == 0, upgraded.stdout + upgraded.stderr
+        yield database, authority, enrollment, work, None
+
+
+def _rollback_v2_readbacks(route_claims):
+    from salience.cycles.production_routing import (
+        PRODUCTION_ACTIVITY_ALLOWLIST,
+        PRODUCTION_WORKFLOW_ALLOWLIST,
+        ROUTE_FENCE_AUTHORITY_VERSION,
+        RouteLease,
+        RouteSlotReadback,
+    )
+    from salience.workflows.worker import WorkerReadback
+
+    now = datetime.now(timezone.utc)
+    route_rows = {}
+    temporal_rows = {}
+    for claim in route_claims:
+        key = (claim.route_id, claim.slot_id)
+        lease = RouteLease(
+            route_id=claim.route_id,
+            slot_id=claim.slot_id,
+            owner_id=claim.owner_id,
+            fencing_epoch=claim.fencing_epoch,
+            expires_at=now + timedelta(minutes=5),
+            route_manifest_sha256=claim.route_manifest_sha256,
+            artifact_lock_sha256=claim.artifact_lock_sha256,
+        )
+        route_rows[key] = RouteSlotReadback(
+            route_id=claim.route_id,
+            slot_id=claim.slot_id,
+            available=True,
+            state="leased",
+            lease=lease,
+            fencing_epoch=claim.fencing_epoch,
+        )
+        temporal_rows[key] = WorkerReadback(
+            route_id=claim.route_id,
+            slot_id=claim.slot_id,
+            owner_id=claim.owner_id,
+            fencing_epoch=claim.fencing_epoch,
+            route_manifest_sha256=claim.route_manifest_sha256,
+            artifact_lock_sha256=claim.artifact_lock_sha256,
+            temporal_endpoint_id="temporal-production-1",
+            namespace="salience-production",
+            task_queue="salience-production-publication",
+            registered_workflow_types=frozenset(PRODUCTION_WORKFLOW_ALLOWLIST),
+            registered_activity_types=frozenset(PRODUCTION_ACTIVITY_ALLOWLIST),
+            poller_count=0,
+            active_task_count=0,
+            observed_at=now,
+            complete=True,
+        )
+
+    class RouteAuthority:
+        protocol_version = ROUTE_FENCE_AUTHORITY_VERSION
+
+        def __init__(self):
+            self.unavailable = False
+
+        def read_slot(self, route_id, slot_id):
+            if self.unavailable:
+                return RouteSlotReadback(
+                    route_id=route_id,
+                    slot_id=slot_id,
+                    available=False,
+                    state="unavailable",
+                    lease=None,
+                    fencing_epoch=None,
+                )
+            return route_rows[(route_id, slot_id)]
+
+    class TemporalReadback:
+        def __init__(self):
+            self.unavailable = False
+
+        def read_worker(self, route_id, slot_id):
+            if self.unavailable:
+                raise RuntimeError("Temporal observation unavailable")
+            return temporal_rows[(route_id, slot_id)]
+
+    return RouteAuthority(), TemporalReadback()

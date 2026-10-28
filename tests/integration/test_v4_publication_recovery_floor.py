@@ -1038,7 +1038,7 @@ def test_worker_floor_rejects_unknown_pre_floor_and_ambiguous_lineages_before_re
     "case,database_revision",
     (
         ("exact-0043", "0043_complete_publication_recovery_liabilities"),
-        ("qualified-descendant", "0047_qualified_descendant"),
+        ("qualified-descendant", "0052_qualified_descendant"),
     ),
     ids=("exact-0043", "qualified-descendant"),
 )
@@ -1049,10 +1049,10 @@ def test_worker_floor_accepts_0043_and_qualified_descendant(
     if case == "qualified-descendant":
         lock = _add_migration_source(
             lock,
-            "0047_qualified_descendant.py",
+            "0052_qualified_descendant.py",
             {
-                "revision": "0047_qualified_descendant",
-                "down_revision": "0046_production_policy_approval_id_immutability",
+                "revision": "0052_qualified_descendant",
+                "down_revision": "0051_p1_recovery_rollback_v2",
             },
         )
     register_worker, database_reads, registered = _compatibility_registration_probe(
@@ -1157,6 +1157,84 @@ def test_authenticated_migration_inventory_rejects_unexpected_state(
         assert parse_calls
     else:
         assert parse_calls == []
+
+
+def test_launcher_v2_lock_builder_binds_exact_final_migration_head_0051_and_verifier_abi(
+    tmp_path, monkeypatch
+):
+    from salience.cycles import publication_recovery_compatibility as compatibility
+    from salience.cycles.production_routing import (
+        PRODUCTION_ACTIVITY_ALLOWLIST,
+        PRODUCTION_WORKFLOW_ALLOWLIST,
+        ProductionRouteManifestV1,
+        RouteTupleV1,
+        canonical_route_manifest_bytes,
+        route_tuple_sha256,
+    )
+
+    assert compatibility.PRODUCTION_MIGRATION_HEAD == "0051_p1_recovery_rollback_v2"
+    assert (
+        compatibility.ROLLBACK_VERIFIER_ABI_V2
+        == "salience.p1-recovery-rollback-verifier.v2"
+    )
+    assert compatibility.PRODUCTION_LOCK_QUALIFICATION == "development-only"
+    builder = _lock_builder_module()
+    repository_root, application_commit, wheel_path, runtime_root = _synthetic_builder_inputs(
+        tmp_path
+    )
+    monkeypatch.setattr(builder, "REPOSITORY_ROOT", repository_root)
+    monkeypatch.setattr(
+        builder, "TARGET_RUNTIME_ROOT", "/usr/local/lib/python3.13/site-packages"
+    )
+    monkeypatch.setattr(builder, "TARGET_INTERPRETER_PATH", "/usr/local/bin/python")
+    route_tuple = RouteTupleV1(
+        deployment_id=UUID("00000000-0000-0000-0000-000000000951"),
+        environment_id=UUID("00000000-0000-0000-0000-000000000952"),
+        temporal_endpoint_id="development-temporal",
+        namespace="salience-development",
+        task_queue="salience-publication-development",
+        worker_kind="production-publication",
+        workflow_types=PRODUCTION_WORKFLOW_ALLOWLIST,
+        activity_types=PRODUCTION_ACTIVITY_ALLOWLIST,
+        producer_bindings=(),
+        compatibility_mode="exact-head",
+    )
+    route = ProductionRouteManifestV1(
+        route_id=UUID("00000000-0000-0000-0000-000000000953"),
+        route_tuple=route_tuple,
+        route_tuple_sha256=route_tuple_sha256(route_tuple),
+        worker_build_id="development-only-worker",
+        slots=(UUID("00000000-0000-0000-0000-000000000954"),),
+        artifact_sha256=_sha256(wheel_path.read_bytes()),
+        image_sha256="e" * 64,
+        artifact_lock_sha256="f" * 64,
+    )
+    route_bundle = {
+        "schema_version": "salience.p1-production-route-bundle.v1",
+        "routes": [json.loads(canonical_route_manifest_bytes(route))],
+    }
+    lock_path, digest_path, control_dir = _builder_output_paths(tmp_path)
+    lock = builder.build_publication_worker_launch_lock(
+        application_commit=application_commit,
+        wheel=wheel_path,
+        runtime_root=runtime_root,
+        lock_path=lock_path,
+        independent_digest_path=digest_path,
+        control_dir=control_dir,
+        interpreter_source=Path(sys.executable).resolve(strict=True),
+        route_bundle=route_bundle,
+    )
+
+    payload = lock.production
+    assert isinstance(payload, compatibility.ProductionWorkerLockPayloadV2)
+    assert payload.schema_version == "salience.p1-production-worker-launch.v2"
+    assert payload.migration_head == "0051_p1_recovery_rollback_v2"
+    assert payload.rollback_verifier_abi == "salience.p1-recovery-rollback-verifier.v2"
+    assert payload.qualification == "development-only"
+    assert not hasattr(payload, "external_trust_digest")
+    lock_bytes = lock_path.read_bytes()
+    assert digest_path.read_text(encoding="ascii") == _sha256(lock_bytes) + "\n"
+    assert lock.pin.application_commit == application_commit
 
 
 def test_authenticated_migration_inventory_accepts_exact_0043_inventory(tmp_path, monkeypatch):
@@ -1606,7 +1684,7 @@ def test_publication_worker_launch_lock_builder_accepts_valid_wheel_and_installe
     assert lock.pin.distribution_record_sha256 == _sha256(record_path.read_bytes())
 
 
-def test_publication_worker_launch_lock_builder_accepts_real_synthetic_0046_descendant(
+def test_publication_worker_launch_lock_builder_accepts_real_synthetic_0051_descendant(
     tmp_path, monkeypatch
 ):
     builder = _lock_builder_module()
@@ -1614,10 +1692,10 @@ def test_publication_worker_launch_lock_builder_accepts_real_synthetic_0046_desc
         tmp_path,
         extra_migrations=(
             (
-                "0047_qualified_builder_descendant.py",
+                "0052_qualified_builder_descendant.py",
                 {
-                    "revision": "0047_qualified_builder_descendant",
-                    "down_revision": "0046_production_policy_approval_id_immutability",
+                    "revision": "0052_qualified_builder_descendant",
+                    "down_revision": "0051_p1_recovery_rollback_v2",
                 },
             ),
         ),
@@ -1632,7 +1710,7 @@ def test_publication_worker_launch_lock_builder_accepts_real_synthetic_0046_desc
 
     assert lock.pin.application_commit == application_commit
     assert any(
-        item.path == "migrations/versions/0047_qualified_builder_descendant.py"
+        item.path == "migrations/versions/0052_qualified_builder_descendant.py"
         for item in lock.pin.source_files
     )
 
@@ -5805,7 +5883,7 @@ def test_authenticated_migration_graph_resolves_inside_site_packages(tmp_path, m
     revisions, heads = compatibility._migration_graph(verified_source_files)
 
     assert "0046_production_policy_approval_id_immutability" in revisions
-    assert heads == {"0046_production_policy_approval_id_immutability"}
+    assert heads == {"0051_p1_recovery_rollback_v2"}
     assert (
         runtime_root
         / "migrations/versions/0046_production_policy_approval_id_immutability.py"
@@ -8473,9 +8551,11 @@ def test_v2_launch_lock_authenticates_route_allowlists_and_exact_head(tmp_path, 
         image_sha256="e" * 64,
         artifact_lock_sha256="f" * 64,
     )
-    production = compatibility.ProductionWorkerLockPayloadV1(
-        schema_version="salience.p1-production-worker-launch.v1",
+    production = compatibility.ProductionWorkerLockPayloadV2(
+        schema_version="salience.p1-production-worker-launch.v2",
         migration_head=compatibility.PRODUCTION_MIGRATION_HEAD,
+        rollback_verifier_abi=compatibility.ROLLBACK_VERIFIER_ABI_V2,
+        qualification=compatibility.PRODUCTION_LOCK_QUALIFICATION,
         workflow_allowlist=PRODUCTION_WORKFLOW_ALLOWLIST,
         activity_allowlist=PRODUCTION_ACTIVITY_ALLOWLIST,
         route_bundle={
@@ -8498,11 +8578,21 @@ def test_v2_launch_lock_authenticates_route_allowlists_and_exact_head(tmp_path, 
     parsed = compatibility._launch_lock_from_json(json.loads(lock_bytes))
     assert isinstance(parsed, compatibility.PublicationWorkerLaunchLockV2)
 
+    assert compatibility.PRODUCTION_EXTERNAL_TRUST_DIGEST is None
+    with pytest.raises(PublicationWorkerCompatibilityError, match="trust digest is unprovisioned"):
+        compatibility.require_production_worker_compatibility(
+            "postgresql://primary/salience",
+            launch_lock=parsed,
+            observed_launch_lock_sha256=digest,
+            route_id=route.route_id,
+        )
+
     monkeypatch.setattr(
         compatibility,
         "_database_revision",
         lambda _url: compatibility.PRODUCTION_MIGRATION_HEAD,
     )
+    monkeypatch.setattr(compatibility, "PRODUCTION_EXTERNAL_TRUST_DIGEST", digest)
     selected = compatibility.require_production_worker_compatibility(
         "postgresql://primary/salience",
         launch_lock=parsed,
@@ -8518,9 +8608,11 @@ def test_v2_launch_lock_authenticates_route_allowlists_and_exact_head(tmp_path, 
         "_database_revision",
         lambda _url: database_reads.append(_url) or compatibility.PRODUCTION_MIGRATION_HEAD,
     )
-    wrong_head_payload = compatibility.ProductionWorkerLockPayloadV1(
+    wrong_head_payload = compatibility.ProductionWorkerLockPayloadV2(
         schema_version=production.schema_version,
         migration_head="0045_production_publication_route_fences",
+        rollback_verifier_abi=production.rollback_verifier_abi,
+        qualification=production.qualification,
         workflow_allowlist=production.workflow_allowlist,
         activity_allowlist=production.activity_allowlist,
         route_bundle=production.route_bundle,
@@ -8536,6 +8628,9 @@ def test_v2_launch_lock_authenticates_route_allowlists_and_exact_head(tmp_path, 
         production=wrong_head_payload,
     )
     wrong_head_digest = _sha256(compatibility._canonical_lock_bytes(wrong_head_lock))
+    monkeypatch.setattr(
+        compatibility, "PRODUCTION_EXTERNAL_TRUST_DIGEST", wrong_head_digest
+    )
     with pytest.raises(PublicationWorkerCompatibilityError, match="exact migration head"):
         compatibility.require_production_worker_compatibility(
             "postgresql://primary/salience",

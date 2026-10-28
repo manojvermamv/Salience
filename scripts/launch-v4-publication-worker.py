@@ -28,6 +28,10 @@ FIXED_INTERPRETER_PATH = "/usr/local/bin/python"
 FIXED_RUNTIME_ROOT = Path("/usr/local/lib/python3.13/site-packages")
 _HEX_40 = re.compile(r"^[0-9a-f]{40}$")
 _HEX_64 = re.compile(r"^[0-9a-f]{64}$")
+_PRODUCTION_MIGRATION_HEAD = "0051_p1_recovery_rollback_v2"
+_ROLLBACK_VERIFIER_ABI_V2 = "salience.p1-recovery-rollback-verifier.v2"
+_PRODUCTION_LOCK_QUALIFICATION = "development-only"
+_EXTERNAL_PRODUCTION_TRUST_DIGEST = None
 _REQUIRED_SOURCE_PATHS = {
     "scripts/launch-v4-publication-worker.py",
     "src/salience/cycles/publication_recovery_compatibility.py",
@@ -41,6 +45,11 @@ _REQUIRED_SOURCE_PATHS = {
     "src/salience/publication/repository.py",
     "migrations/versions/0042_legacy_publication_recovery_holds.py",
 }
+_REQUIRED_PRODUCTION_V2_SOURCE_PATHS = {
+    "migrations/versions/0051_p1_recovery_rollback_v2.py",
+    "src/salience/cycles/p1_recovery_rollback.py",
+    "src/salience/cycles/p1_recovery_rollback_fixtures.py",
+}
 _REQUIRED_IMPORT_MODULES = {
     "salience.cycles.publication_recovery_compatibility",
     "salience.cycles.legacy_runtime",
@@ -52,6 +61,10 @@ _REQUIRED_IMPORT_MODULES = {
     "salience.workflows.persistence",
     "salience.publication.repository",
 }
+_REQUIRED_PRODUCTION_V2_IMPORT_MODULES = {
+    "salience.cycles.p1_recovery_rollback",
+    "salience.cycles.p1_recovery_rollback_fixtures",
+}
 _PREFLIGHT = r"""
 import json, sys
 from uuid import UUID
@@ -59,11 +72,16 @@ payload = json.load(sys.stdin)
 sys.path.insert(0, payload["runtime_root"])
 from salience.cycles.publication_recovery_compatibility import (
     _launch_lock_from_json,
-    require_production_worker_compatibility,
     require_publication_worker_compatibility,
 )
 lock = _launch_lock_from_json(payload["launch_lock"])
-if lock.schema_version == "salience.publication-worker-launch-lock.v2":
+if (
+    payload["launch_lock"].get("schema_version")
+    == "salience.publication-worker-launch-lock.v2"
+):
+    from salience.cycles.publication_recovery_compatibility import (
+        require_production_worker_compatibility,
+    )
     require_production_worker_compatibility(
         payload["database_url"],
         launch_lock=lock,
@@ -251,21 +269,24 @@ def _verify_pin(lock: dict) -> Path:
         if not isinstance(production, dict) or set(production) != {
             "schema_version",
             "migration_head",
+            "rollback_verifier_abi",
+            "qualification",
             "workflow_allowlist",
             "activity_allowlist",
             "route_bundle",
         }:
-            raise LauncherError("production route launch payload is missing or open-ended")
+            raise LauncherError("production v2 launch payload is missing or open-ended")
         if (
             production.get("schema_version")
-            != "salience.p1-production-worker-launch.v1"
-            or not isinstance(production.get("migration_head"), str)
-            or not production["migration_head"]
+            != "salience.p1-production-worker-launch.v2"
+            or production.get("migration_head") != _PRODUCTION_MIGRATION_HEAD
+            or production.get("rollback_verifier_abi") != _ROLLBACK_VERIFIER_ABI_V2
+            or production.get("qualification") != _PRODUCTION_LOCK_QUALIFICATION
             or not isinstance(production.get("workflow_allowlist"), list)
             or not isinstance(production.get("activity_allowlist"), list)
             or not isinstance(production.get("route_bundle"), dict)
         ):
-            raise LauncherError("production route launch payload is malformed")
+            raise LauncherError("production v2 launch payload does not pin exact ABI and head")
     pin = lock.get("pin")
     if not isinstance(pin, dict) or pin.get("schema_version") != "salience.publication-worker-pin.v1":
         raise LauncherError("publication worker pin is missing or unsupported")
@@ -308,7 +329,12 @@ def _verify_pin(lock: dict) -> Path:
     if not isinstance(source_files, list):
         raise LauncherError("publication worker source manifest is invalid")
     source_names = [item.get("path") for item in source_files]
-    if len(source_names) != len(set(source_names)) or not _REQUIRED_SOURCE_PATHS <= set(source_names):
+    required_source_paths = set(_REQUIRED_SOURCE_PATHS)
+    required_import_modules = set(_REQUIRED_IMPORT_MODULES)
+    if lock.get("schema_version") == "salience.publication-worker-launch-lock.v2":
+        required_source_paths.update(_REQUIRED_PRODUCTION_V2_SOURCE_PATHS)
+        required_import_modules.update(_REQUIRED_PRODUCTION_V2_IMPORT_MODULES)
+    if len(source_names) != len(set(source_names)) or not required_source_paths <= set(source_names):
         raise LauncherError("publication worker source manifest is incomplete")
     source_manifest = (json.dumps(source_files, sort_keys=True, separators=(",", ":")) + "\n").encode()
     if hashlib.sha256(source_manifest).hexdigest() != pin.get("source_manifest_sha256"):
@@ -325,7 +351,7 @@ def _verify_pin(lock: dict) -> Path:
     record_paths = _verify_record(pin, root)
     imports = pin.get("runtime_imports")
     import_names = [item.get("module") for item in imports] if isinstance(imports, list) else []
-    if len(import_names) != len(set(import_names)) or not _REQUIRED_IMPORT_MODULES <= set(import_names):
+    if len(import_names) != len(set(import_names)) or not required_import_modules <= set(import_names):
         raise LauncherError("publication worker runtime import manifest is incomplete")
     for item in imports:
         module = item["module"]
@@ -421,6 +447,8 @@ def _environment_for_child(
         environment["SALIENCE_PUBLICATION_ROLLBACK_WORKSPACE_ID"] = workspace
         environment["SALIENCE_PUBLICATION_EXPIRED_HOLD_OPERATION_ID"] = expired
         environment["SALIENCE_PUBLICATION_CANCEL_HOLD_OPERATION_ID"] = cancelled
+    elif mode == "rollback-restart-v2":
+        environment["SALIENCE_PUBLICATION_ROLLBACK_WORKSPACE_ID"] = workspace
     if route_manifest is not None or lease_identity is not None:
         if route_manifest is None or lease_identity is None:
             raise LauncherError("route manifest and one-use lease identity must be complete")
@@ -526,11 +554,90 @@ def _parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _verified_rollback_digest(result: object, workspace_id: UUID) -> str:
+    if (
+        getattr(result, "workspace_id", None) != workspace_id
+        or getattr(result, "migration_head", None) != _PRODUCTION_MIGRATION_HEAD
+    ):
+        raise LauncherError("rollback verifier returned a mismatched workspace or migration head")
+    digest = getattr(result, "digest", None)
+    if not isinstance(digest, str) or not _HEX_64.fullmatch(digest):
+        raise LauncherError("rollback verifier returned an invalid complete-inventory digest")
+    return digest
+
+
+def _validate_rollback_v2_scope(
+    workspace_value: str | None,
+    expired_operation_value: str | None,
+    cancelled_operation_value: str | None,
+    route_values: tuple[str | None, str | None, str | None],
+) -> UUID:
+    if not workspace_value:
+        raise LauncherError("v2 rollback requires workspace scope")
+    if expired_operation_value or cancelled_operation_value:
+        raise LauncherError("v2 rollback accepts workspace scope only; caller hold IDs are rejected")
+    if any(route_values):
+        raise LauncherError("v2 rollback accepts workspace scope only; caller route IDs are rejected")
+    try:
+        return UUID(workspace_value)
+    except ValueError as error:
+        raise LauncherError("v2 rollback requires a valid workspace UUID") from error
+
+
+def _run_rollback_restart_v2(
+    workspace_id: UUID,
+    *,
+    verifier,
+    prior_code_process,
+) -> int:
+    """Fence a prior-code process with identical complete v2 readbacks."""
+    if not isinstance(workspace_id, UUID):
+        raise LauncherError("rollback v2 accepts one workspace UUID scope")
+    if not callable(verifier) or not callable(prior_code_process):
+        raise LauncherError("rollback v2 requires verifier and prior-code process callbacks")
+    try:
+        before = verifier(workspace_id)
+    except Exception as error:
+        raise LauncherError("pre-process rollback v2 readback failed closed") from error
+    before_digest = _verified_rollback_digest(before, workspace_id)
+
+    process_result = None
+    process_error: Exception | None = None
+    try:
+        process_result = prior_code_process()
+    except Exception as error:
+        process_error = error
+
+    try:
+        after = verifier(workspace_id)
+    except Exception as error:
+        raise LauncherError("post-process rollback v2 readback failed closed") from error
+    after_digest = _verified_rollback_digest(after, workspace_id)
+    if after_digest != before_digest:
+        raise LauncherError("complete rollback v2 inventory changed around prior-code process")
+    if process_error is not None:
+        raise LauncherError("prior-code process failed after rollback v2 post-readback") from process_error
+    if isinstance(process_result, subprocess.CompletedProcess):
+        if process_result.returncode != 0:
+            raise LauncherError(
+                f"prior-code process exited with status {process_result.returncode}"
+            )
+        return process_result.returncode
+    if isinstance(process_result, int):
+        if process_result != 0:
+            raise LauncherError(f"prior-code process exited with status {process_result}")
+        return process_result
+    return 0
+
+
 def main(
     argv: list[str] | None = None,
     *,
     route_authority=None,
+    temporal_readback=None,
     route_child_exec=None,
+    rollback_verifier=None,
+    prior_code_process=None,
 ) -> int:
     _require_isolated_startup()
     arguments = _parser().parse_args(argv)
@@ -542,15 +649,27 @@ def main(
     if arguments.mode == "current" and any(rollback_values):
         raise LauncherError("current mode rejects rollback verification arguments")
     if arguments.mode == "rollback-restart":
-        if not all(rollback_values):
-            raise LauncherError("rollback-restart requires workspace and both hold operation IDs")
+        if not arguments.workspace_id:
+            raise LauncherError("rollback-restart requires workspace scope")
+        if any((arguments.expired_hold_operation_id, arguments.cancel_hold_operation_id)) and not all(
+            (arguments.expired_hold_operation_id, arguments.cancel_hold_operation_id)
+        ):
+            raise LauncherError("v1 rollback-restart requires both hold operation IDs")
         try:
             UUID(arguments.workspace_id)
-            expired_id = UUID(arguments.expired_hold_operation_id)
-            cancel_id = UUID(arguments.cancel_hold_operation_id)
+            expired_id = (
+                UUID(arguments.expired_hold_operation_id)
+                if arguments.expired_hold_operation_id
+                else None
+            )
+            cancel_id = (
+                UUID(arguments.cancel_hold_operation_id)
+                if arguments.cancel_hold_operation_id
+                else None
+            )
         except ValueError as error:
             raise LauncherError("rollback-restart requires valid workspace and operation UUIDs") from error
-        if expired_id == cancel_id:
+        if expired_id is not None and expired_id == cancel_id:
             raise LauncherError("rollback-restart operation IDs must be distinct")
     else:
         expired_id = cancel_id = None
@@ -596,7 +715,27 @@ def main(
     if not _HEX_64.fullmatch(lock.get("launcher_sha256", "")):
         raise LauncherError("publication worker launcher hash is malformed")
     is_routed = lock["schema_version"] == "salience.publication-worker-launch-lock.v2"
-    if is_routed:
+    is_rollback_v2 = is_routed and arguments.mode == "rollback-restart"
+    if is_routed and not is_rollback_v2 and _EXTERNAL_PRODUCTION_TRUST_DIGEST is None:
+        raise LauncherError(
+            "external production trust digest is unprovisioned; production route startup remains disabled"
+        )
+    if not is_routed and arguments.mode == "rollback-restart" and not all(rollback_values):
+        raise LauncherError(
+            "v1 rollback-restart requires workspace and both hold operation IDs"
+        )
+    if is_rollback_v2:
+        rollback_workspace_id = _validate_rollback_v2_scope(
+            arguments.workspace_id,
+            arguments.expired_hold_operation_id,
+            arguments.cancel_hold_operation_id,
+            route_values,
+        )
+        if arguments.worker_kind != "legacy-fixture":
+            raise LauncherError("v2 rollback restart requires the authenticated prior-code worker")
+        if route_authority is None or temporal_readback is None:
+            raise LauncherError("v2 rollback requires live route and Temporal readback authorities")
+    if is_routed and not is_rollback_v2:
         if arguments.mode != "current" or arguments.worker_kind != "deployable":
             raise LauncherError("production route startup requires current deployable worker mode")
         if requested_route_id is None or requested_slot_id is None or requested_owner_id is None:
@@ -607,12 +746,13 @@ def main(
             )
         if route_child_exec is None:
             raise LauncherError("production route child handoff requires an injected executor")
-    elif any(route_values) or route_authority is not None or route_child_exec is not None:
+    elif not is_routed and (any(route_values) or route_authority is not None or route_child_exec is not None):
         raise LauncherError("v1 fixture launch rejects production route inputs")
     worker = lock["workers"][arguments.worker_kind]
     interpreter = lock["interpreter_path"]
+    child_mode = "rollback-restart-v2" if is_rollback_v2 else arguments.mode
     environment = _environment_for_child(
-        arguments.mode,
+        child_mode,
         arguments.workspace_id,
         str(expired_id) if expired_id else None,
         str(cancel_id) if cancel_id else None,
@@ -635,25 +775,26 @@ def main(
         ),
         "route_id": str(requested_route_id) if requested_route_id else None,
     }
-    try:
-        result = subprocess.run(
-            [interpreter, "-I", "-B", "-S", "-c", _PREFLIGHT],
-            cwd=runtime_root,
-            env=environment,
-            input=json.dumps(payload, sort_keys=True, separators=(",", ":")),
-            text=True,
-            capture_output=True,
-            timeout=15,
-            check=False,
-        )
-    except (OSError, subprocess.TimeoutExpired) as error:
-        raise LauncherError("publication worker compatibility preflight did not complete") from error
-    if result.returncode != 0:
-        detail = result.stderr.strip() or "publication worker compatibility preflight failed"
-        raise LauncherError(detail[-4000:])
+    if not is_rollback_v2:
+        try:
+            result = subprocess.run(
+                [interpreter, "-I", "-B", "-S", "-c", _PREFLIGHT],
+                cwd=runtime_root,
+                env=environment,
+                input=json.dumps(payload, sort_keys=True, separators=(",", ":")),
+                text=True,
+                capture_output=True,
+                timeout=15,
+                check=False,
+            )
+        except (OSError, subprocess.TimeoutExpired) as error:
+            raise LauncherError("publication worker compatibility preflight did not complete") from error
+        if result.returncode != 0:
+            detail = result.stderr.strip() or "publication worker compatibility preflight failed"
+            raise LauncherError(detail[-4000:])
 
     route = lease = route_manifest_payload = lease_identity_payload = None
-    if is_routed:
+    if is_routed and not is_rollback_v2:
         route, lease, route_manifest_payload, lease_identity_payload = (
             _claim_authenticated_route(
                 lock,
@@ -673,6 +814,53 @@ def main(
             lock_digest,
             route_manifest=route_manifest_payload,
             lease_identity=lease_identity_payload,
+        )
+
+    if is_rollback_v2:
+        if rollback_verifier is None:
+            sys.path.insert(0, str(runtime_root))
+            try:
+                from salience.cycles.publication_recovery_compatibility import (
+                    _launch_lock_from_json,
+                    require_production_rollback_compatibility,
+                )
+
+                typed_lock = _launch_lock_from_json(lock)
+                rollback_verifier = lambda workspace: require_production_rollback_compatibility(
+                    database_url,
+                    launch_lock=typed_lock,
+                    observed_launch_lock_sha256=lock_digest,
+                    workspace_id=workspace,
+                    route_authority=route_authority,
+                    temporal_readback=temporal_readback,
+                )
+            except Exception as error:
+                raise LauncherError("v2 rollback verifier is unavailable") from error
+        environment["DATABASE_URL"] = database_url
+        os.chdir(runtime_root)
+        command = [
+            interpreter,
+            "-I",
+            "-B",
+            "-S",
+            "-c",
+            _WORKER_BOOTSTRAP,
+            str(runtime_root),
+            worker["module"],
+            *worker["argv"],
+        ]
+        if prior_code_process is None:
+            prior_code_process = lambda: subprocess.run(
+                command,
+                env=environment,
+                cwd=runtime_root,
+                check=False,
+                timeout=None,
+            )
+        return _run_rollback_restart_v2(
+            rollback_workspace_id,
+            verifier=rollback_verifier,
+            prior_code_process=prior_code_process,
         )
 
     environment["DATABASE_URL"] = database_url

@@ -29,6 +29,7 @@ _REVISION_0043 = "0043_complete_publication_recovery_liabilities"
 _REVISION_0044 = "0044_production_policy_revocation"
 _REVISION_0045 = "0045_production_policy_approval_guard_repair"
 _REVISION_0046 = "0046_production_policy_approval_id_immutability"
+_REVISION_0050 = "0050_p1_production_dispatch_reissue"
 _HOLD_TABLE = "public.v4_legacy_publication_recovery_holds"
 _V1_KEYS = (
     "dispatch",
@@ -1448,6 +1449,58 @@ async def test_0043_insert_guard_rejects_invalid_v1_projection(
         _drop_migration_database(source, name)
 
 
+def test_0051_downgrade_raises_without_schema_or_alembic_version_change():
+    migration = _MIGRATION_ROOT / "migrations/versions/0051_p1_recovery_rollback_v2.py"
+    assert migration.is_file(), "0051 migration has not been added"
+
+    source = os.environ["TEST_DATABASE_URL"]
+    name, database, _before, _fixture, _authority = _prepare_0047_0046_database(
+        "task9_downgrade_"
+    )
+    try:
+        upgraded = _migration(database, "upgrade", "0051_p1_recovery_rollback_v2")
+        assert upgraded.returncode == 0, upgraded.stdout + upgraded.stderr
+
+        def schema_fingerprint():
+            database_name = database.rsplit("/", 1)[-1]
+            dumped = subprocess.run(
+                [
+                    "docker", "compose", "exec", "-T", "-e", "PGPASSWORD=salience",
+                    "postgres", "pg_dump", "--schema-only", "--no-owner",
+                    "--no-privileges",
+                    "--restrict-key=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                    "-h", "127.0.0.1", "-U", "salience",
+                    database_name,
+                ],
+                cwd=_MIGRATION_ROOT,
+                check=True,
+                capture_output=True,
+                text=False,
+                timeout=60,
+            )
+            return hashlib.sha256(dumped.stdout).hexdigest()
+
+        with psycopg.connect(database) as connection:
+            version_before = connection.execute(
+                "SELECT version_num FROM alembic_version"
+            ).fetchone()[0]
+        assert version_before == "0051_p1_recovery_rollback_v2"
+        fingerprint_before = schema_fingerprint()
+
+        downgraded = _migration(database, "downgrade", "0050_p1_production_dispatch_reissue")
+        assert downgraded.returncode != 0
+        assert "irreversible" in (downgraded.stdout + downgraded.stderr).casefold()
+
+        with psycopg.connect(database) as connection:
+            version_after = connection.execute(
+                "SELECT version_num FROM alembic_version"
+            ).fetchone()[0]
+        assert version_after == version_before == "0051_p1_recovery_rollback_v2"
+        assert schema_fingerprint() == fingerprint_before
+    finally:
+        _drop_migration_database(source, name)
+
+
 @pytest.mark.asyncio
 async def test_0043_downgrade_refuses_populated_v1_without_mutation(
     monkeypatch, tmp_path
@@ -1626,15 +1679,15 @@ def test_clean_upgrade_empty_rollback_and_populated_preservation():
                     )
                 )
 
-            assert migrate("upgrade", "head").returncode == 0
+            assert migrate("upgrade", _REVISION_0050).returncode == 0
             assert migrate("downgrade", "0030_v4_schedule_cutover").returncode == 0
-            assert migrate("upgrade", "head").returncode == 0
+            assert migrate("upgrade", _REVISION_0050).returncode == 0
             assert migrate("downgrade", "0029_goal_create_receipts").returncode == 0
-            assert migrate("upgrade", "head").returncode == 0
+            assert migrate("upgrade", _REVISION_0050).returncode == 0
             assert migrate("downgrade", "0012_publication_profile_scope").returncode == 0
-            assert migrate("upgrade", "head").returncode == 0
+            assert migrate("upgrade", _REVISION_0050).returncode == 0
             assert migrate("downgrade", "0028_fixture_adapter_receipts").returncode == 0
-            assert migrate("upgrade", "head").returncode == 0
+            assert migrate("upgrade", _REVISION_0050).returncode == 0
             assert migrate("downgrade", "0028_fixture_adapter_receipts").returncode == 0
             workspace = uuid4()
             with psycopg.connect(database) as connection:
@@ -1700,7 +1753,7 @@ def test_clean_upgrade_empty_rollback_and_populated_preservation():
             with psycopg.connect(database) as connection:
                 assert connection.execute("SELECT count(*) FROM v4_cycle_events WHERE kind='fixture_adapter_accepted'").fetchone()[0] == 1
                 assert connection.execute("SELECT version_num FROM alembic_version").fetchone()[0] == expected_revision
-            assert migrate("upgrade", "head").returncode == 0
+            assert migrate("upgrade", _REVISION_0050).returncode == 0
             with psycopg.connect(database) as connection:
                 foreign_workspace, foreign_goal = uuid4(), uuid4()
                 connection.execute("INSERT INTO workspaces (id,slug,display_name) VALUES (%s,%s,'foreign receipt fixture')", (foreign_workspace,str(foreign_workspace)))
@@ -2465,7 +2518,7 @@ def test_0045_repairs_stale_approval_guard_without_weakening_v1_binding():
                 ),
             )
 
-        upgraded = _migration(database, "upgrade", "head")
+        upgraded = _migration(database, "upgrade", _REVISION_0046)
         assert upgraded.returncode == 0, upgraded.stdout + upgraded.stderr
 
         with psycopg.connect(database) as connection:
@@ -2648,7 +2701,7 @@ def test_0046_freezes_decided_tagged_approval_identity_from_stamped_0045():
                 (workspace_id, policy_id),
             ).fetchone()[0]
 
-        upgraded_head = _migration(database, "upgrade", "head")
+        upgraded_head = _migration(database, "upgrade", _REVISION_0046)
         assert upgraded_head.returncode == 0, upgraded_head.stdout + upgraded_head.stderr
         with psycopg.connect(database) as connection:
             assert connection.execute(

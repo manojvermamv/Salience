@@ -35,8 +35,8 @@ _DRIFTED_ARTIFACT_LOCK = "c" * 64
 
 
 class _Clock:
-    def __init__(self) -> None:
-        self.current = datetime(2026, 10, 28, 12, 0, tzinfo=timezone.utc)
+    def __init__(self, start: datetime | None = None) -> None:
+        self.current = start or datetime.now(timezone.utc)
 
     def __call__(self) -> datetime:
         return self.current
@@ -501,8 +501,10 @@ async def test_route_preflight_denies_before_temporal_connect(monkeypatch, tmp_p
     lock = {
         "schema_version": "salience.publication-worker-launch-lock.v2",
         "production": {
-            "schema_version": "salience.p1-production-worker-launch.v1",
+            "schema_version": "salience.p1-production-worker-launch.v2",
             "migration_head": "0048_p1_production_schedule_bindings",
+            "rollback_verifier_abi": "salience.p1-recovery-rollback-verifier.v2",
+            "qualification": "development-only",
             "workflow_allowlist": list(route.route_tuple.workflow_types),
             "activity_allowlist": list(route.route_tuple.activity_types),
             "route_bundle": {
@@ -931,8 +933,10 @@ def test_v2_external_launcher_claims_and_hands_off_route_lease(
             "legacy-fixture": {"module": "salience.cycles.legacy_runtime", "argv": []},
         },
         "production": {
-            "schema_version": "salience.p1-production-worker-launch.v1",
-            "migration_head": "0048_p1_production_schedule_bindings",
+            "schema_version": "salience.p1-production-worker-launch.v2",
+            "migration_head": "0051_p1_recovery_rollback_v2",
+            "rollback_verifier_abi": "salience.p1-recovery-rollback-verifier.v2",
+            "qualification": "development-only",
             "workflow_allowlist": list(route.route_tuple.workflow_types),
             "activity_allowlist": list(route.route_tuple.activity_types),
             "route_bundle": {
@@ -946,6 +950,7 @@ def test_v2_external_launcher_claims_and_hands_off_route_lease(
     digest = __import__("hashlib").sha256(lock_bytes).hexdigest()
     digest_path.write_text(digest + "\n", encoding="ascii")
     monkeypatch.setattr(launcher, "_require_isolated_startup", lambda: None)
+    monkeypatch.setattr(launcher, "_EXTERNAL_PRODUCTION_TRUST_DIGEST", digest)
     monkeypatch.setattr(launcher, "CONTROL_LOCK_PATH", lock_path)
     monkeypatch.setattr(launcher, "CONTROL_LOCK_DIGEST_PATH", digest_path)
     monkeypatch.setattr(launcher, "_verify_pin", lambda _lock: tmp_path)
@@ -1112,3 +1117,156 @@ def test_restart_preserves_workflow_cycle_and_operation_identity(monkeypatch):
     assert restarted_request.publication_binding.workflow_id == publication.workflow_id
     assert restarted_request.publication_binding.workflow_run_id == publication.workflow_run_id
     assert restarted_request.route.fencing_epoch == second_lease.fencing_epoch
+
+
+def test_launcher_v2_rejects_caller_supplied_hold_lists(tmp_path, monkeypatch):
+    from importlib.util import module_from_spec, spec_from_file_location
+
+    source = Path(__file__).resolve().parents[2] / "scripts/launch-v4-publication-worker.py"
+    spec = spec_from_file_location("salience_launcher_v2_reject_hold_ids", source)
+    launcher = module_from_spec(spec)
+    spec.loader.exec_module(launcher)
+    _configure_v2_rollback_launcher_main(launcher, tmp_path, monkeypatch)
+    # The options remain available to the immutable v1 fixture launcher, while
+    # v2 workspace scope rejects them before verifier or prior-code callbacks.
+    option_strings = {
+        option for action in launcher._parser()._actions for option in action.option_strings
+    }
+    assert "--expired-hold-operation-id" in option_strings
+    assert "--cancel-hold-operation-id" in option_strings
+    workspace_id = UUID("00000000-0000-0000-0000-000000000901")
+    verifier_calls = []
+    process_calls = []
+    with pytest.raises(launcher.LauncherError, match="caller hold IDs"):
+        launcher._validate_rollback_v2_scope(
+            str(workspace_id),
+            "00000000-0000-0000-0000-000000000902",
+            "00000000-0000-0000-0000-000000000903",
+            (None, None, None),
+        )
+    assert verifier_calls == []
+    assert process_calls == []
+
+    with pytest.raises(launcher.LauncherError, match="caller hold IDs"):
+        launcher.main(
+            [
+                "--mode",
+                "rollback-restart",
+                "--worker-kind",
+                "legacy-fixture",
+                "--workspace-id",
+                str(workspace_id),
+                "--expired-hold-operation-id",
+                "00000000-0000-0000-0000-000000000902",
+                "--cancel-hold-operation-id",
+                "00000000-0000-0000-0000-000000000903",
+            ],
+            route_authority=object(),
+            temporal_readback=object(),
+            rollback_verifier=lambda _scope: verifier_calls.append(True),
+            prior_code_process=lambda: process_calls.append(True),
+        )
+    assert verifier_calls == []
+    assert process_calls == []
+
+
+def _configure_v2_rollback_launcher_main(launcher, tmp_path, monkeypatch):
+    import hashlib
+    import json
+
+    control = tmp_path / "control-v2"
+    control.mkdir()
+    lock_path = control / "publication-worker-launch-lock.json"
+    digest_path = control / "publication-worker-launch-lock.sha256"
+    lock = {
+        "schema_version": "salience.publication-worker-launch-lock.v2",
+        "launcher_sha256": "a" * 64,
+        "interpreter_path": "synthetic-python",
+        "interpreter_sha256": "b" * 64,
+        "runtime_root": str(tmp_path),
+        "workers": {
+            "deployable": {"module": "salience.workflows.worker", "argv": []},
+            "legacy-fixture": {"module": "salience.cycles.legacy_runtime", "argv": []},
+        },
+        "production": {
+            "schema_version": "salience.p1-production-worker-launch.v2",
+            "migration_head": "0051_p1_recovery_rollback_v2",
+            "rollback_verifier_abi": "salience.p1-recovery-rollback-verifier.v2",
+            "qualification": "development-only",
+            "workflow_allowlist": [],
+            "activity_allowlist": [],
+            "route_bundle": {},
+        },
+    }
+    raw = (json.dumps(lock, sort_keys=True, separators=(",", ":")) + "\n").encode()
+    digest = hashlib.sha256(raw).hexdigest()
+    lock_path.write_bytes(raw)
+    digest_path.write_text(digest + "\n", encoding="ascii")
+    monkeypatch.setattr(launcher, "_require_isolated_startup", lambda: None)
+    monkeypatch.setattr(launcher, "CONTROL_LOCK_PATH", lock_path)
+    monkeypatch.setattr(launcher, "CONTROL_LOCK_DIGEST_PATH", digest_path)
+    monkeypatch.setattr(launcher, "_verify_pin", lambda _lock: tmp_path)
+    monkeypatch.setenv("DATABASE_URL", "postgresql://primary/salience")
+    monkeypatch.setenv("TEST_DATABASE_URL", "postgresql://primary/salience")
+    monkeypatch.chdir(tmp_path)
+    return digest
+
+
+def test_launcher_v2_runs_pre_and_post_readback_before_prior_code(tmp_path, monkeypatch):
+    from importlib.util import module_from_spec, spec_from_file_location
+
+    source = Path(__file__).resolve().parents[2] / "scripts/launch-v4-publication-worker.py"
+    spec = spec_from_file_location("salience_launcher_v2_pre_post", source)
+    launcher = module_from_spec(spec)
+    spec.loader.exec_module(launcher)
+    _configure_v2_rollback_launcher_main(launcher, tmp_path, monkeypatch)
+    workspace_id = UUID("00000000-0000-0000-0000-000000000904")
+    digest = "d" * 64
+    calls = []
+
+    def verifier(scope):
+        calls.append(("verify", scope))
+        return SimpleNamespace(
+            workspace_id=scope,
+            migration_head="0051_p1_recovery_rollback_v2",
+            digest=digest,
+        )
+
+    def prior_code():
+        calls.append(("prior", None))
+        return 0
+
+    result = launcher.main(
+        [
+            "--mode",
+            "rollback-restart",
+            "--worker-kind",
+            "legacy-fixture",
+            "--workspace-id",
+            str(workspace_id),
+        ],
+        route_authority=object(),
+        temporal_readback=object(),
+        rollback_verifier=verifier,
+        prior_code_process=prior_code,
+    )
+    assert result == 0
+    assert calls == [
+        ("verify", workspace_id),
+        ("prior", None),
+        ("verify", workspace_id),
+    ]
+
+    changed = iter((digest, "e" * 64))
+
+    def changed_verifier(scope):
+        return SimpleNamespace(
+            workspace_id=scope,
+            migration_head="0051_p1_recovery_rollback_v2",
+            digest=next(changed),
+        )
+
+    with pytest.raises(launcher.LauncherError, match="inventory changed"):
+        launcher._run_rollback_restart_v2(
+            workspace_id, verifier=changed_verifier, prior_code_process=lambda: 0
+        )

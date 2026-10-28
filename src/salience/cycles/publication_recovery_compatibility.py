@@ -19,13 +19,25 @@ from pathlib import Path
 import re
 import stat
 import sys
-from typing import Literal, Mapping
+from typing import TYPE_CHECKING, Literal, Mapping
 from uuid import UUID
 
 import psycopg
 
+from salience.cycles.p1_recovery_rollback import (
+    ROLLBACK_VERIFIER_ABI_V2,
+    RecoveryRollbackInventoryV2,
+    verify_p1_recovery_rollback_v2,
+)
 
-PublicationWorkerStartMode = Literal["current", "rollback-restart"]
+if TYPE_CHECKING:
+    from salience.cycles.production_routing import RouteLeaseAuthority
+    from salience.workflows.worker import TemporalWorkerReadback
+
+
+PublicationWorkerStartMode = Literal[
+    "current", "rollback-restart", "rollback-restart-v2"
+]
 PublicationWorkerKind = Literal["deployable", "legacy-fixture"]
 
 ELIGIBLE_PUBLICATION_WORKER_ANCHOR = "69d7ab5da02cc9b8013f17b3e9aed3f7edb758a6"
@@ -66,6 +78,13 @@ _REQUIRED_SOURCE_PATHS = frozenset(
         "migrations/versions/0043_complete_publication_recovery_liabilities.py",
     }
 )
+_REQUIRED_PRODUCTION_V2_SOURCE_PATHS = frozenset(
+    {
+        "migrations/versions/0051_p1_recovery_rollback_v2.py",
+        "src/salience/cycles/p1_recovery_rollback.py",
+        "src/salience/cycles/p1_recovery_rollback_fixtures.py",
+    }
+)
 _REQUIRED_MIGRATION_SUPPORT_PATHS = frozenset(
     {
         "alembic.ini",
@@ -88,6 +107,12 @@ _REQUIRED_IMPORT_MODULES = frozenset(
         "salience.workflows.publication",
         "salience.workflows.persistence",
         "salience.publication.repository",
+    }
+)
+_REQUIRED_PRODUCTION_V2_IMPORT_MODULES = frozenset(
+    {
+        "salience.cycles.p1_recovery_rollback",
+        "salience.cycles.p1_recovery_rollback_fixtures",
     }
 )
 _RECOVERY_REASON_ORDER = ("expired_permit_receipt", "published_during_cancel")
@@ -155,6 +180,17 @@ class ProductionWorkerLockPayloadV1:
 
 
 @dataclass(frozen=True)
+class ProductionWorkerLockPayloadV2:
+    schema_version: Literal["salience.p1-production-worker-launch.v2"]
+    migration_head: str
+    rollback_verifier_abi: str
+    qualification: Literal["development-only"]
+    workflow_allowlist: tuple[str, ...]
+    activity_allowlist: tuple[str, ...]
+    route_bundle: Mapping[str, object]
+
+
+@dataclass(frozen=True)
 class PublicationWorkerLaunchLockV2:
     """Authenticated production route candidate over the unchanged v1 pin."""
 
@@ -165,12 +201,14 @@ class PublicationWorkerLaunchLockV2:
     runtime_root: str
     workers: Mapping[PublicationWorkerKind, PublicationWorkerEntrypoint]
     pin: PublicationWorkerPin
-    production: ProductionWorkerLockPayloadV1
+    production: ProductionWorkerLockPayloadV1 | ProductionWorkerLockPayloadV2
 
 
 PublicationWorkerLaunchLockAny = PublicationWorkerLaunchLock | PublicationWorkerLaunchLockV2
 
-PRODUCTION_MIGRATION_HEAD = "0048_p1_production_schedule_bindings"
+PRODUCTION_MIGRATION_HEAD = "0051_p1_recovery_rollback_v2"
+PRODUCTION_LOCK_QUALIFICATION = "development-only"
+PRODUCTION_EXTERNAL_TRUST_DIGEST = None
 
 
 def _canonical_json(value: object) -> bytes:
@@ -426,7 +464,7 @@ def _validate_lock_and_pin(
     ):
         raise PublicationWorkerCompatibilityError("publication worker launch-lock version is malformed")
     if is_production_v2 and not isinstance(
-        launch_lock.production, ProductionWorkerLockPayloadV1
+        launch_lock.production, ProductionWorkerLockPayloadV2
     ):
         raise PublicationWorkerCompatibilityError("production launch payload is malformed")
     lock_digest = hashlib.sha256(_canonical_lock_bytes(launch_lock)).hexdigest()
@@ -476,10 +514,15 @@ def _validate_lock_and_pin(
         raise PublicationWorkerCompatibilityError("publication worker runtime root is not a directory")
 
     source_paths = [item.path for item in pin.source_files]
+    required_source_paths = set(_REQUIRED_SOURCE_PATHS)
+    required_import_modules = set(_REQUIRED_IMPORT_MODULES)
+    if is_production_v2:
+        required_source_paths.update(_REQUIRED_PRODUCTION_V2_SOURCE_PATHS)
+        required_import_modules.update(_REQUIRED_PRODUCTION_V2_IMPORT_MODULES)
     if (
         any(not isinstance(path, str) for path in source_paths)
         or len(source_paths) != len(set(source_paths))
-        or not _REQUIRED_SOURCE_PATHS <= set(source_paths)
+        or not required_source_paths <= set(source_paths)
     ):
         raise PublicationWorkerCompatibilityError("publication worker source manifest is incomplete")
     if not _HEX_64.fullmatch(pin.source_manifest_sha256):
@@ -498,7 +541,7 @@ def _validate_lock_and_pin(
         verified_source_files[source_pin.path] = content
 
     import_modules = [item.module for item in pin.runtime_imports]
-    if len(import_modules) != len(set(import_modules)) or not _REQUIRED_IMPORT_MODULES <= set(import_modules):
+    if len(import_modules) != len(set(import_modules)) or not required_import_modules <= set(import_modules):
         raise PublicationWorkerCompatibilityError("publication worker runtime import manifest is incomplete")
     recorded = _validate_record(launch_lock, runtime_root)
     for import_pin in pin.runtime_imports:
@@ -543,9 +586,21 @@ def _production_routes_from_lock(
     )
 
     production = launch_lock.production
-    if production.schema_version != "salience.p1-production-worker-launch.v1":
+    if not isinstance(production, ProductionWorkerLockPayloadV2):
+        raise PublicationWorkerCompatibilityError(
+            "production route launch requires the exact v2 verifier payload"
+        )
+    if production.schema_version != "salience.p1-production-worker-launch.v2":
         raise PublicationWorkerCompatibilityError(
             "production route launch payload schema is unsupported"
+        )
+    if production.rollback_verifier_abi != ROLLBACK_VERIFIER_ABI_V2:
+        raise PublicationWorkerCompatibilityError(
+            "production route launch payload does not pin rollback verifier ABI v2"
+        )
+    if production.qualification != PRODUCTION_LOCK_QUALIFICATION:
+        raise PublicationWorkerCompatibilityError(
+            "production route candidate is not explicitly development-only"
         )
     if production.migration_head != PRODUCTION_MIGRATION_HEAD:
         raise PublicationWorkerCompatibilityError(
@@ -598,9 +653,11 @@ def _validate_production_candidate(
     if not {
         "src/salience/cycles/production_routing.py",
         "src/salience/cycles/production_dispatch.py",
+        *_REQUIRED_PRODUCTION_V2_SOURCE_PATHS,
     } <= source_names or not {
         "salience.cycles.production_routing",
         "salience.cycles.production_dispatch",
+        *_REQUIRED_PRODUCTION_V2_IMPORT_MODULES,
     } <= import_names:
         raise PublicationWorkerCompatibilityError(
             "production route source and import pins are incomplete"
@@ -1290,6 +1347,14 @@ def require_production_worker_compatibility(
         )
     if not isinstance(route_id, UUID):
         raise PublicationWorkerCompatibilityError("production route ID UUID is required")
+    if PRODUCTION_EXTERNAL_TRUST_DIGEST is None:
+        raise PublicationWorkerCompatibilityError(
+            "external production trust digest is unprovisioned; production route startup remains disabled"
+        )
+    if observed_launch_lock_sha256 != PRODUCTION_EXTERNAL_TRUST_DIGEST:
+        raise PublicationWorkerCompatibilityError(
+            "launch lock does not match the externally qualified production trust digest"
+        )
     verified_source_files = _validate_lock_and_pin(
         launch_lock, observed_launch_lock_sha256
     )
@@ -1313,6 +1378,61 @@ def require_production_worker_compatibility(
             "production route ID is absent or ambiguous in the authenticated bundle"
         )
     return selected[0]
+
+
+def require_production_rollback_compatibility(
+    database_url: str,
+    *,
+    launch_lock: PublicationWorkerLaunchLockAny,
+    observed_launch_lock_sha256: str,
+    workspace_id: UUID,
+    route_authority: RouteLeaseAuthority,
+    temporal_readback: TemporalWorkerReadback,
+) -> RecoveryRollbackInventoryV2:
+    """Verify a workspace-scoped rollback against the authenticated v2 payload."""
+    if not isinstance(launch_lock, PublicationWorkerLaunchLockV2):
+        raise PublicationWorkerCompatibilityError(
+            "production rollback restart requires the authenticated v2 launch lock"
+        )
+    verified_source_files = _validate_lock_and_pin(
+        launch_lock, observed_launch_lock_sha256
+    )
+    if _database_revision(database_url) != PRODUCTION_MIGRATION_HEAD:
+        raise PublicationWorkerCompatibilityError(
+            "production rollback database does not have the exact pinned migration head"
+        )
+    production = launch_lock.production
+    if not isinstance(production, ProductionWorkerLockPayloadV2):
+        raise PublicationWorkerCompatibilityError(
+            "production rollback requires the exact verifier-v2 payload"
+        )
+    result = verify_p1_recovery_rollback_v2(
+        database_url,
+        workspace_id=workspace_id,
+        route_authority=route_authority,
+        temporal_readback=temporal_readback,
+    )
+    routes = _production_routes_from_lock(
+        launch_lock, observed_launch_lock_sha256
+    )
+    from salience.cycles.production_routing import route_manifest_sha256
+
+    for claim in result.route_claims:
+        selected = tuple(route for route in routes if route.route_id == claim.route_id)
+        if len(selected) != 1:
+            raise PublicationWorkerCompatibilityError(
+                "workspace rollback route claim is absent or ambiguous in the authenticated bundle"
+            )
+        route = selected[0]
+        if (
+            claim.slot_id not in route.slots
+            or claim.route_manifest_sha256 != route_manifest_sha256(route)
+            or claim.artifact_lock_sha256 != observed_launch_lock_sha256
+        ):
+            raise PublicationWorkerCompatibilityError(
+                "workspace rollback route claim does not match the authenticated bundle"
+            )
+    return result
 
 
 def require_publication_worker_compatibility_from_environment(
@@ -1341,6 +1461,43 @@ def require_publication_worker_compatibility_from_environment(
     workspace = os.environ.get(PUBLICATION_ROLLBACK_WORKSPACE_ENV)
     expired = os.environ.get(PUBLICATION_EXPIRED_HOLD_OPERATION_ENV)
     cancelled = os.environ.get(PUBLICATION_CANCEL_HOLD_OPERATION_ENV)
+    if mode == "rollback-restart-v2":
+        if not isinstance(lock, PublicationWorkerLaunchLockV2):
+            raise PublicationWorkerCompatibilityError(
+                "v2 rollback restart requires the authenticated v2 launch lock"
+            )
+        if expired or cancelled:
+            raise PublicationWorkerCompatibilityError(
+                "v2 rollback restart rejects caller-supplied hold operation IDs"
+            )
+        try:
+            rollback_workspace_id = UUID(workspace) if workspace else None
+        except (TypeError, ValueError, AttributeError) as error:
+            raise PublicationWorkerCompatibilityError(
+                "v2 rollback restart requires one workspace UUID"
+            ) from error
+        if rollback_workspace_id is None or str(rollback_workspace_id) != workspace:
+            raise PublicationWorkerCompatibilityError(
+                "v2 rollback restart requires one canonical workspace UUID"
+            )
+        _validate_lock_and_pin(lock, observed)
+        if _database_revision(database_url) != PRODUCTION_MIGRATION_HEAD:
+            raise PublicationWorkerCompatibilityError(
+                "v2 rollback database does not have the exact pinned migration head"
+            )
+        try:
+            from salience.cycles.p1_recovery_rollback import (
+                read_p1_recovery_rollback_inventory_v2,
+            )
+
+            read_p1_recovery_rollback_inventory_v2(
+                database_url, workspace_id=rollback_workspace_id
+            )
+        except Exception as error:
+            raise PublicationWorkerCompatibilityError(
+                "in-process v2 rollback inventory is unavailable or incomplete"
+            ) from error
+        return lock.pin
     if any((workspace, expired, cancelled)) and not all((workspace, expired, cancelled)):
         raise PublicationWorkerCompatibilityError("rollback verification environment must be complete")
     try:
@@ -1407,6 +1564,8 @@ def _launch_lock_from_json(value: object) -> PublicationWorkerLaunchLockAny:
     if not isinstance(production_value, dict) or frozenset(production_value) != {
         "schema_version",
         "migration_head",
+        "rollback_verifier_abi",
+        "qualification",
         "workflow_allowlist",
         "activity_allowlist",
         "route_bundle",
@@ -1419,9 +1578,11 @@ def _launch_lock_from_json(value: object) -> PublicationWorkerLaunchLockAny:
     activity_allowlist = production_value["activity_allowlist"]
     if not isinstance(workflow_allowlist, list) or not isinstance(activity_allowlist, list):
         raise ValueError("production worker allowlists must be arrays")
-    production = ProductionWorkerLockPayloadV1(
+    production = ProductionWorkerLockPayloadV2(
         schema_version=production_value["schema_version"],
         migration_head=production_value["migration_head"],
+        rollback_verifier_abi=production_value["rollback_verifier_abi"],
+        qualification=production_value["qualification"],
         workflow_allowlist=tuple(workflow_allowlist),
         activity_allowlist=tuple(activity_allowlist),
         route_bundle=route_bundle,

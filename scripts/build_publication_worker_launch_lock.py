@@ -528,6 +528,10 @@ def build_publication_worker_launch_lock(
     repository_root = Path(REPOSITORY_ROOT).resolve(strict=True)
     _validate_commit(application_commit, repository_root)
     tree = _tracked_tree(application_commit, repository_root)
+    if route_bundle is not None and not (
+        _compatibility._REQUIRED_PRODUCTION_V2_SOURCE_PATHS <= set(tree)
+    ):
+        raise ValueError("production v2 candidate omits verifier ABI or migration source")
     runtime_root = Path(runtime_root)
     if runtime_root.is_symlink():
         raise ValueError("runtime_root must not be a symlink")
@@ -599,6 +603,7 @@ def build_publication_worker_launch_lock(
             {
                 "salience.cycles.production_routing",
                 "salience.cycles.production_dispatch",
+                *_compatibility._REQUIRED_PRODUCTION_V2_IMPORT_MODULES,
             }
         )
     imports = []
@@ -678,9 +683,11 @@ def build_publication_worker_launch_lock(
 
         lock = _compatibility.PublicationWorkerLaunchLockV2(
             schema_version="salience.publication-worker-launch-lock.v2",
-            production=_compatibility.ProductionWorkerLockPayloadV1(
-                schema_version="salience.p1-production-worker-launch.v1",
+            production=_compatibility.ProductionWorkerLockPayloadV2(
+                schema_version="salience.p1-production-worker-launch.v2",
                 migration_head=migration_head,
+                rollback_verifier_abi=_compatibility.ROLLBACK_VERIFIER_ABI_V2,
+                qualification=_compatibility.PRODUCTION_LOCK_QUALIFICATION,
                 workflow_allowlist=PRODUCTION_WORKFLOW_ALLOWLIST,
                 activity_allowlist=PRODUCTION_ACTIVITY_ALLOWLIST,
                 route_bundle=route_bundle,
