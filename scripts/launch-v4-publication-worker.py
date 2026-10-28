@@ -16,6 +16,8 @@ import stat
 import subprocess
 import sys
 from datetime import datetime, timezone
+from types import MappingProxyType
+from typing import Mapping, Protocol
 from uuid import UUID
 
 
@@ -49,6 +51,7 @@ _REQUIRED_PRODUCTION_V2_SOURCE_PATHS = {
     "migrations/versions/0051_p1_recovery_rollback_v2.py",
     "src/salience/cycles/p1_recovery_rollback.py",
     "src/salience/cycles/p1_recovery_rollback_fixtures.py",
+    "src/salience/workflows/temporal_readback.py",
 }
 _REQUIRED_IMPORT_MODULES = {
     "salience.cycles.publication_recovery_compatibility",
@@ -64,6 +67,7 @@ _REQUIRED_IMPORT_MODULES = {
 _REQUIRED_PRODUCTION_V2_IMPORT_MODULES = {
     "salience.cycles.p1_recovery_rollback",
     "salience.cycles.p1_recovery_rollback_fixtures",
+    "salience.workflows.temporal_readback",
 }
 _PREFLIGHT = r"""
 import json, sys
@@ -109,6 +113,62 @@ runpy.run_module(module, run_name="__main__", alter_sys=True)
 
 class LauncherError(RuntimeError):
     """The external worker launch did not satisfy its fixed trust contract."""
+
+
+class AuthenticatedDeployableExecution:
+    __slots__ = (
+        "_interpreter_path",
+        "_command",
+        "_environment",
+        "_runtime_root",
+        "_workspace_id",
+        "_launch_lock_sha256",
+    )
+
+    def __init__(
+        self,
+        *,
+        interpreter_path: str,
+        command: tuple[str, ...],
+        environment: Mapping[str, str],
+        runtime_root: str,
+        workspace_id: UUID,
+        launch_lock_sha256: str,
+    ) -> None:
+        self._interpreter_path = interpreter_path
+        self._command = tuple(command)
+        self._environment = MappingProxyType(dict(environment))
+        self._runtime_root = runtime_root
+        self._workspace_id = workspace_id
+        self._launch_lock_sha256 = launch_lock_sha256
+
+    @property
+    def interpreter_path(self) -> str:
+        return self._interpreter_path
+
+    @property
+    def command(self) -> tuple[str, ...]:
+        return self._command
+
+    @property
+    def environment(self) -> Mapping[str, str]:
+        return self._environment
+
+    @property
+    def runtime_root(self) -> str:
+        return self._runtime_root
+
+    @property
+    def workspace_id(self) -> UUID:
+        return self._workspace_id
+
+    @property
+    def launch_lock_sha256(self) -> str:
+        return self._launch_lock_sha256
+
+
+class AuthenticatedDeployableExecutor(Protocol):
+    def __call__(self, execution: AuthenticatedDeployableExecution) -> object: ...
 
 
 def _sha256(path: Path) -> str:
@@ -449,6 +509,7 @@ def _environment_for_child(
         environment["SALIENCE_PUBLICATION_CANCEL_HOLD_OPERATION_ID"] = cancelled
     elif mode == "rollback-restart-v2":
         environment["SALIENCE_PUBLICATION_ROLLBACK_WORKSPACE_ID"] = workspace
+        environment.pop("TEST_DATABASE_URL", None)
     if route_manifest is not None or lease_identity is not None:
         if route_manifest is None or lease_identity is None:
             raise LauncherError("route manifest and one-use lease identity must be complete")
@@ -566,6 +627,13 @@ def _verified_rollback_digest(result: object, workspace_id: UUID) -> str:
     return digest
 
 
+def _verified_rollback_readback_digest(result: object) -> str:
+    digest = getattr(result, "readback_digest", None)
+    if not isinstance(digest, str) or not _HEX_64.fullmatch(digest):
+        raise LauncherError("rollback verifier returned an invalid route/readback digest")
+    return digest
+
+
 def _validate_rollback_v2_scope(
     workspace_value: str | None,
     expired_operation_value: str | None,
@@ -588,23 +656,57 @@ def _run_rollback_restart_v2(
     workspace_id: UUID,
     *,
     verifier,
-    prior_code_process,
+    deployable_executor: AuthenticatedDeployableExecutor,
+    execution: AuthenticatedDeployableExecution,
 ) -> int:
-    """Fence a prior-code process with identical complete v2 readbacks."""
+    """Fence the authenticated deployable handoff with stable v2 readbacks."""
     if not isinstance(workspace_id, UUID):
         raise LauncherError("rollback v2 accepts one workspace UUID scope")
-    if not callable(verifier) or not callable(prior_code_process):
-        raise LauncherError("rollback v2 requires verifier and prior-code process callbacks")
+    if not callable(verifier) or not callable(deployable_executor):
+        raise LauncherError("rollback v2 requires verifier and authenticated deployable executor")
+    if (
+        not isinstance(execution, AuthenticatedDeployableExecution)
+        or execution.workspace_id != workspace_id
+        or not _HEX_64.fullmatch(execution.launch_lock_sha256)
+    ):
+        raise LauncherError("rollback v2 deployable handoff is not authenticated for this workspace")
+    expected_command = (
+        execution.interpreter_path,
+        "-I",
+        "-B",
+        "-S",
+        "-c",
+        _WORKER_BOOTSTRAP,
+        execution.runtime_root,
+        "salience.workflows.worker",
+    )
+    if execution.command != expected_command:
+        raise LauncherError("rollback v2 handoff is not the pinned deployable worker command")
+    if (
+        execution.environment.get("SALIENCE_PUBLICATION_WORKER_START_MODE")
+        != "rollback-restart-v2"
+        or execution.environment.get("SALIENCE_PUBLICATION_ROLLBACK_WORKSPACE_ID")
+        != str(workspace_id)
+        or execution.environment.get("SALIENCE_PUBLICATION_WORKER_LAUNCH_LOCK_SHA256")
+        != execution.launch_lock_sha256
+        or not execution.environment.get("DATABASE_URL")
+        or "TEST_DATABASE_URL" in execution.environment
+        or any(key.startswith("SALIENCE_PRODUCTION_ROUTE_") for key in execution.environment)
+    ):
+        raise LauncherError("rollback v2 handoff environment is not workspace-scoped and authenticated")
     try:
         before = verifier(workspace_id)
     except Exception as error:
         raise LauncherError("pre-process rollback v2 readback failed closed") from error
-    before_digest = _verified_rollback_digest(before, workspace_id)
+    before_digests = (
+        _verified_rollback_digest(before, workspace_id),
+        _verified_rollback_readback_digest(before),
+    )
 
     process_result = None
     process_error: Exception | None = None
     try:
-        process_result = prior_code_process()
+        process_result = deployable_executor(execution)
     except Exception as error:
         process_error = error
 
@@ -612,9 +714,14 @@ def _run_rollback_restart_v2(
         after = verifier(workspace_id)
     except Exception as error:
         raise LauncherError("post-process rollback v2 readback failed closed") from error
-    after_digest = _verified_rollback_digest(after, workspace_id)
-    if after_digest != before_digest:
-        raise LauncherError("complete rollback v2 inventory changed around prior-code process")
+    after_digests = (
+        _verified_rollback_digest(after, workspace_id),
+        _verified_rollback_readback_digest(after),
+    )
+    if after_digests != before_digests:
+        raise LauncherError(
+            "complete rollback v2 inventory or readback changed around prior-code process"
+        )
     if process_error is not None:
         raise LauncherError("prior-code process failed after rollback v2 post-readback") from process_error
     if isinstance(process_result, subprocess.CompletedProcess):
@@ -638,6 +745,7 @@ def main(
     route_child_exec=None,
     rollback_verifier=None,
     prior_code_process=None,
+    deployable_executor: AuthenticatedDeployableExecutor | None = None,
 ) -> int:
     _require_isolated_startup()
     arguments = _parser().parse_args(argv)
@@ -691,12 +799,6 @@ def main(
     database_url = os.environ.get("DATABASE_URL")
     if not database_url:
         raise LauncherError("DATABASE_URL is required for publication worker compatibility")
-    if arguments.worker_kind == "legacy-fixture":
-        test_database_url = os.environ.get("TEST_DATABASE_URL")
-        if not test_database_url or test_database_url != database_url:
-            raise LauncherError(
-                "legacy fixture TEST_DATABASE_URL must match the checked DATABASE_URL"
-            )
     try:
         raw_lock = _read_fixed_control_file(CONTROL_LOCK_PATH, "launch lock")
         raw_digest = _read_fixed_control_file(CONTROL_LOCK_DIGEST_PATH, "launch-lock digest")
@@ -706,6 +808,16 @@ def main(
     if not digest_text.endswith("\n") or not _HEX_64.fullmatch(digest_text[:-1]):
         raise LauncherError("independent launch-lock digest is malformed")
     lock, lock_digest = _verify_authenticated_lock(raw_lock, digest_text[:-1])
+    is_rollback_v2_candidate = (
+        lock["schema_version"] == "salience.publication-worker-launch-lock.v2"
+        and arguments.mode == "rollback-restart"
+    )
+    if arguments.worker_kind == "legacy-fixture" and not is_rollback_v2_candidate:
+        test_database_url = os.environ.get("TEST_DATABASE_URL")
+        if not test_database_url or test_database_url != database_url:
+            raise LauncherError(
+                "legacy fixture TEST_DATABASE_URL must match the checked DATABASE_URL"
+            )
     try:
         runtime_root = _verify_pin(lock)
     except LauncherError:
@@ -731,8 +843,16 @@ def main(
             arguments.cancel_hold_operation_id,
             route_values,
         )
-        if arguments.worker_kind != "legacy-fixture":
-            raise LauncherError("v2 rollback restart requires the authenticated prior-code worker")
+        if arguments.worker_kind != "deployable":
+            raise LauncherError("v2 rollback restart requires the authenticated deployable worker")
+        if deployable_executor is None:
+            raise LauncherError(
+                "v2 rollback restart requires an authenticated deployable executor"
+            )
+        if prior_code_process is not None:
+            raise LauncherError(
+                "v2 rollback restart rejects unauthenticated prior-code process callbacks"
+            )
         if route_authority is None or temporal_readback is None:
             raise LauncherError("v2 rollback requires live route and Temporal readback authorities")
     if is_routed and not is_rollback_v2:
@@ -837,8 +957,7 @@ def main(
             except Exception as error:
                 raise LauncherError("v2 rollback verifier is unavailable") from error
         environment["DATABASE_URL"] = database_url
-        os.chdir(runtime_root)
-        command = [
+        command = (
             interpreter,
             "-I",
             "-B",
@@ -848,19 +967,20 @@ def main(
             str(runtime_root),
             worker["module"],
             *worker["argv"],
-        ]
-        if prior_code_process is None:
-            prior_code_process = lambda: subprocess.run(
-                command,
-                env=environment,
-                cwd=runtime_root,
-                check=False,
-                timeout=None,
-            )
+        )
+        execution = AuthenticatedDeployableExecution(
+            interpreter_path=interpreter,
+            command=command,
+            environment=MappingProxyType(dict(environment)),
+            runtime_root=str(runtime_root),
+            workspace_id=rollback_workspace_id,
+            launch_lock_sha256=lock_digest,
+        )
         return _run_rollback_restart_v2(
             rollback_workspace_id,
             verifier=rollback_verifier,
-            prior_code_process=prior_code_process,
+            deployable_executor=deployable_executor,
+            execution=execution,
         )
 
     environment["DATABASE_URL"] = database_url

@@ -8639,3 +8639,100 @@ def test_v2_launch_lock_authenticates_route_allowlists_and_exact_head(tmp_path, 
             route_id=route.route_id,
         )
     assert database_reads == []
+
+    from salience.cycles.p1_recovery_rollback import (
+        RecoveryRollbackRouteClaimV2,
+        RecoveryRollbackTemporalReadbackV2,
+    )
+    from salience.cycles.production_routing import route_manifest_sha256
+
+    claim = RecoveryRollbackRouteClaimV2(
+        route_id=route.route_id,
+        slot_id=route.slots[0],
+        owner_id=UUID("00000000-0000-0000-0000-000000000305"),
+        fencing_epoch=7,
+        route_manifest_sha256=route_manifest_sha256(route),
+        artifact_lock_sha256=digest,
+    )
+    temporal_target = {
+        "temporal_endpoint_id": "unrelated-temporal-endpoint",
+        "namespace": route_tuple.namespace,
+        "task_queue": route_tuple.task_queue,
+    }
+    calls = []
+    original_import_path = compatibility._observed_import_path
+
+    def record_import_path(module_name):
+        calls.append(("runtime-import-origin", module_name))
+        return original_import_path(module_name)
+
+    monkeypatch.setattr(compatibility, "_observed_import_path", record_import_path)
+
+    def temporal_evidence():
+        return RecoveryRollbackTemporalReadbackV2(
+            route_id=claim.route_id,
+            slot_id=claim.slot_id,
+            owner_id=claim.owner_id,
+            fencing_epoch=claim.fencing_epoch,
+            route_manifest_sha256=claim.route_manifest_sha256,
+            artifact_lock_sha256=claim.artifact_lock_sha256,
+            temporal_endpoint_id=temporal_target["temporal_endpoint_id"],
+            namespace=temporal_target["namespace"],
+            task_queue=temporal_target["task_queue"],
+            registered_workflow_types=tuple(PRODUCTION_WORKFLOW_ALLOWLIST),
+            registered_activity_types=tuple(PRODUCTION_ACTIVITY_ALLOWLIST),
+            poller_count=0,
+            active_task_count=0,
+            complete=True,
+        )
+
+    verified = SimpleNamespace(
+        route_claims=(claim,),
+        temporal_readbacks=(temporal_evidence(),),
+        digest="c" * 64,
+        readback_digest="d" * 64,
+    )
+
+    def verify_rollback(*_args, **_kwargs):
+        calls.append("verified-database-route-temporal-readbacks")
+        return verified
+
+    monkeypatch.setattr(
+        compatibility, "verify_p1_recovery_rollback_v2", verify_rollback
+    )
+    compatibility._validate_lock_and_pin(parsed, digest)
+    calls.clear()
+    temporal_target.update(
+        temporal_endpoint_id=route_tuple.temporal_endpoint_id,
+        namespace=route_tuple.namespace,
+        task_queue=route_tuple.task_queue,
+    )
+    verified.temporal_readbacks = (temporal_evidence(),)
+    result = compatibility.require_production_rollback_compatibility(
+        "postgresql://primary/salience",
+        launch_lock=parsed,
+        observed_launch_lock_sha256=digest,
+        workspace_id=UUID("00000000-0000-0000-0000-000000000306"),
+        route_authority=object(),
+        temporal_readback=object(),
+    )
+    assert result is verified
+    assert calls[0] == "verified-database-route-temporal-readbacks"
+    assert all(
+        isinstance(call, tuple) and call[0] == "runtime-import-origin"
+        for call in calls[1:]
+    )
+
+    temporal_target["temporal_endpoint_id"] = "unrelated-temporal-endpoint"
+    verified.temporal_readbacks = (temporal_evidence(),)
+    calls.clear()
+    with pytest.raises(PublicationWorkerCompatibilityError, match="Temporal target"):
+        compatibility.require_production_rollback_compatibility(
+            "postgresql://primary/salience",
+            launch_lock=parsed,
+            observed_launch_lock_sha256=digest,
+            workspace_id=UUID("00000000-0000-0000-0000-000000000306"),
+            route_authority=object(),
+            temporal_readback=object(),
+        )
+    assert calls == ["verified-database-route-temporal-readbacks"]

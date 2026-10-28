@@ -1220,6 +1220,7 @@ def test_launcher_v2_runs_pre_and_post_readback_before_prior_code(tmp_path, monk
     launcher = module_from_spec(spec)
     spec.loader.exec_module(launcher)
     _configure_v2_rollback_launcher_main(launcher, tmp_path, monkeypatch)
+    monkeypatch.setenv("TEST_DATABASE_URL", "postgresql://unrelated/test-only")
     workspace_id = UUID("00000000-0000-0000-0000-000000000904")
     digest = "d" * 64
     calls = []
@@ -1230,9 +1231,12 @@ def test_launcher_v2_runs_pre_and_post_readback_before_prior_code(tmp_path, monk
             workspace_id=scope,
             migration_head="0051_p1_recovery_rollback_v2",
             digest=digest,
+            readback_digest="f" * 64,
         )
 
-    def prior_code():
+    def deployable_executor(execution):
+        assert execution.workspace_id == workspace_id
+        assert execution.command[0] == execution.interpreter_path
         calls.append(("prior", None))
         return 0
 
@@ -1241,14 +1245,14 @@ def test_launcher_v2_runs_pre_and_post_readback_before_prior_code(tmp_path, monk
             "--mode",
             "rollback-restart",
             "--worker-kind",
-            "legacy-fixture",
+            "deployable",
             "--workspace-id",
             str(workspace_id),
         ],
         route_authority=object(),
         temporal_readback=object(),
         rollback_verifier=verifier,
-        prior_code_process=prior_code,
+        deployable_executor=deployable_executor,
     )
     assert result == 0
     assert calls == [
@@ -1264,9 +1268,159 @@ def test_launcher_v2_runs_pre_and_post_readback_before_prior_code(tmp_path, monk
             workspace_id=scope,
             migration_head="0051_p1_recovery_rollback_v2",
             digest=next(changed),
+            readback_digest="f" * 64,
         )
 
-    with pytest.raises(launcher.LauncherError, match="inventory changed"):
+    execution = launcher.AuthenticatedDeployableExecution(
+        interpreter_path="synthetic-python",
+        command=(
+            "synthetic-python",
+            "-I",
+            "-B",
+            "-S",
+            "-c",
+            launcher._WORKER_BOOTSTRAP,
+            str(tmp_path),
+            "salience.workflows.worker",
+        ),
+        environment={
+            "DATABASE_URL": "postgresql://primary/salience",
+            "SALIENCE_PUBLICATION_WORKER_START_MODE": "rollback-restart-v2",
+            "SALIENCE_PUBLICATION_ROLLBACK_WORKSPACE_ID": str(workspace_id),
+            "SALIENCE_PUBLICATION_WORKER_LAUNCH_LOCK_SHA256": "f" * 64,
+        },
+        runtime_root=str(tmp_path),
+        workspace_id=workspace_id,
+        launch_lock_sha256="f" * 64,
+    )
+
+    with pytest.raises(launcher.LauncherError, match="inventory or readback changed"):
         launcher._run_rollback_restart_v2(
-            workspace_id, verifier=changed_verifier, prior_code_process=lambda: 0
+            workspace_id,
+            verifier=changed_verifier,
+            deployable_executor=lambda _execution: 0,
+            execution=execution,
         )
+
+    changed_readbacks = iter(("a" * 64, "b" * 64))
+
+    def changed_readback_verifier(scope):
+        return SimpleNamespace(
+            workspace_id=scope,
+            migration_head="0051_p1_recovery_rollback_v2",
+            digest=digest,
+            readback_digest=next(changed_readbacks),
+        )
+
+    with pytest.raises(launcher.LauncherError, match="inventory or readback changed"):
+        launcher._run_rollback_restart_v2(
+            workspace_id,
+            verifier=changed_readback_verifier,
+            deployable_executor=lambda _execution: 0,
+            execution=execution,
+        )
+
+
+def test_rollback_v2_hands_off_authenticated_deployable_only_after_verification(
+    tmp_path, monkeypatch
+):
+    import builtins
+    from importlib.util import module_from_spec, spec_from_file_location
+
+    source = Path(__file__).resolve().parents[2] / "scripts/launch-v4-publication-worker.py"
+    spec = spec_from_file_location("salience_launcher_v2_authenticated_handoff", source)
+    launcher = module_from_spec(spec)
+    spec.loader.exec_module(launcher)
+    _configure_v2_rollback_launcher_main(launcher, tmp_path, monkeypatch)
+    monkeypatch.setenv("TEST_DATABASE_URL", "postgresql://unrelated/test-only")
+    workspace_id = UUID("00000000-0000-0000-0000-000000000905")
+    calls = []
+    original_import = builtins.__import__
+
+    def tracked_import(name, globals=None, locals=None, fromlist=(), level=0):
+        prior_worker = name in {
+            "salience.workflows.worker",
+            "salience.cycles.legacy_runtime",
+            "salience.cycles.legacy_publication_runtime",
+        }
+        if prior_worker:
+            assert "verify" in calls, "prior worker module import happened before preflight"
+            calls.append(("worker_import", name))
+        return original_import(name, globals, locals, fromlist, level)
+
+    monkeypatch.setattr(builtins, "__import__", tracked_import)
+
+    def verifier(scope):
+        calls.append("verify")
+        return SimpleNamespace(
+            workspace_id=scope,
+            migration_head="0051_p1_recovery_rollback_v2",
+            digest="d" * 64,
+            readback_digest="e" * 64,
+        )
+
+    def deployable_executor(handoff):
+        calls.append("handoff")
+        assert handoff.interpreter_path == "synthetic-python"
+        assert handoff.command[0:2] == ("synthetic-python", "-I")
+        assert "salience.workflows.worker" in handoff.command
+        assert "--route-id" not in handoff.command
+        assert "--route-id" not in handoff.environment
+        assert handoff.environment["SALIENCE_PUBLICATION_ROLLBACK_WORKSPACE_ID"] == str(
+            workspace_id
+        )
+        assert "TEST_DATABASE_URL" not in handoff.environment
+        __import__("salience.workflows.worker")
+        return 0
+
+    result = launcher.main(
+        [
+            "--mode",
+            "rollback-restart",
+            "--worker-kind",
+            "deployable",
+            "--workspace-id",
+            str(workspace_id),
+        ],
+        route_authority=object(),
+        temporal_readback=object(),
+        rollback_verifier=verifier,
+        deployable_executor=deployable_executor,
+    )
+
+    assert result == 0
+    assert [call if isinstance(call, str) else call[0] for call in calls] == [
+        "verify",
+        "handoff",
+        "worker_import",
+        "verify",
+    ]
+
+
+def test_rollback_v2_fails_closed_without_authenticated_deployable_executor(
+    tmp_path, monkeypatch
+):
+    from importlib.util import module_from_spec, spec_from_file_location
+
+    source = Path(__file__).resolve().parents[2] / "scripts/launch-v4-publication-worker.py"
+    spec = spec_from_file_location("salience_launcher_v2_missing_handoff", source)
+    launcher = module_from_spec(spec)
+    spec.loader.exec_module(launcher)
+    _configure_v2_rollback_launcher_main(launcher, tmp_path, monkeypatch)
+    calls = []
+
+    with pytest.raises(launcher.LauncherError, match="authenticated deployable executor"):
+        launcher.main(
+            [
+                "--mode",
+                "rollback-restart",
+                "--worker-kind",
+                "deployable",
+                "--workspace-id",
+                str(UUID("00000000-0000-0000-0000-000000000906")),
+            ],
+            route_authority=object(),
+            temporal_readback=object(),
+            rollback_verifier=lambda _scope: calls.append("verify"),
+        )
+    assert calls == []

@@ -27,6 +27,7 @@ import psycopg
 from salience.cycles.p1_recovery_rollback import (
     ROLLBACK_VERIFIER_ABI_V2,
     RecoveryRollbackInventoryV2,
+    RecoveryRollbackTemporalReadbackV2,
     verify_p1_recovery_rollback_v2,
 )
 
@@ -83,6 +84,7 @@ _REQUIRED_PRODUCTION_V2_SOURCE_PATHS = frozenset(
         "migrations/versions/0051_p1_recovery_rollback_v2.py",
         "src/salience/cycles/p1_recovery_rollback.py",
         "src/salience/cycles/p1_recovery_rollback_fixtures.py",
+        "src/salience/workflows/temporal_readback.py",
     }
 )
 _REQUIRED_MIGRATION_SUPPORT_PATHS = frozenset(
@@ -113,6 +115,7 @@ _REQUIRED_PRODUCTION_V2_IMPORT_MODULES = frozenset(
     {
         "salience.cycles.p1_recovery_rollback",
         "salience.cycles.p1_recovery_rollback_fixtures",
+        "salience.workflows.temporal_readback",
     }
 )
 _RECOVERY_REASON_ORDER = ("expired_permit_receipt", "published_during_cancel")
@@ -205,6 +208,13 @@ class PublicationWorkerLaunchLockV2:
 
 
 PublicationWorkerLaunchLockAny = PublicationWorkerLaunchLock | PublicationWorkerLaunchLockV2
+
+
+@dataclass(frozen=True)
+class _StaticPinValidation:
+    verified_source_files: Mapping[str, bytes]
+    runtime_root: Path
+    recorded_paths: frozenset[str]
 
 PRODUCTION_MIGRATION_HEAD = "0051_p1_recovery_rollback_v2"
 PRODUCTION_LOCK_QUALIFICATION = "development-only"
@@ -449,10 +459,10 @@ def _validate_worker_entrypoints(lock: PublicationWorkerLaunchLockAny) -> None:
         raise PublicationWorkerCompatibilityError("publication worker entrypoint is not a closed pin")
 
 
-def _validate_lock_and_pin(
+def _validate_lock_and_pin_static(
     launch_lock: PublicationWorkerLaunchLockAny,
     observed_launch_lock_sha256: str,
-) -> None:
+) -> _StaticPinValidation:
     if launch_lock.schema_version not in {
         "salience.publication-worker-launch-lock.v1",
         "salience.publication-worker-launch-lock.v2",
@@ -554,11 +564,10 @@ def _validate_lock_and_pin(
         expected_file = _contained_file(runtime_root / relative, runtime_root)
         if import_pin.wheel_path not in recorded:
             raise PublicationWorkerCompatibilityError("installed distribution RECORD omits a pinned import")
-        observed_file = _contained_file(Path(_observed_import_path(import_pin.module)), runtime_root)
         pinned_observed_file = _contained_file(Path(import_pin.observed_path), runtime_root)
-        if observed_file != expected_file or pinned_observed_file != expected_file:
+        if pinned_observed_file != expected_file:
             raise PublicationWorkerCompatibilityError(
-                f"publication worker import resolved outside its exact pin: {import_pin.module}"
+                f"publication worker recorded import is outside its exact pin: {import_pin.module}"
             )
         if _sha256_file(expected_file) != import_pin.sha256:
             raise PublicationWorkerCompatibilityError(
@@ -572,7 +581,57 @@ def _validate_lock_and_pin(
             verified_source_files,
             observed_launch_lock_sha256,
         )
-    return verified_source_files
+    return _StaticPinValidation(
+        verified_source_files=verified_source_files,
+        runtime_root=runtime_root,
+        recorded_paths=frozenset(recorded),
+    )
+
+
+def _validate_runtime_import_origins(
+    launch_lock: PublicationWorkerLaunchLockAny,
+    runtime_root: Path,
+    recorded_paths: frozenset[str],
+) -> None:
+    """Resolve pinned modules only after the caller's preflight evidence passes."""
+    for import_pin in launch_lock.pin.runtime_imports:
+        expected_file = _contained_file(
+            runtime_root / import_pin.wheel_path, runtime_root
+        )
+        if import_pin.wheel_path not in recorded_paths:
+            raise PublicationWorkerCompatibilityError(
+                "installed distribution RECORD omits a pinned import"
+            )
+        observed_file = _contained_file(
+            Path(_observed_import_path(import_pin.module)), runtime_root
+        )
+        pinned_observed_file = _contained_file(
+            Path(import_pin.observed_path), runtime_root
+        )
+        if observed_file != expected_file or pinned_observed_file != expected_file:
+            raise PublicationWorkerCompatibilityError(
+                f"publication worker import resolved outside its exact pin: {import_pin.module}"
+            )
+        if _sha256_file(expected_file) != import_pin.sha256:
+            raise PublicationWorkerCompatibilityError(
+                f"publication worker import hash mismatch: {import_pin.module}"
+            )
+
+
+def _validate_lock_and_pin(
+    launch_lock: PublicationWorkerLaunchLockAny,
+    observed_launch_lock_sha256: str,
+) -> Mapping[str, bytes]:
+    """Preserve the v1/current gate's full static-plus-runtime validation order."""
+    static_validation = _validate_lock_and_pin_static(
+        launch_lock, observed_launch_lock_sha256
+    )
+    _validate_runtime_import_origins(
+        launch_lock,
+        static_validation.runtime_root,
+        static_validation.recorded_paths,
+    )
+    return static_validation.verified_source_files
 
 
 def _production_routes_from_lock(
@@ -1394,9 +1453,18 @@ def require_production_rollback_compatibility(
         raise PublicationWorkerCompatibilityError(
             "production rollback restart requires the authenticated v2 launch lock"
         )
-    verified_source_files = _validate_lock_and_pin(
+    static_validation = _validate_lock_and_pin_static(
         launch_lock, observed_launch_lock_sha256
     )
+    verified_source_files = static_validation.verified_source_files
+    revisions, heads = _migration_graph(verified_source_files)
+    if (
+        heads != {launch_lock.production.migration_head}
+        or revisions.get(launch_lock.production.migration_head) is None
+    ):
+        raise PublicationWorkerCompatibilityError(
+            "authenticated production migration graph does not have the exact pinned head"
+        )
     if _database_revision(database_url) != PRODUCTION_MIGRATION_HEAD:
         raise PublicationWorkerCompatibilityError(
             "production rollback database does not have the exact pinned migration head"
@@ -1432,6 +1500,71 @@ def require_production_rollback_compatibility(
             raise PublicationWorkerCompatibilityError(
                 "workspace rollback route claim does not match the authenticated bundle"
             )
+    temporal_readbacks = getattr(result, "temporal_readbacks", None)
+    readback_digest = getattr(result, "readback_digest", None)
+    if (
+        not isinstance(readback_digest, str)
+        or not _HEX_64.fullmatch(readback_digest)
+        or not isinstance(temporal_readbacks, tuple)
+        or not temporal_readbacks
+    ):
+        raise PublicationWorkerCompatibilityError(
+            "workspace rollback Temporal readback evidence is incomplete"
+        )
+    claims_by_identity = {
+        (claim.route_id, claim.slot_id): claim for claim in result.route_claims
+    }
+    if len(claims_by_identity) != len(result.route_claims):
+        raise PublicationWorkerCompatibilityError(
+            "workspace rollback route claim evidence is duplicated"
+        )
+    temporal_identities: list[tuple[UUID, UUID]] = []
+    for evidence in temporal_readbacks:
+        if not isinstance(evidence, RecoveryRollbackTemporalReadbackV2):
+            raise PublicationWorkerCompatibilityError(
+                "workspace rollback Temporal readback ABI is unknown"
+            )
+        identity = (evidence.route_id, evidence.slot_id)
+        temporal_identities.append(identity)
+        claim = claims_by_identity.get(identity)
+        selected = tuple(route for route in routes if route.route_id == evidence.route_id)
+        if len(selected) != 1 or claim is None:
+            raise PublicationWorkerCompatibilityError(
+                "workspace rollback Temporal evidence is absent from the authenticated bundle"
+            )
+        route = selected[0]
+        if (
+            evidence.slot_id not in route.slots
+            or evidence.owner_id != claim.owner_id
+            or evidence.fencing_epoch != claim.fencing_epoch
+            or evidence.route_manifest_sha256 != route_manifest_sha256(route)
+            or evidence.route_manifest_sha256 != claim.route_manifest_sha256
+            or evidence.artifact_lock_sha256 != observed_launch_lock_sha256
+            or evidence.artifact_lock_sha256 != claim.artifact_lock_sha256
+        ):
+            raise PublicationWorkerCompatibilityError(
+                "workspace rollback Temporal evidence does not match its authenticated route claim"
+            )
+        if (
+            evidence.temporal_endpoint_id != route.route_tuple.temporal_endpoint_id
+            or evidence.namespace != route.route_tuple.namespace
+            or evidence.task_queue != route.route_tuple.task_queue
+        ):
+            raise PublicationWorkerCompatibilityError(
+                "workspace rollback Temporal target does not match the authenticated route manifest"
+            )
+    ordered_claim_identities = tuple(
+        sorted(claims_by_identity, key=lambda pair: (str(pair[0]), str(pair[1])))
+    )
+    if tuple(temporal_identities) != ordered_claim_identities:
+        raise PublicationWorkerCompatibilityError(
+            "workspace rollback Temporal evidence is incomplete or nondeterministic"
+        )
+    _validate_runtime_import_origins(
+        launch_lock,
+        static_validation.runtime_root,
+        static_validation.recorded_paths,
+    )
     return result
 
 

@@ -11,7 +11,6 @@ import subprocess
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Protocol
 from uuid import UUID, uuid4
 
 import httpx
@@ -68,6 +67,7 @@ from salience.cycles.production_routing import (
     route_manifest_sha256,
 )
 from salience.governance.production_policy import ProductionApprovalBinding
+from salience.workflows.temporal_readback import TemporalWorkerReadback, WorkerReadback
 
 
 @dataclass(frozen=True)
@@ -77,77 +77,6 @@ class ComposeRestartResult:
     reconciled: bool
     canonical_checkpoint_count: int
     canonical_effect_count: int
-
-
-@dataclass(frozen=True, slots=True)
-class WorkerReadback:
-    """Read-only evidence of exact Temporal registration and drained state."""
-
-    route_id: UUID
-    slot_id: UUID
-    owner_id: UUID
-    fencing_epoch: int
-    route_manifest_sha256: str
-    artifact_lock_sha256: str
-    temporal_endpoint_id: str
-    namespace: str
-    task_queue: str
-    registered_workflow_types: frozenset[str]
-    registered_activity_types: frozenset[str]
-    poller_count: int
-    active_task_count: int
-    observed_at: datetime
-    complete: bool
-
-    def __post_init__(self) -> None:
-        if any(
-            not isinstance(value, UUID)
-            for value in (self.route_id, self.slot_id, self.owner_id)
-        ):
-            raise ValueError("worker readback route, slot, and owner UUIDs are required")
-        if type(self.fencing_epoch) is not int or self.fencing_epoch < 1:
-            raise ValueError("worker readback needs a positive fencing epoch")
-        for value in (self.route_manifest_sha256, self.artifact_lock_sha256):
-            if (
-                not isinstance(value, str)
-                or len(value) != 64
-                or any(character not in "0123456789abcdef" for character in value)
-            ):
-                raise ValueError("worker readback digests must be lowercase SHA-256")
-        for value in (
-            self.temporal_endpoint_id,
-            self.namespace,
-            self.task_queue,
-        ):
-            if not isinstance(value, str) or not value.strip():
-                raise ValueError("worker readback target, namespace, and queue are required")
-        for values in (
-            self.registered_workflow_types,
-            self.registered_activity_types,
-        ):
-            if not isinstance(values, frozenset) or any(
-                not isinstance(item, str) or not item.strip() for item in values
-            ):
-                raise ValueError("worker readback registrations must be immutable name sets")
-        if any(
-            type(value) is not int or value < 0
-            for value in (self.poller_count, self.active_task_count)
-        ):
-            raise ValueError("worker readback counts must be non-negative integers")
-        if (
-            not isinstance(self.observed_at, datetime)
-            or self.observed_at.tzinfo is None
-            or self.observed_at.utcoffset() is None
-        ):
-            raise ValueError("worker readback observation time must be timezone-aware")
-        if type(self.complete) is not bool:
-            raise ValueError("worker readback completeness must be explicit")
-
-
-class TemporalWorkerReadback(Protocol):
-    """Injected read-only view bound to one Temporal target and namespace."""
-
-    def read_worker(self, route_id: UUID, slot_id: UUID) -> WorkerReadback: ...
 
 
 async def run_worker() -> None:

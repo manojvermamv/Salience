@@ -2224,6 +2224,16 @@ def test_rollback_v2_requires_complete_two_reason_source_inventory_before_exec()
             temporal_readback=temporal_readback,
         )
         assert verified.digest == inventory.digest
+        assert isinstance(verified.readback_digest, str)
+        assert len(verified.readback_digest) == 64
+        assert verified.temporal_readbacks
+        assert all(
+            item.route_id in {claim.route_id for claim in verified.route_claims}
+            and item.temporal_endpoint_id == "temporal-production-1"
+            and item.namespace == "salience-production"
+            and item.task_queue == "salience-production-publication"
+            for item in verified.temporal_readbacks
+        )
         assert verified.inventory["enrollments"]
         assert any(
             row["intent_id"] == str(enrollment["intent_id"])
@@ -2241,12 +2251,340 @@ def test_rollback_v2_requires_complete_two_reason_source_inventory_before_exec()
         }
 
 
-def test_rollback_v2_checks_zero_one_and_many_rows_for_each_reason():
-    module = import_module("salience.cycles.p1_recovery_rollback")
+def _task9_set_stop_scope(connection, workspace_id, scope_key, revision, stopped, actor_id, key):
+    command_id = uuid4()
+    connection.execute(
+        """INSERT INTO v4_stop_commands(
+                   id,workspace_id,scope_key,idempotency_key,fingerprint,actor_id,
+                   resulting_revision,stopped,traceparent)
+           VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+        (
+            command_id,
+            workspace_id,
+            scope_key,
+            key,
+            sha256(key.encode()).hexdigest(),
+            actor_id,
+            revision,
+            stopped,
+            "00-" + uuid4().hex + "-" + uuid4().hex[:16] + "-01",
+        ),
+    )
+    connection.execute(
+        """UPDATE v4_stop_scopes
+           SET revision=%s,stopped=%s,changed_by=%s,reason=%s,
+               changed_at=clock_timestamp()
+           WHERE workspace_id=%s AND scope_key=%s""",
+        (revision, stopped, actor_id, key, workspace_id, scope_key),
+    )
+
+
+def test_rollback_v2_accepts_current_active_stops_after_historical_enrollment():
+    with _rollback_v2_valid_operation(
+        "task9_active_stop_scope_", active_stops=False
+    ) as (
+        database,
+        authority,
+        enrollment,
+        _work,
+        _route_authority,
+    ):
+        workspace_id = authority["workspace_id"]
+        goal_id = authority["cycle"]["goal_id"]
+        assert enrollment["workspace_stop_revision"] == 1
+        assert enrollment["goal_stop_revision"] == 1
+        with psycopg.connect(database) as connection:
+            _task9_set_stop_scope(
+                connection,
+                workspace_id,
+                "workspace",
+                2,
+                True,
+                authority["subject_id"],
+                "task9-active-workspace-stop",
+            )
+            _task9_set_stop_scope(
+                connection,
+                workspace_id,
+                "goal:" + str(goal_id),
+                2,
+                True,
+                authority["subject_id"],
+                "task9-active-goal-stop",
+            )
+
+        with psycopg.connect(database) as connection:
+            inventory = connection.execute(
+                "SELECT public.v4_p1_recovery_rollback_inventory_v2(%s)",
+                (workspace_id,),
+            ).fetchone()[0]
+        assert inventory["blockers"] == []
+        assert inventory["enrollments"][0]["workspace_stop_revision"] == 1
+        assert inventory["enrollments"][0]["goal_stop_revision"] == 1
+
+
+def test_rollback_v2_validates_noninitial_historical_stop_receipts():
+    with _rollback_v2_valid_operation(
+        "task9_historical_stop_receipt_", historical_stop_binding=True
+    ) as (database, authority, enrollment, _work, _route_authority):
+        workspace_id = authority["workspace_id"]
+        goal_scope_key = "goal:" + str(authority["cycle"]["goal_id"])
+        assert enrollment["workspace_stop_revision"] == 3
+        assert enrollment["goal_stop_revision"] == 3
+        with psycopg.connect(database) as connection:
+            inventory = connection.execute(
+                "SELECT public.v4_p1_recovery_rollback_inventory_v2(%s)",
+                (workspace_id,),
+            ).fetchone()[0]
+        assert inventory["blockers"] == []
+
+        # Simulate missing immutable history while preserving the later active
+        # stop receipt. The inventory must reject the enrollment's bound rev3.
+        with psycopg.connect(database) as connection:
+            connection.execute("SET session_replication_role = replica")
+            connection.execute(
+                """DELETE FROM v4_stop_commands
+                   WHERE workspace_id=%s AND scope_key=%s
+                     AND resulting_revision=3""",
+                (workspace_id, "workspace"),
+            )
+        with psycopg.connect(database) as connection:
+            inventory = connection.execute(
+                "SELECT public.v4_p1_recovery_rollback_inventory_v2(%s)",
+                (workspace_id,),
+            ).fetchone()[0]
+        assert any(
+            blocker.get("kind") == "enrollment_historical_stop_binding_unresolved"
+            and blocker.get("scope_key") == "workspace"
+            and blocker.get("bound_revision") == 3
+            for blocker in inventory["blockers"]
+        )
+
+
+def test_rollback_v2_denies_unstopped_current_scope_after_stop_revision_drift():
+    with _rollback_v2_valid_operation(
+        "task9_unstopped_current_scope_", active_stops=False
+    ) as (
+        database,
+        authority,
+        _enrollment,
+        _work,
+        _route_authority,
+    ):
+        workspace_id = authority["workspace_id"]
+        goal_id = authority["cycle"]["goal_id"]
+        with psycopg.connect(database) as connection:
+            _task9_set_stop_scope(
+                connection,
+                workspace_id,
+                "workspace",
+                2,
+                True,
+                authority["subject_id"],
+                "task9-drift-workspace-stop",
+            )
+            _task9_set_stop_scope(
+                connection,
+                workspace_id,
+                "goal:" + str(goal_id),
+                2,
+                True,
+                authority["subject_id"],
+                "task9-drift-goal-stop",
+            )
+            _task9_set_stop_scope(
+                connection,
+                workspace_id,
+                "goal:" + str(goal_id),
+                3,
+                False,
+                authority["subject_id"],
+                "task9-drift-goal-unstop",
+            )
+
+        with psycopg.connect(database) as connection:
+            inventory = connection.execute(
+                "SELECT public.v4_p1_recovery_rollback_inventory_v2(%s)",
+                (workspace_id,),
+            ).fetchone()[0]
+        assert any(
+            blocker.get("kind") == "rollback_stop_scope_not_active_or_receipted"
+            and blocker.get("scope_key") == "goal:" + str(goal_id)
+            for blocker in inventory["blockers"]
+        )
+
+
+def test_rollback_v2_requires_exact_deadline_suspend_case_command_receipt():
     migration_tests = import_module("test_v4_migrations")
+    recovery = import_module("salience.cycles.production_recovery")
+    with _production_recovery_operation(
+        "task9_deadline_receipt_", task8_dispatch=True
+    ) as (database, _fixture, authority, _enrollment):
+        repository = recovery.ProductionRecoveryWorkRepository(database)
+        work = _case_work(repository, authority, recovery)
+        policy_decision_id = uuid4()
+        route_decision_id = uuid4()
+        valid_key = "task9-deadline-valid:" + str(work.work_id)
+        valid_command_id = uuid4()
+        invalid_cases = (
+            "missing-command",
+            "unrelated-case",
+            "wrong-action",
+            "wrong-result-revision",
+            "mismatched-idempotency-key",
+        )
+
+        def append_deadline_event(
+            connection,
+            *,
+            event_key,
+            command_id,
+            command_case_id,
+            action,
+            result_revision,
+            insert_command,
+        ):
+            command_key = (
+                event_key + ":different"
+                if "mismatched-idempotency-key" in event_key
+                else event_key
+            )
+            if insert_command:
+                connection.execute("SET session_replication_role=replica")
+                connection.execute(
+                    """INSERT INTO v4_case_commands(
+                               id,case_id,idempotency_key,fingerprint,action,actor_id,result)
+                       VALUES(%s,%s,%s,%s,%s,%s,%s)""",
+                    (
+                        command_id,
+                        command_case_id,
+                        command_key,
+                        sha256(command_key.encode()).hexdigest(),
+                        action,
+                        work.owner_id,
+                        Jsonb({"resulting_revision": result_revision}),
+                    ),
+                )
+                connection.execute("SET session_replication_role=origin")
+            payload = {
+                "schema_version": "salience.p1-production-recovery-deadline.v1",
+                "status": "deadline_suspend",
+                "result_class": "suspended",
+                "attempt": work.case_revision + 1,
+                "command_id": str(command_id),
+                "case_id": str(work.case_id),
+                "work_id": str(work.work_id),
+                "source_id": str(work.source_id),
+                "operation_id": str(work.operation_id),
+                "intent_id": str(work.intent_id),
+                "deadline": work.deadline.isoformat(),
+                "event_key": event_key,
+                "policy_decision_id": str(policy_decision_id),
+                "route_decision_id": str(route_decision_id),
+            }
+            return repository._append_event(
+                connection,
+                work,
+                event_key=event_key,
+                event_kind="escalation",
+                policy_decision_id=policy_decision_id,
+                payload=payload,
+            )
+
+        with repository._connect() as connection:
+            connection.execute(
+                """INSERT INTO v4_case_commands(
+                           id,case_id,idempotency_key,fingerprint,action,actor_id,result)
+                   VALUES(%s,%s,%s,%s,'deadline_suspend',%s,%s)""",
+                (
+                    valid_command_id,
+                    work.case_id,
+                    valid_key,
+                    sha256(valid_key.encode()).hexdigest(),
+                    work.owner_id,
+                    Jsonb({"resulting_revision": work.case_revision + 1}),
+                ),
+            )
+            append_deadline_event(
+                connection,
+                event_key=valid_key,
+                command_id=valid_command_id,
+                command_case_id=work.case_id,
+                action="deadline_suspend",
+                result_revision=work.case_revision + 1,
+                insert_command=False,
+            )
+
+        upgraded = migration_tests._migration(
+            database, "upgrade", "0051_p1_recovery_rollback_v2"
+        )
+        assert upgraded.returncode == 0, upgraded.stdout + upgraded.stderr
+        with psycopg.connect(database, row_factory=dict_row) as connection:
+            before = connection.execute(
+                "SELECT public.v4_p1_recovery_rollback_inventory_v2(%s) AS inventory",
+                (authority["workspace_id"],),
+            ).fetchone()["inventory"]
+            assert not any(
+                blocker.get("kind") == "deadline_suspend_command_receipt_mismatch"
+                for blocker in before["blockers"]
+            )
+
+            for invalid_case in invalid_cases:
+                event_key = "task9-deadline-" + invalid_case + ":" + str(work.work_id)
+                command_id = uuid4()
+                insert_command = invalid_case != "missing-command"
+                command_case_id = (
+                    uuid4() if invalid_case == "unrelated-case" else work.case_id
+                )
+                action = "review" if invalid_case == "wrong-action" else "deadline_suspend"
+                result_revision = (
+                    work.case_revision + 2
+                    if invalid_case == "wrong-result-revision"
+                    else work.case_revision + 1
+                )
+                event = append_deadline_event(
+                    connection,
+                    event_key=event_key,
+                    command_id=command_id,
+                    command_case_id=command_case_id,
+                    action=action,
+                    result_revision=result_revision,
+                    insert_command=insert_command,
+                )
+                current = connection.execute(
+                    "SELECT public.v4_p1_recovery_rollback_inventory_v2(%s) AS inventory",
+                    (authority["workspace_id"],),
+                ).fetchone()["inventory"]
+                assert any(
+                    blocker.get("kind") == "deadline_suspend_command_receipt_mismatch"
+                    and blocker.get("event_id") == str(event.event_id)
+                    for blocker in current["blockers"]
+                ), invalid_case
+                connection.execute("SET session_replication_role=replica")
+                connection.execute(
+                    "DELETE FROM v4_production_recovery_events WHERE event_id=%s",
+                    (event.event_id,),
+                )
+                if insert_command:
+                    connection.execute(
+                        "DELETE FROM v4_case_commands WHERE id=%s", (command_id,)
+                    )
+                connection.execute("SET session_replication_role=origin")
+
+
+def test_rollback_v2_checks_zero_one_and_many_rows_for_each_reason():
+    migration_tests = import_module("test_v4_migrations")
+    recovery = import_module("salience.cycles.production_recovery")
     with _production_recovery_operation(
         "task9_reason_counts_", task8_dispatch=True
-    ) as (database, fixture, _authority, _enrollment):
+    ) as (database, fixture, authority, _enrollment):
+        repository = recovery.ProductionRecoveryWorkRepository(database)
+        production_hold = repository.bind_production_publication_hold(
+            authority["operation_id"],
+            reason="expired_permit_receipt",
+            deadline=datetime.now(timezone.utc) + timedelta(days=1),
+            policy=_recovery_policy(recovery),
+        )
         upgraded = migration_tests._migration(
             database, "upgrade", "0051_p1_recovery_rollback_v2"
         )
@@ -2260,6 +2598,63 @@ def test_rollback_v2_checks_zero_one_and_many_rows_for_each_reason():
             assert empty["reason_counts"] == {
                 "expired_permit_receipt": {"production_work": 0, "fixture_holds": 0},
                 "published_during_cancel": {"production_work": 0, "fixture_holds": 0},
+            }
+
+            production_one = connection.execute(
+                "SELECT public.v4_p1_recovery_rollback_inventory_v2(%s)",
+                (authority["workspace_id"],),
+            ).fetchone()[0]
+            assert production_one["reason_counts"] == {
+                "expired_permit_receipt": {"production_work": 1, "fixture_holds": 0},
+                "published_during_cancel": {"production_work": 0, "fixture_holds": 0},
+            }
+
+            def clone_production_work(reason, revision):
+                work_id = uuid4()
+                operation_id = uuid4()
+                connection.execute("SET session_replication_role=replica")
+                inserted = connection.execute(
+                    """INSERT INTO v4_production_recovery_work
+                       SELECT (jsonb_populate_record(
+                           NULL::public.v4_production_recovery_work,
+                           to_jsonb(work) || jsonb_build_object(
+                               'work_id',%s::text,
+                               'source_id',%s::text,
+                               'operation_id',%s::text,
+                               'source_revision',%s::integer,
+                               'reason',%s::text))).*
+                       FROM v4_production_recovery_work work WHERE work_id=%s
+                       RETURNING work_id""",
+                    (
+                        str(work_id),
+                        str(operation_id),
+                        str(operation_id),
+                        revision,
+                        reason,
+                        production_hold.work_id,
+                    ),
+                ).fetchone()
+                connection.execute("SET session_replication_role=origin")
+                assert inserted[0] == work_id
+
+            clone_production_work("published_during_cancel", 2)
+            production_each_one = connection.execute(
+                "SELECT public.v4_p1_recovery_rollback_inventory_v2(%s)",
+                (authority["workspace_id"],),
+            ).fetchone()[0]
+            assert production_each_one["reason_counts"] == {
+                "expired_permit_receipt": {"production_work": 1, "fixture_holds": 0},
+                "published_during_cancel": {"production_work": 1, "fixture_holds": 0},
+            }
+            clone_production_work("expired_permit_receipt", 3)
+            clone_production_work("published_during_cancel", 4)
+            production_many = connection.execute(
+                "SELECT public.v4_p1_recovery_rollback_inventory_v2(%s)",
+                (authority["workspace_id"],),
+            ).fetchone()[0]
+            assert production_many["reason_counts"] == {
+                "expired_permit_receipt": {"production_work": 2, "fixture_holds": 0},
+                "published_during_cancel": {"production_work": 2, "fixture_holds": 0},
             }
 
             one = connection.execute(
@@ -2540,7 +2935,9 @@ def _rollback_v2_operation(prefix):
 
 
 @contextmanager
-def _rollback_v2_valid_operation(prefix):
+def _rollback_v2_valid_operation(
+    prefix, *, active_stops=True, historical_stop_binding=False
+):
     migration_tests = import_module("test_v4_migrations")
     schedule_tests = import_module("test_p1_production_schedule_fencing")
     with schedule_tests._production_enrollment_fixture(prefix) as (
@@ -2605,6 +3002,29 @@ def _rollback_v2_valid_operation(prefix):
                     subject_id,
                 ),
             )
+            if historical_stop_binding:
+                for scope_key in (
+                    "workspace",
+                    "goal:" + str(goal_id),
+                ):
+                    _task9_set_stop_scope(
+                        connection,
+                        workspace_id,
+                        scope_key,
+                        2,
+                        True,
+                        subject_id,
+                        "task9-historical-stop-" + scope_key,
+                    )
+                    _task9_set_stop_scope(
+                        connection,
+                        workspace_id,
+                        scope_key,
+                        3,
+                        False,
+                        subject_id,
+                        "task9-historical-unstop-" + scope_key,
+                    )
             connection.execute(
                 """INSERT INTO v4_admissions(
                            id,intent_id,eligibility_revision,disposition,reason,cycle_id)
@@ -2620,7 +3040,17 @@ def _rollback_v2_valid_operation(prefix):
                 "cycle": {"goal_id": goal_id, "intent_id": intent_id},
             }
             enrollment = migration_tests._insert_0047_enrollment(
-                connection, authority, intent_id=intent_id
+                connection,
+                authority,
+                intent_id=intent_id,
+                overrides=(
+                    {
+                        "workspace_stop_revision": 3,
+                        "goal_stop_revision": 3,
+                    }
+                    if historical_stop_binding
+                    else None
+                ),
             )
         recovery = import_module("salience.cycles.production_recovery")
         repository = recovery.ProductionRecoveryWorkRepository(database)
@@ -2649,6 +3079,27 @@ def _rollback_v2_valid_operation(prefix):
             database, "upgrade", "0051_p1_recovery_rollback_v2"
         )
         assert upgraded.returncode == 0, upgraded.stdout + upgraded.stderr
+        if active_stops:
+            active_stop_revision = 4 if historical_stop_binding else 2
+            with psycopg.connect(database) as connection:
+                _task9_set_stop_scope(
+                    connection,
+                    authority["workspace_id"],
+                    "workspace",
+                    active_stop_revision,
+                    True,
+                    authority["subject_id"],
+                    "task9-current-workspace-stop",
+                )
+                _task9_set_stop_scope(
+                    connection,
+                    authority["workspace_id"],
+                    "goal:" + str(authority["cycle"]["goal_id"]),
+                    active_stop_revision,
+                    True,
+                    authority["subject_id"],
+                    "task9-current-goal-stop",
+                )
         yield database, authority, enrollment, work, None
 
 

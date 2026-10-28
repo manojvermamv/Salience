@@ -52,6 +52,7 @@ def upgrade() -> None:
             enrollment_row public.v4_production_intent_enrollments%ROWTYPE;
             recovery_row public.v4_production_recovery_work%ROWTYPE;
             event_row public.v4_production_recovery_events%ROWTYPE;
+            stop_scope_row record;
             permit_row public.v4_production_effect_permits%ROWTYPE;
             claim_row public.v4_production_effect_permit_claims%ROWTYPE;
             dispatch_row public.v4_production_current_dispatch%ROWTYPE;
@@ -146,16 +147,6 @@ def upgrade() -> None:
                      AND policy.workspace_id = p_workspace_id
                      AND policy.status = 'active'
                      AND policy.document_hash = enrollment_row.policy_document_hash
-                    JOIN public.v4_stop_scopes workspace_stop
-                      ON workspace_stop.workspace_id = p_workspace_id
-                     AND workspace_stop.scope_key = 'workspace'
-                     AND workspace_stop.revision = enrollment_row.workspace_stop_revision
-                     AND workspace_stop.stopped IS FALSE
-                    JOIN public.v4_stop_scopes goal_stop
-                      ON goal_stop.workspace_id = p_workspace_id
-                     AND goal_stop.scope_key = 'goal:' || enrollment_row.goal_id::text
-                     AND goal_stop.revision = enrollment_row.goal_stop_revision
-                     AND goal_stop.stopped IS FALSE
                     WHERE intent.id = enrollment_row.intent_id
                       AND intent.goal_id = enrollment_row.goal_id
                       AND intent.goal_revision = enrollment_row.goal_revision
@@ -181,6 +172,86 @@ def upgrade() -> None:
                         'intent_id', enrollment_row.intent_id,
                         'eligibility_revision', enrollment_row.eligibility_revision));
                 END IF;
+
+                FOR stop_scope_row IN
+                    SELECT expected.scope_key, expected.bound_revision,
+                           scope.revision AS current_revision,
+                           scope.stopped AS current_stopped,
+                           scope.changed_by AS current_actor_id
+                    FROM (VALUES
+                        ('workspace'::text, enrollment_row.workspace_stop_revision),
+                        ('goal:' || enrollment_row.goal_id::text,
+                         enrollment_row.goal_stop_revision)
+                    ) AS expected(scope_key, bound_revision)
+                    LEFT JOIN public.v4_stop_scopes scope
+                      ON scope.workspace_id = p_workspace_id
+                     AND scope.scope_key = expected.scope_key
+                    ORDER BY expected.scope_key
+                LOOP
+                    IF (
+                        stop_scope_row.bound_revision = 1
+                        AND EXISTS (
+                            SELECT 1
+                            FROM public.v4_stop_commands historical_stop
+                            WHERE historical_stop.workspace_id = p_workspace_id
+                              AND historical_stop.scope_key = stop_scope_row.scope_key
+                              AND historical_stop.resulting_revision = 1
+                        )
+                    ) OR (
+                        stop_scope_row.bound_revision > 1
+                        AND (
+                            (SELECT count(*)
+                             FROM public.v4_stop_commands historical_stop
+                             WHERE historical_stop.workspace_id = p_workspace_id
+                               AND historical_stop.scope_key = stop_scope_row.scope_key
+                               AND historical_stop.resulting_revision =
+                                   stop_scope_row.bound_revision) <> 1
+                            OR
+                            (SELECT count(*)
+                             FROM public.v4_stop_commands historical_stop
+                             WHERE historical_stop.workspace_id = p_workspace_id
+                               AND historical_stop.scope_key = stop_scope_row.scope_key
+                               AND historical_stop.resulting_revision =
+                                   stop_scope_row.bound_revision
+                               AND historical_stop.stopped IS FALSE) <> 1
+                        )
+                    ) THEN
+                        blockers := blockers || jsonb_build_array(jsonb_build_object(
+                            'kind', 'enrollment_historical_stop_binding_unresolved',
+                            'intent_id', enrollment_row.intent_id,
+                            'eligibility_revision', enrollment_row.eligibility_revision,
+                            'scope_key', stop_scope_row.scope_key,
+                            'bound_revision', stop_scope_row.bound_revision));
+                    END IF;
+
+                    IF stop_scope_row.current_revision IS NULL
+                       OR stop_scope_row.current_revision < stop_scope_row.bound_revision
+                       OR stop_scope_row.current_stopped IS DISTINCT FROM TRUE
+                       OR (SELECT count(*)
+                           FROM public.v4_stop_commands current_stop
+                           WHERE current_stop.workspace_id = p_workspace_id
+                             AND current_stop.scope_key = stop_scope_row.scope_key
+                             AND current_stop.resulting_revision =
+                                 stop_scope_row.current_revision) <> 1
+                       OR (SELECT count(*)
+                           FROM public.v4_stop_commands current_stop
+                           WHERE current_stop.workspace_id = p_workspace_id
+                             AND current_stop.scope_key = stop_scope_row.scope_key
+                             AND current_stop.resulting_revision =
+                                 stop_scope_row.current_revision
+                             AND current_stop.stopped IS TRUE
+                             AND current_stop.actor_id IS NOT DISTINCT FROM
+                                 stop_scope_row.current_actor_id) <> 1 THEN
+                        blockers := blockers || jsonb_build_array(jsonb_build_object(
+                            'kind', 'rollback_stop_scope_not_active_or_receipted',
+                            'intent_id', enrollment_row.intent_id,
+                            'eligibility_revision', enrollment_row.eligibility_revision,
+                            'scope_key', stop_scope_row.scope_key,
+                            'bound_revision', stop_scope_row.bound_revision,
+                            'current_revision', stop_scope_row.current_revision,
+                            'current_stopped', stop_scope_row.current_stopped));
+                    END IF;
+                END LOOP;
             END LOOP;
 
             FOR recovery_row IN
@@ -363,9 +434,7 @@ def upgrade() -> None:
                          OR event.payload->>'event_key' IS DISTINCT FROM event.event_key
                          OR event.payload->>'policy_decision_id' IS DISTINCT FROM
                             event.policy_decision_id::text
-                         OR event.payload->>'route_decision_id' IS NULL
-                         OR (event.payload->>'status' = 'deadline_suspend'
-                             AND event.payload->>'command_id' IS NULL)))
+                         OR event.payload->>'route_decision_id' IS NULL))
                   )
                 ORDER BY event.event_id
             LOOP
@@ -374,6 +443,60 @@ def upgrade() -> None:
                     'event_id', event_row.event_id,
                     'work_id', event_row.work_id,
                     'event_key', event_row.event_key));
+            END LOOP;
+
+            FOR event_row IN
+                SELECT event.*
+                FROM public.v4_production_recovery_events event
+                JOIN public.v4_production_recovery_work work
+                  ON work.work_id = event.work_id
+                WHERE work.workspace_id = p_workspace_id
+                  AND event.event_kind = 'escalation'
+                  AND event.payload->>'status' = 'deadline_suspend'
+                ORDER BY event.event_id
+            LOOP
+                IF NOT EXISTS (
+                    SELECT 1
+                    FROM public.v4_production_recovery_work work
+                    JOIN public.v4_recovery_cases recovery_case
+                      ON recovery_case.id = work.source_id
+                     AND recovery_case.workspace_id = p_workspace_id
+                     AND recovery_case.goal_id = work.goal_id
+                     AND recovery_case.target_cycle_id = work.cycle_id
+                     AND recovery_case.context_id = work.context_id
+                     AND recovery_case.operation_id = work.operation_id
+                    JOIN public.v4_case_commands case_command
+                      ON case_command.id::text = event_row.payload->>'command_id'
+                     AND case_command.case_id = recovery_case.id
+                    WHERE work.work_id = event_row.work_id
+                      AND work.workspace_id = p_workspace_id
+                      AND work.source_discriminant = 'cycle_case'
+                      AND work.source_id = recovery_case.id
+                      AND work.source_revision = work.case_revision
+                      AND event_row.payload->>'work_id' = work.work_id::text
+                      AND event_row.payload->>'source_id' = work.source_id::text
+                      AND event_row.payload->>'case_id' = recovery_case.id::text
+                      AND event_row.payload->>'intent_id' = work.intent_id::text
+                      AND event_row.payload->>'operation_id' = work.operation_id::text
+                      AND event_row.payload->>'event_key' = event_row.event_key
+                      AND case_command.idempotency_key = event_row.event_key
+                      AND case_command.action = 'deadline_suspend'
+                      AND jsonb_typeof(event_row.payload->'attempt') = 'number'
+                      AND event_row.payload->>'attempt' ~ '^[1-9][0-9]*$'
+                      AND event_row.payload->>'attempt' =
+                          (work.case_revision + 1)::text
+                      AND jsonb_typeof(case_command.result->'resulting_revision') = 'number'
+                      AND case_command.result->>'resulting_revision' =
+                          event_row.payload->>'attempt'
+                ) THEN
+                    blockers := blockers || jsonb_build_array(jsonb_build_object(
+                        'kind', 'deadline_suspend_command_receipt_mismatch',
+                        'event_id', event_row.event_id,
+                        'work_id', event_row.work_id,
+                        'case_id', event_row.payload->>'case_id',
+                        'command_id', event_row.payload->>'command_id',
+                        'event_key', event_row.event_key));
+                END IF;
             END LOOP;
 
             FOR recovery_row IN

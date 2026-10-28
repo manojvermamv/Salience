@@ -13,7 +13,7 @@ import psycopg
 
 if TYPE_CHECKING:
     from salience.cycles.production_routing import RouteLeaseAuthority
-    from salience.workflows.worker import TemporalWorkerReadback
+    from salience.workflows.temporal_readback import TemporalWorkerReadback
 
 
 ROLLBACK_VERIFIER_ABI_V2 = "salience.p1-recovery-rollback-verifier.v2"
@@ -69,6 +69,24 @@ class RecoveryRollbackRouteClaimV2:
 
 
 @dataclass(frozen=True, slots=True)
+class RecoveryRollbackTemporalReadbackV2:
+    route_id: UUID
+    slot_id: UUID
+    owner_id: UUID
+    fencing_epoch: int
+    route_manifest_sha256: str
+    artifact_lock_sha256: str
+    temporal_endpoint_id: str
+    namespace: str
+    task_queue: str
+    registered_workflow_types: tuple[str, ...]
+    registered_activity_types: tuple[str, ...]
+    poller_count: int
+    active_task_count: int
+    complete: bool
+
+
+@dataclass(frozen=True, slots=True)
 class RecoveryRollbackInventoryV2:
     workspace_id: UUID
     migration_head: str
@@ -76,6 +94,8 @@ class RecoveryRollbackInventoryV2:
     inventory: Mapping[str, Any]
     route_claims: tuple[RecoveryRollbackRouteClaimV2, ...]
     fixture_liabilities: tuple[Mapping[str, Any], ...]
+    temporal_readbacks: tuple[RecoveryRollbackTemporalReadbackV2, ...] = ()
+    readback_digest: str | None = None
 
     @property
     def reason_counts(self) -> Mapping[str, Mapping[str, int]]:
@@ -377,18 +397,19 @@ def _verify_route_claims(
 
 def _verify_temporal_readbacks(
     route_claims: tuple[RecoveryRollbackRouteClaimV2, ...], temporal_readback
-) -> None:
+) -> tuple[RecoveryRollbackTemporalReadbackV2, ...]:
     from salience.cycles.production_routing import (
         PRODUCTION_ACTIVITY_ALLOWLIST,
         PRODUCTION_WORKFLOW_ALLOWLIST,
     )
-    from salience.workflows.worker import WorkerReadback
+    from salience.workflows.temporal_readback import WorkerReadback
 
     reader = getattr(temporal_readback, "read_worker", None)
     if not callable(reader):
         raise RecoveryRollbackVerificationError("Temporal worker readback is unavailable")
     now = datetime.now(timezone.utc)
     observed_targets: dict[UUID, tuple[str, str, str]] = {}
+    evidence: list[RecoveryRollbackTemporalReadbackV2] = []
     for claim in route_claims:
         try:
             readback = reader(claim.route_id, claim.slot_id)
@@ -433,6 +454,29 @@ def _verify_temporal_readbacks(
             raise RecoveryRollbackVerificationError(
                 "Temporal readbacks disagree about one production route target"
             )
+        evidence.append(
+            RecoveryRollbackTemporalReadbackV2(
+                route_id=readback.route_id,
+                slot_id=readback.slot_id,
+                owner_id=readback.owner_id,
+                fencing_epoch=readback.fencing_epoch,
+                route_manifest_sha256=readback.route_manifest_sha256,
+                artifact_lock_sha256=readback.artifact_lock_sha256,
+                temporal_endpoint_id=readback.temporal_endpoint_id,
+                namespace=readback.namespace,
+                task_queue=readback.task_queue,
+                registered_workflow_types=tuple(
+                    sorted(readback.registered_workflow_types)
+                ),
+                registered_activity_types=tuple(
+                    sorted(readback.registered_activity_types)
+                ),
+                poller_count=readback.poller_count,
+                active_task_count=readback.active_task_count,
+                complete=readback.complete,
+            )
+        )
+    return tuple(sorted(evidence, key=lambda item: (str(item.route_id), str(item.slot_id))))
 
 
 def verify_p1_recovery_rollback_v2(
@@ -447,5 +491,52 @@ def verify_p1_recovery_rollback_v2(
         database_url, workspace_id=workspace_id
     )
     _verify_route_claims(inventory.route_claims, route_authority)
-    _verify_temporal_readbacks(inventory.route_claims, temporal_readback)
-    return inventory
+    temporal_evidence = _verify_temporal_readbacks(
+        inventory.route_claims, temporal_readback
+    )
+    readback_material = {
+        "route_claims": [
+            {
+                "route_id": str(claim.route_id),
+                "slot_id": str(claim.slot_id),
+                "owner_id": str(claim.owner_id),
+                "fencing_epoch": claim.fencing_epoch,
+                "route_manifest_sha256": claim.route_manifest_sha256,
+                "artifact_lock_sha256": claim.artifact_lock_sha256,
+            }
+            for claim in sorted(
+                inventory.route_claims,
+                key=lambda item: (str(item.route_id), str(item.slot_id)),
+            )
+        ],
+        "temporal_readbacks": [
+            {
+                "route_id": str(item.route_id),
+                "slot_id": str(item.slot_id),
+                "owner_id": str(item.owner_id),
+                "fencing_epoch": item.fencing_epoch,
+                "route_manifest_sha256": item.route_manifest_sha256,
+                "artifact_lock_sha256": item.artifact_lock_sha256,
+                "temporal_endpoint_id": item.temporal_endpoint_id,
+                "namespace": item.namespace,
+                "task_queue": item.task_queue,
+                "registered_workflow_types": list(item.registered_workflow_types),
+                "registered_activity_types": list(item.registered_activity_types),
+                "poller_count": item.poller_count,
+                "active_task_count": item.active_task_count,
+                "complete": item.complete,
+            }
+            for item in temporal_evidence
+        ],
+    }
+    readback_digest = hashlib.sha256(_canonical_bytes(readback_material)).hexdigest()
+    return RecoveryRollbackInventoryV2(
+        workspace_id=inventory.workspace_id,
+        migration_head=inventory.migration_head,
+        digest=inventory.digest,
+        inventory=inventory.inventory,
+        route_claims=inventory.route_claims,
+        fixture_liabilities=inventory.fixture_liabilities,
+        temporal_readbacks=temporal_evidence,
+        readback_digest=readback_digest,
+    )
