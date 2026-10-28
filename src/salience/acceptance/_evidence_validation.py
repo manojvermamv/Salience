@@ -6,6 +6,10 @@ from typing import Any
 from urllib.parse import parse_qsl, urlsplit
 
 from ._contracts import _ValidationState
+from ._scope_binding import (
+    _evidence_binding_from_manifest,
+    _route_binding_for_path,
+)
 
 
 _SENSITIVE_KEY_NAMES = frozenset(
@@ -112,24 +116,6 @@ def _reference_paths(value: Any, path: tuple[str, ...] = ()) -> list[tuple[tuple
     return references
 
 
-def _expected_binding(payload: Mapping[str, Any]) -> dict[str, Any]:
-    manifest = payload.get("manifest", {})
-    candidate = manifest.get("candidate", {})
-    deployment = manifest.get("deployment", {})
-    environment = manifest.get("environment", {})
-    account = environment.get("account_identity", {})
-    return {
-        "run_id": payload.get("run_id"),
-        "candidate_commit": candidate.get("source_commit"),
-        "candidate_tree": candidate.get("source_tree"),
-        "artifact_digests": sorted(candidate.get("candidate_artifact_digests", manifest.get("candidate_artifact_digests", []))),
-        "deployment_id": deployment.get("deployment_id"),
-        "environment_id": environment.get("environment_id"),
-        "account_id": account.get("account_id"),
-        "resource_ids": sorted(environment.get("resource_ids", [])),
-    }
-
-
 def _row_id_from_path(path: tuple[str, ...], payload: Mapping[str, Any]) -> str | None:
     if len(path) < 2 or path[0] != "rows":
         return None
@@ -175,11 +161,14 @@ def _validate_evidence_bindings(
     payload: Mapping[str, Any],
     state: _ValidationState,
 ) -> None:
-    expected = _expected_binding(payload)
     identities: dict[str, tuple[Any, ...]] = {}
     for path, reference in _reference_paths(payload):
         if path and path[0] == "artifact_digest_index":
             continue
+        expected = _evidence_binding_from_manifest(
+            payload,
+            _route_binding_for_path(payload, path),
+        )
         binding = reference.get("binding")
         provenance = reference.get("provenance")
         evidence_id = reference.get("evidence_id")
@@ -237,6 +226,11 @@ def _validate_evidence_bindings(
     route_inventory = manifest.get("route_manifest", {}).get("inventory", [])
     if isinstance(route_inventory, list):
         for index, route in enumerate(route_inventory):
+            path = ("manifest", "route_manifest", "inventory", str(index))
+            expected = _evidence_binding_from_manifest(
+                payload,
+                _route_binding_for_path(payload, path),
+            )
             if isinstance(route, Mapping) and dict(route.get("binding", {})) != expected:
                 _add_evidence_error(
                     state,
@@ -267,6 +261,10 @@ def _validate_evidence_bindings(
         for observation, path in observations:
             if observation is None and not execution_record:
                 continue
+            expected = _evidence_binding_from_manifest(
+                payload,
+                _route_binding_for_path(payload, path),
+            )
             if not isinstance(observation, Mapping) or dict(observation.get("binding", {})) != expected:
                 _add_evidence_error(
                     state,
@@ -279,11 +277,16 @@ def _validate_evidence_bindings(
     invalidations = payload.get("invalidation_records", [])
     if isinstance(invalidations, list):
         for index, record in enumerate(invalidations):
+            path = ("invalidation_records", str(index))
+            expected = _evidence_binding_from_manifest(
+                payload,
+                _route_binding_for_path(payload, path),
+            )
             if not isinstance(record, Mapping) or dict(record.get("binding", {})) != expected:
                 _add_evidence_error(
                     state,
                     payload,
-                    ("invalidation_records", str(index)),
+                    path,
                     "EVIDENCE_BINDING_MISMATCH",
                     "An invalidation observation does not bind to this run and exact candidate/deployment/environment/account/resource scope.",
                 )
@@ -327,3 +330,41 @@ def _validate_evidence_bindings(
                 "Negative-control denial and zero-effect readback need distinct content, IDs, sources, and operators.",
                 structural=True,
             )
+
+    audit = payload.get("final_audit", {})
+    auditor = audit.get("auditor", {}) if isinstance(audit, Mapping) else {}
+    auditor_id = auditor.get("person_id") if isinstance(auditor, Mapping) else None
+    rows_by_id = {
+        row.get("row_id"): row
+        for row in rows
+        if isinstance(row, Mapping) and isinstance(row.get("row_id"), str)
+    }
+    rechecks = audit.get("row_rechecks", []) if isinstance(audit, Mapping) else []
+    if isinstance(rechecks, list):
+        for recheck in rechecks:
+            if not isinstance(recheck, Mapping):
+                continue
+            row = rows_by_id.get(recheck.get("row_id"))
+            readback = recheck.get("readback")
+            if not isinstance(row, Mapping):
+                continue
+            candidates = [row.get("raw_result"), row.get("readback")]
+            control = row.get("negative_control", {})
+            if isinstance(control, Mapping):
+                candidates.extend(
+                    (control.get("raw_denial"), control.get("independent_effect_readback"))
+                )
+            provenance = readback.get("provenance", {}) if isinstance(readback, Mapping) else {}
+            if (
+                not isinstance(provenance, Mapping)
+                or provenance.get("operator_id") != auditor_id
+                or any(
+                    isinstance(candidate, Mapping) and not _independent(candidate, readback)
+                    for candidate in candidates
+                )
+            ):
+                state.add_global(
+                    "FINAL_AUDIT_RECHECK_NOT_INDEPENDENT",
+                    "Each final-audit recheck requires new evidence from the final auditor, independent of that row's execution and negative-control evidence.",
+                    structural=True,
+                )

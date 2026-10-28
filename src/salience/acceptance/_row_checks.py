@@ -8,6 +8,7 @@ from typing import Any
 
 from ._canonical import _evidence_ref_error, _is_sha256, _iter_evidence_refs, _parse_datetime
 from ._contracts import REQUIRED_NEGATIVE_CONTROL_ROW_IDS, ROW_GATES, SECRET_KEY_RE, SECRET_VALUE_RE
+from ._scope_binding import _authorization_scope_from_manifest, _route_binding_from_row
 
 
 def _valid_name(person: Any) -> bool:
@@ -51,25 +52,23 @@ def _validate_person(
     return blockers
 
 
-def _authorization_scope_from_manifest(manifest: Mapping[str, Any]) -> dict[str, Any]:
-    environment = manifest.get("environment", {})
-    account = environment.get("account_identity", {})
-    return {
-        "environment_id": environment.get("environment_id"),
-        "account_id": account.get("account_id"),
-        "resource_ids": environment.get("resource_ids", []),
-        "tenant_id": environment.get("tenant_id"),
-        "workspace_id": environment.get("workspace_id"),
-    }
-
-
 def _normalized_authorization_scope(scope: Any) -> Any:
     if not isinstance(scope, Mapping):
         return scope
     normalized = dict(scope)
-    resources = normalized.get("resource_ids")
-    if isinstance(resources, list):
-        normalized["resource_ids"] = sorted(resources)
+    for key in ("artifact_digests", "resource_ids", "data_jurisdiction"):
+        values = normalized.get(key)
+        if isinstance(values, list):
+            normalized[key] = sorted(values)
+    route_binding = normalized.get("route_binding")
+    if isinstance(route_binding, Mapping) and isinstance(route_binding.get("routes"), list):
+        normalized["route_binding"] = {
+            **route_binding,
+            "routes": sorted(
+                route_binding["routes"],
+                key=lambda item: str(item.get("route_id")) if isinstance(item, Mapping) else "",
+            ),
+        }
     return normalized
 
 
@@ -99,7 +98,10 @@ def _validate_people(row: Mapping[str, Any], now: datetime, manifest: Mapping[st
     owner = row.get("owner")
     operator = row.get("operator")
     reviewer = row.get("independent_reviewer")
-    expected_scope = _authorization_scope_from_manifest(manifest)
+    expected_scope = _authorization_scope_from_manifest(
+        manifest,
+        _route_binding_from_row(row),
+    )
     blockers.extend(
         _validate_person(owner, now, expected_role="accountable-row-owner", expected_scope=expected_scope)
     )
@@ -145,6 +147,8 @@ def _manifest_row_scope_errors(row: Mapping[str, Any], manifest: Mapping[str, An
         (row_deployment.get("database_schema_head"), deployment.get("database", {}).get("schema_head")),
         (row_deployment.get("temporal_target_alias"), deployment.get("temporal", {}).get("target_alias")),
         (row_deployment.get("temporal_namespace"), deployment.get("temporal", {}).get("namespace")),
+        (row_deployment.get("storage_config_revision"), deployment.get("storage_config_revision")),
+        (row_deployment.get("telemetry_config_revision"), deployment.get("telemetry_config_revision")),
         (row_environment.get("environment_id"), environment.get("environment_id")),
         (row_environment.get("stage"), environment.get("stage")),
         (row_environment.get("region"), environment.get("region")),
@@ -208,7 +212,7 @@ def _validate_procedure(row: Mapping[str, Any], manifest: Mapping[str, Any]) -> 
         procedure.get("principal"),
         row.get("operator"),
         procedure.get("delegation"),
-        _authorization_scope_from_manifest(manifest),
+        _authorization_scope_from_manifest(manifest, _route_binding_from_row(row)),
     ):
         blockers.append("PROCEDURE_PRINCIPAL_UNAUTHORIZED")
     started_at = _parse_datetime(procedure.get("started_at"))
@@ -306,11 +310,13 @@ def _validate_transition(
         )
         if any(not transition.get(field) for field in required):
             blockers.append("PLANNED_TRANSITION_UNPINNED")
+        if transition.get("target_scope") != row.get("scope"):
+            blockers.append("PLANNED_TRANSITION_SCOPE_MISMATCH")
         if not _delegation_authorizes(
             transition.get("actor"),
             row.get("operator"),
             transition.get("delegation"),
-            _authorization_scope_from_manifest(manifest),
+            _authorization_scope_from_manifest(manifest, _route_binding_from_row(row)),
         ):
             blockers.append("TRANSITION_ACTOR_UNAUTHORIZED")
         if (
@@ -357,12 +363,7 @@ def _validate_transition(
     else:
         blockers.append("TRANSITION_MODE_INVALID")
     scope = row.get("scope", {})
-    rollback_deployment = rollback.get("deployment_id")
-    if rollback_deployment and rollback_deployment != scope.get("deployment", {}).get("deployment_id"):
-        blockers.append("ROLLBACK_SCOPE_MISMATCH")
-    rollback_route_digest = rollback.get("route_tuple_sha256")
-    expected_route_digest = scope.get("route", {}).get("route_tuple_sha256")
-    if rollback_route_digest and rollback_route_digest != expected_route_digest:
+    if rollback.get("scope") != scope:
         blockers.append("ROLLBACK_SCOPE_MISMATCH")
     return sorted(set(blockers)), failure_status
 

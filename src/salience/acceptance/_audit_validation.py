@@ -7,7 +7,8 @@ from typing import Any
 from ._canonical import _evidence_ref_error, _is_sha256, _iter_evidence_refs, _parse_datetime
 from ._contracts import ROW_GATES, ROW_IDS, _ValidationState
 from ._reconciliation import _transitive_dependents
-from ._row_checks import _authorization_scope_from_manifest, _validate_person
+from ._row_checks import _validate_person
+from ._scope_binding import _authorization_scope_from_manifest, _route_set_binding
 
 
 def _validate_invalidations(
@@ -153,7 +154,7 @@ def _validate_final_audit(
     auditor = audit.get("auditor")
     manifest = payload.get("manifest", {})
     expected_scope = (
-        _authorization_scope_from_manifest(manifest)
+        _authorization_scope_from_manifest(manifest, _route_set_binding(manifest))
         if isinstance(manifest, Mapping)
         else None
     )

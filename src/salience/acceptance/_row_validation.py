@@ -56,6 +56,22 @@ def _validate_row(
                 "RESULT_STATUS_MISMATCH",
                 "A PASS row requires passing normalized checks on exact scope.",
             )
+    if row.get("status") == "FAIL":
+        checks = row.get("normalized_checks", [])
+        has_executed_failure = any(
+            isinstance(check, Mapping)
+            and check.get("status") == "FAIL"
+            and check.get("scope_match") is True
+            and _evidence_ref_error(check.get("raw_result")) is None
+            for check in checks
+        ) if isinstance(checks, Sequence) and not isinstance(checks, (str, bytes)) else False
+        if not has_executed_failure:
+            state.add_row(
+                row_id,
+                "FAIL_WITHOUT_FAILED_ASSERTION",
+                "A FAIL row requires at least one executed failed normalized assertion on exact scope.",
+                structural=True,
+            )
 
     for code in _manifest_row_scope_errors(row, manifest):
         state.add_row(row_id, code, f"Row {row_id} is not bound to the exact manifest scope.")

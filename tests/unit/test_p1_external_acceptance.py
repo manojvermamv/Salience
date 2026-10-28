@@ -88,25 +88,93 @@ def _ref(label: str) -> dict[str, str]:
     }
 
 
-def _authorization_scope() -> dict[str, Any]:
+def _route_binding(route: dict[str, Any]) -> dict[str, Any]:
     return {
-        "environment_id": "env-synthetic-001",
-        "account_id": "account-synthetic",
-        "resource_ids": ["resource-synthetic-001"],
-        "tenant_id": "tenant-synthetic",
-        "workspace_id": "workspace-synthetic",
+        "applicability": "ROUTE",
+        "route_id": route["route_id"],
+        "route_tuple_sha256": route["route_tuple_sha256"],
+        "authenticated_route_manifest_sha256": route[
+            "authenticated_route_manifest_sha256"
+        ],
     }
 
 
-def _person(person_id: str, name: str, role: str) -> dict[str, Any]:
+def _route_set_binding(inventory: list[dict[str, Any]]) -> dict[str, Any]:
+    return {
+        "applicability": "ROUTE_SET",
+        "routes": sorted(
+            [
+                {
+                    "route_id": route["route_id"],
+                    "route_tuple_sha256": route["route_tuple_sha256"],
+                    "authenticated_route_manifest_sha256": route[
+                        "authenticated_route_manifest_sha256"
+                    ],
+                }
+                for route in inventory
+            ],
+            key=lambda item: item["route_id"],
+        ),
+    }
+
+
+def _fixture_scope_axes() -> dict[str, Any]:
+    return {
+        "candidate_commit": SOURCE_COMMIT,
+        "candidate_tree": SOURCE_TREE,
+        "artifact_digests": sorted(
+            [
+                _sha_bytes(f"artifact:{kind}:{name}".encode())
+                for kind, name in [
+                    ("OCI_IMAGE", "api"),
+                    ("WHEEL", "salience"),
+                    ("LAUNCHER", "worker-launcher"),
+                    ("CONFIG_BUNDLE", "production-config"),
+                    ("SOURCE_LOCK", "source-lock"),
+                    ("ARTIFACT_LOCK", "artifact-lock"),
+                ]
+            ]
+        ),
+        "migration_head": MIGRATION_HEAD,
+        "deployment_id": "deploy-synthetic-001",
+        "database_cluster_alias": "db-synthetic",
+        "database_schema_head": MIGRATION_HEAD,
+        "temporal_target_alias": "temporal-synthetic",
+        "temporal_namespace": "salience-synthetic",
+        "storage_config_revision": "storage-synthetic-v1",
+        "telemetry_config_revision": "telemetry-synthetic-v1",
+        "environment_id": "env-synthetic-001",
+        "stage": "production-synthetic",
+        "region": "us-test-1",
+        "tenant_id": "tenant-synthetic",
+        "workspace_id": "workspace-synthetic",
+        "provider": "internal-synthetic",
+        "account_id": "account-synthetic",
+        "repository_id": "repo-synthetic",
+        "resource_ids": ["resource-synthetic-001"],
+        "data_jurisdiction": ["US"],
+    }
+
+
+def _authorization_scope(route_binding: dict[str, Any]) -> dict[str, Any]:
+    return {**_fixture_scope_axes(), "route_binding": copy.deepcopy(route_binding)}
+
+
+def _person(
+    person_id: str,
+    name: str,
+    role: str,
+    route_binding: dict[str, Any],
+    reference_suffix: str,
+) -> dict[str, Any]:
     return {
         "person_id": person_id,
         "name": name,
         "role": role,
         "identity_source": "approved-idp:salience.example",
         "verified_identity": True,
-        "scope": _authorization_scope(),
-        "authorization_ref": _ref(f"authorization:{person_id}"),
+        "scope": _authorization_scope(route_binding),
+        "authorization_ref": _ref(f"authorization:{person_id}:{reference_suffix}"),
         "valid_from": "2026-10-01T00:00:00Z",
         "valid_until": "2026-12-01T00:00:00Z",
     }
@@ -136,6 +204,8 @@ def _row_scope(route_id: str) -> dict[str, Any]:
             "database_schema_head": MIGRATION_HEAD,
             "temporal_target_alias": "temporal-synthetic",
             "temporal_namespace": "salience-synthetic",
+            "storage_config_revision": "storage-synthetic-v1",
+            "telemetry_config_revision": "telemetry-synthetic-v1",
         },
         "environment": {
             "environment_id": "env-synthetic-001",
@@ -160,24 +230,23 @@ def _row_scope(route_id: str) -> dict[str, Any]:
     }
 
 
-def _fixture_evidence_binding(run_id: str) -> dict[str, Any]:
-    candidate_scope = _row_scope("00000000-0000-4000-8000-000000000001")["candidate"]
+def _fixture_evidence_binding(
+    run_id: str,
+    route_binding: dict[str, Any],
+) -> dict[str, Any]:
     return {
         "run_id": run_id,
-        "candidate_commit": SOURCE_COMMIT,
-        "candidate_tree": SOURCE_TREE,
-        "artifact_digests": sorted(candidate_scope["artifact_digests"]),
-        "deployment_id": "deploy-synthetic-001",
-        "environment_id": "env-synthetic-001",
-        "account_id": "account-synthetic",
-        "resource_ids": ["resource-synthetic-001"],
+        **_fixture_scope_axes(),
+        "route_binding": copy.deepcopy(route_binding),
     }
 
 
 def _row(row_id: str, run_id: str, route_id: str) -> dict[str, Any]:
-    owner = _person("owner-01", "Morgan Lee", "accountable-row-owner")
-    operator = _person("operator-01", "Avery Kim", "authorized-operator")
-    reviewer = _person("reviewer-01", "Riley Patel", "independent-reviewer")
+    scope = _row_scope(route_id)
+    route_binding = _route_binding(scope["route"])
+    owner = _person("owner-01", "Morgan Lee", "accountable-row-owner", route_binding, row_id)
+    operator = _person("operator-01", "Avery Kim", "authorized-operator", route_binding, row_id)
+    reviewer = _person("reviewer-01", "Riley Patel", "independent-reviewer", route_binding, row_id)
     dependencies = ROW_DEPENDENCIES.get(row_id, [])
     dependency_evidence = [
         {
@@ -187,7 +256,7 @@ def _row(row_id: str, run_id: str, route_id: str) -> dict[str, Any]:
             "run_id": run_id,
             "candidate_commit": SOURCE_COMMIT,
             "candidate_tree": SOURCE_TREE,
-            "artifact_digests": _fixture_evidence_binding(run_id)["artifact_digests"],
+            "artifact_digests": _fixture_evidence_binding(run_id, route_binding)["artifact_digests"],
             "deployment_id": "deploy-synthetic-001",
             "environment_id": "env-synthetic-001",
             "account_id": "account-synthetic",
@@ -205,7 +274,7 @@ def _row(row_id: str, run_id: str, route_id: str) -> dict[str, Any]:
         "dependencies": dependencies,
         "dependency_evidence": dependency_evidence,
         "evidence_class": "EXTERNAL_PRODUCTION_ACCEPTANCE",
-        "scope": _row_scope(route_id),
+        "scope": scope,
         "owner": owner,
         "operator": operator,
         "independent_reviewer": reviewer,
@@ -266,6 +335,7 @@ def _row(row_id: str, run_id: str, route_id: str) -> dict[str, Any]:
             "reviewer_acknowledged": True,
             "rollback": {
                 "status": "VERIFIED_NO_MUTATION",
+                "scope": copy.deepcopy(scope),
                 "procedure": _ref(f"rollback-procedure:{row_id}"),
                 "pre_state": _ref(f"rollback-pre-state:{row_id}"),
                 "action_receipt": None,
@@ -296,7 +366,7 @@ def _row(row_id: str, run_id: str, route_id: str) -> dict[str, Any]:
                 "run_id": run_id,
                 "candidate_commit": SOURCE_COMMIT,
                 "candidate_tree": SOURCE_TREE,
-                "artifact_digests": _fixture_evidence_binding(run_id)["artifact_digests"],
+            "artifact_digests": _fixture_evidence_binding(run_id, route_binding)["artifact_digests"],
                 "deployment_id": "deploy-synthetic-001",
                 "environment_id": "env-synthetic-001",
                 "account_alias": "account-synthetic",
@@ -378,22 +448,58 @@ def _bind_references(value: Any, context: dict[str, Any], operator_id: str) -> N
             _bind_references(child, context, operator_id)
 
 
+def _binding_context(
+    payload: dict[str, Any],
+    route_binding: dict[str, Any],
+) -> dict[str, Any]:
+    manifest = payload["manifest"]
+    candidate = manifest.get("candidate", {})
+    environment = manifest.get("environment", {})
+    account = environment.get("account_identity", {})
+    deployment = manifest.get("deployment", {})
+    database = deployment.get("database", {})
+    temporal = deployment.get("temporal", {})
+    artifact_digests = manifest.get("candidate_artifact_digests", [])
+    resource_ids = environment.get("resource_ids", [])
+    data_jurisdiction = environment.get("data_jurisdiction", [])
+    return {
+        "run_id": payload.get("run_id"),
+        "candidate_commit": candidate.get("source_commit"),
+        "candidate_tree": candidate.get("source_tree"),
+        "artifact_digests": sorted(artifact_digests) if isinstance(artifact_digests, list) else artifact_digests,
+        "migration_head": candidate.get("migration_head"),
+        "deployment_id": deployment.get("deployment_id"),
+        "database_cluster_alias": database.get("cluster_alias"),
+        "database_schema_head": database.get("schema_head"),
+        "temporal_target_alias": temporal.get("target_alias"),
+        "temporal_namespace": temporal.get("namespace"),
+        "storage_config_revision": deployment.get("storage_config_revision"),
+        "telemetry_config_revision": deployment.get("telemetry_config_revision"),
+        "environment_id": environment.get("environment_id"),
+        "stage": environment.get("stage"),
+        "region": environment.get("region"),
+        "tenant_id": environment.get("tenant_id"),
+        "workspace_id": environment.get("workspace_id"),
+        "provider": account.get("provider"),
+        "account_id": account.get("account_id"),
+        "repository_id": account.get("repository_id"),
+        "resource_ids": sorted(resource_ids) if isinstance(resource_ids, list) else resource_ids,
+        "data_jurisdiction": sorted(data_jurisdiction) if isinstance(data_jurisdiction, list) else data_jurisdiction,
+        "route_binding": copy.deepcopy(route_binding),
+    }
+
+
 def _bind_package_references(payload: dict[str, Any]) -> None:
     manifest = payload["manifest"]
-    environment = manifest["environment"]
-    context = {
-        "run_id": payload["run_id"],
-        "candidate_commit": manifest["candidate"].get("source_commit"),
-        "candidate_tree": manifest["candidate"].get("source_tree"),
-        "artifact_digests": sorted(manifest.get("candidate_artifact_digests", [])),
-        "deployment_id": manifest.get("deployment", {}).get("deployment_id"),
-        "environment_id": environment.get("environment_id"),
-        "account_id": environment.get("account_identity", {}).get("account_id"),
-        "resource_ids": sorted(environment.get("resource_ids", [])),
-    }
-    for route in manifest.get("route_manifest", {}).get("inventory", []):
-        route.setdefault("binding", copy.deepcopy(context))
+    route_inventory = manifest["route_manifest"]["inventory"]
+    route_set = _route_set_binding(route_inventory)
+    all_routes_context = _binding_context(payload, route_set)
+    for route in route_inventory:
+        route_context = _binding_context(payload, _route_binding(route))
+        route.setdefault("binding", copy.deepcopy(route_context))
+        route["evidence_ref"].setdefault("binding", copy.deepcopy(route_context))
     for row in payload.get("rows", []):
+        context = _binding_context(payload, _route_binding(row["scope"]["route"]))
         row.get("freshness", {}).setdefault("binding", copy.deepcopy(context))
         for dependency in row.get("dependency_evidence", []):
             dependency.setdefault("binding", copy.deepcopy(context))
@@ -401,10 +507,29 @@ def _bind_package_references(payload: dict[str, Any]) -> None:
             "binding", copy.deepcopy(context)
         )
     for record in payload.get("invalidation_records", []):
+        source_row = next(
+            (
+                row
+                for row in payload.get("rows", [])
+                if row["row_id"] == record.get("source_row_id")
+            ),
+            None,
+        )
+        context = (
+            _binding_context(payload, _route_binding(source_row["scope"]["route"]))
+            if record.get("scope") == "ROW" and source_row is not None
+            else all_routes_context
+        )
         record.setdefault("binding", copy.deepcopy(context))
-    _bind_references(manifest, context, "deployment-authority")
-    _bind_references(payload.get("manifest_signature", {}), context, "evidence-signer")
+
+    _bind_references(manifest, all_routes_context, "deployment-authority")
+    _bind_references(payload.get("manifest_signature", {}), all_routes_context, "evidence-signer")
+    for route in route_inventory:
+        route_context = _binding_context(payload, _route_binding(route))
+        route.setdefault("binding", copy.deepcopy(route_context))
+        route["evidence_ref"].setdefault("binding", copy.deepcopy(route_context))
     for row in payload.get("rows", []):
+        context = _binding_context(payload, _route_binding(row["scope"]["route"]))
         operator_id = row.get("operator", {}).get("person_id", "operator-unknown")
         reviewer_id = row.get("independent_reviewer", {}).get("person_id", "reviewer-unknown")
         _bind_references(row, context, operator_id)
@@ -416,7 +541,21 @@ def _bind_package_references(payload: dict[str, Any]) -> None:
         independent_readback = control.get("independent_effect_readback")
         if isinstance(independent_readback, dict) and "provenance" in independent_readback:
             independent_readback["provenance"]["operator_id"] = reviewer_id
-    _bind_references(payload.get("final_audit", {}), context, "final-auditor")
+    audit = payload.get("final_audit", {})
+    auditor_id = audit.get("auditor", {}).get("person_id", "auditor-unknown")
+    _bind_references(audit, all_routes_context, auditor_id)
+    rows_by_id = {row["row_id"]: row for row in payload.get("rows", [])}
+    for recheck in audit.get("row_rechecks", []):
+        row = rows_by_id.get(recheck.get("row_id"))
+        if row is None:
+            continue
+        route_context = _binding_context(payload, _route_binding(row["scope"]["route"]))
+        recheck["readback"]["binding"] = copy.deepcopy(route_context)
+        recheck["readback"].setdefault(
+            "provenance",
+            {"source_id": f"audit-source-{recheck['row_id']}", "operator_id": auditor_id},
+        )
+        recheck["readback"]["provenance"]["operator_id"] = auditor_id
 
 
 def _seal(payload: dict[str, Any]) -> dict[str, Any]:
@@ -567,7 +706,13 @@ def _valid_package() -> dict[str, Any]:
         "audit_id": "audit-synthetic-001",
         "record_type": "SEPARATE_FINAL_AUDIT",
         "status": "NOT RUN",
-        "auditor": _person("auditor-01", "Jordan Rivera", "independent-final-auditor"),
+        "auditor": _person(
+            "auditor-01",
+            "Jordan Rivera",
+            "independent-final-auditor",
+            _route_set_binding(manifest["route_manifest"]["inventory"]),
+            "all-routes",
+        ),
         "audited_at": CURRENT_TIME,
         "rechecked_row_ids": ROW_IDS.copy(),
         "row_rechecks": [
@@ -725,14 +870,24 @@ def test_raw_results_and_rollback_are_hashed_and_referenced() -> None:
     row["transition"].update(
         {
             "change_ticket": "CHG-SYNTHETIC-001",
-            "target_scope": "account-synthetic/resource-synthetic-001",
+            "target_scope": copy.deepcopy(row["scope"]),
             "expected_pre_version": "route-v1",
             "expected_post_version": "route-v2",
             "observed_pre_version": "route-v1",
             "observed_post_version": "route-v2",
             "actor": "operator-01",
             "command_receipt": _ref("planned-command-receipt"),
+            "pre_state_sha256": "5" * 64,
+            "post_state_sha256": "6" * 64,
             "mutation_ids": ["mutation-synthetic-001"],
+            "final_reviewed_version": "route-v2",
+        }
+    )
+    row["freshness"].update(
+        {
+            "source_state_sha256": "5" * 64,
+            "final_reviewed_state_sha256": "6" * 64,
+            "final_reviewed_version": "route-v2",
         }
     )
     row["transition"]["rollback"].update(
@@ -863,7 +1018,7 @@ def test_planned_revocation_with_verified_final_denial_passes() -> None:
         {
             "mode": "PLANNED_TRANSITION",
             "change_ticket": "CHG-REVOKE-SYNTHETIC",
-            "target_scope": "identity:synthetic-credential",
+            "target_scope": copy.deepcopy(row["scope"]),
             "expected_pre_version": "credential-v1",
             "expected_post_version": "credential-v2",
             "observed_pre_version": "credential-v1",
@@ -873,6 +1028,7 @@ def test_planned_revocation_with_verified_final_denial_passes() -> None:
             "pre_state_sha256": "7" * 64,
             "post_state_sha256": "8" * 64,
             "mutation_ids": ["credential-revocation-001"],
+            "final_reviewed_version": "credential-v2",
         }
     )
     row["transition"]["rollback"].update(
@@ -884,6 +1040,7 @@ def test_planned_revocation_with_verified_final_denial_passes() -> None:
     )
     row["freshness"]["source_state_sha256"] = "8" * 64
     row["freshness"]["final_reviewed_state_sha256"] = "8" * 64
+    row["freshness"]["final_reviewed_version"] = "credential-v2"
     row["credential_state"] = {
         "revoked_version_ids": ["credential-v1"],
         "current_version_id": "credential-v2",
@@ -916,7 +1073,7 @@ def test_unplanned_or_subsequent_revision_change_fails() -> None:
         {
             "mode": "PLANNED_TRANSITION",
             "change_ticket": "CHG-ROUTE-SYNTHETIC",
-            "target_scope": "route:synthetic",
+            "target_scope": copy.deepcopy(row["scope"]),
             "expected_pre_version": "route-v1",
             "expected_post_version": "route-v2",
             "observed_pre_version": "route-v1",
@@ -1152,7 +1309,7 @@ def test_rollback_requires_pre_state_action_and_exact_post_state_readback() -> N
         {
             "mode": "PLANNED_TRANSITION",
             "change_ticket": "CHG-ROLLBACK-SYNTHETIC",
-            "target_scope": "route:synthetic",
+            "target_scope": copy.deepcopy(row["scope"]),
             "expected_pre_version": "route-v1",
             "expected_post_version": "route-v2",
             "observed_pre_version": "route-v1",
@@ -1167,16 +1324,17 @@ def test_rollback_requires_pre_state_action_and_exact_post_state_readback() -> N
             "status": "UNKNOWN",
             "action_receipt": None,
             "post_state_sha256": "9" * 64,
-            "deployment_id": "other-deployment",
             "unresolved_liabilities": ["remote-operation-unknown"],
         }
     )
+    row["transition"]["rollback"]["scope"]["deployment"]["deployment_id"] = "other-deployment"
     _seal(package)
     result = _validate(package)
     row_result = _result_row(result, "R08")
     assert result.to_dict()["disposition"] == "NO_GO"
     assert row_result["effective_status"] == "HELD"
     assert "ROLLBACK_UNVERIFIED" in row_result["blockers"]
+    assert "ROLLBACK_SCOPE_MISMATCH" in row_result["blockers"]
 
 
 def test_observability_artifacts_are_correlated_and_secret_free() -> None:
@@ -1312,12 +1470,13 @@ def test_authority_scope_and_execution_principals_bind_exactly_or_use_delegation
     mutations.append((package, "PROCEDURE_PRINCIPAL_UNAUTHORIZED"))
 
     package = _valid_package()
-    transition = _row_by_id(package, "R08")["transition"]
+    row = _row_by_id(package, "R08")
+    transition = row["transition"]
     transition.update(
         {
             "mode": "PLANNED_TRANSITION",
             "change_ticket": "CHG-PRINCIPAL-SYNTHETIC",
-            "target_scope": "route:synthetic",
+            "target_scope": copy.deepcopy(row["scope"]),
             "expected_pre_version": "route-v1",
             "expected_post_version": "route-v2",
             "observed_pre_version": "route-v1",
@@ -1342,7 +1501,7 @@ def test_authority_scope_and_execution_principals_bind_exactly_or_use_delegation
     row["procedure"]["delegation"] = {
         "principal_id": "delegated-principal",
         "authorized_by": "operator-01",
-        "scope": _authorization_scope(),
+        "scope": _authorization_scope(_route_binding(row["scope"]["route"])),
         "evidence_ref": _ref("exact-scope-delegation"),
     }
     _seal(package)
@@ -1365,7 +1524,7 @@ def test_planned_transition_final_state_and_version_match_freshness_readback() -
             {
                 "mode": "PLANNED_TRANSITION",
                 "change_ticket": "CHG-FRESHNESS-SYNTHETIC",
-                "target_scope": "route:synthetic",
+                "target_scope": copy.deepcopy(row["scope"]),
                 "expected_pre_version": "route-v1",
                 "expected_post_version": "route-v2",
                 "observed_pre_version": "route-v1",
@@ -1614,3 +1773,190 @@ def test_not_run_and_held_rows_need_no_dummy_execution_evidence_but_pass_fail_st
     row.pop("missing_prerequisites", None)
     _seal(package)
     assert _validate(package).to_dict()["structural_status"] == "INVALID"
+
+
+def test_scope_bindings_cover_manifest_axes_and_route_applicability() -> None:
+    package = _valid_package()
+    manifest = package["manifest"]
+    manifest["environment"].update(
+        {
+            "stage": "external-qualification",
+            "region": "eu-test-2",
+            "data_jurisdiction": ["CA"],
+        }
+    )
+    manifest["environment"]["account_identity"].update(
+        {"provider": "cloud-provider-b", "repository_id": "repo-b"}
+    )
+    manifest["deployment"]["temporal"].update(
+        {"target_alias": "temporal-b", "namespace": "salience-b"}
+    )
+    for row in package["rows"]:
+        row["scope"]["environment"].update(
+            {
+                "stage": manifest["environment"]["stage"],
+                "region": manifest["environment"]["region"],
+                "data_jurisdiction": manifest["environment"]["data_jurisdiction"],
+            }
+        )
+        row["scope"]["account"].update(
+            {
+                "provider": manifest["environment"]["account_identity"]["provider"],
+                "repository_id": manifest["environment"]["account_identity"]["repository_id"],
+            }
+        )
+        row["scope"]["deployment"].update(
+            {
+                "temporal_target_alias": manifest["deployment"]["temporal"]["target_alias"],
+                "temporal_namespace": manifest["deployment"]["temporal"]["namespace"],
+            }
+        )
+    _seal(package)
+    axis_result = _validate(package)
+
+    package = _valid_package()
+    _row_by_id(package, "R01")["raw_result"] = copy.deepcopy(
+        _row_by_id(package, "R02")["raw_result"]
+    )
+    _seal(package)
+    route_result = _validate(package)
+
+    assert axis_result.to_dict()["structural_status"] == "INVALID"
+    assert "EVIDENCE_BINDING_MISMATCH" in _blocker_codes(axis_result)
+    assert "AUTHORIZATION_SCOPE_MISMATCH" in _blocker_codes(axis_result)
+    assert route_result.to_dict()["structural_status"] == "INVALID"
+    assert "EVIDENCE_BINDING_MISMATCH" in _blocker_codes(route_result)
+
+    package = _valid_package()
+    package["rows"][0]["owner"]["scope"]["route_binding"] = {
+        "applicability": "NOT_APPLICABLE",
+        "reason": "Synthetic route applicability test",
+        "accountable_owner_id": "owner-01",
+    }
+    _seal(package)
+    applicability_result = _validate(package)
+    assert applicability_result.to_dict()["structural_status"] == "INVALID"
+    assert "SCHEMA_VALIDATION_FAILED" in _blocker_codes(applicability_result)
+
+
+def test_planned_transition_and_rollback_bind_exact_row_scope() -> None:
+    package = _valid_package()
+    row = _row_by_id(package, "R08")
+    transition = row["transition"]
+    transition.update(
+        {
+            "mode": "PLANNED_TRANSITION",
+            "change_ticket": "CHG-EXACT-SCOPE-001",
+            "target_scope": "another-route-or-region",
+            "expected_pre_version": "route-v1",
+            "expected_post_version": "route-v2",
+            "observed_pre_version": "route-v1",
+            "observed_post_version": "route-v2",
+            "actor": "operator-01",
+            "command_receipt": _ref("exact-scope-command"),
+            "pre_state_sha256": "5" * 64,
+            "post_state_sha256": "6" * 64,
+            "mutation_ids": ["exact-scope-mutation-001"],
+            "final_reviewed_version": "route-v2",
+        }
+    )
+    row["freshness"]["source_state_sha256"] = "5" * 64
+    row["freshness"]["final_reviewed_state_sha256"] = "6" * 64
+    row["freshness"]["final_reviewed_version"] = "route-v2"
+    transition["rollback"].update(
+        {
+            "status": "VERIFIED",
+            "action_receipt": _ref("exact-scope-rollback"),
+            "post_state_sha256": "6" * 64,
+            "scope": copy.deepcopy(row["scope"]),
+        }
+    )
+    _seal(package)
+    result = _validate(package).to_dict()
+    assert result["structural_status"] == "INVALID"
+    assert "PLANNED_TRANSITION_SCOPE_MISMATCH" in _blocker_codes(_validate(package))
+
+    package = _valid_package()
+    row = _row_by_id(package, "R08")
+    transition = row["transition"]
+    transition.update(
+        {
+            "mode": "PLANNED_TRANSITION",
+            "change_ticket": "CHG-MISSING-ROLLBACK-SCOPE-001",
+            "target_scope": copy.deepcopy(row["scope"]),
+            "expected_pre_version": "route-v1",
+            "expected_post_version": "route-v2",
+            "observed_pre_version": "route-v1",
+            "observed_post_version": "route-v2",
+            "actor": "operator-01",
+            "command_receipt": _ref("missing-scope-command"),
+            "pre_state_sha256": "5" * 64,
+            "post_state_sha256": "6" * 64,
+            "mutation_ids": ["missing-scope-mutation-001"],
+            "final_reviewed_version": "route-v2",
+        }
+    )
+    row["freshness"]["source_state_sha256"] = "5" * 64
+    row["freshness"]["final_reviewed_state_sha256"] = "6" * 64
+    row["freshness"]["final_reviewed_version"] = "route-v2"
+    transition["rollback"].update(
+        {
+            "status": "VERIFIED",
+            "action_receipt": _ref("missing-scope-rollback"),
+            "post_state_sha256": "6" * 64,
+            "scope": copy.deepcopy(row["scope"]),
+        }
+    )
+    transition["rollback"]["scope"]["deployment"].pop("deployment_id")
+    _seal(package)
+    result = _validate(package).to_dict()
+    assert result["structural_status"] == "INVALID"
+    assert "ROLLBACK_SCOPE_MISMATCH" in _blocker_codes(_validate(package))
+
+
+def test_final_audit_rechecks_use_new_independent_evidence() -> None:
+    reuse_paths = (
+        ("R01", ("raw_result",)),
+        ("R02", ("readback",)),
+        ("R23F", ("negative_control", "raw_denial")),
+    )
+    for row_id, path in reuse_paths:
+        package = _valid_package()
+        row = _row_by_id(package, row_id)
+        if path == ("negative_control", "raw_denial"):
+            row["negative_control"].update(
+                {
+                    "required": True,
+                    "expected_outcome": "DENIED",
+                    "observed_outcome": "DENIED",
+                    "raw_denial": _ref("audit-reuse-negative-denial"),
+                    "independent_effect_readback": _ref("audit-reuse-zero-effect"),
+                    "observed_call_count": 0,
+                    "observed_effect_count": 0,
+                }
+            )
+        recheck = next(
+            item
+            for item in package["final_audit"]["row_rechecks"]
+            if item["row_id"] == row_id
+        )
+        evidence = row
+        for key in path:
+            evidence = evidence[key]
+        recheck["status"] = "PASS"
+        recheck["readback"] = copy.deepcopy(evidence)
+        _seal(package)
+        result = _validate(package).to_dict()
+        assert result["structural_status"] == "INVALID"
+        assert "FINAL_AUDIT_RECHECK_NOT_INDEPENDENT" in _blocker_codes(_validate(package))
+
+
+def test_fail_status_requires_an_executed_failed_normalized_assertion() -> None:
+    package = _valid_package()
+    row = _row_by_id(package, "R01")
+    row["status"] = "FAIL"
+    assert all(check["status"] == "PASS" for check in row["normalized_checks"])
+    _seal(package)
+    result = _validate(package).to_dict()
+    assert result["structural_status"] == "INVALID"
+    assert "FAIL_WITHOUT_FAILED_ASSERTION" in result["rows"]["R01"]["blockers"]

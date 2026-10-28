@@ -797,7 +797,9 @@
             "database_cluster_alias",
             "database_schema_head",
             "temporal_target_alias",
-            "temporal_namespace"
+            "temporal_namespace",
+            "storage_config_revision",
+            "telemetry_config_revision"
           ],
           "properties": {
             "deployment_id": {
@@ -813,6 +815,12 @@
               "$ref": "#/$defs/nonEmpty"
             },
             "temporal_namespace": {
+              "$ref": "#/$defs/nonEmpty"
+            },
+            "storage_config_revision": {
+              "$ref": "#/$defs/nonEmpty"
+            },
+            "telemetry_config_revision": {
               "$ref": "#/$defs/nonEmpty"
             }
           }
@@ -1118,6 +1126,7 @@
       "additionalProperties": false,
       "required": [
         "status",
+        "scope",
         "procedure",
         "pre_state",
         "action_receipt",
@@ -1153,12 +1162,6 @@
         "post_state_sha256": {
           "$ref": "#/$defs/sha256"
         },
-        "deployment_id": {
-          "$ref": "#/$defs/nonEmpty"
-        },
-        "route_tuple_sha256": {
-          "$ref": "#/$defs/sha256"
-        },
         "unresolved_liabilities": {
           "type": "array",
           "items": {
@@ -1170,6 +1173,9 @@
         },
         "reviewer_acknowledged": {
           "type": "boolean"
+        },
+        "scope": {
+          "$ref": "#/$defs/rowScope"
         }
       }
     },
@@ -1226,8 +1232,7 @@
           "minLength": 1
         },
         "target_scope": {
-          "type": "string",
-          "minLength": 1
+          "$ref": "#/$defs/rowScope"
         },
         "expected_pre_version": {
           "type": "string",
@@ -1790,6 +1795,40 @@
               "missing_prerequisites"
             ]
           }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "FAIL"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "properties": {
+              "normalized_checks": {
+                "contains": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "const": "FAIL"
+                    },
+                    "scope_match": {
+                      "const": true
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "scope_match"
+                  ]
+                },
+                "minContains": 1
+              }
+            }
+          }
         }
       ]
     },
@@ -2007,17 +2046,90 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
+        "candidate_commit",
+        "candidate_tree",
+        "artifact_digests",
+        "migration_head",
+        "deployment_id",
+        "database_cluster_alias",
+        "database_schema_head",
+        "temporal_target_alias",
+        "temporal_namespace",
+        "storage_config_revision",
+        "telemetry_config_revision",
         "environment_id",
-        "account_id",
-        "resource_ids",
+        "stage",
+        "region",
         "tenant_id",
-        "workspace_id"
+        "workspace_id",
+        "provider",
+        "account_id",
+        "repository_id",
+        "resource_ids",
+        "data_jurisdiction",
+        "route_binding"
       ],
       "properties": {
+        "candidate_commit": {
+          "$ref": "#/$defs/sourceSha"
+        },
+        "candidate_tree": {
+          "$ref": "#/$defs/sourceSha"
+        },
+        "artifact_digests": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/sha256"
+          }
+        },
+        "migration_head": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "deployment_id": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "database_cluster_alias": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "database_schema_head": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "temporal_target_alias": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "temporal_namespace": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "storage_config_revision": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "telemetry_config_revision": {
+          "$ref": "#/$defs/nonEmpty"
+        },
         "environment_id": {
           "$ref": "#/$defs/nonEmpty"
         },
+        "stage": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "region": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "tenant_id": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "workspace_id": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "provider": {
+          "$ref": "#/$defs/nonEmpty"
+        },
         "account_id": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "repository_id": {
           "$ref": "#/$defs/nonEmpty"
         },
         "resource_ids": {
@@ -2028,11 +2140,16 @@
             "$ref": "#/$defs/nonEmpty"
           }
         },
-        "tenant_id": {
-          "$ref": "#/$defs/nonEmpty"
+        "data_jurisdiction": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/nonEmpty"
+          }
         },
-        "workspace_id": {
-          "$ref": "#/$defs/nonEmpty"
+        "route_binding": {
+          "$ref": "#/$defs/routeBinding"
         }
       }
     },
@@ -2104,10 +2221,25 @@
         "candidate_commit",
         "candidate_tree",
         "artifact_digests",
+        "migration_head",
         "deployment_id",
+        "database_cluster_alias",
+        "database_schema_head",
+        "temporal_target_alias",
+        "temporal_namespace",
+        "storage_config_revision",
+        "telemetry_config_revision",
         "environment_id",
+        "stage",
+        "region",
+        "tenant_id",
+        "workspace_id",
+        "provider",
         "account_id",
-        "resource_ids"
+        "repository_id",
+        "resource_ids",
+        "data_jurisdiction",
+        "route_binding"
       ],
       "properties": {
         "run_id": {
@@ -2127,13 +2259,52 @@
             "$ref": "#/$defs/sha256"
           }
         },
+        "migration_head": {
+          "$ref": "#/$defs/nonEmpty"
+        },
         "deployment_id": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "database_cluster_alias": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "database_schema_head": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "temporal_target_alias": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "temporal_namespace": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "storage_config_revision": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "telemetry_config_revision": {
           "$ref": "#/$defs/nonEmpty"
         },
         "environment_id": {
           "$ref": "#/$defs/nonEmpty"
         },
+        "stage": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "region": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "tenant_id": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "workspace_id": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "provider": {
+          "$ref": "#/$defs/nonEmpty"
+        },
         "account_id": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "repository_id": {
           "$ref": "#/$defs/nonEmpty"
         },
         "resource_ids": {
@@ -2143,6 +2314,17 @@
           "items": {
             "$ref": "#/$defs/nonEmpty"
           }
+        },
+        "data_jurisdiction": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/nonEmpty"
+          }
+        },
+        "route_binding": {
+          "$ref": "#/$defs/routeBinding"
         }
       }
     },
@@ -2161,6 +2343,103 @@
           "$ref": "#/$defs/nonEmpty"
         }
       }
+    },
+    "routeBinding": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "applicability",
+            "route_id",
+            "route_tuple_sha256",
+            "authenticated_route_manifest_sha256"
+          ],
+          "properties": {
+            "applicability": {
+              "const": "ROUTE"
+            },
+            "route_id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "route_tuple_sha256": {
+              "$ref": "#/$defs/sha256"
+            },
+            "authenticated_route_manifest_sha256": {
+              "$ref": "#/$defs/sha256"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "applicability",
+            "routes"
+          ],
+          "properties": {
+            "applicability": {
+              "const": "ROUTE_SET"
+            },
+            "routes": {
+              "type": "array",
+              "minItems": 22,
+              "maxItems": 22,
+              "uniqueItems": true,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "route_id",
+                  "route_tuple_sha256",
+                  "authenticated_route_manifest_sha256"
+                ],
+                "properties": {
+                  "route_id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "route_tuple_sha256": {
+                    "$ref": "#/$defs/sha256"
+                  },
+                  "authenticated_route_manifest_sha256": {
+                    "$ref": "#/$defs/sha256"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "applicability",
+            "reason",
+            "accountable_owner_id",
+            "reviewer_id",
+            "reviewer_confirmed"
+          ],
+          "properties": {
+            "applicability": {
+              "const": "NOT_APPLICABLE"
+            },
+            "reason": {
+              "$ref": "#/$defs/nonEmpty"
+            },
+            "accountable_owner_id": {
+              "$ref": "#/$defs/nonEmpty"
+            },
+            "reviewer_id": {
+              "$ref": "#/$defs/nonEmpty"
+            },
+            "reviewer_confirmed": {
+              "const": true
+            }
+          }
+        }
+      ]
     }
   }
 }
