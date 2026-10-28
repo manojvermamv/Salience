@@ -7,12 +7,12 @@
   "summary": {
     "current_handoff_hashes": {
       ".superpowers/sdd/2026-10-27-p1-production-policy-and-revocation/final-evidence-report.md": "551c40b4d6852ab3ab4f42bc2cd26ffd1a0339fa03a5f7c2c0f0d39814d05307",
-      ".superpowers/sdd/2026-10-28-p1-remaining-production-development/planning-report.md": "62d19963addb0fbbf8620737c56616e8dfc8569882e7d8ed6c08b8b4036fe2c0",
-      ".superpowers/sdd/2026-10-28-p1-remaining-production-development/progress.md": "c652ebf029cb2b3ea21177d543de1c281b61169a847a34bc93fd21bb8d92dee4",
+      ".superpowers/sdd/2026-10-28-p1-remaining-production-development/planning-report.md": "f7e55165fd10f142dc5bdd7fdcf688d4c6e975f0028ddaca2bb7e8428a838a86",
+      ".superpowers/sdd/2026-10-28-p1-remaining-production-development/progress.md": "5e7e28405838eb60154fa33ef567e0a3c041b06050aa1d92a59410543f4a1d8f",
       "docs/README.md": "a4a4ecf415eb38c9947d7632b4ffccbe03dc4629c8ce6b6988082b4386db2c39",
       "docs/superpowers/plans/2026-10-27-p1-production-policy-and-revocation.md": "c1564a7ec7d09f63b5aba105678c8b5929619fecc49e5b4bb3e415ed1340672e",
       "docs/superpowers/plans/2026-10-27-p1-rg0-rg1-initial-gap-audit.md": "5d1dd8a86718184d03324144643dfb009cb36243a5bd0c0f14c46844eb3c5cd4",
-      "docs/superpowers/plans/2026-10-28-p1-remaining-production-development.md": "1f1b541d4f43506b2cace21147bc841d159ebfdaf020d17fdf55c70109f3390a",
+      "docs/superpowers/plans/2026-10-28-p1-remaining-production-development.md": "1f10d439d3f56ef0f814c6819ba41beac8078d94f547f6a1c0254f47ff874501",
       "docs/superpowers/specs/2026-10-13-p1-live-schedule-fencing-design.md": "17126661384a5c8e7e46f316919f361f86cbc99792f7095e4e8eb714735ee269",
       "docs/superpowers/specs/2026-10-13-p1-production-policy-and-revocation-design.md": "6be8f5ec6c48491a45a734510cc20af98e2cd7554fdc0409e77c6d9667d42fe2",
       "docs/superpowers/specs/2026-10-13-p1-production-recovery-and-alerts-design.md": "4a9b88bf864dda3df939eb50868dca10b671e76056b016ee3eb2180f9dad1d7f",
@@ -829,12 +829,12 @@
     },
     {
       "path": ".superpowers/sdd/2026-10-28-p1-remaining-production-development/planning-report.md",
-      "sha256": "62d19963addb0fbbf8620737c56616e8dfc8569882e7d8ed6c08b8b4036fe2c0",
+      "sha256": "f7e55165fd10f142dc5bdd7fdcf688d4c6e975f0028ddaca2bb7e8428a838a86",
       "disposition": "current effects-disabled P1 remaining-production planning artifacts; external qualification remains NOT RUN/HELD"
     },
     {
       "path": ".superpowers/sdd/2026-10-28-p1-remaining-production-development/progress.md",
-      "sha256": "c652ebf029cb2b3ea21177d543de1c281b61169a847a34bc93fd21bb8d92dee4",
+      "sha256": "5e7e28405838eb60154fa33ef567e0a3c041b06050aa1d92a59410543f4a1d8f",
       "disposition": "current effects-disabled P1 remaining-production planning artifacts; external qualification remains NOT RUN/HELD"
     },
     {
@@ -1529,7 +1529,7 @@
     },
     {
       "path": "docs/superpowers/plans/2026-10-28-p1-remaining-production-development.md",
-      "sha256": "1f1b541d4f43506b2cace21147bc841d159ebfdaf020d17fdf55c70109f3390a",
+      "sha256": "1f10d439d3f56ef0f814c6819ba41beac8078d94f547f6a1c0254f47ff874501",
       "disposition": "current effects-disabled P1 remaining-production planning artifacts; external qualification remains NOT RUN/HELD"
     },
     {
@@ -2408,17 +2408,17 @@
     "docs/README.md": "a4a4ecf415eb38c9947d7632b4ffccbe03dc4629c8ce6b6988082b4386db2c39",
     "docs/superpowers/plans/2026-10-27-p1-production-policy-and-revocation.md": "c1564a7ec7d09f63b5aba105678c8b5929619fecc49e5b4bb3e415ed1340672e",
     "docs/superpowers/plans/2026-10-27-p1-rg0-rg1-initial-gap-audit.md": "5d1dd8a86718184d03324144643dfb009cb36243a5bd0c0f14c46844eb3c5cd4",
-    "docs/superpowers/specs/2026-10-13-p1-live-schedule-fencing-design.md": "04ed59e2ed61ca17dc2c01df3a2964e1569e03e79f0aef2bbfe2ca2d96d5129a",
+    "docs/superpowers/specs/2026-10-13-p1-live-schedule-fencing-design.md": "17126661384a5c8e7e46f316919f361f86cbc99792f7095e4e8eb714735ee269",
     "docs/superpowers/specs/2026-10-13-p1-production-policy-and-revocation-design.md": "6be8f5ec6c48491a45a734510cc20af98e2cd7554fdc0409e77c6d9667d42fe2",
-    "docs/superpowers/specs/2026-10-13-p1-production-recovery-and-alerts-design.md": "1c731ee595be6582902aa79f9ebb52d520f6fd18ad6054ca304709ce16aea61c",
-    "docs/superpowers/specs/2026-10-13-p1-production-routing-and-worker-fencing-design.md": "d4d2c06a1f0925d2826b29a4e2c053f7f7773f660397fe986883c370aee78f67",
-    "docs/superpowers/specs/2026-10-13-rg0-rg1-external-acceptance-design.md": "2a5d6cff0dd44070b1942e79f073906527b8e2650b62b3473d63542f00bfbcd8",
+    "docs/superpowers/specs/2026-10-13-p1-production-recovery-and-alerts-design.md": "4a9b88bf864dda3df939eb50868dca10b671e76056b016ee3eb2180f9dad1d7f",
+    "docs/superpowers/specs/2026-10-13-p1-production-routing-and-worker-fencing-design.md": "244e914ce0a24b869f5d360fdd0129d6773787ed0e49cb60d08a1fda49918830",
+    "docs/superpowers/specs/2026-10-13-rg0-rg1-external-acceptance-design.md": "692fb6900dd1f95179ca923574a692da42fb80e55bfd99d7dd044c3f136abd29",
     "docs/v4/IMPLEMENTATION-BLUEPRINT.md": "8ceb85b83e452c10d4b323a709ac6706935013c2d9193bd1bff2b1b8c83d2703",
     "docs/v4/evidence-lock.json": "b44978d42ed635c8a8b59f2df2bd988a871c47eff3afd3a770d92290a39a771e",
     "docs/v4/p0-release.json": "0a0f1969e0497cbec535fb3f854b51cef870a4746eb92f8a67a127566dc9ff75",
     "docs/v4/p1-production-policy-revocation-evidence.json": "e5a5a3d424157479cacaf00eae39614a5abe12ecdb04ac38af0c95692dbd982b",
     "docs/v4/p1-qualification-matrix.json": "7bd051023bb9dc6af4f491fc88984ca5a37de27b4b4533078881c112ef66655b",
-    "docs/v4/p1-rg0-rg1-audit-and-spec-review.md": "fa399efde0d60ba3343424e9e12adbaa0423fbfecb9c1ae4272c0ed83eca308a",
+    "docs/v4/p1-rg0-rg1-audit-and-spec-review.md": "bf786b3584327ea186d05d10e9e86e25ea0f6222b606b829a2dc112894d77969",
     "docs/v4/p1-rg0-rg1-initial-gap-audit.json": "33fe485384dcf60e36df8d48ace6394c80bce0d1bd9e6b9b39c7a905d65676b1",
     "docs/v4/p1-rg0-rg1-initial-gap-audit.md": "62aab5afb39f7c47e355a68ccf56e319a72955247515dfbdba8913fd797a5944",
     "docs/v4/progress.md": "5bf02b6110af159e5680b68de1ac5ee49d28152a44cdd1be82e40d9e98cc5a69",
@@ -2427,7 +2427,10 @@
     "docs/v4/repository-enforcement-evidence.json": "fc69f901036971bd64588cf3247d1701939e7525442f196daeab7f1919de11a2",
     "docs/v4/test_checks.py": "c915b137417c53b3b3f773eacbfcfea3d62584a21ca11df8288e0c2b4281cf6e",
     "docs/v4/validation.md": "64c021233a1fcaa423c21e33ba8553b2a9cdef69c6f6d565436dd15fdb180fd2",
-    ".superpowers/sdd/2026-10-27-p1-production-policy-and-revocation/final-evidence-report.md": "551c40b4d6852ab3ab4f42bc2cd26ffd1a0339fa03a5f7c2c0f0d39814d05307"
+    ".superpowers/sdd/2026-10-27-p1-production-policy-and-revocation/final-evidence-report.md": "551c40b4d6852ab3ab4f42bc2cd26ffd1a0339fa03a5f7c2c0f0d39814d05307",
+    ".superpowers/sdd/2026-10-28-p1-remaining-production-development/planning-report.md": "f7e55165fd10f142dc5bdd7fdcf688d4c6e975f0028ddaca2bb7e8428a838a86",
+    ".superpowers/sdd/2026-10-28-p1-remaining-production-development/progress.md": "5e7e28405838eb60154fa33ef567e0a3c041b06050aa1d92a59410543f4a1d8f",
+    "docs/superpowers/plans/2026-10-28-p1-remaining-production-development.md": "1f10d439d3f56ef0f814c6819ba41beac8078d94f547f6a1c0254f47ff874501"
   },
   "historical_documentation_refresh": {
     "plan_task": "docs/superpowers/plans/2026-10-27-p1-rg0-rg1-initial-gap-audit.md",
