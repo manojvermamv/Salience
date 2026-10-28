@@ -83,3 +83,67 @@ Package: [`docs/v4/p1-remaining-production-development-evidence.json`](../../../
   Expected and observed exit: 1, with `structural_status: VALID`, `disposition: NO_GO`, and `gate_state: UNCHANGED`. Exit 2 would indicate invalid evidence. The package file SHA-256 is `7802433872dd87dd2a18fe4a79a1e9c2de49945b08b6c738d35d11eee3451230`.
 
 The unique Compose project was removed with its containers, volume, and network by the cleanup trap. A subsequent `docker compose --project-name salience-p1-task11-final-full-1793217725-2697832 ps -a` returned no services. No live/provider path, remote schedule, production database, alert target, push, or merge was used. Independent review of the exact committed diff remains the next handoff; it does not change the local `NO_GO` or held external status.
+
+## Focused evidence follow-up — review fix round 1
+
+The review identified a reporting gap: the seven focused categories were not all captured against the final exact candidate. I reran them serially on documentation-only `HEAD 8c85d7efd10906dfddf96cf1342116f74861ddba`. Source/artifact pins remained implementation source `1ded0219c13fa478e3850956a30841d89cd80a38` and generated lock commit `3e7f6798c652412d2992f83ed7f65974532a91c9`; no application, migration, or checker code changed. The exact Compose project was `salience-p1-task11-review-20261028210012-2771713`. It used only Postgres and Temporal, a local `TEST_DATABASE_URL`/`TEST_TEMPORAL_TARGET`, `PYTHONPATH=/home/admin/Salience/src:/home/admin/Salience/tests`, base migration head 0051, and no environment variable matching the credential/production/live/provider/alert/effect filter. Setup and cleanup results are in `/tmp/salience-p1-task11-review-20261028210012-2771713.log` and `...-cleanup.log`.
+
+Compose startup exited 0 in 6.82 seconds. Alembic upgrade to `0051_p1_recovery_rollback_v2` exited 0 in 1.78 seconds; `alembic current` exited 0 in 0.79 seconds and reported 0051 as head. Each pytest command used `-p no:cacheprovider -m 'not live' -q -rs --tb=short` and exited 0:
+
+1. Route manifest/launcher, keeping rollback-v2 cases in their own group:
+
+   ```bash
+   /home/admin/Salience/.venv/bin/python -m pytest -p no:cacheprovider -m 'not live' -q -rs --tb=short tests/unit/test_production_routing.py tests/integration/test_p1_production_routing.py tests/integration/test_v4_publication_recovery_floor.py::test_launcher_v2_lock_builder_binds_exact_final_migration_head_0051_and_verifier_abi -k 'not rollback_v2 and not runs_pre_and_post_readback and not caller_supplied_hold_lists'
+   ```
+
+   Exit 0; 26 passed, 4 deselected in 2.36 seconds (runner elapsed 2.99 seconds).
+
+2. Migrations 0047–0051:
+
+   ```bash
+   /home/admin/Salience/.venv/bin/python -m pytest -p no:cacheprovider -m 'not live' -q -rs --tb=short tests/integration/test_v4_migrations.py tests/integration/test_p1_production_recovery.py -k '0047 or 0048 or 0049 or 0050 or 0051 or schema_and_migration_safety'
+   ```
+
+   Exit 0; 39 passed, 76 deselected in 258.18 seconds (runner elapsed 258.62 seconds).
+
+3. Schedule fakes and native schedule regressions:
+
+   ```bash
+   /home/admin/Salience/.venv/bin/python -m pytest -p no:cacheprovider -m 'not live' -q -rs --tb=short tests/integration/test_p1_production_schedule_fencing.py tests/integration/test_v4_native_schedules.py tests/integration/test_v4_native_publication_schedules.py
+   ```
+
+   Exit 0; 46 passed in 207.29 seconds (runner elapsed 208.26 seconds).
+
+4. Recovery fakes and runtime waits, excluding migration-only cases already in group 2:
+
+   ```bash
+   /home/admin/Salience/.venv/bin/python -m pytest -p no:cacheprovider -m 'not live' -q -rs --tb=short tests/integration/test_p1_production_recovery.py tests/integration/test_v4_runtime_waits.py -k 'not 0047 and not 0049 and not schema_and_migration_safety'
+   ```
+
+   Exit 0; 65 passed, 2 deselected in 316.07 seconds (runner elapsed 316.63 seconds).
+
+5. Rollback-v2 handoff/readback cases:
+
+   ```bash
+   /home/admin/Salience/.venv/bin/python -m pytest -p no:cacheprovider -m 'not live' -q -rs --tb=short tests/integration/test_p1_production_routing.py::test_launcher_v2_runs_pre_and_post_readback_before_prior_code tests/integration/test_p1_production_routing.py::test_rollback_v2_hands_off_authenticated_deployable_only_after_verification tests/integration/test_p1_production_routing.py::test_rollback_v2_fails_closed_without_authenticated_deployable_executor tests/integration/test_p1_production_routing.py::test_launcher_v2_rejects_caller_supplied_hold_lists
+   ```
+
+   Exit 0; 4 passed in 0.93 seconds (runner elapsed 1.47 seconds).
+
+6. Policy and revocation:
+
+   ```bash
+   /home/admin/Salience/.venv/bin/python -m pytest -p no:cacheprovider -m 'not live' -q -rs --tb=short tests/integration/test_p1_production_policy_revocation.py
+   ```
+
+   Exit 0; 124 passed in 57.05 seconds (runner elapsed 57.62 seconds).
+
+7. External acceptance checker:
+
+   ```bash
+   /home/admin/Salience/.venv/bin/python -m pytest -p no:cacheprovider -m 'not live' -q -rs --tb=short tests/unit/test_p1_external_acceptance.py
+   ```
+
+   Exit 0; 45 passed in 189.82 seconds (runner elapsed 190.16 seconds).
+
+After the focused run, the package CLI again exited 1 with `structural_status: VALID`, `disposition: NO_GO`, and `gate_state: UNCHANGED` for 22 rows; this is the expected synthetic no-go result. The v1 lock SHA-256 remained `1c8ac4ff92e589e27dc0af2c6dd0bc69c4295435df5a318174a2c77f3b1f2c9c`. The v2 lock SHA-256 remained `04514285da583fe4b32feb0ae2e710a55da6c9bdbf40d853c9454c0105fd8221`, and the evidence JSON was unchanged. The cleanup trap exited 0, removed the exact Compose project and temporary tree, and a follow-up `compose ps -a` showed no services. No full suite was rerun.

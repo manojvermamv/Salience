@@ -60,3 +60,69 @@ All 5 RG0 and 17 RG1 rows are `NOT RUN`; all synthetic owners/operators/reviewer
 ## Remaining review and release state
 
 The exact committed diff is ready for independent review. External owner/operator identity, route/target qualification, credentials, named provider/database/Temporal evidence, alert destinations, and independent final audit remain absent. Therefore all five RG0 and seventeen RG1 procedures stay `NOT RUN`/`HELD`, aggregate status remains `NO_GO`, production effects remain disabled, publication budget remains zero, P2 stays blocked, and no push or merge occurred. The frozen normal docs checker status is the sole current verification limitation; its evidence was left unchanged.
+
+## Focused evidence follow-up — review fix round 1
+
+To close the focused-evidence reporting gap, all seven approved non-live groups were run serially on documentation-only `HEAD 8c85d7efd10906dfddf96cf1342116f74861ddba`. Source pin remained `1ded0219c13fa478e3850956a30841d89cd80a38`; artifact pin remained `3e7f6798c652412d2992f83ed7f65974532a91c9`. One fresh project, `salience-p1-task11-review-20261028210012-2771713`, ran only Postgres and Temporal; `COMPOSE_PROJECT_NAME`, source/test `PYTHONPATH`, local database and Temporal URLs were explicit, the base DB was upgraded and checked at 0051, and credentials were unset. All commands used `-m 'not live'`; no full suite was rerun.
+
+Commands and exact pytest results (all exit 0):
+
+1. Route/launcher, with four rollback-v2 cases reserved for group 5:
+
+   ```bash
+   /home/admin/Salience/.venv/bin/python -m pytest -p no:cacheprovider -m 'not live' -q -rs --tb=short tests/unit/test_production_routing.py tests/integration/test_p1_production_routing.py tests/integration/test_v4_publication_recovery_floor.py::test_launcher_v2_lock_builder_binds_exact_final_migration_head_0051_and_verifier_abi -k 'not rollback_v2 and not runs_pre_and_post_readback and not caller_supplied_hold_lists'
+   ```
+
+   26 passed, 4 deselected in 2.36s (runner 2.99s).
+
+2. Migration 0047–0051 selection:
+
+   ```bash
+   /home/admin/Salience/.venv/bin/python -m pytest -p no:cacheprovider -m 'not live' -q -rs --tb=short tests/integration/test_v4_migrations.py tests/integration/test_p1_production_recovery.py -k '0047 or 0048 or 0049 or 0050 or 0051 or schema_and_migration_safety'
+   ```
+
+   39 passed, 76 deselected in 258.18s (runner 258.62s).
+
+3. Schedule fakes/native schedule regression:
+
+   ```bash
+   /home/admin/Salience/.venv/bin/python -m pytest -p no:cacheprovider -m 'not live' -q -rs --tb=short tests/integration/test_p1_production_schedule_fencing.py tests/integration/test_v4_native_schedules.py tests/integration/test_v4_native_publication_schedules.py
+   ```
+
+   46 passed in 207.29s (runner 208.26s).
+
+4. Recovery fakes/runtime waits, excluding migration-only selections:
+
+   ```bash
+   /home/admin/Salience/.venv/bin/python -m pytest -p no:cacheprovider -m 'not live' -q -rs --tb=short tests/integration/test_p1_production_recovery.py tests/integration/test_v4_runtime_waits.py -k 'not 0047 and not 0049 and not schema_and_migration_safety'
+   ```
+
+   65 passed, 2 deselected in 316.07s (runner 316.63s).
+
+5. Rollback-v2 readback/handoff:
+
+   ```bash
+   /home/admin/Salience/.venv/bin/python -m pytest -p no:cacheprovider -m 'not live' -q -rs --tb=short tests/integration/test_p1_production_routing.py::test_launcher_v2_runs_pre_and_post_readback_before_prior_code tests/integration/test_p1_production_routing.py::test_rollback_v2_hands_off_authenticated_deployable_only_after_verification tests/integration/test_p1_production_routing.py::test_rollback_v2_fails_closed_without_authenticated_deployable_executor tests/integration/test_p1_production_routing.py::test_launcher_v2_rejects_caller_supplied_hold_lists
+   ```
+
+   4 passed in 0.93s (runner 1.47s).
+
+6. Policy/revocation:
+
+   ```bash
+   /home/admin/Salience/.venv/bin/python -m pytest -p no:cacheprovider -m 'not live' -q -rs --tb=short tests/integration/test_p1_production_policy_revocation.py
+   ```
+
+   124 passed in 57.05s (runner 57.62s).
+
+7. Checker unit suite:
+
+   ```bash
+   /home/admin/Salience/.venv/bin/python -m pytest -p no:cacheprovider -m 'not live' -q -rs --tb=short tests/unit/test_p1_external_acceptance.py
+   ```
+
+   45 passed in 189.82s (runner 190.16s).
+
+Compose startup exited 0 in 6.82s; Alembic upgrade to 0051 exited 0 in 1.78s; Alembic current exited 0 in 0.79s and returned 0051 as head. Full per-command output is retained in `/tmp/salience-p1-task11-review-20261028210012-2771713.log`. Cleanup exited 0, removed the unique Compose project and temp tree, and follow-up `compose ps -a` was empty.
+
+The package checker was rerun after these tests and returned the expected exit 1 with `VALID` / `NO_GO` / `UNCHANGED`, 22 rows. The v1 lock hash remains `1c8ac4ff92e589e27dc0af2c6dd0bc69c4295435df5a318174a2c77f3b1f2c9c`; the v2 lock remains `04514285da583fe4b32feb0ae2e710a55da6c9bdbf40d853c9454c0105fd8221`. No package/evidence JSON, product, migration, or checker changes were made for this follow-up.
