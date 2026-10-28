@@ -348,12 +348,7 @@ def _validate_evidence_bindings(
             readback = recheck.get("readback")
             if not isinstance(row, Mapping):
                 continue
-            candidates = [row.get("raw_result"), row.get("readback")]
-            control = row.get("negative_control", {})
-            if isinstance(control, Mapping):
-                candidates.extend(
-                    (control.get("raw_denial"), control.get("independent_effect_readback"))
-                )
+            candidates = [reference for _, reference in _reference_paths(row)]
             provenance = readback.get("provenance", {}) if isinstance(readback, Mapping) else {}
             if (
                 not isinstance(provenance, Mapping)

@@ -427,11 +427,27 @@ def _collect_refs(value: Any) -> list[dict[str, str]]:
     return [found[key] for key in sorted(found)]
 
 
+def _reference_paths(
+    value: Any,
+    path: tuple[str, ...] = (),
+) -> list[tuple[tuple[str, ...], dict[str, str]]]:
+    references: list[tuple[tuple[str, ...], dict[str, str]]] = []
+    if isinstance(value, dict):
+        if {"uri", "sha256", "retention_mode"}.issubset(value):
+            references.append((path, value))
+        for key, child in value.items():
+            references.extend(_reference_paths(child, (*path, str(key))))
+    elif isinstance(value, list):
+        for index, child in enumerate(value):
+            references.extend(_reference_paths(child, (*path, str(index))))
+    return references
+
+
 def _bind_references(value: Any, context: dict[str, Any], operator_id: str) -> None:
     if isinstance(value, dict):
         if {"uri", "sha256", "retention_mode"}.issubset(value):
             digest = value.get("sha256")
-            value["evidence_id"] = f"evidence-{digest}"
+            value.setdefault("evidence_id", f"evidence-{digest}")
             value.setdefault("binding", copy.deepcopy(context))
             value.setdefault(
                 "provenance",
@@ -1915,26 +1931,77 @@ def test_planned_transition_and_rollback_bind_exact_row_scope() -> None:
 
 
 def test_final_audit_rechecks_use_new_independent_evidence() -> None:
-    reuse_paths = (
-        ("R01", ("raw_result",)),
-        ("R02", ("readback",)),
-        ("R23F", ("negative_control", "raw_denial")),
+    def configure_planned_transition(row: dict[str, Any]) -> None:
+        transition = row["transition"]
+        transition.update(
+            {
+                "mode": "PLANNED_TRANSITION",
+                "change_ticket": "CHG-AUDIT-REUSE-001",
+                "target_scope": copy.deepcopy(row["scope"]),
+                "expected_pre_version": "route-v1",
+                "expected_post_version": "route-v2",
+                "observed_pre_version": "route-v1",
+                "observed_post_version": "route-v2",
+                "actor": "operator-01",
+                "command_receipt": _ref("audit-reuse-command-receipt"),
+                "pre_state_sha256": "5" * 64,
+                "post_state_sha256": "6" * 64,
+                "mutation_ids": ["audit-reuse-mutation-001"],
+                "final_reviewed_version": "route-v2",
+            }
+        )
+        row["freshness"].update(
+            {
+                "source_state_sha256": "5" * 64,
+                "final_reviewed_state_sha256": "6" * 64,
+                "final_reviewed_version": "route-v2",
+            }
+        )
+        transition["rollback"].update(
+            {
+                "status": "VERIFIED",
+                "action_receipt": _ref("audit-reuse-rollback-action"),
+                "post_state_sha256": "6" * 64,
+                "scope": copy.deepcopy(row["scope"]),
+            }
+        )
+
+    def configure_negative_control(row: dict[str, Any]) -> None:
+        row["negative_control"].update(
+            {
+                "required": True,
+                "expected_outcome": "DENIED",
+                "observed_outcome": "DENIED",
+                "raw_denial": _ref("audit-reuse-negative-denial"),
+                "independent_effect_readback": _ref("audit-reuse-zero-effect"),
+                "observed_call_count": 0,
+                "observed_effect_count": 0,
+            }
+        )
+
+    candidate_references: list[tuple[str, tuple[str, ...]]] = []
+    planned_package = _valid_package()
+    planned_row = _row_by_id(planned_package, "R08")
+    configure_planned_transition(planned_row)
+    candidate_references.extend(
+        ("R08", path) for path, _ in _reference_paths(planned_row)
     )
-    for row_id, path in reuse_paths:
+
+    negative_package = _valid_package()
+    negative_row = _row_by_id(negative_package, "R23F")
+    configure_negative_control(negative_row)
+    candidate_references.extend(
+        ("R23F", path) for path, _ in _reference_paths(negative_row)
+    )
+
+    accepted_reuses: list[tuple[str, tuple[str, ...]]] = []
+    for row_id, path in candidate_references:
         package = _valid_package()
         row = _row_by_id(package, row_id)
-        if path == ("negative_control", "raw_denial"):
-            row["negative_control"].update(
-                {
-                    "required": True,
-                    "expected_outcome": "DENIED",
-                    "observed_outcome": "DENIED",
-                    "raw_denial": _ref("audit-reuse-negative-denial"),
-                    "independent_effect_readback": _ref("audit-reuse-zero-effect"),
-                    "observed_call_count": 0,
-                    "observed_effect_count": 0,
-                }
-            )
+        if row_id == "R08":
+            configure_planned_transition(row)
+        else:
+            configure_negative_control(row)
         recheck = next(
             item
             for item in package["final_audit"]["row_rechecks"]
@@ -1942,13 +2009,24 @@ def test_final_audit_rechecks_use_new_independent_evidence() -> None:
         )
         evidence = row
         for key in path:
-            evidence = evidence[key]
+            evidence = evidence[int(key)] if isinstance(evidence, list) else evidence[key]
         recheck["status"] = "PASS"
         recheck["readback"] = copy.deepcopy(evidence)
+        recheck["readback"]["evidence_id"] = (
+            f"audit-reuse-spoof-{row_id}-{len(accepted_reuses)}"
+        )
+        recheck["readback"].setdefault("provenance", {})["source_id"] = (
+            f"audit-source-spoof-{row_id}-{len(accepted_reuses)}"
+        )
         _seal(package)
-        result = _validate(package).to_dict()
-        assert result["structural_status"] == "INVALID"
-        assert "FINAL_AUDIT_RECHECK_NOT_INDEPENDENT" in _blocker_codes(_validate(package))
+        result = _validate(package)
+        if (
+            result.to_dict()["structural_status"] != "INVALID"
+            or "FINAL_AUDIT_RECHECK_NOT_INDEPENDENT" not in _blocker_codes(result)
+        ):
+            accepted_reuses.append((row_id, path))
+
+    assert not accepted_reuses, f"final audit reused row evidence: {accepted_reuses!r}"
 
 
 def test_fail_status_requires_an_executed_failed_normalized_assertion() -> None:
