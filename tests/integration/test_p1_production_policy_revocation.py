@@ -191,6 +191,7 @@ def _production_case(
         fencing_epoch=7,
         route_manifest_sha256="d" * 64,
         artifact_lock_sha256="e" * 64,
+        route_tuple_sha256="f" * 64,
     )
     route_fence = LocalRouteFence()
 
@@ -2777,6 +2778,7 @@ def test_production_authorize_issues_one_permit_from_current_publication_binding
         fencing_epoch=1,
         route_manifest_sha256="c" * 64,
         artifact_lock_sha256="d" * 64,
+        route_tuple_sha256="e" * 64,
     )
 
     def make_permit(approved_binding, publication_binding):

@@ -9,7 +9,7 @@ supplies and qualifies its versioned implementation.
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 import hashlib
 import re
@@ -112,6 +112,7 @@ _ROUTE_FIELDS = frozenset(
         "artifact_lock_sha256",
     }
 )
+_OPTIONAL_ROUTE_FIELDS = frozenset({"route_tuple_sha256"})
 _PUBLICATION_FIELDS = frozenset(
     {
         "publication_request_id",
@@ -145,6 +146,7 @@ class RouteBinding:
     fencing_epoch: int
     route_manifest_sha256: str
     artifact_lock_sha256: str
+    route_tuple_sha256: str | None = field(default=None, kw_only=True)
 
     def __post_init__(self) -> None:
         if any(
@@ -164,6 +166,10 @@ class RouteBinding:
             self.artifact_lock_sha256
         ):
             raise ValueError("route binding digests must be lowercase SHA-256")
+        if self.route_tuple_sha256 is not None and not _SHA256.fullmatch(
+            self.route_tuple_sha256
+        ):
+            raise ValueError("route tuple digest must be lowercase SHA-256")
 
 
 @dataclass(frozen=True, slots=True)
@@ -171,6 +177,9 @@ class RouteFenceRequest(RouteBinding):
     operation_id: UUID
     permit_id: UUID
     action_kind: str
+    # Tuple evidence is authenticated by route_manifest_sha256 and recorded
+    # with the permit. It is not a member of the route-fence request identity.
+    route_tuple_sha256: str | None = field(default=None, kw_only=True, compare=False)
 
     def __post_init__(self) -> None:
         super(RouteFenceRequest, self).__post_init__()
@@ -385,6 +394,10 @@ class ProductionEffectDispatch:
         self.metrics = metrics
 
     def issue_permit(self, request: ProductionPermitRequest) -> ProductionPermitResult:
+        if not isinstance(request, ProductionPermitRequest):
+            raise ValueError("typed production permit request required")
+        if request.route.route_tuple_sha256 is None:
+            raise ProductionAuthorizationDenied("invalid_binding")
         attempt_id = uuid4()
         try:
             result = self._issue_permit(request)
@@ -408,6 +421,8 @@ class ProductionEffectDispatch:
     def _issue_permit(self, request: ProductionPermitRequest) -> ProductionPermitResult:
         if not isinstance(request, ProductionPermitRequest):
             raise ValueError("typed production permit request required")
+        if request.route.route_tuple_sha256 is None:
+            raise ProductionAuthorizationDenied("invalid_binding")
         permit_id = uuid4()
         denial: ProductionAuthorizationDenied | None = None
         result: ProductionPermitResult | None = None
@@ -2232,6 +2247,7 @@ class ProductionEffectDispatch:
             "fencing_epoch": request.route.fencing_epoch,
             "route_manifest_sha256": request.route.route_manifest_sha256,
             "artifact_lock_sha256": request.route.artifact_lock_sha256,
+            "route_tuple_sha256": request.route.route_tuple_sha256,
             "route_fence_decision_id": str(decision_id),
             "workspace_stop_revision": facts.workspace_stop_revision,
             "goal_stop_revision": facts.goal_stop_revision,
@@ -2254,6 +2270,7 @@ class ProductionEffectDispatch:
         allowed = (
             _SNAPSHOT_METADATA
             | _ROUTE_FIELDS
+            | _OPTIONAL_ROUTE_FIELDS
             | _PUBLICATION_FIELDS
             | frozenset(
                 {
@@ -2286,10 +2303,21 @@ class ProductionEffectDispatch:
             value.get("schema_version") != "salience.p1-production-effect-permit.v1"
             or frozenset(value) - allowed
             or value.get("generation") != 1
-            or not all(key in value for key in allowed - _PUBLICATION_FIELDS - _SNAPSHOT_METADATA)
+            or not all(
+                key in value
+                for key in allowed
+                - _PUBLICATION_FIELDS
+                - _SNAPSHOT_METADATA
+                - _OPTIONAL_ROUTE_FIELDS
+            )
         ):
             raise ProductionAuthorizationDenied("invalid_binding")
         try:
+            if "route_tuple_sha256" in value and (
+                not isinstance(value["route_tuple_sha256"], str)
+                or not _SHA256.fullmatch(value["route_tuple_sha256"])
+            ):
+                raise ValueError("route tuple digest must be lowercase SHA-256")
             route = RouteBinding(
                 deployment_id=UUID(str(value["deployment_id"])),
                 environment_id=UUID(str(value["environment_id"])),
@@ -2299,6 +2327,7 @@ class ProductionEffectDispatch:
                 fencing_epoch=value["fencing_epoch"],
                 route_manifest_sha256=value["route_manifest_sha256"],
                 artifact_lock_sha256=value["artifact_lock_sha256"],
+                route_tuple_sha256=value.get("route_tuple_sha256"),
             )
             publication = None
             publication_present = frozenset(value) & _PUBLICATION_FIELDS
