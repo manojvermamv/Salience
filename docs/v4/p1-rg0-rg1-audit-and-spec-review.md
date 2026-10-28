@@ -249,3 +249,16 @@ This append-only digest note records the current text of the four reviewed specs
 | `docs/superpowers/specs/2026-10-13-p1-live-schedule-fencing-design.md` | `17126661384a5c8e7e46f316919f361f86cbc99792f7095e4e8eb714735ee269` |
 | `docs/superpowers/specs/2026-10-13-p1-production-recovery-and-alerts-design.md` | `4a9b88bf864dda3df939eb50868dca10b671e76056b016ee3eb2180f9dad1d7f` |
 | `docs/superpowers/specs/2026-10-13-rg0-rg1-external-acceptance-design.md` | `692fb6900dd1f95179ca923574a692da42fb80e55bfd99d7dd044c3f136abd29` |
+
+## Recovery-origin and Task 2 currentization — 2026-10-28
+
+This append-only note records the correction that shared Slice 2 intent/admission/case rows do not persist production origin. The current design adds immutable `v4_production_intent_enrollments` as the typed production-origin authorization record. Task 6's provider-neutral schedule/admission path is the sole writer after live-current policy, stop, and route checks; Task 7 may only consume an exact enrollment. Historical/unmarked rows are not adopted or backfilled. This ruling clarifies development architecture only: it does not extend the original review verdict or qualify/enable production.
+
+The recovery design and implementation plan now agree on exact source IDs and reason/state pairs, the production-only `salience.p1-production-publication-liability.v1` 22-key snapshot, and the separate historical fixture-only 21-key `salience.publication-liability.v1`. Earlier hashes and verdicts in this wrapper are retained as historical evidence. The following hashes bind the corrected current text and planning records only:
+
+| File | SHA-256 |
+| --- | --- |
+| `docs/superpowers/specs/2026-10-13-p1-production-recovery-and-alerts-design.md` | `bbddebd8731a6119367a72776bcd0be47849436232419f6e95da4e613447a3c1` |
+| `docs/superpowers/plans/2026-10-28-p1-remaining-production-development.md` | `9cc14b0611961da5758b934263a032a9364da3fe595ef45fcd1f4ff2c4ffccac` |
+| `.superpowers/sdd/2026-10-28-p1-remaining-production-development/planning-report.md` | `0332b1767cc49000cf6a3009bec65e51edd36c1de48ff1cac0a5f3b4e35fb9b0` |
+| `.superpowers/sdd/2026-10-28-p1-remaining-production-development/progress.md` | `37b53aab85310e83c730c70b08152311baaa6b8b69d2a7642f5d280d8269d888` |
