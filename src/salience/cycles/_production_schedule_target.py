@@ -50,6 +50,73 @@ class _ProductionScheduleTargetAdapter:
         return row
 
 
+    def _assert_current_action_source(self, connection, binding):
+        """Hold current source, goal revision, and owner facts before remote action."""
+        # Keep the active local schedule identity stable until the remote
+        # command returns. The fixture mirror update runs after this transaction.
+        self._schedule(connection, binding.schedule_id, lock=True)
+        rows = self._local_source(connection, binding.remote_schedule_id)
+        expected = (
+            binding.source_kind,
+            binding.schedule_id,
+            binding.publication_schedule_id,
+            binding.remote_schedule_id,
+            binding.workspace_id,
+            binding.goal_id,
+            binding.goal_revision,
+            binding.source_actor_id,
+            binding.interval_seconds,
+            binding.first_v4_slot,
+        )
+        if len(rows) != 1 or (
+            rows[0]["source_kind"],
+            rows[0]["schedule_id"],
+            rows[0]["publication_schedule_id"],
+            rows[0]["remote_id"],
+            rows[0]["workspace_id"],
+            rows[0]["goal_id"],
+            rows[0]["goal_revision"],
+            rows[0]["source_actor_id"],
+            rows[0]["interval_seconds"],
+            rows[0]["first_v4_slot"],
+        ) != expected:
+            raise PermissionError("current active bound schedule source and goal revision required")
+
+        goal = connection.execute(
+            """SELECT id,workspace_id,revision,state FROM public.v4_goals
+               WHERE id=%s AND workspace_id=%s FOR SHARE""",
+            (binding.goal_id, binding.workspace_id),
+        ).fetchone()
+        if (
+            goal is None
+            or goal["revision"] != binding.goal_revision
+            or goal["state"] != "active"
+        ):
+            raise PermissionError("current bound active goal revision required")
+
+        owner = connection.execute(
+            """SELECT id,workspace_id,enabled FROM public.identity_subjects
+               WHERE id=%s FOR SHARE""",
+            (binding.source_owner_subject_id,),
+        ).fetchone()
+        if (
+            owner is None
+            or owner["workspace_id"] != binding.workspace_id
+            or owner["enabled"] is not True
+        ):
+            raise PermissionError("current enabled bound source owner required")
+
+        if binding.publication_schedule_id is not None:
+            publication = connection.execute(
+                """SELECT id FROM public.publication_schedules
+                   WHERE id=%s AND job_schedule_id=%s AND status='scheduled'
+                   FOR SHARE""",
+                (binding.publication_schedule_id, binding.schedule_id),
+            ).fetchone()
+            if publication is None:
+                raise PermissionError("current bound publication schedule required")
+
+
     def _command_key(self, binding: ProductionScheduleBinding, action: str, suffix: str = "") -> str:
         return str(
             uuid5(
@@ -241,13 +308,19 @@ class _ProductionScheduleTargetAdapter:
     def pause(self, schedule_id):
         schedule_id = UUID(str(schedule_id))
         binding = self.binding_for_schedule(schedule_id)
-        self.assert_binding(binding, action_kind="schedule_pause")
         command_key = self._command_key(binding, "pause")
         mutation_error = None
-        try:
-            self.target.pause(binding.remote_schedule_id, command_key)
-        except Exception as error:
-            mutation_error = error
+        with self._connect() as connection:
+            connection.execute("SET LOCAL statement_timeout='3s'")
+            self._assert_current_action_source(connection, binding)
+            # Read the exact remote schedule before the command. This prevents
+            # an out-of-band source or route change from being discovered only
+            # after a pause has already been sent.
+            self._readback(binding, action_kind="schedule_pause")
+            try:
+                self.target.pause(binding.remote_schedule_id, command_key)
+            except Exception as error:
+                mutation_error = error
         try:
             readback = self._readback(binding)
         except Exception as error:
@@ -293,40 +366,42 @@ class _ProductionScheduleTargetAdapter:
         schedule_id = UUID(str(schedule_id))
         after_slot = _aware(after_slot, "rollback watermark")
         binding = self.binding_for_schedule(schedule_id)
-        self.assert_binding(binding, action_kind="schedule_resume")
-        before = self._readback(binding)
-        if before.running_action_count:
-            self._hold(
-                binding,
-                "schedule_remote_liability",
-                {
-                    "remote_schedule_id": binding.remote_schedule_id,
-                    "running_action_count": before.running_action_count,
-                    "watermark": after_slot.isoformat(),
-                },
-            )
-            raise PermissionError("unresolved remote schedule actions hold rollback")
-        if not before.paused and not (
-            before.resume_after is not None
-            and _aware(before.resume_after, "resume watermark") == after_slot
-            and before.next_action is not None
-            and _aware(before.next_action, "next action") > after_slot
-        ):
-            self._hold(
-                binding,
-                "schedule_resume_precondition_unknown",
-                {"paused": before.paused, "resume_after": _time_text(before.resume_after, "resume watermark")},
-            )
-            raise PermissionError("exact paused schedule or prior resume reconciliation required")
         command_key = self._command_key(binding, "resume_after", after_slot.isoformat())
         mutation_error = None
-        if before.paused:
-            try:
-                self.target.resume_after(
-                    binding.remote_schedule_id, command_key, after_slot
+        with self._connect() as connection:
+            connection.execute("SET LOCAL statement_timeout='3s'")
+            self._assert_current_action_source(connection, binding)
+            before = self._readback(binding, action_kind="schedule_resume")
+            if before.running_action_count:
+                self._hold(
+                    binding,
+                    "schedule_remote_liability",
+                    {
+                        "remote_schedule_id": binding.remote_schedule_id,
+                        "running_action_count": before.running_action_count,
+                        "watermark": after_slot.isoformat(),
+                    },
                 )
-            except Exception as error:
-                mutation_error = error
+                raise PermissionError("unresolved remote schedule actions hold rollback")
+            if not before.paused and not (
+                before.resume_after is not None
+                and _aware(before.resume_after, "resume watermark") == after_slot
+                and before.next_action is not None
+                and _aware(before.next_action, "next action") > after_slot
+            ):
+                self._hold(
+                    binding,
+                    "schedule_resume_precondition_unknown",
+                    {"paused": before.paused, "resume_after": _time_text(before.resume_after, "resume watermark")},
+                )
+                raise PermissionError("exact paused schedule or prior resume reconciliation required")
+            if before.paused:
+                try:
+                    self.target.resume_after(
+                        binding.remote_schedule_id, command_key, after_slot
+                    )
+                except Exception as error:
+                    mutation_error = error
         try:
             readback = self._readback(binding)
         except Exception as error:

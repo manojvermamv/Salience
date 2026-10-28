@@ -629,6 +629,7 @@ def _mutation_control(monkeypatch, *, paused=False, running=0, behavior=None, ov
 
     control.binding_for_schedule = binding_lookup
     control.assert_binding = assert_binding
+    control._assert_current_action_source = lambda *_: None
     return module, control, binding, target, route, lease, authority, actions
 
 
@@ -904,8 +905,21 @@ def test_pending_requires_remote_pause_readback_and_drained_actions(monkeypatch)
     with pytest.raises(PermissionError, match="drained actions"):
         control.pause(binding.schedule_id)
     assert target.pause_calls == [(binding.remote_schedule_id, target.pause_calls[0][1])]
-    assert target.describe_calls == [binding.remote_schedule_id]
+    assert target.describe_calls == [
+        binding.remote_schedule_id,
+        binding.remote_schedule_id,
+    ]
     assert control.alerts.events[-1][2] == "schedule_pause_not_drained"
+
+
+def test_pause_rejects_pre_read_action_route_drift_before_remote_mutation(monkeypatch):
+    module, control, binding, target, *_ = _mutation_control(
+        monkeypatch, overrides={"action_id": "out-of-band-action"}
+    )
+    with pytest.raises(PermissionError):
+        control.pause(binding.schedule_id)
+    assert target.pause_calls == []
+    assert target.describe_calls == [binding.remote_schedule_id]
 
 
 def test_lost_pause_ack_or_source_readback_reconciles_one_exact_schedule(monkeypatch):
@@ -916,7 +930,10 @@ def test_lost_pause_ack_or_source_readback_reconciles_one_exact_schedule(monkeyp
     monkeypatch.setattr(fixture_module.FixtureLegacyScheduleControl, "pause", lambda *_: None)
     control.pause(binding.schedule_id)
     assert target.pause_calls and target.pause_calls[0][0] == binding.remote_schedule_id
-    assert target.describe_calls == [binding.remote_schedule_id]
+    assert target.describe_calls == [
+        binding.remote_schedule_id,
+        binding.remote_schedule_id,
+    ]
     assert control.alerts.events == []
 
     module, control, binding, target, *_ = _mutation_control(
@@ -1307,7 +1324,7 @@ def test_intent_enrollment_rejects_stale_policy_stop_or_route(drift):
             route_authority.release_slot(control.route_lease)
         writer = module.ProductionIntentEnrollmentWriter(control, binding)
         with pytest.raises(PermissionError):
-            writer.enroll(key)
+            writer.enroll_and_admit(key)
         with psycopg.connect(database) as connection:
             assert connection.execute(
                 "SELECT count(*) FROM v4_production_intent_enrollments WHERE intent_id=%s",
@@ -1336,7 +1353,9 @@ def test_intent_enrollment_rejects_changed_route_tuple_and_missing_identity():
             ("artifact_lock_sha256", replace(binding, artifact_lock_sha256="c" * 64)),
         ):
             try:
-                module.ProductionIntentEnrollmentWriter(control, invalid_binding).enroll(key)
+                module.ProductionIntentEnrollmentWriter(
+                    control, invalid_binding
+                ).enroll_and_admit(key)
             except PermissionError:
                 pass
             else:
@@ -1347,12 +1366,61 @@ def test_intent_enrollment_rejects_changed_route_tuple_and_missing_identity():
                 (binding.source_owner_subject_id,),
             )
         with pytest.raises(PermissionError, match="identit"):
-            module.ProductionIntentEnrollmentWriter(control, binding).enroll(key)
+            module.ProductionIntentEnrollmentWriter(control, binding).enroll_and_admit(key)
         with psycopg.connect(database, autocommit=True) as connection:
             assert connection.execute(
                 "SELECT count(*) FROM v4_production_intent_enrollments WHERE intent_id=%s",
                 (key.intent_id,),
             ).fetchone()[0] == 0
+
+
+@pytest.mark.parametrize("action", ["pause", "resume_after"])
+@pytest.mark.parametrize("drift", ["goal_revision", "disabled_source_owner"])
+def test_schedule_mutations_recheck_current_source_revision_and_owner_before_mutation(
+    action, drift
+):
+    module = import_module("salience.cycles.production_schedule_control")
+    with _production_enrollment_fixture("task6_mutation_authority_") as (
+        database,
+        control,
+        binding,
+        _key,
+        _authority,
+        _route_authority,
+    ):
+        target = _MutationTarget(
+            _readback(module, binding, paused=action == "resume_after")
+        )
+        control.target = target
+        with psycopg.connect(database) as connection:
+            if drift == "goal_revision":
+                connection.execute("SET session_replication_role = replica")
+                connection.execute(
+                    "UPDATE v4_goals SET revision=revision+1 WHERE id=%s",
+                    (binding.goal_id,),
+                )
+                connection.execute("SET session_replication_role = origin")
+            else:
+                connection.execute(
+                    "UPDATE identity_subjects SET enabled=false WHERE id=%s",
+                    (binding.source_owner_subject_id,),
+                )
+
+        denied = False
+        try:
+            if action == "pause":
+                control.pause(binding.schedule_id)
+            else:
+                control.resume_after(
+                    binding.schedule_id,
+                    binding.first_v4_slot,
+                    subject_id=binding.schedule_operator_subject_id,
+                )
+        except PermissionError:
+            denied = True
+        assert denied
+        assert target.pause_calls == []
+        assert target.resume_calls == []
 
 
 def test_general_application_role_cannot_insert_production_enrollment():
@@ -1392,6 +1460,14 @@ def test_general_application_role_cannot_insert_production_enrollment():
             connection.execute(
                 psycopg.sql.SQL("DROP ROLE {}").format(psycopg.sql.Identifier(role))
             )
+
+
+def test_intent_enrollment_writer_has_no_standalone_public_write(monkeypatch):
+    module = import_module("salience.cycles.production_schedule_control")
+    _, control, binding, *_ = _mutation_control(monkeypatch)
+    writer = module.ProductionIntentEnrollmentWriter(control, binding)
+    assert not callable(getattr(writer, "enroll", None))
+    assert callable(writer.enroll_and_admit)
 
 
 def test_intent_enrollment_replay_is_exact_and_conflicting_revisions_deny():

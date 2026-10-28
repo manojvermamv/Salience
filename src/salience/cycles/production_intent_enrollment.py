@@ -15,7 +15,7 @@ from salience.cycles._production_schedule_contracts import (
 from salience.cycles._production_schedule_core import ProductionTemporalScheduleControl
 
 class ProductionIntentEnrollmentWriter:
-    """Only application writer for the immutable 0047 production enrollment."""
+    """Atomically write immutable 0047 enrollment with authorized admission."""
 
     def __init__(
         self,
@@ -346,11 +346,6 @@ class ProductionIntentEnrollmentWriter:
                 "route_fence_decision_id": decision.decision_id,
             },
         ).fetchone()
-
-    def enroll(self, key: ProductionIntentKey):
-        with self.schedule_control._connect() as connection:
-            with connection.transaction():
-                return self._enroll_in_transaction(connection, key, require_write=False)
 
     def current_key(self, intent_id: UUID) -> ProductionIntentKey:
         if not isinstance(intent_id, UUID):
