@@ -692,7 +692,10 @@ def _insert_task7_no_effect_command(
         current = connection.execute(
             """SELECT permit.request_snapshot,dispatch.generation,
                       dispatch.idempotency_key,permit.provider_id,permit.account_id,
-                      permit.route_id,permit.slot_id,permit.fencing_epoch
+                      permit.deployment_id,permit.environment_id,permit.route_id,
+                      permit.slot_id,permit.owner_id,permit.fencing_epoch,
+                      permit.route_manifest_sha256,permit.artifact_lock_sha256,
+                      permit.route_fence_decision_id
                FROM v4_production_current_dispatch dispatch
                JOIN v4_production_effect_permits permit
                  ON permit.permit_id=dispatch.current_permit_id
@@ -702,10 +705,134 @@ def _insert_task7_no_effect_command(
             (request.operation_id,),
         ).fetchone()
         assert current is not None
+        assert (
+            current["deployment_id"],
+            current["environment_id"],
+            current["route_id"],
+            current["slot_id"],
+            current["owner_id"],
+            current["fencing_epoch"],
+            current["route_manifest_sha256"],
+            current["artifact_lock_sha256"],
+        ) == (
+            request.route.deployment_id,
+            request.route.environment_id,
+            request.route.route_id,
+            request.route.slot_id,
+            request.route.owner_id,
+            request.route.fencing_epoch,
+            request.route.route_manifest_sha256,
+            request.route.artifact_lock_sha256,
+        )
         fingerprint = connection.execute(
             "SELECT encode(public.digest(%s::jsonb::text,'sha256'),'hex') AS value",
             (Jsonb(current["request_snapshot"]),),
         ).fetchone()["value"]
+        intent = connection.execute(
+            """SELECT goal_id,goal_revision,eligibility_revision
+               FROM v4_cycle_intents WHERE id=%s""",
+            (request.intent_id,),
+        ).fetchone()
+        assert intent is not None
+        assert intent["goal_id"] == request.goal_id
+        assert intent["goal_revision"] == request.goal_revision
+        goal = connection.execute(
+            "SELECT workspace_id,revision FROM v4_goals WHERE id=%s",
+            (intent["goal_id"],),
+        ).fetchone()
+        assert goal == {
+            "workspace_id": request.workspace_id,
+            "revision": request.goal_revision,
+        }
+        subject = connection.execute(
+            """SELECT workspace_id,revision,enabled FROM identity_subjects
+               WHERE id=%s""",
+            (request.subject_id,),
+        ).fetchone()
+        assert subject is not None
+        assert subject["workspace_id"] == request.workspace_id
+        assert subject["enabled"] is True
+        grant_rows = connection.execute(
+            """SELECT id FROM permission_grants
+               WHERE workspace_id=%s AND principal_type='identity'
+                 AND principal_id=%s AND scope=ANY(%s) AND effect='allow'
+                 AND (expires_at IS NULL OR expires_at>clock_timestamp())
+               ORDER BY id::text""",
+            (
+                request.workspace_id,
+                str(request.subject_id),
+                list(request.required_scopes),
+            ),
+        ).fetchall()
+        grant_ids = [str(row["id"]) for row in grant_rows]
+        assert len(grant_ids) == len(request.required_scopes)
+        policy = connection.execute(
+            """SELECT workspace_id,status,document_hash FROM policy_versions
+               WHERE id=%s""",
+            (request.policy_version_id,),
+        ).fetchone()
+        assert policy is not None
+        assert policy["workspace_id"] == request.workspace_id
+        assert policy["status"] == "active"
+        workspace_stop = connection.execute(
+            """SELECT revision,stopped FROM v4_stop_scopes
+               WHERE workspace_id=%s AND scope_key='workspace'""",
+            (request.workspace_id,),
+        ).fetchone()
+        goal_stop = connection.execute(
+            """SELECT revision,stopped FROM v4_stop_scopes
+               WHERE workspace_id=%s AND scope_key=%s""",
+            (request.workspace_id, "goal:" + str(request.goal_id)),
+        ).fetchone()
+        assert workspace_stop is not None and workspace_stop["stopped"] is False
+        assert goal_stop is not None and goal_stop["stopped"] is False
+
+        # The route owner is a synthetic identity fixture matching the local
+        # RouteBinding; it does not represent a real operator or assignment.
+        connection.execute(
+            """INSERT INTO identity_subjects(
+                       id,workspace_id,issuer,subject,expires_at)
+               VALUES(%s,%s,'https://synthetic-task7-fixture.invalid',%s,
+                      clock_timestamp()+interval '1 day')""",
+            (
+                current["owner_id"],
+                request.workspace_id,
+                "synthetic-route-owner:" + str(current["owner_id"]),
+            ),
+        )
+        connection.execute(
+            """INSERT INTO v4_production_intent_enrollments(
+                      intent_id,eligibility_revision,workspace_id,goal_id,goal_revision,
+                      source_owner_id,subject_id,subject_revision,grant_ids,
+                      policy_version_id,policy_document_hash,workspace_stop_revision,
+                      goal_stop_revision,artifact_sha256,route_id,slot_id,route_owner_id,
+                      fencing_epoch,route_manifest_sha256,external_lock_sha256,
+                      route_fence_decision_id)
+               VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+            (
+                request.intent_id,
+                intent["eligibility_revision"],
+                request.workspace_id,
+                intent["goal_id"],
+                intent["goal_revision"],
+                request.subject_id,
+                request.subject_id,
+                subject["revision"],
+                Jsonb(grant_ids),
+                request.policy_version_id,
+                policy["document_hash"],
+                workspace_stop["revision"],
+                goal_stop["revision"],
+                request.artifact_sha256,
+                current["route_id"],
+                current["slot_id"],
+                current["owner_id"],
+                current["fencing_epoch"],
+                current["route_manifest_sha256"],
+                current["artifact_lock_sha256"],
+                current["route_fence_decision_id"],
+            ),
+        )
         payload = {
             "schema_version": "salience.p1-same-operation-no-effect.v1",
             "reason_code": "authoritative_no_effect",
@@ -756,7 +883,7 @@ def _insert_task7_no_effect_command(
                       remote_account_id,reason,state,request_fingerprint,
                       source_fingerprint,deadline,deadline_revision,
                       recipient_profile_revision)
-               VALUES(%s,'cycle_case',%s,%s,%s,%s,%s,%s,%s,1,1,1,%s,%s,%s,
+               VALUES(%s,'cycle_case',%s,%s,%s,%s,%s,%s,%s,1,1,%s,%s,%s,%s,
                       'unknown_effect','reconciling',%s,%s,
                       clock_timestamp()+interval '1 day',1,1)""",
             (
@@ -768,6 +895,7 @@ def _insert_task7_no_effect_command(
                 request.cycle_id,
                 request.context_id,
                 request.operation_id,
+                intent["eligibility_revision"],
                 request.subject_id,
                 current["provider_id"],
                 current["account_id"],
@@ -775,6 +903,26 @@ def _insert_task7_no_effect_command(
                 "3" * 64,
             ),
         )
+        enrollment_join = connection.execute(
+            """SELECT work.work_id,enrollment.intent_id,
+                      enrollment.eligibility_revision,enrollment.workspace_id,
+                      enrollment.goal_id
+               FROM v4_production_recovery_work work
+               JOIN v4_production_intent_enrollments enrollment
+                 ON enrollment.intent_id=work.intent_id
+                AND enrollment.eligibility_revision=work.eligibility_revision
+                AND enrollment.workspace_id=work.workspace_id
+                AND enrollment.goal_id=work.goal_id
+               WHERE work.work_id=%s""",
+            (work_id,),
+        ).fetchone()
+        assert enrollment_join == {
+            "work_id": work_id,
+            "intent_id": request.intent_id,
+            "eligibility_revision": intent["eligibility_revision"],
+            "workspace_id": case["workspace_id"],
+            "goal_id": case["goal_id"],
+        }
         observation_payload = Jsonb(
             {
                 "schema_version": "salience.p1-production-recovery-read.v1",
