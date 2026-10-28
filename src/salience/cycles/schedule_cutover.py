@@ -5,6 +5,7 @@ from datetime import datetime, timedelta, timezone
 import logging
 import os
 import re
+from typing import Protocol, runtime_checkable
 from uuid import UUID
 
 import psycopg
@@ -108,8 +109,27 @@ class FixtureLegacyScheduleControl:
             current_authority(connection,self.workspace_id,actor)
 
 
+@runtime_checkable
+class CycleScheduleControl(Protocol):
+    """Shared schedule-control boundary consumed by the cutover state machine."""
+
+    supports_temporal: bool
+
+    def _schedule(self, connection, schedule_id, *, lock=False): ...
+
+    def describe(self, schedule_id): ...
+
+    def pause(self, schedule_id): ...
+
+    def resume_after(self, schedule_id, after_slot, *, subject_id=None): ...
+
+    @staticmethod
+    def _last_slot_precedes(metadata, first_v4_slot): ...
+
+
 class CycleScheduleCutover(CycleAdmission):
-    def __init__(self, database_url, *, workspace_id, subject_id, legacy_control=None, trace_context=None):
+    def __init__(self, database_url, *, workspace_id, subject_id,
+                 legacy_control: CycleScheduleControl | None = None, trace_context=None):
         super().__init__(database_url, workspace_id=workspace_id, subject_id=subject_id, trace_context=trace_context)
         self.legacy_control = legacy_control or FixtureLegacyScheduleControl(database_url, workspace_id=workspace_id)
 
