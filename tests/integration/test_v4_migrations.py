@@ -5505,3 +5505,1409 @@ def test_0047_empty_downgrade_restores_0046_head():
                 ).fetchone()[0] is None
     finally:
         _drop_migration_database(source, name)
+
+
+_REVISION_0048 = "0048_p1_production_schedule_bindings"
+_PRODUCTION_SCHEDULE_INVENTORY_SCHEMA = "salience.p1-production-schedule-inventory.v1"
+_PRODUCTION_SCHEDULE_MEMBER_SCHEMA = "salience.p1-production-schedule-inventory-member.v1"
+_PRODUCTION_SCHEDULE_APPROVAL_SCHEMA = (
+    "salience.p1-production-schedule-binding-approval.v1"
+)
+_PRODUCTION_SCHEDULE_MEMBER_KEYS = (
+    "schema_version",
+    "target_alias",
+    "namespace",
+    "remote_schedule_id",
+    "classification",
+    "source_kind",
+    "schedule_id",
+    "publication_schedule_id",
+    "workspace_id",
+    "goal_id",
+    "goal_revision",
+    "source_actor_id",
+    "source_owner_subject_id",
+    "schedule_operator_subject_id",
+    "owner_ref",
+    "exclusion_reason",
+    "workflow_type",
+    "action_id",
+    "argument_sha256",
+    "task_queue",
+    "route_id",
+    "route_tuple_sha256",
+    "slot_id",
+    "owner_id",
+    "fencing_epoch",
+    "route_manifest_sha256",
+    "artifact_lock_sha256",
+    "cadence_policy_revision",
+    "interval_seconds",
+    "first_v4_slot",
+    "observed_last_slot",
+    "remote_state",
+    "next_action",
+    "running_action_count",
+    "history_page_count",
+    "history_action_count",
+    "history_page_chain_sha256",
+    "history_action_set_sha256",
+    "history_watermark",
+    "history_watermark_sha256",
+)
+_PRODUCTION_SCHEDULE_APPROVAL_KEYS = (
+    "schema_version",
+    "target_alias",
+    "namespace",
+    "inventory_id",
+    "inventory_sha256",
+    "source_kind",
+    "schedule_id",
+    "publication_schedule_id",
+    "workspace_id",
+    "goal_id",
+    "goal_revision",
+    "source_actor_id",
+    "source_owner_subject_id",
+    "schedule_operator_subject_id",
+    "remote_schedule_id",
+    "task_queue",
+    "workflow_type",
+    "action_id",
+    "argument_sha256",
+    "route_id",
+    "route_tuple_sha256",
+    "slot_id",
+    "owner_id",
+    "fencing_epoch",
+    "route_manifest_sha256",
+    "artifact_lock_sha256",
+    "cadence_policy_revision",
+    "first_v4_slot",
+    "history_watermark_sha256",
+    "policy_version_id",
+    "policy_document_hash",
+    "expires_at",
+)
+
+
+def _prepare_0048_database(prefix):
+    source = os.environ["TEST_DATABASE_URL"]
+    name, database, _, fixture_state, authority = _prepare_0047_0046_database(prefix)
+    try:
+        _upgrade_0047_or_fail(database)
+        with psycopg.connect(database) as connection:
+            fixture_contract = _capture_0043_fixture_contract(connection)
+        return name, database, fixture_contract, fixture_state, authority
+    except Exception:
+        _drop_migration_database(source, name)
+        raise
+
+
+def _upgrade_0048_or_fail(database):
+    upgraded = _migration(database, "upgrade", _REVISION_0048)
+    assert upgraded.returncode == 0, upgraded.stdout + upgraded.stderr
+    return upgraded
+
+
+def _production_schedule_sha256_jsonb(connection, value):
+    return connection.execute(
+        "SELECT encode(public.digest(convert_to(%s::jsonb::text,'UTF8'),'sha256'),'hex')",
+        (Jsonb(value),),
+    ).fetchone()[0]
+
+
+def _production_schedule_sha256_text(connection, value):
+    return connection.execute(
+        "SELECT encode(public.digest(convert_to(%s,'UTF8'),'sha256'),'hex')",
+        (value,),
+    ).fetchone()[0]
+
+
+def _insert_0048_local_source(connection, authority, *, source_kind):
+    workspace_id = authority["workspace_id"]
+    source_actor_id = authority["subject_id"]
+    program_id = authority["cycle"]["program_id"]
+    goal_id = uuid4()
+    schedule_id = uuid4()
+    publication_schedule_id = uuid4() if source_kind == "governed_publication" else None
+    source_owner_subject_id = uuid4()
+    schedule_operator_subject_id = uuid4()
+    for subject_id, suffix in (
+        (source_owner_subject_id, "owner"),
+        (schedule_operator_subject_id, "operator"),
+    ):
+        connection.execute(
+            """INSERT INTO identity_subjects(id,workspace_id,issuer,subject,expires_at)
+               VALUES(%s,%s,'https://production-schedule.invalid',%s,
+                      clock_timestamp()+interval '1 day')""",
+            (subject_id, workspace_id, suffix + ":" + str(subject_id)),
+        )
+    connection.execute(
+        "INSERT INTO v4_goals(id,workspace_id,state) VALUES(%s,%s,'active')",
+        (goal_id, workspace_id),
+    )
+    connection.execute(
+        """INSERT INTO v4_goal_revisions(goal_id,revision,payload)
+           VALUES(%s,1,%s)""",
+        (
+            goal_id,
+            Jsonb(
+                {
+                    "schema_version": "GoalSpec.local.v1",
+                    "content_program_id": str(program_id),
+                    "cadence": {"interval_seconds": 60},
+                }
+            ),
+        ),
+    )
+    job_type = (
+        "intelligence_research"
+        if source_kind == "intelligence_research"
+        else "governed_publication"
+    )
+    payload = (
+        {"dry_run": True, "niche": "Production schedule test"}
+        if source_kind == "intelligence_research"
+        else {"publication_request_id": str(uuid4())}
+    )
+    first_v4_slot = datetime(2099, 1, 1, tzinfo=timezone.utc)
+    connection.execute(
+        """INSERT INTO job_schedules(
+                  id,workspace_id,content_program_id,name,schedule_expression,
+                  timezone,job_type,payload,next_run_at,status)
+           VALUES(%s,%s,%s,%s,'every 60s','UTC',%s,%s,%s,'active')""",
+        (
+            schedule_id,
+            workspace_id,
+            program_id,
+            "p1-0048-" + uuid4().hex,
+            job_type,
+            Jsonb(payload),
+            first_v4_slot,
+        ),
+    )
+    original_identity = connection.execute(
+        """SELECT to_jsonb(schedule)-ARRAY['status','next_run_at','updated_at']
+           FROM job_schedules schedule WHERE id=%s""",
+        (schedule_id,),
+    ).fetchone()[0]
+    remote_schedule_id = (
+        str(schedule_id)
+        if publication_schedule_id is None
+        else "publication:" + str(publication_schedule_id)
+    )
+    connection.execute("SET session_replication_role = replica")
+    if publication_schedule_id is not None:
+        connection.execute(
+            """INSERT INTO publication_schedules(
+                      id,publication_request_id,publication_plan_id,job_schedule_id,
+                      version,scheduled_for,timezone,schedule_fingerprint,status)
+               VALUES(%s,%s,%s,%s,1,%s,'UTC',%s,'scheduled')""",
+            (
+                publication_schedule_id,
+                uuid4(),
+                uuid4(),
+                schedule_id,
+                first_v4_slot,
+                "a" * 64,
+            ),
+        )
+        connection.execute(
+            """INSERT INTO v4_native_publication_schedule_sources(
+                      schedule_id,publication_schedule_id,workspace_id,goal_id,
+                      actor_id,goal_revision,remote_id,task_queue,interval_seconds,
+                      first_v4_slot,observed_last_slot,remote_snapshot,
+                      original_identity,publication_identity)
+               VALUES(%s,%s,%s,%s,%s,1,%s,'salience-v4-local-legacy-test',60,
+                      %s,NULL,%s,%s,%s)""",
+            (
+                schedule_id,
+                publication_schedule_id,
+                workspace_id,
+                goal_id,
+                source_actor_id,
+                remote_schedule_id,
+                first_v4_slot,
+                Jsonb({"action_count": 0}),
+                Jsonb(original_identity),
+                Jsonb(
+                    {
+                        "id": str(publication_schedule_id),
+                        "job_schedule_id": str(schedule_id),
+                        "status": "scheduled",
+                    }
+                ),
+            ),
+        )
+        connection.execute(
+            """INSERT INTO v4_native_publication_schedule_progress(
+                      schedule_id,last_slot,resume_after,next_slot)
+               VALUES(%s,NULL,NULL,%s)""",
+            (schedule_id, first_v4_slot),
+        )
+    else:
+        connection.execute(
+            """INSERT INTO v4_native_schedule_sources(
+                      schedule_id,workspace_id,goal_id,actor_id,goal_revision,
+                      remote_id,task_queue,interval_seconds,first_v4_slot,
+                      observed_last_slot,remote_snapshot,original_identity)
+               VALUES(%s,%s,%s,%s,1,%s,'salience-v4-local-legacy-test',60,
+                      %s,NULL,%s,%s)""",
+            (
+                schedule_id,
+                workspace_id,
+                goal_id,
+                source_actor_id,
+                remote_schedule_id,
+                first_v4_slot,
+                Jsonb({"action_count": 0}),
+                Jsonb(original_identity),
+            ),
+        )
+        connection.execute(
+            """INSERT INTO v4_native_schedule_progress(
+                      schedule_id,last_slot,resume_after,next_slot)
+               VALUES(%s,NULL,NULL,%s)""",
+            (schedule_id, first_v4_slot),
+        )
+    connection.execute("SET session_replication_role = origin")
+    return {
+        "source_kind": source_kind,
+        "schedule_id": schedule_id,
+        "publication_schedule_id": publication_schedule_id,
+        "remote_schedule_id": remote_schedule_id,
+        "workspace_id": workspace_id,
+        "goal_id": goal_id,
+        "goal_revision": 1,
+        "source_actor_id": source_actor_id,
+        "source_owner_subject_id": source_owner_subject_id,
+        "schedule_operator_subject_id": schedule_operator_subject_id,
+        "first_v4_slot": first_v4_slot,
+        "interval_seconds": 60,
+        "source_owner_ref": "owner-ref:" + str(source_owner_subject_id),
+    }
+
+
+def _insert_0048_schedule_approval(
+    connection, inventory, facts, member_snapshot, context_overrides=None
+):
+    policy_id = _seed_0044_policy(
+        connection,
+        facts["workspace_id"],
+        status="active",
+        version="schedule-" + uuid4().hex[:8],
+    )
+    expiry = "2099-01-01T00:00:00Z"
+    request_context = {
+        "schema_version": _PRODUCTION_SCHEDULE_APPROVAL_SCHEMA,
+        "target_alias": inventory["target_alias"],
+        "namespace": inventory["namespace"],
+        "inventory_id": str(inventory["inventory_id"]),
+        "inventory_sha256": inventory["inventory_sha256"],
+        "source_kind": facts["source_kind"],
+        "schedule_id": str(facts["schedule_id"]),
+        "publication_schedule_id": (
+            None
+            if facts["publication_schedule_id"] is None
+            else str(facts["publication_schedule_id"])
+        ),
+        "workspace_id": str(facts["workspace_id"]),
+        "goal_id": str(facts["goal_id"]),
+        "goal_revision": facts["goal_revision"],
+        "source_actor_id": str(facts["source_actor_id"]),
+        "source_owner_subject_id": str(facts["source_owner_subject_id"]),
+        "schedule_operator_subject_id": str(facts["schedule_operator_subject_id"]),
+        "remote_schedule_id": inventory["remote_schedule_id"],
+        "task_queue": member_snapshot["task_queue"],
+        "workflow_type": member_snapshot["workflow_type"],
+        "action_id": member_snapshot["action_id"],
+        "argument_sha256": member_snapshot["argument_sha256"],
+        "route_id": member_snapshot["route_id"],
+        "route_tuple_sha256": member_snapshot["route_tuple_sha256"],
+        "slot_id": member_snapshot["slot_id"],
+        "owner_id": member_snapshot["owner_id"],
+        "fencing_epoch": member_snapshot["fencing_epoch"],
+        "route_manifest_sha256": member_snapshot["route_manifest_sha256"],
+        "artifact_lock_sha256": member_snapshot["artifact_lock_sha256"],
+        "cadence_policy_revision": member_snapshot["cadence_policy_revision"],
+        "first_v4_slot": member_snapshot["first_v4_slot"],
+        "history_watermark_sha256": member_snapshot["history_watermark_sha256"],
+        "policy_version_id": str(policy_id),
+        "policy_document_hash": "b" * 64,
+        "expires_at": expiry,
+    }
+    if context_overrides:
+        request_context.update(context_overrides)
+    approval_id = uuid4()
+    connection.execute(
+        """INSERT INTO approval_requests(
+                  id,workspace_id,policy_version_id,effect_type,status,
+                  request_context,requested_by)
+           VALUES(%s,%s,%s,'production_schedule_binding','pending',%s,
+                  'schedule-operator')""",
+        (approval_id, facts["workspace_id"], policy_id, Jsonb(request_context)),
+    )
+    connection.execute(
+        """UPDATE approval_requests
+           SET status='approved',decided_by='schedule-reviewer',
+               decided_at=clock_timestamp()
+           WHERE id=%s""",
+        (approval_id,),
+    )
+    return approval_id, request_context
+
+
+def _build_0048_inventory(
+    connection,
+    authority,
+    *,
+    source_kind="intelligence_research",
+    include_binding=True,
+    finalize=True,
+    include_history_page=True,
+    page_count=1,
+    classification="bound",
+    approval_context_overrides=None,
+    binding_snapshot_overrides=None,
+):
+    facts = (
+        _insert_0048_local_source(connection, authority, source_kind=source_kind)
+        if classification == "bound"
+        else None
+    )
+    inventory_id = uuid4()
+    target_alias = "temporal-production-test"
+    namespace = "production-test-namespace"
+    remote_schedule_id = (
+        facts["remote_schedule_id"] if facts is not None else "out-of-scope:" + uuid4().hex
+    )
+    first_v4_slot = (
+        facts["first_v4_slot"].isoformat()
+        if facts is not None
+        else "2099-01-01T00:00:00+00:00"
+    )
+    history_page_items = []
+    history_request = _production_schedule_sha256_text(
+        connection,
+        "salience.p1-production-schedule-history.start.v1:" + remote_schedule_id,
+    )
+    history_item_set = _production_schedule_sha256_jsonb(connection, [])
+    history_response = _production_schedule_sha256_jsonb(connection, [])
+    history_receipt = _production_schedule_sha256_jsonb(
+        connection,
+        {
+            "inventory_id": str(inventory_id),
+            "remote_schedule_id": remote_schedule_id,
+            "page_index": 0,
+            "request_cursor_sha256": history_request,
+            "response_sha256": history_response,
+            "item_count": 0,
+            "next_cursor_sha256": None,
+            "is_terminal": True,
+            "item_set_sha256": history_item_set,
+            "last_item_sha256": None,
+        },
+    )
+    history_page_chain = _production_schedule_sha256_jsonb(
+        connection, [history_receipt] if include_history_page else []
+    )
+    history_action_set = _production_schedule_sha256_jsonb(connection, [])
+    history_page_count = 1 if include_history_page or classification == "bound" else 0
+    member_snapshot = {
+        "schema_version": _PRODUCTION_SCHEDULE_MEMBER_SCHEMA,
+        "target_alias": target_alias,
+        "namespace": namespace,
+        "remote_schedule_id": remote_schedule_id,
+        "classification": classification,
+        "source_kind": None if facts is None else facts["source_kind"],
+        "schedule_id": None if facts is None else str(facts["schedule_id"]),
+        "publication_schedule_id": (
+            None
+            if facts is None or facts["publication_schedule_id"] is None
+            else str(facts["publication_schedule_id"])
+        ),
+        "workspace_id": None if facts is None else str(facts["workspace_id"]),
+        "goal_id": None if facts is None else str(facts["goal_id"]),
+        "goal_revision": None if facts is None else facts["goal_revision"],
+        "source_actor_id": None if facts is None else str(facts["source_actor_id"]),
+        "source_owner_subject_id": (
+            None if facts is None else str(facts["source_owner_subject_id"])
+        ),
+        "schedule_operator_subject_id": (
+            None if facts is None else str(facts["schedule_operator_subject_id"])
+        ),
+        "owner_ref": "external-owner-ref-" + remote_schedule_id,
+        "exclusion_reason": "out of production schedule scope" if facts is None else None,
+        "workflow_type": (
+            "IntelligenceLoopWorkflow"
+            if source_kind == "intelligence_research"
+            else "GovernedPublicationWorkflow"
+        ),
+        "action_id": remote_schedule_id + ":execution",
+        "argument_sha256": "c" * 64,
+        "task_queue": "production-v4-schedule-worker",
+        "route_id": str(uuid4()),
+        "route_tuple_sha256": "d" * 64,
+        "slot_id": str(uuid4()),
+        "owner_id": (
+            str(facts["source_owner_subject_id"])
+            if facts is not None
+            else str(uuid4())
+        ),
+        "fencing_epoch": 7,
+        "route_manifest_sha256": "e" * 64,
+        "artifact_lock_sha256": "f" * 64,
+        "cadence_policy_revision": "cadence-policy-v1",
+        "interval_seconds": 60,
+        "first_v4_slot": first_v4_slot,
+        "observed_last_slot": None,
+        "remote_state": "paused",
+        "next_action": "2099-01-01T00:01:00+00:00",
+        "running_action_count": 0,
+        "history_page_count": history_page_count,
+        "history_action_count": 0,
+        "history_page_chain_sha256": history_page_chain,
+        "history_action_set_sha256": history_action_set,
+        "history_watermark": None,
+        "history_watermark_sha256": None,
+    }
+    member_sha256 = _production_schedule_sha256_jsonb(connection, member_snapshot)
+    listing_page_items = (
+        [{"remote_schedule_id": remote_schedule_id, "member_sha256": member_sha256}]
+        if classification != ""
+        else []
+    )
+    listing_request = _production_schedule_sha256_text(
+        connection, "salience.p1-production-schedule-inventory.start.v1"
+    )
+    listing_item_set = _production_schedule_sha256_jsonb(
+        connection,
+        [member_sha256] if listing_page_items else [],
+    )
+    listing_response = _production_schedule_sha256_jsonb(
+        connection, listing_page_items
+    )
+    listing_receipt = _production_schedule_sha256_jsonb(
+        connection,
+        {
+            "inventory_id": str(inventory_id),
+            "remote_schedule_id": None,
+            "page_index": 0,
+            "request_cursor_sha256": listing_request,
+            "response_sha256": listing_response,
+            "item_count": len(listing_page_items),
+            "next_cursor_sha256": None,
+            "is_terminal": True,
+            "item_set_sha256": listing_item_set,
+            "last_item_sha256": None,
+        },
+    )
+    member_set_sha256 = _production_schedule_sha256_jsonb(
+        connection,
+        [
+            {"remote_schedule_id": remote_schedule_id, "member_sha256": member_sha256}
+        ]
+        if listing_page_items
+        else [],
+    )
+    listing_chain_sha256 = _production_schedule_sha256_jsonb(
+        connection, [listing_receipt]
+    )
+    captured_at = datetime(2026, 10, 28, tzinfo=timezone.utc)
+    connection.execute(
+        """INSERT INTO v4_production_schedule_inventories(
+                  inventory_id,target_alias,namespace,captured_at,source_tool,
+                  source_tool_version,candidate_sha256,configuration_sha256,
+                  page_count,remote_member_count,bound_member_count,
+                  out_of_scope_member_count,inventory_page_chain_sha256,
+                  member_set_sha256,inventory_sha256,finalized_at)
+           VALUES(%s,%s,%s,%s,'test-inventory','1',%s,%s,%s,%s,%s,%s,
+                  %s,%s,%s,NULL)""",
+        (
+            inventory_id,
+            target_alias,
+            namespace,
+            captured_at,
+            "1" * 64,
+            "2" * 64,
+            page_count,
+            len(listing_page_items),
+            int(classification == "bound"),
+            int(classification == "out_of_scope"),
+            listing_chain_sha256,
+            member_set_sha256,
+            "0" * 64,
+        ),
+    )
+    if listing_page_items:
+        connection.execute(
+            """INSERT INTO v4_production_schedule_inventory_members(
+                      inventory_id,remote_schedule_id,page_index,classification,
+                      member_snapshot,member_sha256,history_page_count,
+                      history_action_count,history_page_chain_sha256,
+                      history_action_set_sha256,history_watermark,
+                      history_watermark_sha256)
+               VALUES(%s,%s,0,%s,%s,%s,%s,0,%s,%s,NULL,NULL)""",
+            (
+                inventory_id,
+                remote_schedule_id,
+                classification,
+                Jsonb(member_snapshot),
+                member_sha256,
+                history_page_count,
+                history_page_chain,
+                history_action_set,
+            ),
+        )
+    connection.execute(
+        """INSERT INTO v4_production_schedule_inventory_pages(
+                  inventory_id,remote_schedule_id,page_index,request_cursor_sha256,
+                  page_items,response_sha256,item_count,next_cursor_sha256,
+                  is_terminal,item_set_sha256,last_item_sha256,page_receipt_sha256)
+           VALUES(%s,NULL,0,%s,%s,%s,%s,NULL,true,%s,NULL,%s)""",
+        (
+            inventory_id,
+            listing_request,
+            Jsonb(listing_page_items),
+            listing_response,
+            len(listing_page_items),
+            listing_item_set,
+            listing_receipt,
+        ),
+    )
+    if include_history_page and listing_page_items:
+        connection.execute(
+            """INSERT INTO v4_production_schedule_inventory_pages(
+                      inventory_id,remote_schedule_id,page_index,request_cursor_sha256,
+                      page_items,response_sha256,item_count,next_cursor_sha256,
+                      is_terminal,item_set_sha256,last_item_sha256,page_receipt_sha256)
+               VALUES(%s,%s,0,%s,%s,%s,0,NULL,true,%s,NULL,%s)""",
+            (
+                inventory_id,
+                remote_schedule_id,
+                history_request,
+                Jsonb(history_page_items),
+                history_response,
+                history_item_set,
+                history_receipt,
+            ),
+        )
+    connection.execute(
+        """UPDATE v4_production_schedule_inventories
+           SET inventory_page_chain_sha256=%s,member_set_sha256=%s
+           WHERE inventory_id=%s""",
+        (listing_chain_sha256, member_set_sha256, inventory_id),
+    )
+    inventory_sha256 = connection.execute(
+        """SELECT encode(public.digest(convert_to(jsonb_build_object(
+             'schema_version',%s::text,'inventory_id',inventory_id,
+             'target_alias',target_alias,'namespace',namespace,
+             'captured_at',captured_at,'source_tool',source_tool,
+             'source_tool_version',source_tool_version,
+             'candidate_sha256',candidate_sha256,
+             'configuration_sha256',configuration_sha256,
+             'page_count',page_count,'remote_member_count',remote_member_count,
+             'bound_member_count',bound_member_count,
+             'out_of_scope_member_count',out_of_scope_member_count,
+             'inventory_page_chain_sha256',inventory_page_chain_sha256,
+             'member_set_sha256',member_set_sha256)::text,'UTF8'),'sha256'),'hex')
+           FROM v4_production_schedule_inventories WHERE inventory_id=%s""",
+        (_PRODUCTION_SCHEDULE_INVENTORY_SCHEMA, inventory_id),
+    ).fetchone()[0]
+    connection.execute(
+        """UPDATE v4_production_schedule_inventories
+           SET inventory_sha256=%s WHERE inventory_id=%s""",
+        (inventory_sha256, inventory_id),
+    )
+    inventory = {
+        "inventory_id": inventory_id,
+        "target_alias": target_alias,
+        "namespace": namespace,
+        "remote_schedule_id": remote_schedule_id,
+        "inventory_sha256": inventory_sha256,
+        "member_sha256": member_sha256,
+        "page_receipt_sha256": listing_receipt,
+    }
+    approval_id = None
+    if facts is not None:
+        approval_id, approval_context = _insert_0048_schedule_approval(
+            connection,
+            inventory,
+            facts,
+            member_snapshot,
+            context_overrides=approval_context_overrides,
+        )
+        if include_binding:
+            binding_snapshot = dict(member_snapshot)
+            if binding_snapshot_overrides:
+                binding_snapshot.update(binding_snapshot_overrides)
+            connection.execute(
+                """INSERT INTO v4_production_schedule_source_bindings(
+                          inventory_id,inventory_sha256,target_alias,namespace,
+                          remote_schedule_id,member_sha256,source_kind,schedule_id,
+                          publication_schedule_id,source_approval_id,source_actor_id,
+                          source_owner_subject_id,schedule_operator_subject_id,
+                          workspace_id,goal_id,goal_revision,owner_ref,task_queue,
+                          workflow_type,action_id,argument_sha256,route_id,
+                          route_tuple_sha256,slot_id,owner_id,fencing_epoch,
+                          route_manifest_sha256,artifact_lock_sha256,
+                          cadence_policy_revision,interval_seconds,first_v4_slot,
+                          observed_last_slot,remote_state,next_action,
+                          running_action_count,history_page_count,history_action_count,
+                          history_page_chain_sha256,history_action_set_sha256,
+                          history_watermark,history_watermark_sha256,member_snapshot,
+                          binding_fingerprint)
+                   VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
+                          %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
+                          %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+                (
+                    inventory_id,
+                    inventory_sha256,
+                    target_alias,
+                    namespace,
+                    remote_schedule_id,
+                    member_sha256,
+                    facts["source_kind"],
+                    facts["schedule_id"],
+                    facts["publication_schedule_id"],
+                    approval_id,
+                    facts["source_actor_id"],
+                    facts["source_owner_subject_id"],
+                    facts["schedule_operator_subject_id"],
+                    facts["workspace_id"],
+                    facts["goal_id"],
+                    facts["goal_revision"],
+                    member_snapshot["owner_ref"],
+                    member_snapshot["task_queue"],
+                    member_snapshot["workflow_type"],
+                    member_snapshot["action_id"],
+                    member_snapshot["argument_sha256"],
+                    member_snapshot["route_id"],
+                    member_snapshot["route_tuple_sha256"],
+                    member_snapshot["slot_id"],
+                    member_snapshot["owner_id"],
+                    member_snapshot["fencing_epoch"],
+                    member_snapshot["route_manifest_sha256"],
+                    member_snapshot["artifact_lock_sha256"],
+                    member_snapshot["cadence_policy_revision"],
+                    member_snapshot["interval_seconds"],
+                    first_v4_slot,
+                    None,
+                    member_snapshot["remote_state"],
+                    member_snapshot["next_action"],
+                    member_snapshot["running_action_count"],
+                    member_snapshot["history_page_count"],
+                    member_snapshot["history_action_count"],
+                    member_snapshot["history_page_chain_sha256"],
+                    member_snapshot["history_action_set_sha256"],
+                    None,
+                    None,
+                    Jsonb(binding_snapshot),
+                    "0" * 64,
+                ),
+            )
+    if finalize:
+        connection.execute(
+            "SELECT public.v4_finalize_production_schedule_inventory_v1(%s)",
+            (inventory_id,),
+        )
+    return {
+        **inventory,
+        "facts": facts,
+        "member_snapshot": member_snapshot,
+        "approval_id": approval_id,
+        "approval_context": None if facts is None else approval_context,
+        "history_page_receipt_sha256": history_receipt,
+    }
+
+
+def test_0048_upgrade_preserves_fixture_schedule_contracts():
+    source = os.environ["TEST_DATABASE_URL"]
+    name, database, fixture_contract, _, _ = _prepare_0048_database(
+        "p1_0048_fixture_contract_"
+    )
+    try:
+        upgraded = _upgrade_0048_or_fail(database)
+        assert upgraded.returncode == 0
+        with psycopg.connect(database) as connection:
+            _assert_0043_fixture_contract(connection, fixture_contract)
+            assert connection.execute(
+                "SELECT version_num FROM alembic_version"
+            ).fetchone()[0] == _REVISION_0048
+    finally:
+        _drop_migration_database(source, name)
+
+
+def test_0048_production_schedule_binding_uniqueness_and_immutability():
+    source = os.environ["TEST_DATABASE_URL"]
+    name, database, _, _, authority = _prepare_0048_database(
+        "p1_0048_binding_unique_"
+    )
+    try:
+        _upgrade_0048_or_fail(database)
+        with psycopg.connect(database) as connection:
+            adopted = _build_0048_inventory(connection, authority)
+            indexes = connection.execute(
+                """SELECT indexdef FROM pg_indexes
+                   WHERE schemaname='public'
+                     AND tablename='v4_production_schedule_source_bindings'
+                   ORDER BY indexname"""
+            ).fetchall()
+            definitions = "\n".join(row[0] for row in indexes)
+            assert any("USING btree (goal_id)" in row[0] for row in indexes)
+            assert "target_alias, namespace, remote_schedule_id" in definitions
+            assert connection.execute(
+                """SELECT count(*) FROM v4_production_schedule_source_bindings
+                   WHERE inventory_id=%s AND remote_schedule_id=%s""",
+                (adopted["inventory_id"], adopted["remote_schedule_id"]),
+            ).fetchone()[0] == 1
+            assert _postgres_statement_rejected(
+                connection,
+                "immutable|finalized",
+                lambda: connection.execute(
+                    """UPDATE v4_production_schedule_source_bindings
+                       SET task_queue='changed' WHERE inventory_id=%s""",
+                    (adopted["inventory_id"],),
+                ),
+            )
+    finally:
+        _drop_migration_database(source, name)
+
+
+def test_0048_finalized_inventory_page_member_binding_immutability():
+    source = os.environ["TEST_DATABASE_URL"]
+    name, database, _, _, authority = _prepare_0048_database(
+        "p1_0048_finalized_immutable_"
+    )
+    try:
+        _upgrade_0048_or_fail(database)
+        with psycopg.connect(database) as connection:
+            adopted = _build_0048_inventory(connection, authority)
+            for statement, parameters in (
+                (
+                    "DELETE FROM v4_production_schedule_inventories WHERE inventory_id=%s",
+                    (adopted["inventory_id"],),
+                ),
+                (
+                    "UPDATE v4_production_schedule_inventory_pages SET item_count=2 WHERE inventory_id=%s",
+                    (adopted["inventory_id"],),
+                ),
+                (
+                    "UPDATE v4_production_schedule_inventory_members SET classification='out_of_scope' WHERE inventory_id=%s",
+                    (adopted["inventory_id"],),
+                ),
+                (
+                    "DELETE FROM v4_production_schedule_source_bindings WHERE inventory_id=%s",
+                    (adopted["inventory_id"],),
+                ),
+            ):
+                assert _postgres_statement_rejected(
+                    connection,
+                    "immutable|finalized",
+                    lambda statement=statement, parameters=parameters: connection.execute(
+                        statement, parameters
+                    ),
+                )
+    finally:
+        _drop_migration_database(source, name)
+
+
+def test_0048_incomplete_or_fixture_derived_binding_is_rejected():
+    source = os.environ["TEST_DATABASE_URL"]
+    name, database, _, _, authority = _prepare_0048_database(
+        "p1_0048_incomplete_fixture_"
+    )
+    try:
+        _upgrade_0048_or_fail(database)
+        with psycopg.connect(database) as connection:
+            incomplete = _build_0048_inventory(
+                connection, authority, include_binding=False, finalize=False
+            )
+            assert _postgres_statement_rejected(
+                connection,
+                "binding|complete|inventory",
+                lambda: connection.execute(
+                    "SELECT public.v4_finalize_production_schedule_inventory_v1(%s)",
+                    (incomplete["inventory_id"],),
+                ),
+            )
+            member = incomplete["member_snapshot"]
+            member["task_queue"] = "salience-v4-local-legacy-fixture"
+            member_sha = _production_schedule_sha256_jsonb(connection, member)
+            assert _postgres_statement_rejected(
+                connection,
+                "fixture|source|immutable|member",
+                lambda: connection.execute(
+                    """UPDATE v4_production_schedule_inventory_members
+                       SET member_snapshot=%s,member_sha256=%s
+                       WHERE inventory_id=%s AND remote_schedule_id=%s""",
+                    (
+                        Jsonb(member),
+                        member_sha,
+                        incomplete["inventory_id"],
+                        incomplete["remote_schedule_id"],
+                    ),
+                ),
+            )
+    finally:
+        _drop_migration_database(source, name)
+
+
+def test_0048_upgrade_does_not_backfill_from_fixture_sources():
+    source = os.environ["TEST_DATABASE_URL"]
+    name, database, _, fixture_state, authority = _prepare_0047_0046_database(
+        "p1_0048_no_backfill_"
+    )
+    try:
+        _upgrade_0047_or_fail(database)
+        with psycopg.connect(database) as connection:
+            local = _insert_0048_local_source(
+                connection, authority, source_kind="intelligence_research"
+            )
+            assert connection.execute(
+                "SELECT count(*) FROM v4_native_schedule_sources WHERE schedule_id=%s",
+                (local["schedule_id"],),
+            ).fetchone()[0] == 1
+        _upgrade_0048_or_fail(database)
+        with psycopg.connect(database) as connection:
+            assert connection.execute(
+                "SELECT count(*) FROM v4_production_schedule_inventories"
+            ).fetchone()[0] == 0
+            assert connection.execute(
+                "SELECT count(*) FROM v4_production_schedule_inventory_pages"
+            ).fetchone()[0] == 0
+            assert connection.execute(
+                "SELECT count(*) FROM v4_production_schedule_inventory_members"
+            ).fetchone()[0] == 0
+            assert connection.execute(
+                "SELECT count(*) FROM v4_production_schedule_source_bindings"
+            ).fetchone()[0] == 0
+            assert connection.execute(
+                "SELECT count(*) FROM v4_native_schedule_sources WHERE schedule_id=%s",
+                (local["schedule_id"],),
+            ).fetchone()[0] == 1
+    finally:
+        _drop_migration_database(source, name)
+
+
+def test_0048_inventory_finalize_rejects_partial_or_truncated_pages():
+    source = os.environ["TEST_DATABASE_URL"]
+    name, database, _, _, authority = _prepare_0048_database(
+        "p1_0048_partial_pages_"
+    )
+    try:
+        _upgrade_0048_or_fail(database)
+        with psycopg.connect(database) as connection:
+            partial = _build_0048_inventory(
+                connection, authority, finalize=False, page_count=2
+            )
+            assert _postgres_statement_rejected(
+                connection,
+                "page|contiguous|complete|inventory",
+                lambda: connection.execute(
+                    "SELECT public.v4_finalize_production_schedule_inventory_v1(%s)",
+                    (partial["inventory_id"],),
+                ),
+            )
+    finally:
+        _drop_migration_database(source, name)
+
+
+def test_0048_inventory_finalize_rejects_cursor_chain_or_terminal_mismatch():
+    source = os.environ["TEST_DATABASE_URL"]
+    name, database, _, _, authority = _prepare_0048_database(
+        "p1_0048_cursor_chain_"
+    )
+    try:
+        _upgrade_0048_or_fail(database)
+        with psycopg.connect(database) as connection:
+            broken = _build_0048_inventory(connection, authority, finalize=False)
+            page = connection.execute(
+                """SELECT remote_schedule_id,request_cursor_sha256,
+                          response_sha256,item_count,next_cursor_sha256,is_terminal,
+                          item_set_sha256,last_item_sha256
+                   FROM v4_production_schedule_inventory_pages
+                   WHERE inventory_id=%s AND remote_schedule_id IS NOT NULL""",
+                (broken["inventory_id"],),
+            ).fetchone()
+            altered_request = "a" * 64
+            receipt = _production_schedule_sha256_jsonb(
+                connection,
+                {
+                    "inventory_id": str(broken["inventory_id"]),
+                    "remote_schedule_id": page[0],
+                    "page_index": 0,
+                    "request_cursor_sha256": altered_request,
+                    "response_sha256": page[2],
+                    "item_count": page[3],
+                    "next_cursor_sha256": page[4],
+                    "is_terminal": page[5],
+                    "item_set_sha256": page[6],
+                    "last_item_sha256": page[7],
+                },
+            )
+            connection.execute(
+                """UPDATE v4_production_schedule_inventory_pages
+                   SET request_cursor_sha256=%s,page_receipt_sha256=%s
+                   WHERE inventory_id=%s AND remote_schedule_id IS NOT NULL""",
+                (altered_request, receipt, broken["inventory_id"]),
+            )
+            assert _postgres_statement_rejected(
+                connection,
+                "cursor|sentinel|chain|history|complete",
+                lambda: connection.execute(
+                    "SELECT public.v4_finalize_production_schedule_inventory_v1(%s)",
+                    (broken["inventory_id"],),
+                ),
+            )
+    finally:
+        _drop_migration_database(source, name)
+
+
+def test_0048_inventory_finalize_rejects_count_or_sorted_root_mismatch():
+    source = os.environ["TEST_DATABASE_URL"]
+    name, database, _, _, authority = _prepare_0048_database(
+        "p1_0048_count_root_"
+    )
+    try:
+        _upgrade_0048_or_fail(database)
+        with psycopg.connect(database) as connection:
+            broken = _build_0048_inventory(connection, authority, finalize=False)
+            connection.execute(
+                """UPDATE v4_production_schedule_inventories
+                   SET remote_member_count=2,bound_member_count=2,
+                       inventory_sha256=encode(public.digest(convert_to(
+                           jsonb_build_object(
+                               'schema_version','salience.p1-production-schedule-inventory.v1',
+                               'inventory_id',inventory_id,
+                               'target_alias',target_alias,'namespace',namespace,
+                               'captured_at',captured_at,'source_tool',source_tool,
+                               'source_tool_version',source_tool_version,
+                               'candidate_sha256',candidate_sha256,
+                               'configuration_sha256',configuration_sha256,
+                               'page_count',page_count,'remote_member_count',2,
+                               'bound_member_count',2,
+                               'out_of_scope_member_count',out_of_scope_member_count,
+                               'inventory_page_chain_sha256',inventory_page_chain_sha256,
+                               'member_set_sha256',member_set_sha256)::text,'UTF8'),
+                           'sha256'),'hex')
+                   WHERE inventory_id=%s""",
+                (broken["inventory_id"],),
+            )
+            assert _postgres_statement_rejected(
+                connection,
+                "count|member|root|digest|inventory",
+                lambda: connection.execute(
+                    "SELECT public.v4_finalize_production_schedule_inventory_v1(%s)",
+                    (broken["inventory_id"],),
+                ),
+            )
+    finally:
+        _drop_migration_database(source, name)
+
+
+def test_0048_inventory_rejects_duplicate_or_unknown_members():
+    source = os.environ["TEST_DATABASE_URL"]
+    name, database, _, _, authority = _prepare_0048_database(
+        "p1_0048_duplicate_unknown_"
+    )
+    try:
+        _upgrade_0048_or_fail(database)
+        with psycopg.connect(database) as connection:
+            inventory = _build_0048_inventory(
+                connection, authority, include_binding=False, finalize=False
+            )
+            assert _postgres_statement_rejected(
+                connection,
+                "duplicate|unique|member|classification",
+                lambda: connection.execute(
+                    """UPDATE v4_production_schedule_inventory_members
+                       SET classification='unknown'
+                       WHERE inventory_id=%s AND remote_schedule_id=%s""",
+                    (inventory["inventory_id"], inventory["remote_schedule_id"]),
+                ),
+            )
+            assert _postgres_statement_rejected(
+                connection,
+                "duplicate|unique",
+                lambda: connection.execute(
+                    """INSERT INTO v4_production_schedule_inventory_members(
+                              inventory_id,remote_schedule_id,page_index,classification,
+                              member_snapshot,member_sha256,history_page_count,
+                              history_action_count,history_page_chain_sha256,
+                              history_action_set_sha256)
+                       SELECT inventory_id,remote_schedule_id,page_index,classification,
+                              member_snapshot,member_sha256,history_page_count,
+                              history_action_count,history_page_chain_sha256,
+                              history_action_set_sha256
+                       FROM v4_production_schedule_inventory_members
+                       WHERE inventory_id=%s""",
+                    (inventory["inventory_id"],),
+                ),
+            )
+    finally:
+        _drop_migration_database(source, name)
+
+
+def test_0048_inventory_finalize_rejects_incomplete_bound_member_history():
+    source = os.environ["TEST_DATABASE_URL"]
+    name, database, _, _, authority = _prepare_0048_database(
+        "p1_0048_history_incomplete_"
+    )
+    try:
+        _upgrade_0048_or_fail(database)
+        with psycopg.connect(database) as connection:
+            incomplete = _build_0048_inventory(
+                connection,
+                authority,
+                finalize=False,
+                include_history_page=False,
+            )
+            assert _postgres_statement_rejected(
+                connection,
+                "history|page|complete|watermark",
+                lambda: connection.execute(
+                    "SELECT public.v4_finalize_production_schedule_inventory_v1(%s)",
+                    (incomplete["inventory_id"],),
+                ),
+            )
+            connection.execute(
+                "UPDATE job_schedules SET status='paused' WHERE id=%s",
+                (incomplete["facts"]["schedule_id"],),
+            )
+            wrong_last = _build_0048_inventory(
+                connection, authority, finalize=False
+            )
+            page = connection.execute(
+                """SELECT remote_schedule_id,page_index,request_cursor_sha256,
+                          response_sha256,item_count,next_cursor_sha256,is_terminal,
+                          item_set_sha256
+                   FROM v4_production_schedule_inventory_pages
+                   WHERE inventory_id=%s AND remote_schedule_id IS NOT NULL""",
+                (wrong_last["inventory_id"],),
+            ).fetchone()
+            wrong_last_digest = "0" * 64
+            wrong_receipt = _production_schedule_sha256_jsonb(
+                connection,
+                {
+                    "inventory_id": str(wrong_last["inventory_id"]),
+                    "remote_schedule_id": page[0],
+                    "page_index": page[1],
+                    "request_cursor_sha256": page[2],
+                    "response_sha256": page[3],
+                    "item_count": page[4],
+                    "next_cursor_sha256": page[5],
+                    "is_terminal": page[6],
+                    "item_set_sha256": page[7],
+                    "last_item_sha256": wrong_last_digest,
+                },
+            )
+            assert _postgres_statement_rejected(
+                connection,
+                "last item digest",
+                lambda: connection.execute(
+                    """UPDATE v4_production_schedule_inventory_pages
+                       SET last_item_sha256=%s,page_receipt_sha256=%s
+                       WHERE inventory_id=%s AND remote_schedule_id IS NOT NULL""",
+                    (wrong_last_digest, wrong_receipt, wrong_last["inventory_id"]),
+                ),
+            )
+    finally:
+        _drop_migration_database(source, name)
+
+
+def test_0048_source_kind_schedule_id_publication_schedule_id_matrix():
+    source = os.environ["TEST_DATABASE_URL"]
+    name, database, _, _, authority = _prepare_0048_database(
+        "p1_0048_source_matrix_"
+    )
+    try:
+        _upgrade_0048_or_fail(database)
+        with psycopg.connect(database) as connection:
+            adopted = _build_0048_inventory(
+                connection, authority, finalize=False
+            )
+            bad_snapshot = dict(adopted["member_snapshot"])
+            bad_snapshot["source_kind"] = "governed_publication"
+            bad_snapshot["publication_schedule_id"] = None
+            bad_snapshot["schedule_id"] = str(uuid4())
+            bad_snapshot["remote_schedule_id"] = "publication:" + uuid4().hex
+            bad_sha = _production_schedule_sha256_jsonb(connection, bad_snapshot)
+            assert _postgres_statement_rejected(
+                connection,
+                "source|matrix|publication|member",
+                lambda: connection.execute(
+                    """INSERT INTO v4_production_schedule_inventory_members(
+                              inventory_id,remote_schedule_id,page_index,classification,
+                              member_snapshot,member_sha256,history_page_count,
+                              history_action_count,history_page_chain_sha256,
+                              history_action_set_sha256)
+                       VALUES(%s,%s,0,'bound',%s,%s,1,0,%s,%s)""",
+                    (
+                        adopted["inventory_id"],
+                        bad_snapshot["remote_schedule_id"],
+                        Jsonb(bad_snapshot),
+                        bad_sha,
+                        adopted["member_snapshot"]["history_page_chain_sha256"],
+                        adopted["member_snapshot"]["history_action_set_sha256"],
+                    ),
+                ),
+            )
+            connection.execute(
+                "UPDATE job_schedules SET status='paused' WHERE id=%s",
+                (adopted["facts"]["schedule_id"],),
+            )
+            publication = _build_0048_inventory(
+                connection,
+                authority,
+                source_kind="governed_publication",
+                finalize=True,
+            )
+            assert publication["member_snapshot"]["publication_schedule_id"]
+            assert publication["member_snapshot"]["schedule_id"]
+    finally:
+        _drop_migration_database(source, name)
+
+
+def test_0048_binding_requires_exact_member_and_schedule_approval():
+    source = os.environ["TEST_DATABASE_URL"]
+    name, database, _, _, authority = _prepare_0048_database(
+        "p1_0048_exact_binding_"
+    )
+    try:
+        _upgrade_0048_or_fail(database)
+        with psycopg.connect(database) as connection:
+            assert _postgres_statement_rejected(
+                connection,
+                "member|binding|exact|inventory",
+                lambda: _build_0048_inventory(
+                    connection,
+                    authority,
+                    finalize=False,
+                    binding_snapshot_overrides={"task_queue": "wrong-queue"},
+                ),
+            )
+            assert _postgres_statement_rejected(
+                connection,
+                "approval|binding|inventory|digest|member",
+                lambda: _build_0048_inventory(
+                    connection,
+                    authority,
+                    finalize=False,
+                    approval_context_overrides={"inventory_sha256": "0" * 64},
+                ),
+            )
+    finally:
+        _drop_migration_database(source, name)
+
+
+def test_0048_deferred_finalization_requires_one_binding_per_bound_member():
+    source = os.environ["TEST_DATABASE_URL"]
+    name, database, _, _, authority = _prepare_0048_database(
+        "p1_0048_deferred_binding_"
+    )
+    try:
+        _upgrade_0048_or_fail(database)
+        with psycopg.connect(database) as connection:
+            inventory = _build_0048_inventory(
+                connection, authority, include_binding=False, finalize=False
+            )
+            assert _postgres_statement_rejected(
+                connection,
+                "binding|bound member|complete|inventory",
+                lambda: connection.execute(
+                    "SELECT public.v4_finalize_production_schedule_inventory_v1(%s)",
+                    (inventory["inventory_id"],),
+                ),
+            )
+            assert connection.execute(
+                "SELECT finalized_at FROM v4_production_schedule_inventories WHERE inventory_id=%s",
+                (inventory["inventory_id"],),
+            ).fetchone()[0] is None
+            connection.commit()
+            try:
+                with connection.transaction():
+                    connection.execute(
+                        "SELECT set_config('salience.p1_production_schedule_finalize',%s,true)",
+                        (str(inventory["inventory_id"]),),
+                    )
+                    connection.execute(
+                        """UPDATE v4_production_schedule_inventories
+                           SET finalized_at=clock_timestamp() WHERE inventory_id=%s""",
+                        (inventory["inventory_id"],),
+                    )
+            except psycopg.Error as error:
+                assert re.search(
+                    "binding|bound member|complete|inventory", str(error)
+                ), str(error)
+            else:
+                raise AssertionError(
+                    "deferred schedule inventory validation accepted a missing binding"
+                )
+            assert connection.execute(
+                "SELECT finalized_at FROM v4_production_schedule_inventories WHERE inventory_id=%s",
+                (inventory["inventory_id"],),
+            ).fetchone()[0] is None
+    finally:
+        _drop_migration_database(source, name)
+
+
+def test_0048_out_of_scope_member_requires_owner_and_reason():
+    source = os.environ["TEST_DATABASE_URL"]
+    name, database, _, _, authority = _prepare_0048_database(
+        "p1_0048_out_of_scope_"
+    )
+    try:
+        _upgrade_0048_or_fail(database)
+        with psycopg.connect(database) as connection:
+            inventory = _build_0048_inventory(
+                connection,
+                authority,
+                classification="out_of_scope",
+                include_binding=False,
+                finalize=False,
+            )
+            bad_snapshot = dict(inventory["member_snapshot"])
+            bad_snapshot["owner_ref"] = ""
+            bad_snapshot["exclusion_reason"] = ""
+            bad_snapshot_sha = _production_schedule_sha256_jsonb(
+                connection, bad_snapshot
+            )
+            assert _postgres_statement_rejected(
+                connection,
+                "owner|reason|out.of.scope|member",
+                lambda: connection.execute(
+                    """INSERT INTO v4_production_schedule_inventory_members(
+                              inventory_id,remote_schedule_id,page_index,classification,
+                              member_snapshot,member_sha256,history_page_count,
+                              history_action_count,history_page_chain_sha256,
+                              history_action_set_sha256)
+                       VALUES(%s,%s,1,'out_of_scope',%s,%s,1,0,%s,%s)""",
+                    (
+                        inventory["inventory_id"],
+                        "out-of-scope-invalid:" + uuid4().hex,
+                        Jsonb(bad_snapshot),
+                        bad_snapshot_sha,
+                        bad_snapshot["history_page_chain_sha256"],
+                        bad_snapshot["history_action_set_sha256"],
+                    ),
+                ),
+            )
+    finally:
+        _drop_migration_database(source, name)
+
+
+def test_0048_schedule_approval_shape_and_decided_identity_are_immutable():
+    source = os.environ["TEST_DATABASE_URL"]
+    name, database, _, _, authority = _prepare_0048_database(
+        "p1_0048_approval_immutable_"
+    )
+    try:
+        _upgrade_0048_or_fail(database)
+        with psycopg.connect(database) as connection:
+            adopted = _build_0048_inventory(connection, authority)
+            row = connection.execute(
+                """SELECT id,request_context FROM approval_requests
+                   WHERE id=%s""",
+                (adopted["approval_id"],),
+            ).fetchone()
+            assert set(row[1]) == set(_PRODUCTION_SCHEDULE_APPROVAL_KEYS)
+            assert _postgres_statement_rejected(
+                connection,
+                "decided|immutable|approval",
+                lambda: connection.execute(
+                    "UPDATE approval_requests SET decided_by='changed' WHERE id=%s",
+                    (row[0],),
+                ),
+            )
+            assert _postgres_statement_rejected(
+                connection,
+                "decided|immutable|approval",
+                lambda: connection.execute(
+                    "DELETE FROM approval_requests WHERE id=%s", (row[0],)
+                ),
+            )
+    finally:
+        _drop_migration_database(source, name)
+
+
+def test_0048_downgrade_refuses_adopted_schedule_evidence():
+    source = os.environ["TEST_DATABASE_URL"]
+    name, database, _, _, authority = _prepare_0048_database(
+        "p1_0048_populated_downgrade_"
+    )
+    try:
+        _upgrade_0048_or_fail(database)
+        with psycopg.connect(database) as connection:
+            adopted = _build_0048_inventory(connection, authority)
+            before = connection.execute(
+                """SELECT
+                     (SELECT count(*) FROM v4_production_schedule_inventories),
+                     (SELECT count(*) FROM v4_production_schedule_inventory_pages),
+                     (SELECT count(*) FROM v4_production_schedule_inventory_members),
+                     (SELECT count(*) FROM v4_production_schedule_source_bindings),
+                     (SELECT to_jsonb(i) FROM v4_production_schedule_inventories i
+                       WHERE inventory_id=%s),
+                     (SELECT to_jsonb(b) FROM v4_production_schedule_source_bindings b
+                       WHERE inventory_id=%s),
+                     (SELECT version_num FROM alembic_version)""",
+                (adopted["inventory_id"], adopted["inventory_id"]),
+            ).fetchone()
+        downgrade = _migration(database, "downgrade", _REVISION_0047)
+        assert downgrade.returncode != 0
+        assert "preserve production schedule inventory and binding evidence" in (
+            downgrade.stdout + downgrade.stderr
+        )
+        with psycopg.connect(database) as connection:
+            after = connection.execute(
+                """SELECT
+                     (SELECT count(*) FROM v4_production_schedule_inventories),
+                     (SELECT count(*) FROM v4_production_schedule_inventory_pages),
+                     (SELECT count(*) FROM v4_production_schedule_inventory_members),
+                     (SELECT count(*) FROM v4_production_schedule_source_bindings),
+                     (SELECT to_jsonb(i) FROM v4_production_schedule_inventories i
+                       WHERE inventory_id=%s),
+                     (SELECT to_jsonb(b) FROM v4_production_schedule_source_bindings b
+                       WHERE inventory_id=%s),
+                     (SELECT version_num FROM alembic_version)""",
+                (adopted["inventory_id"], adopted["inventory_id"]),
+            ).fetchone()
+            assert after == before
+    finally:
+        _drop_migration_database(source, name)
+
+
+def test_0048_empty_downgrade_restores_0047_head():
+    source = os.environ["TEST_DATABASE_URL"]
+    name, database, fixture_contract, _, _ = _prepare_0048_database(
+        "p1_0048_empty_downgrade_"
+    )
+    try:
+        _upgrade_0048_or_fail(database)
+        downgraded = _migration(database, "downgrade", _REVISION_0047)
+        assert downgraded.returncode == 0, downgraded.stdout + downgraded.stderr
+        with psycopg.connect(database) as connection:
+            assert connection.execute(
+                "SELECT version_num FROM alembic_version"
+            ).fetchone()[0] == _REVISION_0047
+            _assert_0043_fixture_contract(connection, fixture_contract)
+            for relation in (
+                "v4_production_schedule_inventories",
+                "v4_production_schedule_inventory_pages",
+                "v4_production_schedule_inventory_members",
+                "v4_production_schedule_source_bindings",
+            ):
+                assert connection.execute(
+                    "SELECT to_regclass(%s)", ("public." + relation,)
+                ).fetchone()[0] is None
+            for function in (
+                "v4_finalize_production_schedule_inventory_v1(uuid)",
+                "v4_validate_production_schedule_inventory_v1(uuid)",
+                "v4_guard_production_schedule_approval_v1()",
+            ):
+                assert connection.execute(
+                    "SELECT to_regprocedure(%s)", ("public." + function,)
+                ).fetchone()[0] is None
+    finally:
+        _drop_migration_database(source, name)
