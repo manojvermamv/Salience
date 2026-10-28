@@ -50,12 +50,28 @@ class _ProductionScheduleTargetAdapter:
         return row
 
 
-    def _assert_current_action_source(self, connection, binding):
-        """Hold current source, goal revision, and owner facts before remote action."""
+    def _assert_current_action_source(self, connection, binding, *, action):
+        """Hold exact local source/lifecycle facts before a remote action."""
         # Keep the active local schedule identity stable until the remote
         # command returns. The fixture mirror update runs after this transaction.
-        self._schedule(connection, binding.schedule_id, lock=True)
-        rows = self._local_source(connection, binding.remote_schedule_id)
+        schedule = self._schedule(connection, binding.schedule_id, lock=True)
+        status = schedule["status"]
+        if action == "pause":
+            if status not in {"active", "paused"}:
+                raise PermissionError("invalid local schedule status for pause")
+            required_cutover_state = "pending"
+        elif action == "resume_after":
+            if status != "paused":
+                raise PermissionError("invalid local schedule status for resume")
+            required_cutover_state = "rollback_pending"
+        else:
+            raise ValueError("bounded production schedule action required")
+
+        rows = self._local_source(
+            connection,
+            binding.remote_schedule_id,
+            schedule_statuses=(status,),
+        )
         expected = (
             binding.source_kind,
             binding.schedule_id,
@@ -105,6 +121,27 @@ class _ProductionScheduleTargetAdapter:
             or owner["enabled"] is not True
         ):
             raise PermissionError("current enabled bound source owner required")
+
+        cutover = connection.execute(
+            """SELECT state,goal_revision,legacy_schedule_id,actor_id,first_v4_slot
+               FROM public.v4_schedule_cutovers
+               WHERE goal_id=%s AND workspace_id=%s FOR SHARE""",
+            (binding.goal_id, binding.workspace_id),
+        ).fetchone()
+        if cutover is None or (
+            cutover["state"],
+            cutover["goal_revision"],
+            cutover["legacy_schedule_id"],
+            cutover["actor_id"],
+            cutover["first_v4_slot"],
+        ) != (
+            required_cutover_state,
+            binding.goal_revision,
+            binding.schedule_id,
+            binding.schedule_operator_subject_id,
+            binding.first_v4_slot,
+        ):
+            raise PermissionError("exact pending or rollback-pending cutover source required")
 
         if binding.publication_schedule_id is not None:
             publication = connection.execute(
@@ -312,7 +349,7 @@ class _ProductionScheduleTargetAdapter:
         mutation_error = None
         with self._connect() as connection:
             connection.execute("SET LOCAL statement_timeout='3s'")
-            self._assert_current_action_source(connection, binding)
+            self._assert_current_action_source(connection, binding, action="pause")
             # Read the exact remote schedule before the command. This prevents
             # an out-of-band source or route change from being discovered only
             # after a pause has already been sent.
@@ -370,7 +407,9 @@ class _ProductionScheduleTargetAdapter:
         mutation_error = None
         with self._connect() as connection:
             connection.execute("SET LOCAL statement_timeout='3s'")
-            self._assert_current_action_source(connection, binding)
+            self._assert_current_action_source(
+                connection, binding, action="resume_after"
+            )
             before = self._readback(binding, action_kind="schedule_resume")
             if before.running_action_count:
                 self._hold(

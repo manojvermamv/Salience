@@ -86,7 +86,16 @@ class ProductionTemporalScheduleControl(
         )
 
 
-    def _local_source(self, connection, remote_schedule_id: str):
+    def _local_source(
+        self,
+        connection,
+        remote_schedule_id: str,
+        *,
+        schedule_statuses=("active",),
+    ):
+        statuses = tuple(schedule_statuses)
+        if not statuses or any(status not in {"active", "paused"} for status in statuses):
+            raise ValueError("current active or paused local schedule status required")
         return connection.execute(
             """SELECT 'intelligence_research'::text AS source_kind,
                       source.schedule_id, NULL::uuid AS publication_schedule_id,
@@ -99,7 +108,7 @@ class ProductionTemporalScheduleControl(
                  ON schedule.id=source.schedule_id AND schedule.workspace_id=source.workspace_id
                JOIN public.v4_goals goal
                  ON goal.id=source.goal_id AND goal.workspace_id=source.workspace_id
-               WHERE source.remote_id=%s AND schedule.status='active'
+               WHERE source.remote_id=%s AND schedule.status=ANY(%s)
                  AND goal.state='active' AND goal.revision=source.goal_revision
                UNION ALL
                SELECT 'governed_publication'::text, source.schedule_id,
@@ -115,10 +124,15 @@ class ProductionTemporalScheduleControl(
                 AND publication.job_schedule_id=source.schedule_id
                JOIN public.v4_goals goal
                  ON goal.id=source.goal_id AND goal.workspace_id=source.workspace_id
-               WHERE source.remote_id=%s AND schedule.status='active'
+               WHERE source.remote_id=%s AND schedule.status=ANY(%s)
                  AND publication.status='scheduled' AND goal.state='active'
                  AND goal.revision=source.goal_revision""",
-            (remote_schedule_id, remote_schedule_id),
+            (
+                remote_schedule_id,
+                list(statuses),
+                remote_schedule_id,
+                list(statuses),
+            ),
         ).fetchall()
 
 

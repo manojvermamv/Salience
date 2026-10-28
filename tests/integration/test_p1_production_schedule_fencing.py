@@ -335,6 +335,65 @@ def _production_enrollment_fixture(prefix="task6_enroll_"):
         migration_tests._drop_migration_database(source, name)
 
 
+@contextmanager
+def _production_cutover_fixture(prefix="task6_lifecycle_"):
+    """Use the real source helper and cutover machine with a V2 fixture goal."""
+    module = import_module("salience.cycles.production_schedule_control")
+    from salience.cycles.contracts import CadencePolicy, GoalSpec, GoalSpecV2
+
+    with _production_enrollment_fixture(prefix) as (
+        database,
+        control,
+        binding,
+        _key,
+        authority,
+        _route_authority,
+    ):
+        with psycopg.connect(database, row_factory=dict_row) as connection:
+            payload = connection.execute(
+                "SELECT payload FROM v4_goal_revisions WHERE goal_id=%s AND revision=%s",
+                (binding.goal_id, binding.goal_revision),
+            ).fetchone()["payload"]
+            spec = GoalSpecV2.model_validate(
+                GoalSpec.model_validate(payload).model_dump()
+                | {
+                    "schema_version": "GoalSpec.local.v2",
+                    "horizon_end": binding.first_v4_slot + timedelta(days=1),
+                    "cadence_seconds": None,
+                    "content_program_id": authority["cycle"]["program_id"],
+                    "channel_refs": ("fixture-channel",),
+                    "content_scope": "fixture-only",
+                    "policy_refs": ("task6-lifecycle-policy-v1",),
+                    "retention_policy": "task6-lifecycle-fixture",
+                    "cadence": CadencePolicy(
+                        anchor=binding.first_v4_slot
+                        - timedelta(seconds=binding.interval_seconds),
+                        interval_seconds=binding.interval_seconds,
+                    ),
+                }
+            )
+            connection.execute("SET session_replication_role = replica")
+            connection.execute(
+                "UPDATE v4_goal_revisions SET payload=%s WHERE goal_id=%s AND revision=%s",
+                (Jsonb(spec.model_dump(mode="json")), binding.goal_id, binding.goal_revision),
+            )
+            connection.execute("SET session_replication_role = origin")
+
+        target = _MutationTarget(_readback(module, binding))
+        control.target = target
+        production = module.ProductionScheduleCutover(
+            database, schedule_control=control, binding=binding
+        )
+        prepared = production.prepare(
+            binding.goal_id,
+            legacy_schedule_id=binding.schedule_id,
+            expected_revision=binding.goal_revision,
+            first_v4_slot=binding.first_v4_slot,
+            idempotency_key="task6-lifecycle-prepare",
+        )
+        yield database, control, binding, target, production, prepared
+
+
 class _AlertSink:
     def __init__(self):
         self.events = []
@@ -629,7 +688,7 @@ def _mutation_control(monkeypatch, *, paused=False, running=0, behavior=None, ov
 
     control.binding_for_schedule = binding_lookup
     control.assert_binding = assert_binding
-    control._assert_current_action_source = lambda *_: None
+    control._assert_current_action_source = lambda *_, **__: None
     return module, control, binding, target, route, lease, authority, actions
 
 
@@ -1421,6 +1480,89 @@ def test_schedule_mutations_recheck_current_source_revision_and_owner_before_mut
         assert denied
         assert target.pause_calls == []
         assert target.resume_calls == []
+
+
+def test_production_schedule_pause_then_resume_rollback_accepts_exact_paused_source():
+    with _production_cutover_fixture("task6_lifecycle_rollback_") as (
+        database,
+        _control,
+        binding,
+        target,
+        production,
+        _prepared,
+    ):
+        activated = production.activate(
+            binding.goal_id, idempotency_key="task6-lifecycle-activate"
+        )
+        assert activated["state"] == "active"
+        with psycopg.connect(database) as connection:
+            assert connection.execute(
+                "SELECT status FROM job_schedules WHERE id=%s",
+                (binding.schedule_id,),
+            ).fetchone()[0] == "paused"
+
+        rolled_back = production.rollback(
+            binding.goal_id, idempotency_key="task6-lifecycle-rollback"
+        )
+        assert rolled_back["state"] == "rolled_back"
+        assert len(target.pause_calls) == 1
+        assert len(target.resume_calls) == 1
+        with psycopg.connect(database) as connection:
+            assert connection.execute(
+                "SELECT status FROM job_schedules WHERE id=%s",
+                (binding.schedule_id,),
+            ).fetchone()[0] == "active"
+
+
+def test_pending_activation_retry_accepts_exact_paused_source():
+    with _production_cutover_fixture("task6_lifecycle_retry_") as (
+        database,
+        control,
+        binding,
+        target,
+        production,
+        prepared,
+    ):
+        assert prepared["state"] == "pending"
+        control.pause(binding.schedule_id)
+        first_pause = target.pause_calls[0]
+        with psycopg.connect(database) as connection:
+            assert connection.execute(
+                "SELECT status FROM job_schedules WHERE id=%s",
+                (binding.schedule_id,),
+            ).fetchone()[0] == "paused"
+            assert connection.execute(
+                "SELECT state FROM v4_schedule_cutovers WHERE goal_id=%s",
+                (binding.goal_id,),
+            ).fetchone()[0] == "pending"
+
+        activated = production.activate(
+            binding.goal_id, idempotency_key="task6-lifecycle-activate"
+        )
+        assert activated["state"] == "active"
+        assert len(target.pause_calls) == 2
+        assert target.pause_calls[1] == first_pause
+
+
+def test_production_schedule_pause_rejects_invalid_local_status():
+    with _production_cutover_fixture("task6_lifecycle_invalid_status_") as (
+        database,
+        control,
+        binding,
+        target,
+        _production,
+        _prepared,
+    ):
+        with psycopg.connect(database) as connection:
+            connection.execute(
+                "UPDATE job_schedules SET status='cancelled' WHERE id=%s",
+                (binding.schedule_id,),
+            )
+        target.describe_calls.clear()
+        with pytest.raises(PermissionError, match="invalid local schedule status"):
+            control.pause(binding.schedule_id)
+        assert target.pause_calls == []
+        assert target.describe_calls == []
 
 
 def test_general_application_role_cannot_insert_production_enrollment():
