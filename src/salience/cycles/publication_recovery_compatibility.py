@@ -145,11 +145,39 @@ class PublicationWorkerLaunchLock:
     pin: PublicationWorkerPin
 
 
+@dataclass(frozen=True)
+class ProductionWorkerLockPayloadV1:
+    schema_version: Literal["salience.p1-production-worker-launch.v1"]
+    migration_head: str
+    workflow_allowlist: tuple[str, ...]
+    activity_allowlist: tuple[str, ...]
+    route_bundle: Mapping[str, object]
+
+
+@dataclass(frozen=True)
+class PublicationWorkerLaunchLockV2:
+    """Authenticated production route candidate over the unchanged v1 pin."""
+
+    schema_version: Literal["salience.publication-worker-launch-lock.v2"]
+    launcher_sha256: str
+    interpreter_path: str
+    interpreter_sha256: str
+    runtime_root: str
+    workers: Mapping[PublicationWorkerKind, PublicationWorkerEntrypoint]
+    pin: PublicationWorkerPin
+    production: ProductionWorkerLockPayloadV1
+
+
+PublicationWorkerLaunchLockAny = PublicationWorkerLaunchLock | PublicationWorkerLaunchLockV2
+
+PRODUCTION_MIGRATION_HEAD = "0048_p1_production_schedule_bindings"
+
+
 def _canonical_json(value: object) -> bytes:
     return (json.dumps(value, sort_keys=True, separators=(",", ":")) + "\n").encode()
 
 
-def _canonical_lock_bytes(launch_lock: PublicationWorkerLaunchLock) -> bytes:
+def _canonical_lock_bytes(launch_lock: PublicationWorkerLaunchLockAny) -> bytes:
     return _canonical_json(asdict(launch_lock))
 
 
@@ -374,7 +402,7 @@ def _validate_record(lock: PublicationWorkerLaunchLock, runtime_root: Path) -> s
     return recorded
 
 
-def _validate_worker_entrypoints(lock: PublicationWorkerLaunchLock) -> None:
+def _validate_worker_entrypoints(lock: PublicationWorkerLaunchLockAny) -> None:
     expected = {
         "deployable": PublicationWorkerEntrypoint("salience.workflows.worker", ()),
         "legacy-fixture": PublicationWorkerEntrypoint("salience.cycles.legacy_runtime", ()),
@@ -384,11 +412,23 @@ def _validate_worker_entrypoints(lock: PublicationWorkerLaunchLock) -> None:
 
 
 def _validate_lock_and_pin(
-    launch_lock: PublicationWorkerLaunchLock,
+    launch_lock: PublicationWorkerLaunchLockAny,
     observed_launch_lock_sha256: str,
 ) -> None:
-    if launch_lock.schema_version != "salience.publication-worker-launch-lock.v1":
+    if launch_lock.schema_version not in {
+        "salience.publication-worker-launch-lock.v1",
+        "salience.publication-worker-launch-lock.v2",
+    }:
         raise PublicationWorkerCompatibilityError("publication worker launch-lock schema is unsupported")
+    is_production_v2 = isinstance(launch_lock, PublicationWorkerLaunchLockV2)
+    if is_production_v2 != (
+        launch_lock.schema_version == "salience.publication-worker-launch-lock.v2"
+    ):
+        raise PublicationWorkerCompatibilityError("publication worker launch-lock version is malformed")
+    if is_production_v2 and not isinstance(
+        launch_lock.production, ProductionWorkerLockPayloadV1
+    ):
+        raise PublicationWorkerCompatibilityError("production launch payload is malformed")
     lock_digest = hashlib.sha256(_canonical_lock_bytes(launch_lock)).hexdigest()
     if not _HEX_64.fullmatch(observed_launch_lock_sha256) or lock_digest != observed_launch_lock_sha256:
         raise PublicationWorkerCompatibilityError("publication worker launch-lock trust digest mismatch")
@@ -483,7 +523,100 @@ def _validate_lock_and_pin(
             )
     _validate_worker_entrypoints(launch_lock)
     _validate_migration_inventory(launch_lock, verified_source_files)
+    if is_production_v2:
+        _validate_production_candidate(
+            launch_lock,
+            verified_source_files,
+            observed_launch_lock_sha256,
+        )
     return verified_source_files
+
+
+def _production_routes_from_lock(
+    launch_lock: PublicationWorkerLaunchLockV2,
+    observed_launch_lock_sha256: str,
+):
+    from salience.cycles.production_routing import (
+        PRODUCTION_ACTIVITY_ALLOWLIST,
+        PRODUCTION_WORKFLOW_ALLOWLIST,
+        parse_route_bundle,
+    )
+
+    production = launch_lock.production
+    if production.schema_version != "salience.p1-production-worker-launch.v1":
+        raise PublicationWorkerCompatibilityError(
+            "production route launch payload schema is unsupported"
+        )
+    if production.migration_head != PRODUCTION_MIGRATION_HEAD:
+        raise PublicationWorkerCompatibilityError(
+            "production route launch payload does not pin the exact migration head"
+        )
+    if production.workflow_allowlist != PRODUCTION_WORKFLOW_ALLOWLIST:
+        raise PublicationWorkerCompatibilityError(
+            "production workflow allowlist is not the closed publication set"
+        )
+    if production.activity_allowlist != PRODUCTION_ACTIVITY_ALLOWLIST:
+        raise PublicationWorkerCompatibilityError(
+            "production activity allowlist is not the closed publication set"
+        )
+    try:
+        routes = parse_route_bundle(
+            production.route_bundle,
+            expected_lock_sha256=observed_launch_lock_sha256,
+        )
+    except (TypeError, ValueError) as error:
+        raise PublicationWorkerCompatibilityError(
+            "authenticated production route bundle is invalid"
+        ) from error
+    for route in routes:
+        if route.route_tuple.worker_kind != "production-publication":
+            raise PublicationWorkerCompatibilityError(
+                "production route worker kind is outside the closed allowlist"
+            )
+        if set(route.route_tuple.workflow_types) != set(PRODUCTION_WORKFLOW_ALLOWLIST):
+            raise PublicationWorkerCompatibilityError(
+                "production route workflow types do not match the closed allowlist"
+            )
+        if set(route.route_tuple.activity_types) != set(PRODUCTION_ACTIVITY_ALLOWLIST):
+            raise PublicationWorkerCompatibilityError(
+                "production route activity types do not match the closed allowlist"
+            )
+        if route.artifact_sha256 != launch_lock.pin.artifact_sha256:
+            raise PublicationWorkerCompatibilityError(
+                "production route artifact does not match the authenticated worker pin"
+            )
+    return routes
+
+
+def _validate_production_candidate(
+    launch_lock: PublicationWorkerLaunchLockV2,
+    verified_source_files: Mapping[str, bytes],
+    observed_launch_lock_sha256: str,
+) -> None:
+    source_names = {item.path for item in launch_lock.pin.source_files}
+    import_names = {item.module for item in launch_lock.pin.runtime_imports}
+    if not {
+        "src/salience/cycles/production_routing.py",
+        "src/salience/cycles/production_dispatch.py",
+    } <= source_names or not {
+        "salience.cycles.production_routing",
+        "salience.cycles.production_dispatch",
+    } <= import_names:
+        raise PublicationWorkerCompatibilityError(
+            "production route source and import pins are incomplete"
+        )
+    routes = _production_routes_from_lock(launch_lock, observed_launch_lock_sha256)
+    revisions, heads = _migration_graph(verified_source_files)
+    if heads != {launch_lock.production.migration_head}:
+        raise PublicationWorkerCompatibilityError(
+            "authenticated production migration graph does not have the exact pinned head"
+        )
+    if not revisions:
+        raise PublicationWorkerCompatibilityError(
+            "authenticated production migration graph is empty"
+        )
+    if not routes:
+        raise PublicationWorkerCompatibilityError("authenticated production route bundle is empty")
 
 
 def _contained_directory(path: Path, root: Path) -> Path:
@@ -1107,6 +1240,10 @@ def require_publication_worker_compatibility(
     """Require an authenticated exact pin at schema 0043 or a qualified descendant."""
     if launch_lock is None:
         raise PublicationWorkerCompatibilityError("publication worker launch-lock configuration is required")
+    if not isinstance(launch_lock, PublicationWorkerLaunchLock):
+        raise PublicationWorkerCompatibilityError(
+            "fixture recovery compatibility requires the existing v1 launch lock"
+        )
     workspace, operation_ids = _validate_start_mode(
         start_mode, rollback_workspace_id, rollback_operation_ids
     )
@@ -1137,6 +1274,45 @@ def require_publication_worker_compatibility(
                 "both retained publication recovery holds failed verification"
             ) from error
     return launch_lock.pin
+
+
+def require_production_worker_compatibility(
+    database_url: str,
+    *,
+    launch_lock: PublicationWorkerLaunchLockAny,
+    observed_launch_lock_sha256: str,
+    route_id: UUID,
+):
+    """Require an authenticated v2 route and the exact production schema head."""
+    if not isinstance(launch_lock, PublicationWorkerLaunchLockV2):
+        raise PublicationWorkerCompatibilityError(
+            "production route startup requires an authenticated v2 launch lock"
+        )
+    if not isinstance(route_id, UUID):
+        raise PublicationWorkerCompatibilityError("production route ID UUID is required")
+    verified_source_files = _validate_lock_and_pin(
+        launch_lock, observed_launch_lock_sha256
+    )
+    revisions, heads = _migration_graph(verified_source_files)
+    expected_head = launch_lock.production.migration_head
+    if heads != {expected_head}:
+        raise PublicationWorkerCompatibilityError(
+            "authenticated production migration graph does not have the exact pinned head"
+        )
+    revision = _database_revision(database_url)
+    if revision != expected_head:
+        raise PublicationWorkerCompatibilityError(
+            "database migration revision does not match the exact production head"
+        )
+    routes = _production_routes_from_lock(
+        launch_lock, observed_launch_lock_sha256
+    )
+    selected = tuple(route for route in routes if route.route_id == route_id)
+    if len(selected) != 1:
+        raise PublicationWorkerCompatibilityError(
+            "production route ID is absent or ambiguous in the authenticated bundle"
+        )
+    return selected[0]
 
 
 def require_publication_worker_compatibility_from_environment(
@@ -1188,7 +1364,7 @@ def require_publication_worker_compatibility_from_environment(
     )
 
 
-def _launch_lock_from_json(value: object) -> PublicationWorkerLaunchLock:
+def _launch_lock_from_json(value: object) -> PublicationWorkerLaunchLockAny:
     if not isinstance(value, dict):
         raise ValueError("launch lock must be an object")
     pin_value = value.get("pin")
@@ -1212,12 +1388,46 @@ def _launch_lock_from_json(value: object) -> PublicationWorkerLaunchLock:
         )
         for name, entry in value["workers"].items()
     }
-    return PublicationWorkerLaunchLock(
+    common = {
+        "launcher_sha256": value["launcher_sha256"],
+        "interpreter_path": value["interpreter_path"],
+        "interpreter_sha256": value["interpreter_sha256"],
+        "runtime_root": value["runtime_root"],
+        "workers": workers,
+        "pin": pin,
+    }
+    if value["schema_version"] == "salience.publication-worker-launch-lock.v1":
+        return PublicationWorkerLaunchLock(
+            schema_version=value["schema_version"],
+            **common,
+        )
+    if value["schema_version"] != "salience.publication-worker-launch-lock.v2":
+        raise ValueError("launch-lock schema is unsupported")
+    production_value = value.get("production")
+    if not isinstance(production_value, dict) or frozenset(production_value) != {
+        "schema_version",
+        "migration_head",
+        "workflow_allowlist",
+        "activity_allowlist",
+        "route_bundle",
+    }:
+        raise ValueError("production launch payload is missing or has unknown fields")
+    route_bundle = production_value["route_bundle"]
+    if not isinstance(route_bundle, dict):
+        raise ValueError("production route bundle must be an object")
+    workflow_allowlist = production_value["workflow_allowlist"]
+    activity_allowlist = production_value["activity_allowlist"]
+    if not isinstance(workflow_allowlist, list) or not isinstance(activity_allowlist, list):
+        raise ValueError("production worker allowlists must be arrays")
+    production = ProductionWorkerLockPayloadV1(
+        schema_version=production_value["schema_version"],
+        migration_head=production_value["migration_head"],
+        workflow_allowlist=tuple(workflow_allowlist),
+        activity_allowlist=tuple(activity_allowlist),
+        route_bundle=route_bundle,
+    )
+    return PublicationWorkerLaunchLockV2(
         schema_version=value["schema_version"],
-        launcher_sha256=value["launcher_sha256"],
-        interpreter_path=value["interpreter_path"],
-        interpreter_sha256=value["interpreter_sha256"],
-        runtime_root=value["runtime_root"],
-        workers=workers,
-        pin=pin,
+        production=production,
+        **common,
     )

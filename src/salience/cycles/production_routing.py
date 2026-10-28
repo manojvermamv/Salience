@@ -27,6 +27,19 @@ _ROUTE_BUNDLE_VERSION = "salience.p1-production-route-bundle.v1"
 ROUTE_FENCE_AUTHORITY_VERSION: Literal["salience.p1-route-fence.v1"] = (
     "salience.p1-route-fence.v1"
 )
+PRODUCTION_WORKER_KIND = "production-publication"
+PRODUCTION_WORKFLOW_ALLOWLIST = ("GovernedPublicationWorkflow",)
+PRODUCTION_ACTIVITY_ALLOWLIST = (
+    "salience.publication.request",
+    "salience.publication.authorize",
+    "salience.publication.delivery",
+    "salience.publication.submit_or_reconcile",
+    "salience.publication.await",
+    "salience.publication.complete",
+    "salience.publication.denied",
+    "salience.publication.cancel",
+    "salience.publication.dead_letter",
+)
 _ROUTE_TUPLE_FIELDS = frozenset(
     {
         "deployment_id",

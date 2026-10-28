@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
@@ -9,6 +10,7 @@ from importlib import import_module
 from pathlib import Path
 import sys
 from threading import Barrier
+from types import SimpleNamespace
 from uuid import UUID
 
 import pytest
@@ -281,3 +283,651 @@ def test_route_service_outage_denies_without_cached_epoch() -> None:
     assert expiring_authority.consume_decision(
         expiring_decision.decision_id, short_request
     ) is False
+
+
+def _publication_route():
+    from salience.cycles.production_routing import (
+        ProductionRouteManifestV1,
+        RouteTupleV1,
+        route_tuple_sha256,
+    )
+
+    workflow_types = ("GovernedPublicationWorkflow",)
+    activity_types = (
+        "salience.publication.request",
+        "salience.publication.authorize",
+        "salience.publication.delivery",
+        "salience.publication.submit_or_reconcile",
+        "salience.publication.await",
+        "salience.publication.complete",
+        "salience.publication.denied",
+        "salience.publication.cancel",
+        "salience.publication.dead_letter",
+    )
+    route_tuple = RouteTupleV1(
+        deployment_id=_DEPLOYMENT_ID,
+        environment_id=_ENVIRONMENT_ID,
+        temporal_endpoint_id="temporal-endpoint-test",
+        namespace="salience-production-test",
+        task_queue="salience-publication-test",
+        worker_kind="production-publication",
+        workflow_types=workflow_types,
+        activity_types=activity_types,
+        producer_bindings=(),
+        compatibility_mode="exact-head",
+    )
+    return ProductionRouteManifestV1(
+        route_id=_ROUTE_ID,
+        route_tuple=route_tuple,
+        route_tuple_sha256=route_tuple_sha256(route_tuple),
+        worker_build_id="salience-worker-build-2026-10-28",
+        slots=(_SLOT_A, _SLOT_B),
+        artifact_sha256="e" * 64,
+        image_sha256="f" * 64,
+        artifact_lock_sha256=_ARTIFACT_LOCK,
+    )
+
+
+def _route_lease(authority, route=None, *, owner_id=_OWNER_A, slot_id=_SLOT_A):
+    from salience.cycles.production_routing import (
+        RouteLeaseClaim,
+        route_manifest_sha256,
+    )
+
+    route = route or _publication_route()
+    return authority.claim_slot(
+        RouteLeaseClaim(
+            route_id=route.route_id,
+            route_manifest_sha256=route_manifest_sha256(route),
+            artifact_lock_sha256=route.artifact_lock_sha256,
+            slot_id=slot_id,
+            owner_id=owner_id,
+            build_id=route.worker_build_id,
+        )
+    )
+
+
+def _publication_state():
+    from salience.workflows.publication import PublicationWorkflowState
+
+    return PublicationWorkflowState(store=object(), repository=object())
+
+
+def _approval_and_publication_binding(route):
+    from datetime import datetime, timedelta, timezone
+    from salience.cycles.production_dispatch import PublicationEffectBinding
+    from salience.governance.production_policy import ProductionApprovalBinding
+
+    approval = ProductionApprovalBinding(
+        approval_request_id=UUID("00000000-0000-0000-0000-000000000201"),
+        workspace_id=UUID("00000000-0000-0000-0000-000000000202"),
+        program_id=UUID("00000000-0000-0000-0000-000000000203"),
+        goal_id=UUID("00000000-0000-0000-0000-000000000204"),
+        goal_revision=1,
+        intent_id=UUID("00000000-0000-0000-0000-000000000205"),
+        cycle_id=UUID("00000000-0000-0000-0000-000000000206"),
+        context_id=UUID("00000000-0000-0000-0000-000000000207"),
+        operation_id=UUID("00000000-0000-0000-0000-000000000208"),
+        subject_id=UUID("00000000-0000-0000-0000-000000000209"),
+        policy_version_id=UUID("00000000-0000-0000-0000-000000000210"),
+        policy_document_hash="a" * 64,
+        effect_type="write",
+        purpose="authorized publication",
+        artifact_sha256="9" * 64,
+        account_id=UUID("00000000-0000-0000-0000-000000000211"),
+        provider_id="publisher.test",
+        required_scopes=("publish:create",),
+        budget_id=UUID("00000000-0000-0000-0000-000000000212"),
+        budget_reservation_id=UUID("00000000-0000-0000-0000-000000000213"),
+        expires_at=datetime(2026, 10, 28, 12, 5, tzinfo=timezone.utc),
+    )
+    publication = PublicationEffectBinding(
+        publication_request_id=UUID("00000000-0000-0000-0000-000000000214"),
+        job_id=UUID("00000000-0000-0000-0000-000000000215"),
+        workflow_id="publication-cycle-stable",
+        workflow_run_id="publication-run-stable",
+        publication_plan_id=UUID("00000000-0000-0000-0000-000000000216"),
+        publication_attempt_id=UUID("00000000-0000-0000-0000-000000000217"),
+        external_effect_id=UUID("00000000-0000-0000-0000-000000000218"),
+    )
+    return approval, publication
+
+
+def _permit_factory(route, lease):
+    from datetime import datetime, timedelta, timezone
+
+    from salience.cycles.production_dispatch import ProductionPermitRequest, RouteBinding
+
+    route_binding = RouteBinding(
+        deployment_id=route.route_tuple.deployment_id,
+        environment_id=route.route_tuple.environment_id,
+        route_id=route.route_id,
+        slot_id=lease.slot_id,
+        owner_id=lease.owner_id,
+        fencing_epoch=lease.fencing_epoch,
+        route_manifest_sha256=lease.route_manifest_sha256,
+        artifact_lock_sha256=lease.artifact_lock_sha256,
+        route_tuple_sha256=route.route_tuple_sha256,
+    )
+
+    def create(approval, publication):
+        return ProductionPermitRequest(
+            workspace_id=approval.workspace_id,
+            goal_id=approval.goal_id,
+            goal_revision=approval.goal_revision,
+            program_id=approval.program_id,
+            intent_id=approval.intent_id,
+            cycle_id=approval.cycle_id,
+            context_id=approval.context_id,
+            operation_id=approval.operation_id,
+            subject_id=approval.subject_id,
+            policy_version_id=approval.policy_version_id,
+            approval_request_id=approval.approval_request_id,
+            required_scopes=approval.required_scopes,
+            effect_type=approval.effect_type,
+            purpose=approval.purpose,
+            artifact_sha256=approval.artifact_sha256,
+            account_id=approval.account_id,
+            budget_id=approval.budget_id,
+            budget_reservation_id=approval.budget_reservation_id,
+            provider_id=approval.provider_id,
+            idempotency_key="publication-operation-stable",
+            route=route_binding,
+            execution_deadline=datetime.now(timezone.utc) + timedelta(seconds=20),
+            ttl_seconds=20,
+            publication_binding=publication,
+        )
+
+    return create
+
+
+def _worker_readback(route, lease, *, poller_count=0, active_task_count=0):
+    from datetime import datetime, timezone
+
+    from salience.workflows.worker import WorkerReadback
+
+    return WorkerReadback(
+        route_id=route.route_id,
+        slot_id=lease.slot_id,
+        owner_id=lease.owner_id,
+        fencing_epoch=lease.fencing_epoch,
+        route_manifest_sha256=lease.route_manifest_sha256,
+        artifact_lock_sha256=lease.artifact_lock_sha256,
+        temporal_endpoint_id=route.route_tuple.temporal_endpoint_id,
+        namespace=route.route_tuple.namespace,
+        task_queue=route.route_tuple.task_queue,
+        registered_workflow_types=frozenset(route.route_tuple.workflow_types),
+        registered_activity_types=frozenset(route.route_tuple.activity_types),
+        poller_count=poller_count,
+        active_task_count=active_task_count,
+        observed_at=datetime.now(timezone.utc),
+        complete=True,
+    )
+
+
+@pytest.mark.asyncio
+async def test_route_preflight_denies_before_temporal_connect(monkeypatch, tmp_path):
+    import hashlib
+    import json
+
+    from salience.cycles.publication_recovery_compatibility import (
+        PublicationWorkerCompatibilityError,
+    )
+    from salience.cycles.production_routing import canonical_route_manifest_bytes
+    from salience.workflows import worker
+
+    route = _publication_route()
+    authority = _authority()
+    lease = _route_lease(authority, route)
+    connects = []
+    registrations = []
+    preflights = []
+    from importlib.util import spec_from_file_location, module_from_spec
+
+    launcher_spec = spec_from_file_location(
+        "salience_fake_external_launcher",
+        Path(__file__).resolve().parents[2] / "scripts/launch-v4-publication-worker.py",
+    )
+    launcher = module_from_spec(launcher_spec)
+    launcher_spec.loader.exec_module(launcher)
+    control = tmp_path / "control"
+    control.mkdir()
+    fake_launcher_file = control / "launch-v4-publication-worker.py"
+    fake_launcher_file.write_text("# synthetic authenticated launcher\n", encoding="utf-8")
+    lock_path = control / "publication-worker-launch-lock.json"
+    digest_path = control / "publication-worker-launch-lock.sha256"
+    lock = {
+        "schema_version": "salience.publication-worker-launch-lock.v2",
+        "production": {
+            "schema_version": "salience.p1-production-worker-launch.v1",
+            "migration_head": "0048_p1_production_schedule_bindings",
+            "workflow_allowlist": list(route.route_tuple.workflow_types),
+            "activity_allowlist": list(route.route_tuple.activity_types),
+            "route_bundle": {
+                "schema_version": "salience.p1-production-route-bundle.v1",
+                "routes": [json.loads(canonical_route_manifest_bytes(route))],
+            },
+        },
+    }
+    lock_bytes = (json.dumps(lock, sort_keys=True, separators=(",", ":")) + "\n").encode()
+    lock_path.write_bytes(lock_bytes)
+    digest_path.write_text(hashlib.sha256(lock_bytes).hexdigest() + "\n", encoding="ascii")
+
+    async def connector(target, *, namespace):
+        connects.append((target, namespace))
+        return SimpleNamespace(namespace=namespace)
+
+    def preflight(database_url, selected_route, selected_lease):
+        preflights.append((database_url, selected_route, selected_lease))
+        raw = launcher._read_fixed_control_file(fake_launcher_file, "fake launcher")
+        assert raw.startswith(b"# synthetic authenticated launcher")
+        authenticated, lock_digest = launcher._verify_authenticated_lock(
+            launcher._read_fixed_control_file(lock_path, "fake lock"),
+            launcher._read_fixed_control_file(digest_path, "fake lock digest")
+            .decode("ascii")
+            .strip(),
+        )
+        assert authenticated["production"]["migration_head"].startswith("0048_")
+        assert lock_digest == hashlib.sha256(lock_bytes).hexdigest()
+        raise PublicationWorkerCompatibilityError("wrong production migration head")
+
+    monkeypatch.setattr(worker, "Worker", lambda *args, **kwargs: registrations.append(kwargs))
+    with pytest.raises(PublicationWorkerCompatibilityError, match="migration head"):
+        await worker.connect_routed_worker(
+            route=route,
+            lease=lease,
+            route_authority=authority,
+            database_url="postgresql://primary/salience",
+            publication_state=_publication_state(),
+            permit_request_factory=_permit_factory(route, lease),
+            temporal_connect=connector,
+            compatibility_preflight=preflight,
+        )
+    assert len(preflights) == 1
+    assert preflights[0][1:] == (route, lease)
+    assert connects == []
+    assert registrations == []
+
+
+def test_worker_registers_exact_route_allowlists_and_namespace(monkeypatch):
+    from salience.workflows import worker
+
+    route = _publication_route()
+    authority = _authority()
+    lease = _route_lease(authority, route)
+    calls = []
+
+    class CaptureWorker:
+        def __init__(self, client, **kwargs):
+            calls.append((client, kwargs))
+
+    client = SimpleNamespace(
+        namespace=route.route_tuple.namespace,
+        route_endpoint_id=route.route_tuple.temporal_endpoint_id,
+        route_build_id=route.worker_build_id,
+        route_artifact_sha256=route.artifact_sha256,
+        route_image_sha256=route.image_sha256,
+    )
+    state = _publication_state()
+    factory = _permit_factory(route, lease)
+    monkeypatch.setattr(worker, "Worker", CaptureWorker)
+    worker.build_routed_worker(
+        client,
+        route=route,
+        lease=lease,
+        route_authority=authority,
+        database_url="postgresql://primary/salience",
+        publication_state=state,
+        permit_request_factory=factory,
+    )
+
+    assert len(calls) == 1
+    registered_client, options = calls[0]
+    assert registered_client is client
+    assert options["task_queue"] == route.route_tuple.task_queue
+    assert options["workflows"] == [worker.GovernedPublicationWorkflow]
+    registered_activity_names = {
+        activity.__temporal_activity_definition.name
+        for activity in options["activities"]
+    }
+    assert registered_activity_names == set(route.route_tuple.activity_types)
+    assert state.production_dispatch.database_url == "postgresql://primary/salience"
+    assert state.production_dispatch.route_fence is authority
+    approval, publication = _approval_and_publication_binding(route)
+    request = state.production_permit_request_factory(approval, publication)
+    assert request.route.route_id == route.route_id
+    assert request.route.slot_id == lease.slot_id
+    assert request.route.owner_id == lease.owner_id
+    assert request.route.fencing_epoch == lease.fencing_epoch
+    assert request.route.route_manifest_sha256 == lease.route_manifest_sha256
+    assert request.route.artifact_lock_sha256 == lease.artifact_lock_sha256
+    assert request.route.route_tuple_sha256 == route.route_tuple_sha256
+
+
+@pytest.mark.asyncio
+async def test_route_renewal_loss_drains_before_expiry_and_preserves_identity():
+    from datetime import timedelta
+
+    from salience.workflows import worker
+
+    clock = _Clock()
+    authority = _authority(clock)
+    route = _publication_route()
+    lease = _route_lease(authority, route)
+    original_expiry = lease.expires_at
+    shutdown_at = []
+    renewal_intervals = []
+    worker_stopped = asyncio.Event()
+
+    class LossAuthority:
+        protocol_version = authority.protocol_version
+
+        def read_slot(self, route_id, slot_id):
+            return authority.read_slot(route_id, slot_id)
+
+        def renew_slot(self, current):
+            raise PermissionError("synthetic route renewal loss")
+
+        def claim_slot(self, request):
+            return authority.claim_slot(request)
+
+        def authorize_action(self, request):
+            return authority.authorize_action(request)
+
+        def release_slot(self, current):
+            return authority.release_slot(current)
+
+        def terminate_slot(self, current):
+            return authority.terminate_slot(current)
+
+    class RunningWorker:
+        async def run(self):
+            await worker_stopped.wait()
+
+        def shutdown(self):
+            shutdown_at.append(clock())
+            worker_stopped.set()
+
+    async def wait_for_renewal(interval):
+        renewal_intervals.append(interval)
+        clock.advance(timedelta(seconds=interval))
+
+    readbacks = []
+
+    class Readback:
+        def read_worker(self, route_id, slot_id):
+            result = _worker_readback(route, lease)
+            readbacks.append((route_id, slot_id, result))
+            return result
+
+    result = await worker.run_routed_worker(
+        RunningWorker(),
+        route=route,
+        lease=lease,
+        route_authority=LossAuthority(),
+        temporal_readback=Readback(),
+        sleep=wait_for_renewal,
+        now=clock,
+    )
+
+    assert result == "lease_lost"
+    assert renewal_intervals and renewal_intervals[0] <= 10
+    assert shutdown_at[0] < original_expiry
+    assert readbacks[0][2].poller_count == 0
+    assert readbacks[0][2].active_task_count == 0
+    current = authority.read_slot(route.route_id, lease.slot_id)
+    assert current.state == "leased"
+    assert current.lease == lease
+    assert current.fencing_epoch == lease.fencing_epoch
+
+
+def test_duplicate_slot_owner_never_registers(monkeypatch):
+    from dataclasses import replace
+
+    from salience.cycles.production_routing import RouteLeaseClaim, route_manifest_sha256
+    from salience.workflows import worker
+
+    route = _publication_route()
+    authority = _authority()
+    first = _route_lease(authority, route, owner_id=_OWNER_A)
+    registered = []
+    monkeypatch.setattr(worker, "Worker", lambda *args, **kwargs: registered.append(kwargs))
+    with pytest.raises(PermissionError, match="already claimed"):
+        authority.claim_slot(
+            RouteLeaseClaim(
+                route_id=route.route_id,
+                route_manifest_sha256=route_manifest_sha256(route),
+                artifact_lock_sha256=route.artifact_lock_sha256,
+                slot_id=first.slot_id,
+                owner_id=_OWNER_B,
+                build_id=route.worker_build_id,
+            )
+        )
+    with pytest.raises(PermissionError, match="current lease"):
+        worker.build_routed_worker(
+            SimpleNamespace(
+                namespace=route.route_tuple.namespace,
+                route_endpoint_id=route.route_tuple.temporal_endpoint_id,
+            ),
+            route=route,
+            lease=replace(first, owner_id=_OWNER_B),
+            route_authority=authority,
+            database_url="postgresql://primary/salience",
+            publication_state=_publication_state(),
+            permit_request_factory=_permit_factory(route, first),
+        )
+    assert registered == []
+
+
+def test_v2_external_launcher_claims_and_hands_off_route_lease(
+    monkeypatch, tmp_path
+):
+    import json
+    from importlib.util import module_from_spec, spec_from_file_location
+    import subprocess
+
+    from salience.cycles.production_routing import canonical_route_manifest_bytes
+
+    route = _publication_route()
+    launcher_spec = spec_from_file_location(
+        "salience_route_launcher_handoff",
+        Path(__file__).resolve().parents[2] / "scripts/launch-v4-publication-worker.py",
+    )
+    launcher = module_from_spec(launcher_spec)
+    launcher_spec.loader.exec_module(launcher)
+    control = tmp_path / "control"
+    control.mkdir()
+    fake_launcher_file = control / "launch-v4-publication-worker.py"
+    fake_launcher_file.write_text("# fake v2 launcher\n", encoding="utf-8")
+    lock_path = control / "publication-worker-launch-lock.json"
+    digest_path = control / "publication-worker-launch-lock.sha256"
+    lock = {
+        "schema_version": "salience.publication-worker-launch-lock.v2",
+        "launcher_sha256": "a" * 64,
+        "interpreter_path": "synthetic-python",
+        "workers": {
+            "deployable": {"module": "salience.workflows.worker", "argv": []},
+            "legacy-fixture": {"module": "salience.cycles.legacy_runtime", "argv": []},
+        },
+        "production": {
+            "schema_version": "salience.p1-production-worker-launch.v1",
+            "migration_head": "0048_p1_production_schedule_bindings",
+            "workflow_allowlist": list(route.route_tuple.workflow_types),
+            "activity_allowlist": list(route.route_tuple.activity_types),
+            "route_bundle": {
+                "schema_version": "salience.p1-production-route-bundle.v1",
+                "routes": [json.loads(canonical_route_manifest_bytes(route))],
+            },
+        },
+    }
+    lock_bytes = (json.dumps(lock, sort_keys=True, separators=(",", ":")) + "\n").encode()
+    lock_path.write_bytes(lock_bytes)
+    digest = __import__("hashlib").sha256(lock_bytes).hexdigest()
+    digest_path.write_text(digest + "\n", encoding="ascii")
+    monkeypatch.setattr(launcher, "_require_isolated_startup", lambda: None)
+    monkeypatch.setattr(launcher, "CONTROL_LOCK_PATH", lock_path)
+    monkeypatch.setattr(launcher, "CONTROL_LOCK_DIGEST_PATH", digest_path)
+    monkeypatch.setattr(launcher, "_verify_pin", lambda _lock: tmp_path)
+    monkeypatch.setattr(
+        launcher.subprocess,
+        "run",
+        lambda *args, **kwargs: subprocess.CompletedProcess(args[0], 0, "", ""),
+    )
+    monkeypatch.setenv("DATABASE_URL", "postgresql://primary/salience")
+    monkeypatch.chdir(tmp_path)
+    authority = _authority()
+    handoffs = []
+
+    def child_exec(interpreter, command, environment):
+        handoffs.append((interpreter, command, environment))
+
+    with pytest.raises(launcher.LauncherError, match="executor returned"):
+        launcher.main(
+            [
+                "--mode",
+                "current",
+                "--worker-kind",
+                "deployable",
+                "--route-id",
+                str(route.route_id),
+                "--slot-id",
+                str(_SLOT_A),
+                "--owner-id",
+                str(_OWNER_A),
+            ],
+            route_authority=authority,
+            route_child_exec=child_exec,
+        )
+
+    assert fake_launcher_file.read_text(encoding="utf-8").startswith("# fake v2")
+    assert len(handoffs) == 1
+    environment = handoffs[0][2]
+    manifest_payload = json.loads(environment["SALIENCE_PRODUCTION_ROUTE_MANIFEST"])
+    lease_payload = json.loads(environment["SALIENCE_PRODUCTION_ROUTE_LEASE"])
+    assert manifest_payload["route_id"] == str(route.route_id)
+    assert manifest_payload["route_tuple"]["namespace"] == route.route_tuple.namespace
+    assert lease_payload["route_id"] == str(route.route_id)
+    assert lease_payload["slot_id"] == str(_SLOT_A)
+    assert lease_payload["owner_id"] == str(_OWNER_A)
+    assert lease_payload["fencing_epoch"] == 1
+    assert lease_payload["artifact_lock_sha256"] == digest
+    assert authority.read_slot(route.route_id, _SLOT_A).lease is not None
+
+
+def test_routed_publication_uses_production_effect_dispatch_with_exact_route_binding(
+    monkeypatch,
+):
+    from salience.cycles.production_dispatch import ProductionEffectDispatch
+    from salience.workflows import worker
+
+    route = _publication_route()
+    authority = _authority()
+    lease = _route_lease(authority, route)
+    monkeypatch.setattr(worker, "Worker", lambda *args, **kwargs: SimpleNamespace(**kwargs))
+    state = _publication_state()
+    worker.build_routed_worker(
+        SimpleNamespace(
+            namespace=route.route_tuple.namespace,
+            route_endpoint_id=route.route_tuple.temporal_endpoint_id,
+            route_build_id=route.worker_build_id,
+            route_artifact_sha256=route.artifact_sha256,
+            route_image_sha256=route.image_sha256,
+        ),
+        route=route,
+        lease=lease,
+        route_authority=authority,
+        database_url="postgresql://primary/salience",
+        publication_state=state,
+        permit_request_factory=_permit_factory(route, lease),
+    )
+    approval, publication = _approval_and_publication_binding(route)
+    request = state.production_permit_request_factory(approval, publication)
+
+    assert isinstance(state.production_dispatch, ProductionEffectDispatch)
+    assert state.production_dispatch.route_fence is authority
+    assert request.route.owner_id == lease.owner_id
+    assert request.route.fencing_epoch == lease.fencing_epoch
+    assert request.route.route_tuple_sha256 == route.route_tuple_sha256
+    assert request.publication_binding == publication
+
+
+def test_restart_preserves_workflow_cycle_and_operation_identity(monkeypatch):
+    from salience.cycles.production_routing import RouteLeaseClaim, route_manifest_sha256
+    from salience.workflows import worker
+
+    clock = _Clock()
+    authority = _authority(clock)
+    route = _publication_route()
+    first_lease = _route_lease(authority, route)
+    approval, publication = _approval_and_publication_binding(route)
+    state = _publication_state()
+    monkeypatch.setattr(worker, "Worker", lambda *args, **kwargs: SimpleNamespace(**kwargs))
+    client = SimpleNamespace(
+        namespace=route.route_tuple.namespace,
+        route_endpoint_id=route.route_tuple.temporal_endpoint_id,
+        route_build_id=route.worker_build_id,
+        route_artifact_sha256=route.artifact_sha256,
+        route_image_sha256=route.image_sha256,
+    )
+    worker.build_routed_worker(
+        client,
+        route=route,
+        lease=first_lease,
+        route_authority=authority,
+        database_url="postgresql://primary/salience",
+        publication_state=state,
+        permit_request_factory=_permit_factory(route, first_lease),
+    )
+    first_request = state.production_permit_request_factory(approval, publication)
+    incorrect_readback = SimpleNamespace(
+        read_worker=lambda route_id, slot_id: replace(
+            _worker_readback(route, first_lease), namespace="wrong-namespace"
+        )
+    )
+    with pytest.raises(PermissionError, match="readback"):
+        worker.transfer_routed_worker(
+            route=route,
+            lease=first_lease,
+            route_authority=authority,
+            temporal_readback=incorrect_readback,
+            now=clock,
+        )
+    assert authority.read_slot(route.route_id, first_lease.slot_id).lease == first_lease
+    released = worker.transfer_routed_worker(
+        route=route,
+        lease=first_lease,
+        route_authority=authority,
+        temporal_readback=SimpleNamespace(
+            read_worker=lambda route_id, slot_id: _worker_readback(route, first_lease)
+        ),
+        now=clock,
+    )
+    assert released.state == "released"
+    assert released.fencing_epoch == first_lease.fencing_epoch
+    second_lease = authority.claim_slot(
+        RouteLeaseClaim(
+            route_id=route.route_id,
+            route_manifest_sha256=route_manifest_sha256(route),
+            artifact_lock_sha256=route.artifact_lock_sha256,
+            slot_id=first_lease.slot_id,
+            owner_id=first_lease.owner_id,
+            build_id=route.worker_build_id,
+        )
+    )
+    worker.build_routed_worker(
+        client,
+        route=route,
+        lease=second_lease,
+        route_authority=authority,
+        database_url="postgresql://primary/salience",
+        publication_state=state,
+        permit_request_factory=_permit_factory(route, second_lease),
+    )
+    restarted_request = state.production_permit_request_factory(approval, publication)
+
+    assert second_lease.fencing_epoch == first_lease.fencing_epoch + 1
+    assert restarted_request.cycle_id == first_request.cycle_id == approval.cycle_id
+    assert restarted_request.operation_id == first_request.operation_id == approval.operation_id
+    assert restarted_request.publication_binding.workflow_id == publication.workflow_id
+    assert restarted_request.publication_binding.workflow_run_id == publication.workflow_run_id
+    assert restarted_request.route.fencing_epoch == second_lease.fencing_epoch

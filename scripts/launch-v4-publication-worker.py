@@ -15,6 +15,7 @@ import re
 import stat
 import subprocess
 import sys
+from datetime import datetime, timezone
 from uuid import UUID
 
 
@@ -53,21 +54,31 @@ _REQUIRED_IMPORT_MODULES = {
 }
 _PREFLIGHT = r"""
 import json, sys
+from uuid import UUID
 payload = json.load(sys.stdin)
 sys.path.insert(0, payload["runtime_root"])
 from salience.cycles.publication_recovery_compatibility import (
     _launch_lock_from_json,
+    require_production_worker_compatibility,
     require_publication_worker_compatibility,
 )
 lock = _launch_lock_from_json(payload["launch_lock"])
-require_publication_worker_compatibility(
-    payload["database_url"],
-    start_mode=payload["mode"],
-    launch_lock=lock,
-    observed_launch_lock_sha256=payload["lock_sha256"],
-    rollback_workspace_id=payload.get("workspace_id"),
-    rollback_operation_ids=payload.get("operation_ids"),
-)
+if lock.schema_version == "salience.publication-worker-launch-lock.v2":
+    require_production_worker_compatibility(
+        payload["database_url"],
+        launch_lock=lock,
+        observed_launch_lock_sha256=payload["lock_sha256"],
+        route_id=UUID(payload["route_id"]),
+    )
+else:
+    require_publication_worker_compatibility(
+        payload["database_url"],
+        start_mode=payload["mode"],
+        launch_lock=lock,
+        observed_launch_lock_sha256=payload["lock_sha256"],
+        rollback_workspace_id=payload.get("workspace_id"),
+        rollback_operation_ids=payload.get("operation_ids"),
+    )
 """
 _WORKER_BOOTSTRAP = r"""
 import runpy, sys
@@ -226,12 +237,35 @@ def _verify_authenticated_lock(raw: bytes, trusted_digest: str) -> tuple[dict, s
     canonical = (json.dumps(lock, sort_keys=True, separators=(",", ":")) + "\n").encode()
     if canonical != raw:
         raise LauncherError("launch-lock bytes are not canonical")
-    if lock.get("schema_version") != "salience.publication-worker-launch-lock.v1":
+    if lock.get("schema_version") not in {
+        "salience.publication-worker-launch-lock.v1",
+        "salience.publication-worker-launch-lock.v2",
+    }:
         raise LauncherError("launch-lock schema is unsupported")
     return lock, actual_digest
 
 
 def _verify_pin(lock: dict) -> Path:
+    if lock.get("schema_version") == "salience.publication-worker-launch-lock.v2":
+        production = lock.get("production")
+        if not isinstance(production, dict) or set(production) != {
+            "schema_version",
+            "migration_head",
+            "workflow_allowlist",
+            "activity_allowlist",
+            "route_bundle",
+        }:
+            raise LauncherError("production route launch payload is missing or open-ended")
+        if (
+            production.get("schema_version")
+            != "salience.p1-production-worker-launch.v1"
+            or not isinstance(production.get("migration_head"), str)
+            or not production["migration_head"]
+            or not isinstance(production.get("workflow_allowlist"), list)
+            or not isinstance(production.get("activity_allowlist"), list)
+            or not isinstance(production.get("route_bundle"), dict)
+        ):
+            raise LauncherError("production route launch payload is malformed")
     pin = lock.get("pin")
     if not isinstance(pin, dict) or pin.get("schema_version") != "salience.publication-worker-pin.v1":
         raise LauncherError("publication worker pin is missing or unsupported")
@@ -363,11 +397,22 @@ def _reject_bytecode_cache(runtime_root: Path) -> None:
                 raise LauncherError("authenticated runtime root cannot be scanned") from error
 
 
-def _environment_for_child(mode: str, workspace: str | None, expired: str | None, cancelled: str | None, lock_digest: str) -> dict[str, str]:
+def _environment_for_child(
+    mode: str,
+    workspace: str | None,
+    expired: str | None,
+    cancelled: str | None,
+    lock_digest: str,
+    *,
+    route_manifest: object | None = None,
+    lease_identity: object | None = None,
+) -> dict[str, str]:
     environment = {
         key: value
         for key, value in os.environ.items()
-        if not key.startswith("PYTHON") and not key.startswith("SALIENCE_PUBLICATION_")
+        if not key.startswith("PYTHON")
+        and not key.startswith("SALIENCE_PUBLICATION_")
+        and not key.startswith("SALIENCE_PRODUCTION_ROUTE_")
     }
     environment["SALIENCE_PUBLICATION_WORKER_START_MODE"] = mode
     environment["SALIENCE_PUBLICATION_WORKER_LAUNCH_LOCK"] = str(CONTROL_LOCK_PATH)
@@ -376,7 +421,96 @@ def _environment_for_child(mode: str, workspace: str | None, expired: str | None
         environment["SALIENCE_PUBLICATION_ROLLBACK_WORKSPACE_ID"] = workspace
         environment["SALIENCE_PUBLICATION_EXPIRED_HOLD_OPERATION_ID"] = expired
         environment["SALIENCE_PUBLICATION_CANCEL_HOLD_OPERATION_ID"] = cancelled
+    if route_manifest is not None or lease_identity is not None:
+        if route_manifest is None or lease_identity is None:
+            raise LauncherError("route manifest and one-use lease identity must be complete")
+        environment["SALIENCE_PRODUCTION_ROUTE_MANIFEST"] = json.dumps(
+            route_manifest, sort_keys=True, separators=(",", ":")
+        )
+        environment["SALIENCE_PRODUCTION_ROUTE_LEASE"] = json.dumps(
+            lease_identity, sort_keys=True, separators=(",", ":")
+        )
     return environment
+
+
+def _claim_authenticated_route(
+    lock: dict,
+    lock_digest: str,
+    runtime_root: Path,
+    *,
+    route_id: UUID,
+    slot_id: UUID,
+    owner_id: UUID,
+    route_authority,
+):
+    """Resolve and claim one route only after the outer lock and preflight pass."""
+    if getattr(route_authority, "protocol_version", None) != "salience.p1-route-fence.v1":
+        raise LauncherError("production route lease authority version is unsupported")
+    sys.path.insert(0, str(runtime_root))
+    try:
+        from salience.cycles.production_routing import (
+            RouteLease,
+            RouteLeaseClaim,
+            canonical_route_manifest_bytes,
+            parse_route_bundle,
+            route_manifest_sha256,
+        )
+
+        routes = parse_route_bundle(
+            lock["production"]["route_bundle"],
+            expected_lock_sha256=lock_digest,
+        )
+        selected = tuple(route for route in routes if route.route_id == route_id)
+        if len(selected) != 1:
+            raise LauncherError(
+                "requested route is absent or ambiguous in the authenticated bundle"
+            )
+        route = selected[0]
+        if slot_id not in route.slots:
+            raise LauncherError("requested slot is absent from the authenticated route")
+        expected_manifest_digest = route_manifest_sha256(route)
+        lease = route_authority.claim_slot(
+            RouteLeaseClaim(
+                route_id=route.route_id,
+                route_manifest_sha256=expected_manifest_digest,
+                artifact_lock_sha256=lock_digest,
+                slot_id=slot_id,
+                owner_id=owner_id,
+                build_id=route.worker_build_id,
+            )
+        )
+        if (
+            not isinstance(lease, RouteLease)
+            or lease.route_id != route.route_id
+            or lease.slot_id != slot_id
+            or lease.owner_id != owner_id
+            or lease.route_manifest_sha256 != expected_manifest_digest
+            or lease.artifact_lock_sha256 != lock_digest
+            or lease.expires_at <= datetime.now(timezone.utc)
+        ):
+            raise LauncherError("route authority returned a mismatched one-use lease identity")
+        readback = route_authority.read_slot(route.route_id, slot_id)
+        if (
+            not readback.available
+            or readback.state != "leased"
+            or readback.lease != lease
+        ):
+            raise LauncherError("route authority did not read back its claimed slot")
+        manifest_payload = json.loads(canonical_route_manifest_bytes(route))
+        lease_payload = {
+            "route_id": str(lease.route_id),
+            "slot_id": str(lease.slot_id),
+            "owner_id": str(lease.owner_id),
+            "fencing_epoch": lease.fencing_epoch,
+            "expires_at": lease.expires_at.isoformat(),
+            "route_manifest_sha256": lease.route_manifest_sha256,
+            "artifact_lock_sha256": lease.artifact_lock_sha256,
+        }
+        return route, lease, manifest_payload, lease_payload
+    except LauncherError:
+        raise
+    except Exception as error:
+        raise LauncherError("production route lease claim was denied") from error
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -386,10 +520,18 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--workspace-id")
     parser.add_argument("--expired-hold-operation-id")
     parser.add_argument("--cancel-hold-operation-id")
+    parser.add_argument("--route-id")
+    parser.add_argument("--slot-id")
+    parser.add_argument("--owner-id")
     return parser
 
 
-def main(argv: list[str] | None = None) -> int:
+def main(
+    argv: list[str] | None = None,
+    *,
+    route_authority=None,
+    route_child_exec=None,
+) -> int:
     _require_isolated_startup()
     arguments = _parser().parse_args(argv)
     rollback_values = (
@@ -412,6 +554,20 @@ def main(argv: list[str] | None = None) -> int:
             raise LauncherError("rollback-restart operation IDs must be distinct")
     else:
         expired_id = cancel_id = None
+    route_values = (arguments.route_id, arguments.slot_id, arguments.owner_id)
+    if any(route_values) and not all(route_values):
+        raise LauncherError("routed startup requires route, slot, and owner UUIDs")
+    if all(route_values):
+        try:
+            requested_route_id = UUID(arguments.route_id)
+            requested_slot_id = UUID(arguments.slot_id)
+            requested_owner_id = UUID(arguments.owner_id)
+        except ValueError as error:
+            raise LauncherError(
+                "routed startup requires valid route, slot, and owner UUIDs"
+            ) from error
+    else:
+        requested_route_id = requested_slot_id = requested_owner_id = None
 
     database_url = os.environ.get("DATABASE_URL")
     if not database_url:
@@ -439,6 +595,20 @@ def main(argv: list[str] | None = None) -> int:
         raise LauncherError("publication worker launch pin is invalid") from error
     if not _HEX_64.fullmatch(lock.get("launcher_sha256", "")):
         raise LauncherError("publication worker launcher hash is malformed")
+    is_routed = lock["schema_version"] == "salience.publication-worker-launch-lock.v2"
+    if is_routed:
+        if arguments.mode != "current" or arguments.worker_kind != "deployable":
+            raise LauncherError("production route startup requires current deployable worker mode")
+        if requested_route_id is None or requested_slot_id is None or requested_owner_id is None:
+            raise LauncherError("production route startup requires route, slot, and owner UUIDs")
+        if route_authority is None:
+            raise LauncherError(
+                "production route startup requires an injected route lease authority"
+            )
+        if route_child_exec is None:
+            raise LauncherError("production route child handoff requires an injected executor")
+    elif any(route_values) or route_authority is not None or route_child_exec is not None:
+        raise LauncherError("v1 fixture launch rejects production route inputs")
     worker = lock["workers"][arguments.worker_kind]
     interpreter = lock["interpreter_path"]
     environment = _environment_for_child(
@@ -463,6 +633,7 @@ def main(argv: list[str] | None = None) -> int:
             if expired_id and cancel_id
             else None
         ),
+        "route_id": str(requested_route_id) if requested_route_id else None,
     }
     try:
         result = subprocess.run(
@@ -481,6 +652,29 @@ def main(argv: list[str] | None = None) -> int:
         detail = result.stderr.strip() or "publication worker compatibility preflight failed"
         raise LauncherError(detail[-4000:])
 
+    route = lease = route_manifest_payload = lease_identity_payload = None
+    if is_routed:
+        route, lease, route_manifest_payload, lease_identity_payload = (
+            _claim_authenticated_route(
+                lock,
+                lock_digest,
+                runtime_root,
+                route_id=requested_route_id,
+                slot_id=requested_slot_id,
+                owner_id=requested_owner_id,
+                route_authority=route_authority,
+            )
+        )
+        environment = _environment_for_child(
+            arguments.mode,
+            arguments.workspace_id,
+            str(expired_id) if expired_id else None,
+            str(cancel_id) if cancel_id else None,
+            lock_digest,
+            route_manifest=route_manifest_payload,
+            lease_identity=lease_identity_payload,
+        )
+
     environment["DATABASE_URL"] = database_url
     os.chdir(runtime_root)
     command = [
@@ -494,6 +688,11 @@ def main(argv: list[str] | None = None) -> int:
         worker["module"],
         *worker["argv"],
     ]
+    if is_routed:
+        if route_child_exec is None:
+            raise LauncherError("production route child handoff requires an injected executor")
+        route_child_exec(interpreter, command, environment)
+        raise LauncherError("injected production route child executor returned unexpectedly")
     try:
         os.execve(interpreter, command, environment)
     except OSError as error:

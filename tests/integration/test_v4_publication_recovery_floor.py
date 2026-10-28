@@ -8387,3 +8387,160 @@ async def test_floor_worker_executes_both_retained_reasons_and_second_verifier_p
     base_evidence["third_verifier"] = third_verifier
 
     save_json(final_evidence_path, base_evidence)
+
+
+@pytest.mark.asyncio
+async def test_0043_fixture_startup_guard_remains_unchanged(monkeypatch):
+    from salience.cycles import publication_recovery_compatibility as compatibility
+    from salience.workflows import worker
+
+    fixture_lock = ROOT / "deployment/v4/publication-worker-launch-lock.json"
+    assert _sha256(fixture_lock.read_bytes()) == (
+        "1c8ac4ff92e589e27dc0af2c6dd0bc69c4295435df5a318174a2c77f3b1f2c9c"
+    )
+    assert compatibility._MIGRATION_FLOOR_REVISION == (
+        "0043_complete_publication_recovery_liabilities"
+    )
+
+    temporal_connects = []
+    compatibility_checks = []
+
+    async def fake_connect(*args, **kwargs):
+        temporal_connects.append((args, kwargs))
+        raise RuntimeError("fixture connector sentinel")
+
+    monkeypatch.setattr(worker.Client, "connect", fake_connect)
+    monkeypatch.setattr(
+        compatibility,
+        "require_publication_worker_compatibility_from_environment",
+        lambda database_url: compatibility_checks.append(database_url),
+    )
+    monkeypatch.setattr(
+        worker.Settings,
+        "from_environment",
+        staticmethod(
+            lambda: SimpleNamespace(
+                database_url="postgresql://fixture/salience",
+                temporal_target="temporal-fixture.invalid:7233",
+            )
+        ),
+    )
+
+    monkeypatch.setenv("SALIENCE_DEPLOYMENT_MODE", "production")
+    with pytest.raises(ValueError, match="P0 does not authorize effect workers"):
+        await worker.run_worker()
+    assert temporal_connects == []
+    assert compatibility_checks == []
+
+    monkeypatch.setenv("SALIENCE_DEPLOYMENT_MODE", "fixture")
+    with pytest.raises(RuntimeError, match="fixture connector sentinel"):
+        await worker.run_worker()
+    assert compatibility_checks == ["postgresql://fixture/salience"]
+    assert len(temporal_connects) == 1
+
+
+def test_v2_launch_lock_authenticates_route_allowlists_and_exact_head(tmp_path, monkeypatch):
+    from salience.cycles import publication_recovery_compatibility as compatibility
+    from salience.cycles.production_routing import (
+        PRODUCTION_ACTIVITY_ALLOWLIST,
+        PRODUCTION_WORKFLOW_ALLOWLIST,
+        ProductionRouteManifestV1,
+        RouteTupleV1,
+        canonical_route_manifest_bytes,
+        route_tuple_sha256,
+    )
+
+    v1_lock, _, _, _ = _write_test_lock(tmp_path, monkeypatch)
+    route_tuple = RouteTupleV1(
+        deployment_id=UUID("00000000-0000-0000-0000-000000000301"),
+        environment_id=UUID("00000000-0000-0000-0000-000000000302"),
+        temporal_endpoint_id="temporal-test-endpoint",
+        namespace="salience-production-test",
+        task_queue="salience-publication-test",
+        worker_kind="production-publication",
+        workflow_types=PRODUCTION_WORKFLOW_ALLOWLIST,
+        activity_types=PRODUCTION_ACTIVITY_ALLOWLIST,
+        producer_bindings=(),
+        compatibility_mode="exact-head",
+    )
+    route = ProductionRouteManifestV1(
+        route_id=UUID("00000000-0000-0000-0000-000000000303"),
+        route_tuple=route_tuple,
+        route_tuple_sha256=route_tuple_sha256(route_tuple),
+        worker_build_id="test-worker-build",
+        slots=(UUID("00000000-0000-0000-0000-000000000304"),),
+        artifact_sha256=v1_lock.pin.artifact_sha256,
+        image_sha256="e" * 64,
+        artifact_lock_sha256="f" * 64,
+    )
+    production = compatibility.ProductionWorkerLockPayloadV1(
+        schema_version="salience.p1-production-worker-launch.v1",
+        migration_head=compatibility.PRODUCTION_MIGRATION_HEAD,
+        workflow_allowlist=PRODUCTION_WORKFLOW_ALLOWLIST,
+        activity_allowlist=PRODUCTION_ACTIVITY_ALLOWLIST,
+        route_bundle={
+            "schema_version": "salience.p1-production-route-bundle.v1",
+            "routes": [json.loads(canonical_route_manifest_bytes(route))],
+        },
+    )
+    v2_lock = compatibility.PublicationWorkerLaunchLockV2(
+        schema_version="salience.publication-worker-launch-lock.v2",
+        launcher_sha256=v1_lock.launcher_sha256,
+        interpreter_path=v1_lock.interpreter_path,
+        interpreter_sha256=v1_lock.interpreter_sha256,
+        runtime_root=v1_lock.runtime_root,
+        workers=v1_lock.workers,
+        pin=v1_lock.pin,
+        production=production,
+    )
+    lock_bytes = compatibility._canonical_lock_bytes(v2_lock)
+    digest = _sha256(lock_bytes)
+    parsed = compatibility._launch_lock_from_json(json.loads(lock_bytes))
+    assert isinstance(parsed, compatibility.PublicationWorkerLaunchLockV2)
+
+    monkeypatch.setattr(
+        compatibility,
+        "_database_revision",
+        lambda _url: compatibility.PRODUCTION_MIGRATION_HEAD,
+    )
+    selected = compatibility.require_production_worker_compatibility(
+        "postgresql://primary/salience",
+        launch_lock=parsed,
+        observed_launch_lock_sha256=digest,
+        route_id=route.route_id,
+    )
+    assert selected.route_id == route.route_id
+    assert selected.artifact_lock_sha256 == digest
+
+    database_reads = []
+    monkeypatch.setattr(
+        compatibility,
+        "_database_revision",
+        lambda _url: database_reads.append(_url) or compatibility.PRODUCTION_MIGRATION_HEAD,
+    )
+    wrong_head_payload = compatibility.ProductionWorkerLockPayloadV1(
+        schema_version=production.schema_version,
+        migration_head="0045_production_publication_route_fences",
+        workflow_allowlist=production.workflow_allowlist,
+        activity_allowlist=production.activity_allowlist,
+        route_bundle=production.route_bundle,
+    )
+    wrong_head_lock = compatibility.PublicationWorkerLaunchLockV2(
+        schema_version=v2_lock.schema_version,
+        launcher_sha256=v2_lock.launcher_sha256,
+        interpreter_path=v2_lock.interpreter_path,
+        interpreter_sha256=v2_lock.interpreter_sha256,
+        runtime_root=v2_lock.runtime_root,
+        workers=v2_lock.workers,
+        pin=v2_lock.pin,
+        production=wrong_head_payload,
+    )
+    wrong_head_digest = _sha256(compatibility._canonical_lock_bytes(wrong_head_lock))
+    with pytest.raises(PublicationWorkerCompatibilityError, match="exact migration head"):
+        compatibility.require_production_worker_compatibility(
+            "postgresql://primary/salience",
+            launch_lock=wrong_head_lock,
+            observed_launch_lock_sha256=wrong_head_digest,
+            route_id=route.route_id,
+        )
+    assert database_reads == []

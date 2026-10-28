@@ -3,12 +3,16 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Callable
+from datetime import datetime, timezone
+import inspect
 import os
 import subprocess
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from uuid import uuid4
+from typing import Protocol
+from uuid import UUID, uuid4
 
 import httpx
 from temporalio.client import Client
@@ -48,6 +52,23 @@ from salience.research.rss import ConfiguredRssResearchConnector
 from salience.workflows.persistence import CanonicalJobStore
 from temporalio.worker import Worker
 
+from salience.cycles.production_dispatch import (
+    ProductionEffectDispatch,
+    ProductionPermitRequest,
+    PublicationEffectBinding,
+    RouteBinding,
+)
+from salience.cycles.production_routing import (
+    PRODUCTION_ACTIVITY_ALLOWLIST,
+    PRODUCTION_WORKER_KIND,
+    PRODUCTION_WORKFLOW_ALLOWLIST,
+    ProductionRouteManifestV1,
+    RouteLease,
+    RouteLeaseAuthority,
+    route_manifest_sha256,
+)
+from salience.governance.production_policy import ProductionApprovalBinding
+
 
 @dataclass(frozen=True)
 class ComposeRestartResult:
@@ -56,6 +77,77 @@ class ComposeRestartResult:
     reconciled: bool
     canonical_checkpoint_count: int
     canonical_effect_count: int
+
+
+@dataclass(frozen=True, slots=True)
+class WorkerReadback:
+    """Read-only evidence of exact Temporal registration and drained state."""
+
+    route_id: UUID
+    slot_id: UUID
+    owner_id: UUID
+    fencing_epoch: int
+    route_manifest_sha256: str
+    artifact_lock_sha256: str
+    temporal_endpoint_id: str
+    namespace: str
+    task_queue: str
+    registered_workflow_types: frozenset[str]
+    registered_activity_types: frozenset[str]
+    poller_count: int
+    active_task_count: int
+    observed_at: datetime
+    complete: bool
+
+    def __post_init__(self) -> None:
+        if any(
+            not isinstance(value, UUID)
+            for value in (self.route_id, self.slot_id, self.owner_id)
+        ):
+            raise ValueError("worker readback route, slot, and owner UUIDs are required")
+        if type(self.fencing_epoch) is not int or self.fencing_epoch < 1:
+            raise ValueError("worker readback needs a positive fencing epoch")
+        for value in (self.route_manifest_sha256, self.artifact_lock_sha256):
+            if (
+                not isinstance(value, str)
+                or len(value) != 64
+                or any(character not in "0123456789abcdef" for character in value)
+            ):
+                raise ValueError("worker readback digests must be lowercase SHA-256")
+        for value in (
+            self.temporal_endpoint_id,
+            self.namespace,
+            self.task_queue,
+        ):
+            if not isinstance(value, str) or not value.strip():
+                raise ValueError("worker readback target, namespace, and queue are required")
+        for values in (
+            self.registered_workflow_types,
+            self.registered_activity_types,
+        ):
+            if not isinstance(values, frozenset) or any(
+                not isinstance(item, str) or not item.strip() for item in values
+            ):
+                raise ValueError("worker readback registrations must be immutable name sets")
+        if any(
+            type(value) is not int or value < 0
+            for value in (self.poller_count, self.active_task_count)
+        ):
+            raise ValueError("worker readback counts must be non-negative integers")
+        if (
+            not isinstance(self.observed_at, datetime)
+            or self.observed_at.tzinfo is None
+            or self.observed_at.utcoffset() is None
+        ):
+            raise ValueError("worker readback observation time must be timezone-aware")
+        if type(self.complete) is not bool:
+            raise ValueError("worker readback completeness must be explicit")
+
+
+class TemporalWorkerReadback(Protocol):
+    """Injected read-only view bound to one Temporal target and namespace."""
+
+    def read_worker(self, route_id: UUID, slot_id: UUID) -> WorkerReadback: ...
 
 
 async def run_worker() -> None:
@@ -173,6 +265,304 @@ def build_deployable_worker(
         workflows=workflows,
         activities=activities,
     )
+
+
+def _validate_routed_lease(
+    route: ProductionRouteManifestV1,
+    lease: RouteLease,
+    route_authority: RouteLeaseAuthority,
+    *,
+    now: datetime,
+) -> None:
+    if not isinstance(route, ProductionRouteManifestV1) or not isinstance(lease, RouteLease):
+        raise PermissionError("authenticated production route and lease are required")
+    if not isinstance(route_authority, RouteLeaseAuthority):
+        raise PermissionError("injected route lease authority is required")
+    if route_authority.protocol_version != "salience.p1-route-fence.v1":
+        raise PermissionError("route lease authority version is unsupported")
+    if route.route_tuple.worker_kind != PRODUCTION_WORKER_KIND:
+        raise PermissionError("route worker kind is outside the production publication allowlist")
+    if set(route.route_tuple.workflow_types) != set(PRODUCTION_WORKFLOW_ALLOWLIST):
+        raise PermissionError("route workflow registration is outside the closed allowlist")
+    if set(route.route_tuple.activity_types) != set(PRODUCTION_ACTIVITY_ALLOWLIST):
+        raise PermissionError("route activity registration is outside the closed allowlist")
+    if (
+        lease.route_id != route.route_id
+        or lease.slot_id not in route.slots
+        or lease.route_manifest_sha256 != route_manifest_sha256(route)
+        or lease.artifact_lock_sha256 != route.artifact_lock_sha256
+        or lease.expires_at <= now
+    ):
+        raise PermissionError("route lease does not match the authenticated route")
+    current = route_authority.read_slot(route.route_id, lease.slot_id)
+    if (
+        not current.available
+        or current.state != "leased"
+        or current.lease != lease
+        or current.fencing_epoch != lease.fencing_epoch
+    ):
+        raise PermissionError("route lease is not the current lease")
+
+
+def _route_binding(route: ProductionRouteManifestV1, lease: RouteLease) -> RouteBinding:
+    return RouteBinding(
+        deployment_id=route.route_tuple.deployment_id,
+        environment_id=route.route_tuple.environment_id,
+        route_id=route.route_id,
+        slot_id=lease.slot_id,
+        owner_id=lease.owner_id,
+        fencing_epoch=lease.fencing_epoch,
+        route_manifest_sha256=lease.route_manifest_sha256,
+        artifact_lock_sha256=lease.artifact_lock_sha256,
+        route_tuple_sha256=route.route_tuple_sha256,
+    )
+
+
+def build_routed_worker(
+    client: Client,
+    *,
+    route: ProductionRouteManifestV1,
+    lease: RouteLease,
+    route_authority: RouteLeaseAuthority,
+    database_url: str,
+    publication_state: PublicationWorkflowState,
+    permit_request_factory: Callable[
+        [ProductionApprovalBinding, PublicationEffectBinding], ProductionPermitRequest
+    ],
+) -> Worker:
+    """Assemble one route-bound publication worker after exact lease validation."""
+    _validate_routed_lease(
+        route,
+        lease,
+        route_authority,
+        now=datetime.now(timezone.utc),
+    )
+    if getattr(client, "namespace", None) != route.route_tuple.namespace:
+        raise PermissionError("Temporal client namespace does not match the authenticated route")
+    if (
+        hasattr(client, "route_endpoint_id")
+        and client.route_endpoint_id != route.route_tuple.temporal_endpoint_id
+    ):
+        raise PermissionError("Temporal client target does not match the authenticated route")
+    if hasattr(client, "route_build_id") and client.route_build_id != route.worker_build_id:
+        raise PermissionError("worker build does not match the authenticated route")
+    if (
+        hasattr(client, "route_artifact_sha256")
+        and client.route_artifact_sha256 != route.artifact_sha256
+    ):
+        raise PermissionError("worker artifact does not match the authenticated route")
+    if hasattr(client, "route_image_sha256") and client.route_image_sha256 != route.image_sha256:
+        raise PermissionError("worker image does not match the authenticated route")
+    if not isinstance(publication_state, PublicationWorkflowState):
+        raise ValueError("routed publication workflow state is required")
+    if not callable(permit_request_factory):
+        raise ValueError("route-bound production permit request factory is required")
+
+    publication_state.production_dispatch = ProductionEffectDispatch(
+        database_url,
+        route_authority,
+    )
+    expected_route_binding = _route_binding(route, lease)
+
+    def route_bound_permit_request(
+        approval: ProductionApprovalBinding,
+        publication: PublicationEffectBinding,
+    ) -> ProductionPermitRequest:
+        proposed = permit_request_factory(approval, publication)
+        if (
+            not isinstance(proposed, ProductionPermitRequest)
+            or proposed.route != expected_route_binding
+            or proposed.publication_binding != publication
+            or proposed.operation_id != approval.operation_id
+        ):
+            raise ValueError("production permit factory returned a mismatched route binding")
+        return proposed
+
+    publication_state.production_permit_request_factory = route_bound_permit_request
+
+    publication = PublicationActivities(publication_state)
+    workflow_handlers = {
+        "GovernedPublicationWorkflow": GovernedPublicationWorkflow,
+    }
+    activity_handlers = {
+        "salience.publication.request": publication.request,
+        "salience.publication.authorize": publication.authorize,
+        "salience.publication.delivery": publication.delivery,
+        "salience.publication.submit_or_reconcile": publication.submit_or_reconcile,
+        "salience.publication.await": publication.await_publication,
+        "salience.publication.complete": publication.complete,
+        "salience.publication.denied": publication.denied,
+        "salience.publication.cancel": publication.cancel,
+        "salience.publication.dead_letter": publication.dead_letter,
+    }
+    return Worker(
+        client,
+        task_queue=route.route_tuple.task_queue,
+        workflows=[workflow_handlers[name] for name in route.route_tuple.workflow_types],
+        activities=[activity_handlers[name] for name in route.route_tuple.activity_types],
+    )
+
+
+async def connect_routed_worker(
+    *,
+    route: ProductionRouteManifestV1,
+    lease: RouteLease,
+    route_authority: RouteLeaseAuthority,
+    database_url: str,
+    publication_state: PublicationWorkflowState,
+    permit_request_factory: Callable[
+        [ProductionApprovalBinding, PublicationEffectBinding], ProductionPermitRequest
+    ],
+    temporal_connect: Callable[..., object],
+    compatibility_preflight: Callable[
+        [str, ProductionRouteManifestV1, RouteLease], object
+    ],
+) -> tuple[Client, Worker]:
+    """Revalidate authenticated pins and lease before the injected Temporal connector."""
+    preflight_result = compatibility_preflight(database_url, route, lease)
+    if inspect.isawaitable(preflight_result):
+        await preflight_result
+    _validate_routed_lease(
+        route,
+        lease,
+        route_authority,
+        now=datetime.now(timezone.utc),
+    )
+    client_result = temporal_connect(
+        route.route_tuple.temporal_endpoint_id,
+        namespace=route.route_tuple.namespace,
+    )
+    client = await client_result if inspect.isawaitable(client_result) else client_result
+    worker = build_routed_worker(
+        client,
+        route=route,
+        lease=lease,
+        route_authority=route_authority,
+        database_url=database_url,
+        publication_state=publication_state,
+        permit_request_factory=permit_request_factory,
+    )
+    return client, worker
+
+
+def _require_exact_drained_readback(
+    readback: WorkerReadback,
+    route: ProductionRouteManifestV1,
+    lease: RouteLease,
+) -> None:
+    expected_workflows = frozenset(route.route_tuple.workflow_types)
+    expected_activities = frozenset(route.route_tuple.activity_types)
+    if (
+        not isinstance(readback, WorkerReadback)
+        or not readback.complete
+        or readback.route_id != route.route_id
+        or readback.slot_id != lease.slot_id
+        or readback.owner_id != lease.owner_id
+        or readback.fencing_epoch != lease.fencing_epoch
+        or readback.route_manifest_sha256 != lease.route_manifest_sha256
+        or readback.artifact_lock_sha256 != lease.artifact_lock_sha256
+        or readback.temporal_endpoint_id != route.route_tuple.temporal_endpoint_id
+        or readback.namespace != route.route_tuple.namespace
+        or readback.task_queue != route.route_tuple.task_queue
+        or readback.registered_workflow_types != expected_workflows
+        or readback.registered_activity_types != expected_activities
+        or readback.poller_count != 0
+        or readback.active_task_count != 0
+    ):
+        raise PermissionError(
+            "Temporal worker readback is incomplete or does not match the drained route"
+        )
+
+
+async def _read_and_require_drained(
+    temporal_readback: TemporalWorkerReadback,
+    route: ProductionRouteManifestV1,
+    lease: RouteLease,
+) -> None:
+    result = temporal_readback.read_worker(route.route_id, lease.slot_id)
+    readback = await result if inspect.isawaitable(result) else result
+    _require_exact_drained_readback(readback, route, lease)
+
+
+async def run_routed_worker(
+    worker: Worker,
+    *,
+    route: ProductionRouteManifestV1,
+    lease: RouteLease,
+    route_authority: RouteLeaseAuthority,
+    temporal_readback: TemporalWorkerReadback,
+    sleep: Callable[[float], object] = asyncio.sleep,
+    now: Callable[[], datetime] = lambda: datetime.now(timezone.utc),
+) -> str:
+    """Renew a slot at one third of its remaining TTL and drain on lease loss."""
+    current = lease
+    _validate_routed_lease(route, current, route_authority, now=now())
+    run_task = asyncio.create_task(worker.run())
+    lease_lost = False
+    run_error: BaseException | None = None
+    cancellation: asyncio.CancelledError | None = None
+    try:
+        while not run_task.done():
+            remaining = (current.expires_at - now()).total_seconds()
+            if remaining <= 0:
+                lease_lost = True
+                break
+            interval = remaining / 3
+            pause = sleep(interval)
+            if inspect.isawaitable(pause):
+                await pause
+            if run_task.done():
+                break
+            if current.expires_at <= now():
+                raise PermissionError("route lease expired before renewal")
+            renewed = route_authority.renew_slot(current)
+            if not isinstance(renewed, RouteLease):
+                raise PermissionError("route authority returned an invalid renewal")
+            _validate_routed_lease(route, renewed, route_authority, now=now())
+            current = renewed
+    except asyncio.CancelledError as error:
+        cancellation = error
+    except Exception:
+        lease_lost = True
+    if lease_lost or cancellation is not None:
+        worker.shutdown()
+    try:
+        await run_task
+    except BaseException as error:
+        run_error = error
+        worker.shutdown()
+    await _read_and_require_drained(temporal_readback, route, current)
+    if run_error is not None:
+        raise run_error
+    if cancellation is not None:
+        raise cancellation
+    return "lease_lost" if lease_lost else "stopped"
+
+
+def transfer_routed_worker(
+    *,
+    route: ProductionRouteManifestV1,
+    lease: RouteLease,
+    route_authority: RouteLeaseAuthority,
+    temporal_readback: TemporalWorkerReadback,
+    now: Callable[[], datetime] = lambda: datetime.now(timezone.utc),
+):
+    """Release a routed slot only after exact, complete zero-work readback."""
+    _validate_routed_lease(route, lease, route_authority, now=now())
+    readback = temporal_readback.read_worker(route.route_id, lease.slot_id)
+    if inspect.isawaitable(readback):
+        raise TypeError("synchronous route transfer requires synchronous Temporal readback")
+    _require_exact_drained_readback(readback, route, lease)
+    released = route_authority.release_slot(lease)
+    if (
+        not released.available
+        or released.state != "released"
+        or released.route_id != lease.route_id
+        or released.slot_id != lease.slot_id
+        or released.fencing_epoch != lease.fencing_epoch
+    ):
+        raise PermissionError("route authority release readback is incomplete")
+    return released
 
 
 def _intelligence_agent_service(settings: Settings):

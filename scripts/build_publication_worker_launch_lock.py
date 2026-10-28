@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import base64
 import csv
+from collections.abc import Mapping
 from dataclasses import asdict
 import hashlib
 import io
@@ -521,7 +522,8 @@ def build_publication_worker_launch_lock(
     independent_digest_path: Path,
     control_dir: Path,
     interpreter_source: Path | None = None,
-) -> _compatibility.PublicationWorkerLaunchLock:
+    route_bundle: Mapping[str, object] | None = None,
+) -> _compatibility.PublicationWorkerLaunchLockAny:
     """Validate a candidate install and write its canonical lock/control bundle."""
     repository_root = Path(REPOSITORY_ROOT).resolve(strict=True)
     _validate_commit(application_commit, repository_root)
@@ -566,10 +568,41 @@ def build_publication_worker_launch_lock(
             if revision in revisions:
                 raise ValueError("application commit contains duplicate Alembic revision IDs")
             revisions[revision] = parents
-    _compatibility._validate_migration_graph(revisions)
+    migration_heads = _compatibility._validate_migration_graph(revisions)
+    migration_head = next(iter(migration_heads))
+    if route_bundle is not None:
+        from salience.cycles.production_routing import (
+            PRODUCTION_ACTIVITY_ALLOWLIST,
+            PRODUCTION_WORKFLOW_ALLOWLIST,
+            parse_route_bundle,
+        )
+
+        if migration_head != _compatibility.PRODUCTION_MIGRATION_HEAD:
+            raise ValueError("production launch lock requires the exact current migration head")
+        try:
+            routes = parse_route_bundle(route_bundle, expected_lock_sha256="0" * 64)
+        except (TypeError, ValueError) as error:
+            raise ValueError("production route bundle is invalid") from error
+        artifact_sha256 = _sha256(wheel.read_bytes())
+        for route in routes:
+            if (
+                route.route_tuple.worker_kind != "production-publication"
+                or set(route.route_tuple.workflow_types) != set(PRODUCTION_WORKFLOW_ALLOWLIST)
+                or set(route.route_tuple.activity_types) != set(PRODUCTION_ACTIVITY_ALLOWLIST)
+                or route.artifact_sha256 != artifact_sha256
+            ):
+                raise ValueError("production route does not match the closed artifact allowlists")
     source_manifest_sha256 = _sha256(_canonical_json([asdict(item) for item in source_pins]))
+    required_import_modules = set(_compatibility._REQUIRED_IMPORT_MODULES)
+    if route_bundle is not None:
+        required_import_modules.update(
+            {
+                "salience.cycles.production_routing",
+                "salience.cycles.production_dispatch",
+            }
+        )
     imports = []
-    for module in sorted(_compatibility._REQUIRED_IMPORT_MODULES):
+    for module in sorted(required_import_modules):
         wheel_relative = module.replace(".", "/") + ".py"
         content = expected_package.get(wheel_relative)
         if content is None:
@@ -617,13 +650,12 @@ def build_publication_worker_launch_lock(
         source_files=source_pins,
         runtime_imports=tuple(imports),
     )
-    lock = _compatibility.PublicationWorkerLaunchLock(
-        schema_version="salience.publication-worker-launch-lock.v1",
-        launcher_sha256=_sha256(launcher_bytes),
-        interpreter_path=str(interpreter_path),
-        interpreter_sha256=_sha256(interpreter_bytes),
-        runtime_root=str(TARGET_RUNTIME_ROOT),
-        workers={
+    common_lock_fields = {
+        "launcher_sha256": _sha256(launcher_bytes),
+        "interpreter_path": str(interpreter_path),
+        "interpreter_sha256": _sha256(interpreter_bytes),
+        "runtime_root": str(TARGET_RUNTIME_ROOT),
+        "workers": {
             "deployable": _compatibility.PublicationWorkerEntrypoint(
                 module="salience.workflows.worker", argv=()
             ),
@@ -631,8 +663,30 @@ def build_publication_worker_launch_lock(
                 module="salience.cycles.legacy_runtime", argv=()
             ),
         },
-        pin=pin,
-    )
+        "pin": pin,
+    }
+    if route_bundle is None:
+        lock = _compatibility.PublicationWorkerLaunchLock(
+            schema_version="salience.publication-worker-launch-lock.v1",
+            **common_lock_fields,
+        )
+    else:
+        from salience.cycles.production_routing import (
+            PRODUCTION_ACTIVITY_ALLOWLIST,
+            PRODUCTION_WORKFLOW_ALLOWLIST,
+        )
+
+        lock = _compatibility.PublicationWorkerLaunchLockV2(
+            schema_version="salience.publication-worker-launch-lock.v2",
+            production=_compatibility.ProductionWorkerLockPayloadV1(
+                schema_version="salience.p1-production-worker-launch.v1",
+                migration_head=migration_head,
+                workflow_allowlist=PRODUCTION_WORKFLOW_ALLOWLIST,
+                activity_allowlist=PRODUCTION_ACTIVITY_ALLOWLIST,
+                route_bundle=route_bundle,
+            ),
+            **common_lock_fields,
+        )
     lock_bytes = _canonical_json(asdict(lock))
     digest_bytes = (_sha256(lock_bytes) + "\n").encode("ascii")
     control_dir = Path(control_dir)
@@ -667,7 +721,20 @@ def main(argv: list[str] | None = None) -> int:
             "the lock retains the fixed in-container interpreter path"
         ),
     )
+    parser.add_argument(
+        "--route-bundle",
+        type=Path,
+        help="optional canonical production route bundle; emits authenticated launch-lock v2",
+    )
     arguments = parser.parse_args(argv)
+    route_bundle = None
+    if arguments.route_bundle is not None:
+        try:
+            route_bundle = json.loads(arguments.route_bundle.read_bytes())
+        except (OSError, json.JSONDecodeError, UnicodeDecodeError) as error:
+            raise ValueError("production route bundle file is invalid") from error
+        if not isinstance(route_bundle, dict):
+            raise ValueError("production route bundle must be an object")
     lock = build_publication_worker_launch_lock(
         application_commit=arguments.application_commit,
         wheel=arguments.wheel,
@@ -676,6 +743,7 @@ def main(argv: list[str] | None = None) -> int:
         independent_digest_path=arguments.independent_digest,
         control_dir=arguments.control_dir,
         interpreter_source=arguments.interpreter_source,
+        route_bundle=route_bundle,
     )
     print(lock.pin.source_manifest_sha256)
     return 0
