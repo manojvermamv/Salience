@@ -5870,6 +5870,8 @@ def _build_0048_inventory(
     classification="bound",
     approval_context_overrides=None,
     binding_snapshot_overrides=None,
+    binding_fact_overrides=None,
+    bypass_binding_guard=False,
 ):
     facts = (
         _insert_0048_local_source(connection, authority, source_kind=source_kind)
@@ -6142,6 +6144,15 @@ def _build_0048_inventory(
             binding_snapshot = dict(member_snapshot)
             if binding_snapshot_overrides:
                 binding_snapshot.update(binding_snapshot_overrides)
+            binding_facts = {
+                "remote_state": member_snapshot["remote_state"],
+                "next_action": member_snapshot["next_action"],
+                "running_action_count": member_snapshot["running_action_count"],
+            }
+            if binding_fact_overrides:
+                binding_facts.update(binding_fact_overrides)
+            if bypass_binding_guard:
+                connection.execute("SET session_replication_role = replica")
             connection.execute(
                 """INSERT INTO v4_production_schedule_source_bindings(
                           inventory_id,inventory_sha256,target_alias,namespace,
@@ -6194,9 +6205,9 @@ def _build_0048_inventory(
                     member_snapshot["interval_seconds"],
                     first_v4_slot,
                     None,
-                    member_snapshot["remote_state"],
-                    member_snapshot["next_action"],
-                    member_snapshot["running_action_count"],
+                    binding_facts["remote_state"],
+                    binding_facts["next_action"],
+                    binding_facts["running_action_count"],
                     member_snapshot["history_page_count"],
                     member_snapshot["history_action_count"],
                     member_snapshot["history_page_chain_sha256"],
@@ -6207,6 +6218,16 @@ def _build_0048_inventory(
                     "0" * 64,
                 ),
             )
+            if bypass_binding_guard:
+                connection.execute(
+                    """UPDATE v4_production_schedule_source_bindings binding
+                       SET binding_fingerprint=
+                           public.v4_production_schedule_jsonb_sha256_v1(
+                               to_jsonb(binding)-'binding_fingerprint')
+                       WHERE inventory_id=%s AND remote_schedule_id=%s""",
+                    (inventory_id, remote_schedule_id),
+                )
+                connection.execute("SET session_replication_role = origin")
     if finalize:
         connection.execute(
             "SELECT public.v4_finalize_production_schedule_inventory_v1(%s)",
@@ -6828,6 +6849,130 @@ def test_0048_schedule_approval_shape_and_decided_identity_are_immutable():
                     "DELETE FROM approval_requests WHERE id=%s", (row[0],)
                 ),
             )
+    finally:
+        _drop_migration_database(source, name)
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    (
+        ("remote_state", "running"),
+        ("next_action", "2099-01-01T00:02:00+00:00"),
+        ("running_action_count", 1),
+    ),
+    ids=("remote-state", "next-action", "running-count"),
+)
+def test_0048_binding_runtime_facts_match_member_in_insert_guard(field, value):
+    source = os.environ["TEST_DATABASE_URL"]
+    name, database, _, _, authority = _prepare_0048_database(
+        "p1_0048_runtime_guard_"
+    )
+    try:
+        _upgrade_0048_or_fail(database)
+        with psycopg.connect(database) as connection:
+            assert _postgres_statement_rejected(
+                connection,
+                "binding facts|match its member",
+                lambda: _build_0048_inventory(
+                    connection,
+                    authority,
+                    finalize=False,
+                    binding_fact_overrides={field: value},
+                ),
+            ), f"binding insert guard accepted mismatched {field}"
+    finally:
+        _drop_migration_database(source, name)
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    (
+        ("remote_state", "running"),
+        ("next_action", "2099-01-01T00:02:00+00:00"),
+        ("running_action_count", 1),
+    ),
+    ids=("remote-state", "next-action", "running-count"),
+)
+def test_0048_binding_runtime_facts_match_member_in_finalizer(field, value):
+    source = os.environ["TEST_DATABASE_URL"]
+    name, database, _, _, authority = _prepare_0048_database(
+        "p1_0048_runtime_finalizer_"
+    )
+    try:
+        _upgrade_0048_or_fail(database)
+        with psycopg.connect(database) as connection:
+            inventory = _build_0048_inventory(
+                connection,
+                authority,
+                finalize=False,
+                binding_fact_overrides={field: value},
+                bypass_binding_guard=True,
+            )
+            assert _postgres_statement_rejected(
+                connection,
+                "binding facts|fingerprint|member",
+                lambda: connection.execute(
+                    "SELECT public.v4_finalize_production_schedule_inventory_v1(%s)",
+                    (inventory["inventory_id"],),
+                ),
+            ), f"inventory finalizer accepted mismatched {field}"
+    finally:
+        _drop_migration_database(source, name)
+
+
+def test_0048_schedule_approval_rejects_null_or_non_string_required_fields():
+    source = os.environ["TEST_DATABASE_URL"]
+    name, database, _, _, authority = _prepare_0048_database(
+        "p1_0048_approval_json_types_"
+    )
+    try:
+        _upgrade_0048_or_fail(database)
+        with psycopg.connect(database) as connection:
+            adopted = _build_0048_inventory(
+                connection, authority, include_binding=False, finalize=False
+            )
+            base = connection.execute(
+                """SELECT workspace_id,policy_version_id,effect_type,
+                          request_context,requested_by
+                   FROM approval_requests WHERE id=%s""",
+                (adopted["approval_id"],),
+            ).fetchone()
+            nullable_fields = {"publication_schedule_id", "history_watermark_sha256"}
+            numeric_fields = {"goal_revision", "fencing_epoch"}
+            rejected_cases = []
+            for field in _PRODUCTION_SCHEDULE_APPROVAL_KEYS:
+                invalid_values = ["123"] if field in numeric_fields else [123]
+                if field not in nullable_fields:
+                    invalid_values.insert(0, None)
+                for invalid_value in invalid_values:
+                    context = dict(base[3])
+                    context[field] = invalid_value
+                    rejected = _postgres_statement_rejected(
+                        connection,
+                        "production schedule approval|context|identity|malformed|invalid input",
+                        lambda context=context: connection.execute(
+                            """INSERT INTO approval_requests(
+                                      id,workspace_id,policy_version_id,effect_type,status,
+                                      request_context,requested_by,decided_by,decided_at)
+                               VALUES(%s,%s,%s,%s,'approved',%s,%s,
+                                      'schedule-reviewer',clock_timestamp())""",
+                            (
+                                uuid4(),
+                                base[0],
+                                base[1],
+                                base[2],
+                                Jsonb(context),
+                                base[4],
+                            ),
+                        ),
+                    )
+                    rejected_cases.append((field, invalid_value, rejected))
+            accepted = [
+                (field, value)
+                for field, value, rejected in rejected_cases
+                if not rejected
+            ]
+            assert not accepted, f"approval guard accepted invalid context values: {accepted}"
     finally:
         _drop_migration_database(source, name)
 

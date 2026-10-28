@@ -231,11 +231,31 @@ def upgrade() -> None:
                    'salience.p1-production-schedule-binding-approval.v1' AND NOT tagged THEN
                 RAISE EXCEPTION 'production schedule approval identity is immutable';
             END IF;
+            IF NOT tagged AND NEW.effect_type = 'production_schedule_binding' THEN
+                RAISE EXCEPTION 'production schedule approval requires its typed v1 context';
+            END IF;
             IF NOT tagged THEN RETURN NEW; END IF;
             IF jsonb_typeof(NEW.request_context) IS DISTINCT FROM 'object'
                OR NOT (NEW.request_context ?& required_keys)
                OR (NEW.request_context - required_keys) <> '{}'::jsonb THEN
                 RAISE EXCEPTION 'production schedule approval requires exact v1 context fields';
+            END IF;
+            IF EXISTS (
+                SELECT 1
+                FROM unnest(required_keys) AS required(key)
+                WHERE NOT (
+                    (required.key = ANY(ARRAY['publication_schedule_id',
+                                               'history_watermark_sha256'])
+                     AND NEW.request_context->required.key = 'null'::jsonb)
+                    OR (required.key = ANY(ARRAY['goal_revision','fencing_epoch'])
+                        AND jsonb_typeof(NEW.request_context->required.key) = 'number'
+                        AND NEW.request_context->>required.key ~ '^[1-9][0-9]*$')
+                    OR (required.key <> ALL(ARRAY['goal_revision','fencing_epoch'])
+                        AND jsonb_typeof(NEW.request_context->required.key) = 'string'
+                        AND btrim(NEW.request_context->>required.key) <> '')
+                )
+            ) THEN
+                RAISE EXCEPTION 'production schedule approval context has invalid JSON types, nullability, or blank strings';
             END IF;
             IF NEW.effect_type IS DISTINCT FROM 'production_schedule_binding'
                OR NEW.policy_version_id IS NULL
@@ -656,6 +676,9 @@ def upgrade() -> None:
                OR NEW.member_snapshot->>'cadence_policy_revision' IS DISTINCT FROM NEW.cadence_policy_revision
                OR NEW.member_snapshot->>'interval_seconds' IS DISTINCT FROM NEW.interval_seconds::text
                OR (NEW.member_snapshot->>'first_v4_slot')::timestamptz IS DISTINCT FROM NEW.first_v4_slot
+               OR NEW.member_snapshot->>'remote_state' IS DISTINCT FROM NEW.remote_state
+               OR NEW.next_action IS DISTINCT FROM NULLIF(NEW.member_snapshot->>'next_action','')::timestamptz
+               OR NEW.running_action_count::text IS DISTINCT FROM NEW.member_snapshot->>'running_action_count'
                OR NEW.member_snapshot->>'history_page_count' IS DISTINCT FROM NEW.history_page_count::text
                OR NEW.member_snapshot->>'history_action_count' IS DISTINCT FROM NEW.history_action_count::text
                OR NEW.member_snapshot->>'history_page_chain_sha256' IS DISTINCT FROM NEW.history_page_chain_sha256
@@ -1152,6 +1175,9 @@ def upgrade() -> None:
                     OR binding.interval_seconds::text IS DISTINCT FROM member.member_snapshot->>'interval_seconds'
                     OR binding.first_v4_slot IS DISTINCT FROM (member.member_snapshot->>'first_v4_slot')::timestamptz
                     OR binding.observed_last_slot IS DISTINCT FROM NULLIF(member.member_snapshot->>'observed_last_slot','')::timestamptz
+                    OR binding.remote_state IS DISTINCT FROM member.member_snapshot->>'remote_state'
+                    OR binding.next_action IS DISTINCT FROM NULLIF(member.member_snapshot->>'next_action','')::timestamptz
+                    OR binding.running_action_count::text IS DISTINCT FROM member.member_snapshot->>'running_action_count'
                     OR binding.history_page_count::text IS DISTINCT FROM member.member_snapshot->>'history_page_count'
                     OR binding.history_action_count::text IS DISTINCT FROM member.member_snapshot->>'history_action_count'
                     OR binding.history_page_chain_sha256 IS DISTINCT FROM member.member_snapshot->>'history_page_chain_sha256'
