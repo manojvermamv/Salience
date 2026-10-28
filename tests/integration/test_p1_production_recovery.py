@@ -1273,6 +1273,138 @@ def test_due_escalation_routes_to_on_call_and_replays_same_delivery():
         assert first_receipt.status == second_receipt.status == "accepted"
 
 
+def test_committed_escalation_receipt_replays_after_clock_rolls_back():
+    from dataclasses import replace
+
+    module = import_module("salience.cycles.production_recovery")
+    schedule_tests = import_module("test_p1_production_schedule_fencing")
+    with schedule_tests._production_enrollment_fixture("task7_alert_receipt_clock_rollback_") as (
+        database,
+        control,
+        binding,
+        key,
+        _authority,
+        _route_authority,
+    ):
+        _enroll_production_intent(control, binding, key)
+        repository = module.ProductionRecoveryWorkRepository(database)
+        policy = _recovery_policy(module)
+        work = repository.bind_pre_admission_intent(key.intent_id, policy=policy)
+        initial = _alert_request(repository, module, work, policy)
+        initial_at = _alert_event_time(database, initial)
+        retry = replace(
+            initial.retry_policy,
+            escalation_after=(timedelta(minutes=2),),
+        )
+        due_at = initial_at + timedelta(minutes=2)
+        clock_value = [due_at]
+        repository = module.ProductionRecoveryWorkRepository(
+            database, now=lambda: clock_value[0]
+        )
+        request = repository.alert_request(
+            work.work_id,
+            severity="high",
+            escalation_level=1,
+            recipient_profile=initial.recipient_profile,
+            retry_policy=retry,
+            policy_decision_id=initial.policy_decision_id,
+        )
+        channel = _AlertTarget(module)
+        alerts = module.ProductionRecoveryAlerts(
+            repository,
+            target=channel,
+            authority=_RecoveryAuthority(module),
+            recipient_profile=request.recipient_profile,
+            retry_policy=request.retry_policy,
+            wait=lambda _delay: None,
+            now=repository._now,
+            schedule_hold_target=lambda *_args: None,
+        )
+
+        receipt = alerts.send(request)
+        clock_value[0] = due_at - timedelta(microseconds=1)
+
+        replay = alerts.send(request)
+
+        assert replay == receipt
+        assert len(channel.calls) == 1
+
+
+def test_provider_acceptance_reconciles_after_clock_rolls_back(monkeypatch):
+    from dataclasses import replace
+
+    module = import_module("salience.cycles.production_recovery")
+    schedule_tests = import_module("test_p1_production_schedule_fencing")
+    with schedule_tests._production_enrollment_fixture("task7_alert_provider_clock_rollback_") as (
+        database,
+        control,
+        binding,
+        key,
+        _authority,
+        _route_authority,
+    ):
+        _enroll_production_intent(control, binding, key)
+        repository = module.ProductionRecoveryWorkRepository(database)
+        policy = _recovery_policy(module)
+        work = repository.bind_pre_admission_intent(key.intent_id, policy=policy)
+        initial = _alert_request(repository, module, work, policy)
+        initial_at = _alert_event_time(database, initial)
+        retry = replace(
+            initial.retry_policy,
+            escalation_after=(timedelta(minutes=2),),
+        )
+        due_at = initial_at + timedelta(minutes=2)
+        clock_value = [due_at]
+        repository = module.ProductionRecoveryWorkRepository(
+            database, now=lambda: clock_value[0]
+        )
+        request = repository.alert_request(
+            work.work_id,
+            severity="high",
+            escalation_level=1,
+            recipient_profile=initial.recipient_profile,
+            retry_policy=retry,
+            policy_decision_id=initial.policy_decision_id,
+        )
+        channel = _AlertTarget(module)
+        alerts = module.ProductionRecoveryAlerts(
+            repository,
+            target=channel,
+            authority=_RecoveryAuthority(module),
+            recipient_profile=request.recipient_profile,
+            retry_policy=request.retry_policy,
+            wait=lambda _delay: None,
+            now=repository._now,
+            schedule_hold_target=lambda *_args: None,
+        )
+        append = repository._append_event
+        failed = [False]
+
+        def crash_after_external_acceptance(connection, *args, **kwargs):
+            if kwargs.get("event_kind") == "delivery_receipt" and not failed[0]:
+                failed[0] = True
+                raise RuntimeError("simulated death before local receipt commit")
+            return append(connection, *args, **kwargs)
+
+        monkeypatch.setattr(repository, "_append_event", crash_after_external_acceptance)
+        with pytest.raises(RuntimeError, match="before local receipt commit"):
+            alerts.send(request)
+        clock_value[0] = due_at - timedelta(microseconds=1)
+        monkeypatch.setattr(repository, "_append_event", append)
+
+        replay = alerts.send(request)
+
+        assert replay.status == "accepted"
+        assert replay.idempotency_key == request.idempotency_key
+        assert len(channel.calls) == 1
+        with psycopg.connect(database) as connection:
+            assert connection.execute(
+                """SELECT count(*) FROM v4_production_recovery_events
+                   WHERE work_id=%s AND event_kind='delivery_receipt'""",
+                (work.work_id,),
+            ).fetchone()[0] == 1
+
+
 def test_escalation_without_configured_on_call_group_is_rejected_before_intent():
     from dataclasses import replace
 

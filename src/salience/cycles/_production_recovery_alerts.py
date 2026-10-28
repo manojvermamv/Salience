@@ -185,13 +185,13 @@ class ProductionRecoveryAlerts:
                 (work.owner_id, work.workspace_id),
             ).fetchone() is not None
 
-    def _validate_intent_timing_and_tier(
+    def _validate_intent_tier_and_policy(
         self,
         connection,
         work: ProductionRecoveryWork,
         alert: ProductionAlertRequest,
         intent,
-    ) -> None:
+    ) -> datetime | None:
         level = alert.escalation_level
         if level > len(alert.retry_policy.escalation_after):
             raise ValueError("escalation level exceeds the explicit retry policy")
@@ -229,7 +229,7 @@ class ProductionRecoveryAlerts:
         if any(payload.get(name) != value for name, value in expected_common.items()):
             raise RecoveryIdentityConflict("alert intent does not match the exact request policy")
         if level == 0:
-            return
+            return None
         if (
             payload.get("escalation_level") != level
             or payload.get("severity") != alert.severity
@@ -250,7 +250,11 @@ class ProductionRecoveryAlerts:
         due_at = production_alert_escalation_due_at(
             initial_event, alert.retry_policy, level
         )
-        if _require_aware(self.now(), "alert delivery time") < due_at:
+
+        return due_at
+
+    def _require_escalation_due(self, due_at: datetime | None) -> None:
+        if due_at is not None and _require_aware(self.now(), "alert delivery time") < due_at:
             raise ValueError("production alert escalation is not due")
 
     def _held_receipt(
@@ -362,7 +366,7 @@ class ProductionRecoveryAlerts:
             ).fetchone()
             if intent is None:
                 raise RecoveryInventoryGap("alert request lacks its committed alert intent")
-            self._validate_intent_timing_and_tier(
+            due_at = self._validate_intent_tier_and_policy(
                 connection, work, alert, intent
             )
             local_receipt = connection.execute(
@@ -419,6 +423,7 @@ class ProductionRecoveryAlerts:
                 )
                 return self._receipt_from_event(event, alert)
 
+        self._require_escalation_due(due_at)
         with self.repository._connect() as connection:
             attempts = connection.execute(
                 """SELECT count(*) AS count
@@ -429,6 +434,7 @@ class ProductionRecoveryAlerts:
             ).fetchone()["count"]
         next_attempt = attempts + 1
         for attempt in range(next_attempt, alert.retry_policy.maximum_attempts + 1):
+            self._require_escalation_due(due_at)
             current = self.authority.authorize_alert(work, alert)
             if not isinstance(current, ProductionRecoveryDecision) or not current.allowed:
                 raise PermissionError("alert authority changed before a delivery attempt")

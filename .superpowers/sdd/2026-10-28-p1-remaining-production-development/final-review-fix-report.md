@@ -49,3 +49,27 @@ Final static checks passed: `git diff --check` exit 0; `.venv/bin/python -m comp
 
 - System `pytest` was unavailable: the initial `pytest -q ...` command exited 127 (`pytest: command not found`).
 - The first `.venv/bin/python -m pytest ...` attempt omitted `PYTHONPATH=src`; pytest session setup started the local Compose test services, then Alembic exited 1 because it could not import `salience` (pytest process exit 3). The corrected commands above use `PYTHONPATH=src`. This setup failure ran no test cases and did not touch a production database.
+
+## Follow-up review correction: replay after clock rollback
+
+The scoped rereview found that delivery-time enforcement ran during immutable intent validation, before either the committed local receipt or provider same-key receipt could be replayed. This made an already accepted escalation appear not due if the injected clock moved backward after delivery. The fix preserves work, intent, policy-evidence, recipient-tier, and on-call configuration validation before any replay; it then returns exact committed local receipts or reconciles an exact provider readback before consulting the mutable clock. The configured due boundary is still enforced before each new target send attempt, and alert-request creation gating is unchanged.
+
+Two injected-clock regressions were added for positive escalation level 1: replay of a committed local receipt after moving the clock one microsecond before due, and crash recovery where the provider accepted but the local receipt append failed, followed by clock rollback before same-key lookup. Both failed before the production change at the expected `production alert escalation is not due` check: exit 1, 2 failed, 45 deselected in 14.15 seconds.
+
+```sh
+PYTHONPATH=src .venv/bin/pytest -q tests/integration/test_p1_production_recovery.py -k 'committed_escalation_receipt_replays_after_clock_rolls_back or provider_acceptance_reconciles_after_clock_rolls_back'
+```
+
+The alert-name focused selection passed: exit 0, 5 passed, 42 deselected in 28.33 seconds. The combined alert and explicit replay-regression selection passed: exit 0, 7 passed, 40 deselected in 41.78 seconds.
+
+```sh
+PYTHONPATH=src .venv/bin/pytest -q tests/integration/test_p1_production_recovery.py -k 'alert or committed_escalation_receipt_replays_after_clock_rolls_back or provider_acceptance_reconciles_after_clock_rolls_back'
+```
+
+The full recovery module passed serially: exit 0, 47 passed in 323.74 seconds. Compile validation and `git diff --check` both exited 0. These checks used the local disposable Compose database and in-process fake alert target; no provider or production path was used.
+
+```sh
+PYTHONPATH=src .venv/bin/pytest -q tests/integration/test_p1_production_recovery.py
+.venv/bin/python -m compileall -q src/salience/cycles/_production_recovery_alerts.py tests/integration/test_p1_production_recovery.py
+git diff --check
+```
