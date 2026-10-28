@@ -608,7 +608,11 @@ def _seal(payload: dict[str, Any]) -> dict[str, Any]:
     return payload
 
 
-def _valid_package(route_count: int = 1, distribute_routes: bool = False) -> dict[str, Any]:
+def _valid_package(
+    route_count: int = 1,
+    distribute_routes: bool = False,
+    route_id_values: list[str] | None = None,
+) -> dict[str, Any]:
     run_id = "run-synthetic-2026-10-28-001"
     artifacts = []
     for kind, name in [
@@ -631,7 +635,7 @@ def _valid_package(route_count: int = 1, distribute_routes: bool = False) -> dic
         )
     artifact_ids = [item["artifact_id"] for item in artifacts]
     artifact_digests = [item["sha256"] for item in artifacts]
-    route_ids = [
+    route_ids = route_id_values or [
         f"00000000-0000-4000-8000-{index:012d}"
         for index in range(1, route_count + 1)
     ]
@@ -906,6 +910,61 @@ def test_route_inventory_rejects_empty_duplicate_mismatched_and_unlisted_routes(
         assert result.to_dict()["structural_status"] == "INVALID"
         assert result.to_dict()["disposition"] == "NO_GO"
         assert blocker in _blocker_codes(result)
+
+
+def test_route_inventory_rejects_semantic_uuid_duplicates() -> None:
+    from salience.acceptance.p1_external_evidence import validate_payload_against_schema
+
+    route_id = "abcdefab-cdef-4abc-8def-abcdefabcdef"
+    package = _valid_package(route_id_values=[route_id, route_id.upper()])
+
+    assert package["manifest"]["deployment"]["workers"][0]["route_ids"] == [
+        route_id,
+        route_id.upper(),
+    ]
+    result = _validate(package)
+    assert result.to_dict()["structural_status"] == "INVALID"
+    assert "ROUTE_INVENTORY_INVALID" in _blocker_codes(result)
+    assert validate_payload_against_schema(
+        package,
+        ROOT / "docs/v4/p1-rg0-rg1-external-acceptance.schema.json",
+    )
+
+
+@pytest.mark.parametrize(
+    "reference",
+    ["inventory", "worker", "row", "correlation", "authorization", "route_set"],
+)
+def test_route_uuid_references_require_canonical_text(reference: str) -> None:
+    from salience.acceptance.p1_external_evidence import validate_payload_against_schema
+
+    route_id = "abcdefab-cdef-4abc-8def-abcdefabcdef"
+    package = _valid_package(route_id_values=[route_id])
+    if reference == "inventory":
+        package["manifest"]["route_manifest"]["inventory"][0]["route_id"] = route_id.upper()
+    elif reference == "worker":
+        package["manifest"]["deployment"]["workers"][0]["route_ids"] = [route_id.upper()]
+    elif reference == "row":
+        _row_by_id(package, "R01")["scope"]["route"]["route_id"] = route_id.upper()
+    elif reference == "correlation":
+        _row_by_id(package, "R01")["observability"]["correlation"]["route_id"] = route_id.upper()
+    elif reference == "authorization":
+        _row_by_id(package, "R01")["owner"]["scope"]["route_binding"]["route_id"] = (
+            route_id.upper()
+        )
+    else:
+        package["final_audit"]["auditor"]["scope"]["route_binding"]["routes"][0][
+            "route_id"
+        ] = route_id.upper()
+    _seal(package)
+
+    schema_errors = validate_payload_against_schema(
+        package,
+        ROOT / "docs/v4/p1-rg0-rg1-external-acceptance.schema.json",
+    )
+    result = _validate(package).to_dict()
+    assert schema_errors
+    assert result["structural_status"] == "INVALID"
 
 
 def test_each_row_requires_named_authorized_owner_operator_and_independent_reviewer() -> None:

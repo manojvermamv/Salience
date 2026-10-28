@@ -7,6 +7,7 @@ from collections.abc import Mapping
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from uuid import UUID
 from urllib.parse import urlsplit
 
 from jsonschema import Draft202012Validator, FormatChecker
@@ -38,6 +39,15 @@ def sha256_json(value: Any) -> str:
 
 def _is_sha256(value: Any) -> bool:
     return isinstance(value, str) and SHA256_RE.fullmatch(value) is not None
+
+
+def _is_canonical_uuid(value: Any) -> bool:
+    if not isinstance(value, str):
+        return False
+    try:
+        return str(UUID(value)) == value
+    except ValueError:
+        return False
 
 
 def _parse_datetime(value: Any) -> datetime | None:

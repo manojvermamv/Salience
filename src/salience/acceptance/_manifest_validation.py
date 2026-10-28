@@ -6,6 +6,7 @@ from typing import Any
 
 from ._canonical import (
     _evidence_ref_error,
+    _is_canonical_uuid,
     _is_sha256,
     _package_digest_payload,
     _parse_datetime,
@@ -216,7 +217,7 @@ def _validate_deployment_artifact_and_route_bindings(
         route_id = route.get("route_id")
         worker_id = route.get("worker_id")
         if (
-            not isinstance(route_id, str)
+            not _is_canonical_uuid(route_id)
             or route_id in route_by_id
             or not isinstance(worker_id, str)
             or worker_id not in worker_by_id
@@ -234,13 +235,16 @@ def _validate_deployment_artifact_and_route_bindings(
 
     for worker_id, worker in worker_by_id.items():
         declared = worker.get("route_ids", [])
+        declared_are_canonical = isinstance(declared, list) and all(
+            _is_canonical_uuid(route_id) for route_id in declared
+        )
         assigned = [
             route_id
             for route_id, route in route_by_id.items()
             if route.get("worker_id") == worker_id
         ]
         if (
-            not isinstance(declared, list)
+            not declared_are_canonical
             or len(declared) != len(set(declared))
             or set(declared) != set(assigned)
         ):
@@ -256,9 +260,11 @@ def _validate_deployment_artifact_and_route_bindings(
         row_id = row.get("row_id")
         route = row.get("scope", {}).get("route", {})
         route_id = route.get("route_id")
-        inventory_route = route_by_id.get(route_id)
+        canonical_route_id = _is_canonical_uuid(route_id)
+        inventory_route = route_by_id.get(route_id) if canonical_route_id else None
         if (
-            inventory_route is None
+            not canonical_route_id
+            or inventory_route is None
             or route.get("route_tuple_sha256") != inventory_route.get("route_tuple_sha256")
             or route.get("authenticated_route_manifest_sha256") != manifest_digest
             or route.get("authenticated_route_manifest_sha256")

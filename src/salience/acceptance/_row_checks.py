@@ -1,12 +1,17 @@
 from __future__ import annotations
 
 import re
-import uuid
 from collections.abc import Mapping, Sequence
 from datetime import datetime
 from typing import Any
 
-from ._canonical import _evidence_ref_error, _is_sha256, _iter_evidence_refs, _parse_datetime
+from ._canonical import (
+    _evidence_ref_error,
+    _is_canonical_uuid,
+    _is_sha256,
+    _iter_evidence_refs,
+    _parse_datetime,
+)
 from ._contracts import REQUIRED_NEGATIVE_CONTROL_ROW_IDS, ROW_GATES, SECRET_KEY_RE, SECRET_VALUE_RE
 from ._scope_binding import _authorization_scope_from_manifest, _route_binding_from_row
 
@@ -166,9 +171,7 @@ def _manifest_row_scope_errors(row: Mapping[str, Any], manifest: Mapping[str, An
     ]
     if any(actual != expected for actual, expected in checks):
         errors.append("SCOPE_IDENTITY_MISMATCH")
-    try:
-        uuid.UUID(str(row_scope.get("route", {}).get("route_id")))
-    except (ValueError, AttributeError, TypeError):
+    if not _is_canonical_uuid(row_scope.get("route", {}).get("route_id")):
         errors.append("ROUTE_ID_NOT_UUID")
     route = row_scope.get("route", {})
     if row_scope.get("route_evidence_required"):

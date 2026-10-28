@@ -174,3 +174,56 @@ exit 2; structural_status=INVALID; disposition=NO_GO; SCHEMA_VALIDATION_FAILED
 ```
 
 P0 release and P1 qualification ledger bytes were unchanged by CLI checks. `compileall` and `git diff --check` passed. Temporary CLI fixtures and generated `__pycache__` directories were removed. No ledger, production, or gate mutation was made.
+
+## Route UUID canonical-spelling review fix
+
+Authenticated route IDs must now use canonical lowercase hyphenated UUID text (`str(UUID(value)) == value`). The runtime applies this rule to route inventory entries, worker route assignments, row route references, and the other route-ID references covered by the closed schema. The schema adds the corresponding lowercase UUID pattern alongside its UUID format checks. Route cardinality remains independent of the fixed 22-row count, and row reuse plus exact worker/inventory matching are unchanged.
+
+The semantic-duplicate regression was RED before the runtime fix: an inventory and worker assignment containing lowercase and uppercase spellings of the same UUID were accepted as structurally `VALID`.
+
+```text
+TEST_DATABASE_URL=postgresql://127.0.0.1:1/unused TEST_TEMPORAL_TARGET=127.0.0.1:1 /home/admin/Salience/.venv/bin/python -m pytest tests/unit/test_p1_external_acceptance.py -q --tb=short -k test_route_inventory_rejects_semantic_uuid_duplicates
+1 failed, 38 deselected in 1.23s
+```
+
+Before implementation, the expanded canonical-reference regressions also failed for semantic duplicate inventory IDs and mixed-case worker, row, correlation, and authorization route references:
+
+```text
+TEST_DATABASE_URL=postgresql://127.0.0.1:1/unused TEST_TEMPORAL_TARGET=127.0.0.1:1 /home/admin/Salience/.venv/bin/python -m pytest tests/unit/test_p1_external_acceptance.py -q --tb=short -k 'semantic_uuid_duplicates or route_uuid_references_require_canonical_text'
+5 failed, 38 deselected in 8.03s
+```
+
+After implementation, the expanded regression covers inventory, worker, row, observability correlation, authorization route binding, and final-audit route-set references, and passes:
+
+```text
+TEST_DATABASE_URL=postgresql://127.0.0.1:1/unused TEST_TEMPORAL_TARGET=127.0.0.1:1 /home/admin/Salience/.venv/bin/python -m pytest tests/unit/test_p1_external_acceptance.py -q --tb=short -k 'semantic_uuid_duplicates or route_uuid_references_require_canonical_text'
+7 passed, 38 deselected in 11.93s
+```
+
+The full serial Task 10 suite passed:
+
+```text
+TEST_DATABASE_URL=postgresql://127.0.0.1:1/unused TEST_TEMPORAL_TARGET=127.0.0.1:1 /home/admin/Salience/.venv/bin/python -m pytest tests/unit/test_p1_external_acceptance.py -q --tb=short
+45 passed in 190.46s (0:03:10)
+```
+
+Schema and direct CLI controls passed. The schema-check command exited 0:
+
+```text
+PYTHONPATH=src /home/admin/Salience/.venv/bin/python -c 'import json; from pathlib import Path; from jsonschema import Draft202012Validator; Draft202012Validator.check_schema(json.loads(Path("docs/v4/p1-rg0-rg1-external-acceptance.schema.json").read_text(encoding="utf-8")))'
+```
+
+The one-route and two-route packages had zero schema errors and each returned `exit 1; structural_status=VALID; disposition=NO_GO; gate_state=UNCHANGED`, preserving local-structure-only semantics. The mixed-case semantic alias package had 23 schema errors and returned `exit 2; structural_status=INVALID; disposition=NO_GO; gate_state=UNCHANGED; SCHEMA_VALIDATION_FAILED`.
+
+```text
+/home/admin/Salience/.venv/bin/python scripts/check-p1-external-acceptance.py --package /tmp/salience-p1-canonical-route-controls/one-route.json --schema docs/v4/p1-rg0-rg1-external-acceptance.schema.json
+exit 1; structural_status=VALID; disposition=NO_GO
+
+/home/admin/Salience/.venv/bin/python scripts/check-p1-external-acceptance.py --package /tmp/salience-p1-canonical-route-controls/two-routes.json --schema docs/v4/p1-rg0-rg1-external-acceptance.schema.json
+exit 1; structural_status=VALID; disposition=NO_GO
+
+/home/admin/Salience/.venv/bin/python scripts/check-p1-external-acceptance.py --package /tmp/salience-p1-canonical-route-controls/mixed-case-alias.json --schema docs/v4/p1-rg0-rg1-external-acceptance.schema.json
+exit 2; structural_status=INVALID; disposition=NO_GO; SCHEMA_VALIDATION_FAILED
+```
+
+`compileall` and `git diff --check` passed. Generated `__pycache__` directories and temporary CLI fixtures were removed. No ledger, application migration, external client, production state, or release gate was modified.
