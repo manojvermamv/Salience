@@ -285,3 +285,5 @@ The plan traces all 17 Slice 2 policy/revocation acceptance cases, all 7 routing
 ## Evidence commit reference — append-only
 
 - `evidence_commit`: `f0e7de0681ab7d18531e65ffc1337380e3b58fbc` (focused-results/report commit). This reference is appended in a later commit; the evidence JSON remains unchanged and does not self-hash.
+- Task 11 review fix round 1/5 (1 Important evidence-completeness finding and 1 Minor evidence-commit reference addressed, 0 open; commits `8c85d7e..a00d8ec`). Independent scoped rereview returned CLEAN with spec PASS and quality PASS; no product, migration, checker, package, or gate state changed in the fix.
+- Task 11: complete (source `1ded021`, artifact `3e7f679`, evidence/results `f0e7de0`, append-only evidence reference `a00d8ec`; review clean). Production effects remain disabled; RG0/full RG1 remain HELD; P2 remains BLOCKED; external acceptance remains `NOT RUN`; no push or merge occurred.
