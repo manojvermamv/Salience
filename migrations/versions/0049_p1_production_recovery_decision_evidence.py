@@ -37,23 +37,29 @@ def upgrade() -> None:
                 '            IF NEW.event_kind = ''same_operation_no_effect_reissue'''
                 || ' AND ('
                 || 'NOT (NEW.payload ? ''stage_decision_id'')'
-                || ' OR NOT (NEW.payload ? ''policy_decision_id'')'
-                || ' OR NOT (NEW.payload ? ''workspace_stop_revision'')'
-                || ' OR NOT (NEW.payload ? ''goal_stop_revision'')'
-                || ' OR NOT (NEW.payload ? ''route_decision_id'')'
+                || ' OR jsonb_typeof(NEW.payload->''stage_decision_id'') IS DISTINCT FROM ''string'''
                 || ' OR NEW.payload->>''stage_decision_id'' !~ '
                 || '''^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'''
+                || ' OR NOT (NEW.payload ? ''policy_decision_id'')'
+                || ' OR jsonb_typeof(NEW.payload->''policy_decision_id'') IS DISTINCT FROM ''string'''
+                || ' OR NEW.payload->>''policy_decision_id'' !~ '
+                || '''^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'''
                 || ' OR NEW.payload->>''policy_decision_id'' IS DISTINCT FROM NEW.policy_decision_id::text'
+                || ' OR NOT (NEW.payload ? ''workspace_stop_revision'')'
+                || ' OR jsonb_typeof(NEW.payload->''workspace_stop_revision'') IS DISTINCT FROM ''number'''
+                || ' OR NEW.payload->>''workspace_stop_revision'' !~ ''^[1-9][0-9]*$'''
+                || ' OR NOT (NEW.payload ? ''goal_stop_revision'')'
+                || ' OR jsonb_typeof(NEW.payload->''goal_stop_revision'') IS DISTINCT FROM ''number'''
+                || ' OR NEW.payload->>''goal_stop_revision'' !~ ''^[1-9][0-9]*$'''
+                || ' OR NOT (NEW.payload ? ''route_decision_id'')'
+                || ' OR jsonb_typeof(NEW.payload->''route_decision_id'') IS DISTINCT FROM ''string'''
                 || ' OR NEW.payload->>''route_decision_id'' !~ '
                 || '''^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'''
-                || ' OR NEW.payload->>''workspace_stop_revision'' !~ ''^[1-9][0-9]*$'''
-                || ' OR NEW.payload->>''goal_stop_revision'' !~ ''^[1-9][0-9]*$'') THEN'
+                || ' OR NOT (NEW.payload ? ''event_key'')'
+                || ' OR jsonb_typeof(NEW.payload->''event_key'') IS DISTINCT FROM ''string'''
+                || ' OR NEW.payload->>''event_key'' IS DISTINCT FROM NEW.event_key) THEN'
                 || ' RAISE EXCEPTION ''same-operation no-effect event requires exact decision and split stop evidence'';'
                 || ' END IF;'
-                || ' IF NEW.event_kind = ''escalation'' AND NEW.payload->>''status'' = ''deadline_suspend'''
-                || ' AND NEW.payload->>''command_id'' !~ '
-                || '''^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'''
-                || ' THEN RAISE EXCEPTION ''deadline suspension event requires its typed command receipt''; END IF;'
                 || ' IF NEW.payload_sha256 IS DISTINCT FROM'
             );
             IF definition = pg_get_functiondef(
@@ -79,18 +85,28 @@ def upgrade() -> None:
         RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER
         SET search_path = pg_catalog, public AS $$
         BEGIN
-            IF NEW.event_kind = 'escalation'
-               AND NEW.payload->>'schema_version' =
-                   'salience.p1-production-recovery-deadline.v1'
-               AND (
-                   NEW.payload->>'policy_decision_id'
-                     IS DISTINCT FROM NEW.policy_decision_id::text
+            IF NEW.event_kind = 'escalation' AND (
+                   jsonb_typeof(NEW.payload->'schema_version') IS DISTINCT FROM 'string'
+                   OR NEW.payload->>'schema_version' IS DISTINCT FROM
+                      'salience.p1-production-recovery-deadline.v1'
+                   OR jsonb_typeof(NEW.payload->'status') IS DISTINCT FROM 'string'
+                   OR length(NEW.payload->>'status') = 0
+                   OR NOT (NEW.payload ? 'policy_decision_id')
+                   OR jsonb_typeof(NEW.payload->'policy_decision_id') IS DISTINCT FROM 'string'
+                   OR NEW.payload->>'policy_decision_id' !~
+                      '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+                   OR NEW.payload->>'policy_decision_id' IS DISTINCT FROM NEW.policy_decision_id::text
                    OR NOT (NEW.payload ? 'route_decision_id')
+                   OR jsonb_typeof(NEW.payload->'route_decision_id') IS DISTINCT FROM 'string'
                    OR NEW.payload->>'route_decision_id' !~
-                     '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+                      '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+                   OR NOT (NEW.payload ? 'event_key')
+                   OR jsonb_typeof(NEW.payload->'event_key') IS DISTINCT FROM 'string'
                    OR NEW.payload->>'event_key' IS DISTINCT FROM NEW.event_key
                    OR (NEW.payload->>'status' = 'deadline_suspend'
-                       AND (NOT (NEW.payload ? 'command_id')
+                       AND NOT (NEW.payload ? 'command_id'))
+                   OR (NEW.payload ? 'command_id'
+                       AND (jsonb_typeof(NEW.payload->'command_id') IS DISTINCT FROM 'string'
                             OR NEW.payload->>'command_id' !~
                               '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'))
                ) THEN

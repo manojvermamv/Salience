@@ -1500,6 +1500,205 @@ def test_schema_and_migration_safety():
             ).fetchone()[0] == 2
 
 
+def test_0049_recovery_evidence_rejects_null_missing_wrong_type_and_malformed():
+    module = import_module("salience.cycles.production_recovery")
+    with _production_recovery_operation("task7_0049_evidence_types_") as (
+        database,
+        _fixture,
+        authority,
+        _enrollment,
+    ):
+        repository = module.ProductionRecoveryWorkRepository(database)
+        work = _case_work(repository, authority, module)
+        policy_decision_id = uuid4()
+        missing = object()
+
+        def insert_event(connection, event_kind, event_key, payload):
+            encoded = Jsonb(payload)
+            connection.execute(
+                """INSERT INTO v4_production_recovery_events(
+                           event_id,work_id,event_key,event_kind,actor_id,
+                           policy_decision_id,payload,payload_sha256)
+                   VALUES(%s,%s,%s,%s,%s,%s,%s,
+                          encode(public.digest(%s::jsonb::text,'sha256'),'hex'))""",
+                (
+                    uuid4(),
+                    work.work_id,
+                    event_key,
+                    event_kind,
+                    work.owner_id,
+                    policy_decision_id,
+                    encoded,
+                    encoded,
+                ),
+            )
+
+        def require_rejected(connection, event_kind, base, field, label, value):
+            event_key = f"task7-0049:{label}:{uuid4()}"
+            payload = dict(base)
+            payload["event_key"] = event_key
+            if value is missing:
+                payload.pop(field, None)
+            else:
+                payload[field] = value
+            with pytest.raises(psycopg.Error):
+                with connection.transaction():
+                    insert_event(connection, event_kind, event_key, payload)
+
+        no_effect = {
+            "stage_decision_id": str(uuid4()),
+            "policy_decision_id": str(policy_decision_id),
+            "workspace_stop_revision": 3,
+            "goal_stop_revision": 5,
+            "route_decision_id": str(uuid4()),
+        }
+        deadline_suspend = {
+            "schema_version": "salience.p1-production-recovery-deadline.v1",
+            "status": "deadline_suspend",
+            "policy_decision_id": str(policy_decision_id),
+            "route_decision_id": str(uuid4()),
+            "command_id": str(uuid4()),
+        }
+        deadline_wake = {
+            "schema_version": "salience.p1-production-recovery-deadline.v1",
+            "status": "woken",
+            "policy_decision_id": str(policy_decision_id),
+            "route_decision_id": str(uuid4()),
+        }
+        uuid_evidence = (
+            "stage_decision_id",
+            "policy_decision_id",
+            "route_decision_id",
+        )
+        stop_evidence = ("workspace_stop_revision", "goal_stop_revision")
+        deadline_uuid_evidence = (
+            "policy_decision_id",
+            "route_decision_id",
+            "command_id",
+        )
+
+        with psycopg.connect(database) as connection:
+            # Valid controls preserve the exact expected JSON types. An intent
+            # wake explicitly has no case command receipt, so its command_id
+            # remains absent rather than JSON null.
+            valid_no_effect_key = f"task7-0049:valid-no-effect:{uuid4()}"
+            insert_event(
+                connection,
+                "same_operation_no_effect_reissue",
+                valid_no_effect_key,
+                {**no_effect, "event_key": valid_no_effect_key},
+            )
+            valid_deadline_key = f"task7-0049:valid-deadline:{uuid4()}"
+            insert_event(
+                connection,
+                "escalation",
+                valid_deadline_key,
+                {**deadline_suspend, "event_key": valid_deadline_key},
+            )
+            valid_wake_key = f"task7-0049:valid-intent-wake:{uuid4()}"
+            insert_event(
+                connection,
+                "escalation",
+                valid_wake_key,
+                {**deadline_wake, "event_key": valid_wake_key},
+            )
+
+            for field in uuid_evidence:
+                for label, value in (
+                    ("json-null", None),
+                    ("missing", missing),
+                    ("wrong-json-type", 17),
+                    ("malformed-string", "not-a-uuid"),
+                ):
+                    require_rejected(
+                        connection,
+                        "same_operation_no_effect_reissue",
+                        no_effect,
+                        field,
+                        f"no-effect-{field}-{label}",
+                        value,
+                    )
+            for field in stop_evidence:
+                for label, value in (
+                    ("json-null", None),
+                    ("missing", missing),
+                    ("wrong-json-type", "3"),
+                    ("malformed-string", "three"),
+                    ("malformed-number", 3.5),
+                ):
+                    require_rejected(
+                        connection,
+                        "same_operation_no_effect_reissue",
+                        no_effect,
+                        field,
+                        f"no-effect-{field}-{label}",
+                        value,
+                    )
+            for label, value in (
+                ("json-null", None),
+                ("missing", missing),
+                ("wrong-json-type", 17),
+                ("mismatched-string", "other-event-key"),
+            ):
+                require_rejected(
+                    connection,
+                    "same_operation_no_effect_reissue",
+                    no_effect,
+                    "event_key",
+                    f"no-effect-event-key-{label}",
+                    value,
+                )
+
+            deadline_fields = {
+                "schema_version": (
+                    ("json-null", None),
+                    ("missing", missing),
+                    ("wrong-json-type", 17),
+                    ("malformed-string", "wrong-schema"),
+                ),
+                "status": (
+                    ("json-null", None),
+                    ("missing", missing),
+                    ("wrong-json-type", 17),
+                    ("malformed-string", ""),
+                ),
+                "event_key": (
+                    ("json-null", None),
+                    ("missing", missing),
+                    ("wrong-json-type", 17),
+                    ("mismatched-string", "other-event-key"),
+                ),
+            }
+            for field in deadline_uuid_evidence:
+                deadline_fields[field] = (
+                    ("json-null", None),
+                    ("missing", missing),
+                    ("wrong-json-type", 17),
+                    ("malformed-string", "not-a-uuid"),
+                )
+            for field, variants in deadline_fields.items():
+                for label, value in variants:
+                    require_rejected(
+                        connection,
+                        "escalation",
+                        deadline_suspend,
+                        field,
+                        f"deadline-{field}-{label}",
+                        value,
+                    )
+
+            # An intent wake can omit a case-command receipt. A present JSON
+            # null is never a valid command receipt.
+            require_rejected(
+                connection,
+                "escalation",
+                {**deadline_wake, "command_id": str(uuid4())},
+                "command_id",
+                "deadline-optional-command-id-json-null",
+                None,
+            )
+
+
 def test_remote_read_not_found_without_authoritative_window_stays_held():
     module = import_module("salience.cycles.production_recovery")
     with _production_recovery_operation("task7_not_found_visibility_") as (
