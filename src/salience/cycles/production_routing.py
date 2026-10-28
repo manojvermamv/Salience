@@ -9,17 +9,24 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass
+from datetime import datetime
 from hashlib import sha256
 import json
 import re
 from types import MappingProxyType
-from typing import cast
+from typing import TYPE_CHECKING, Literal, Protocol, cast, runtime_checkable
 from uuid import UUID
+
+if TYPE_CHECKING:
+    from salience.cycles.production_dispatch import RouteFenceDecision, RouteFenceRequest
 
 
 _SHA256 = re.compile(r"[0-9a-f]{64}\Z")
 _ROUTE_MANIFEST_VERSION = "salience.p1-production-route-manifest.v1"
 _ROUTE_BUNDLE_VERSION = "salience.p1-production-route-bundle.v1"
+ROUTE_FENCE_AUTHORITY_VERSION: Literal["salience.p1-route-fence.v1"] = (
+    "salience.p1-route-fence.v1"
+)
 _ROUTE_TUPLE_FIELDS = frozenset(
     {
         "deployment_id",
@@ -58,6 +65,129 @@ def _require_text(value: object, name: str) -> str:
     if not isinstance(value, str) or not value.strip():
         raise ValueError(f"{name} must be a non-empty string")
     return value
+
+
+@dataclass(frozen=True, slots=True)
+class RouteLeaseClaim:
+    route_id: UUID
+    route_manifest_sha256: str
+    artifact_lock_sha256: str
+    slot_id: UUID
+    owner_id: UUID
+    build_id: str
+
+    def __post_init__(self) -> None:
+        for name in ("route_id", "slot_id", "owner_id"):
+            if not isinstance(getattr(self, name), UUID):
+                raise ValueError(f"route lease claim {name} UUID required")
+        _require_digest(self.route_manifest_sha256, "route manifest digest")
+        _require_digest(self.artifact_lock_sha256, "artifact lock digest")
+        _require_text(self.build_id, "route worker build ID")
+
+
+@dataclass(frozen=True, slots=True)
+class RouteLease:
+    route_id: UUID
+    slot_id: UUID
+    owner_id: UUID
+    fencing_epoch: int
+    expires_at: datetime
+    route_manifest_sha256: str
+    artifact_lock_sha256: str
+
+    def __post_init__(self) -> None:
+        for name in ("route_id", "slot_id", "owner_id"):
+            if not isinstance(getattr(self, name), UUID):
+                raise ValueError(f"route lease {name} UUID required")
+        if type(self.fencing_epoch) is not int or self.fencing_epoch < 1:
+            raise ValueError("positive route fencing epoch required")
+        if (
+            not isinstance(self.expires_at, datetime)
+            or self.expires_at.tzinfo is None
+            or self.expires_at.utcoffset() is None
+        ):
+            raise ValueError("route lease expiry must be timezone-aware")
+        _require_digest(self.route_manifest_sha256, "route manifest digest")
+        _require_digest(self.artifact_lock_sha256, "artifact lock digest")
+
+
+@dataclass(frozen=True, slots=True)
+class RouteSlotReadback:
+    route_id: UUID
+    slot_id: UUID
+    available: bool
+    state: Literal[
+        "missing", "leased", "released", "terminated", "expired", "unavailable"
+    ]
+    lease: RouteLease | None
+    fencing_epoch: int | None
+    protocol_version: Literal["salience.p1-route-fence.v1"] = (
+        ROUTE_FENCE_AUTHORITY_VERSION
+    )
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.route_id, UUID) or not isinstance(self.slot_id, UUID):
+            raise ValueError("route slot readback UUIDs are required")
+        if type(self.available) is not bool:
+            raise ValueError("route slot readback availability must be explicit")
+        if self.state not in {
+            "missing",
+            "leased",
+            "released",
+            "terminated",
+            "expired",
+            "unavailable",
+        }:
+            raise ValueError("route slot readback state is invalid")
+        if self.protocol_version != ROUTE_FENCE_AUTHORITY_VERSION:
+            raise ValueError("route slot readback version is unsupported")
+        if self.state == "unavailable":
+            if self.available or self.lease is not None or self.fencing_epoch is not None:
+                raise ValueError("unavailable route readback cannot expose cached lease state")
+            return
+        if not self.available:
+            raise ValueError("available route readback state is required")
+        if self.state == "missing":
+            if self.lease is not None or self.fencing_epoch is not None:
+                raise ValueError("missing route slot cannot carry lease state")
+            return
+        if type(self.fencing_epoch) is not int or self.fencing_epoch < 1:
+            raise ValueError("route slot readback needs a positive fencing epoch")
+        if self.state == "leased":
+            if (
+                not isinstance(self.lease, RouteLease)
+                or self.lease.route_id != self.route_id
+                or self.lease.slot_id != self.slot_id
+                or self.lease.fencing_epoch != self.fencing_epoch
+            ):
+                raise ValueError("leased route slot readback needs its current lease")
+        elif self.lease is not None:
+            raise ValueError("inactive route slot readback cannot carry a current lease")
+
+
+@runtime_checkable
+class RouteLeaseAuthority(Protocol):
+    """Versioned provider-neutral slot lease and action-fence boundary.
+
+    All methods are implemented against one ``salience.p1-route-fence.v1``
+    serialization order. Action requests and decisions use the existing
+    ``production_dispatch`` contract, imported for type checking only so this
+    module does not create a runtime dependency cycle.
+    """
+
+    protocol_version: Literal["salience.p1-route-fence.v1"]
+
+    def claim_slot(self, request: RouteLeaseClaim) -> RouteLease: ...
+
+    def renew_slot(self, lease: RouteLease) -> RouteLease: ...
+
+    def authorize_action(self, request: RouteFenceRequest) -> RouteFenceDecision: ...
+
+    def release_slot(self, lease: RouteLease) -> RouteSlotReadback: ...
+
+    def terminate_slot(self, lease: RouteLease) -> RouteSlotReadback: ...
+
+    def read_slot(self, route_id: UUID, slot_id: UUID) -> RouteSlotReadback: ...
 
 
 def _parse_uuid(value: object, name: str) -> UUID:
