@@ -285,9 +285,9 @@ def test_additive_migration_empty_rollback_and_populated_preservation():
         try:
             def migrate(direction,target):
                 return subprocess.run([sys.executable,'-m','alembic','-x',f'database_url={database}',direction,target],capture_output=True,text=True)
-            assert migrate('upgrade','head').returncode==0
+            assert migrate('upgrade','0050_p1_production_dispatch_reissue').returncode==0
             assert migrate('downgrade','0034_runtime_delivery_scope').returncode==0
-            assert migrate('upgrade','head').returncode==0
+            assert migrate('upgrade','0050_p1_production_dispatch_reissue').returncode==0
             with psycopg.connect(database) as c:
                 head_revision=c.execute('SELECT version_num FROM alembic_version').fetchone()[0]
             workspace=uuid4();actor=uuid4()

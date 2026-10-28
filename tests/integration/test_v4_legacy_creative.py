@@ -305,11 +305,11 @@ def test_creative_migration_empty_exact_restore_and_populated_refusal(legacy):
                 with psycopg.connect(fresh) as connection:return connection.execute("SELECT pg_get_functiondef('v4_guard_legacy_dispatch()'::regprocedure)").fetchone()[0]
             assert migrate(fresh,'upgrade','0038_legacy_dummy_stage').returncode == 0
             original=guard()
-            assert migrate(fresh,'upgrade','head').returncode == 0
+            assert migrate(fresh,'upgrade','0050_p1_production_dispatch_reissue').returncode == 0
             assert guard()!=original
             assert migrate(fresh,'downgrade','0038_legacy_dummy_stage').returncode == 0
             assert guard()==original
-            assert migrate(refusal,'upgrade','head').returncode == 0
+            assert migrate(refusal,'upgrade','0050_p1_production_dispatch_reissue').returncode == 0
             assert migrate(refusal,'downgrade','0042_publication_recovery_holds').returncode == 0
             submitted=_seed_legacy_stage_for_migration_refusal(refusal,stage='creative')
             result=migrate(refusal,'downgrade','0038_legacy_dummy_stage')

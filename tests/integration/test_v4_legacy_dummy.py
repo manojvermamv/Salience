@@ -249,12 +249,12 @@ def test_dummy_migration_empty_restore_and_populated_stage_preservation(legacy):
                     return connection.execute("SELECT pg_get_functiondef('v4_guard_legacy_dispatch()'::regprocedure)").fetchone()[0]
             assert migrate(fresh,"upgrade","0037_native_schedule_sources").returncode == 0
             original=guard()
-            assert migrate(fresh,"upgrade","head").returncode == 0
+            assert migrate(fresh,"upgrade","0050_p1_production_dispatch_reissue").returncode == 0
             assert guard() != original
             assert migrate(fresh,"downgrade","0037_native_schedule_sources").returncode == 0
             assert guard() == original
             assert migrate(fresh,"upgrade","head").returncode == 0
-            assert migrate(refusal,"upgrade","head").returncode == 0
+            assert migrate(refusal,"upgrade","0050_p1_production_dispatch_reissue").returncode == 0
             assert migrate(refusal,"downgrade","0042_publication_recovery_holds").returncode == 0
             submitted=_seed_legacy_stage_for_migration_refusal(refusal,stage="dummy")
             result=migrate(refusal,"downgrade","0037_native_schedule_sources")

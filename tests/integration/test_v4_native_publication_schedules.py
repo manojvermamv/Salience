@@ -580,6 +580,7 @@ async def test_actual_native_publication_pair_is_adopted_fenced_and_resumed_thro
         )
         assert result.returncode != 0
         assert any(reason in result.stderr for reason in (
+            "0051_p1_recovery_rollback_v2 is irreversible",
             "preserve original native publication schedule history",
             "preserve production policy and revocation authority history",
         ))
@@ -799,7 +800,7 @@ def test_native_publication_migration_empty_downgrade_restores_m40_guards():
                 original_cutover_guard = connection.execute(
                     "SELECT pg_get_functiondef('v4_preserve_schedule_cutover()'::regprocedure) AS definition"
                 ).fetchone()["definition"]
-            upgraded = migrate("upgrade", "head")
+            upgraded = migrate("upgrade", "0050_p1_production_dispatch_reissue")
             assert upgraded.returncode == 0, upgraded.stderr
             with psycopg.connect(database, row_factory=dict_row) as connection:
                 assert connection.execute(

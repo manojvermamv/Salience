@@ -120,6 +120,7 @@ async def test_native_adoption_atomic_replay_scope_and_identity(policy, monkeypa
         result = await asyncio.to_thread(subprocess.run, [sys.executable, "-m", "alembic", "-x", "database_url="+database,
             "downgrade", "0036_legacy_cycle_dispatch"], capture_output=True, text=True)
         assert result.returncode != 0 and any(reason in result.stderr for reason in (
+            "0051_p1_recovery_rollback_v2 is irreversible",
             "preserve original native publication schedule history",
             "preserve original legacy publication history",
             "preserve original native schedule history",
@@ -316,7 +317,7 @@ def test_native_migration_empty_rollback_restores_original_cutover_guard():
                     return connection.execute("SELECT pg_get_functiondef('v4_preserve_schedule_cutover()'::regprocedure)").fetchone()[0]
             migrate("upgrade","0036_legacy_cycle_dispatch")
             original = guard()
-            migrate("upgrade","head")
+            migrate("upgrade","0050_p1_production_dispatch_reissue")
             assert guard() != original
             migrate("downgrade","0036_legacy_cycle_dispatch")
             assert guard() == original
