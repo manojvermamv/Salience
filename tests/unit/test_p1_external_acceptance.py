@@ -88,6 +88,16 @@ def _ref(label: str) -> dict[str, str]:
     }
 
 
+def _authorization_scope() -> dict[str, Any]:
+    return {
+        "environment_id": "env-synthetic-001",
+        "account_id": "account-synthetic",
+        "resource_ids": ["resource-synthetic-001"],
+        "tenant_id": "tenant-synthetic",
+        "workspace_id": "workspace-synthetic",
+    }
+
+
 def _person(person_id: str, name: str, role: str) -> dict[str, Any]:
     return {
         "person_id": person_id,
@@ -95,7 +105,7 @@ def _person(person_id: str, name: str, role: str) -> dict[str, Any]:
         "role": role,
         "identity_source": "approved-idp:salience.example",
         "verified_identity": True,
-        "scope": ["environment:prod-synthetic", "account:account-synthetic"],
+        "scope": _authorization_scope(),
         "authorization_ref": _ref(f"authorization:{person_id}"),
         "valid_from": "2026-10-01T00:00:00Z",
         "valid_until": "2026-12-01T00:00:00Z",
@@ -150,6 +160,20 @@ def _row_scope(route_id: str) -> dict[str, Any]:
     }
 
 
+def _fixture_evidence_binding(run_id: str) -> dict[str, Any]:
+    candidate_scope = _row_scope("00000000-0000-4000-8000-000000000001")["candidate"]
+    return {
+        "run_id": run_id,
+        "candidate_commit": SOURCE_COMMIT,
+        "candidate_tree": SOURCE_TREE,
+        "artifact_digests": sorted(candidate_scope["artifact_digests"]),
+        "deployment_id": "deploy-synthetic-001",
+        "environment_id": "env-synthetic-001",
+        "account_id": "account-synthetic",
+        "resource_ids": ["resource-synthetic-001"],
+    }
+
+
 def _row(row_id: str, run_id: str, route_id: str) -> dict[str, Any]:
     owner = _person("owner-01", "Morgan Lee", "accountable-row-owner")
     operator = _person("operator-01", "Avery Kim", "authorized-operator")
@@ -160,9 +184,14 @@ def _row(row_id: str, run_id: str, route_id: str) -> dict[str, Any]:
             "dependency_id": dependency_id,
             "status": "PASS",
             "evidence_id": f"{run_id}:{dependency_id}",
+            "run_id": run_id,
             "candidate_commit": SOURCE_COMMIT,
+            "candidate_tree": SOURCE_TREE,
+            "artifact_digests": _fixture_evidence_binding(run_id)["artifact_digests"],
             "deployment_id": "deploy-synthetic-001",
             "environment_id": "env-synthetic-001",
+            "account_id": "account-synthetic",
+            "resource_ids": ["resource-synthetic-001"],
             "scope_match": True,
             "evidence_ref": _ref(f"dependency:{row_id}:{dependency_id}"),
         }
@@ -224,6 +253,7 @@ def _row(row_id: str, run_id: str, route_id: str) -> dict[str, Any]:
             "state": "CURRENT",
             "source_state_sha256": state_digest,
             "final_reviewed_state_sha256": state_digest,
+            "final_reviewed_version": "stable-v1",
         },
         "transition": {
             "mode": "NO_MUTATION",
@@ -265,8 +295,12 @@ def _row(row_id: str, run_id: str, route_id: str) -> dict[str, Any]:
             "correlation": {
                 "run_id": run_id,
                 "candidate_commit": SOURCE_COMMIT,
+                "candidate_tree": SOURCE_TREE,
+                "artifact_digests": _fixture_evidence_binding(run_id)["artifact_digests"],
+                "deployment_id": "deploy-synthetic-001",
                 "environment_id": "env-synthetic-001",
                 "account_alias": "account-synthetic",
+                "resource_ids": ["resource-synthetic-001"],
                 "command_ids": [f"command-{row_id.lower()}-001"],
                 "request_ids": [],
                 "trace_ids": [f"trace-{row_id.lower()}-001"],
@@ -323,7 +357,70 @@ def _collect_refs(value: Any) -> list[dict[str, str]]:
     return [found[key] for key in sorted(found)]
 
 
+def _bind_references(value: Any, context: dict[str, Any], operator_id: str) -> None:
+    if isinstance(value, dict):
+        if {"uri", "sha256", "retention_mode"}.issubset(value):
+            digest = value.get("sha256")
+            value["evidence_id"] = f"evidence-{digest}"
+            value.setdefault("binding", copy.deepcopy(context))
+            value.setdefault(
+                "provenance",
+                {
+                    "source_id": f"evidence-source-{digest}",
+                    "operator_id": operator_id,
+                },
+            )
+        for key, child in value.items():
+            if isinstance(child, (dict, list)):
+                _bind_references(child, context, operator_id)
+    elif isinstance(value, list):
+        for child in value:
+            _bind_references(child, context, operator_id)
+
+
+def _bind_package_references(payload: dict[str, Any]) -> None:
+    manifest = payload["manifest"]
+    environment = manifest["environment"]
+    context = {
+        "run_id": payload["run_id"],
+        "candidate_commit": manifest["candidate"].get("source_commit"),
+        "candidate_tree": manifest["candidate"].get("source_tree"),
+        "artifact_digests": sorted(manifest.get("candidate_artifact_digests", [])),
+        "deployment_id": manifest.get("deployment", {}).get("deployment_id"),
+        "environment_id": environment.get("environment_id"),
+        "account_id": environment.get("account_identity", {}).get("account_id"),
+        "resource_ids": sorted(environment.get("resource_ids", [])),
+    }
+    for route in manifest.get("route_manifest", {}).get("inventory", []):
+        route.setdefault("binding", copy.deepcopy(context))
+    for row in payload.get("rows", []):
+        row.get("freshness", {}).setdefault("binding", copy.deepcopy(context))
+        for dependency in row.get("dependency_evidence", []):
+            dependency.setdefault("binding", copy.deepcopy(context))
+        row.get("observability", {}).get("correlation", {}).setdefault(
+            "binding", copy.deepcopy(context)
+        )
+    for record in payload.get("invalidation_records", []):
+        record.setdefault("binding", copy.deepcopy(context))
+    _bind_references(manifest, context, "deployment-authority")
+    _bind_references(payload.get("manifest_signature", {}), context, "evidence-signer")
+    for row in payload.get("rows", []):
+        operator_id = row.get("operator", {}).get("person_id", "operator-unknown")
+        reviewer_id = row.get("independent_reviewer", {}).get("person_id", "reviewer-unknown")
+        _bind_references(row, context, operator_id)
+        for key in ("readback", "independent_effect_readback"):
+            reference = row.get(key)
+            if isinstance(reference, dict) and "provenance" in reference:
+                reference["provenance"]["operator_id"] = reviewer_id
+        control = row.get("negative_control", {})
+        independent_readback = control.get("independent_effect_readback")
+        if isinstance(independent_readback, dict) and "provenance" in independent_readback:
+            independent_readback["provenance"]["operator_id"] = reviewer_id
+    _bind_references(payload.get("final_audit", {}), context, "final-auditor")
+
+
 def _seal(payload: dict[str, Any]) -> dict[str, Any]:
+    _bind_package_references(payload)
     payload["manifest_sha256"] = _digest(payload["manifest"])
     payload["manifest_signature"]["signed_manifest_sha256"] = payload["manifest_sha256"]
     for row in payload["rows"]:
@@ -344,6 +441,7 @@ def _seal(payload: dict[str, Any]) -> dict[str, Any]:
             "manifest_signature": payload["manifest_signature"],
             "artifact_digest_index": payload["artifact_digest_index"],
             "row_record_sha256": [row["record_sha256"] for row in payload["rows"]],
+            "lineage": payload.get("lineage"),
             "invalidation_records": payload["invalidation_records"],
         }
     )
@@ -378,6 +476,7 @@ def _valid_package() -> dict[str, Any]:
         )
     artifact_ids = [item["artifact_id"] for item in artifacts]
     artifact_digests = [item["sha256"] for item in artifacts]
+    route_ids = [f"00000000-0000-4000-8000-{index:012d}" for index in range(1, len(ROW_IDS) + 1)]
     manifest = {
         "package_scope": "SYNTHETIC",
         "created_at": CURRENT_TIME,
@@ -396,11 +495,15 @@ def _valid_package() -> dict[str, Any]:
         "deployment": {
             "deployment_id": "deploy-synthetic-001",
             "services": [
-                {"service_id": "api-synthetic", "artifact_id": artifact_ids[0]},
-                {"service_id": "worker-synthetic", "artifact_id": artifact_ids[1]},
+                {"service_id": "api-synthetic", "component": "api", "artifact_id": artifact_ids[0]},
             ],
             "workers": [
-                {"worker_id": "worker-synthetic", "artifact_id": artifact_ids[1], "route_ids": []}
+                {
+                    "worker_id": "worker-synthetic",
+                    "component": "salience",
+                    "artifact_id": artifact_ids[1],
+                    "route_ids": route_ids,
+                }
             ],
             "database": {
                 "cluster_alias": "db-synthetic",
@@ -444,12 +547,21 @@ def _valid_package() -> dict[str, Any]:
         "route_manifest": {
             "authenticated_manifest_sha256": "3" * 64,
             "evidence_ref": _ref("authenticated-route-manifest"),
+            "inventory": [
+                {
+                    "route_id": route_id,
+                    "route_tuple_sha256": "2" * 64,
+                    "worker_id": "worker-synthetic",
+                    "authenticated_route_manifest_sha256": "3" * 64,
+                    "evidence_ref": _ref(f"authenticated-route:{route_id}"),
+                }
+                for route_id in route_ids
+            ],
         },
         "candidate_artifact_digests": artifact_digests,
     }
     rows = []
-    for index, row_id in enumerate(ROW_IDS, start=1):
-        route_id = f"00000000-0000-4000-8000-{index:012d}"
+    for route_id, row_id in zip(route_ids, ROW_IDS, strict=True):
         rows.append(_row(row_id, run_id, route_id))
     final_audit = {
         "audit_id": "audit-synthetic-001",
@@ -484,6 +596,7 @@ def _valid_package() -> dict[str, Any]:
             "signature_evidence": _ref("manifest-signature"),
         },
         "rows": rows,
+        "lineage": {"kind": "ROOT"},
         "invalidation_records": [],
         "final_audit": final_audit,
         "artifact_digest_index": [],
@@ -510,7 +623,11 @@ def _result_row(result: Any, row_id: str) -> dict[str, Any]:
 
 
 def _blocker_codes(result: Any) -> set[str]:
-    return {item["code"] for item in result.to_dict()["blockers"]}
+    result_dict = result.to_dict()
+    codes = {item["code"] for item in result_dict["blockers"]}
+    for row in result_dict["rows"].values():
+        codes.update(row["blockers"])
+    return codes
 
 
 def test_package_requires_exact_candidate_tree_artifacts_deployment_and_environment() -> None:
@@ -852,6 +969,11 @@ def test_revoked_credentials_are_never_restored() -> None:
 
 def test_run_invalidation_is_append_only_and_transitive() -> None:
     package = _valid_package()
+    package["lineage"] = {
+        "kind": "SUCCESSOR",
+        "predecessor_run_id": "run-synthetic-2026-10-27-001",
+        "predecessor_package_sha256": "a" * 64,
+    }
     package["invalidation_records"] = [
         {
             "invalidation_id": "invalidation-001",
@@ -873,6 +995,11 @@ def test_run_invalidation_is_append_only_and_transitive() -> None:
     assert "INVALIDATION_CLOSURE_MISMATCH" in _blocker_codes(result)
 
     package = _valid_package()
+    package["lineage"] = {
+        "kind": "SUCCESSOR",
+        "predecessor_run_id": "run-synthetic-2026-10-27-001",
+        "predecessor_package_sha256": "a" * 64,
+    }
     package["invalidation_records"] = [
         {
             "invalidation_id": "invalidation-001",
@@ -1092,3 +1219,398 @@ def test_default_package_adds_no_application_migration_and_excludes_later_phases
     assert result.to_dict()["structural_status"] == "INVALID"
     assert _sha_bytes(P0_PATH.read_bytes()) == before_p0
     assert _sha_bytes(MATRIX_PATH.read_bytes()) == before_matrix
+
+
+def test_reconciliation_rejects_duplicate_matrix_ids_and_wrong_p0_contract(tmp_path, monkeypatch) -> None:
+    from salience.acceptance import p1_external_evidence, _reconciliation
+
+    p0 = json.loads(P0_PATH.read_text(encoding="utf-8"))
+    matrix = json.loads(MATRIX_PATH.read_text(encoding="utf-8"))
+
+    cases = []
+    duplicate_matrix = copy.deepcopy(matrix)
+    duplicate_matrix["requirements"].append(copy.deepcopy(duplicate_matrix["requirements"][0]))
+    cases.append((copy.deepcopy(p0), duplicate_matrix))
+
+    for change in ("rename", "duplicate_check", "release_gate", "summary_status"):
+        invalid_p0 = copy.deepcopy(p0)
+        if change == "rename":
+            invalid_p0["external_checks"][0]["check"] = "renamed check"
+        elif change == "duplicate_check":
+            invalid_p0["external_checks"][1]["check"] = invalid_p0["external_checks"][0]["check"]
+        elif change == "release_gate":
+            invalid_p0["release_gate"] = "RG1"
+        else:
+            invalid_p0["RG0"] = "UNKNOWN"
+        cases.append((invalid_p0, copy.deepcopy(matrix)))
+
+    for index, (invalid_p0, invalid_matrix) in enumerate(cases):
+        p0_path = tmp_path / f"p0-{index}.json"
+        matrix_path = tmp_path / f"matrix-{index}.json"
+        p0_path.write_text(json.dumps(invalid_p0), encoding="utf-8")
+        matrix_path.write_text(json.dumps(invalid_matrix), encoding="utf-8")
+        monkeypatch.setattr(
+            p1_external_evidence,
+            "_read_ledgers",
+            lambda p0_path=p0_path, matrix_path=matrix_path: _reconciliation._read_ledgers(
+                p0_path, matrix_path
+            ),
+        )
+        monkeypatch.setattr(
+            p1_external_evidence,
+            "_load_matrix_safely",
+            lambda matrix_path=matrix_path: json.loads(matrix_path.read_text(encoding="utf-8")),
+        )
+        result = _validate(_valid_package()).to_dict()
+        assert result["structural_status"] == "INVALID"
+        assert result["disposition"] == "NO_GO"
+
+
+def test_deployment_artifacts_and_row_routes_resolve_to_authenticated_inventory() -> None:
+    mutations = []
+    package = _valid_package()
+    package["manifest"]["deployment"]["services"][0]["artifact_id"] = "unlisted-service-artifact"
+    mutations.append(package)
+
+    package = _valid_package()
+    package["manifest"]["deployment"]["workers"][0]["artifact_id"] = "unlisted-worker-artifact"
+    mutations.append(package)
+
+    package = _valid_package()
+    package["manifest"]["deployment"]["workers"][0]["route_ids"] = [
+        _row_by_id(package, "R01")["scope"]["route"]["route_id"]
+    ]
+    mutations.append(package)
+
+    package = _valid_package()
+    _row_by_id(package, "R01")["scope"]["route"]["route_tuple_sha256"] = "9" * 64
+    mutations.append(package)
+
+    for invalid in mutations:
+        _seal(invalid)
+        result = _validate(invalid).to_dict()
+        assert result["structural_status"] == "INVALID"
+        assert result["disposition"] == "NO_GO"
+
+
+def test_authority_scope_and_execution_principals_bind_exactly_or_use_delegation() -> None:
+    mutations = []
+    package = _valid_package()
+    _row_by_id(package, "R01")["owner"]["scope"]["account_id"] = "other-account"
+    mutations.append((package, "AUTHORIZATION_SCOPE_MISMATCH"))
+
+    package = _valid_package()
+    _row_by_id(package, "R01")["operator"]["scope"]["tenant_id"] = "other-tenant"
+    mutations.append((package, "AUTHORIZATION_SCOPE_MISMATCH"))
+
+    package = _valid_package()
+    _row_by_id(package, "R01")["independent_reviewer"]["scope"]["resource_ids"] = []
+    mutations.append((package, "AUTHORIZATION_SCOPE_MISMATCH"))
+
+    package = _valid_package()
+    _row_by_id(package, "R01")["procedure"]["principal"] = "unapproved-principal"
+    mutations.append((package, "PROCEDURE_PRINCIPAL_UNAUTHORIZED"))
+
+    package = _valid_package()
+    transition = _row_by_id(package, "R08")["transition"]
+    transition.update(
+        {
+            "mode": "PLANNED_TRANSITION",
+            "change_ticket": "CHG-PRINCIPAL-SYNTHETIC",
+            "target_scope": "route:synthetic",
+            "expected_pre_version": "route-v1",
+            "expected_post_version": "route-v2",
+            "observed_pre_version": "route-v1",
+            "observed_post_version": "route-v2",
+            "actor": "unapproved-principal",
+            "command_receipt": _ref("transition-command"),
+            "mutation_ids": ["mutation-principal-synthetic"],
+        }
+    )
+    transition["rollback"].update(
+        {
+            "status": "VERIFIED",
+            "action_receipt": _ref("transition-rollback"),
+            "post_state_sha256": "6" * 64,
+        }
+    )
+    mutations.append((package, "TRANSITION_ACTOR_UNAUTHORIZED"))
+
+    package = _valid_package()
+    row = _row_by_id(package, "R01")
+    row["procedure"]["principal"] = "delegated-principal"
+    row["procedure"]["delegation"] = {
+        "principal_id": "delegated-principal",
+        "authorized_by": "operator-01",
+        "scope": _authorization_scope(),
+        "evidence_ref": _ref("exact-scope-delegation"),
+    }
+    _seal(package)
+    delegated = _validate(package).to_dict()
+    assert "PROCEDURE_PRINCIPAL_UNAUTHORIZED" not in delegated["rows"]["R01"]["blockers"]
+
+    for invalid, expected_code in mutations:
+        _seal(invalid)
+        result = _validate(invalid).to_dict()
+        assert result["disposition"] == "NO_GO"
+        assert expected_code in result["rows"]["R01" if expected_code != "TRANSITION_ACTOR_UNAUTHORIZED" else "R08"]["blockers"]
+
+
+def test_planned_transition_final_state_and_version_match_freshness_readback() -> None:
+    for mismatch in ("state", "version"):
+        package = _valid_package()
+        row = _row_by_id(package, "R08")
+        transition = row["transition"]
+        transition.update(
+            {
+                "mode": "PLANNED_TRANSITION",
+                "change_ticket": "CHG-FRESHNESS-SYNTHETIC",
+                "target_scope": "route:synthetic",
+                "expected_pre_version": "route-v1",
+                "expected_post_version": "route-v2",
+                "observed_pre_version": "route-v1",
+                "observed_post_version": "route-v2",
+                "actor": "operator-01",
+                "command_receipt": _ref("freshness-transition-command"),
+                "pre_state_sha256": "5" * 64,
+                "post_state_sha256": "6" * 64,
+                "mutation_ids": ["freshness-transition-001"],
+                "final_reviewed_version": "route-v2",
+            }
+        )
+        transition["rollback"].update(
+            {
+                "status": "VERIFIED",
+                "action_receipt": _ref("freshness-transition-rollback"),
+                "post_state_sha256": "6" * 64,
+            }
+        )
+        row["freshness"]["final_reviewed_state_sha256"] = "6" * 64
+        row["freshness"]["final_reviewed_version"] = "route-v3" if mismatch == "version" else "route-v2"
+        if mismatch == "state":
+            row["freshness"]["final_reviewed_state_sha256"] = "7" * 64
+        _seal(package)
+        result = _validate(package).to_dict()
+        assert result["disposition"] == "NO_GO"
+        assert "PLANNED_TRANSITION_FRESHNESS_MISMATCH" in result["rows"]["R08"]["blockers"]
+
+
+def test_no_mutation_requires_empty_resolved_liabilities() -> None:
+    package = _valid_package()
+    row = _row_by_id(package, "R01")
+    row["transition"]["rollback"]["unresolved_liabilities"] = ["pending-side-effect-check"]
+    _seal(package)
+    result = _validate(package).to_dict()
+    assert result["disposition"] == "NO_GO"
+    assert "ROLLBACK_LIABILITY_UNRESOLVED" in result["rows"]["R01"]["blockers"]
+
+
+def test_lineage_requires_explicit_root_or_predecessor_invalidation_history() -> None:
+    package = _valid_package()
+    package.pop("lineage")
+    _seal(package)
+    result = _validate(package).to_dict()
+    assert result["structural_status"] == "INVALID"
+
+    package = _valid_package()
+    package["lineage"] = {
+        "kind": "SUCCESSOR",
+        "predecessor_run_id": "run-synthetic-2026-10-27-001",
+        "predecessor_package_sha256": "a" * 64,
+    }
+    _seal(package)
+    result = _validate(package).to_dict()
+    assert result["structural_status"] == "INVALID"
+    assert "LINEAGE_PREDECESSOR_INVALID" in _blocker_codes(_validate(package))
+
+
+def test_all_evidence_references_bind_to_run_and_exact_candidate_scope() -> None:
+    mutations = []
+    package = _valid_package()
+    _row_by_id(package, "R01")["raw_result"]["binding"]["candidate_commit"] = "f" * 40
+    mutations.append(package)
+
+    package = _valid_package()
+    _row_by_id(package, "R08")["transition"]["rollback"]["post_state"]["binding"]["deployment_id"] = "other-deployment"
+    mutations.append(package)
+
+    package = _valid_package()
+    _row_by_id(package, "R34")["observability"]["events"][0]["binding"]["environment_id"] = "other-environment"
+    mutations.append(package)
+
+    package = _valid_package()
+    _row_by_id(package, "R03")["dependency_evidence"][0]["evidence_ref"]["binding"]["run_id"] = "other-run"
+    mutations.append(package)
+
+    package = _valid_package()
+    package["manifest"]["route_manifest"]["inventory"][0]["evidence_ref"]["binding"]["resource_ids"] = ["other-resource"]
+    mutations.append(package)
+
+    for invalid in mutations:
+        _seal(invalid)
+        result = _validate(invalid).to_dict()
+        assert result["structural_status"] == "INVALID"
+        assert result["disposition"] == "NO_GO"
+        assert "EVIDENCE_BINDING_MISMATCH" in _blocker_codes(_validate(invalid))
+
+
+def test_primary_and_independent_readback_evidence_are_distinct() -> None:
+    package = _valid_package()
+    row = _row_by_id(package, "R01")
+    row["readback"] = copy.deepcopy(row["raw_result"])
+    _seal(package)
+    result = _validate(package).to_dict()
+    assert "EVIDENCE_INDEPENDENCE_REQUIRED" in result["rows"]["R01"]["blockers"]
+
+    package = _valid_package()
+    row = _row_by_id(package, "R23F")
+    row["negative_control"] = {
+        "required": True,
+        "expected_outcome": "DENIED",
+        "observed_outcome": "DENIED",
+        "raw_denial": _ref("same-denial-and-readback"),
+        "independent_effect_readback": _ref("same-denial-and-readback"),
+        "observed_call_count": 0,
+        "observed_effect_count": 0,
+    }
+    _seal(package)
+    result = _validate(package).to_dict()
+    assert "EVIDENCE_INDEPENDENCE_REQUIRED" in result["rows"]["R23F"]["blockers"]
+
+
+def test_secret_scan_covers_normalized_package_and_uri_components_without_echo(tmp_path) -> None:
+    mutations = []
+    for uri in (
+        "https://user:password-value@evidence.example/object",
+        "https://evidence.example/object?access_token=synthetic-value",
+        "https://evidence.example/object#private_key=synthetic-value",
+    ):
+        package = _valid_package()
+        package["manifest"]["candidate"]["signed_build_provenance"]["uri"] = uri
+        mutations.append((package, "synthetic-value" if "synthetic-value" in uri else "password-value"))
+
+    package = _valid_package()
+    package["final_audit"]["private_key"] = "sensitive-key-name"
+    mutations.append((package, "sensitive-key-name"))
+
+    package = _valid_package()
+    package["lineage"]["credential_value"] = "sensitive-lineage-value"
+    mutations.append((package, "sensitive-lineage-value"))
+
+    package = _valid_package()
+    package["manifest"]["effect_state"]["no_effect_sink"]["aws_secret_access_key"] = "sensitive-aws-key-value"
+    mutations.append((package, "sensitive-aws-key-value"))
+
+    package = _valid_package()
+    package["invalidation_records"] = [
+        {
+            "invalidation_id": "secret-invalidation",
+            "sequence": 1,
+            "source_run_id": "prior-run",
+            "source_package_sha256": "a" * 64,
+            "new_run_id": package["run_id"],
+            "scope": "ROW",
+            "source_row_id": "R01",
+            "affected_row_ids": ["R01"],
+            "reason": "Bearer synthetic-secret-token-value",
+            "invalidated_at": CURRENT_TIME,
+        }
+    ]
+    mutations.append((package, "synthetic-secret-token-value"))
+
+    package = _valid_package()
+    package["artifact_digest_index"][0]["uri"] = "https://evidence.example/index#token=synthetic-index-value"
+    mutations.append((package, "synthetic-index-value"))
+
+    for package, secret in mutations:
+        result = _validate(package).to_dict()
+        rendered = json.dumps(result, sort_keys=True)
+        assert result["structural_status"] == "INVALID"
+        assert "SECRET_FOUND_IN_EVIDENCE" in _blocker_codes(_validate(package))
+        assert secret not in rendered
+
+    package = _valid_package()
+    secret = "cli-secret-marker-value-123456789"
+    _row_by_id(package, "R01")["status"] = f"Bearer {secret}"
+    _seal(package)
+    package_path = tmp_path / "secret-package.json"
+    package_path.write_text(json.dumps(package), encoding="utf-8")
+    completed = subprocess.run(
+        [
+            sys.executable,
+            str(ROOT / "scripts/check-p1-external-acceptance.py"),
+            "--package",
+            str(package_path),
+            "--schema",
+            str(ROOT / "docs/v4/p1-rg0-rg1-external-acceptance.schema.json"),
+        ],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert completed.returncode != 0
+    assert "SECRET_FOUND_IN_EVIDENCE" in completed.stdout
+    assert secret not in completed.stdout
+
+
+def test_final_auditor_differs_from_every_row_authority() -> None:
+    for role in ("owner", "operator", "independent_reviewer"):
+        package = _valid_package()
+        row = _row_by_id(package, "R01")
+        package["final_audit"]["auditor"]["person_id"] = row[role]["person_id"]
+        _seal(package)
+        result = _validate(package).to_dict()
+        assert result["disposition"] == "NO_GO"
+        assert "FINAL_AUDITOR_NOT_INDEPENDENT" in _blocker_codes(_validate(package))
+
+
+def test_not_run_and_held_rows_need_no_dummy_execution_evidence_but_pass_fail_stay_strict() -> None:
+    execution_fields = (
+        "dependencies",
+        "dependency_evidence",
+        "procedure",
+        "raw_result",
+        "readback",
+        "normalized_checks",
+        "freshness",
+        "transition",
+        "negative_control",
+        "credential_state",
+        "observability",
+        "operator_declaration",
+        "reviewer_decision",
+    )
+    for status in ("NOT RUN", "HELD"):
+        package = _valid_package()
+        row = _row_by_id(package, "R01")
+        row["status"] = status
+        row["reason"] = f"{status.lower()} pending an external prerequisite"
+        row["missing_prerequisites"] = ["approved external environment access"]
+        for field in execution_fields:
+            row.pop(field, None)
+        _seal(package)
+        result = _validate(package).to_dict()
+        assert result["structural_status"] == "VALID"
+        assert result["disposition"] == "NO_GO"
+        assert result["rows"]["R01"]["effective_status"] == status
+
+    for status in ("PASS", "FAIL"):
+        package = _valid_package()
+        row = _row_by_id(package, "R01")
+        row["status"] = status
+        row.pop("raw_result")
+        row.pop("readback")
+        row.pop("transition")
+        _seal(package)
+        result = _validate(package).to_dict()
+        assert result["structural_status"] == "INVALID"
+        assert result["disposition"] == "NO_GO"
+
+    package = _valid_package()
+    row = _row_by_id(package, "R01")
+    row["status"] = "NOT RUN"
+    row["reason"] = "Missing approval"
+    row.pop("missing_prerequisites", None)
+    _seal(package)
+    assert _validate(package).to_dict()["structural_status"] == "INVALID"

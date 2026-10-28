@@ -7,7 +7,7 @@ from typing import Any
 from ._canonical import _evidence_ref_error, _is_sha256, _iter_evidence_refs, _parse_datetime
 from ._contracts import ROW_GATES, ROW_IDS, _ValidationState
 from ._reconciliation import _transitive_dependents
-from ._row_checks import _validate_person
+from ._row_checks import _authorization_scope_from_manifest, _validate_person
 
 
 def _validate_invalidations(
@@ -19,8 +19,47 @@ def _validate_invalidations(
     if not isinstance(records, list):
         state.add_global("INVALIDATION_LOG_INVALID", "Invalidation history must be an array.", structural=True)
         return
+    lineage = payload.get("lineage")
+    if not isinstance(lineage, Mapping):
+        lineage = {}
+        state.add_global(
+            "LINEAGE_DECLARATION_INVALID",
+            "The package must explicitly declare a root or a predecessor-linked successor.",
+            structural=True,
+        )
+    lineage_kind = lineage.get("kind")
+    predecessor_run_id = lineage.get("predecessor_run_id")
+    predecessor_digest = lineage.get("predecessor_package_sha256")
+    if lineage_kind == "ROOT":
+        if records:
+            state.add_global(
+                "LINEAGE_DECLARATION_INVALID",
+                "A lineage root cannot silently carry prior-run invalidation history.",
+                structural=True,
+            )
+    elif lineage_kind == "SUCCESSOR":
+        if (
+            not isinstance(predecessor_run_id, str)
+            or not predecessor_run_id
+            or predecessor_run_id == payload.get("run_id")
+            or not _is_sha256(predecessor_digest)
+            or not records
+            or predecessor_digest == payload.get("package_digest")
+        ):
+            state.add_global(
+                "LINEAGE_PREDECESSOR_INVALID",
+                "A successor must identify a distinct immutable predecessor and carry append-only invalidations.",
+                structural=True,
+            )
+    else:
+        state.add_global(
+            "LINEAGE_DECLARATION_INVALID",
+            "Lineage kind must be ROOT or SUCCESSOR.",
+            structural=True,
+        )
     ids: set[str] = set()
     sequences: list[int] = []
+    predecessor_link_found = False
     row_states = state.row_states
     for record in records:
         if not isinstance(record, Mapping):
@@ -55,6 +94,12 @@ def _validate_invalidations(
                 "Invalidation must preserve a prior immutable run digest, name the new run, and use UTC time.",
                 structural=True,
             )
+        if (
+            lineage_kind == "SUCCESSOR"
+            and record.get("source_run_id") == predecessor_run_id
+            and record.get("source_package_sha256") == predecessor_digest
+        ):
+            predecessor_link_found = True
         scope = record.get("scope")
         source_row = record.get("source_row_id")
         if scope == "COMMON":
@@ -72,16 +117,22 @@ def _validate_invalidations(
             )
         for row_id in actual_affected & set(row_states):
             row_states[row_id].blockers.add("EVIDENCE_INVALIDATED")
-    if sequences and sequences != sorted(sequences):
+    if sequences and sequences != list(range(1, len(sequences) + 1)):
         state.add_global(
             "INVALIDATION_APPEND_ONLY_VIOLATION",
-            "Invalidation sequence numbers must be strictly append-only.",
+            "Invalidation sequence numbers must be contiguous and strictly append-only.",
             structural=True,
         )
     if len(sequences) != len(set(sequences)):
         state.add_global(
             "INVALIDATION_APPEND_ONLY_VIOLATION",
             "Invalidation sequence numbers must be unique.",
+            structural=True,
+        )
+    if lineage_kind == "SUCCESSOR" and not predecessor_link_found:
+        state.add_global(
+            "LINEAGE_PREDECESSOR_INVALID",
+            "Successor invalidation history must bind the declared predecessor package digest.",
             structural=True,
         )
 
@@ -100,24 +151,37 @@ def _validate_final_audit(
     rechecked_ids = [item.get("row_id") for item in rechecks if isinstance(item, Mapping)]
     audit_time = _parse_datetime(audit.get("audited_at"))
     auditor = audit.get("auditor")
+    manifest = payload.get("manifest", {})
+    expected_scope = (
+        _authorization_scope_from_manifest(manifest)
+        if isinstance(manifest, Mapping)
+        else None
+    )
     if (
         audit_time is None
         or audit_time > now
-        or _validate_person(auditor, now, expected_role="independent-final-auditor")
+        or _validate_person(
+            auditor,
+            now,
+            expected_role="independent-final-auditor",
+            expected_scope=expected_scope,
+        )
     ):
         state.add_global(
             "FINAL_AUDITOR_AUTHORITY_INVALID",
             "The separate final audit requires a named, current independent auditor.",
         )
-    operators = {
-        row.get("operator", {}).get("person_id")
+    row_authorities = {
+        person.get("person_id")
         for row in row_by_id.values()
-        if isinstance(row.get("operator"), Mapping)
+        for role in ("owner", "operator", "independent_reviewer")
+        for person in (row.get(role),)
+        if isinstance(person, Mapping)
     }
-    if isinstance(auditor, Mapping) and auditor.get("person_id") in operators:
+    if isinstance(auditor, Mapping) and auditor.get("person_id") in row_authorities:
         state.add_global(
             "FINAL_AUDITOR_NOT_INDEPENDENT",
-            "The final auditor cannot be an evidence operator for this package.",
+            "The final auditor must differ from every row owner, operator, and reviewer.",
         )
     if (
         audit.get("record_type") != "SEPARATE_FINAL_AUDIT"
@@ -152,9 +216,14 @@ def _validate_final_audit(
         rechecks_complete
         and audit_time is not None
         and audit_time <= now
-        and not _validate_person(auditor, now, expected_role="independent-final-auditor")
+        and not _validate_person(
+            auditor,
+            now,
+            expected_role="independent-final-auditor",
+            expected_scope=expected_scope,
+        )
         and isinstance(auditor, Mapping)
-        and auditor.get("person_id") not in operators
+        and auditor.get("person_id") not in row_authorities
         and audit.get("status") == "PASS"
         and audit.get("disposition") == "READY_FOR_FINAL_AUDIT"
     )

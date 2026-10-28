@@ -16,7 +16,8 @@
     "package_digest",
     "application_migrations",
     "later_phase_claims",
-    "gate_mutation"
+    "gate_mutation",
+    "lineage"
   ],
   "properties": {
     "schema_version": {
@@ -71,6 +72,9 @@
     },
     "gate_mutation": {
       "const": false
+    },
+    "lineage": {
+      "$ref": "#/$defs/lineage"
     }
   },
   "$defs": {
@@ -96,7 +100,10 @@
       "required": [
         "uri",
         "sha256",
-        "retention_mode"
+        "retention_mode",
+        "evidence_id",
+        "binding",
+        "provenance"
       ],
       "properties": {
         "uri": {
@@ -116,6 +123,15 @@
         "object_version": {
           "type": "string",
           "minLength": 1
+        },
+        "evidence_id": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "binding": {
+          "$ref": "#/$defs/evidenceBinding"
+        },
+        "provenance": {
+          "$ref": "#/$defs/evidenceProvenance"
         }
       },
       "allOf": [
@@ -194,11 +210,7 @@
           "type": "boolean"
         },
         "scope": {
-          "type": "array",
-          "minItems": 1,
-          "items": {
-            "$ref": "#/$defs/nonEmpty"
-          }
+          "$ref": "#/$defs/scopeBinding"
         },
         "authorization_ref": {
           "$ref": "#/$defs/uriRef"
@@ -354,6 +366,7 @@
                 "additionalProperties": false,
                 "required": [
                   "service_id",
+                  "component",
                   "artifact_id"
                 ],
                 "properties": {
@@ -361,6 +374,9 @@
                     "$ref": "#/$defs/nonEmpty"
                   },
                   "artifact_id": {
+                    "$ref": "#/$defs/nonEmpty"
+                  },
+                  "component": {
                     "$ref": "#/$defs/nonEmpty"
                   }
                 }
@@ -374,6 +390,7 @@
                 "additionalProperties": false,
                 "required": [
                   "worker_id",
+                  "component",
                   "artifact_id",
                   "route_ids"
                 ],
@@ -390,6 +407,9 @@
                       "type": "string",
                       "format": "uuid"
                     }
+                  },
+                  "component": {
+                    "$ref": "#/$defs/nonEmpty"
                   }
                 }
               }
@@ -558,7 +578,8 @@
           "additionalProperties": false,
           "required": [
             "authenticated_manifest_sha256",
-            "evidence_ref"
+            "evidence_ref",
+            "inventory"
           ],
           "properties": {
             "authenticated_manifest_sha256": {
@@ -566,6 +587,44 @@
             },
             "evidence_ref": {
               "$ref": "#/$defs/uriRef"
+            },
+            "inventory": {
+              "type": "array",
+              "minItems": 22,
+              "maxItems": 22,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "route_id",
+                  "route_tuple_sha256",
+                  "worker_id",
+                  "authenticated_route_manifest_sha256",
+                  "evidence_ref",
+                  "binding"
+                ],
+                "properties": {
+                  "route_id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "route_tuple_sha256": {
+                    "$ref": "#/$defs/sha256"
+                  },
+                  "worker_id": {
+                    "$ref": "#/$defs/nonEmpty"
+                  },
+                  "authenticated_route_manifest_sha256": {
+                    "$ref": "#/$defs/sha256"
+                  },
+                  "evidence_ref": {
+                    "$ref": "#/$defs/uriRef"
+                  },
+                  "binding": {
+                    "$ref": "#/$defs/evidenceBinding"
+                  }
+                }
+              }
             }
           }
         },
@@ -621,7 +680,13 @@
         "deployment_id",
         "environment_id",
         "scope_match",
-        "evidence_ref"
+        "evidence_ref",
+        "run_id",
+        "candidate_tree",
+        "artifact_digests",
+        "account_id",
+        "resource_ids",
+        "binding"
       ],
       "properties": {
         "dependency_id": {
@@ -652,6 +717,34 @@
         },
         "evidence_ref": {
           "$ref": "#/$defs/uriRef"
+        },
+        "run_id": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "account_id": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "candidate_tree": {
+          "$ref": "#/$defs/sourceSha"
+        },
+        "artifact_digests": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/sha256"
+          }
+        },
+        "resource_ids": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/nonEmpty"
+          }
+        },
+        "binding": {
+          "$ref": "#/$defs/evidenceBinding"
         }
       }
     },
@@ -909,6 +1002,9 @@
           "items": {
             "$ref": "#/$defs/nonEmpty"
           }
+        },
+        "delegation": {
+          "$ref": "#/$defs/delegation"
         }
       }
     },
@@ -951,7 +1047,9 @@
         "policy",
         "state",
         "source_state_sha256",
-        "final_reviewed_state_sha256"
+        "final_reviewed_state_sha256",
+        "final_reviewed_version",
+        "binding"
       ],
       "properties": {
         "observation_class": {
@@ -1006,6 +1104,12 @@
         },
         "final_reviewed_state_sha256": {
           "$ref": "#/$defs/sha256"
+        },
+        "final_reviewed_version": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "binding": {
+          "$ref": "#/$defs/evidenceBinding"
         }
       }
     },
@@ -1155,6 +1259,9 @@
         "final_reviewed_version": {
           "type": "string",
           "minLength": 1
+        },
+        "delegation": {
+          "$ref": "#/$defs/delegation"
         }
       }
     },
@@ -1283,7 +1390,12 @@
             "schedule_ids",
             "operation_ids",
             "external_receipt_ids",
-            "timestamps_utc"
+            "timestamps_utc",
+            "candidate_tree",
+            "artifact_digests",
+            "deployment_id",
+            "resource_ids",
+            "binding"
           ],
           "properties": {
             "run_id": {
@@ -1344,6 +1456,31 @@
               "items": {
                 "$ref": "#/$defs/timestamp"
               }
+            },
+            "candidate_tree": {
+              "$ref": "#/$defs/sourceSha"
+            },
+            "artifact_digests": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "$ref": "#/$defs/sha256"
+              }
+            },
+            "deployment_id": {
+              "$ref": "#/$defs/nonEmpty"
+            },
+            "resource_ids": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "$ref": "#/$defs/nonEmpty"
+              }
+            },
+            "binding": {
+              "$ref": "#/$defs/evidenceBinding"
             }
           }
         },
@@ -1407,26 +1544,13 @@
         "run_id",
         "row_id",
         "gate",
-        "dependencies",
-        "dependency_evidence",
         "evidence_class",
         "scope",
         "owner",
         "operator",
         "independent_reviewer",
-        "procedure",
-        "raw_result",
-        "readback",
-        "normalized_checks",
         "status",
         "scope_match",
-        "freshness",
-        "transition",
-        "negative_control",
-        "credential_state",
-        "observability",
-        "operator_declaration",
-        "reviewer_decision",
         "reason",
         "record_sha256"
       ],
@@ -1604,8 +1728,70 @@
         },
         "record_sha256": {
           "$ref": "#/$defs/sha256"
+        },
+        "missing_prerequisites": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/nonEmpty"
+          }
         }
-      }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "enum": [
+                  "PASS",
+                  "FAIL"
+                ]
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "required": [
+              "dependencies",
+              "dependency_evidence",
+              "procedure",
+              "raw_result",
+              "readback",
+              "normalized_checks",
+              "freshness",
+              "transition",
+              "negative_control",
+              "credential_state",
+              "observability",
+              "operator_declaration",
+              "reviewer_decision"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "enum": [
+                  "NOT RUN",
+                  "HELD"
+                ]
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "required": [
+              "missing_prerequisites"
+            ]
+          }
+        }
+      ]
     },
     "invalidation": {
       "type": "object",
@@ -1620,7 +1806,8 @@
         "source_row_id",
         "affected_row_ids",
         "reason",
-        "invalidated_at"
+        "invalidated_at",
+        "binding"
       ],
       "properties": {
         "invalidation_id": {
@@ -1663,6 +1850,9 @@
         },
         "invalidated_at": {
           "$ref": "#/$defs/timestamp"
+        },
+        "binding": {
+          "$ref": "#/$defs/evidenceBinding"
         }
       }
     },
@@ -1810,6 +2000,165 @@
         },
         "record_sha256": {
           "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "scopeBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "environment_id",
+        "account_id",
+        "resource_ids",
+        "tenant_id",
+        "workspace_id"
+      ],
+      "properties": {
+        "environment_id": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "account_id": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "resource_ids": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/nonEmpty"
+          }
+        },
+        "tenant_id": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "workspace_id": {
+          "$ref": "#/$defs/nonEmpty"
+        }
+      }
+    },
+    "delegation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "principal_id",
+        "authorized_by",
+        "scope",
+        "evidence_ref"
+      ],
+      "properties": {
+        "principal_id": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "authorized_by": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "scope": {
+          "$ref": "#/$defs/scopeBinding"
+        },
+        "evidence_ref": {
+          "$ref": "#/$defs/uriRef"
+        }
+      }
+    },
+    "lineage": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind"
+          ],
+          "properties": {
+            "kind": {
+              "const": "ROOT"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "predecessor_run_id",
+            "predecessor_package_sha256"
+          ],
+          "properties": {
+            "kind": {
+              "const": "SUCCESSOR"
+            },
+            "predecessor_run_id": {
+              "$ref": "#/$defs/nonEmpty"
+            },
+            "predecessor_package_sha256": {
+              "$ref": "#/$defs/sha256"
+            }
+          }
+        }
+      ]
+    },
+    "evidenceBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "run_id",
+        "candidate_commit",
+        "candidate_tree",
+        "artifact_digests",
+        "deployment_id",
+        "environment_id",
+        "account_id",
+        "resource_ids"
+      ],
+      "properties": {
+        "run_id": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "candidate_commit": {
+          "$ref": "#/$defs/sourceSha"
+        },
+        "candidate_tree": {
+          "$ref": "#/$defs/sourceSha"
+        },
+        "artifact_digests": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/sha256"
+          }
+        },
+        "deployment_id": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "environment_id": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "account_id": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "resource_ids": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/nonEmpty"
+          }
+        }
+      }
+    },
+    "evidenceProvenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_id",
+        "operator_id"
+      ],
+      "properties": {
+        "source_id": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "operator_id": {
+          "$ref": "#/$defs/nonEmpty"
         }
       }
     }

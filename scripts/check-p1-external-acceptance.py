@@ -16,6 +16,7 @@ from salience.acceptance.p1_external_evidence import (
     validate_acceptance_package,
     validate_payload_against_schema,
 )
+from salience.acceptance._evidence_validation import _contains_secret
 
 
 def _invalid_result(code: str, message: str, *, run_id: object = None) -> dict[str, object]:
@@ -70,6 +71,15 @@ def main(argv: Sequence[str] | None = None) -> int:
         payload = _parse_json_file(args.package, "package")
     except ValueError as exc:
         _emit(_invalid_result("PACKAGE_INPUT_INVALID", str(exc)))
+        return 2
+
+    if _contains_secret(payload):
+        _emit(
+            _invalid_result(
+                "SECRET_FOUND_IN_EVIDENCE",
+                "The normalized acceptance package contains a secret or credential value.",
+            )
+        )
         return 2
 
     schema_errors = validate_payload_against_schema(payload, args.schema)

@@ -17,6 +17,18 @@ from ._contracts import (
 )
 
 
+P0_EXTERNAL_CHECKS = frozenset(
+    {
+        "independent safety review",
+        "production identity and ingress",
+        "production storage and restore",
+        "production collector and alert delivery",
+        "remote repository gate enforcement",
+    }
+)
+LEDGER_STATUSES = frozenset({"PASS", "FAIL", "NOT RUN", "HELD"})
+
+
 def _compute_dependency_map(matrix: Any) -> tuple[dict[str, tuple[str, ...]], dict[str, Mapping[str, Any]], list[str]]:
     if not isinstance(matrix, Mapping):
         return dict(FALLBACK_DEPENDENCIES), {}, ["qualification matrix is not an object"]
@@ -24,13 +36,17 @@ def _compute_dependency_map(matrix: Any) -> tuple[dict[str, tuple[str, ...]], di
     if not isinstance(requirements, list):
         return dict(FALLBACK_DEPENDENCIES), {}, ["qualification matrix requirements are missing"]
     indexed: dict[str, Mapping[str, Any]] = {}
+    duplicates: set[str] = set()
     for requirement in requirements:
         if not isinstance(requirement, Mapping):
             continue
         row_id = requirement.get("id")
         if isinstance(row_id, str):
+            if row_id in indexed:
+                duplicates.add(row_id)
             indexed[row_id] = requirement
     missing = [row_id for row_id in RG1_ROW_IDS if row_id not in indexed]
+    unexpected = sorted(set(indexed) - set(RG1_ROW_IDS))
     dependencies: dict[str, tuple[str, ...]] = {}
     for row_id in RG1_ROW_IDS:
         requirement = indexed.get(row_id)
@@ -40,7 +56,10 @@ def _compute_dependency_map(matrix: Any) -> tuple[dict[str, tuple[str, ...]], di
             continue
         values = tuple(part.strip() for part in raw.split(",") if part.strip())
         dependencies[row_id] = values
-    return dependencies, indexed, [f"missing matrix row {row_id}" for row_id in missing]
+    errors = [f"missing matrix row {row_id}" for row_id in missing]
+    errors.extend(f"duplicate matrix row ID {row_id}" for row_id in sorted(duplicates))
+    errors.extend(f"unexpected matrix row ID {row_id}" for row_id in unexpected)
+    return dependencies, indexed, errors
 
 
 def _read_ledgers(
@@ -73,12 +92,15 @@ def _read_ledgers(
                 status = check.get("status")
                 check_statuses.append(status if isinstance(status, str) else "HELD")
         if (
-            len(p0_checks) != 5
-            or len(check_statuses) != 5
-            or len(check_names) != 5
-            or len(set(check_names)) != 5
+            len(p0_checks) != len(P0_EXTERNAL_CHECKS)
+            or len(check_statuses) != len(P0_EXTERNAL_CHECKS)
+            or len(check_names) != len(P0_EXTERNAL_CHECKS)
+            or len(set(check_names)) != len(P0_EXTERNAL_CHECKS)
+            or set(check_names) != P0_EXTERNAL_CHECKS
         ):
-            errors.append("p0 release ledger must contain exactly five external checks")
+            errors.append("p0 release ledger must contain the exact five external check identities once")
+        if any(status not in LEDGER_STATUSES for status in check_statuses):
+            errors.append("p0 external check status is invalid")
     else:
         errors.append("p0 external checks are missing or malformed")
 
@@ -105,6 +127,15 @@ def _read_ledgers(
             if row_id in matrix_rows
         },
     }
+    if p0_status["release_gate"] != "RG0":
+        errors.append("p0 release gate must be RG0")
+    if any(
+        p0_status.get(key) not in LEDGER_STATUSES
+        for key in ("release_status", "RG0", "RG1")
+    ):
+        errors.append("p0 RG0/RG1 release summary status is invalid")
+    if any(matrix_status.get(key) not in LEDGER_STATUSES for key in ("RG0", "RG1")):
+        errors.append("P1 RG0/RG1 qualification summary status is invalid")
     return p0_status, matrix_status, errors
 
 

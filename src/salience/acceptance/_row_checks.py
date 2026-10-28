@@ -25,6 +25,7 @@ def _validate_person(
     now: datetime,
     *,
     expected_role: str,
+    expected_scope: Mapping[str, Any] | None = None,
 ) -> list[str]:
     if not isinstance(person, Mapping):
         return ["PERSON_AUTHORIZATION_MISSING"]
@@ -37,6 +38,8 @@ def _validate_person(
         blockers.append("IDENTITY_NOT_VERIFIED")
     if not person.get("scope"):
         blockers.append("AUTHORIZATION_SCOPE_MISSING")
+    elif expected_scope is not None and _normalized_authorization_scope(person.get("scope")) != _normalized_authorization_scope(expected_scope):
+        blockers.append("AUTHORIZATION_SCOPE_MISMATCH")
     if _evidence_ref_error(person.get("authorization_ref")):
         blockers.append("AUTHORIZATION_REFERENCE_INVALID")
     valid_from = _parse_datetime(person.get("valid_from"))
@@ -48,19 +51,63 @@ def _validate_person(
     return blockers
 
 
-def _validate_people(row: Mapping[str, Any], now: datetime) -> list[str]:
+def _authorization_scope_from_manifest(manifest: Mapping[str, Any]) -> dict[str, Any]:
+    environment = manifest.get("environment", {})
+    account = environment.get("account_identity", {})
+    return {
+        "environment_id": environment.get("environment_id"),
+        "account_id": account.get("account_id"),
+        "resource_ids": environment.get("resource_ids", []),
+        "tenant_id": environment.get("tenant_id"),
+        "workspace_id": environment.get("workspace_id"),
+    }
+
+
+def _normalized_authorization_scope(scope: Any) -> Any:
+    if not isinstance(scope, Mapping):
+        return scope
+    normalized = dict(scope)
+    resources = normalized.get("resource_ids")
+    if isinstance(resources, list):
+        normalized["resource_ids"] = sorted(resources)
+    return normalized
+
+
+def _delegation_authorizes(
+    principal: Any,
+    operator: Any,
+    delegation: Any,
+    expected_scope: Mapping[str, Any],
+) -> bool:
+    operator_id = operator.get("person_id") if isinstance(operator, Mapping) else None
+    if principal == operator_id and isinstance(operator_id, str):
+        return True
+    return (
+        isinstance(principal, str)
+        and isinstance(operator_id, str)
+        and isinstance(delegation, Mapping)
+        and delegation.get("principal_id") == principal
+        and delegation.get("authorized_by") == operator_id
+        and _normalized_authorization_scope(delegation.get("scope"))
+        == _normalized_authorization_scope(expected_scope)
+        and _evidence_ref_error(delegation.get("evidence_ref")) is None
+    )
+
+
+def _validate_people(row: Mapping[str, Any], now: datetime, manifest: Mapping[str, Any]) -> list[str]:
     blockers: list[str] = []
     owner = row.get("owner")
     operator = row.get("operator")
     reviewer = row.get("independent_reviewer")
+    expected_scope = _authorization_scope_from_manifest(manifest)
     blockers.extend(
-        _validate_person(owner, now, expected_role="accountable-row-owner")
+        _validate_person(owner, now, expected_role="accountable-row-owner", expected_scope=expected_scope)
     )
     blockers.extend(
-        _validate_person(operator, now, expected_role="authorized-operator")
+        _validate_person(operator, now, expected_role="authorized-operator", expected_scope=expected_scope)
     )
     blockers.extend(
-        _validate_person(reviewer, now, expected_role="independent-reviewer")
+        _validate_person(reviewer, now, expected_role="independent-reviewer", expected_scope=expected_scope)
     )
     if isinstance(operator, Mapping) and isinstance(reviewer, Mapping):
         if operator.get("person_id") == reviewer.get("person_id"):
@@ -128,7 +175,7 @@ def _manifest_row_scope_errors(row: Mapping[str, Any], manifest: Mapping[str, An
     return errors
 
 
-def _validate_procedure(row: Mapping[str, Any]) -> list[str]:
+def _validate_procedure(row: Mapping[str, Any], manifest: Mapping[str, Any]) -> list[str]:
     procedure = row.get("procedure", {})
     blockers: list[str] = []
     if _evidence_ref_error(procedure.get("runbook")):
@@ -157,6 +204,13 @@ def _validate_procedure(row: Mapping[str, Any]) -> list[str]:
         blockers.append("PROCEDURE_KIND_INVALID")
     if not procedure.get("principal") or not procedure.get("trace_ids"):
         blockers.append("PROCEDURE_CORRELATION_MISSING")
+    if not _delegation_authorizes(
+        procedure.get("principal"),
+        row.get("operator"),
+        procedure.get("delegation"),
+        _authorization_scope_from_manifest(manifest),
+    ):
+        blockers.append("PROCEDURE_PRINCIPAL_UNAUTHORIZED")
     started_at = _parse_datetime(procedure.get("started_at"))
     completed_at = _parse_datetime(procedure.get("completed_at"))
     if started_at is None or completed_at is None or completed_at < started_at:
@@ -209,7 +263,9 @@ def _validate_freshness(
     return "CURRENT", sorted(set(blockers))
 
 
-def _validate_transition(row: Mapping[str, Any]) -> tuple[list[str], str | None]:
+def _validate_transition(
+    row: Mapping[str, Any], manifest: Mapping[str, Any]
+) -> tuple[list[str], str | None]:
     transition = row.get("transition", {})
     mode = transition.get("mode")
     rollback = transition.get("rollback", {})
@@ -229,6 +285,8 @@ def _validate_transition(row: Mapping[str, Any]) -> tuple[list[str], str | None]
             blockers.append("NO_MUTATION_READBACK_MISSING")
         if rollback.get("status") != "VERIFIED_NO_MUTATION":
             blockers.append("ROLLBACK_UNVERIFIED")
+        if rollback.get("unresolved_liabilities"):
+            blockers.append("ROLLBACK_LIABILITY_UNRESOLVED")
         if rollback.get("post_state_sha256") != transition.get("post_state_sha256"):
             blockers.append("ROLLBACK_POST_STATE_MISMATCH")
         if _evidence_ref_error(rollback.get("procedure")) or _evidence_ref_error(
@@ -248,11 +306,25 @@ def _validate_transition(row: Mapping[str, Any]) -> tuple[list[str], str | None]
         )
         if any(not transition.get(field) for field in required):
             blockers.append("PLANNED_TRANSITION_UNPINNED")
+        if not _delegation_authorizes(
+            transition.get("actor"),
+            row.get("operator"),
+            transition.get("delegation"),
+            _authorization_scope_from_manifest(manifest),
+        ):
+            blockers.append("TRANSITION_ACTOR_UNAUTHORIZED")
         if (
             transition.get("expected_pre_version") != transition.get("observed_pre_version")
             or transition.get("expected_post_version") != transition.get("observed_post_version")
         ):
             blockers.append("PLANNED_TRANSITION_MISMATCH")
+        freshness = row.get("freshness", {})
+        if (
+            transition.get("post_state_sha256") != freshness.get("final_reviewed_state_sha256")
+            or transition.get("expected_post_version") != freshness.get("final_reviewed_version")
+            or transition.get("final_reviewed_version") != freshness.get("final_reviewed_version")
+        ):
+            blockers.append("PLANNED_TRANSITION_FRESHNESS_MISMATCH")
         if _evidence_ref_error(transition.get("command_receipt")):
             blockers.append("PLANNED_TRANSITION_RECEIPT_MISSING")
         if not transition.get("mutation_ids"):
@@ -341,8 +413,12 @@ def _validate_observability(row: Mapping[str, Any], run_id: str, manifest: Mappi
     expected = {
         "run_id": run_id,
         "candidate_commit": candidate.get("source_commit"),
+        "candidate_tree": candidate.get("source_tree"),
+        "artifact_digests": sorted(manifest.get("candidate_artifact_digests", [])),
+        "deployment_id": manifest.get("deployment", {}).get("deployment_id"),
         "environment_id": environment.get("environment_id"),
         "account_alias": account.get("account_id"),
+        "resource_ids": sorted(environment.get("resource_ids", [])),
         "command_ids": procedure.get("command_ids", []),
         "request_ids": procedure.get("request_ids", []),
         "trace_ids": procedure.get("trace_ids", []),
@@ -415,14 +491,22 @@ def _validate_dependency_records(
     candidate = manifest.get("candidate", {})
     deployment = manifest.get("deployment", {})
     environment = manifest.get("environment", {})
+    account = environment.get("account_identity", {})
     for dependency_id in expected:
         item = evidence_by_id[dependency_id]
         if (
             item.get("status") != "PASS"
             or item.get("scope_match") is not True
+            or item.get("run_id") != run_id
             or item.get("candidate_commit") != candidate.get("source_commit")
+            or item.get("candidate_tree") != candidate.get("source_tree")
+            or sorted(item.get("artifact_digests", []))
+            != sorted(manifest.get("candidate_artifact_digests", []))
             or item.get("deployment_id") != deployment.get("deployment_id")
             or item.get("environment_id") != environment.get("environment_id")
+            or item.get("account_id") != account.get("account_id")
+            or sorted(item.get("resource_ids", []))
+            != sorted(environment.get("resource_ids", []))
             or item.get("evidence_id") != f"{run_id}:{dependency_id}"
             or _evidence_ref_error(item.get("evidence_ref"))
         ):

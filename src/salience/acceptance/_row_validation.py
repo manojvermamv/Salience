@@ -43,6 +43,7 @@ def _validate_row(
         state.add_row(row_id, "STATUS_INVALID", "Row status is not in the allowed enum.")
     if row.get("scope_match") is not True:
         state.add_row(row_id, "SCOPE_MISMATCH", "Row does not declare an exact scope match.")
+    execution_record = row.get("status") in {"PASS", "FAIL"}
     if row.get("status") == "PASS":
         checks = row.get("normalized_checks", [])
         if not checks or any(
@@ -58,27 +59,35 @@ def _validate_row(
 
     for code in _manifest_row_scope_errors(row, manifest):
         state.add_row(row_id, code, f"Row {row_id} is not bound to the exact manifest scope.")
-    for code in _validate_people(row, now):
+    for code in _validate_people(row, now, manifest):
         state.add_row(row_id, code, f"Row {row_id} has missing or invalid human authority.")
-    for code in _validate_procedure(row):
-        state.add_row(row_id, code, f"Row {row_id} procedure/evidence is missing or unpinned.")
-    freshness, freshness_blockers = _validate_freshness(row, now)
-    state.row_states[row_id].freshness = freshness
-    for code in freshness_blockers:
-        state.add_row(row_id, code, f"Row {row_id} freshness is not approved and current.")
-    transition_blockers, failure_status = _validate_transition(row)
-    for code in transition_blockers:
-        state.add_row(row_id, code, f"Row {row_id} transition or rollback evidence is not verified.")
-    if failure_status:
-        state.row_states[row_id].claimed_status = failure_status
-    for code in _validate_negative_control(row, row_id):
-        state.add_row(row_id, code, f"Row {row_id} negative control lacks denial or zero-effect proof.")
-    for code in _validate_credentials(row):
-        state.add_row(row_id, code, f"Row {row_id} restores or reuses a revoked credential.")
-    for code in _validate_observability(row, str(payload.get("run_id", "")), manifest):
-        state.add_row(row_id, code, f"Row {row_id} observability is missing, uncorrelated, or unsafe.")
-    for code in _validate_dependency_records(row, expected_dependencies, str(payload.get("run_id", "")), manifest):
-        state.add_row(row_id, code, f"Row {row_id} dependencies do not match exact current prerequisites.")
+    freshness_record = row.get("freshness")
+    if isinstance(freshness_record, Mapping):
+        freshness, freshness_blockers = _validate_freshness(row, now)
+        state.row_states[row_id].freshness = freshness
+        for code in freshness_blockers:
+            state.add_row(row_id, code, f"Row {row_id} freshness is not approved and current.")
+    else:
+        state.row_states[row_id].freshness = "STALE"
+    if execution_record:
+        for code in _validate_procedure(row, manifest):
+            state.add_row(row_id, code, f"Row {row_id} procedure/evidence is missing or unpinned.")
+        transition_blockers, failure_status = _validate_transition(row, manifest)
+        for code in transition_blockers:
+            state.add_row(row_id, code, f"Row {row_id} transition or rollback evidence is not verified.")
+        if failure_status:
+            state.row_states[row_id].claimed_status = failure_status
+        for code in _validate_negative_control(row, row_id):
+            state.add_row(row_id, code, f"Row {row_id} negative control lacks denial or zero-effect proof.")
+        for code in _validate_credentials(row):
+            state.add_row(row_id, code, f"Row {row_id} restores or reuses a revoked credential.")
+        for code in _validate_observability(row, str(payload.get("run_id", "")), manifest):
+            state.add_row(row_id, code, f"Row {row_id} observability is missing, uncorrelated, or unsafe.")
+        for code in _validate_dependency_records(row, expected_dependencies, str(payload.get("run_id", "")), manifest):
+            state.add_row(row_id, code, f"Row {row_id} dependencies do not match exact current prerequisites.")
+    elif row.get("dependencies") is not None or row.get("dependency_evidence") is not None:
+        for code in _validate_dependency_records(row, expected_dependencies, str(payload.get("run_id", "")), manifest):
+            state.add_row(row_id, code, f"Row {row_id} dependencies do not match exact current prerequisites.")
     for ref in _iter_evidence_refs(row):
         code = _evidence_ref_error(ref)
         if code:
@@ -87,7 +96,7 @@ def _validate_row(
 
     operator_status = row.get("operator_declaration", {}).get("status")
     reviewer_status = row.get("reviewer_decision", {}).get("status")
-    if row.get("status") == "PASS" and (
+    if execution_record and row.get("status") == "PASS" and (
         operator_status != "PASS" or reviewer_status != "PASS"
     ):
         state.add_row(

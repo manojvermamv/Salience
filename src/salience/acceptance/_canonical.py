@@ -148,5 +148,6 @@ def _package_digest_payload(payload: Mapping[str, Any]) -> dict[str, Any]:
             row.get("record_sha256") for row in payload.get("rows", [])
             if isinstance(row, Mapping)
         ],
+        "lineage": payload.get("lineage"),
         "invalidation_records": payload.get("invalidation_records"),
     }

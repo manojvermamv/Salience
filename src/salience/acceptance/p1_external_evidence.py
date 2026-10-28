@@ -43,6 +43,7 @@ from ._contracts import (
     _RowState,
     _ValidationState,
 )
+from ._evidence_validation import _contains_secret, _validate_evidence_bindings
 from ._manifest_validation import _validate_manifest, _validate_record_digests
 from ._reconciliation import (
     _apply_row_holds,
@@ -85,6 +86,36 @@ def _invalid_result(
     )
 
 
+def _secret_result(payload: Any) -> AcceptanceDisposition:
+    rows: dict[str, RowDisposition] = {}
+    if isinstance(payload, Mapping) and isinstance(payload.get("rows"), list):
+        for row in payload["rows"]:
+            if isinstance(row, Mapping) and row.get("row_id") in ROW_GATES:
+                row_id = row["row_id"]
+                rows[row_id] = RowDisposition(
+                    row_id=row_id,
+                    claimed_status="HELD",
+                    local_validation="HELD",
+                    effective_status="HELD",
+                    freshness="STALE",
+                    blockers=("SECRET_FOUND_IN_EVIDENCE",),
+                )
+    return AcceptanceDisposition(
+        run_id=None,
+        structural_status="INVALID",
+        disposition="NO_GO",
+        package_digest=None,
+        rows=rows,
+        blockers=(
+            {
+                "code": "SECRET_FOUND_IN_EVIDENCE",
+                "message": "The normalized acceptance package contains a secret or credential value.",
+            },
+        ),
+        ledger_status={},
+    )
+
+
 def _validate_acceptance_package_impl(
     payload: Mapping[str, object],
     *,
@@ -96,6 +127,8 @@ def _validate_acceptance_package_impl(
             payload,
             [("PACKAGE_NOT_OBJECT", "Acceptance package must be a JSON object.")],
         )
+    if _contains_secret(payload):
+        return _secret_result(payload)
     try:
         schema = _schema_for_default()
     except (OSError, json.JSONDecodeError) as exc:
@@ -181,9 +214,9 @@ def _validate_acceptance_package_impl(
         _load_matrix_safely()
     )
     for error in ledger_errors:
-        state.add_global("LEDGER_READ_FAILED", error)
+        state.add_global("LEDGER_READ_FAILED", error, structural=True)
     for error in dependency_errors:
-        state.add_global("MATRIX_ROW_MISSING", error)
+        state.add_global("MATRIX_ROW_MISSING", error, structural=True)
     _validate_ledgers(payload, p0_status, matrix_status, matrix_rows, state)
 
     for row_id, row in row_by_id.items():
@@ -198,6 +231,7 @@ def _validate_acceptance_package_impl(
         )
 
     _validate_invalidations(payload, dependencies, state)
+    _validate_evidence_bindings(payload, state)
     _validate_evidence_index(payload, state)
 
     p0_rg0_pass = (
