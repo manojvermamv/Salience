@@ -168,3 +168,19 @@ The plan traces all 17 Slice 2 policy/revocation acceptance cases, all 7 routing
 - Task 4 TDD: RED produced four missing-contract failures; GREEN passed all four named routing cases, including the deliberate concurrent claim race, transfer, stale tuple/action/operation/epoch denial, expiry, and outage. No live adapter, credential, provider, or production effect was added.
 - Task 4 minor (deferred to final review): add a direct assertion that authorization against a never-claimed missing slot denies; the current implementation follows the same fail-closed active-lease-none path and review found no blocking defect.
 - Task 4: complete (commits `f87bb15..7bfd53e`, review clean). Reviewer `/root/p1_task4_route_review` returned spec PASS and quality PASS with no Critical/Important findings.
+
+## Task 5 execution and review
+
+- Task 5 BASE: `9d709fb1231278dc8cc54aa04b871508ed1dc029`; implementer `/root/p1_task5_worker_lifecycle` (GPT-6 Luna Max); report `task-5-report.md`.
+- Initial commit `ad85b49` adds authenticated launcher v2 parsing at provisional migration head 0048, injected route-bound worker construction, exact allowlist registration, production dispatch injection, lease lifecycle/readback, and fixture-v1 preservation. Sixteen initial focused cases passed; the tracked v1 lock hash remained unchanged.
+- Task 5 review found one Critical and two Important defects: Temporal SDK shutdown was not awaited, drain/readback had no lease-expiry bound, and build/artifact/image/endpoint attestations were optional. Fix round 1 commit `0a0eb3e` added red-first regressions, awaited actual async shutdown semantics, bounded shutdown/drain/readback by remaining TTL, and required all four exact attestations before registration. The amended focused suite passed 26 cases. Scoped rereview marked all three findings addressed with no new Critical/Important breakage.
+- Task 5 fix round 1/5 (3 addressed, 0 open; commits `ad85b49..0a0eb3e`).
+- Task 5 ruling: the launcher-authenticated environment handoff and injected routed-worker assembly remain separate development seams. Connecting `main()` would expose a production entrypoint without the absent live authority, Temporal target qualification, credentials, or external trust digest; `run_worker()` therefore remains fixture-only as the brief requires. Task 9 finalizes launcher v2 for exact head 0050/verifier ABI v2; external integration remains held.
+- Task 5 minor (deferred to final review): `WorkerReadback.observed_at` is present but the exact-drain gate does not prove freshness relative to shutdown; Task 9's complete pre/post readback should carry an explicit freshness rule.
+- Task 5: complete (commits `9d709fb..0a0eb3e`, review clean after one fix round). Production remains disabled and no live adapter, credential, default endpoint, or enable flag exists.
+
+## Task 3 follow-up regression correction
+
+- The first broad post-Task-5 run exposed a Task 3 trigger defect: absent/JSON-null `schema_version` produced SQL NULL for the approval `tagged` boolean, so unrelated generic approvals fell through into production-schedule validation. Commit `7b92c59` normalizes the comparison with `COALESCE(..., false)` and adds red-first absent/null generic-approval cases while preserving rejection of untagged production-schedule approvals.
+- Task 3 fix round 2/5 (1 addressed, 0 open; commits `0a0eb3e..7b92c59`). The full 0048 focused suite passed 25 cases; scoped rereview closed the finding without new Critical/Important breakage.
+- The harness-owned local `salience` fixture database was rebuilt from current migrations after the source fix. A representative governed-publication generic-approval flow and all six production route-deadline variants then passed (`7 passed`), confirming the observed failures were caused by the defective/stale 0048 trigger. This was local fixture state only; no production/external target was contacted.
