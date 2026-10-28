@@ -634,6 +634,451 @@ def _claim_count(database, operation_id):
         ).fetchone()[0]
 
 
+def _insert_task7_no_effect_command(case, request, *, later_result=None):
+    """Seed a migration-valid Task 7 event payload for a focused dispatch test."""
+    work_id, case_id, event_id = uuid4(), uuid4(), uuid4()
+    observation_id = uuid4()
+    stage_decision_id, policy_decision_id, route_decision_id = (
+        uuid4() for _ in range(3)
+    )
+    event_key = "reissue:" + str(work_id) + ":1"
+    with psycopg.connect(case["database"], row_factory=dict_row) as connection:
+        current = connection.execute(
+            """SELECT permit.request_snapshot,dispatch.generation,
+                      dispatch.idempotency_key,permit.provider_id,permit.account_id,
+                      permit.route_id,permit.slot_id,permit.fencing_epoch
+               FROM v4_production_current_dispatch dispatch
+               JOIN v4_production_effect_permits permit
+                 ON permit.permit_id=dispatch.current_permit_id
+                AND permit.operation_id=dispatch.operation_id
+                AND permit.generation=dispatch.generation
+               WHERE dispatch.operation_id=%s""",
+            (request.operation_id,),
+        ).fetchone()
+        assert current is not None
+        fingerprint = connection.execute(
+            "SELECT encode(public.digest(%s::jsonb::text,'sha256'),'hex') AS value",
+            (Jsonb(current["request_snapshot"]),),
+        ).fetchone()["value"]
+        payload = {
+            "schema_version": "salience.p1-same-operation-no-effect.v1",
+            "reason_code": "authoritative_no_effect",
+            "evidence_sha256": "1" * 64,
+            "remote_identity_sha256": sha256(
+                f"{request.operation_id}:{current['idempotency_key']}".encode("utf-8")
+            ).hexdigest(),
+            "request_fingerprint": fingerprint,
+            "operation_id": str(request.operation_id),
+            "case_id": str(case_id),
+            "work_id": str(work_id),
+            "source_id": str(case_id),
+            "state": "reconciling",
+            "result_class": "authoritative_no_effect",
+            "event_key": event_key,
+            "stage_decision_id": str(stage_decision_id),
+            "policy_decision_id": str(policy_decision_id),
+            "workspace_stop_revision": 1,
+            "goal_stop_revision": 1,
+            "route_decision_id": str(route_decision_id),
+        }
+        connection.execute("SET LOCAL session_replication_role='replica'")
+        connection.execute(
+            """INSERT INTO v4_recovery_cases(
+                      id,workspace_id,goal_id,target_intent_id,target_cycle_id,context_id,
+                      operation_id,kind,open_fingerprint,failure_class,state,revision,owner_id,
+                      reason,deadline,max_actions)
+               VALUES(%s,%s,%s,NULL,%s,%s,%s,'reconciliation',%s,'unknown_effect',
+                      'reconciling',1,%s,'Task 8 typed no-effect dispatch fixture',
+                      clock_timestamp()+interval '1 day',5)""",
+            (
+                case_id,
+                case["workspace_id"],
+                case["goal_id"],
+                request.cycle_id,
+                request.context_id,
+                request.operation_id,
+                "3" * 64,
+                request.subject_id,
+            ),
+        )
+        connection.execute(
+            """INSERT INTO v4_production_recovery_work(
+                      work_id,source_discriminant,source_id,workspace_id,goal_id,
+                      intent_id,cycle_id,context_id,operation_id,source_revision,
+                      case_revision,eligibility_revision,owner_id,target_alias,
+                      remote_account_id,reason,state,request_fingerprint,
+                      source_fingerprint,deadline,deadline_revision,
+                      recipient_profile_revision)
+               VALUES(%s,'cycle_case',%s,%s,%s,%s,%s,%s,%s,1,1,1,%s,%s,%s,
+                      'unknown_effect','reconciling',%s,%s,
+                      clock_timestamp()+interval '1 day',1,1)""",
+            (
+                work_id,
+                case_id,
+                case["workspace_id"],
+                case["goal_id"],
+                request.intent_id,
+                request.cycle_id,
+                request.context_id,
+                request.operation_id,
+                request.subject_id,
+                current["provider_id"],
+                current["account_id"],
+                fingerprint,
+                "3" * 64,
+            ),
+        )
+        observation_payload = Jsonb({"result_class": "authoritative_no_effect"})
+        observation_hash = connection.execute(
+            "SELECT encode(public.digest(%s::jsonb::text,'sha256'),'hex') AS value",
+            (observation_payload,),
+        ).fetchone()["value"]
+        connection.execute(
+            """INSERT INTO v4_production_recovery_events(
+                      event_id,work_id,event_key,event_kind,actor_id,
+                      policy_decision_id,payload,payload_sha256,occurred_at)
+               VALUES(%s,%s,%s,'remote_read_observation',%s,%s,%s,%s,
+                      clock_timestamp()-interval '2 seconds')""",
+            (
+                observation_id,
+                work_id,
+                "observation:" + str(work_id),
+                request.subject_id,
+                policy_decision_id,
+                observation_payload,
+                observation_hash,
+            ),
+        )
+        payload_json = Jsonb(payload)
+        payload_hash = connection.execute(
+            "SELECT encode(public.digest(%s::jsonb::text,'sha256'),'hex') AS value",
+            (payload_json,),
+        ).fetchone()["value"]
+        connection.execute(
+            """INSERT INTO v4_production_recovery_events(
+                      event_id,work_id,event_key,event_kind,actor_id,
+                      policy_decision_id,payload,payload_sha256)
+               VALUES(%s,%s,%s,'same_operation_no_effect_reissue',%s,%s,%s,%s)""",
+            (
+                event_id,
+                work_id,
+                event_key,
+                request.subject_id,
+                policy_decision_id,
+                payload_json,
+                payload_hash,
+            ),
+        )
+        if later_result is not None:
+            later_payload = Jsonb({"result_class": later_result})
+            later_hash = connection.execute(
+                "SELECT encode(public.digest(%s::jsonb::text,'sha256'),'hex') AS value",
+                (later_payload,),
+            ).fetchone()["value"]
+            connection.execute(
+                """INSERT INTO v4_production_recovery_events(
+                          event_id,work_id,event_key,event_kind,actor_id,
+                          policy_decision_id,payload,payload_sha256)
+                   VALUES(%s,%s,%s,'remote_read_observation',%s,%s,%s,%s)""",
+                (
+                    uuid4(),
+                    work_id,
+                    "later-observation:" + str(uuid4()),
+                    request.subject_id,
+                    policy_decision_id,
+                    later_payload,
+                    later_hash,
+                ),
+            )
+    return {
+        "event_id": event_id,
+        "work_id": work_id,
+        "case_id": case_id,
+        "observation_event_id": observation_id,
+        "observation_sha256": observation_hash,
+        "event_key": event_key,
+        "request_fingerprint": fingerprint,
+        "original_idempotency_key": current["idempotency_key"],
+        "stage_decision_id": stage_decision_id,
+        "policy_decision_id": policy_decision_id,
+        "workspace_stop_revision": 1,
+        "goal_stop_revision": 1,
+        "route_decision_id": route_decision_id,
+    }
+
+
+def test_0050_new_permit_snapshot_v2_binds_route_tuple_hash(accounting):
+    case = _production_case(accounting)
+    issued = case["dispatch"].issue_permit(case["request"])
+    with psycopg.connect(case["database"]) as connection:
+        snapshot = connection.execute(
+            """SELECT request_snapshot,recovery_command_id
+               FROM v4_production_effect_permits WHERE permit_id=%s""",
+            (issued.permit_id,),
+        ).fetchone()
+    assert snapshot[0]["schema_version"] == "salience.p1-production-effect-permit.v2"
+    assert snapshot[0]["generation"] == 1
+    assert snapshot[0]["route_tuple_sha256"] == case["request"].route.route_tuple_sha256
+    assert snapshot[0]["recovery_command_id"] is None
+    assert snapshot[1] is None
+
+
+def test_historical_v1_permit_snapshot_remains_readable(accounting):
+    case = _production_case(accounting)
+    issued = case["dispatch"].issue_permit(case["request"])
+    with psycopg.connect(case["database"]) as connection:
+        snapshot = connection.execute(
+            "SELECT request_snapshot FROM v4_production_effect_permits WHERE permit_id=%s",
+            (issued.permit_id,),
+        ).fetchone()[0]
+    legacy = dict(snapshot)
+    legacy["schema_version"] = "salience.p1-production-effect-permit.v1"
+    legacy.pop("route_tuple_sha256")
+    legacy.pop("recovery_command_id")
+    parsed = ProductionEffectDispatch._request_from_snapshot(legacy)
+    assert parsed.operation_id == case["operation_id"]
+    assert parsed.generation == 1 and parsed.recovery_command_id is None
+    assert parsed.route.route_tuple_sha256 is None
+
+
+def test_no_effect_generation_advance_requires_one_typed_same_operation_command(
+    accounting, monkeypatch
+):
+    case = _production_case(accounting)
+    original = case["dispatch"].issue_permit(case["request"])
+    proof = _insert_task7_no_effect_command(case, case["request"])
+    changed = replace(
+        case["request"], generation=2, recovery_command_id=proof["event_id"]
+    )
+
+    with pytest.raises(ProductionAuthorizationDenied):
+        case["dispatch"].issue_permit(changed)
+    case["dispatch"].claim_permit(case["operation_id"], original.permit_id)
+
+    write_event = case["dispatch"]._write_event
+
+    def crash_after_pointer_advance(*args, **kwargs):
+        raise RuntimeError("simulated reissue crash before transaction commit")
+
+    monkeypatch.setattr(case["dispatch"], "_write_event", crash_after_pointer_advance)
+    with pytest.raises(RuntimeError, match="reissue crash"):
+        case["dispatch"].issue_permit(changed)
+    with psycopg.connect(case["database"]) as connection:
+        assert connection.execute(
+            "SELECT generation FROM v4_production_current_dispatch WHERE operation_id=%s",
+            (case["operation_id"],),
+        ).fetchone()[0] == 1
+    assert _permit_count(case["database"], case["operation_id"]) == 1
+    monkeypatch.setattr(case["dispatch"], "_write_event", write_event)
+
+    issued = case["dispatch"].issue_permit(changed)
+    assert issued.operation_id == original.operation_id
+    assert issued.generation == 2
+    assert issued.permit_id != original.permit_id
+    assert case["route"].calls[-1].operation_id == original.operation_id
+    with psycopg.connect(case["database"]) as connection:
+        rows = connection.execute(
+            """SELECT generation,recovery_command_id,request_snapshot
+               FROM v4_production_effect_permits WHERE operation_id=%s
+               ORDER BY generation""",
+            (case["operation_id"],),
+        ).fetchall()
+        pointer = connection.execute(
+            """SELECT generation,current_permit_id,current_claim_id,idempotency_key
+               FROM v4_production_current_dispatch WHERE operation_id=%s""",
+            (case["operation_id"],),
+        ).fetchone()
+    assert [row[0] for row in rows] == [1, 2]
+    assert rows[0][1] is None
+    assert rows[1][1] == proof["event_id"]
+    assert pointer == (2, issued.permit_id, None, case["request"].idempotency_key)
+    assert rows[0][2]["schema_version"] == "salience.p1-production-effect-permit.v2"
+    assert rows[1][2]["schema_version"] == "salience.p1-production-effect-permit.v2"
+
+
+def test_concurrent_same_no_effect_command_retries_return_one_permit(accounting):
+    case = _production_case(accounting)
+    original = case["dispatch"].issue_permit(case["request"])
+    case["dispatch"].claim_permit(case["operation_id"], original.permit_id)
+    proof = _insert_task7_no_effect_command(case, case["request"])
+    changed = replace(
+        case["request"], generation=2, recovery_command_id=proof["event_id"]
+    )
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        results = list(pool.map(case["dispatch"].issue_permit, (changed, changed)))
+    assert results[0].permit_id == results[1].permit_id
+    assert results[0].generation == results[1].generation == 2
+    assert _permit_count(case["database"], case["operation_id"]) == 2
+    with psycopg.connect(case["database"]) as connection:
+        assert connection.execute(
+            "SELECT count(*) FROM v4_production_effect_permits "
+            "WHERE operation_id=%s AND recovery_command_id=%s",
+            (case["operation_id"], proof["event_id"]),
+        ).fetchone()[0] == 1
+
+
+def test_no_effect_command_cannot_be_replayed_or_cross_operation(accounting):
+    case = _production_case(accounting)
+    original = case["dispatch"].issue_permit(case["request"])
+    case["dispatch"].claim_permit(case["operation_id"], original.permit_id)
+    proof = _insert_task7_no_effect_command(case, case["request"])
+    reissued = case["dispatch"].issue_permit(
+        replace(case["request"], generation=2, recovery_command_id=proof["event_id"])
+    )
+    case["dispatch"].claim_permit(case["operation_id"], reissued.permit_id)
+    with pytest.raises(ProductionAuthorizationDenied):
+        case["dispatch"].issue_permit(
+            replace(case["request"], generation=3, recovery_command_id=proof["event_id"])
+        )
+
+    other_operation = uuid4()
+    with pytest.raises(ProductionAuthorizationDenied):
+        case["dispatch"].issue_permit(
+            replace(
+                case["request"],
+                operation_id=other_operation,
+                generation=2,
+                recovery_command_id=proof["event_id"],
+            )
+        )
+    assert _permit_count(case["database"], case["operation_id"]) == 2
+    assert _permit_count(case["database"], other_operation) == 0
+    assert reissued.operation_id == case["operation_id"]
+
+
+@pytest.mark.parametrize("later_result", ("unknown", "accepted"))
+def test_unknown_or_accepted_generation_cannot_be_reissued(accounting, later_result):
+    case = _production_case(accounting)
+    original = case["dispatch"].issue_permit(case["request"])
+    case["dispatch"].claim_permit(case["operation_id"], original.permit_id)
+    proof = _insert_task7_no_effect_command(
+        case, case["request"], later_result=later_result
+    )
+    with pytest.raises(ProductionAuthorizationDenied):
+        case["dispatch"].issue_permit(
+            replace(case["request"], generation=2, recovery_command_id=proof["event_id"])
+        )
+    assert _permit_count(case["database"], case["operation_id"]) == 1
+
+
+def test_generation_advance_preserves_original_operation_fingerprint_and_key(accounting):
+    case = _production_case(accounting)
+    original = case["dispatch"].issue_permit(case["request"])
+    case["dispatch"].claim_permit(case["operation_id"], original.permit_id)
+    proof = _insert_task7_no_effect_command(case, case["request"])
+    # The public recovery controller obtains the exact Task 7 typed receipt,
+    # then delegates the generation-specific permit request to dispatch.
+    recovery = __import__(
+        "salience.cycles.production_recovery", fromlist=["ProductionRecoveryCaseController"]
+    )
+    from salience.cycles.production_dispatch import ProductionRecoveryCommandReference
+    from salience.cycles._production_recovery_contracts import ProductionNoEffectReissueReceipt
+
+    repository = recovery.ProductionRecoveryWorkRepository(case["database"])
+
+    class Authority:
+        def authorize_deadline_wake(self, *args):
+            raise AssertionError("deadline authority is not part of no-effect reissue")
+
+        def authorize_no_effect_reissue(self, *args):
+            raise AssertionError("the typed event was already issued by the Task 7 boundary")
+
+    controller = recovery.ProductionRecoveryCaseController(
+        repository, authority=Authority(), commands=object()
+    )
+    reference = ProductionRecoveryCommandReference(
+        event_id=proof["event_id"],
+        work_id=proof["work_id"],
+        operation_id=case["operation_id"],
+        request_fingerprint=proof["request_fingerprint"],
+        original_idempotency_key=proof["original_idempotency_key"],
+        case_id=proof["case_id"],
+        case_revision=1,
+        stage_decision_id=proof["stage_decision_id"],
+        policy_decision_id=proof["policy_decision_id"],
+        workspace_stop_revision=proof["workspace_stop_revision"],
+        goal_stop_revision=proof["goal_stop_revision"],
+        route_decision_id=proof["route_decision_id"],
+    )
+    receipt = ProductionNoEffectReissueReceipt(
+        event_id=proof["event_id"],
+        work_id=proof["work_id"],
+        operation_id=case["operation_id"],
+        idempotency_key=proof["original_idempotency_key"],
+        case_revision=1,
+        payload_sha256="4" * 64,
+        command_reference=reference,
+    )
+    controller.authorize_no_effect_generation_reissue = lambda _command: receipt
+
+    command = recovery.NoEffectGenerationReissueCommand(
+        work_id=proof["work_id"],
+        case_id=proof["case_id"],
+        expected_case_revision=1,
+        observation_event_id=proof["observation_event_id"],
+        observation_sha256=proof["observation_sha256"],
+        operation_id=case["operation_id"],
+        request_fingerprint=proof["request_fingerprint"],
+        original_idempotency_key=proof["original_idempotency_key"],
+        stage_decision_id=proof["stage_decision_id"],
+        policy_decision_id=proof["policy_decision_id"],
+        workspace_stop_revision=proof["workspace_stop_revision"],
+        goal_stop_revision=proof["goal_stop_revision"],
+        route_decision_id=proof["route_decision_id"],
+        idempotency_key=proof["event_key"],
+    )
+
+    issued = controller.issue_no_effect_generation_permit(
+        command, request=case["request"], dispatch=case["dispatch"]
+    )
+    retried = controller.issue_no_effect_generation_permit(
+        command, request=case["request"], dispatch=case["dispatch"]
+    )
+    with psycopg.connect(case["database"]) as connection:
+        permits = connection.execute(
+            """SELECT request_snapshot,
+                      encode(public.digest(request_snapshot::text,'sha256'),'hex'),
+                      request_snapshot->>'operation_id',
+                      request_snapshot->>'idempotency_key',
+                      request_snapshot->>'generation',
+                      request_snapshot->>'recovery_command_id'
+               FROM v4_production_effect_permits WHERE operation_id=%s
+               ORDER BY generation""",
+            (case["operation_id"],),
+        ).fetchall()
+    assert issued.generation == 2
+    assert retried.permit_id == issued.permit_id
+    assert _permit_count(case["database"], case["operation_id"]) == 2
+    assert permits[0][1] == proof["request_fingerprint"]
+    assert permits[0][2] == permits[1][2] == str(case["operation_id"])
+    assert permits[0][3] == permits[1][3] == case["request"].idempotency_key
+    assert permits[0][4] == "1" and permits[1][4] == "2"
+    assert permits[0][5] is None and permits[1][5] == str(proof["event_id"])
+    dynamic_snapshot_fields = {
+        "schema_version",
+        "generation",
+        "recovery_command_id",
+        "subject_revision",
+        "grant_ids",
+        "policy_version_id",
+        "policy_document_hash",
+        "approval_request_id",
+        "approval_expires_at",
+        "route_fence_decision_id",
+        "workspace_stop_revision",
+        "goal_stop_revision",
+        "baseline_approval_id",
+        "budget_reservation_ids",
+    }
+    assert {
+        key: value for key, value in permits[0][0].items()
+        if key not in dynamic_snapshot_fields
+    } == {
+        key: value for key, value in permits[1][0].items()
+        if key not in dynamic_snapshot_fields
+    }
+
+
 def test_issue_denies_missing_or_wrong_current_authority(accounting):
     case = _production_case(accounting)
     dispatch, request, route = case["dispatch"], case["request"], case["route"]

@@ -7108,3 +7108,204 @@ def test_0048_empty_downgrade_restores_0047_head():
                 ).fetchone()[0] is None
     finally:
         _drop_migration_database(source, name)
+
+
+_REVISION_0049 = "0049_p1_production_recovery_decision_evidence"
+_REVISION_0050 = "0050_p1_production_dispatch_reissue"
+
+
+def _prepare_0049_database(prefix):
+    source = os.environ["TEST_DATABASE_URL"]
+    name, database, fixture_contract, fixture_state, authority = _prepare_0048_database(
+        prefix
+    )
+    try:
+        _upgrade_0048_or_fail(database)
+        upgraded = _migration(database, "upgrade", _REVISION_0049)
+        assert upgraded.returncode == 0, upgraded.stdout + upgraded.stderr
+        return name, database, fixture_contract, fixture_state, authority
+    except Exception:
+        _drop_migration_database(source, name)
+        raise
+
+
+def _upgrade_0050_or_fail(database):
+    upgraded = _migration(database, "upgrade", _REVISION_0050)
+    assert upgraded.returncode == 0, upgraded.stdout + upgraded.stderr
+    return upgraded
+
+
+def _capture_0050_predecessor_history(connection):
+    return {
+        "permits": connection.execute(
+            """SELECT jsonb_agg(to_jsonb(permit)-'recovery_command_id' ORDER BY permit_id)
+               FROM v4_production_effect_permits permit"""
+        ).fetchone()[0],
+        "claims": connection.execute(
+            """SELECT jsonb_agg(to_jsonb(claim) ORDER BY claim_id)
+               FROM v4_production_effect_permit_claims claim"""
+        ).fetchone()[0],
+        "dispatch": connection.execute(
+            """SELECT jsonb_agg(to_jsonb(dispatch) ORDER BY operation_id)
+               FROM v4_production_current_dispatch dispatch"""
+        ).fetchone()[0],
+        "recovery_work": connection.execute(
+            """SELECT jsonb_agg(to_jsonb(work) ORDER BY work_id)
+               FROM v4_production_recovery_work work"""
+        ).fetchone()[0],
+        "recovery_events": connection.execute(
+            """SELECT jsonb_agg(to_jsonb(event) ORDER BY event_id)
+               FROM v4_production_recovery_events event"""
+        ).fetchone()[0],
+        "permit_snapshots": connection.execute(
+            """SELECT jsonb_agg(jsonb_build_array(permit_id,request_snapshot)
+                                      ORDER BY permit_id)
+               FROM v4_production_effect_permits"""
+        ).fetchone()[0],
+    }
+
+
+def _capture_0050_predecessor_dispatch_contract(connection):
+    return {
+        "permit_validator": connection.execute(
+            "SELECT pg_get_functiondef('public.v4_validate_production_effect_permit_v1()'::regprocedure)"
+        ).fetchone()[0],
+        "dispatch_advance": connection.execute(
+            """SELECT pg_get_functiondef(
+                   'public.v4_advance_production_current_dispatch_v1(uuid,integer,uuid,uuid,text,uuid)'::regprocedure
+               )"""
+        ).fetchone()[0],
+        "snapshot_constraint": connection.execute(
+            "SELECT pg_get_constraintdef(oid) FROM pg_constraint "
+            "WHERE conrelid='public.v4_production_effect_permits'::regclass "
+            "AND conname='ck_v4_production_effect_permits_snapshot'"
+        ).fetchone()[0],
+        "validator_trigger": connection.execute(
+            """SELECT tgname,pg_get_triggerdef(oid) FROM pg_trigger
+               WHERE tgrelid='public.v4_production_effect_permits'::regclass
+                 AND tgname='validate_v4_production_effect_permit_v1'"""
+        ).fetchone(),
+    }
+
+
+def test_0050_preserves_all_predecessor_history():
+    source = os.environ["TEST_DATABASE_URL"]
+    name, database, _fixture_contract, _fixture_state, _authority = (
+        _prepare_0049_database("p1_0050_history_preserved_")
+    )
+    try:
+        with psycopg.connect(database) as connection:
+            before = _capture_0050_predecessor_history(connection)
+            assert before["permits"]
+            assert all(
+                row[1]["schema_version"] == "salience.p1-production-effect-permit.v1"
+                for row in before["permit_snapshots"]
+            )
+        _upgrade_0050_or_fail(database)
+        with psycopg.connect(database) as connection:
+            after = _capture_0050_predecessor_history(connection)
+            assert after == before
+            assert connection.execute(
+                "SELECT version_num FROM alembic_version"
+            ).fetchone()[0] == _REVISION_0050
+            assert connection.execute(
+                "SELECT count(*) FROM v4_production_effect_permits "
+                "WHERE request_snapshot->>'schema_version'="
+                "'salience.p1-production-effect-permit.v1'"
+            ).fetchone()[0] == len(before["permit_snapshots"])
+    finally:
+        _drop_migration_database(source, name)
+
+
+def test_0050_populated_downgrade_refuses_without_mutation():
+    source = os.environ["TEST_DATABASE_URL"]
+    name, database, _fixture_contract, _fixture_state, _authority = (
+        _prepare_0049_database("p1_0050_populated_downgrade_")
+    )
+    try:
+        _upgrade_0050_or_fail(database)
+        with psycopg.connect(database) as connection:
+            connection.execute("SET LOCAL session_replication_role='replica'")
+            connection.execute(
+                """UPDATE v4_production_effect_permits
+                       SET request_snapshot=jsonb_set(
+                           jsonb_set(
+                             jsonb_set(request_snapshot,'{schema_version}',
+                               to_jsonb('salience.p1-production-effect-permit.v2'::text)),
+                             '{route_tuple_sha256}',to_jsonb(repeat('a',64))),
+                           '{recovery_command_id}','null'::jsonb)"""
+            )
+            before = connection.execute(
+                """SELECT
+                     (SELECT jsonb_agg(to_jsonb(permit) ORDER BY permit_id)
+                      FROM v4_production_effect_permits permit),
+                     (SELECT jsonb_agg(to_jsonb(dispatch) ORDER BY operation_id)
+                      FROM v4_production_current_dispatch dispatch),
+                     (SELECT version_num FROM alembic_version),
+                     to_regclass('public.uq_v4_production_effect_permits_recovery_command'),
+                     to_regclass('public.v4_production_effect_permits')"""
+            ).fetchone()
+        downgrade = _migration(database, "downgrade", _REVISION_0049)
+        assert downgrade.returncode != 0
+        assert "preserve production permit reissue history" in (
+            downgrade.stdout + downgrade.stderr
+        )
+        with psycopg.connect(database) as connection:
+            after = connection.execute(
+                """SELECT
+                     (SELECT jsonb_agg(to_jsonb(permit) ORDER BY permit_id)
+                      FROM v4_production_effect_permits permit),
+                     (SELECT jsonb_agg(to_jsonb(dispatch) ORDER BY operation_id)
+                      FROM v4_production_current_dispatch dispatch),
+                     (SELECT version_num FROM alembic_version),
+                     to_regclass('public.uq_v4_production_effect_permits_recovery_command'),
+                     to_regclass('public.v4_production_effect_permits')"""
+            ).fetchone()
+            assert after == before
+    finally:
+        _drop_migration_database(source, name)
+
+
+def test_0050_empty_downgrade_restores_0049_contract():
+    source = os.environ["TEST_DATABASE_URL"]
+    name, database, fixture_contract, _fixture_state, _authority = (
+        _prepare_0049_database("p1_0050_empty_downgrade_")
+    )
+    try:
+        with psycopg.connect(database) as connection:
+            predecessor_contract = _capture_0050_predecessor_dispatch_contract(
+                connection
+            )
+        _upgrade_0050_or_fail(database)
+        with psycopg.connect(database) as connection:
+            assert connection.execute(
+                "SELECT count(*) FROM v4_production_effect_permits "
+                "WHERE request_snapshot->>'schema_version'="
+                "'salience.p1-production-effect-permit.v2'"
+            ).fetchone()[0] == 0
+        downgraded = _migration(database, "downgrade", _REVISION_0049)
+        assert downgraded.returncode == 0, downgraded.stdout + downgraded.stderr
+        with psycopg.connect(database) as connection:
+            assert connection.execute(
+                "SELECT version_num FROM alembic_version"
+            ).fetchone()[0] == _REVISION_0049
+            assert connection.execute(
+                "SELECT to_regclass('public.v4_production_effect_permits') IS NOT NULL"
+            ).fetchone()[0]
+            assert connection.execute(
+                "SELECT to_regclass('public.uq_v4_production_effect_permits_recovery_command')"
+            ).fetchone()[0] is None
+            assert connection.execute(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='v4_production_effect_permits' "
+                "AND column_name='recovery_command_id'"
+            ).fetchone() is None
+            assert connection.execute(
+                "SELECT request_snapshot->>'schema_version' "
+                "FROM v4_production_effect_permits"
+            ).fetchone()[0] == "salience.p1-production-effect-permit.v1"
+            assert _capture_0050_predecessor_dispatch_contract(
+                connection
+            ) == predecessor_contract
+    finally:
+        _drop_migration_database(source, name)

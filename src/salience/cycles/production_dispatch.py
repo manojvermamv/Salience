@@ -89,6 +89,7 @@ _SNAPSHOT_METADATA = frozenset(
     {
         "schema_version",
         "generation",
+        "recovery_command_id",
         "subject_revision",
         "grant_ids",
         "policy_document_hash",
@@ -273,6 +274,8 @@ class ProductionPermitRequest:
     execution_deadline: datetime
     ttl_seconds: int
     publication_binding: PublicationEffectBinding | None = None
+    generation: int = 1
+    recovery_command_id: UUID | None = None
 
     def __post_init__(self) -> None:
         for field in (
@@ -294,6 +297,12 @@ class ProductionPermitRequest:
                 raise ValueError(f"production permit {field} UUID required")
         if type(self.goal_revision) is not int or self.goal_revision < 1:
             raise ValueError("positive goal revision required")
+        if type(self.generation) is not int or self.generation < 1:
+            raise ValueError("positive production permit generation required")
+        if self.generation == 1 and self.recovery_command_id is not None:
+            raise ValueError("first production permit generation cannot use a recovery command")
+        if self.generation > 1 and not isinstance(self.recovery_command_id, UUID):
+            raise ValueError("later production permit generations require a typed recovery command")
         if (
             not isinstance(self.required_scopes, tuple)
             or not self.required_scopes
@@ -456,8 +465,44 @@ class ProductionEffectDispatch:
         except psycopg.OperationalError:
             self._record_primary_outage("issue", getattr(request, "effect_type", "other"))
             raise
+        except (psycopg.errors.RaiseException, psycopg.IntegrityError) as error:
+            if request.generation <= 1:
+                raise
+            denial = ProductionAuthorizationDenied("generation_advance_required")
+            self._record_decision("issue", request.effect_type, "deny", denial.reason_code)
+            self._persist_denial_event(
+                request.operation_id,
+                "issue",
+                denial.reason_code,
+                permit_id=None,
+                request=request,
+                attempt_id=attempt_id,
+            )
+            raise denial from error
         self._record_decision("issue", request.effect_type, "allow", "none")
         return result
+
+    def _current_generation_for_reissue(
+        self, request: ProductionPermitRequest, recovery_command_id: UUID
+    ) -> int:
+        """Read the current primary pointer before the recovery wrapper builds its next request."""
+        with psycopg.connect(self.database_url, row_factory=dict_row) as connection:
+            row = connection.execute(
+                """SELECT dispatch.generation,dispatch.idempotency_key,
+                          permit.recovery_command_id
+                   FROM public.v4_production_current_dispatch dispatch
+                   JOIN public.v4_production_effect_permits permit
+                     ON permit.permit_id=dispatch.current_permit_id
+                    AND permit.operation_id=dispatch.operation_id
+                    AND permit.generation=dispatch.generation
+                   WHERE dispatch.operation_id=%s""",
+                (request.operation_id,),
+            ).fetchone()
+        if row is None or row["idempotency_key"] != request.idempotency_key:
+            raise ProductionAuthorizationDenied("generation_advance_required")
+        if row["recovery_command_id"] == recovery_command_id:
+            return row["generation"]
+        return row["generation"] + 1
 
     def _issue_permit(self, request: ProductionPermitRequest) -> ProductionPermitResult:
         if not isinstance(request, ProductionPermitRequest):
@@ -483,7 +528,7 @@ class ProductionEffectDispatch:
                         (pointer["current_permit_id"], request.operation_id),
                     ).fetchone()
                     if (
-                        pointer["generation"] == 1
+                        pointer["generation"] == request.generation
                         and existing is not None
                         and pointer["idempotency_key"] == request.idempotency_key
                         and self._snapshot_matches_request(
@@ -498,11 +543,19 @@ class ProductionEffectDispatch:
                         return ProductionPermitResult(
                             permit_id=existing["permit_id"],
                             operation_id=request.operation_id,
-                            generation=1,
+                            generation=request.generation,
                             expires_at=existing["expires_at"],
                             claim_id=claim_id,
                             dispatch_allowed=False,
                         )
+                    if (
+                        request.generation != pointer["generation"] + 1
+                        or request.recovery_command_id is None
+                        or pointer["idempotency_key"] != request.idempotency_key
+                        or pointer["current_claim_id"] is None
+                    ):
+                        raise ProductionAuthorizationDenied("generation_advance_required")
+                elif request.generation != 1 or request.recovery_command_id is not None:
                     raise ProductionAuthorizationDenied("generation_advance_required")
 
                 expiry = min(
@@ -537,12 +590,13 @@ class ProductionEffectDispatch:
                               approval_expires_at,effect_type,purpose,account_id,provider_id,
                               artifact_sha256,deployment_id,environment_id,route_id,slot_id,owner_id,
                               fencing_epoch,route_manifest_sha256,artifact_lock_sha256,
-                              route_fence_decision_id,expires_at,request_snapshot)
-                       VALUES(%s,%s,1,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
-                              %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+                              route_fence_decision_id,expires_at,request_snapshot,recovery_command_id)
+                       VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
+                              %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
                         (
                             permit_id,
                             request.operation_id,
+                            request.generation,
                             facts.workspace_id,
                             facts.goal_id,
                             facts.goal_revision,
@@ -573,11 +627,18 @@ class ProductionEffectDispatch:
                             decision.decision_id,
                             expiry,
                             Jsonb(snapshot),
+                            request.recovery_command_id,
                         ),
                     )
                     connection.execute(
-                        "SELECT public.v4_advance_production_current_dispatch_v1(%s,0,%s,NULL,%s,NULL)",
-                        (request.operation_id, permit_id, request.idempotency_key),
+                        "SELECT public.v4_advance_production_current_dispatch_v1(%s,%s,%s,NULL,%s,%s)",
+                        (
+                            request.operation_id,
+                            request.generation - 1,
+                            permit_id,
+                            request.idempotency_key,
+                            request.recovery_command_id,
+                        ),
                     )
                     self._write_event(
                         connection,
@@ -594,7 +655,7 @@ class ProductionEffectDispatch:
                     result = ProductionPermitResult(
                         permit_id=permit_id,
                         operation_id=request.operation_id,
-                        generation=1,
+                        generation=request.generation,
                         expires_at=expiry,
                         claim_id=None,
                         dispatch_allowed=False,
@@ -646,7 +707,7 @@ class ProductionEffectDispatch:
                 ).fetchone()
                 if pointer is None or permit is None:
                     raise ProductionAuthorizationDenied("permit_missing")
-                if pointer["generation"] != 1 or permit["generation"] != 1:
+                if pointer["generation"] != permit["generation"]:
                     raise ProductionAuthorizationDenied("generation_advance_required")
                 if pointer["current_permit_id"] != permit_id:
                     raise ProductionAuthorizationDenied("current_operation_missing")
@@ -692,12 +753,24 @@ class ProductionEffectDispatch:
                         connection.execute(
                             """INSERT INTO public.v4_production_effect_permit_claims(
                               claim_id,permit_id,operation_id,generation,route_fence_decision_id)
-                       VALUES(%s,%s,%s,1,%s)""",
-                            (claim_id, permit_id, operation_id, decision.decision_id),
+                       VALUES(%s,%s,%s,%s,%s)""",
+                            (
+                                claim_id,
+                                permit_id,
+                                operation_id,
+                                pointer["generation"],
+                                decision.decision_id,
+                            ),
                         )
                         connection.execute(
-                            "SELECT public.v4_advance_production_current_dispatch_v1(%s,1,%s,%s,%s,NULL)",
-                            (operation_id, permit_id, claim_id, request.idempotency_key),
+                            "SELECT public.v4_advance_production_current_dispatch_v1(%s,%s,%s,%s,%s,NULL)",
+                            (
+                                operation_id,
+                                pointer["generation"],
+                                permit_id,
+                                claim_id,
+                                request.idempotency_key,
+                            ),
                         )
                         self._write_event(
                             connection,
@@ -714,7 +787,7 @@ class ProductionEffectDispatch:
                         result = ProductionPermitResult(
                             permit_id=permit_id,
                             operation_id=operation_id,
-                            generation=1,
+                            generation=pointer["generation"],
                             expires_at=permit["expires_at"],
                             claim_id=claim_id,
                             dispatch_allowed=True,
@@ -828,8 +901,7 @@ class ProductionEffectDispatch:
                 if (
                     pointer is None
                     or permit is None
-                    or pointer["generation"] != 1
-                    or permit["generation"] != 1
+                    or pointer["generation"] != permit["generation"]
                     or pointer["current_permit_id"] != permit_id
                     or pointer["current_claim_id"] is not None
                 ):
@@ -1257,8 +1329,7 @@ class ProductionEffectDispatch:
                     action_kind == "delivery" and pointer["current_claim_id"] is None
                 )
                 if (
-                    pointer["generation"] != 1
-                    or permit["generation"] != 1
+                    pointer["generation"] != permit["generation"]
                     or pointer["current_permit_id"] != permit_id
                     or (pointer["current_claim_id"] is None and not preclaim_delivery)
                 ):
@@ -1270,9 +1341,14 @@ class ProductionEffectDispatch:
                 if pointer["current_claim_id"] is not None:
                     claim = connection.execute(
                         """SELECT * FROM public.v4_production_effect_permit_claims
-                           WHERE claim_id=%s AND operation_id=%s AND permit_id=%s AND generation=1
+                           WHERE claim_id=%s AND operation_id=%s AND permit_id=%s AND generation=%s
                            FOR UPDATE""",
-                        (pointer["current_claim_id"], operation_id, permit_id),
+                        (
+                            pointer["current_claim_id"],
+                            operation_id,
+                            permit_id,
+                            pointer["generation"],
+                        ),
                     ).fetchone()
                     if claim is None:
                         return self._denied_action(
@@ -2252,8 +2328,13 @@ class ProductionEffectDispatch:
     ) -> dict[str, object]:
         binding = request.publication_binding
         snapshot: dict[str, object] = {
-            "schema_version": "salience.p1-production-effect-permit.v1",
-            "generation": 1,
+            "schema_version": "salience.p1-production-effect-permit.v2",
+            "generation": request.generation,
+            "recovery_command_id": (
+                str(request.recovery_command_id)
+                if request.recovery_command_id is not None
+                else None
+            ),
             "workspace_id": str(request.workspace_id),
             "goal_id": str(request.goal_id),
             "goal_revision": request.goal_revision,
@@ -2340,10 +2421,31 @@ class ProductionEffectDispatch:
                 }
             )
         )
+        schema_version = value.get("schema_version")
+        generation = value.get("generation")
+        recovery_command_id = value.get("recovery_command_id")
+        v1_snapshot = (
+            schema_version == "salience.p1-production-effect-permit.v1"
+            and generation == 1
+            and "recovery_command_id" not in value
+        )
+        v2_snapshot = (
+            schema_version == "salience.p1-production-effect-permit.v2"
+            and type(generation) is int
+            and generation >= 1
+            and "recovery_command_id" in value
+            and "route_tuple_sha256" in value
+            and (
+                (generation == 1 and recovery_command_id is None)
+                or (
+                    generation > 1
+                    and isinstance(recovery_command_id, str)
+                )
+            )
+        )
         if (
-            value.get("schema_version") != "salience.p1-production-effect-permit.v1"
+            not (v1_snapshot or v2_snapshot)
             or frozenset(value) - allowed
-            or value.get("generation") != 1
             or not all(
                 key in value
                 for key in allowed
@@ -2417,6 +2519,12 @@ class ProductionEffectDispatch:
                 execution_deadline=deadline,
                 ttl_seconds=value["ttl_seconds"],
                 publication_binding=publication,
+                generation=generation,
+                recovery_command_id=(
+                    UUID(str(recovery_command_id))
+                    if recovery_command_id is not None
+                    else None
+                ),
             )
         except (KeyError, TypeError, ValueError) as error:
             raise ProductionAuthorizationDenied("invalid_binding") from error
@@ -2434,6 +2542,11 @@ class ProductionEffectDispatch:
     def _validate_permit_row(permit, request: ProductionPermitRequest, facts: _AuthorityFacts):
         route = request.route
         snapshot = permit["request_snapshot"]
+        if (
+            permit["generation"] != request.generation
+            or permit["recovery_command_id"] != request.recovery_command_id
+        ):
+            raise ProductionAuthorizationDenied("invalid_binding")
         current_revision_bindings = {
             "subject_revision": facts.subject_revision,
             "grant_ids": [str(grant_id) for grant_id in facts.grant_ids],

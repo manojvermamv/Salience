@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import datetime
 from hashlib import sha256
 from uuid import UUID
@@ -16,7 +17,12 @@ from salience.cycles._production_recovery_contracts import (
     TypedIntentWakeReceipt, _require_aware, _require_uuid,
 )
 from salience.cycles._production_recovery_work import ProductionRecoveryWorkRepository
-from salience.cycles.production_dispatch import ProductionRecoveryCommandReference
+from salience.cycles.production_dispatch import (
+    ProductionEffectDispatch,
+    ProductionPermitRequest,
+    ProductionPermitResult,
+    ProductionRecoveryCommandReference,
+)
 
 
 class ProductionRecoveryCaseController:
@@ -461,3 +467,53 @@ class ProductionRecoveryCaseController:
                 payload_sha256=event.payload_sha256,
                 command_reference=reference,
             )
+
+    def issue_no_effect_generation_permit(
+        self,
+        command: NoEffectGenerationReissueCommand,
+        *,
+        request: ProductionPermitRequest,
+        dispatch: ProductionEffectDispatch,
+    ) -> ProductionPermitResult:
+        """Replay the exact typed no-effect event, then delegate its one use to dispatch."""
+        if not isinstance(command, NoEffectGenerationReissueCommand):
+            raise ValueError("typed same-operation no-effect command required")
+        if not isinstance(request, ProductionPermitRequest):
+            raise ValueError("typed production permit request required")
+        if not isinstance(dispatch, ProductionEffectDispatch):
+            raise ValueError("production effect dispatch is required")
+        receipt = self.authorize_no_effect_generation_reissue(command)
+        if not isinstance(receipt, ProductionNoEffectReissueReceipt):
+            raise ValueError("typed no-effect command receipt is required")
+        reference = receipt.command_reference
+        if not isinstance(reference, ProductionRecoveryCommandReference):
+            raise ValueError("typed no-effect command reference is required")
+        if (
+            receipt.event_id != reference.event_id
+            or receipt.work_id != command.work_id
+            or reference.work_id != command.work_id
+            or receipt.operation_id != command.operation_id
+            or reference.operation_id != command.operation_id
+            or receipt.idempotency_key != command.original_idempotency_key
+            or reference.original_idempotency_key != command.original_idempotency_key
+            or reference.request_fingerprint != command.request_fingerprint
+            or reference.case_id != command.case_id
+            or reference.case_revision != command.expected_case_revision
+            or reference.stage_decision_id != command.stage_decision_id
+            or reference.policy_decision_id != command.policy_decision_id
+            or reference.workspace_stop_revision != command.workspace_stop_revision
+            or reference.goal_stop_revision != command.goal_stop_revision
+            or reference.route_decision_id != command.route_decision_id
+            or request.operation_id != command.operation_id
+            or request.idempotency_key != command.original_idempotency_key
+        ):
+            raise ValueError("typed no-effect receipt does not match the original operation")
+        generation = dispatch._current_generation_for_reissue(
+            request, reference.event_id
+        )
+        next_request = replace(
+            request,
+            generation=generation,
+            recovery_command_id=reference.event_id,
+        )
+        return dispatch.issue_permit(next_request)
