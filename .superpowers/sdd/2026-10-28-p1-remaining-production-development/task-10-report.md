@@ -133,3 +133,44 @@ exit 2; ARGUMENTS_MISSING; disposition=NO_GO
 ```
 
 `compileall` for `src/salience/acceptance` and the checker CLI passed, as did `git diff --check`. Generated `__pycache__` directories under `src`, `scripts`, and `tests` were removed. No application migration, external client, production/gate mutation, or ledger modification was added.
+
+
+## Post-completion route-inventory cardinality correction
+
+The external contract fixes the acceptance row set at 22; it does not require 22 deployed routes. The schema had incorrectly tied both `manifest.route_manifest.inventory` and the `ROUTE_SET` scope binding to exactly 22 entries. Both arrays now require at least one entry and have no route-count maximum. Existing runtime checks in `_manifest_validation.py` still enforce unique route IDs, exact worker-to-inventory assignment, and exact row route UUID/tuple digest/manifest membership. The unit fixture now uses one authenticated route for all 22 rows by default; tests that need cross-route evidence opt into an explicit distributed inventory.
+
+The acceptance regression was RED against the old schema for both supported layouts:
+
+```text
+TEST_DATABASE_URL=postgresql://127.0.0.1:1/unused TEST_TEMPORAL_TARGET=127.0.0.1:1 /home/admin/Salience/.venv/bin/python -m pytest tests/unit/test_p1_external_acceptance.py -q --tb=short -k test_route_inventory_cardinality_is_independent_of_row_count
+2 failed, 36 deselected in 1.64s
+```
+
+After the schema correction, the focused route inventory checks passed, covering one route shared by all rows, a unique two-route inventory with row reuse, and rejection of empty inventory, duplicate route IDs, worker/inventory mismatch, and an out-of-inventory row route:
+
+```text
+TEST_DATABASE_URL=postgresql://127.0.0.1:1/unused TEST_TEMPORAL_TARGET=127.0.0.1:1 /home/admin/Salience/.venv/bin/python -m pytest tests/unit/test_p1_external_acceptance.py -q --tb=short -k route_inventory
+3 passed, 35 deselected in 8.80s
+```
+
+The complete serial Task 10 suite passed:
+
+```text
+TEST_DATABASE_URL=postgresql://127.0.0.1:1/unused TEST_TEMPORAL_TARGET=127.0.0.1:1 /home/admin/Salience/.venv/bin/python -m pytest tests/unit/test_p1_external_acceptance.py -q --tb=short
+38 passed in 175.68s (0:02:55)
+```
+
+`Draft202012Validator.check_schema` passed, and `validate_payload_against_schema` returned no errors for the one-route and two-route fixtures. Direct CLI controls with the supplied schema returned:
+
+```text
+/home/admin/Salience/.venv/bin/python scripts/check-p1-external-acceptance.py --package /tmp/salience-route-inventory-cli-controls/valid-1-routes.json --schema docs/v4/p1-rg0-rg1-external-acceptance.schema.json
+exit 1; structural_status=VALID; disposition=NO_GO
+
+/home/admin/Salience/.venv/bin/python scripts/check-p1-external-acceptance.py --package /tmp/salience-route-inventory-cli-controls/valid-2-routes.json --schema docs/v4/p1-rg0-rg1-external-acceptance.schema.json
+exit 1; structural_status=VALID; disposition=NO_GO
+
+/home/admin/Salience/.venv/bin/python scripts/check-p1-external-acceptance.py --package /tmp/salience-route-inventory-cli-controls/empty-inventory.json --schema docs/v4/p1-rg0-rg1-external-acceptance.schema.json
+exit 2; structural_status=INVALID; disposition=NO_GO; SCHEMA_VALIDATION_FAILED
+```
+
+P0 release and P1 qualification ledger bytes were unchanged by CLI checks. `compileall` and `git diff --check` passed. Temporary CLI fixtures and generated `__pycache__` directories were removed. No ledger, production, or gate mutation was made.

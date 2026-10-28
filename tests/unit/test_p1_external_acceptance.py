@@ -608,7 +608,7 @@ def _seal(payload: dict[str, Any]) -> dict[str, Any]:
     return payload
 
 
-def _valid_package() -> dict[str, Any]:
+def _valid_package(route_count: int = 1, distribute_routes: bool = False) -> dict[str, Any]:
     run_id = "run-synthetic-2026-10-28-001"
     artifacts = []
     for kind, name in [
@@ -631,7 +631,10 @@ def _valid_package() -> dict[str, Any]:
         )
     artifact_ids = [item["artifact_id"] for item in artifacts]
     artifact_digests = [item["sha256"] for item in artifacts]
-    route_ids = [f"00000000-0000-4000-8000-{index:012d}" for index in range(1, len(ROW_IDS) + 1)]
+    route_ids = [
+        f"00000000-0000-4000-8000-{index:012d}"
+        for index in range(1, route_count + 1)
+    ]
     manifest = {
         "package_scope": "SYNTHETIC",
         "created_at": CURRENT_TIME,
@@ -716,7 +719,8 @@ def _valid_package() -> dict[str, Any]:
         "candidate_artifact_digests": artifact_digests,
     }
     rows = []
-    for route_id, row_id in zip(route_ids, ROW_IDS, strict=True):
+    for index, row_id in enumerate(ROW_IDS):
+        route_id = route_ids[index % len(route_ids)] if distribute_routes else route_ids[0]
         rows.append(_row(row_id, run_id, route_id))
     final_audit = {
         "audit_id": "audit-synthetic-001",
@@ -839,6 +843,69 @@ def test_package_requires_exact_row_set_once() -> None:
         result = _validate(package)
         assert result.to_dict()["structural_status"] == "INVALID"
         assert result.to_dict()["disposition"] == "NO_GO"
+
+
+@pytest.mark.parametrize("route_count", [1, 2])
+def test_route_inventory_cardinality_is_independent_of_row_count(route_count: int) -> None:
+    from salience.acceptance.p1_external_evidence import validate_payload_against_schema
+
+    package = _valid_package(route_count=route_count)
+    inventory = package["manifest"]["route_manifest"]["inventory"]
+    route_ids = [route["route_id"] for route in inventory]
+    worker = package["manifest"]["deployment"]["workers"][0]
+
+    assert len(inventory) == route_count
+    assert len(set(route_ids)) == route_count
+    assert worker["route_ids"] == route_ids
+    assert {row["scope"]["route"]["route_id"] for row in package["rows"]} == {route_ids[0]}
+    assert validate_payload_against_schema(
+        package,
+        ROOT / "docs/v4/p1-rg0-rg1-external-acceptance.schema.json",
+    ) == []
+    result = _validate(package).to_dict()
+    assert result["structural_status"] == "VALID"
+    assert result["disposition"] == "NO_GO"
+
+
+def test_route_inventory_rejects_empty_duplicate_mismatched_and_unlisted_routes() -> None:
+    from salience.acceptance.p1_external_evidence import validate_payload_against_schema
+
+    cases: list[tuple[dict[str, Any], str, bool]] = []
+
+    package = _valid_package()
+    package["manifest"]["route_manifest"]["inventory"] = []
+    package["manifest"]["deployment"]["workers"][0]["route_ids"] = []
+    cases.append((package, "ROW_ROUTE_INVENTORY_MISMATCH", False))
+
+    package = _valid_package()
+    duplicate_route = copy.deepcopy(package["manifest"]["route_manifest"]["inventory"][0])
+    duplicate_route["evidence_ref"] = _ref("duplicate-route-id-evidence")
+    package["manifest"]["route_manifest"]["inventory"].append(duplicate_route)
+    cases.append((package, "ROUTE_INVENTORY_INVALID", False))
+
+    package = _valid_package()
+    package["manifest"]["deployment"]["workers"][0]["route_ids"] = [
+        "00000000-0000-4000-8000-000000000099"
+    ]
+    cases.append((package, "WORKER_ROUTE_INVENTORY_MISMATCH", True))
+
+    package = _valid_package()
+    _row_by_id(package, "R01")["scope"]["route"]["route_id"] = (
+        "00000000-0000-4000-8000-000000000099"
+    )
+    cases.append((package, "ROW_ROUTE_INVENTORY_MISMATCH", True))
+
+    for package, blocker, schema_valid in cases:
+        _seal(package)
+        if schema_valid:
+            assert validate_payload_against_schema(
+                package,
+                ROOT / "docs/v4/p1-rg0-rg1-external-acceptance.schema.json",
+            ) == []
+        result = _validate(package)
+        assert result.to_dict()["structural_status"] == "INVALID"
+        assert result.to_dict()["disposition"] == "NO_GO"
+        assert blocker in _blocker_codes(result)
 
 
 def test_each_row_requires_named_authorized_owner_operator_and_independent_reviewer() -> None:
@@ -1452,7 +1519,7 @@ def test_deployment_artifacts_and_row_routes_resolve_to_authenticated_inventory(
 
     package = _valid_package()
     package["manifest"]["deployment"]["workers"][0]["route_ids"] = [
-        _row_by_id(package, "R01")["scope"]["route"]["route_id"]
+        "00000000-0000-4000-8000-000000000099"
     ]
     mutations.append(package)
 
@@ -1830,7 +1897,7 @@ def test_scope_bindings_cover_manifest_axes_and_route_applicability() -> None:
     _seal(package)
     axis_result = _validate(package)
 
-    package = _valid_package()
+    package = _valid_package(route_count=len(ROW_IDS), distribute_routes=True)
     _row_by_id(package, "R01")["raw_result"] = copy.deepcopy(
         _row_by_id(package, "R02")["raw_result"]
     )

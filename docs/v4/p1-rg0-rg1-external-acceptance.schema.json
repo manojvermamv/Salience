@@ -590,8 +590,7 @@
             },
             "inventory": {
               "type": "array",
-              "minItems": 22,
-              "maxItems": 22,
+              "minItems": 1,
               "items": {
                 "type": "object",
                 "additionalProperties": false,
@@ -2384,8 +2383,7 @@
             },
             "routes": {
               "type": "array",
-              "minItems": 22,
-              "maxItems": 22,
+              "minItems": 1,
               "uniqueItems": true,
               "items": {
                 "type": "object",
