@@ -3612,3 +3612,1332 @@ def test_0044_empty_downgrade_preserves_0043_fixture_contract():
             _assert_0043_fixture_contract(connection, before)
     finally:
         _drop_migration_database(source, name)
+
+
+_REVISION_0047 = "0047_p1_production_recovery_work_events"
+_RECOVERY_V1_KEYS = (
+    "production_intent_enrollment",
+    "goal",
+    "intent",
+    "cycle",
+    "context",
+    "job",
+    "production_current_dispatch",
+    "production_permits",
+    "production_permit_claims",
+    "publication_request",
+    "publication_plan",
+    "publication_attempt",
+    "external_effect",
+    "budget_reservation",
+    "output",
+    "remote_publication_receipts",
+    "publication_status_events",
+    "cycle_events",
+    "cycle_outbox",
+    "job_checkpoints",
+    "audit_events",
+    "provenance_records",
+)
+
+
+def _seed_0047_legacy_history(connection):
+    """Seed unmarked fixture-era rows that a production migration must preserve."""
+    workspace_id, subject_id = _seed_0044_workspace_subject(connection)
+    cycle = _seed_0044_cycle(connection, workspace_id, subject_id)
+    case_id = uuid4()
+    notification_id = uuid4()
+    connection.execute(
+        """INSERT INTO v4_recovery_cases(
+                  id,workspace_id,goal_id,target_cycle_id,context_id,operation_id,
+                  kind,open_fingerprint,failure_class,state,revision,owner_id,reason,
+                  deadline,max_actions)
+           VALUES(%s,%s,%s,%s,%s,%s,'manual_review',%s,'manual_review',
+                  'awaiting_review',1,%s,'fixture history',
+                  clock_timestamp()+interval '1 day',3)""",
+        (
+            case_id,
+            workspace_id,
+            cycle["goal_id"],
+            cycle["cycle_id"],
+            cycle["context_id"],
+            cycle["operation_id"],
+            "f" * 64,
+            subject_id,
+        ),
+    )
+    connection.execute(
+        """INSERT INTO v4_case_notifications(
+                  id,case_id,case_revision,kind,due_at)
+           VALUES(%s,%s,1,'review_due',clock_timestamp()+interval '1 hour')""",
+        (notification_id, case_id),
+    )
+
+    fixture_hold_id = uuid4()
+    fixture_operation_id = uuid4()
+    fixture_snapshot = Jsonb({key: None for key in _V1_KEYS})
+    fixture_snapshot_hash = connection.execute(
+        "SELECT encode(public.digest(%s::jsonb::text,'sha256'),'hex')",
+        (fixture_snapshot,),
+    ).fetchone()[0]
+    connection.execute("SET session_replication_role = replica")
+    connection.execute(
+        """INSERT INTO v4_legacy_publication_recovery_holds(
+                  id,operation_id,workspace_id,goal_id,intent_id,cycle_id,context_id,
+                  job_id,publication_attempt_id,permit_id,owner_id,execution_deadline,
+                  permit_expires_at,request_fingerprint,receipt_fingerprint,
+                  liability_fingerprint,remote_id,remote_state,reason,state,
+                  liability_snapshot,liability_snapshot_version,liability_snapshot_v1,
+                  liability_fingerprint_v1)
+           VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
+                  clock_timestamp()+interval '1 day',clock_timestamp()+interval '1 hour',
+                  %s,%s,%s,%s,'accepted','expired_permit_receipt','held',%s,
+                  'salience.publication-liability.v1',%s,%s)""",
+        (
+            fixture_hold_id,
+            fixture_operation_id,
+            workspace_id,
+            cycle["goal_id"],
+            cycle["intent_id"],
+            cycle["cycle_id"],
+            cycle["context_id"],
+            uuid4(),
+            uuid4(),
+            uuid4(),
+            subject_id,
+            "a" * 64,
+            "b" * 64,
+            fixture_snapshot_hash,
+            "fixture-v4-publication:" + str(fixture_operation_id),
+            Jsonb({"fixture_snapshot": True}),
+            fixture_snapshot,
+            fixture_snapshot_hash,
+        ),
+    )
+    connection.execute("SET session_replication_role = origin")
+    return {
+        "workspace_id": workspace_id,
+        "subject_id": subject_id,
+        "cycle": cycle,
+        "case_id": case_id,
+        "notification_id": notification_id,
+        "fixture_hold_id": fixture_hold_id,
+        "fixture_operation_id": fixture_operation_id,
+    }
+
+
+def _seed_0047_slice2_authority(connection):
+    workspace_id, subject_id = _seed_0044_workspace_subject(connection)
+    cycle = _seed_0044_cycle(connection, workspace_id, subject_id)
+    policy_id = _seed_0044_policy(connection, workspace_id, status="active")
+    approval_context = _approval_context_0044(
+        workspace_id, subject_id, cycle, policy_id
+    )
+    approval_id = _insert_0044_approval(
+        connection, workspace_id, policy_id, approval_context
+    )
+    connection.execute(
+        """UPDATE approval_requests SET status='approved',decided_by='reviewer',
+                  decided_at=clock_timestamp() WHERE id=%s""",
+        (approval_id,),
+    )
+    binding = {
+        "workspace_id": workspace_id,
+        "subject_id": subject_id,
+        "operation_id": cycle["operation_id"],
+        "cycle": cycle,
+        "policy_id": policy_id,
+        "approval_id": approval_id,
+    }
+    permit_id, idempotency_key = _insert_0044_production_permit(
+        connection,
+        binding,
+    )
+    claim_id = uuid4()
+    connection.execute(
+        """INSERT INTO v4_production_effect_permit_claims(
+                  claim_id,permit_id,operation_id,generation,route_fence_decision_id)
+           SELECT %s,permit_id,operation_id,generation,route_fence_decision_id
+           FROM v4_production_effect_permits WHERE permit_id=%s""",
+        (claim_id, permit_id),
+    )
+    connection.execute(
+        """SELECT public.v4_advance_production_current_dispatch_v1(
+                  %s,0,%s,%s,%s,NULL)""",
+        (cycle["operation_id"], permit_id, claim_id, idempotency_key),
+    )
+    # Create the historical expired-permit condition only after the 0044
+    # dispatch guard has accepted and recorded the permit as current.
+    connection.execute("SET session_replication_role = replica")
+    connection.execute(
+        """UPDATE v4_production_effect_permits
+           SET issued_at=clock_timestamp()-interval '120 seconds',
+               expires_at=clock_timestamp()-interval '61 seconds'
+           WHERE permit_id=%s""",
+        (permit_id,),
+    )
+    connection.execute("SET session_replication_role = origin")
+    assert connection.execute(
+        """SELECT EXISTS (
+               SELECT 1
+               FROM v4_production_current_dispatch dispatch
+               JOIN v4_production_effect_permits permit
+                 ON permit.permit_id=dispatch.current_permit_id
+                AND permit.operation_id=dispatch.operation_id
+                AND permit.generation=dispatch.generation
+               JOIN v4_production_effect_permit_claims claim
+                 ON claim.claim_id=dispatch.current_claim_id
+                AND claim.permit_id=permit.permit_id
+                AND claim.operation_id=permit.operation_id
+                AND claim.generation=permit.generation
+               WHERE dispatch.operation_id=%s AND dispatch.generation=1
+                 AND permit.intent_id=%s AND permit.cycle_id=%s
+                 AND permit.context_id=%s
+           )""",
+        (
+            cycle["operation_id"],
+            cycle["intent_id"],
+            cycle["cycle_id"],
+            cycle["context_id"],
+        ),
+    ).fetchone()[0]
+    grant_id = connection.execute(
+        """INSERT INTO permission_grants(
+                  workspace_id,principal_type,principal_id,scope,effect,
+                  constraints,expires_at)
+           VALUES(%s,'identity',%s,'production:recovery','allow','{}',
+                  clock_timestamp()+interval '1 day') RETURNING id""",
+        (workspace_id, str(subject_id)),
+    ).fetchone()[0]
+    connection.execute(
+        """INSERT INTO v4_stop_scopes(
+                  workspace_id,scope_key,revision,stopped,changed_by,reason)
+           VALUES(%s,'workspace',1,false,%s,'not stopped'),
+                 (%s,%s,1,false,%s,'not stopped')""",
+        (
+            workspace_id,
+            subject_id,
+            workspace_id,
+            "goal:" + str(cycle["goal_id"]),
+            subject_id,
+        ),
+    )
+    subject_revision = connection.execute(
+        "SELECT revision FROM identity_subjects WHERE id=%s", (subject_id,)
+    ).fetchone()[0]
+    return {
+        **binding,
+        "permit_id": permit_id,
+        "claim_id": claim_id,
+        "grant_id": grant_id,
+        "subject_revision": subject_revision,
+        "idempotency_key": idempotency_key,
+    }
+
+
+def _prepare_0047_0046_database(prefix):
+    source = os.environ["TEST_DATABASE_URL"]
+    fixture_state = {}
+
+    def seed_legacy(connection):
+        fixture_state.update(_seed_0047_legacy_history(connection))
+
+    name, database, _ = _prepare_0044_database(prefix, seed=seed_legacy)
+    try:
+        upgraded_0045 = _migration(database, "upgrade", _REVISION_0045)
+        assert upgraded_0045.returncode == 0, upgraded_0045.stdout + upgraded_0045.stderr
+        upgraded_0046 = _migration(database, "upgrade", _REVISION_0046)
+        assert upgraded_0046.returncode == 0, upgraded_0046.stdout + upgraded_0046.stderr
+        with psycopg.connect(database) as connection:
+            authority = _seed_0047_slice2_authority(connection)
+            before_0046 = _capture_0043_fixture_contract(connection)
+            assert connection.execute(
+                "SELECT version_num FROM alembic_version"
+            ).fetchone()[0] == _REVISION_0046
+            for relation in (
+                "v4_production_intent_enrollments",
+                "v4_production_recovery_work",
+                "v4_production_recovery_events",
+            ):
+                assert connection.execute(
+                    "SELECT to_regclass(%s)", ("public." + relation,)
+                ).fetchone()[0] is None
+        return name, database, before_0046, fixture_state, authority
+    except Exception:
+        _drop_migration_database(source, name)
+        raise
+
+
+def _upgrade_0047_or_fail(database):
+    upgraded = _migration(database, "upgrade", _REVISION_0047)
+    assert upgraded.returncode == 0, upgraded.stdout + upgraded.stderr
+    return upgraded
+
+
+def _insert_0047_enrollment(connection, authority, *, intent_id=None, overrides=None):
+    intent_id = intent_id or authority["cycle"]["intent_id"]
+    intent = connection.execute(
+        """SELECT goal_id,goal_revision,eligibility_revision
+           FROM v4_cycle_intents WHERE id=%s""",
+        (intent_id,),
+    ).fetchone()
+    assert intent is not None
+    row = {
+        "intent_id": intent_id,
+        "eligibility_revision": intent[2],
+        "workspace_id": authority["workspace_id"],
+        "goal_id": intent[0],
+        "goal_revision": intent[1],
+        "source_owner_id": authority["subject_id"],
+        "subject_id": authority["subject_id"],
+        "subject_revision": authority["subject_revision"],
+        "grant_ids": Jsonb([str(authority["grant_id"])]),
+        "policy_version_id": authority["policy_id"],
+        "policy_document_hash": "b" * 64,
+        "workspace_stop_revision": 1,
+        "goal_stop_revision": 1,
+        "artifact_sha256": "c" * 64,
+        "route_id": uuid4(),
+        "slot_id": uuid4(),
+        "route_owner_id": authority["subject_id"],
+        "fencing_epoch": 7,
+        "route_manifest_sha256": "d" * 64,
+        "external_lock_sha256": "e" * 64,
+        "route_fence_decision_id": uuid4(),
+    }
+    if overrides:
+        row.update(overrides)
+    cursor = connection.execute(
+        """INSERT INTO v4_production_intent_enrollments(
+                  intent_id,eligibility_revision,workspace_id,goal_id,goal_revision,
+                  source_owner_id,subject_id,subject_revision,grant_ids,
+                  policy_version_id,policy_document_hash,workspace_stop_revision,
+                  goal_stop_revision,artifact_sha256,route_id,slot_id,route_owner_id,
+                  fencing_epoch,route_manifest_sha256,external_lock_sha256,
+                  route_fence_decision_id)
+           VALUES(%(intent_id)s,%(eligibility_revision)s,%(workspace_id)s,%(goal_id)s,
+                  %(goal_revision)s,%(source_owner_id)s,%(subject_id)s,
+                  %(subject_revision)s,%(grant_ids)s,%(policy_version_id)s,
+                  %(policy_document_hash)s,%(workspace_stop_revision)s,
+                  %(goal_stop_revision)s,%(artifact_sha256)s,%(route_id)s,%(slot_id)s,
+                  %(route_owner_id)s,%(fencing_epoch)s,%(route_manifest_sha256)s,
+                  %(external_lock_sha256)s,%(route_fence_decision_id)s)
+           RETURNING *""",
+        row,
+    )
+    result = cursor.fetchone()
+    return dict(zip((column.name for column in cursor.description), result))
+
+
+def _insert_0047_recovery_work(
+    connection,
+    authority,
+    *,
+    source_discriminant,
+    source_id,
+    source_revision,
+    case_revision=None,
+    eligibility_revision=1,
+    cycle_id=None,
+    context_id=None,
+    operation_id=None,
+    intent_id=None,
+    target_alias=None,
+    remote_account_id=None,
+    remote_resource_id=None,
+    reason=None,
+    state=None,
+    snapshot=None,
+    snapshot_version=None,
+    snapshot_sha256=None,
+    deadline=None,
+    due_at=None,
+    expires_at=None,
+    request_fingerprint=None,
+):
+    deadline = deadline or connection.execute(
+        "SELECT clock_timestamp()+interval '1 day'"
+    ).fetchone()[0]
+    if request_fingerprint is None:
+        request_fingerprint = "a" * 64
+    cursor = connection.execute(
+        """INSERT INTO v4_production_recovery_work(
+                  work_id,source_discriminant,source_id,workspace_id,goal_id,intent_id,
+                  cycle_id,context_id,operation_id,source_revision,case_revision,
+                  eligibility_revision,owner_id,target_alias,remote_account_id,
+                  remote_resource_id,reason,state,request_fingerprint,
+                  snapshot_version,snapshot,snapshot_sha256,deadline,due_at,expires_at,
+                  deadline_revision,recipient_profile_revision)
+           VALUES(%(work_id)s,%(source_discriminant)s,%(source_id)s,%(workspace_id)s,
+                  %(goal_id)s,%(intent_id)s,%(cycle_id)s,%(context_id)s,%(operation_id)s,
+                  %(source_revision)s,%(case_revision)s,%(eligibility_revision)s,
+                  %(owner_id)s,%(target_alias)s,%(remote_account_id)s,
+                  %(remote_resource_id)s,%(reason)s,%(state)s,%(request_fingerprint)s,
+                  %(snapshot_version)s,%(snapshot)s,%(snapshot_sha256)s,%(deadline)s,
+                  %(due_at)s,%(expires_at)s,1,1) RETURNING *""",
+        {
+            "work_id": uuid4(),
+            "source_discriminant": source_discriminant,
+            "source_id": source_id,
+            "workspace_id": authority["workspace_id"],
+            "goal_id": authority["cycle"]["goal_id"],
+            "intent_id": intent_id or authority["cycle"]["intent_id"],
+            "cycle_id": cycle_id,
+            "context_id": context_id,
+            "operation_id": operation_id,
+            "source_revision": source_revision,
+            "case_revision": case_revision,
+            "eligibility_revision": eligibility_revision,
+            "owner_id": authority["subject_id"],
+            "target_alias": target_alias,
+            "remote_account_id": remote_account_id,
+            "remote_resource_id": remote_resource_id,
+            "reason": reason,
+            "state": state,
+            "request_fingerprint": request_fingerprint,
+            "snapshot_version": snapshot_version,
+            "snapshot": Jsonb(snapshot) if snapshot is not None else None,
+            "snapshot_sha256": snapshot_sha256,
+            "deadline": deadline,
+            "due_at": due_at,
+            "expires_at": expires_at,
+        },
+    )
+    result = cursor.fetchone()
+    return dict(zip((column.name for column in cursor.description), result))
+
+
+def _production_snapshot_fixture(connection, authority, enrollment):
+    snapshot = connection.execute(
+        """SELECT public.v4_production_recovery_publication_snapshot_v1(%s)""",
+        (authority["operation_id"],),
+    ).fetchone()[0]
+    assert snapshot is not None
+    snapshot_hash = connection.execute(
+        "SELECT encode(public.digest(%s::jsonb::text,'sha256'),'hex')",
+        (Jsonb(snapshot),),
+    ).fetchone()[0]
+    return snapshot, snapshot_hash
+
+
+def _production_request_fingerprint(connection, authority):
+    return connection.execute(
+        """SELECT encode(public.digest(request_snapshot::text,'sha256'),'hex')
+           FROM v4_production_effect_permits WHERE permit_id=%s""",
+        (authority["permit_id"],),
+    ).fetchone()[0]
+
+
+def _capture_0047_new_schema_contract(connection):
+    contract = {}
+    for table_name in (
+        "v4_production_intent_enrollments",
+        "v4_production_recovery_work",
+        "v4_production_recovery_events",
+    ):
+        contract[table_name] = {
+            "columns": connection.execute(
+                """SELECT column_name,data_type,udt_name,is_nullable,column_default,
+                          ordinal_position
+                   FROM information_schema.columns
+                   WHERE table_schema='public' AND table_name=%s
+                   ORDER BY ordinal_position""",
+                (table_name,),
+            ).fetchall(),
+            "constraints": connection.execute(
+                """SELECT conname,pg_get_constraintdef(oid)
+                   FROM pg_constraint WHERE conrelid=%s::regclass
+                   ORDER BY conname""",
+                ("public." + table_name,),
+            ).fetchall(),
+            "indexes": connection.execute(
+                """SELECT indexname,indexdef FROM pg_indexes
+                   WHERE schemaname='public' AND tablename=%s
+                   ORDER BY indexname""",
+                (table_name,),
+            ).fetchall(),
+            "triggers": connection.execute(
+                """SELECT tgname,pg_get_triggerdef(oid),tgenabled
+                   FROM pg_trigger WHERE tgrelid=%s::regclass AND NOT tgisinternal
+                   ORDER BY tgname""",
+                ("public." + table_name,),
+            ).fetchall(),
+        }
+    contract["functions"] = connection.execute(
+        """SELECT proc.proname,pg_get_function_identity_arguments(proc.oid),
+                  pg_get_functiondef(proc.oid),proc.prosecdef,proc.proconfig,
+                  COALESCE(proc.proacl,acldefault('f',proc.proowner))::text
+           FROM pg_proc proc JOIN pg_namespace schema
+             ON schema.oid=proc.pronamespace
+           WHERE schema.nspname='public' AND proc.proname = ANY(%s)
+           ORDER BY proc.proname,pg_get_function_identity_arguments(proc.oid)""",
+        (
+            [
+                "v4_validate_production_intent_enrollment_v1",
+                "v4_production_recovery_publication_snapshot_v1",
+                "v4_validate_production_recovery_work_v1",
+                "v4_validate_production_recovery_event_v1",
+                "v4_reject_production_recovery_history_change_v1",
+            ],
+        ),
+    ).fetchall()
+    return contract
+
+
+def test_0047_upgrade_preserves_0046_authority_history():
+    source = os.environ["TEST_DATABASE_URL"]
+    name, database, before, fixture, authority = _prepare_0047_0046_database(
+        "p1_0047_preserve_"
+    )
+    try:
+        with psycopg.connect(database) as connection:
+            assert connection.execute(
+                "SELECT version_num FROM alembic_version"
+            ).fetchone()[0] == _REVISION_0046
+            assert connection.execute(
+                "SELECT count(*) FROM v4_legacy_publication_recovery_holds WHERE id=%s",
+                (fixture["fixture_hold_id"],),
+            ).fetchone()[0] == 1
+            assert connection.execute(
+                "SELECT count(*) FROM v4_recovery_cases WHERE id=%s",
+                (fixture["case_id"],),
+            ).fetchone()[0] == 1
+            assert connection.execute(
+                "SELECT count(*) FROM v4_case_notifications WHERE id=%s",
+                (fixture["notification_id"],),
+            ).fetchone()[0] == 1
+            assert connection.execute(
+                "SELECT count(*) FROM v4_production_effect_permits WHERE permit_id=%s",
+                (authority["permit_id"],),
+            ).fetchone()[0] == 1
+            assert connection.execute(
+                "SELECT count(*) FROM v4_production_effect_permit_claims WHERE claim_id=%s",
+                (authority["claim_id"],),
+            ).fetchone()[0] == 1
+            assert connection.execute(
+                "SELECT count(*) FROM v4_production_current_dispatch WHERE operation_id=%s",
+                (authority["operation_id"],),
+            ).fetchone()[0] == 1
+
+        _upgrade_0047_or_fail(database)
+        with psycopg.connect(database) as connection:
+            assert connection.execute(
+                "SELECT version_num FROM alembic_version"
+            ).fetchone()[0] == _REVISION_0047
+            _assert_0043_fixture_contract(connection, before)
+            assert connection.execute(
+                "SELECT count(*) FROM v4_production_intent_enrollments"
+            ).fetchone()[0] == 0
+            assert connection.execute(
+                "SELECT count(*) FROM v4_production_recovery_work"
+            ).fetchone()[0] == 0
+            assert connection.execute(
+                "SELECT count(*) FROM v4_production_recovery_events"
+            ).fetchone()[0] == 0
+    finally:
+        _drop_migration_database(source, name)
+
+
+def test_0047_production_intent_enrollment_requires_complete_current_authority():
+    source = os.environ["TEST_DATABASE_URL"]
+    name, database, _, _, authority = _prepare_0047_0046_database(
+        "p1_0047_enrollment_complete_"
+    )
+    try:
+        _upgrade_0047_or_fail(database)
+        with psycopg.connect(database) as connection:
+            valid = _insert_0047_enrollment(connection, authority)
+            assert valid["intent_id"] == authority["cycle"]["intent_id"]
+
+            assert _postgres_statement_rejected(
+                connection,
+                "canonical production grant IDs|required.*grant",
+                lambda: _insert_0047_enrollment(
+                    connection,
+                    authority,
+                    overrides={"grant_ids": Jsonb([])},
+                ),
+            )
+            assert _postgres_statement_rejected(
+                connection,
+                "current intent eligibility|production intent enrollment",
+                lambda: _insert_0047_enrollment(
+                    connection,
+                    authority,
+                    overrides={"eligibility_revision": 99},
+                ),
+            )
+            assert _postgres_statement_rejected(
+                connection,
+                "current workspace stop|stop revision|production intent enrollment",
+                lambda: _insert_0047_enrollment(
+                    connection,
+                    authority,
+                    overrides={"workspace_stop_revision": 99},
+                ),
+            )
+
+            role = "p1_0047_enroll_ro_" + uuid4().hex[:12]
+            connection.execute(
+                psycopg.sql.SQL("CREATE ROLE {} NOLOGIN").format(
+                    psycopg.sql.Identifier(role)
+                )
+            )
+            connection.execute(
+                psycopg.sql.SQL("GRANT USAGE ON SCHEMA public TO {}").format(
+                    psycopg.sql.Identifier(role)
+                )
+            )
+            connection.execute(
+                psycopg.sql.SQL("SET ROLE {}").format(psycopg.sql.Identifier(role))
+            )
+            for denied_write in (
+                lambda: connection.execute(
+                    "INSERT INTO v4_production_intent_enrollments DEFAULT VALUES"
+                ),
+                lambda: connection.execute(
+                    "UPDATE v4_production_intent_enrollments SET intent_id=intent_id "
+                    "WHERE intent_id=%s",
+                    (valid["intent_id"],),
+                ),
+                lambda: connection.execute(
+                    "DELETE FROM v4_production_intent_enrollments WHERE intent_id=%s",
+                    (valid["intent_id"],),
+                ),
+            ):
+                assert _postgres_statement_rejected(
+                    connection, "permission denied", denied_write
+                )
+            connection.execute("RESET ROLE")
+        _drop_migration_database(source, name, role=role)
+        name = None
+    finally:
+        if name is not None:
+            _drop_migration_database(source, name)
+
+
+def test_0047_production_intent_enrollment_is_immutable_and_has_no_backfill():
+    source = os.environ["TEST_DATABASE_URL"]
+    name, database, _, fixture, authority = _prepare_0047_0046_database(
+        "p1_0047_enrollment_immutable_"
+    )
+    try:
+        _upgrade_0047_or_fail(database)
+        with psycopg.connect(database) as connection:
+            assert connection.execute(
+                "SELECT count(*) FROM v4_production_intent_enrollments"
+            ).fetchone()[0] == 0
+            assert connection.execute(
+                "SELECT count(*) FROM v4_production_recovery_work"
+            ).fetchone()[0] == 0
+            assert connection.execute(
+                "SELECT count(*) FROM v4_production_recovery_events"
+            ).fetchone()[0] == 0
+
+            historical_intent_id = fixture["cycle"]["intent_id"]
+            assert connection.execute(
+                """SELECT count(*) FROM v4_production_intent_enrollments
+                   WHERE intent_id=%s""",
+                (historical_intent_id,),
+            ).fetchone()[0] == 0
+            enrollment = _insert_0047_enrollment(connection, authority)
+            assert _postgres_statement_rejected(
+                connection,
+                "production intent enrollment is immutable",
+                lambda: connection.execute(
+                    "UPDATE v4_production_intent_enrollments SET artifact_sha256=%s "
+                    "WHERE intent_id=%s AND eligibility_revision=%s",
+                    ("f" * 64, enrollment["intent_id"], enrollment["eligibility_revision"]),
+                ),
+            )
+            assert _postgres_statement_rejected(
+                connection,
+                "production intent enrollment is immutable",
+                lambda: connection.execute(
+                    "DELETE FROM v4_production_intent_enrollments "
+                    "WHERE intent_id=%s AND eligibility_revision=%s",
+                    (enrollment["intent_id"], enrollment["eligibility_revision"]),
+                ),
+            )
+
+            before = connection.execute(
+                """SELECT to_jsonb(e) FROM v4_production_intent_enrollments e
+                   WHERE intent_id=%s AND eligibility_revision=%s""",
+                (enrollment["intent_id"], enrollment["eligibility_revision"]),
+            ).fetchone()[0]
+            assert before["intent_id"] == str(enrollment["intent_id"])
+    finally:
+        _drop_migration_database(source, name)
+
+
+def test_0047_recovery_source_discriminants_and_snapshots_are_guarded():
+    source = os.environ["TEST_DATABASE_URL"]
+    name, database, _, fixture, authority = _prepare_0047_0046_database(
+        "p1_0047_work_sources_"
+    )
+    try:
+        _upgrade_0047_or_fail(database)
+        with psycopg.connect(database) as connection:
+            enrollment = _insert_0047_enrollment(connection, authority)
+            cycle = authority["cycle"]
+            permit_snapshot = connection.execute(
+                """SELECT request_snapshot FROM v4_production_effect_permits
+                   WHERE permit_id=%s""",
+                (authority["permit_id"],),
+            ).fetchone()[0]
+            request_fingerprint = connection.execute(
+                "SELECT encode(public.digest(%s::jsonb::text,'sha256'),'hex')",
+                (Jsonb(permit_snapshot),),
+            ).fetchone()[0]
+
+            case_id = uuid4()
+            case_revision = 1
+            case_deadline = connection.execute(
+                "SELECT clock_timestamp()+interval '1 day'"
+            ).fetchone()[0]
+            connection.execute(
+                """INSERT INTO v4_recovery_cases(
+                          id,workspace_id,goal_id,target_cycle_id,context_id,operation_id,
+                          kind,open_fingerprint,failure_class,state,revision,owner_id,
+                          reason,deadline,max_actions)
+                   VALUES(%s,%s,%s,%s,%s,%s,'reconciliation',%s,'unknown_effect',
+                          'reconciling',1,%s,'production recovery source',%s,3)""",
+                (
+                    case_id,
+                    authority["workspace_id"],
+                    cycle["goal_id"],
+                    cycle["cycle_id"],
+                    cycle["context_id"],
+                    cycle["operation_id"],
+                    "e" * 64,
+                    authority["subject_id"],
+                    case_deadline,
+                ),
+            )
+            cycle_case = _insert_0047_recovery_work(
+                connection,
+                authority,
+                source_discriminant="cycle_case",
+                source_id=case_id,
+                source_revision=case_revision,
+                case_revision=case_revision,
+                eligibility_revision=enrollment["eligibility_revision"],
+                cycle_id=cycle["cycle_id"],
+                context_id=cycle["context_id"],
+                operation_id=cycle["operation_id"],
+                target_alias="production-provider-1",
+                remote_account_id="production-account-1",
+                remote_resource_id=None,
+                reason="unknown_effect",
+                state="reconciling",
+                deadline=case_deadline,
+                request_fingerprint=request_fingerprint,
+            )
+            assert cycle_case["source_id"] == case_id
+            assert cycle_case["source_fingerprint"] != "0" * 64
+            assert cycle_case["snapshot"] is None
+            assert (cycle_case["reason"], cycle_case["state"]) == connection.execute(
+                "SELECT failure_class,state FROM v4_recovery_cases WHERE id=%s",
+                (case_id,),
+            ).fetchone()
+            assert _postgres_statement_rejected(
+                connection,
+                "exact current source",
+                lambda: _insert_0047_recovery_work(
+                    connection,
+                    authority,
+                    source_discriminant="cycle_case",
+                    source_id=case_id,
+                    source_revision=case_revision,
+                    case_revision=case_revision,
+                    eligibility_revision=enrollment["eligibility_revision"],
+                    cycle_id=cycle["cycle_id"],
+                    context_id=cycle["context_id"],
+                    operation_id=cycle["operation_id"],
+                    target_alias="production-provider-1",
+                    remote_account_id="production-account-1",
+                    remote_resource_id=None,
+                    reason="manual_review",
+                    state="reconciling",
+                    deadline=case_deadline,
+                    request_fingerprint=request_fingerprint,
+                ),
+            )
+            assert _postgres_statement_rejected(
+                connection,
+                "remote resource identity must match persisted production receipt evidence",
+                lambda: _insert_0047_recovery_work(
+                    connection,
+                    authority,
+                    source_discriminant="cycle_case",
+                    source_id=case_id,
+                    source_revision=case_revision,
+                    case_revision=case_revision,
+                    eligibility_revision=enrollment["eligibility_revision"],
+                    cycle_id=cycle["cycle_id"],
+                    context_id=cycle["context_id"],
+                    operation_id=cycle["operation_id"],
+                    target_alias="production-provider-1",
+                    remote_account_id="production-account-1",
+                    remote_resource_id="not-in-persisted-receipts",
+                    reason="unknown_effect",
+                    state="reconciling",
+                    deadline=case_deadline,
+                    request_fingerprint=request_fingerprint,
+                ),
+            )
+
+            preadmission_intent_id = uuid4()
+            due_at, expires_at = connection.execute(
+                "SELECT clock_timestamp(),clock_timestamp()+interval '1 day'"
+            ).fetchone()
+            connection.execute(
+                """INSERT INTO v4_cycle_intents(
+                          id,goal_id,goal_revision,slot,fingerprint,due_at,expires_at)
+                   VALUES(%s,%s,1,%s,%s,%s,%s)""",
+                (
+                    preadmission_intent_id,
+                    cycle["goal_id"],
+                    "pre-admission-" + str(preadmission_intent_id),
+                    "1" * 64,
+                    due_at,
+                    expires_at,
+                ),
+            )
+            preadmission_enrollment = _insert_0047_enrollment(
+                connection, authority, intent_id=preadmission_intent_id
+            )
+            connection.execute(
+                """INSERT INTO v4_admissions(
+                          id,intent_id,eligibility_revision,disposition,reason,cycle_id)
+                   VALUES(%s,%s,%s,'deferred','wait for due time',NULL)""",
+                (
+                    uuid4(),
+                    preadmission_intent_id,
+                    preadmission_enrollment["eligibility_revision"],
+                ),
+            )
+            preadmission = _insert_0047_recovery_work(
+                connection,
+                authority,
+                source_discriminant="pre_admission_intent_case",
+                source_id=preadmission_intent_id,
+                source_revision=preadmission_enrollment["eligibility_revision"],
+                intent_id=preadmission_intent_id,
+                eligibility_revision=preadmission_enrollment["eligibility_revision"],
+                target_alias=None,
+                remote_account_id=None,
+                remote_resource_id=None,
+                reason="admission_deferred",
+                state="unadmitted",
+                deadline=expires_at,
+                due_at=due_at,
+                expires_at=expires_at,
+                request_fingerprint="1" * 64,
+            )
+            assert preadmission["source_id"] == preadmission_intent_id
+            assert preadmission["cycle_id"] is None
+            assert preadmission["context_id"] is None
+            assert preadmission["operation_id"] is None
+            assert preadmission["target_alias"] is None
+            assert preadmission["snapshot"] is None
+            assert (preadmission["reason"], preadmission["state"]) == (
+                "admission_deferred",
+                "unadmitted",
+            )
+            assert _postgres_statement_rejected(
+                connection,
+                "canonical admission disposition",
+                lambda: _insert_0047_recovery_work(
+                    connection,
+                    authority,
+                    source_discriminant="pre_admission_intent_case",
+                    source_id=preadmission_intent_id,
+                    source_revision=preadmission_enrollment["eligibility_revision"],
+                    intent_id=preadmission_intent_id,
+                    eligibility_revision=preadmission_enrollment["eligibility_revision"],
+                    reason="admission_review_required",
+                    state="unadmitted",
+                    deadline=expires_at,
+                    due_at=due_at,
+                    expires_at=expires_at,
+                    request_fingerprint="1" * 64,
+                ),
+            )
+
+            hold_snapshot, hold_hash = _production_snapshot_fixture(
+                connection, authority, enrollment
+            )
+            hold = _insert_0047_recovery_work(
+                connection,
+                authority,
+                source_discriminant="production_publication_hold",
+                source_id=cycle["operation_id"],
+                source_revision=1,
+                eligibility_revision=enrollment["eligibility_revision"],
+                cycle_id=cycle["cycle_id"],
+                context_id=cycle["context_id"],
+                operation_id=cycle["operation_id"],
+                target_alias="production-provider-1",
+                remote_account_id="production-account-1",
+                remote_resource_id=None,
+                reason="expired_permit_receipt",
+                state="held",
+                snapshot=hold_snapshot,
+                snapshot_version="salience.p1-production-publication-liability.v1",
+                snapshot_sha256=hold_hash,
+                request_fingerprint=request_fingerprint,
+            )
+            assert hold["work_id"] != cycle["operation_id"]
+            assert hold["source_id"] == hold["operation_id"]
+            assert set(hold["snapshot"]) == set(_RECOVERY_V1_KEYS)
+            assert (hold["reason"], hold["state"]) == (
+                "expired_permit_receipt",
+                "held",
+            )
+            assert _postgres_statement_rejected(
+                connection,
+                "reason/state pair does not match cycle evidence",
+                lambda: _insert_0047_recovery_work(
+                    connection,
+                    authority,
+                    source_discriminant="production_publication_hold",
+                    source_id=cycle["operation_id"],
+                    source_revision=1,
+                    eligibility_revision=enrollment["eligibility_revision"],
+                    cycle_id=cycle["cycle_id"],
+                    context_id=cycle["context_id"],
+                    operation_id=cycle["operation_id"],
+                    target_alias="production-provider-1",
+                    remote_account_id="production-account-1",
+                    remote_resource_id=None,
+                    reason="published_during_cancel",
+                    state="held",
+                    snapshot=hold_snapshot,
+                    snapshot_version="salience.p1-production-publication-liability.v1",
+                    snapshot_sha256=hold_hash,
+                    request_fingerprint=request_fingerprint,
+                ),
+            )
+            assert _postgres_statement_rejected(
+                connection,
+                "fixture target identities cannot be adopted",
+                lambda: _insert_0047_recovery_work(
+                    connection,
+                    authority,
+                    source_discriminant="cycle_case",
+                    source_id=case_id,
+                    source_revision=case_revision,
+                    case_revision=case_revision,
+                    eligibility_revision=enrollment["eligibility_revision"],
+                    cycle_id=cycle["cycle_id"],
+                    context_id=cycle["context_id"],
+                    operation_id=cycle["operation_id"],
+                    target_alias="fixture-provider",
+                    remote_account_id="production-account-1",
+                    remote_resource_id=None,
+                    reason="unknown_effect",
+                    state="reconciling",
+                    deadline=case_deadline,
+                    request_fingerprint=request_fingerprint,
+                ),
+            )
+
+            assert _postgres_statement_rejected(
+                connection,
+                "exact production intent enrollment|required production enrollment",
+                lambda: _insert_0047_recovery_work(
+                    connection,
+                    authority,
+                    source_discriminant="cycle_case",
+                    source_id=fixture["case_id"],
+                    source_revision=2,
+                    case_revision=2,
+                    intent_id=fixture["cycle"]["intent_id"],
+                    eligibility_revision=1,
+                    cycle_id=fixture["cycle"]["cycle_id"],
+                    context_id=fixture["cycle"]["context_id"],
+                    operation_id=fixture["cycle"]["operation_id"],
+                    target_alias="production-provider-1",
+                    remote_account_id="production-account-1",
+                    remote_resource_id="unmarked-source-resource",
+                    reason="manual_review",
+                    state="awaiting_review",
+                    request_fingerprint="a" * 64,
+                ),
+            )
+            assert _postgres_statement_rejected(
+                connection,
+                "source_id.*operation_id|production publication hold source identity",
+                lambda: _insert_0047_recovery_work(
+                    connection,
+                    authority,
+                    source_discriminant="production_publication_hold",
+                    source_id=uuid4(),
+                    source_revision=1,
+                    eligibility_revision=enrollment["eligibility_revision"],
+                    cycle_id=cycle["cycle_id"],
+                    context_id=cycle["context_id"],
+                    operation_id=cycle["operation_id"],
+                    target_alias="production-provider-1",
+                    remote_account_id="production-account-1",
+                    remote_resource_id=None,
+                    reason="expired_permit_receipt",
+                    state="held",
+                    snapshot=hold_snapshot,
+                    snapshot_version="salience.p1-production-publication-liability.v1",
+                    snapshot_sha256=hold_hash,
+                    request_fingerprint=request_fingerprint,
+                ),
+            )
+            incomplete_snapshot = dict(hold_snapshot)
+            incomplete_snapshot.pop("audit_events")
+            assert _postgres_statement_rejected(
+                connection,
+                "exact 22 production liability snapshot keys|required 22-key",
+                lambda: _insert_0047_recovery_work(
+                    connection,
+                    authority,
+                    source_discriminant="production_publication_hold",
+                    source_id=cycle["operation_id"],
+                    source_revision=1,
+                    eligibility_revision=enrollment["eligibility_revision"],
+                    cycle_id=cycle["cycle_id"],
+                    context_id=cycle["context_id"],
+                    operation_id=cycle["operation_id"],
+                    target_alias="production-provider-1",
+                    remote_account_id="production-account-1",
+                    remote_resource_id=None,
+                    reason="expired_permit_receipt",
+                    state="held",
+                    snapshot=incomplete_snapshot,
+                    snapshot_version="salience.p1-production-publication-liability.v1",
+                    snapshot_sha256=hold_hash,
+                    request_fingerprint=request_fingerprint,
+                ),
+            )
+    finally:
+        _drop_migration_database(source, name)
+
+
+def test_0047_recovery_events_are_append_only_and_scoped():
+    source = os.environ["TEST_DATABASE_URL"]
+    name, database, _, _, authority = _prepare_0047_0046_database(
+        "p1_0047_recovery_events_"
+    )
+    try:
+        _upgrade_0047_or_fail(database)
+        with psycopg.connect(database) as connection:
+            enrollment = _insert_0047_enrollment(connection, authority)
+            request_fingerprint = _production_request_fingerprint(
+                connection, authority
+            )
+            work = _insert_0047_recovery_work(
+                connection,
+                authority,
+                source_discriminant="production_publication_hold",
+                source_id=authority["operation_id"],
+                source_revision=1,
+                eligibility_revision=enrollment["eligibility_revision"],
+                cycle_id=authority["cycle"]["cycle_id"],
+                context_id=authority["cycle"]["context_id"],
+                operation_id=authority["operation_id"],
+                target_alias="production-provider-1",
+                remote_account_id="production-account-1",
+                remote_resource_id=None,
+                reason="expired_permit_receipt",
+                state="held",
+                snapshot=_production_snapshot_fixture(connection, authority, enrollment)[0],
+                snapshot_version="salience.p1-production-publication-liability.v1",
+                snapshot_sha256=_production_snapshot_fixture(
+                    connection, authority, enrollment
+                )[1],
+                request_fingerprint=request_fingerprint,
+            )
+            payload = Jsonb(
+                {
+                    "schema_version": "salience.p1-production-recovery-event.v1",
+                    "reason_code": "expired_permit_receipt",
+                    "evidence_sha256": "a" * 64,
+                    "operation_id": str(authority["operation_id"]),
+                }
+            )
+            event_id = uuid4()
+            event_key = "work:" + str(work["work_id"]) + ":initial-alert"
+            connection.execute(
+                """INSERT INTO v4_production_recovery_events(
+                          event_id,work_id,event_key,event_kind,occurred_at,actor_id,
+                          route_id,slot_id,fencing_epoch,policy_decision_id,payload,
+                          payload_sha256)
+                   VALUES(%s,%s,%s,'alert_intent',clock_timestamp(),%s,%s,%s,7,%s,%s,
+                          encode(public.digest(%s::jsonb::text,'sha256'),'hex'))""",
+                (
+                    event_id,
+                    work["work_id"],
+                    event_key,
+                    authority["subject_id"],
+                    enrollment["route_id"],
+                    enrollment["slot_id"],
+                    uuid4(),
+                    payload,
+                    payload,
+                ),
+            )
+            assert connection.execute(
+                "SELECT event_kind FROM v4_production_recovery_events WHERE event_id=%s",
+                (event_id,),
+            ).fetchone()[0] == "alert_intent"
+
+            mismatched_scope_payload = Jsonb(
+                {"operation_id": str(uuid4())}
+            )
+            assert _postgres_statement_rejected(
+                connection,
+                "payload identity or route does not match",
+                lambda: connection.execute(
+                    """INSERT INTO v4_production_recovery_events(
+                              event_id,work_id,event_key,event_kind,occurred_at,actor_id,
+                              policy_decision_id,payload,payload_sha256)
+                       VALUES(%s,%s,%s,'held_conflict',clock_timestamp(),%s,%s,%s,
+                              encode(public.digest(%s::jsonb::text,'sha256'),'hex'))""",
+                    (
+                        uuid4(),
+                        work["work_id"],
+                        event_key + ":wrong-operation",
+                        authority["subject_id"],
+                        uuid4(),
+                        mismatched_scope_payload,
+                        mismatched_scope_payload,
+                    ),
+                ),
+            )
+
+            assert _postgres_statement_rejected(
+                connection,
+                "production recovery events are append-only",
+                lambda: connection.execute(
+                    "UPDATE v4_production_recovery_events SET event_kind="
+                    "'same_operation_no_effect_reissue' WHERE event_id=%s",
+                    (event_id,),
+                ),
+            )
+            assert _postgres_statement_rejected(
+                connection,
+                "production recovery events are append-only",
+                lambda: connection.execute(
+                    "DELETE FROM v4_production_recovery_events WHERE event_id=%s",
+                    (event_id,),
+                ),
+            )
+            duplicate_key = _postgres_statement_rejected(
+                connection,
+                "unique|duplicate key",
+                lambda: connection.execute(
+                    """INSERT INTO v4_production_recovery_events(
+                              event_id,work_id,event_key,event_kind,occurred_at,actor_id,
+                              policy_decision_id,payload,payload_sha256)
+                       VALUES(%s,%s,%s,'same_operation_no_effect_reissue',
+                              clock_timestamp(),%s,%s,%s,%s)""",
+                    (
+                        uuid4(),
+                        work["work_id"],
+                        event_key,
+                        authority["subject_id"],
+                        uuid4(),
+                        payload,
+                        connection.execute(
+                            "SELECT encode(public.digest(%s::jsonb::text,'sha256'),'hex')",
+                            (payload,),
+                        ).fetchone()[0],
+                    ),
+                ),
+            )
+            assert duplicate_key
+
+            assert _postgres_statement_rejected(
+                connection,
+                "unsafe recovery event payload key|unapproved payload key",
+                lambda: connection.execute(
+                    """INSERT INTO v4_production_recovery_events(
+                              event_id,work_id,event_key,event_kind,occurred_at,actor_id,
+                              policy_decision_id,payload,payload_sha256)
+                       VALUES(%s,%s,%s,'held_conflict',clock_timestamp(),%s,%s,%s,%s)""",
+                    (
+                        uuid4(),
+                        work["work_id"],
+                        event_key + ":unsafe",
+                        authority["subject_id"],
+                        uuid4(),
+                        Jsonb({"access_token": "never persist"}),
+                        "b" * 64,
+                    ),
+                ),
+            )
+
+            assert _postgres_statement_rejected(
+                connection,
+                "does not belong to the matching production recovery work|event work scope",
+                lambda: connection.execute(
+                    """INSERT INTO v4_production_recovery_events(
+                              event_id,work_id,event_key,event_kind,occurred_at,actor_id,
+                              policy_decision_id,payload,payload_sha256)
+                       VALUES(%s,%s,%s,'held_conflict',clock_timestamp(),%s,%s,%s,
+                              encode(public.digest(%s::jsonb::text,'sha256'),'hex'))""",
+                    (
+                        uuid4(),
+                        uuid4(),
+                        event_key + ":cross-work",
+                        authority["subject_id"],
+                        uuid4(),
+                        payload,
+                        payload,
+                    ),
+                ),
+            )
+    finally:
+        _drop_migration_database(source, name)
+
+
+def test_0047_downgrade_refuses_populated_recovery_history():
+    source = os.environ["TEST_DATABASE_URL"]
+    name, database, _, _, authority = _prepare_0047_0046_database(
+        "p1_0047_populated_downgrade_"
+    )
+    try:
+        _upgrade_0047_or_fail(database)
+        with psycopg.connect(database) as connection:
+            enrollment = _insert_0047_enrollment(connection, authority)
+            snapshot, snapshot_hash = _production_snapshot_fixture(
+                connection, authority, enrollment
+            )
+            request_fingerprint = _production_request_fingerprint(
+                connection, authority
+            )
+            work = _insert_0047_recovery_work(
+                connection,
+                authority,
+                source_discriminant="production_publication_hold",
+                source_id=authority["operation_id"],
+                source_revision=1,
+                eligibility_revision=enrollment["eligibility_revision"],
+                cycle_id=authority["cycle"]["cycle_id"],
+                context_id=authority["cycle"]["context_id"],
+                operation_id=authority["operation_id"],
+                target_alias="production-provider-1",
+                remote_account_id="production-account-1",
+                remote_resource_id=None,
+                reason="expired_permit_receipt",
+                state="held",
+                snapshot=snapshot,
+                snapshot_version="salience.p1-production-publication-liability.v1",
+                snapshot_sha256=snapshot_hash,
+                request_fingerprint=request_fingerprint,
+            )
+            payload = Jsonb({"reason_code": "expired_permit_receipt"})
+            connection.execute(
+                """INSERT INTO v4_production_recovery_events(
+                          event_id,work_id,event_key,event_kind,occurred_at,actor_id,
+                          route_id,slot_id,fencing_epoch,policy_decision_id,payload,
+                          payload_sha256)
+                   VALUES(%s,%s,'downgrade-proof','alert_intent',clock_timestamp(),
+                          %s,%s,%s,7,%s,%s,
+                          encode(public.digest(%s::jsonb::text,'sha256'),'hex'))""",
+                (
+                    uuid4(),
+                    work["work_id"],
+                    authority["subject_id"],
+                    enrollment["route_id"],
+                    enrollment["slot_id"],
+                    uuid4(),
+                    payload,
+                    payload,
+                ),
+            )
+            before_rows = connection.execute(
+                """SELECT
+                      (SELECT count(*) FROM v4_production_intent_enrollments),
+                      (SELECT count(*) FROM v4_production_recovery_work),
+                      (SELECT count(*) FROM v4_production_recovery_events),
+                      (SELECT to_jsonb(e) FROM v4_production_intent_enrollments e
+                       WHERE intent_id=%s AND eligibility_revision=%s),
+                      (SELECT to_jsonb(w) FROM v4_production_recovery_work w
+                       WHERE work_id=%s),
+                      (SELECT version_num FROM alembic_version)""",
+                (
+                    enrollment["intent_id"],
+                    enrollment["eligibility_revision"],
+                    work["work_id"],
+                ),
+            ).fetchone()
+            schema_before = _capture_0047_new_schema_contract(connection)
+        downgrade = _migration(database, "downgrade", _REVISION_0046)
+        assert downgrade.returncode != 0
+        assert "preserve production recovery enrollment and work history" in (
+            downgrade.stdout + downgrade.stderr
+        )
+        with psycopg.connect(database) as connection:
+            after_rows = connection.execute(
+                """SELECT
+                      (SELECT count(*) FROM v4_production_intent_enrollments),
+                      (SELECT count(*) FROM v4_production_recovery_work),
+                      (SELECT count(*) FROM v4_production_recovery_events),
+                      (SELECT to_jsonb(e) FROM v4_production_intent_enrollments e
+                       WHERE intent_id=%s AND eligibility_revision=%s),
+                      (SELECT to_jsonb(w) FROM v4_production_recovery_work w
+                       WHERE work_id=%s),
+                      (SELECT version_num FROM alembic_version)""",
+                (
+                    enrollment["intent_id"],
+                    enrollment["eligibility_revision"],
+                    work["work_id"],
+                ),
+            ).fetchone()
+            assert after_rows == before_rows
+            assert _capture_0047_new_schema_contract(connection) == schema_before
+            for relation in (
+                "v4_production_intent_enrollments",
+                "v4_production_recovery_work",
+                "v4_production_recovery_events",
+            ):
+                assert connection.execute(
+                    "SELECT to_regclass(%s) IS NOT NULL",
+                    ("public." + relation,),
+                ).fetchone()[0]
+    finally:
+        _drop_migration_database(source, name)
+
+
+def test_0047_empty_downgrade_restores_0046_head():
+    source = os.environ["TEST_DATABASE_URL"]
+    name, database, before, _, _ = _prepare_0047_0046_database(
+        "p1_0047_empty_downgrade_"
+    )
+    try:
+        _upgrade_0047_or_fail(database)
+        downgraded = _migration(database, "downgrade", _REVISION_0046)
+        assert downgraded.returncode == 0, downgraded.stdout + downgraded.stderr
+        with psycopg.connect(database) as connection:
+            assert connection.execute(
+                "SELECT version_num FROM alembic_version"
+            ).fetchone()[0] == _REVISION_0046
+            _assert_0043_fixture_contract(connection, before)
+            for relation in (
+                "v4_production_intent_enrollments",
+                "v4_production_recovery_work",
+                "v4_production_recovery_events",
+            ):
+                assert connection.execute(
+                    "SELECT to_regclass(%s)", ("public." + relation,)
+                ).fetchone()[0] is None
+            for function in (
+                "v4_validate_production_intent_enrollment_v1()",
+                "v4_production_recovery_publication_snapshot_v1(uuid)",
+                "v4_validate_production_recovery_work_v1()",
+                "v4_validate_production_recovery_event_v1()",
+                "v4_reject_production_recovery_history_change_v1()",
+            ):
+                assert connection.execute(
+                    "SELECT to_regprocedure(%s)", ("public." + function,)
+                ).fetchone()[0] is None
+    finally:
+        _drop_migration_database(source, name)
