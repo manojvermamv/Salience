@@ -83,6 +83,10 @@ def upgrade() -> None:
         )"""
     )
     op.execute(
+        """COMMENT ON TABLE public.v4_production_intent_enrollments IS
+           'Immutable authorization and provenance envelope. Route tuple values are opaque external fence evidence: this migration has no route registry and does not treat a production permit as route-fence verification. The restricted Task 6 writer must verify the live fence and bind its route, slot, route owner, epoch, manifest digest, artifact-lock digest, and decision ID before insertion. PUBLIC has no write privilege.'"""
+    )
+    op.execute(
         """CREATE FUNCTION public.v4_validate_production_intent_enrollment_v1()
         RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER
         SET search_path = pg_catalog, public AS $$
@@ -243,15 +247,19 @@ def upgrade() -> None:
     op.execute(
         """CREATE FUNCTION public.v4_production_recovery_publication_snapshot_v1(
             p_operation_id uuid
-        ) RETURNS jsonb LANGUAGE sql STABLE SECURITY DEFINER
+        ) RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER
         SET search_path = pg_catalog, public AS $$
-        WITH binding AS (
+        DECLARE
+            validation_binding record;
+            snapshot_result jsonb;
+        BEGIN
             SELECT dispatch.operation_id, dispatch.generation,
                    dispatch.current_permit_id, dispatch.current_claim_id,
                    permit.request_snapshot,
                    permit.workspace_id, permit.goal_id, permit.intent_id,
-                   permit.cycle_id, permit.context_id,
+                   permit.cycle_id, permit.context_id, permit.program_id,
                    intent.eligibility_revision
+            INTO validation_binding
             FROM public.v4_production_current_dispatch dispatch
             JOIN public.v4_production_effect_permits permit
               ON permit.permit_id = dispatch.current_permit_id
@@ -259,8 +267,143 @@ def upgrade() -> None:
              AND permit.generation = dispatch.generation
             JOIN public.v4_cycle_intents intent
               ON intent.id = permit.intent_id
-            WHERE dispatch.operation_id = p_operation_id
-        )
+            WHERE dispatch.operation_id = p_operation_id;
+            IF NOT FOUND THEN
+                RETURN NULL;
+            END IF;
+
+            IF validation_binding.request_snapshot ? 'job_id' THEN
+                IF jsonb_typeof(validation_binding.request_snapshot->'job_id')
+                       IS DISTINCT FROM 'string'
+                   OR validation_binding.request_snapshot->>'job_id'
+                       !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' THEN
+                    RAISE EXCEPTION
+                        'malformed production snapshot job_id';
+                END IF;
+                IF NOT EXISTS (
+                    SELECT 1 FROM public.jobs job_row
+                    WHERE job_row.id =
+                              (validation_binding.request_snapshot->>'job_id')::uuid
+                      AND job_row.workspace_id = validation_binding.workspace_id
+                ) THEN
+                    RAISE EXCEPTION
+                        'production snapshot job_id is unresolved in its workspace';
+                END IF;
+            END IF;
+
+            IF validation_binding.request_snapshot ? 'publication_request_id' THEN
+                IF jsonb_typeof(
+                       validation_binding.request_snapshot->'publication_request_id'
+                   ) IS DISTINCT FROM 'string'
+                   OR validation_binding.request_snapshot->>'publication_request_id'
+                       !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' THEN
+                    RAISE EXCEPTION
+                        'malformed production snapshot publication_request_id';
+                END IF;
+                IF NOT EXISTS (
+                    SELECT 1 FROM public.publication_requests request_row
+                    WHERE request_row.id =
+                              (validation_binding.request_snapshot->>'publication_request_id')::uuid
+                      AND request_row.workspace_id = validation_binding.workspace_id
+                      AND request_row.content_program_id = validation_binding.program_id
+                ) THEN
+                    RAISE EXCEPTION
+                        'production snapshot publication_request_id is unresolved in its workspace and program';
+                END IF;
+            END IF;
+
+            IF validation_binding.request_snapshot ? 'publication_plan_id' THEN
+                IF jsonb_typeof(
+                       validation_binding.request_snapshot->'publication_plan_id'
+                   ) IS DISTINCT FROM 'string'
+                   OR validation_binding.request_snapshot->>'publication_plan_id'
+                       !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' THEN
+                    RAISE EXCEPTION
+                        'malformed production snapshot publication_plan_id';
+                END IF;
+                IF NOT (validation_binding.request_snapshot ? 'publication_request_id')
+                   OR NOT EXISTS (
+                       SELECT 1
+                       FROM public.publication_plans plan_row
+                       JOIN public.publication_requests request_row
+                         ON request_row.id = plan_row.publication_request_id
+                       WHERE plan_row.id =
+                                 (validation_binding.request_snapshot->>'publication_plan_id')::uuid
+                         AND request_row.id =
+                                 (validation_binding.request_snapshot->>'publication_request_id')::uuid
+                         AND request_row.workspace_id = validation_binding.workspace_id
+                         AND request_row.content_program_id = validation_binding.program_id
+                   ) THEN
+                    RAISE EXCEPTION
+                        'production snapshot publication_plan_id is unresolved for its publication_request_id';
+                END IF;
+            END IF;
+
+            IF validation_binding.request_snapshot ? 'job_id'
+               AND validation_binding.request_snapshot ? 'publication_plan_id'
+               AND NOT EXISTS (
+                   SELECT 1
+                   FROM public.publication_plans plan_row
+                   JOIN public.external_effects effect_row
+                     ON effect_row.id = plan_row.external_effect_id
+                   WHERE plan_row.id =
+                             (validation_binding.request_snapshot->>'publication_plan_id')::uuid
+                     AND effect_row.job_id =
+                             (validation_binding.request_snapshot->>'job_id')::uuid
+                     AND effect_row.workspace_id = validation_binding.workspace_id
+               ) THEN
+                RAISE EXCEPTION
+                    'production snapshot job_id does not match its publication plan external effect';
+            END IF;
+
+            IF validation_binding.request_snapshot ? 'publication_attempt_id' THEN
+                IF jsonb_typeof(
+                       validation_binding.request_snapshot->'publication_attempt_id'
+                   ) IS DISTINCT FROM 'string'
+                   OR validation_binding.request_snapshot->>'publication_attempt_id'
+                       !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' THEN
+                    RAISE EXCEPTION
+                        'malformed production snapshot publication_attempt_id';
+                END IF;
+                IF NOT (validation_binding.request_snapshot ? 'publication_plan_id')
+                   OR NOT (validation_binding.request_snapshot ? 'publication_request_id')
+                   OR NOT EXISTS (
+                       SELECT 1
+                       FROM public.publication_attempts attempt_row
+                       JOIN public.publication_plans plan_row
+                         ON plan_row.id = attempt_row.publication_plan_id
+                       JOIN public.publication_requests request_row
+                         ON request_row.id = plan_row.publication_request_id
+                       WHERE attempt_row.id =
+                                 (validation_binding.request_snapshot->>'publication_attempt_id')::uuid
+                         AND plan_row.id =
+                                 (validation_binding.request_snapshot->>'publication_plan_id')::uuid
+                         AND request_row.id =
+                                 (validation_binding.request_snapshot->>'publication_request_id')::uuid
+                         AND request_row.workspace_id = validation_binding.workspace_id
+                         AND request_row.content_program_id = validation_binding.program_id
+                   ) THEN
+                    RAISE EXCEPTION
+                        'production snapshot publication_attempt_id is unresolved for its publication_plan_id';
+                END IF;
+            END IF;
+
+            WITH binding AS (
+                SELECT dispatch.operation_id, dispatch.generation,
+                       dispatch.current_permit_id, dispatch.current_claim_id,
+                       permit.request_snapshot,
+                       permit.workspace_id, permit.goal_id, permit.intent_id,
+                       permit.cycle_id, permit.context_id,
+                       intent.eligibility_revision
+                FROM public.v4_production_current_dispatch dispatch
+                JOIN public.v4_production_effect_permits permit
+                  ON permit.permit_id = dispatch.current_permit_id
+                 AND permit.operation_id = dispatch.operation_id
+                 AND permit.generation = dispatch.generation
+                JOIN public.v4_cycle_intents intent
+                  ON intent.id = permit.intent_id
+                WHERE dispatch.operation_id = p_operation_id
+            )
         SELECT jsonb_build_object(
             'production_intent_enrollment', to_jsonb(enrollment),
             'goal', to_jsonb(goal),
@@ -330,7 +473,7 @@ def upgrade() -> None:
                 FROM public.provenance_records provenance
                 WHERE provenance.job_id = job_row.id
             ), '[]'::jsonb)
-        )
+        ) INTO snapshot_result
         FROM binding
         JOIN public.v4_production_current_dispatch dispatch
           ON dispatch.operation_id = binding.operation_id
@@ -348,17 +491,24 @@ def upgrade() -> None:
                WHEN binding.request_snapshot->>'job_id'
                     ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
                THEN (binding.request_snapshot->>'job_id')::uuid END
+         AND job_row.workspace_id = binding.workspace_id
         LEFT JOIN public.publication_requests publication_request
           ON publication_request.id = CASE
                WHEN binding.request_snapshot->>'publication_request_id'
                     ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
                THEN (binding.request_snapshot->>'publication_request_id')::uuid END
+         AND publication_request.workspace_id = binding.workspace_id
+         AND publication_request.content_program_id = validation_binding.program_id
         LEFT JOIN LATERAL (
             SELECT plan_row.*
             FROM public.publication_plans plan_row
             WHERE plan_row.publication_request_id = publication_request.id
               AND (binding.request_snapshot->>'publication_plan_id' IS NULL
-                   OR plan_row.id::text = binding.request_snapshot->>'publication_plan_id')
+                   OR plan_row.id = CASE
+                       WHEN binding.request_snapshot->>'publication_plan_id'
+                            ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+                       THEN (binding.request_snapshot->>'publication_plan_id')::uuid
+                   END)
             ORDER BY plan_row.version DESC, plan_row.id
             LIMIT 1
         ) publication_plan ON true
@@ -367,7 +517,11 @@ def upgrade() -> None:
             FROM public.publication_attempts attempt_row
             WHERE attempt_row.publication_plan_id = publication_plan.id
               AND (binding.request_snapshot->>'publication_attempt_id' IS NULL
-                   OR attempt_row.id::text = binding.request_snapshot->>'publication_attempt_id')
+                   OR attempt_row.id = CASE
+                       WHEN binding.request_snapshot->>'publication_attempt_id'
+                            ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+                       THEN (binding.request_snapshot->>'publication_attempt_id')::uuid
+                   END)
             ORDER BY attempt_row.attempt_number DESC, attempt_row.id
             LIMIT 1
         ) publication_attempt ON true
@@ -376,6 +530,9 @@ def upgrade() -> None:
         LEFT JOIN public.budget_reservations budget_reservation
           ON budget_reservation.id = publication_plan.budget_reservation_id
         WHERE binding.operation_id = p_operation_id
+            ;
+            RETURN snapshot_result;
+        END
         $$"""
     )
     op.execute(
@@ -874,6 +1031,7 @@ def upgrade() -> None:
             work_row public.v4_production_recovery_work%ROWTYPE;
             enrollment_row public.v4_production_intent_enrollments%ROWTYPE;
             event_key_name text;
+            actor_workspace_id uuid;
         BEGIN
             IF TG_RELID <> 'public.v4_production_recovery_events'::regclass
                OR TG_TABLE_SCHEMA <> 'public'
@@ -899,10 +1057,27 @@ def upgrade() -> None:
                 RAISE EXCEPTION
                     'production recovery event work is missing its exact enrollment';
             END IF;
+            IF NEW.actor_id IS NOT NULL THEN
+                SELECT subject.workspace_id INTO actor_workspace_id
+                FROM public.identity_subjects subject
+                WHERE subject.id = NEW.actor_id;
+                IF NOT FOUND OR actor_workspace_id IS DISTINCT FROM work_row.workspace_id THEN
+                    RAISE EXCEPTION
+                        'production recovery event actor must belong to its work workspace';
+                END IF;
+            END IF;
             IF jsonb_typeof(NEW.payload) IS DISTINCT FROM 'object'
                OR octet_length(NEW.payload::text) > 16384 THEN
                 RAISE EXCEPTION
                     'production recovery event payload must be a bounded object';
+            END IF;
+            IF EXISTS (
+                SELECT 1
+                FROM jsonb_each(NEW.payload) payload_entry
+                WHERE jsonb_typeof(payload_entry.value) IN ('object','array')
+            ) THEN
+                RAISE EXCEPTION
+                    'production recovery event payload values must be bounded JSON scalars';
             END IF;
             FOR event_key_name IN SELECT jsonb_object_keys(NEW.payload) LOOP
                 IF event_key_name NOT IN (
@@ -953,6 +1128,13 @@ def upgrade() -> None:
                        IS DISTINCT FROM enrollment_row.fencing_epoch::text) THEN
                 RAISE EXCEPTION
                     'production recovery event payload identity or route does not match its work scope';
+            END IF;
+            IF NEW.payload ? 'case_id'
+               AND (work_row.source_discriminant <> 'cycle_case'
+                    OR NEW.payload->>'case_id'
+                       IS DISTINCT FROM work_row.source_id::text) THEN
+                RAISE EXCEPTION
+                    'production recovery event cycle case_id must match its work source';
             END IF;
             IF NEW.route_id IS NOT NULL
                AND (NEW.route_id IS DISTINCT FROM enrollment_row.route_id

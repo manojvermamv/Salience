@@ -3905,6 +3905,11 @@ def _insert_0047_enrollment(connection, authority, *, intent_id=None, overrides=
         "external_lock_sha256": "e" * 64,
         "route_fence_decision_id": uuid4(),
     }
+    # This helper runs as the disposable database owner to exercise the
+    # migration's immutable storage/source guards. Its route tuple is fixture
+    # input, not proof that a permit or this trigger verified an external
+    # fence. Task 6's restricted writer must perform that live check before
+    # it is granted the sole application enrollment path.
     if overrides:
         row.update(overrides)
     cursor = connection.execute(
@@ -4148,6 +4153,26 @@ def test_0047_production_intent_enrollment_requires_complete_current_authority()
         with psycopg.connect(database) as connection:
             valid = _insert_0047_enrollment(connection, authority)
             assert valid["intent_id"] == authority["cycle"]["intent_id"]
+            assert connection.execute(
+                """SELECT EXISTS (
+                       SELECT 1
+                       FROM pg_class relation
+                       CROSS JOIN LATERAL aclexplode(
+                           COALESCE(relation.relacl,
+                                    acldefault('r',relation.relowner))
+                       ) privilege
+                       WHERE relation.oid =
+                             'public.v4_production_intent_enrollments'::regclass
+                         AND privilege.grantee = 0
+                         AND privilege.privilege_type IN ('INSERT','UPDATE','DELETE')
+                   )"""
+            ).fetchone()[0] is False
+            enrollment_boundary = connection.execute(
+                "SELECT obj_description("
+                "'public.v4_production_intent_enrollments'::regclass,'pg_class')"
+            ).fetchone()[0]
+            assert "does not treat a production permit as route-fence verification" in enrollment_boundary
+            assert "restricted Task 6 writer must verify the live fence" in enrollment_boundary
 
             assert _postgres_statement_rejected(
                 connection,
@@ -4340,6 +4365,27 @@ def test_0047_recovery_source_discriminants_and_snapshots_are_guarded():
                 "SELECT failure_class,state FROM v4_recovery_cases WHERE id=%s",
                 (case_id,),
             ).fetchone()
+            mismatched_case_payload = Jsonb({"case_id": str(uuid4())})
+            assert _postgres_statement_rejected(
+                connection,
+                "cycle case_id.*source|case_id.*work source",
+                lambda: connection.execute(
+                    """INSERT INTO v4_production_recovery_events(
+                              event_id,work_id,event_key,event_kind,occurred_at,
+                              actor_id,policy_decision_id,payload,payload_sha256)
+                       VALUES(%s,%s,%s,'held_conflict',clock_timestamp(),%s,%s,%s,
+                              encode(public.digest(%s::jsonb::text,'sha256'),'hex'))""",
+                    (
+                        uuid4(),
+                        cycle_case["work_id"],
+                        "work:" + str(cycle_case["work_id"]) + ":wrong-case",
+                        authority["subject_id"],
+                        uuid4(),
+                        mismatched_case_payload,
+                        mismatched_case_payload,
+                    ),
+                ),
+            )
             assert _postgres_statement_rejected(
                 connection,
                 "exact current source",
@@ -4774,6 +4820,77 @@ def test_0047_recovery_events_are_append_only_and_scoped():
                 ),
             )
 
+            other_workspace_id, foreign_actor_id = _seed_0044_workspace_subject(
+                connection
+            )
+            assert other_workspace_id != authority["workspace_id"]
+            assert _postgres_statement_rejected(
+                connection,
+                "actor.*workspace|workspace.*actor",
+                lambda: connection.execute(
+                    """INSERT INTO v4_production_recovery_events(
+                              event_id,work_id,event_key,event_kind,occurred_at,actor_id,
+                              policy_decision_id,payload,payload_sha256)
+                       VALUES(%s,%s,%s,'held_conflict',clock_timestamp(),%s,%s,%s,
+                              encode(public.digest(%s::jsonb::text,'sha256'),'hex'))""",
+                    (
+                        uuid4(),
+                        work["work_id"],
+                        event_key + ":cross-workspace-actor",
+                        foreign_actor_id,
+                        uuid4(),
+                        Jsonb({"reason_code": "test"}),
+                        Jsonb({"reason_code": "test"}),
+                    ),
+                ),
+            )
+
+            nested_secret_payload = Jsonb(
+                {"reason_code": {"access_token": "never persist"}}
+            )
+            assert _postgres_statement_rejected(
+                connection,
+                "nested|scalar|bounded object",
+                lambda: connection.execute(
+                    """INSERT INTO v4_production_recovery_events(
+                              event_id,work_id,event_key,event_kind,occurred_at,actor_id,
+                              policy_decision_id,payload,payload_sha256)
+                       VALUES(%s,%s,%s,'held_conflict',clock_timestamp(),%s,%s,%s,
+                              encode(public.digest(%s::jsonb::text,'sha256'),'hex'))""",
+                    (
+                        uuid4(),
+                        work["work_id"],
+                        event_key + ":nested-secret",
+                        authority["subject_id"],
+                        uuid4(),
+                        nested_secret_payload,
+                        nested_secret_payload,
+                    ),
+                ),
+            )
+
+            non_case_payload = Jsonb({"case_id": str(uuid4())})
+            assert _postgres_statement_rejected(
+                connection,
+                "cycle case_id.*work source",
+                lambda: connection.execute(
+                    """INSERT INTO v4_production_recovery_events(
+                              event_id,work_id,event_key,event_kind,occurred_at,actor_id,
+                              policy_decision_id,payload,payload_sha256)
+                       VALUES(%s,%s,%s,'held_conflict',clock_timestamp(),%s,%s,%s,
+                              encode(public.digest(%s::jsonb::text,'sha256'),'hex'))""",
+                    (
+                        uuid4(),
+                        work["work_id"],
+                        event_key + ":non-case-case-id",
+                        authority["subject_id"],
+                        uuid4(),
+                        non_case_payload,
+                        non_case_payload,
+                    ),
+                ),
+            )
+
             assert _postgres_statement_rejected(
                 connection,
                 "does not belong to the matching production recovery work|event work scope",
@@ -4794,6 +4911,257 @@ def test_0047_recovery_events_are_append_only_and_scoped():
                     ),
                 ),
             )
+    finally:
+        _drop_migration_database(source, name)
+
+
+def test_0047_snapshot_lookup_rejects_unresolved_scope_and_binding_ids():
+    source = os.environ["TEST_DATABASE_URL"]
+    name, database, _, _, authority = _prepare_0047_0046_database(
+        "p1_0047_snapshot_scope_"
+    )
+    try:
+        _upgrade_0047_or_fail(database)
+        with psycopg.connect(database) as connection:
+            _insert_0047_enrollment(connection, authority)
+            job_id, foreign_job_id = uuid4(), uuid4()
+            request_id, foreign_request_id = uuid4(), uuid4()
+            plan_id, other_plan_id = uuid4(), uuid4()
+            attempt_id, other_attempt_id = uuid4(), uuid4()
+            external_effect_id = uuid4()
+            other_workspace_id, _ = _seed_0044_workspace_subject(connection)
+            program_id = authority["cycle"]["program_id"]
+
+            connection.execute("SET session_replication_role = replica")
+            for current_job_id, workspace_id in (
+                (job_id, authority["workspace_id"]),
+                (foreign_job_id, other_workspace_id),
+            ):
+                connection.execute(
+                    """INSERT INTO jobs(
+                              id,workspace_id,job_type,workflow_run_id,task_queue,
+                              idempotency_key,trace_id)
+                       VALUES(%s,%s,'recovery_snapshot','workflow-'||%s::text,
+                              'local','job-'||%s::text,'trace')""",
+                    (current_job_id, workspace_id, current_job_id, current_job_id),
+                )
+
+            request_columns = """(
+                id,workspace_id,content_program_id,ready_package_id,
+                publisher_account_id,request_key,version,publisher_id,platform,
+                destination,locale,territory,visibility,capability_profile_version,
+                approval_reference,state,request_fingerprint,disclosure_projection,
+                policy_references,rights_references)"""
+            for current_request_id, workspace_id, request_key in (
+                (request_id, authority["workspace_id"], "snapshot-valid"),
+                (foreign_request_id, other_workspace_id, "snapshot-foreign"),
+            ):
+                connection.execute(
+                    """INSERT INTO publication_requests""" + request_columns + """
+                       VALUES(%s,%s,%s,%s,%s,%s,1,'p1-local','p1-local',
+                              'channel','en-US','US','public',1,'test','planned',
+                              %s,'{}','[]','[]')""",
+                    (
+                        current_request_id,
+                        workspace_id,
+                        program_id,
+                        uuid4(),
+                        uuid4(),
+                        request_key,
+                        "f" * 64,
+                    ),
+                )
+
+            connection.execute(
+                """INSERT INTO external_effects(
+                          id,workspace_id,job_id,effect_type,effect_classification,
+                          idempotency_key,request_fingerprint)
+                   VALUES(%s,%s,%s,'publication','write','snapshot-effect',%s)""",
+                (
+                    external_effect_id,
+                    authority["workspace_id"],
+                    job_id,
+                    "c" * 64,
+                ),
+            )
+            connection.execute(
+                """INSERT INTO publication_plans(
+                          id,publication_request_id,version,publisher_id,
+                          publisher_version,external_effect_id,state)
+                   VALUES(%s,%s,1,'p1-local','1',%s,'planned'),
+                         (%s,%s,2,'p1-local','1',NULL,'planned')""",
+                (plan_id, request_id, external_effect_id, other_plan_id, request_id),
+            )
+            connection.execute(
+                """INSERT INTO publication_attempts(
+                          id,publication_plan_id,attempt_number,idempotency_key,
+                          state,request_fingerprint)
+                   VALUES(%s,%s,1,'snapshot-attempt-1','planned',%s),
+                         (%s,%s,1,'snapshot-attempt-2','planned',%s)""",
+                (
+                    attempt_id,
+                    plan_id,
+                    "a" * 64,
+                    other_attempt_id,
+                    other_plan_id,
+                    "b" * 64,
+                ),
+            )
+
+            def replace_request_snapshot(snapshot):
+                connection.execute(
+                    "UPDATE v4_production_effect_permits SET request_snapshot=%s "
+                    "WHERE permit_id=%s",
+                    (Jsonb(snapshot), authority["permit_id"]),
+                )
+
+            base_snapshot = dict(
+                connection.execute(
+                    "SELECT request_snapshot FROM v4_production_effect_permits "
+                    "WHERE permit_id=%s",
+                    (authority["permit_id"],),
+                ).fetchone()[0]
+            )
+            base_snapshot.update(
+                {
+                    "job_id": str(job_id),
+                    "publication_request_id": str(request_id),
+                    "publication_plan_id": str(plan_id),
+                    "publication_attempt_id": str(attempt_id),
+                }
+            )
+            replace_request_snapshot(base_snapshot)
+            valid = connection.execute(
+                "SELECT v4_production_recovery_publication_snapshot_v1(%s)",
+                (authority["operation_id"],),
+            ).fetchone()[0]
+            assert valid["job"]["id"] == str(job_id)
+            assert valid["publication_request"]["id"] == str(request_id)
+            assert valid["publication_plan"]["id"] == str(plan_id)
+            assert valid["publication_attempt"]["id"] == str(attempt_id)
+
+            uppercase_identifiers = dict(
+                base_snapshot,
+                publication_plan_id=str(plan_id).upper(),
+                publication_attempt_id=str(attempt_id).upper(),
+            )
+            replace_request_snapshot(uppercase_identifiers)
+            uppercase_snapshot = connection.execute(
+                "SELECT v4_production_recovery_publication_snapshot_v1(%s)",
+                (authority["operation_id"],),
+            ).fetchone()[0]
+            assert uppercase_snapshot["publication_plan"]["id"] == str(plan_id)
+            assert uppercase_snapshot["publication_attempt"]["id"] == str(attempt_id)
+
+            cross_workspace_job = dict(base_snapshot, job_id=str(foreign_job_id))
+            replace_request_snapshot(cross_workspace_job)
+            assert _postgres_statement_rejected(
+                connection,
+                "job_id.*workspace|unresolved.*job_id",
+                lambda: connection.execute(
+                    "SELECT v4_production_recovery_publication_snapshot_v1(%s)",
+                    (authority["operation_id"],),
+                ).fetchone(),
+            )
+
+            malformed_job = dict(base_snapshot, job_id="not-a-uuid")
+            replace_request_snapshot(malformed_job)
+            assert _postgres_statement_rejected(
+                connection,
+                "malformed.*job_id",
+                lambda: connection.execute(
+                    "SELECT v4_production_recovery_publication_snapshot_v1(%s)",
+                    (authority["operation_id"],),
+                ).fetchone(),
+            )
+
+            cross_workspace_request = dict(
+                base_snapshot, publication_request_id=str(foreign_request_id)
+            )
+            replace_request_snapshot(cross_workspace_request)
+            assert _postgres_statement_rejected(
+                connection,
+                "publication_request_id.*workspace|unresolved.*publication_request_id",
+                lambda: connection.execute(
+                    "SELECT v4_production_recovery_publication_snapshot_v1(%s)",
+                    (authority["operation_id"],),
+                ).fetchone(),
+            )
+
+            malformed_request = dict(
+                base_snapshot, publication_request_id="not-a-uuid"
+            )
+            replace_request_snapshot(malformed_request)
+            assert _postgres_statement_rejected(
+                connection,
+                "malformed.*publication_request_id",
+                lambda: connection.execute(
+                    "SELECT v4_production_recovery_publication_snapshot_v1(%s)",
+                    (authority["operation_id"],),
+                ).fetchone(),
+            )
+
+            mismatched_plan = dict(base_snapshot, publication_plan_id=str(uuid4()))
+            replace_request_snapshot(mismatched_plan)
+            assert _postgres_statement_rejected(
+                connection,
+                "publication_plan_id.*request|unresolved.*publication_plan_id",
+                lambda: connection.execute(
+                    "SELECT v4_production_recovery_publication_snapshot_v1(%s)",
+                    (authority["operation_id"],),
+                ).fetchone(),
+            )
+
+            mismatched_job_plan = dict(
+                base_snapshot, publication_plan_id=str(other_plan_id)
+            )
+            replace_request_snapshot(mismatched_job_plan)
+            assert _postgres_statement_rejected(
+                connection,
+                "job_id.*external effect",
+                lambda: connection.execute(
+                    "SELECT v4_production_recovery_publication_snapshot_v1(%s)",
+                    (authority["operation_id"],),
+                ).fetchone(),
+            )
+
+            mismatched_attempt = dict(
+                base_snapshot, publication_attempt_id=str(other_attempt_id)
+            )
+            replace_request_snapshot(mismatched_attempt)
+            assert _postgres_statement_rejected(
+                connection,
+                "publication_attempt_id.*plan|unresolved.*publication_attempt_id",
+                lambda: connection.execute(
+                    "SELECT v4_production_recovery_publication_snapshot_v1(%s)",
+                    (authority["operation_id"],),
+                ).fetchone(),
+            )
+
+            malformed_attempt = dict(
+                base_snapshot, publication_attempt_id="not-a-uuid"
+            )
+            replace_request_snapshot(malformed_attempt)
+            assert _postgres_statement_rejected(
+                connection,
+                "malformed.*publication_attempt_id",
+                lambda: connection.execute(
+                    "SELECT v4_production_recovery_publication_snapshot_v1(%s)",
+                    (authority["operation_id"],),
+                ).fetchone(),
+            )
+
+            malformed_plan = dict(base_snapshot, publication_plan_id="not-a-uuid")
+            replace_request_snapshot(malformed_plan)
+            assert _postgres_statement_rejected(
+                connection,
+                "malformed.*publication_plan_id|unresolved.*publication_plan_id",
+                lambda: connection.execute(
+                    "SELECT v4_production_recovery_publication_snapshot_v1(%s)",
+                    (authority["operation_id"],),
+                ).fetchone(),
+            )
+            connection.execute("SET session_replication_role = origin")
     finally:
         _drop_migration_database(source, name)
 
