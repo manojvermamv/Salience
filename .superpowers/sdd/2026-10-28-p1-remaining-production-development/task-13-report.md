@@ -111,3 +111,20 @@ Both `.venv/bin/python docs/v4/check.py --self-test` and `.venv/bin/python docs/
 ## Cleanup and limitations
 
 The test-run cleanup trap exited 0 and removed only the exact Compose project. Post-cleanup queries found zero project-labeled containers, volumes, or networks. The temporary image-build resources were removed by exact name; no host-wide prune ran. No live provider, production database, remote schedule, alert target, or external service was contacted. No push or merge occurred. Final independent read-only reviews and exact-head CI remain controller-owned; this report is local development evidence, not production qualification.
+
+## Task 13 metadata correction — 2026-10-29
+
+The main meta-review confirmed the finding: `verification.current_full_non_live_application_commit` named stale source `ec12763`, while the adjacent full-suite result is the Task 13 run with 1,150 passed. In these records, `application_commit` identifies the implementation source, so the active alias now names source `8d26aa15ef8d6bf7c9248bdd1899cf01a352cb2a`; tested artifact `e805c277577da8491dca51933dadb5c36acc805b` remains explicit in the status and candidate fields.
+
+The stale root-level current test/source/status aliases were aligned with Task 13: seven focused groups (360 passed total), the one full non-live run (1,150 passed / 26 skipped / 3 warnings), source `8d26aa1`, and artifact `e805c27`. The Task 6 fixture checkpoint objects remain unchanged as preserved historical evidence tied to their `ec12763` verifier log. No source, live/provider, or external state changed.
+
+The correction is documentation-only. The focused documentation integrity test, complete `docs/v4/test_checks.py`, both `docs/v4/check.py` modes, expected synthetic acceptance result, and whitespace check are recorded after final metadata refresh below.
+
+### Documentation correction validation
+
+- Focused inventory/handoff integrity test: `.venv/bin/python docs/v4/test_checks.py GateChecks.test_documentation_status_audit_covers_current_artifacts_and_hashes` — exit 0, 1/1 test passed.
+- Complete documentation checks: `.venv/bin/python docs/v4/test_checks.py` — exit 0, 25/25 tests passed.
+- Normal checker: `.venv/bin/python docs/v4/check.py` — exit 0; 75 requirements, 416 evidence files, 360 inventory files, 111 Markdown files, 4 HTML files, zero errors.
+- Checker self-test: `.venv/bin/python docs/v4/check.py --self-test` — exit 0; same counts, six negative controls, zero errors.
+- Synthetic acceptance checker: `.venv/bin/python scripts/check-p1-external-acceptance.py --package docs/v4/p1-remaining-production-development-evidence.json --schema docs/v4/p1-rg0-rg1-external-acceptance.schema.json` — expected exit 1; `structural_status=VALID`, `disposition=NO_GO`, `gate_state=UNCHANGED`.
+- `git diff --check` — exit 0. The refreshed wrapper has 304 artifact rows, 303 verified non-self hashes, one intentional null self-hash, and 36 verified current handoff hashes.
