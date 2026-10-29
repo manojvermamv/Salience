@@ -1,7 +1,7 @@
 # Task 14 report — final review corrections
 
 Date: 2026-10-29
-Status: the initial four source corrections and three subsequent recipient-tier recovery corrections are implemented and focused verification complete; exact-candidate artifact/evidence refresh remains controller-owned.
+Status: the initial four source corrections and four subsequent recipient-tier recovery corrections are implemented and focused verification complete; exact-candidate artifact/evidence refresh remains controller-owned.
 
 ## Source changes
 
@@ -84,4 +84,20 @@ Task 13's artifact, synthetic acceptance package, and active evidence lock remai
   ```
 
   Normal alert delivery/acknowledgment/escalation controls: **3 passed, 74 deselected** (21.94 seconds). Touched-file compileall and `git diff --check` passed.
+- No full suite, artifact/evidence-lock rebuild, push, merge, provider, or live-system use. Task 13 evidence remains historical for controller regeneration. Production remains disabled; synthetic package `NO_GO`; RG0/full RG1 `HELD`; P2 `BLOCKED`; external qualification `NOT RUN`.
+
+## Follow-up — atomic owner escalation retry — 2026-10-29
+
+- Source/test commit `c1f8ed11a0dcdda9b2b05a9b1663635ec003f031` (tree `ed5a31e35fa3ad3726c7b7309f5c31d841a594ee`) persists the pending owner-attempt `owner_unavailable` marker and tier-changing on-call retry event in one connection/transaction with the same database timestamp. Retry history validation and waiting happen only after commit. The marker keeps the fresh owner authorization decision; the retry retains the committed attempt's policy-decision ID.
+- Regression RED command: `PYTHONPATH=src TEST_DATABASE_URL=postgresql://salience:salience@172.20.0.2:5432/salience TEST_TEMPORAL_TARGET=172.20.0.3:7233 .venv/bin/pytest -q tests/integration/test_p1_production_recovery.py -k 'owner_escalation_retry_transaction_rolls_back_and_restarts_safely or owner_escalation_retry_commit_survives_crash_and_owner_return'` — **2 failed, 77 deselected** at the intended assertions: the injected retry-append failure left the marker committed, and the split writes used different event timestamps.
+- Focused GREEN recovery selector and result:
+
+  ```text
+  PYTHONPATH=src TEST_DATABASE_URL=postgresql://salience:salience@172.20.0.2:5432/salience TEST_TEMPORAL_TARGET=172.20.0.3:7233 .venv/bin/pytest -q tests/integration/test_p1_production_recovery.py -k 'uses_persisted_on_call_tier_after_retry_commit or rejects_corrupt_outstanding_retry_tier or holds_when_outstanding_owner_retry_is_unavailable or preserves_committed_on_call_tier_when_owner_returns or changes_owner_tier_only_at_authorized_retry_boundary or holds_instead_of_changing_pending_owner_attempt_tier or after_attempt_commit_waits_for_claim_ttl_and_reuses_attempt or reconciles_receipt_that_appears_during_claim_ttl or waits_for_claim_ttl_when_latest_retry_record_is_missing or after_attempt_crash_preserves_bounded_retry_schedule or holds_after_unavailable_final_attempt_reuses_committed_attempt or rechecks_unavailable_owner_after_committed_attempt_claim_ttl or rejects_invalid_persisted_retry_evidence or waits_for_persisted_retry_at_before_sending or holds_owner_retry_if_owner_loses_eligibility_during_wait or owner_to_on_call_transition_uses_fresh_on_call_authorization or owner_escalation_retry_transaction_rolls_back_and_restarts_safely or owner_escalation_retry_commit_survives_crash_and_owner_return'
+  24 passed, 55 deselected in 168.78s
+  ```
+
+- Normal control command: `PYTHONPATH=src TEST_DATABASE_URL=postgresql://salience:salience@172.20.0.2:5432/salience TEST_TEMPORAL_TARGET=172.20.0.3:7233 .venv/bin/pytest -q tests/integration/test_p1_production_recovery.py -k 'alert_delivery_and_acknowledgment or due_escalation_routes_to_on_call_and_replays_same_delivery or owner_and_outage_escalation'` — **3 passed, 76 deselected** in 22.08 seconds.
+- The rollback regression now proves a retry append failure leaves neither event and a subsequent restart can continue to an on-call attempt with the same key and exactly attempts 1 and 2. The crash-after-commit regression verifies both rows are visible with identical timestamps before crash, then reenables the owner and proves restart authorizes and sends the persisted on-call retry without another attempt event.
+- Final Task14 alert recovery selector result: **24 passed, 55 deselected** in 168.78 seconds. Normal delivery/acknowledgment/escalation controls: **3 passed, 76 deselected** in 22.08 seconds. Touched-file compileall and `git diff --check` passed.
 - No full suite, artifact/evidence-lock rebuild, push, merge, provider, or live-system use. Task 13 evidence remains historical for controller regeneration. Production remains disabled; synthetic package `NO_GO`; RG0/full RG1 `HELD`; P2 `BLOCKED`; external qualification `NOT RUN`.
