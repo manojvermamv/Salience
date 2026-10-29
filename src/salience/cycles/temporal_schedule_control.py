@@ -1,6 +1,8 @@
 """Scoped Temporal pause/readback for explicitly pinned no-effects fixtures."""
 
 import asyncio
+import ipaddress
+from dataclasses import dataclass
 from datetime import timedelta, timezone
 
 from temporalio.client import Client, ScheduleActionStartWorkflow, ScheduleUpdate
@@ -45,6 +47,12 @@ _PAUSE_OPERATION_TIMEOUT_SECONDS = 27
 _RESUME_OPERATION_TIMEOUT_SECONDS = 35
 
 
+@dataclass(frozen=True)
+class _DatabaseEndpoint:
+    host: str
+    hostaddr: str | None
+
+
 class TemporalFixtureLegacyScheduleControl(FixtureLegacyScheduleControl):
     supports_temporal = True
     def __init__(self,database_url,*,workspace_id,temporal_target,task_queue):
@@ -59,26 +67,49 @@ class TemporalFixtureLegacyScheduleControl(FixtureLegacyScheduleControl):
         from psycopg.rows import dict_row
         with psycopg.connect(self.database_url,row_factory=dict_row,connect_timeout=3) as connection:
             row = self._schedule(connection,schedule_id)
+            endpoint = _DatabaseEndpoint(
+                host=connection.info.host,
+                hostaddr=connection.info.hostaddr,
+            )
         native = row.get("native_source") or row.get("native_publication_source")
         expected = schedule_metadata(row)["remote_id"] if native else f"salience-v4-legacy-fixture:{self.workspace_id}:{schedule_id}"
         if schedule_metadata(row)["remote_id"] != expected:
             raise PermissionError("exact scoped Temporal fixture schedule pin required")
         if native and native["task_queue"] != self.task_queue:
             raise PermissionError("original native schedule worker route required")
-        return row,expected
+        return row,expected,endpoint
 
-    async def _plan_async(self, row, *, required=False):
+    async def _plan_async(self, row, *, endpoint, required=False):
         import psycopg
         from psycopg.rows import dict_row
+
+        host = endpoint.host
+        hostaddr = endpoint.hostaddr
+        if not isinstance(host, str) or not host:
+            raise RuntimeError("pinned database endpoint required for Temporal plan read")
+        if hostaddr is None:
+            if not host.startswith("/"):
+                raise RuntimeError("numeric database endpoint address required for Temporal plan read")
+        else:
+            try:
+                ipaddress.ip_address(hostaddr)
+            except (TypeError, ValueError) as error:
+                raise RuntimeError("numeric database endpoint address required for Temporal plan read") from error
 
         owned_connection = None
 
         async def read_plan():
             nonlocal owned_connection
+            connect_options = {
+                "row_factory": dict_row,
+                "connect_timeout": _PLAN_CONNECT_TIMEOUT_SECONDS,
+                "host": host,
+            }
+            if hostaddr is not None:
+                connect_options["hostaddr"] = hostaddr
             connection = await psycopg.AsyncConnection.connect(
                 self.database_url,
-                row_factory=dict_row,
-                connect_timeout=_PLAN_CONNECT_TIMEOUT_SECONDS,
+                **connect_options,
             )
             owned_connection = connection
             try:
@@ -137,10 +168,10 @@ class TemporalFixtureLegacyScheduleControl(FixtureLegacyScheduleControl):
         if close_error is not None:
             raise RuntimeError("Temporal plan connection failed to close") from close_error
 
-    async def _preflight_resume_plan(self, row):
+    async def _preflight_resume_plan(self, row, endpoint):
         # The 6s plan deadline leaves a bounded 0.5s drain and 0.5s margin.
         async with asyncio.timeout(_PLAN_PREFLIGHT_OPERATION_TIMEOUT_SECONDS):
-            return await self._plan_async(row, required=True)
+            return await self._plan_async(row, endpoint=endpoint, required=True)
 
     def _validate_plan(self, row, plan, *, required=False):
         if plan and plan["task_queue"] != self.task_queue:
@@ -167,7 +198,7 @@ class TemporalFixtureLegacyScheduleControl(FixtureLegacyScheduleControl):
             payload["publication_schedule_id"] = str(source["publication_schedule_id"])
         return payload
 
-    async def _verified(self,client,handle,row,*,allow_running=False,description=None):
+    async def _verified(self,client,handle,row,*,endpoint,allow_running=False,description=None):
         if description is None:
             for attempt in range(_TEMPORAL_DESCRIBE_ATTEMPTS):
                 try:
@@ -192,7 +223,8 @@ class TemporalFixtureLegacyScheduleControl(FixtureLegacyScheduleControl):
         elif isinstance(argument,Payload):
             argument = (await client.data_converter.decode([argument],[dict]))[0]
         plan = await self._plan_async(
-            row, required=action.workflow == LEGACY_SCHEDULE_INGRESS
+            row, endpoint=endpoint,
+            required=action.workflow == LEGACY_SCHEDULE_INGRESS
         )
         if row.get("native_publication_source") and plan and plan["stage"] != "publication":
             raise PermissionError("native publication schedule requires publication-stage binding")
@@ -225,16 +257,18 @@ class TemporalFixtureLegacyScheduleControl(FixtureLegacyScheduleControl):
             raise ValueError("in-flight legacy actions hold cutover")
         return description
 
-    async def _describe(self,row,remote_id):
+    async def _describe(self,row,remote_id,endpoint):
         # 6.5s plan/drain + 4.05s for two read-only describes, with 1.45s margin.
         async with asyncio.timeout(_DESCRIBE_OPERATION_TIMEOUT_SECONDS):
             client = await Client.connect(self.temporal_target)
-            description = await self._verified(client,client.get_schedule_handle(remote_id),row)
+            description = await self._verified(
+                client, client.get_schedule_handle(remote_id), row, endpoint=endpoint
+            )
             return description
 
     def describe(self,schedule_id):
-        row,remote_id = self._pin(schedule_id)
-        description = asyncio.run(self._describe(row,remote_id))
+        row,remote_id,endpoint = self._pin(schedule_id)
+        description = asyncio.run(self._describe(row,remote_id,endpoint))
         result = super().describe(schedule_id)
         if description.info.recent_actions:
             observed = max(action.scheduled_at for action in description.info.recent_actions)
@@ -251,12 +285,12 @@ class TemporalFixtureLegacyScheduleControl(FixtureLegacyScheduleControl):
                 result["next_run_at"] = description.info.next_action_times[0]
         return result
 
-    async def _pause(self,row,remote_id):
+    async def _pause(self,row,remote_id,endpoint):
         # Two 10.55s verified reads + one 2s pause RPC + 3.9s overhead margin.
         async with asyncio.timeout(_PAUSE_OPERATION_TIMEOUT_SECONDS):
             client = await Client.connect(self.temporal_target)
             handle = client.get_schedule_handle(remote_id)
-            await self._verified(client,handle,row,allow_running=True)
+            await self._verified(client,handle,row,endpoint=endpoint,allow_running=True)
             try:
                 await handle.pause(
                     note="V4 no-effects fixture cutover",
@@ -264,24 +298,26 @@ class TemporalFixtureLegacyScheduleControl(FixtureLegacyScheduleControl):
                 )
             except TimeoutError:
                 pass
-            description = await self._verified(client,handle,row)
+            description = await self._verified(client,handle,row,endpoint=endpoint)
             if not description.schedule.state.paused:
                 raise ValueError("Temporal pause readback required")
 
     def pause(self,schedule_id):
-        row,remote_id = self._pin(schedule_id)
-        asyncio.run(self._pause(row,remote_id))
+        row,remote_id,endpoint = self._pin(schedule_id)
+        asyncio.run(self._pause(row,remote_id,endpoint))
         super().pause(schedule_id)
 
-    async def _resume(self,row,remote_id,after_slot):
+    async def _resume(self,row,remote_id,after_slot,endpoint):
         # Three 6.5s plan/drain phases, the SDK's 2s initial description, one
         # 2s update, and a 4.05s final read total 27.55s; 35s leaves 7.45s.
         async with asyncio.timeout(_RESUME_OPERATION_TIMEOUT_SECONDS):
             client = await Client.connect(self.temporal_target)
             handle = client.get_schedule_handle(remote_id)
-            plan = await self._plan_async(row, required=True)
+            plan = await self._plan_async(row, endpoint=endpoint, required=True)
             async def update(argument):
-                await self._verified(client, handle, row, description=argument.description)
+                await self._verified(
+                    client, handle, row, endpoint=endpoint, description=argument.description
+                )
                 schedule = argument.description.schedule
                 if not schedule.state.paused and (schedule.action.workflow != LEGACY_SCHEDULE_INGRESS or schedule.state.note != "V4 no-effects rollback watermark:"+after_slot.isoformat()):
                     raise PermissionError("paused original schedule required before conversion")
@@ -296,18 +332,18 @@ class TemporalFixtureLegacyScheduleControl(FixtureLegacyScheduleControl):
                 update,
                 rpc_timeout=timedelta(seconds=_TEMPORAL_UPDATE_TIMEOUT_SECONDS),
             )
-            description = await self._verified(client,handle,row)
+            description = await self._verified(client,handle,row,endpoint=endpoint)
             if description.schedule.state.paused or description.schedule.spec.start_at <= after_slot:
                 raise ValueError("Temporal rollback watermark readback required")
 
     def resume_after(self,schedule_id,after_slot,*,subject_id=None):
-        row,remote_id = self._pin(schedule_id)
-        asyncio.run(self._preflight_resume_plan(row))
+        row,remote_id,endpoint = self._pin(schedule_id)
+        asyncio.run(self._preflight_resume_plan(row,endpoint))
         # Canonical rollback_pending fences V4 throughout the remote boundary.
         # If the remote acknowledgment is unknown, keep that fence for retry.
         super().resume_after(schedule_id,after_slot,subject_id=subject_id)
-        row,remote_id = self._pin(schedule_id)
-        asyncio.run(self._resume(row,remote_id,after_slot))
+        row,remote_id,endpoint = self._pin(schedule_id)
+        asyncio.run(self._resume(row,remote_id,after_slot,endpoint))
 
     async def _native_snapshot(self, row, first_v4_slot):
         async with asyncio.timeout(4):

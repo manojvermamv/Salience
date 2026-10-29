@@ -15,6 +15,7 @@ import salience.cycles.temporal_schedule_control as temporal_schedule_control
 TASK_QUEUE = "salience-v4-local-legacy-readback"
 WORKSPACE_ID = UUID("e50cb6ae-2c1a-47e1-82e9-6c3fcd72030b")
 CONTENT_PROGRAM_ID = UUID("2c677a22-415d-4f08-9b4e-f935d8c58136")
+TEST_ENDPOINT = temporal_schedule_control._DatabaseEndpoint("db.example.test", "192.0.2.55")
 
 
 class _ScheduleHandle:
@@ -90,7 +91,7 @@ def _readback_fixture(monkeypatch, outcomes):
         "postgresql://unused", workspace_id=WORKSPACE_ID,
         temporal_target="temporal-fixture", task_queue=TASK_QUEUE,
     )
-    async def no_plan(row, *, required=False):
+    async def no_plan(row, *, endpoint=None, required=False):
         return None
 
     monkeypatch.setattr(control, "_plan_async", no_plan)
@@ -145,6 +146,10 @@ async def test_async_plan_uses_bounded_connection_and_shared_query(monkeypatch):
     from psycopg.rows import dict_row
 
     control, _, _, _, row = _readback_fixture(monkeypatch, [])
+    control.database_url = (
+        "postgresql://unused:unused@fixture.invalid:5432/unused"
+        "?sslmode=verify-full&application_name=task25-fixture"
+    )
     real_async_plan = temporal_schedule_control.TemporalFixtureLegacyScheduleControl._plan_async.__get__(control)
     monkeypatch.setattr(control, "_plan_async", real_async_plan)
     plan = {"goal_id": UUID("a56ed3ab-4a8a-47db-8073-5d74dd883921"), "task_queue": TASK_QUEUE}
@@ -171,19 +176,151 @@ async def test_async_plan_uses_bounded_connection_and_shared_query(monkeypatch):
 
     monkeypatch.setattr(psycopg.AsyncConnection, "connect", classmethod(connect))
 
-    result = await control._plan_async(row, required=True)
+    endpoint = SimpleNamespace(host="db.example.test", hostaddr="192.0.2.55")
+    result = await control._plan_async(row, endpoint=endpoint, required=True)
 
     assert result is plan
-    assert connect_calls == [("postgresql://unused", {
-        "row_factory": dict_row,
-        "connect_timeout": temporal_schedule_control._PLAN_CONNECT_TIMEOUT_SECONDS,
-    })]
+    assert connect_calls == [(
+        "postgresql://unused:unused@fixture.invalid:5432/unused"
+        "?sslmode=verify-full&application_name=task25-fixture",
+        {
+            "row_factory": dict_row,
+            "connect_timeout": temporal_schedule_control._PLAN_CONNECT_TIMEOUT_SECONDS,
+            "host": "db.example.test",
+            "hostaddr": "192.0.2.55",
+        },
+    )]
     assert calls[0] == (temporal_schedule_control._PLAN_STATEMENT_TIMEOUT_COMMAND, None)
     assert calls[1] == (
         temporal_schedule_control._PLAN_LOOKUP_QUERY,
         (row["id"], WORKSPACE_ID, row["id"], WORKSPACE_ID),
     )
     assert connection_state["closed"] is True
+
+
+def test_pin_captures_active_database_host_and_hostaddr(monkeypatch):
+    control, _, _, _, row = _readback_fixture(monkeypatch, [])
+    connection_state = {"closed": False}
+
+    class ConnectionInfo:
+        @property
+        def host(self):
+            assert not connection_state["closed"]
+            return "db.example.test"
+
+        @property
+        def hostaddr(self):
+            assert not connection_state["closed"]
+            return "192.0.2.55"
+
+    class Connection:
+        info = ConnectionInfo()
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_):
+            connection_state["closed"] = True
+
+    monkeypatch.setattr(temporal_schedule_control, "require_fixture", lambda: None)
+    monkeypatch.setattr(control, "_schedule", lambda connection, schedule_id: row)
+    monkeypatch.setattr(
+        temporal_schedule_control,
+        "schedule_metadata",
+        lambda _row: {
+            "remote_id": (
+                "salience-v4-legacy-fixture:"
+                "e50cb6ae-2c1a-47e1-82e9-6c3fcd72030b:"
+                "38e45f69-4af2-47ab-a645-11d5e8006fd8"
+            )
+        },
+    )
+    monkeypatch.setattr(
+        "psycopg.connect", lambda *args, **kwargs: Connection()
+    )
+
+    pinned_row, remote_id, endpoint = control._pin(row["id"])
+
+    assert pinned_row is row
+    assert remote_id == (
+        "salience-v4-legacy-fixture:"
+        "e50cb6ae-2c1a-47e1-82e9-6c3fcd72030b:"
+        "38e45f69-4af2-47ab-a645-11d5e8006fd8"
+    )
+    assert endpoint.host == "db.example.test"
+    assert endpoint.hostaddr == "192.0.2.55"
+    assert connection_state["closed"] is True
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("hostaddr", [None, "not-a-numeric-address"])
+async def test_async_plan_fails_closed_without_numeric_address_for_hostname(
+    monkeypatch, caplog, hostaddr
+):
+    import psycopg
+
+    control, _, _, _, row = _readback_fixture(monkeypatch, [])
+    control.database_url = "postgresql://user:task25-secret@fixture.invalid:5432/unused"
+    real_async_plan = temporal_schedule_control.TemporalFixtureLegacyScheduleControl._plan_async.__get__(control)
+    monkeypatch.setattr(control, "_plan_async", real_async_plan)
+    connect_calls = []
+
+    async def connect(cls, conninfo, **kwargs):
+        connect_calls.append((conninfo, kwargs))
+        raise AssertionError("hostname-only async fallback must never be attempted")
+
+    monkeypatch.setattr(psycopg.AsyncConnection, "connect", classmethod(connect))
+    endpoint = SimpleNamespace(host="fixture.invalid", hostaddr=hostaddr)
+
+    with pytest.raises((ValueError, RuntimeError), match="database endpoint") as error:
+        await control._plan_async(row, endpoint=endpoint)
+
+    assert connect_calls == []
+    assert "task25-secret" not in str(error.value)
+    assert "postgresql://" not in str(error.value)
+    assert "task25-secret" not in caplog.text
+    assert "postgresql://" not in caplog.text
+
+
+@pytest.mark.asyncio
+async def test_async_plan_keeps_local_unix_socket_endpoint_without_hostaddr(monkeypatch):
+    import psycopg
+    from psycopg.rows import dict_row
+
+    control, _, _, _, row = _readback_fixture(monkeypatch, [])
+    real_async_plan = temporal_schedule_control.TemporalFixtureLegacyScheduleControl._plan_async.__get__(control)
+    monkeypatch.setattr(control, "_plan_async", real_async_plan)
+    plan = None
+
+    class Cursor:
+        async def fetchone(self):
+            return plan
+
+    class Connection:
+        async def execute(self, query, params=None):
+            return Cursor()
+
+        async def close(self):
+            return None
+
+    connect_calls = []
+
+    async def connect(cls, conninfo, **kwargs):
+        connect_calls.append((conninfo, kwargs))
+        return Connection()
+
+    monkeypatch.setattr(psycopg.AsyncConnection, "connect", classmethod(connect))
+
+    result = await control._plan_async(
+        row, endpoint=SimpleNamespace(host="/var/run/postgresql", hostaddr=None)
+    )
+
+    assert result is None
+    assert connect_calls == [("postgresql://unused", {
+        "row_factory": dict_row,
+        "connect_timeout": temporal_schedule_control._PLAN_CONNECT_TIMEOUT_SECONDS,
+        "host": "/var/run/postgresql",
+    })]
 
 
 @pytest.mark.asyncio
@@ -199,7 +336,7 @@ async def test_async_plan_closes_connection_when_cancelled(monkeypatch):
         return connection
 
     monkeypatch.setattr(psycopg.AsyncConnection, "connect", classmethod(connect))
-    task = asyncio.create_task(control._plan_async(row))
+    task = asyncio.create_task(control._plan_async(row, endpoint=TEST_ENDPOINT))
     assert await asyncio.to_thread(connection.query_started.wait, 1)
     started_at = time.monotonic()
     task.cancel()
@@ -268,7 +405,7 @@ async def test_describe_retries_deadline_exceeded_and_returns_verified_state(mon
     transient = RPCError("describe deadline", RPCStatusCode.DEADLINE_EXCEEDED, b"")
     control, client, handle, description, row = _readback_fixture(monkeypatch, [transient])
 
-    actual = await control._describe(row, "fixture-schedule")
+    actual = await control._describe(row, "fixture-schedule", TEST_ENDPOINT)
 
     assert actual is description
     assert client.schedule_id == "fixture-schedule"
@@ -281,7 +418,7 @@ async def test_describe_does_not_retry_non_deadline_rpc_errors(monkeypatch):
     control, _, handle, _, row = _readback_fixture(monkeypatch, [error])
 
     with pytest.raises(RPCError, match="invalid describe request"):
-        await control._describe(row, "fixture-schedule")
+        await control._describe(row, "fixture-schedule", TEST_ENDPOINT)
 
     assert handle.rpc_timeouts == [timedelta(seconds=2)]
 
@@ -292,7 +429,7 @@ async def test_verified_plan_lookup_does_not_block_its_async_deadline(monkeypatc
     plan_started = asyncio.Event()
     plan_cancelled = asyncio.Event()
 
-    async def slow_plan(_row, *, required=False):
+    async def slow_plan(_row, *, endpoint, required=False):
         plan_started.set()
         try:
             await asyncio.sleep(0.5)
@@ -304,7 +441,7 @@ async def test_verified_plan_lookup_does_not_block_its_async_deadline(monkeypatc
     monkeypatch.setattr(control, "_plan_async", slow_plan, raising=False)
     with pytest.raises(TimeoutError):
         async with asyncio.timeout(0.03):
-            await control._verified(client, handle, row)
+            await control._verified(client, handle, row, endpoint=TEST_ENDPOINT)
 
     assert plan_started.is_set()
     assert plan_cancelled.is_set()
@@ -316,7 +453,7 @@ async def test_resume_plan_lookup_does_not_exceed_async_deadline(monkeypatch):
     plan_started = asyncio.Event()
     plan_cancelled = asyncio.Event()
 
-    async def slow_plan(_row, *, required=False):
+    async def slow_plan(_row, *, endpoint, required=False):
         plan_started.set()
         try:
             await asyncio.sleep(0.5)
@@ -330,7 +467,12 @@ async def test_resume_plan_lookup_does_not_exceed_async_deadline(monkeypatch):
     started_at = loop.time()
     with pytest.raises(TimeoutError):
         async with asyncio.timeout(0.03):
-            await control._resume(row, "fixture-schedule", datetime(2025, 1, 1, tzinfo=timezone.utc))
+            await control._resume(
+                row,
+                "fixture-schedule",
+                datetime(2025, 1, 1, tzinfo=timezone.utc),
+                TEST_ENDPOINT,
+            )
     elapsed = loop.time() - started_at
 
     assert elapsed < 0.3
@@ -351,7 +493,11 @@ def test_public_describe_deadline_closes_driver_connection_before_draining(monke
     monkeypatch.setattr(psycopg.AsyncConnection, "connect", classmethod(connect))
     real_async_plan = temporal_schedule_control.TemporalFixtureLegacyScheduleControl._plan_async.__get__(control)
     monkeypatch.setattr(control, "_plan_async", real_async_plan)
-    monkeypatch.setattr(control, "_pin", lambda schedule_id: (row, "fixture-schedule"))
+    monkeypatch.setattr(
+        control,
+        "_pin",
+        lambda schedule_id: (row, "fixture-schedule", TEST_ENDPOINT),
+    )
     monkeypatch.setattr(temporal_schedule_control, "_DESCRIBE_OPERATION_TIMEOUT_SECONDS", 0.03)
     finished = threading.Event()
     outcome = []
@@ -385,6 +531,96 @@ def test_public_describe_deadline_closes_driver_connection_before_draining(monke
     assert not caller.is_alive()
 
 
+@pytest.mark.parametrize("operation", ["describe", "pause", "resume"])
+def test_public_plan_paths_do_not_wait_for_default_executor_dns(monkeypatch, operation):
+    import socket
+
+    control, _, handle, _, row = _readback_fixture(monkeypatch, [])
+    control.database_url = "postgresql://unused:unused@fixture.invalid:1/unused"
+    real_async_plan = temporal_schedule_control.TemporalFixtureLegacyScheduleControl._plan_async.__get__(control)
+    monkeypatch.setattr(control, "_plan_async", real_async_plan)
+    endpoint = temporal_schedule_control._DatabaseEndpoint("fixture.invalid", "127.0.0.1")
+    monkeypatch.setattr(
+        control, "_pin", lambda schedule_id: (row, "fixture-schedule", endpoint)
+    )
+    monkeypatch.setattr(temporal_schedule_control, "_DESCRIBE_OPERATION_TIMEOUT_SECONDS", 0.03)
+    monkeypatch.setattr(temporal_schedule_control, "_PAUSE_OPERATION_TIMEOUT_SECONDS", 0.03)
+    monkeypatch.setattr(temporal_schedule_control, "_PLAN_PREFLIGHT_OPERATION_TIMEOUT_SECONDS", 0.03)
+
+    side_effects = {"pause": 0, "local_resume": 0}
+    original_pause = temporal_schedule_control.FixtureLegacyScheduleControl.pause
+
+    def record_pause(self, schedule_id):
+        side_effects["pause"] += 1
+        return original_pause(self, schedule_id)
+
+    def record_local_resume(self, schedule_id, after_slot, *, subject_id=None):
+        side_effects["local_resume"] += 1
+
+    monkeypatch.setattr(
+        temporal_schedule_control.FixtureLegacyScheduleControl,
+        "pause",
+        record_pause,
+    )
+    monkeypatch.setattr(
+        temporal_schedule_control.FixtureLegacyScheduleControl,
+        "resume_after",
+        record_local_resume,
+    )
+
+    resolver_entered = threading.Event()
+    resolver_release = threading.Event()
+    resolver_hosts = []
+    real_getaddrinfo = socket.getaddrinfo
+
+    def blocked_getaddrinfo(host, *args, **kwargs):
+        if host == "fixture.invalid":
+            resolver_hosts.append(host)
+            resolver_entered.set()
+            resolver_release.wait(1)
+            raise socket.gaierror("controlled resolver release")
+        return real_getaddrinfo(host, *args, **kwargs)
+
+    monkeypatch.setattr(socket, "getaddrinfo", blocked_getaddrinfo)
+    finished = threading.Event()
+    outcome = []
+
+    def call_public_describe():
+        try:
+            if operation == "describe":
+                control.describe(row["id"])
+            elif operation == "pause":
+                control.pause(row["id"])
+            else:
+                control.resume_after(row["id"], datetime(2025, 1, 1, tzinfo=timezone.utc))
+        except BaseException as error:
+            outcome.append(error)
+        finally:
+            finished.set()
+
+    caller = threading.Thread(target=call_public_describe, daemon=True)
+    caller.start()
+    try:
+        resolver_was_entered = resolver_entered.wait(0.25)
+        returned_before_resolver_release = finished.wait(0.25)
+    finally:
+        resolver_release.set()
+        caller.join(timeout=1)
+
+    assert not resolver_was_entered, (
+        f"public {operation} plan connection submitted hostname DNS to the default executor"
+    )
+    assert returned_before_resolver_release, (
+        f"public {operation} call waited for DNS after the plan deadline"
+    )
+    assert resolver_hosts == []
+    assert len(outcome) == 1
+    assert side_effects == {"pause": 0, "local_resume": 0}
+    assert handle.pause_calls == []
+    assert handle.update_calls == []
+    assert not caller.is_alive()
+
+
 @pytest.mark.asyncio
 async def test_internal_plan_deadline_closes_and_drains_driver_task(monkeypatch):
     import psycopg
@@ -402,7 +638,7 @@ async def test_internal_plan_deadline_closes_and_drains_driver_task(monkeypatch)
 
     monkeypatch.setattr(psycopg.AsyncConnection, "connect", classmethod(connect))
     started_at = time.monotonic()
-    task = asyncio.create_task(control._plan_async(row))
+    task = asyncio.create_task(control._plan_async(row, endpoint=TEST_ENDPOINT))
     try:
         assert await asyncio.to_thread(connection.query_started.wait, 1)
         done, _ = await asyncio.wait({task}, timeout=0.25)
@@ -446,7 +682,7 @@ async def test_internal_plan_deadline_cancels_connect_stage(monkeypatch):
             raise
 
     monkeypatch.setattr(psycopg.AsyncConnection, "connect", classmethod(connect))
-    task = asyncio.create_task(control._plan_async(row))
+    task = asyncio.create_task(control._plan_async(row, endpoint=TEST_ENDPOINT))
     done, _ = await asyncio.wait({task}, timeout=0.25)
 
     assert task in done
@@ -473,7 +709,7 @@ def test_public_resume_preflight_timeout_prevents_local_rollback_mutation(monkey
         time.sleep(0.2)
         return {"goal_id": "fixture-goal"}
 
-    async def slow_async_plan(_row, *, required=False):
+    async def slow_async_plan(_row, *, endpoint, required=False):
         assert required is True
         plan_async_started.set()
         try:
@@ -486,10 +722,14 @@ def test_public_resume_preflight_timeout_prevents_local_rollback_mutation(monkey
     def local_resume(self, schedule_id, after_slot, *, subject_id=None):
         local_resume_calls.append((schedule_id, after_slot, subject_id))
 
-    async def no_remote_resume(_row, _remote_id, _after_slot):
+    async def no_remote_resume(_row, _remote_id, _after_slot, _endpoint):
         return None
 
-    monkeypatch.setattr(control, "_pin", lambda schedule_id: (row, "fixture-schedule"))
+    monkeypatch.setattr(
+        control,
+        "_pin",
+        lambda schedule_id: (row, "fixture-schedule", TEST_ENDPOINT),
+    )
     monkeypatch.setattr(control, "_plan", slow_sync_plan, raising=False)
     monkeypatch.setattr(control, "_plan_async", slow_async_plan)
     monkeypatch.setattr(control, "_resume", no_remote_resume)
@@ -523,7 +763,7 @@ async def test_pause_retries_transient_post_pause_readback_once(monkeypatch):
     transient = RPCError("post-pause describe deadline", RPCStatusCode.DEADLINE_EXCEEDED, b"")
     handle.results = [description, transient, description]
 
-    await control._pause(row, "fixture-schedule")
+    await control._pause(row, "fixture-schedule", TEST_ENDPOINT)
 
     assert handle.paused_at_describe == [False, True, True]
     assert handle.pause_calls == [
@@ -543,7 +783,7 @@ async def test_pause_propagates_persistent_post_pause_deadlines_without_repeatin
     handle.results = [description, first_deadline, second_deadline]
 
     with pytest.raises(RPCError, match="second post-pause deadline"):
-        await control._pause(row, "fixture-schedule")
+        await control._pause(row, "fixture-schedule", TEST_ENDPOINT)
 
     assert handle.paused_at_describe == [False, True, True]
     assert handle.pause_calls == [
