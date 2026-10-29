@@ -15,7 +15,7 @@ import salience.cycles.temporal_schedule_control as temporal_schedule_control
 TASK_QUEUE = "salience-v4-local-legacy-readback"
 WORKSPACE_ID = UUID("e50cb6ae-2c1a-47e1-82e9-6c3fcd72030b")
 CONTENT_PROGRAM_ID = UUID("2c677a22-415d-4f08-9b4e-f935d8c58136")
-TEST_ENDPOINT = temporal_schedule_control._DatabaseEndpoint("db.example.test", "192.0.2.55")
+TEST_ENDPOINT = temporal_schedule_control._DatabaseEndpoint("db.example.test", "192.0.2.55", 5432)
 
 
 class _ScheduleHandle:
@@ -144,11 +144,13 @@ def _readback_fixture(monkeypatch, outcomes):
 async def test_async_plan_uses_bounded_connection_and_shared_query(monkeypatch):
     import psycopg
     from psycopg.rows import dict_row
+    from psycopg._conninfo_utils import split_attempts
+    from psycopg.conninfo import conninfo_to_dict
 
     control, _, _, _, row = _readback_fixture(monkeypatch, [])
     control.database_url = (
-        "postgresql://unused:unused@fixture.invalid:5432/unused"
-        "?sslmode=verify-full&application_name=task25-fixture"
+        "postgresql://unused:unused@db1.example.test:5432,db2.example.test:5433/salience"
+        "?sslmode=verify-full&application_name=task25-fixture&target_session_attrs=read-write"
     )
     real_async_plan = temporal_schedule_control.TemporalFixtureLegacyScheduleControl._plan_async.__get__(control)
     monkeypatch.setattr(control, "_plan_async", real_async_plan)
@@ -172,22 +174,36 @@ async def test_async_plan_uses_bounded_connection_and_shared_query(monkeypatch):
 
     async def connect(cls, conninfo, **kwargs):
         connect_calls.append((conninfo, kwargs))
+        params = conninfo_to_dict(
+            conninfo, **{key: value for key, value in kwargs.items() if key != "row_factory"}
+        )
+        attempts = split_attempts(params)
+        assert len(attempts) == 1
+        assert attempts[0]["host"] == "db2.example.test"
+        assert attempts[0]["hostaddr"] == "192.0.2.55"
+        assert attempts[0]["port"] == "5433"
+        assert params["sslmode"] == "verify-full"
+        assert params["application_name"] == "task25-fixture"
+        assert params["target_session_attrs"] == "read-write"
         return Connection()
 
     monkeypatch.setattr(psycopg.AsyncConnection, "connect", classmethod(connect))
 
-    endpoint = SimpleNamespace(host="db.example.test", hostaddr="192.0.2.55")
+    endpoint = SimpleNamespace(
+        host="db2.example.test", hostaddr="192.0.2.55", port=5433
+    )
     result = await control._plan_async(row, endpoint=endpoint, required=True)
 
     assert result is plan
     assert connect_calls == [(
-        "postgresql://unused:unused@fixture.invalid:5432/unused"
-        "?sslmode=verify-full&application_name=task25-fixture",
+        "postgresql://unused:unused@db1.example.test:5432,db2.example.test:5433/salience"
+        "?sslmode=verify-full&application_name=task25-fixture&target_session_attrs=read-write",
         {
             "row_factory": dict_row,
             "connect_timeout": temporal_schedule_control._PLAN_CONNECT_TIMEOUT_SECONDS,
-            "host": "db.example.test",
+            "host": "db2.example.test",
             "hostaddr": "192.0.2.55",
+            "port": "5433",
         },
     )]
     assert calls[0] == (temporal_schedule_control._PLAN_STATEMENT_TIMEOUT_COMMAND, None)
@@ -198,29 +214,43 @@ async def test_async_plan_uses_bounded_connection_and_shared_query(monkeypatch):
     assert connection_state["closed"] is True
 
 
-def test_pin_captures_active_database_host_and_hostaddr(monkeypatch):
-    control, _, _, _, row = _readback_fixture(monkeypatch, [])
-    connection_state = {"closed": False}
+def _install_pin_connection(monkeypatch, control, row, *, host, hostaddr, port):
+    connection_states = []
 
     class ConnectionInfo:
+        def __init__(self, state):
+            self.state = state
+
         @property
         def host(self):
-            assert not connection_state["closed"]
-            return "db.example.test"
+            assert not self.state["closed"]
+            return host
 
         @property
         def hostaddr(self):
-            assert not connection_state["closed"]
-            return "192.0.2.55"
+            assert not self.state["closed"]
+            return hostaddr
+
+        @property
+        def port(self):
+            assert not self.state["closed"]
+            return port
 
     class Connection:
-        info = ConnectionInfo()
+        def __init__(self, state):
+            self.state = state
+            self.info = ConnectionInfo(state)
 
         def __enter__(self):
             return self
 
         def __exit__(self, *_):
-            connection_state["closed"] = True
+            self.state["closed"] = True
+
+    def connect(*args, **kwargs):
+        state = {"closed": False}
+        connection_states.append(state)
+        return Connection(state)
 
     monkeypatch.setattr(temporal_schedule_control, "require_fixture", lambda: None)
     monkeypatch.setattr(control, "_schedule", lambda connection, schedule_id: row)
@@ -232,11 +262,29 @@ def test_pin_captures_active_database_host_and_hostaddr(monkeypatch):
                 "salience-v4-legacy-fixture:"
                 "e50cb6ae-2c1a-47e1-82e9-6c3fcd72030b:"
                 "38e45f69-4af2-47ab-a645-11d5e8006fd8"
-            )
+            ),
+            "interval_seconds": 60,
+            "next_run_at": datetime(2025, 1, 1, tzinfo=timezone.utc),
         },
     )
-    monkeypatch.setattr(
-        "psycopg.connect", lambda *args, **kwargs: Connection()
+    monkeypatch.setattr("psycopg.connect", connect)
+    return connection_states
+
+
+@pytest.mark.parametrize(
+    ("host", "hostaddr", "expected_hostaddr", "port"),
+    [
+        ("db.example.test", "192.0.2.55", "192.0.2.55", 5432),
+        ("/var/run/postgresql", "", None, 5432),
+        ("db.example.test", "", "", 5433),
+    ],
+)
+def test_pin_captures_active_endpoint_and_normalizes_empty_unix_address(
+    monkeypatch, host, hostaddr, expected_hostaddr, port
+):
+    control, _, _, _, row = _readback_fixture(monkeypatch, [])
+    connection_states = _install_pin_connection(
+        monkeypatch, control, row, host=host, hostaddr=hostaddr, port=port
     )
 
     pinned_row, remote_id, endpoint = control._pin(row["id"])
@@ -247,13 +295,14 @@ def test_pin_captures_active_database_host_and_hostaddr(monkeypatch):
         "e50cb6ae-2c1a-47e1-82e9-6c3fcd72030b:"
         "38e45f69-4af2-47ab-a645-11d5e8006fd8"
     )
-    assert endpoint.host == "db.example.test"
-    assert endpoint.hostaddr == "192.0.2.55"
-    assert connection_state["closed"] is True
+    assert endpoint.host == host
+    assert endpoint.hostaddr == expected_hostaddr
+    assert endpoint.port == port
+    assert connection_states == [{"closed": True}]
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("hostaddr", [None, "not-a-numeric-address"])
+@pytest.mark.parametrize("hostaddr", [None, "", "not-a-numeric-address"])
 async def test_async_plan_fails_closed_without_numeric_address_for_hostname(
     monkeypatch, caplog, hostaddr
 ):
@@ -270,7 +319,7 @@ async def test_async_plan_fails_closed_without_numeric_address_for_hostname(
         raise AssertionError("hostname-only async fallback must never be attempted")
 
     monkeypatch.setattr(psycopg.AsyncConnection, "connect", classmethod(connect))
-    endpoint = SimpleNamespace(host="fixture.invalid", hostaddr=hostaddr)
+    endpoint = SimpleNamespace(host="fixture.invalid", hostaddr=hostaddr, port=5432)
 
     with pytest.raises((ValueError, RuntimeError), match="database endpoint") as error:
         await control._plan_async(row, endpoint=endpoint)
@@ -312,7 +361,10 @@ async def test_async_plan_keeps_local_unix_socket_endpoint_without_hostaddr(monk
     monkeypatch.setattr(psycopg.AsyncConnection, "connect", classmethod(connect))
 
     result = await control._plan_async(
-        row, endpoint=SimpleNamespace(host="/var/run/postgresql", hostaddr=None)
+        row,
+        endpoint=SimpleNamespace(
+            host="/var/run/postgresql", hostaddr=None, port=5432
+        ),
     )
 
     assert result is None
@@ -320,7 +372,106 @@ async def test_async_plan_keeps_local_unix_socket_endpoint_without_hostaddr(monk
         "row_factory": dict_row,
         "connect_timeout": temporal_schedule_control._PLAN_CONNECT_TIMEOUT_SECONDS,
         "host": "/var/run/postgresql",
+        "port": "5432",
     })]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("port", [0, 65536, True, "5432"])
+async def test_async_plan_rejects_invalid_pinned_port_without_logging_conninfo(
+    monkeypatch, caplog, port
+):
+    import psycopg
+
+    control, _, _, _, row = _readback_fixture(monkeypatch, [])
+    control.database_url = "postgresql://user:task25-secret@db.example.test:5432/unused"
+    real_async_plan = temporal_schedule_control.TemporalFixtureLegacyScheduleControl._plan_async.__get__(control)
+    monkeypatch.setattr(control, "_plan_async", real_async_plan)
+    connect_calls = []
+
+    async def connect(cls, conninfo, **kwargs):
+        connect_calls.append((conninfo, kwargs))
+        raise AssertionError("invalid pinned port must be rejected before connect")
+
+    monkeypatch.setattr(psycopg.AsyncConnection, "connect", classmethod(connect))
+    endpoint = SimpleNamespace(
+        host="db.example.test", hostaddr="192.0.2.55", port=port
+    )
+
+    with pytest.raises(RuntimeError, match="database endpoint port") as error:
+        await control._plan_async(row, endpoint=endpoint)
+
+    assert connect_calls == []
+    assert "task25-secret" not in str(error.value)
+    assert "postgresql://" not in str(error.value)
+    assert "task25-secret" not in caplog.text
+    assert "postgresql://" not in caplog.text
+
+
+def test_public_describe_uses_normalized_unix_pin_endpoint(monkeypatch):
+    import psycopg
+    from psycopg.rows import dict_row
+
+    control, _, _, description, row = _readback_fixture(monkeypatch, [])
+    description.info.recent_actions = []
+    _install_pin_connection(
+        monkeypatch,
+        control,
+        row,
+        host="/var/run/postgresql",
+        hostaddr="",
+        port=5432,
+    )
+    real_async_plan = temporal_schedule_control.TemporalFixtureLegacyScheduleControl._plan_async.__get__(control)
+    monkeypatch.setattr(control, "_plan_async", real_async_plan)
+    monkeypatch.setattr(
+        temporal_schedule_control.FixtureLegacyScheduleControl,
+        "describe",
+        lambda self, schedule_id: {
+            "last_slot_is_boundary": True,
+            "last_slot": None,
+            "resume_after": None,
+        },
+    )
+    plan_calls = []
+
+    class Cursor:
+        async def fetchone(self):
+            return None
+
+    class Connection:
+        async def execute(self, query, params=None):
+            plan_calls.append((query, params))
+            return Cursor()
+
+        async def close(self):
+            return None
+
+    connect_calls = []
+
+    async def connect(cls, conninfo, **kwargs):
+        connect_calls.append((conninfo, kwargs))
+        return Connection()
+
+    monkeypatch.setattr(psycopg.AsyncConnection, "connect", classmethod(connect))
+
+    result = control.describe(row["id"])
+
+    assert result["paused"] is False
+    assert connect_calls == [("postgresql://unused", {
+        "row_factory": dict_row,
+        "connect_timeout": temporal_schedule_control._PLAN_CONNECT_TIMEOUT_SECONDS,
+        "host": "/var/run/postgresql",
+        "port": "5432",
+    })]
+    assert plan_calls == [
+        (temporal_schedule_control._PLAN_STATEMENT_TIMEOUT_COMMAND, None),
+        (
+            temporal_schedule_control._PLAN_LOOKUP_QUERY,
+            (row["id"], WORKSPACE_ID, row["id"], WORKSPACE_ID),
+        ),
+    ]
+    assert description.schedule.state.paused is False
 
 
 @pytest.mark.asyncio
@@ -539,7 +690,7 @@ def test_public_plan_paths_do_not_wait_for_default_executor_dns(monkeypatch, ope
     control.database_url = "postgresql://unused:unused@fixture.invalid:1/unused"
     real_async_plan = temporal_schedule_control.TemporalFixtureLegacyScheduleControl._plan_async.__get__(control)
     monkeypatch.setattr(control, "_plan_async", real_async_plan)
-    endpoint = temporal_schedule_control._DatabaseEndpoint("fixture.invalid", "127.0.0.1")
+    endpoint = temporal_schedule_control._DatabaseEndpoint("fixture.invalid", "127.0.0.1", 1)
     monkeypatch.setattr(
         control, "_pin", lambda schedule_id: (row, "fixture-schedule", endpoint)
     )

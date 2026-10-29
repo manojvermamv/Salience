@@ -51,6 +51,7 @@ _RESUME_OPERATION_TIMEOUT_SECONDS = 35
 class _DatabaseEndpoint:
     host: str
     hostaddr: str | None
+    port: int
 
 
 class TemporalFixtureLegacyScheduleControl(FixtureLegacyScheduleControl):
@@ -67,9 +68,14 @@ class TemporalFixtureLegacyScheduleControl(FixtureLegacyScheduleControl):
         from psycopg.rows import dict_row
         with psycopg.connect(self.database_url,row_factory=dict_row,connect_timeout=3) as connection:
             row = self._schedule(connection,schedule_id)
+            host = connection.info.host
+            hostaddr = connection.info.hostaddr
+            if isinstance(host, str) and host.startswith("/") and hostaddr == "":
+                hostaddr = None
             endpoint = _DatabaseEndpoint(
-                host=connection.info.host,
-                hostaddr=connection.info.hostaddr,
+                host=host,
+                hostaddr=hostaddr,
+                port=connection.info.port,
             )
         native = row.get("native_source") or row.get("native_publication_source")
         expected = schedule_metadata(row)["remote_id"] if native else f"salience-v4-legacy-fixture:{self.workspace_id}:{schedule_id}"
@@ -85,8 +91,11 @@ class TemporalFixtureLegacyScheduleControl(FixtureLegacyScheduleControl):
 
         host = endpoint.host
         hostaddr = endpoint.hostaddr
+        port = endpoint.port
         if not isinstance(host, str) or not host:
             raise RuntimeError("pinned database endpoint required for Temporal plan read")
+        if isinstance(port, bool) or not isinstance(port, int) or not 1 <= port <= 65535:
+            raise RuntimeError("valid numeric database endpoint port required for Temporal plan read")
         if hostaddr is None:
             if not host.startswith("/"):
                 raise RuntimeError("numeric database endpoint address required for Temporal plan read")
@@ -104,6 +113,7 @@ class TemporalFixtureLegacyScheduleControl(FixtureLegacyScheduleControl):
                 "row_factory": dict_row,
                 "connect_timeout": _PLAN_CONNECT_TIMEOUT_SECONDS,
                 "host": host,
+                "port": str(port),
             }
             if hostaddr is not None:
                 connect_options["hostaddr"] = hostaddr
