@@ -343,17 +343,17 @@ This append-only inventory binds the current navigation, status, source-lock, sy
 | `.superpowers/sdd/2026-10-28-p1-remaining-production-development/final-evidence-report.md` | `3a13c72f58ff08e66f42de20d693db2db1a26b98168cb09ea952e1a1abaa4ade` |
 
 
-## Task22/23 latest local candidate and gate disposition — 2026-10-29
+## Historical Task22/23 local candidate and gate disposition — 2026-10-29
 
-The latest local development evidence binds source `db3613482ac78cd708f6aa62e64854626ba7a906` / tree `f6ed4a172065985dd13b92994cb781318e0960f9` to exact artifact `c1c78dd25e467d0ae48e9c949de6aeb555875ea8` / tree `7212ba6537bcdde0196c55152ac0814c59787073`, whose sole parent is the source. Task22 changed only the generated development v2 lock JSON and companion; wheel size/hash are 459,013 bytes / `7e3073d66ffc6f6d0eb9aa4a27e08e506d82b7ecf58d749558cd6544d805a5b6`, local image digest is `24084cf14fadcb711bccefb9ab24c72444c0740ad819d79a3756831b2e008fd6`, source manifest is `b4fbe57aacde546f7733f839211cf211d7a4d12ac35cc901f2c74f90e2c33fe8`, and v2 lock JSON/content plus companion-file hashes are `d7cc873fe32beffcf042db7133b7b134be23d6ad9774b75568f337482a4e7bc1` / `7d30bce4d395dcd3242dff345ecc88f4fe45e2485e8ae6dba43c418d61d6420f`. The v1 lock remains unchanged. The synthetic route IDs are deployment/environment/route/slot `221/222/223/224`; tuple digest `6f56661b24a5032deb6f5bfea8459b17d4efdbdee03d6131ac8ff441f47cd25c`; route-manifest digest `baf5884f361937459d47e3d6467565acc54d2f6a28d0584978556b60e37935dc`. Migration head is `0051_p1_recovery_rollback_v2`, rollback ABI v2; endpoint remains unprovisioned and producer bindings empty.
+The Task24 local development evidence bound source `db3613482ac78cd708f6aa62e64854626ba7a906` / tree `f6ed4a172065985dd13b92994cb781318e0960f9` to exact artifact `c1c78dd25e467d0ae48e9c949de6aeb555875ea8` / tree `7212ba6537bcdde0196c55152ac0814c59787073`, whose sole parent is the source. Task22 changed only the generated development v2 lock JSON and companion; wheel size/hash are 459,013 bytes / `7e3073d66ffc6f6d0eb9aa4a27e08e506d82b7ecf58d749558cd6544d805a5b6`, local image digest is `24084cf14fadcb711bccefb9ab24c72444c0740ad819d79a3756831b2e008fd6`, source manifest is `b4fbe57aacde546f7733f839211cf211d7a4d12ac35cc901f2c74f90e2c33fe8`, and v2 lock JSON/content plus companion-file hashes are `d7cc873fe32beffcf042db7133b7b134be23d6ad9774b75568f337482a4e7bc1` / `7d30bce4d395dcd3242dff345ecc88f4fe45e2485e8ae6dba43c418d61d6420f`. The v1 lock remains unchanged. The synthetic route IDs are deployment/environment/route/slot `221/222/223/224`; tuple digest `6f56661b24a5032deb6f5bfea8459b17d4efdbdee03d6131ac8ff441f47cd25c`; route-manifest digest `baf5884f361937459d47e3d6467565acc54d2f6a28d0584978556b60e37935dc`. Migration head is `0051_p1_recovery_rollback_v2`, rollback ABI v2; endpoint remains unprovisioned and producer bindings empty.
 
 Task23 passed seven focused groups (38 + 39 + 64 + 79 + 4 + 137 + 45 = **406**) and one full non-live suite (**1,196 passed, 26 skipped, 3 warnings**, log SHA-256 `228705c455ab4dad8f0216bc67bef1ac31563dcae9871a3d1252a5d27b928111`). Exact group hashes and setup/cleanup records are in [Task23 qualification report](../../.superpowers/sdd/2026-10-28-p1-remaining-production-development/task-23-report.md); reproducible build commands and artifact evidence are in [Task22 build report](../../.superpowers/sdd/2026-10-28-p1-remaining-production-development/task-22-report.md).
 
 This addendum supersedes the Task19 current-candidate addendum above for latest local status only. It does not change the frozen initial audit, historical review verdicts, or external qualification. All 22 external/live rows remain `NOT RUN`; identities remain synthetic/unverified; final external audit remains `NOT RUN`; production trust remains unprovisioned; effects remain disabled; budget is zero; package disposition remains `NO_GO` / `UNCHANGED`; RG0/full RG1 remain `HELD`; P2 remains `BLOCKED`; and `main` remains unmerged.
 
-## Task24 current handoff hash inventory — 2026-10-29
+## Historical Task24 handoff hash inventory — 2026-10-29
 
-SHA-256 values below bind the current Task22/23 documentation handoff after this refresh. The wrapper and documentation-status audit are omitted here to avoid a cross-file digest cycle; the status audit continues to omit its own self-hash.
+These SHA-256 values preserve the Task24 handoff snapshot. They are historical and do not describe this refresh. The Task24 wrapper and documentation-status audit were omitted to avoid a cross-file digest cycle; the status audit omitted its own self-hash.
 
 | Path | SHA-256 |
 | --- | --- |
@@ -398,3 +398,67 @@ SHA-256 values below bind the current Task22/23 documentation handoff after this
 | `docs/v4/repository-enforcement-evidence.json` | `fc69f901036971bd64588cf3247d1701939e7525442f196daeab7f1919de11a2` |
 | `docs/v4/test_checks.py` | `c915b137417c53b3b3f773eacbfcfea3d62584a21ca11df8288e0c2b4281cf6e` |
 | `docs/v4/validation.md` | `b074e7ac8c9fb8b0ffee1faffbc736f048f77d137e49487603f65a7efd56ebf5` |
+
+## Task30 current candidate and gate disposition — 2026-10-29
+
+The active local development candidate is Task25 source `cf070328d035f9010b760431173845c6afdfedee` / tree `d9f57a83364422b2062fdfbe1cf03a87c9af71a0`, bound to Task26 artifact `33cac5cffff973e9cba5e03be6b493065e5f817d` / tree `d324a3257c9149ee65b52a95333ebf9a57ceb8f2`, directly parented by the source and changing only the two generated v2 development lock files. Task25 fixes the async plan/preflight DNS timeout escape by passing active pinned connection host and numeric `hostaddr`; its independent review is PASS/CLEAN with zero findings. The active source lock covers 417 files: 410 source/application files and seven boundary files.
+
+Task26's final wheel is 459,327 bytes / SHA-256 `0c44f28534e1976e13429b3ae14df02acb4f7329e46ff824861489f574c078c6`. The route image identity is the typed linux/amd64 OCI image manifest `ccf73a53169b1e775036afda13b858114b2201905bab155e1bd8036ca49078e0`, config `03ad31fde9e2a0ed843a79639a01a5baf8d1a22d53673790c7df4e6ccff28ecd`, with 14 layers. Two provenance-disabled outputs share the selected manifest/config/layers and referenced blobs byte-for-byte, while root-index `created` annotations and archives differ; no archive-level reproducibility claim is made. The offline derivative uses a cached Task15 runtime base and does not prove source-Dockerfile fidelity or production qualification. Production trust remains absent.
+
+Task28's first runner attempt is historical and superseded: group 02 failed because its environment omitted `COMPOSE_PROJECT_NAME`, producing 412 passed, 1 failed, 113 deselected; the full suite was NOT RUN and group 02 was not rerun. Task29 then ran all seven focused groups serially once and passed 38 + 39 + 71 + 79 + 4 + 137 + 45 = **413 tests**. Its one full non-live suite passed **1,203**, skipped **26**, and emitted **3 warnings** (log SHA-256 `d7d1d0ffe497665fb5be923cfd2a5022cf283b11a36610e3abcd7d35e5a1dc74`). Exact focused log hashes, commands, times, setup, and cleanup are retained in [`task-29-report.md`](../../.superpowers/sdd/2026-10-28-p1-remaining-production-development/task-29-report.md); the exact build and runner-attempt reports are [`task-26-build-report.md`](../../.superpowers/sdd/2026-10-28-p1-remaining-production-development/task-26-build-report.md) and [`task-28-report.md`](../../.superpowers/sdd/2026-10-28-p1-remaining-production-development/task-28-report.md). Task29's disposable project cleanup found zero containers, networks, and volumes.
+
+The synthetic acceptance package is structurally `VALID` and remains `NO_GO` / `UNCHANGED`; all 22 external/live rows, provider acceptance, and final external audit remain `NOT RUN`; identities remain synthetic/unverified; effects remain disabled; budget is zero; RG0/full RG1 remain `HELD`; P2 and later phases remain gated; `main` is unmerged. No exact-head hosted CI or formal PR approval is asserted for this Task30 documentation refresh. Task22/23 remains a historical candidate and its first focused log digest is corrected to `1e2f03e2c7f7898678530c1434fbacb0dd85bd230bc1f8e269e1076b4848906c`.
+
+### Task30 current handoff hash inventory — 2026-10-29
+
+SHA-256 values bind the current Task30 documentation/evidence handoff after the refresh. The wrapper and `documentation-status-audit.json` are omitted to avoid a cross-file digest cycle; the status audit omits its own self-hash.
+
+| Path | SHA-256 |
+| --- | --- |
+| `.superpowers/sdd/2026-10-27-p1-production-policy-and-revocation/final-evidence-report.md` | `551c40b4d6852ab3ab4f42bc2cd26ffd1a0339fa03a5f7c2c0f0d39814d05307` |
+| `.superpowers/sdd/2026-10-28-p1-remaining-production-development/final-evidence-report.md` | `7fe3bf369adf70e57d1a5cbfe5446d2c767d6fccc81ba2cb00983eae534026c2` |
+| `.superpowers/sdd/2026-10-28-p1-remaining-production-development/final-review-fix-report.md` | `14b4ee16ba0e71c59313104632c939ce3f0d5df3a04568226d1ac0c5b77ae8a4` |
+| `.superpowers/sdd/2026-10-28-p1-remaining-production-development/planning-report.md` | `5ead73f3b32307f59fd4887c353c17616c2024f4d55cb6e3e55a1483e58359a6` |
+| `.superpowers/sdd/2026-10-28-p1-remaining-production-development/progress.md` | `7a0c85e5f30b75e973c30ce00f00f2dbe2c4114bcb5d18f67faf2006528a0d3b` |
+| `.superpowers/sdd/2026-10-28-p1-remaining-production-development/task-11-report.md` | `65a04c815c0a3a243d3c4d099dca058d79d5f3ca909cba30e607aaa8a6fc4bd7` |
+| `.superpowers/sdd/2026-10-28-p1-remaining-production-development/task-12-brief.md` | `2b2a68c85f4da49341ca208447c537f011be2fbc164290721cc4176401983a4e` |
+| `.superpowers/sdd/2026-10-28-p1-remaining-production-development/task-12-report.md` | `47bae8175c878d98f500e833481747006f0523bfc948e02af57ade546b65aa28` |
+| `.superpowers/sdd/2026-10-28-p1-remaining-production-development/task-13-brief.md` | `3eb7c64461d399c8d51854ef6bcd29d68bdd649c9a0342a061d7ed18b23f8bd0` |
+| `.superpowers/sdd/2026-10-28-p1-remaining-production-development/task-13-report.md` | `e428a660c9d543834fd98a988ed7d0eea80ce5addefb00af931ab46026848ec3` |
+| `.superpowers/sdd/2026-10-28-p1-remaining-production-development/task-14-report.md` | `48cc7f44429a719c6efb7b6e6d7fe0013662608f67a14f32789436c14d8437aa` |
+| `.superpowers/sdd/2026-10-28-p1-remaining-production-development/task-15-brief.md` | `0dcc031842b3198898b1163689e47873ed9932698c8f4e2812c3b5f56768754d` |
+| `.superpowers/sdd/2026-10-28-p1-remaining-production-development/task-15-report.md` | `74d105938bcfdfd94af814d985a3c759c84e54c4e1e6566a91a134696ca90863` |
+| `.superpowers/sdd/2026-10-28-p1-remaining-production-development/task-22-report.md` | `3f8aebe87557d1d90c1d188ad82e7efd9d616964d53e2e11a197fa3a64e88745` |
+| `.superpowers/sdd/2026-10-28-p1-remaining-production-development/task-23-report.md` | `78079f921b52425a101cbb0cdb4ecaad8e65072eecf7bd91c4da4ff616b8af23` |
+| `.superpowers/sdd/2026-10-28-p1-remaining-production-development/task-25-report.md` | `d9a9c4bf5394c7e3042bf0911e8c2c62b7b1992e271ed0b9a3659b9c08c71ee8` |
+| `.superpowers/sdd/2026-10-28-p1-remaining-production-development/task-25-review.md` | `48dfefbda13e7cf448736b9f9e7e49ca5474a96dcfca5a0dfa31aa129d735f54` |
+| `.superpowers/sdd/2026-10-28-p1-remaining-production-development/task-26-build-report.md` | `da464f968a5e7c53420b372b527118453f52cf6aa54dd4e4b35e503501cb4c6b` |
+| `.superpowers/sdd/2026-10-28-p1-remaining-production-development/task-26-build-review.md` | `0f6d93d74769560657572789416efd838ec8bcff31db3e06826894d2e20601af` |
+| `.superpowers/sdd/2026-10-28-p1-remaining-production-development/task-28-report.md` | `277e5f65953a5f19dcc327a5062211fc3abcaceae2955c14ff952b46f05ef3dc` |
+| `.superpowers/sdd/2026-10-28-p1-remaining-production-development/task-29-report.md` | `f954f25db4be2e3eb4e0e2e59da85ac525c90f84ba719399c1b5bd646470638c` |
+| `README.md` | `8effeea627f1c848e47511d1b362bbf35dfa9c3b71ea8798b09e4f417533e2d1` |
+| `docs/README.md` | `a1647c0096fa1833c08649bc8819ea6b701501c2fa0d2fe527f9613ddaee1467` |
+| `docs/superpowers/plans/2026-10-27-p1-production-policy-and-revocation.md` | `c1564a7ec7d09f63b5aba105678c8b5929619fecc49e5b4bb3e415ed1340672e` |
+| `docs/superpowers/plans/2026-10-27-p1-rg0-rg1-initial-gap-audit.md` | `5d1dd8a86718184d03324144643dfb009cb36243a5bd0c0f14c46844eb3c5cd4` |
+| `docs/superpowers/plans/2026-10-28-p1-recovery-rollback-v2.md` | `e4548b283023d31bba22a0a73a8472d5cb0e9e4ef0dee77fc058605c58d54787` |
+| `docs/superpowers/plans/2026-10-28-p1-remaining-production-development.md` | `98142a4720b483e4cc04254e7482cdbbec3240e1bc992c230d921c7aaaea6a04` |
+| `docs/superpowers/specs/2026-10-13-p1-live-schedule-fencing-design.md` | `de5e961bbd1ea756a98e5694b5f079982c5d7958c4b71a86a2de680189717e99` |
+| `docs/superpowers/specs/2026-10-13-p1-production-policy-and-revocation-design.md` | `6be8f5ec6c48491a45a734510cc20af98e2cd7554fdc0409e77c6d9667d42fe2` |
+| `docs/superpowers/specs/2026-10-13-p1-production-recovery-and-alerts-design.md` | `4d7076fd968c28d78307678fa0b186d446dff6e3f3a88d5507646a828b2605cc` |
+| `docs/superpowers/specs/2026-10-13-p1-production-routing-and-worker-fencing-design.md` | `76921a085e352f86ae77895c824917832a49847c306b76bc56ae2c7e44a23e90` |
+| `docs/superpowers/specs/2026-10-13-rg0-rg1-external-acceptance-design.md` | `7334364e5417cbb29143877334a80ea90125e9ce61bff71f67de77a86f61069e` |
+| `docs/v4/IMPLEMENTATION-BLUEPRINT.md` | `8ceb85b83e452c10d4b323a709ac6706935013c2d9193bd1bff2b1b8c83d2703` |
+| `docs/v4/evidence-lock.json` | `bcb4c35b748307933bb375b90c71acf13bd127df103c5f7f7da44a273e1a607b` |
+| `docs/v4/p0-release.json` | `0a0f1969e0497cbec535fb3f854b51cef870a4746eb92f8a67a127566dc9ff75` |
+| `docs/v4/p1-production-policy-revocation-evidence.json` | `e5a5a3d424157479cacaf00eae39614a5abe12ecdb04ac38af0c95692dbd982b` |
+| `docs/v4/p1-qualification-matrix.json` | `9f03ddf9fc76905683c7e286a81d7a2a408e6f3439ac66cda09e1ce03750499a` |
+| `docs/v4/p1-remaining-production-development-evidence.json` | `8c8764119ca6d99d00216896bdc2e9e4d66a7e7c7eadbfc73638c401f1ae1f09` |
+| `docs/v4/p1-rg0-rg1-external-acceptance.schema.json` | `0086353075c823f92f78b2d4f5e48005e62660537b70c95864b5f4ed5e2c945c` |
+| `docs/v4/p1-rg0-rg1-initial-gap-audit.json` | `33fe485384dcf60e36df8d48ace6394c80bce0d1bd9e6b9b39c7a905d65676b1` |
+| `docs/v4/p1-rg0-rg1-initial-gap-audit.md` | `62aab5afb39f7c47e355a68ccf56e319a72955247515dfbdba8913fd797a5944` |
+| `docs/v4/progress.md` | `8315c4628e93772b717ba07d5c9c09d1149bbaa69b36e8080520c7ce0ae9b0bc` |
+| `docs/v4/publication-recovery-hold-evidence.json` | `3cce88e4d692f726be710c1f4db46b1428c9546561424a2ab0ad120363becc66` |
+| `docs/v4/publication-recovery-hold-successor-evidence.json` | `6bb3ce696cffec2629838f5f30b8eea4acb837cbb81c1bcbc1b4de4f19e8764a` |
+| `docs/v4/repository-enforcement-evidence.json` | `fc69f901036971bd64588cf3247d1701939e7525442f196daeab7f1919de11a2` |
+| `docs/v4/test_checks.py` | `c915b137417c53b3b3f773eacbfcfea3d62584a21ca11df8288e0c2b4281cf6e` |
+| `docs/v4/validation.md` | `68b84f64f30d842b6b570c642a7cda60151808e5de8b40051ae0c2e01c15f355` |
