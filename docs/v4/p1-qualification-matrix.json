@@ -1416,7 +1416,7 @@
     "status": "PASS root-reviewed bounded parallel-agent local extension; historical item7 independent review retained; RG0/RG1/RG5 HELD",
     "qualified_application_commit": "2653d2ecb3f0d5bb8ea6560de274137dd6032a96"
   },
-  "current_independent_review_scope": "Historical branch review and hosted Actions retain their recorded heads; the initial commit-bound audit and five-spec design review remain COMPLETE_REVIEWED only for source 7c1ddcda and its recorded environment. Task34 artifact review is PASS/CLEAN for the exact Task34 source/artifact. Task25 final mixed Unix/TCP fix at source 546ac4e has no independent post-fix review supplied; its earlier review does not transfer. Task35 is local qualification, not independent code review. No exact-head hosted CI or formal approval is asserted for this documentation commit. Production gates remain HELD.",
+  "current_independent_review_scope": "Historical branch review and hosted Actions retain their recorded heads; the initial commit-bound audit and five-spec design review remain COMPLETE_REVIEWED only for source 7c1ddcda and its recorded environment. The final Task25 mixed Unix/TCP fix at source 546ac4e received an independent fix-loop rereview against parent 951ee1a00fb31040765140679720bf02ec7e3d5a: Spec PASS, Quality PASS — CLEAN, 0 findings; durable record at task-25-review.md (source report SHA-256 6d26fc9717cfd888eea26025d442dbbf1a42174343d967d85b3dcb92c2131644; durable record SHA-256 42de4ad70cc6192d03cd983359d30a8ca631fc52cf2dc6d8c8c2fd6ee0d08b8d). The earlier Task25 review remains bound to 8c31e84. Task34 artifact review is PASS/CLEAN for the exact Task34 source/artifact. Task35 is local qualification, not independent code review. No independent whole-change review, exact-head hosted CI, or formal approval is asserted for this documentation commit. Production gates remain HELD.",
   "historical_legacy_intelligence_qualification": {
     "evidence": "docs/v4/legacy-dispatch-evidence.json",
     "full_non_live_tests": 556,
@@ -2841,7 +2841,7 @@
       "collection_log_sha256": "916694c44a1df8287ef4e0d284d391584db91c830475c7d558db8c96c203f9c6"
     },
     "qualification_scope": "development-only; exact Task34/35 local candidate qualification, not externally trusted or production-qualified",
-    "review_scope": "Task34 build artifact independently reviewed PASS/CLEAN; Task25 final mixed-host source fix has no independent post-fix review supplied; Task35 is exact-candidate local qualification only.",
+    "review_scope": "Task25 final mixed Unix/TCP source fix at 546ac4e has an independent fix-loop rereview against parent 951ee1a00fb31040765140679720bf02ec7e3d5a: Spec PASS, Quality PASS — CLEAN, 0 findings; durable Task25 review record SHA-256 42de4ad70cc6192d03cd983359d30a8ca631fc52cf2dc6d8c8c2fd6ee0d08b8d (source report SHA-256 6d26fc9717cfd888eea26025d442dbbf1a42174343d967d85b3dcb92c2131644; 8 Markdown hard-break whitespace normalizations are documented there). Earlier 8c31e84 review remains scoped to that commit. Task34 build artifact independently reviewed PASS/CLEAN; Task35 is exact-candidate local qualification only. No whole-change review or exact-head hosted CI is claimed.",
     "external_gates": {
       "external_rows": "NOT RUN (22 rows)",
       "identities": "synthetic and unverified",

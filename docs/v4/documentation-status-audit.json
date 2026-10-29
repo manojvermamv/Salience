@@ -24,7 +24,6 @@
     "historical Task22 development build report; superseded by Task26 final corrected artifact": 1,
     "historical Task23 exact-candidate qualification; superseded by Task35 authoritative qualification": 1,
     "current Task25 final mixed-host fix implementation report; 29 readback unit tests passed": 1,
-    "Task25 review history preserved; prior PASS/CLEAN scope ends at 8c31e84; final mixed-host fix has no post-fix independent review": 1,
     "historical Task26 development artifact build; superseded by Task34": 1,
     "historical Task26 build review; superseded by Task34": 1,
     "historical Task28 runner-environment failure; superseded as latest qualification by Task35": 1,
@@ -76,10 +75,10 @@
     "current Task34/35 exact-candidate local validation; earlier candidate results historical": 1,
     "current_handoff_hashes": {
       ".superpowers/sdd/2026-10-27-p1-production-policy-and-revocation/final-evidence-report.md": "551c40b4d6852ab3ab4f42bc2cd26ffd1a0339fa03a5f7c2c0f0d39814d05307",
-      ".superpowers/sdd/2026-10-28-p1-remaining-production-development/final-evidence-report.md": "813503a7aee7f3a2864f852d49428fe2ccbb7da0a4d2918242ce1171af2d827b",
+      ".superpowers/sdd/2026-10-28-p1-remaining-production-development/final-evidence-report.md": "72ef2f56f09801891e0ba34fcf880d19535a43c0e790172c35717fa7529807e6",
       ".superpowers/sdd/2026-10-28-p1-remaining-production-development/final-review-fix-report.md": "14b4ee16ba0e71c59313104632c939ce3f0d5df3a04568226d1ac0c5b77ae8a4",
       ".superpowers/sdd/2026-10-28-p1-remaining-production-development/planning-report.md": "5ead73f3b32307f59fd4887c353c17616c2024f4d55cb6e3e55a1483e58359a6",
-      ".superpowers/sdd/2026-10-28-p1-remaining-production-development/progress.md": "46822f758172b87d883298c30a119e8284dace21cb4d7fdaccc349f99b333aeb",
+      ".superpowers/sdd/2026-10-28-p1-remaining-production-development/progress.md": "2a1a9251350588f5fbd8ba74dbfc368c12f527af7f14e88395ff58e7e72ffbad",
       ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-11-report.md": "65a04c815c0a3a243d3c4d099dca058d79d5f3ca909cba30e607aaa8a6fc4bd7",
       ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-12-brief.md": "2b2a68c85f4da49341ca208447c537f011be2fbc164290721cc4176401983a4e",
       ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-12-report.md": "47bae8175c878d98f500e833481747006f0523bfc948e02af57ade546b65aa28",
@@ -91,7 +90,7 @@
       ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-22-report.md": "3f8aebe87557d1d90c1d188ad82e7efd9d616964d53e2e11a197fa3a64e88745",
       ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-23-report.md": "78079f921b52425a101cbb0cdb4ecaad8e65072eecf7bd91c4da4ff616b8af23",
       ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-25-report.md": "69f0798aaad67df3791601b6095ca48fff2cef2dbbdb41297162ce193a75a28f",
-      ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-25-review.md": "fd89d1c0891b68855fadb3e3b852b34441275b0415455ceba2cc5e9baded5fbf",
+      ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-25-review.md": "42de4ad70cc6192d03cd983359d30a8ca631fc52cf2dc6d8c8c2fd6ee0d08b8d",
       ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-26-build-report.md": "da464f968a5e7c53420b372b527118453f52cf6aa54dd4e4b35e503501cb4c6b",
       ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-26-build-review.md": "0f6d93d74769560657572789416efd838ec8bcff31db3e06826894d2e20601af",
       ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-28-report.md": "277e5f65953a5f19dcc327a5062211fc3abcaceae2955c14ff952b46f05ef3dc",
@@ -117,7 +116,7 @@
       "docs/v4/evidence-lock.json": "09100cb7aee864227d78112aa7729a1cded7790d34cc33687c5e2a3732188e55",
       "docs/v4/p0-release.json": "0a0f1969e0497cbec535fb3f854b51cef870a4746eb92f8a67a127566dc9ff75",
       "docs/v4/p1-production-policy-revocation-evidence.json": "e5a5a3d424157479cacaf00eae39614a5abe12ecdb04ac38af0c95692dbd982b",
-      "docs/v4/p1-qualification-matrix.json": "6fa2cc23f371557cb333f0a88e3ff9734d6b8df05e8ff6161c23e531dcbfa617",
+      "docs/v4/p1-qualification-matrix.json": "fb3ae1b5af6844bcf6e2d72c5c2d8f2444c6f2156c30e5d4cdd17f0cdd24768e",
       "docs/v4/p1-remaining-production-development-evidence.json": "9712af1be052ae418a26d4c0ac600ce15a191d49b31517885926e3cc72d598ad",
       "docs/v4/p1-rg0-rg1-external-acceptance.schema.json": "0086353075c823f92f78b2d4f5e48005e62660537b70c95864b5f4ed5e2c945c",
       "docs/v4/p1-rg0-rg1-initial-gap-audit.json": "33fe485384dcf60e36df8d48ace6394c80bce0d1bd9e6b9b39c7a905d65676b1",
@@ -128,7 +127,8 @@
       "docs/v4/repository-enforcement-evidence.json": "fc69f901036971bd64588cf3247d1701939e7525442f196daeab7f1919de11a2",
       "docs/v4/test_checks.py": "c915b137417c53b3b3f773eacbfcfea3d62584a21ca11df8288e0c2b4281cf6e",
       "docs/v4/validation.md": "ea9a8542919690e417e575c37e5f50e804d47edf4c87a179502674256319e2ed"
-    }
+    },
+    "Task25 review history and final source-546ac4e fix-loop rereview preserved; current rereview PASS/CLEAN with 0 findings; durable review SHA-256 42de4ad70cc6192d03cd983359d30a8ca631fc52cf2dc6d8c8c2fd6ee0d08b8d; earlier 8c31e84 review remains historically scoped": 1
   },
   "application_source_files_verified": 410,
   "prior_application_files_preserved": 347,
@@ -151,7 +151,7 @@
   ],
   "mermaid_source_blocks_preserved": 12,
   "item7_status": "COMPLETE_IMPLEMENTED_LOCAL_FIXTURE_QUALIFICATION; historical item7 scope preserved",
-  "independent_review": "Task25 fix round 2 at source 546ac4e clears the original mixed-host hostaddr list when selecting a Unix socket; its complete readback unit file passed 29 tests. The earlier independent PASS/CLEAN review remains scoped to source 8c31e84 and does not review this final fix. Task34 build review is PASS/CLEAN for artifact fe6b379; Task35 exact-candidate local qualification passed 422 focused and 1,212 full non-live tests (26 skipped, 3 warnings). Historical whole-branch reviews and Actions runs retain their original scopes; no independent whole-change review or exact-head hosted CI is asserted for this documentation commit. All 22 external rows remain NOT RUN; identities are synthetic/unverified; provider acceptance and final external audit are NOT RUN; effects are disabled; budget is zero; RG0/full RG1 are HELD; P2 is BLOCKED; main is unmerged.",
+  "independent_review": "Task25 fix round 2 at source 546ac4e clears the original mixed-host hostaddr list when selecting a Unix socket; its complete readback unit file passed 29 tests. An independent fix-loop rereview compared source 546ac4e with parent 951ee1a00fb31040765140679720bf02ec7e3d5a and returned Spec PASS, Quality PASS — CLEAN, with 0 Critical / 0 Important / 0 Minor findings; the complete review is durably bound in task-25-review.md. The earlier independent review remains scoped to source 8c31e84. Task34 build review is PASS/CLEAN for artifact fe6b379; Task35 exact-candidate local qualification passed 422 focused and 1,212 full non-live tests (26 skipped, 3 warnings). Historical whole-branch reviews and Actions runs retain their original scopes; no independent whole-change review, formal approval, or exact-head hosted CI is asserted for this documentation commit. All 22 external rows remain NOT RUN; identities are synthetic/unverified; provider acceptance and final external audit are NOT RUN; effects are disabled; budget is zero; RG0/full RG1 are HELD; P2 is BLOCKED; main is unmerged.",
   "next_queue_item": "production_policy_and_cross_service_revocation",
   "RG0": "HELD",
   "RG1": "HELD",
@@ -164,7 +164,7 @@
     "preserved_documentation_artifacts": 168,
     "independent_reviewers": 3,
     "reviewed_p1_rows": 17,
-    "independent_review_scope": "Task25 fix round 2 at source 546ac4e clears the original mixed-host hostaddr list when selecting a Unix socket; its complete readback unit file passed 29 tests. The earlier independent PASS/CLEAN review remains scoped to source 8c31e84 and does not review this final fix. Task34 build review is PASS/CLEAN for artifact fe6b379; Task35 exact-candidate local qualification passed 422 focused and 1,212 full non-live tests (26 skipped, 3 warnings). Historical whole-branch reviews and Actions runs retain their original scopes; no independent whole-change review or exact-head hosted CI is asserted for this documentation commit. All 22 external rows remain NOT RUN; identities are synthetic/unverified; provider acceptance and final external audit are NOT RUN; effects are disabled; budget is zero; RG0/full RG1 are HELD; P2 is BLOCKED; main is unmerged.",
+    "independent_review_scope": "Task25 fix round 2 at source 546ac4e clears the original mixed-host hostaddr list when selecting a Unix socket; its complete readback unit file passed 29 tests. An independent fix-loop rereview compared source 546ac4e with parent 951ee1a00fb31040765140679720bf02ec7e3d5a and returned Spec PASS, Quality PASS — CLEAN, with 0 Critical / 0 Important / 0 Minor findings; the complete review is durably bound in task-25-review.md. The earlier independent review remains scoped to source 8c31e84. Task34 build review is PASS/CLEAN for artifact fe6b379; Task35 exact-candidate local qualification passed 422 focused and 1,212 full non-live tests (26 skipped, 3 warnings). Historical whole-branch reviews and Actions runs retain their original scopes; no independent whole-change review, formal approval, or exact-head hosted CI is asserted for this documentation commit. All 22 external rows remain NOT RUN; identities are synthetic/unverified; provider acceptance and final external audit are NOT RUN; effects are disabled; budget is zero; RG0/full RG1 are HELD; P2 is BLOCKED; main is unmerged.",
     "tracked_markdown_files": 147,
     "active_project_markdown_files": 111,
     "active_integration_contracts": 1,
@@ -512,7 +512,7 @@
     },
     "current_full_non_live_application_commit": "546ac4ed794afc123ea02586a37d4a4457590582",
     "current_full_non_live_status": "Task35 exact-artifact full non-live suite: 1,212 passed, 26 skipped, 3 warnings; log SHA-256 10f3722e943361a0323311b5be06816f40faa0dde805736182ea6aef748b023c; started 2026-10-29T18:00:50Z, completed 2026-10-29T18:44:17Z.",
-    "current_independent_review_scope": "Task25 fix round 2 at source 546ac4e clears the original mixed-host hostaddr list when selecting a Unix socket; its complete readback unit file passed 29 tests. The earlier independent PASS/CLEAN review remains scoped to source 8c31e84 and does not review this final fix. Task34 build review is PASS/CLEAN for artifact fe6b379; Task35 exact-candidate local qualification passed 422 focused and 1,212 full non-live tests (26 skipped, 3 warnings). Historical whole-branch reviews and Actions runs retain their original scopes; no independent whole-change review or exact-head hosted CI is asserted for this documentation commit. All 22 external rows remain NOT RUN; identities are synthetic/unverified; provider acceptance and final external audit are NOT RUN; effects are disabled; budget is zero; RG0/full RG1 are HELD; P2 is BLOCKED; main is unmerged.",
+    "current_independent_review_scope": "Task25 fix round 2 at source 546ac4e clears the original mixed-host hostaddr list when selecting a Unix socket; its complete readback unit file passed 29 tests. An independent fix-loop rereview compared source 546ac4e with parent 951ee1a00fb31040765140679720bf02ec7e3d5a and returned Spec PASS, Quality PASS — CLEAN, with 0 Critical / 0 Important / 0 Minor findings; the complete review is durably bound in task-25-review.md. The earlier independent review remains scoped to source 8c31e84. Task34 build review is PASS/CLEAN for artifact fe6b379; Task35 exact-candidate local qualification passed 422 focused and 1,212 full non-live tests (26 skipped, 3 warnings). Historical whole-branch reviews and Actions runs retain their original scopes; no independent whole-change review, formal approval, or exact-head hosted CI is asserted for this documentation commit. All 22 external rows remain NOT RUN; identities are synthetic/unverified; provider acceptance and final external audit are NOT RUN; effects are disabled; budget is zero; RG0/full RG1 are HELD; P2 is BLOCKED; main is unmerged.",
     "current_documentation_artifacts": 322,
     "mermaid_source_blocks_updated": 1,
     "current_task6_fixture_checkpoint": {
@@ -861,7 +861,7 @@
         "collection_log_sha256": "916694c44a1df8287ef4e0d284d391584db91c830475c7d558db8c96c203f9c6"
       },
       "qualification_scope": "development-only; exact Task34/35 local candidate qualification, not externally trusted or production-qualified",
-      "review_scope": "Task34 build artifact independently reviewed PASS/CLEAN; Task25 final mixed-host source fix has no independent post-fix review supplied; Task35 is exact-candidate local qualification only.",
+      "review_scope": "Task25 final mixed Unix/TCP source fix at 546ac4e has an independent fix-loop rereview against parent 951ee1a00fb31040765140679720bf02ec7e3d5a: Spec PASS, Quality PASS — CLEAN, 0 findings; durable Task25 review record SHA-256 42de4ad70cc6192d03cd983359d30a8ca631fc52cf2dc6d8c8c2fd6ee0d08b8d (source report SHA-256 6d26fc9717cfd888eea26025d442dbbf1a42174343d967d85b3dcb92c2131644; 8 Markdown hard-break whitespace normalizations are documented there). Earlier 8c31e84 review remains scoped to that commit. Task34 build artifact independently reviewed PASS/CLEAN; Task35 is exact-candidate local qualification only. No whole-change review or exact-head hosted CI is claimed.",
       "external_gates": {
         "external_rows": "NOT RUN (22 rows)",
         "identities": "synthetic and unverified",
@@ -2277,7 +2277,7 @@
     },
     {
       "path": ".superpowers/sdd/2026-10-28-p1-remaining-production-development/final-evidence-report.md",
-      "sha256": "813503a7aee7f3a2864f852d49428fe2ccbb7da0a4d2918242ce1171af2d827b",
+      "sha256": "72ef2f56f09801891e0ba34fcf880d19535a43c0e790172c35717fa7529807e6",
       "disposition": "current Task34/35 final local evidence; external acceptance remains unqualified"
     },
     {
@@ -2292,7 +2292,7 @@
     },
     {
       "path": ".superpowers/sdd/2026-10-28-p1-remaining-production-development/progress.md",
-      "sha256": "46822f758172b87d883298c30a119e8284dace21cb4d7fdaccc349f99b333aeb",
+      "sha256": "2a1a9251350588f5fbd8ba74dbfc368c12f527af7f14e88395ff58e7e72ffbad",
       "disposition": "current Task34/35 candidate progress; external gates HELD"
     },
     {
@@ -2367,8 +2367,8 @@
     },
     {
       "path": ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-25-review.md",
-      "sha256": "fd89d1c0891b68855fadb3e3b852b34441275b0415455ceba2cc5e9baded5fbf",
-      "disposition": "Task25 review history preserved; prior PASS/CLEAN scope ends at 8c31e84; final mixed-host fix has no post-fix independent review"
+      "sha256": "42de4ad70cc6192d03cd983359d30a8ca631fc52cf2dc6d8c8c2fd6ee0d08b8d",
+      "disposition": "Task25 review history and final source-546ac4e fix-loop rereview preserved; current rereview PASS/CLEAN with 0 findings; durable review SHA-256 42de4ad70cc6192d03cd983359d30a8ca631fc52cf2dc6d8c8c2fd6ee0d08b8d; earlier 8c31e84 review remains historically scoped"
     },
     {
       "path": ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-26-build-report.md",
@@ -3422,7 +3422,7 @@
     },
     {
       "path": "docs/v4/p1-qualification-matrix.json",
-      "sha256": "6fa2cc23f371557cb333f0a88e3ff9734d6b8df05e8ff6161c23e531dcbfa617",
+      "sha256": "fb3ae1b5af6844bcf6e2d72c5c2d8f2444c6f2156c30e5d4cdd17f0cdd24768e",
       "disposition": "latest Task34/35 candidate; historical Task31/32 and earlier records retained"
     },
     {
@@ -3432,7 +3432,7 @@
     },
     {
       "path": "docs/v4/p1-rg0-rg1-audit-and-spec-review.md",
-      "sha256": "ab9236332a917c13a9a251dd2ce6a9c188d6590c573bad01aab0907ec84ad6fc",
+      "sha256": "92fe76838a199d4a5ac5750a99a523499481650ba9cda52a536bf1fbbfd0a7e8",
       "disposition": "frozen initial audit/review scope plus current Task36 candidate addendum; external gates HELD"
     },
     {
@@ -3582,7 +3582,7 @@
   "parallel_qualified_application_commit": "2653d2ecb3f0d5bb8ea6560de274137dd6032a96",
   "legacy_intelligence_status": "PASS_LOCAL_LEGACY_INTELLIGENCE_AND_PUBLICATION_FIXTURE_STAGES; ORIGINAL_NATIVE_INTELLIGENCE_AND_PUBLICATION_SCHEDULES_QUALIFIED",
   "goal_status": "ACTIVE",
-  "independent_review_scope": "Task25 fix round 2 at source 546ac4e clears the original mixed-host hostaddr list when selecting a Unix socket; its complete readback unit file passed 29 tests. The earlier independent PASS/CLEAN review remains scoped to source 8c31e84 and does not review this final fix. Task34 build review is PASS/CLEAN for artifact fe6b379; Task35 exact-candidate local qualification passed 422 focused and 1,212 full non-live tests (26 skipped, 3 warnings). Historical whole-branch reviews and Actions runs retain their original scopes; no independent whole-change review or exact-head hosted CI is asserted for this documentation commit. All 22 external rows remain NOT RUN; identities are synthetic/unverified; provider acceptance and final external audit are NOT RUN; effects are disabled; budget is zero; RG0/full RG1 are HELD; P2 is BLOCKED; main is unmerged.",
+  "independent_review_scope": "Task25 fix round 2 at source 546ac4e clears the original mixed-host hostaddr list when selecting a Unix socket; its complete readback unit file passed 29 tests. An independent fix-loop rereview compared source 546ac4e with parent 951ee1a00fb31040765140679720bf02ec7e3d5a and returned Spec PASS, Quality PASS — CLEAN, with 0 Critical / 0 Important / 0 Minor findings; the complete review is durably bound in task-25-review.md. The earlier independent review remains scoped to source 8c31e84. Task34 build review is PASS/CLEAN for artifact fe6b379; Task35 exact-candidate local qualification passed 422 focused and 1,212 full non-live tests (26 skipped, 3 warnings). Historical whole-branch reviews and Actions runs retain their original scopes; no independent whole-change review, formal approval, or exact-head hosted CI is asserted for this documentation commit. All 22 external rows remain NOT RUN; identities are synthetic/unverified; provider acceptance and final external audit are NOT RUN; effects are disabled; budget is zero; RG0/full RG1 are HELD; P2 is BLOCKED; main is unmerged.",
   "tracked_markdown_paths": [
     ".agents/skills/archify/SKILL.md",
     ".agents/skills/archify/THIRD_PARTY_NOTICES.md",
@@ -4032,10 +4032,10 @@
   },
   "current_handoff_hashes": {
     ".superpowers/sdd/2026-10-27-p1-production-policy-and-revocation/final-evidence-report.md": "551c40b4d6852ab3ab4f42bc2cd26ffd1a0339fa03a5f7c2c0f0d39814d05307",
-    ".superpowers/sdd/2026-10-28-p1-remaining-production-development/final-evidence-report.md": "813503a7aee7f3a2864f852d49428fe2ccbb7da0a4d2918242ce1171af2d827b",
+    ".superpowers/sdd/2026-10-28-p1-remaining-production-development/final-evidence-report.md": "72ef2f56f09801891e0ba34fcf880d19535a43c0e790172c35717fa7529807e6",
     ".superpowers/sdd/2026-10-28-p1-remaining-production-development/final-review-fix-report.md": "14b4ee16ba0e71c59313104632c939ce3f0d5df3a04568226d1ac0c5b77ae8a4",
     ".superpowers/sdd/2026-10-28-p1-remaining-production-development/planning-report.md": "5ead73f3b32307f59fd4887c353c17616c2024f4d55cb6e3e55a1483e58359a6",
-    ".superpowers/sdd/2026-10-28-p1-remaining-production-development/progress.md": "46822f758172b87d883298c30a119e8284dace21cb4d7fdaccc349f99b333aeb",
+    ".superpowers/sdd/2026-10-28-p1-remaining-production-development/progress.md": "2a1a9251350588f5fbd8ba74dbfc368c12f527af7f14e88395ff58e7e72ffbad",
     ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-11-report.md": "65a04c815c0a3a243d3c4d099dca058d79d5f3ca909cba30e607aaa8a6fc4bd7",
     ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-12-brief.md": "2b2a68c85f4da49341ca208447c537f011be2fbc164290721cc4176401983a4e",
     ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-12-report.md": "47bae8175c878d98f500e833481747006f0523bfc948e02af57ade546b65aa28",
@@ -4047,7 +4047,7 @@
     ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-22-report.md": "3f8aebe87557d1d90c1d188ad82e7efd9d616964d53e2e11a197fa3a64e88745",
     ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-23-report.md": "78079f921b52425a101cbb0cdb4ecaad8e65072eecf7bd91c4da4ff616b8af23",
     ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-25-report.md": "69f0798aaad67df3791601b6095ca48fff2cef2dbbdb41297162ce193a75a28f",
-    ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-25-review.md": "fd89d1c0891b68855fadb3e3b852b34441275b0415455ceba2cc5e9baded5fbf",
+    ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-25-review.md": "42de4ad70cc6192d03cd983359d30a8ca631fc52cf2dc6d8c8c2fd6ee0d08b8d",
     ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-26-build-report.md": "da464f968a5e7c53420b372b527118453f52cf6aa54dd4e4b35e503501cb4c6b",
     ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-26-build-review.md": "0f6d93d74769560657572789416efd838ec8bcff31db3e06826894d2e20601af",
     ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-28-report.md": "277e5f65953a5f19dcc327a5062211fc3abcaceae2955c14ff952b46f05ef3dc",
@@ -4073,7 +4073,7 @@
     "docs/v4/evidence-lock.json": "09100cb7aee864227d78112aa7729a1cded7790d34cc33687c5e2a3732188e55",
     "docs/v4/p0-release.json": "0a0f1969e0497cbec535fb3f854b51cef870a4746eb92f8a67a127566dc9ff75",
     "docs/v4/p1-production-policy-revocation-evidence.json": "e5a5a3d424157479cacaf00eae39614a5abe12ecdb04ac38af0c95692dbd982b",
-    "docs/v4/p1-qualification-matrix.json": "6fa2cc23f371557cb333f0a88e3ff9734d6b8df05e8ff6161c23e531dcbfa617",
+    "docs/v4/p1-qualification-matrix.json": "fb3ae1b5af6844bcf6e2d72c5c2d8f2444c6f2156c30e5d4cdd17f0cdd24768e",
     "docs/v4/p1-remaining-production-development-evidence.json": "9712af1be052ae418a26d4c0ac600ce15a191d49b31517885926e3cc72d598ad",
     "docs/v4/p1-rg0-rg1-external-acceptance.schema.json": "0086353075c823f92f78b2d4f5e48005e62660537b70c95864b5f4ed5e2c945c",
     "docs/v4/p1-rg0-rg1-initial-gap-audit.json": "33fe485384dcf60e36df8d48ace6394c80bce0d1bd9e6b9b39c7a905d65676b1",
@@ -4177,7 +4177,6 @@
       "historical Task22 development build report; superseded by Task26 final corrected artifact": 1,
       "historical Task23 exact-candidate qualification; superseded by Task35 authoritative qualification": 1,
       "current Task25 final mixed-host fix implementation report; 29 readback unit tests passed": 1,
-      "Task25 review history preserved; prior PASS/CLEAN scope ends at 8c31e84; final mixed-host fix has no post-fix independent review": 1,
       "historical Task26 development artifact build; superseded by Task34": 1,
       "historical Task26 build review; superseded by Task34": 1,
       "historical Task28 runner-environment failure; superseded as latest qualification by Task35": 1,
@@ -4204,7 +4203,8 @@
       "preserved dated independent item7 qualification report": 1,
       "frozen initial audit/review scope plus current Task36 candidate addendum; external gates HELD": 1,
       "current Task34/35 exact-candidate progress; external acceptance NOT RUN/HELD": 1,
-      "current Task34/35 exact-candidate local validation; earlier candidate results historical": 1
+      "current Task34/35 exact-candidate local validation; earlier candidate results historical": 1,
+      "Task25 review history and final source-546ac4e fix-loop rereview preserved; current rereview PASS/CLEAN with 0 findings; durable review SHA-256 42de4ad70cc6192d03cd983359d30a8ca631fc52cf2dc6d8c8c2fd6ee0d08b8d; earlier 8c31e84 review remains historically scoped": 1
     }
   },
   "mermaid_source_blocks_updated": 1,
@@ -4350,7 +4350,7 @@
   },
   "active_project_markdown_files": 111,
   "current_application_artifact_status": "Task34 development-only artifact from source 546ac4ed794afc123ea02586a37d4a4457590582 / tree 278e2bbf074fdf07b701f87f925c537dd916e118: artifact fe6b3795ce4453beb6c6bbafcc20cd3be91b3b87 / tree 124037b25c754751e2447c7d8639800f9f35d238, sole parent is source; only generated v2 development lock JSON and companion changed. The 250-entry source manifest is bc73519f454a95ada057dae27b6a71ac1c0ad1b73db419175666b23e65c410d4; two source exports match at 20fd5248161ef33bc6d5e4dbeb4f359a25fde1142bf86736c9cda75fb90af565 (23,521,280 bytes). Two wheels are 459,449 bytes / SHA-256 49d5c34e7d6770d963e6dc065a6b058fe6e08e8880bf8ea0ebbffd34e072d12f. Typed linux/amd64 OCI manifest f1c69d4a45caa33310162335eaf084057017e667b46fc925f93a6ea3b9f9b4af (2,951 bytes); config b93060c5466a0a90b4c3b2e0fcff8dc77c087748dc43100cdc6e23949a039f7a (9,777 bytes); all 14 layer hashes and sizes are retained in task-34-build-report.md. Selected payload blobs match across builds, while created annotations and OCI archive hashes differ, so root-layout/archive reproducibility is not claimed. The offline cached Task15 base and temporary Dockerfile do not establish source-Dockerfile fidelity. Route bundle 2bfbcd68ae8f76cc612cfb58f2000c49ef5167a0537200c42e6256a4903885d9; tuple 4e49460c7a89ea69a2268fc4d680906be56635a9983f20d1ababb1da4f75714f; authenticated route manifest 40198749291c758d22815def2281a7c5b6860ae8bb43f732d6f42e3765cf2a78; v2 lock d5b8e5b7ce0a97ce92bc2259fc2961ad23bc38808262159ca9e1c136c8cc6317; companion 6a91e79eb67b6fa779deafff1c48f1e1d5b2f6bad7ab280469a75fe3f08d01c0; runtime inventory 349782ff04770a3543668323fd5bcd88783e5b2b34fb90ce6a7cf1f3f2867c06; RECORD fdc6905faa6d807e3aeda7420fb03341b125f5fa9cc1a6030681716e34ce1183; interpreter 73b68fc2dac176af16098180a2c98a03ee9f1f1b02db25d42d44d782e79e2330. Production trust remains absent.",
-  "current_independent_review_scope": "Task25 fix round 2 at source 546ac4e clears the original mixed-host hostaddr list when selecting a Unix socket; its complete readback unit file passed 29 tests. The earlier independent PASS/CLEAN review remains scoped to source 8c31e84 and does not review this final fix. Task34 build review is PASS/CLEAN for artifact fe6b379; Task35 exact-candidate local qualification passed 422 focused and 1,212 full non-live tests (26 skipped, 3 warnings). Historical whole-branch reviews and Actions runs retain their original scopes; no independent whole-change review or exact-head hosted CI is asserted for this documentation commit. All 22 external rows remain NOT RUN; identities are synthetic/unverified; provider acceptance and final external audit are NOT RUN; effects are disabled; budget is zero; RG0/full RG1 are HELD; P2 is BLOCKED; main is unmerged.",
+  "current_independent_review_scope": "Task25 fix round 2 at source 546ac4e clears the original mixed-host hostaddr list when selecting a Unix socket; its complete readback unit file passed 29 tests. An independent fix-loop rereview compared source 546ac4e with parent 951ee1a00fb31040765140679720bf02ec7e3d5a and returned Spec PASS, Quality PASS — CLEAN, with 0 Critical / 0 Important / 0 Minor findings; the complete review is durably bound in task-25-review.md. The earlier independent review remains scoped to source 8c31e84. Task34 build review is PASS/CLEAN for artifact fe6b379; Task35 exact-candidate local qualification passed 422 focused and 1,212 full non-live tests (26 skipped, 3 warnings). Historical whole-branch reviews and Actions runs retain their original scopes; no independent whole-change review, formal approval, or exact-head hosted CI is asserted for this documentation commit. All 22 external rows remain NOT RUN; identities are synthetic/unverified; provider acceptance and final external audit are NOT RUN; effects are disabled; budget is zero; RG0/full RG1 are HELD; P2 is BLOCKED; main is unmerged.",
   "historical_0043_candidate_artifact_pins": {
     "application_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
     "scope": "HISTORICAL_0043_ARTIFACT_FIXTURE_QUALIFICATION",
@@ -4633,7 +4633,7 @@
       "collection_log_sha256": "916694c44a1df8287ef4e0d284d391584db91c830475c7d558db8c96c203f9c6"
     },
     "qualification_scope": "development-only; exact Task34/35 local candidate qualification, not externally trusted or production-qualified",
-    "review_scope": "Task34 build artifact independently reviewed PASS/CLEAN; Task25 final mixed-host source fix has no independent post-fix review supplied; Task35 is exact-candidate local qualification only.",
+    "review_scope": "Task25 final mixed Unix/TCP source fix at 546ac4e has an independent fix-loop rereview against parent 951ee1a00fb31040765140679720bf02ec7e3d5a: Spec PASS, Quality PASS — CLEAN, 0 findings; durable Task25 review record SHA-256 42de4ad70cc6192d03cd983359d30a8ca631fc52cf2dc6d8c8c2fd6ee0d08b8d (source report SHA-256 6d26fc9717cfd888eea26025d442dbbf1a42174343d967d85b3dcb92c2131644; 8 Markdown hard-break whitespace normalizations are documented there). Earlier 8c31e84 review remains scoped to that commit. Task34 build artifact independently reviewed PASS/CLEAN; Task35 is exact-candidate local qualification only. No whole-change review or exact-head hosted CI is claimed.",
     "external_gates": {
       "external_rows": "NOT RUN (22 rows)",
       "identities": "synthetic and unverified",

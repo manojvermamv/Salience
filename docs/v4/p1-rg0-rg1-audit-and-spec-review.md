@@ -467,7 +467,7 @@ SHA-256 values bind the current Task30 documentation/evidence handoff after the 
 
 The active source lock is bound to Task34/35 source `546ac4ed794afc123ea02586a37d4a4457590582` / tree `546ac4ed794afc123ea02586a37d4a4457590582_TREE` and covers 417 paths; its raw SHA-256 is `09100cb7aee864227d78112aa7729a1cded7790d34cc33687c5e2a3732188e55`. The exact Task34 development artifact is `fe6b3795ce4453beb6c6bbafcc20cd3be91b3b87` / tree `124037b25c754751e2447c7d8639800f9f35d238`, directly parented by source and changing only the generated v2 development lock JSON and companion.
 
-Task25 fix round 2 explicitly clears the original mixed Unix/TCP `hostaddr` list when a Unix socket is selected, while TCP remains numerically pinned. The complete current readback unit file passed 29 tests. The earlier independent PASS/CLEAN review is scoped to source `8c31e84`; no independent post-fix review was supplied for the mixed-host correction.
+Task25 fix round 2 explicitly clears the original mixed Unix/TCP `hostaddr` list when a Unix socket is selected, while TCP remains numerically pinned. The complete current readback unit file passed 29 tests. An independent fix-loop rereview of source `546ac4e` against parent `951ee1a00fb31040765140679720bf02ec7e3d5a` returned Spec PASS, Quality PASS — CLEAN, and zero findings; the earlier `8c31e84` review remains scoped to its source. The full review is durably preserved in [the Task25 review record](../../.superpowers/sdd/2026-10-28-p1-remaining-production-development/task-25-review.md): source report SHA-256 `6d26fc9717cfd888eea26025d442dbbf1a42174343d967d85b3dcb92c2131644`, durable record SHA-256 `42de4ad70cc6192d03cd983359d30a8ca631fc52cf2dc6d8c8c2fd6ee0d08b8d`. Eight Markdown hard-break suffixes were normalized to `<br>`; all other review-body bytes are unchanged.
 
 Task34’s 250-entry source manifest is `bc73519f454a95ada057dae27b6a71ac1c0ad1b73db419175666b23e65c410d4`; two source exports match at `20fd5248161ef33bc6d5e4dbeb4f359a25fde1142bf86736c9cda75fb90af565` (23,521,280 bytes), and two 459,449-byte wheels match at `49d5c34e7d6770d963e6dc065a6b058fe6e08e8880bf8ea0ebbffd34e072d12f`. The selected typed linux/amd64 OCI manifest is `f1c69d4a45caa33310162335eaf084057017e667b46fc925f93a6ea3b9f9b4af`, config `b93060c5466a0a90b4c3b2e0fcff8dc77c087748dc43100cdc6e23949a039f7a`, with 14 layer hashes and sizes recorded in the Task34 build report. Selected payload blobs match across the two builds; created annotations and OCI archive hashes differ, so root-layout/archive reproducibility is not claimed. The offline cached Task15 base and temporary Dockerfile do not establish source-Dockerfile fidelity.
 
@@ -484,10 +484,10 @@ SHA-256 values bind the current Task36 documentation/evidence handoff. The wrapp
 | Path | SHA-256 |
 | --- | --- |
 | `.superpowers/sdd/2026-10-27-p1-production-policy-and-revocation/final-evidence-report.md` | `551c40b4d6852ab3ab4f42bc2cd26ffd1a0339fa03a5f7c2c0f0d39814d05307` |
-| `.superpowers/sdd/2026-10-28-p1-remaining-production-development/final-evidence-report.md` | `813503a7aee7f3a2864f852d49428fe2ccbb7da0a4d2918242ce1171af2d827b` |
+| `.superpowers/sdd/2026-10-28-p1-remaining-production-development/final-evidence-report.md` | `72ef2f56f09801891e0ba34fcf880d19535a43c0e790172c35717fa7529807e6` |
 | `.superpowers/sdd/2026-10-28-p1-remaining-production-development/final-review-fix-report.md` | `14b4ee16ba0e71c59313104632c939ce3f0d5df3a04568226d1ac0c5b77ae8a4` |
 | `.superpowers/sdd/2026-10-28-p1-remaining-production-development/planning-report.md` | `5ead73f3b32307f59fd4887c353c17616c2024f4d55cb6e3e55a1483e58359a6` |
-| `.superpowers/sdd/2026-10-28-p1-remaining-production-development/progress.md` | `46822f758172b87d883298c30a119e8284dace21cb4d7fdaccc349f99b333aeb` |
+| `.superpowers/sdd/2026-10-28-p1-remaining-production-development/progress.md` | `2a1a9251350588f5fbd8ba74dbfc368c12f527af7f14e88395ff58e7e72ffbad` |
 | `.superpowers/sdd/2026-10-28-p1-remaining-production-development/task-11-report.md` | `65a04c815c0a3a243d3c4d099dca058d79d5f3ca909cba30e607aaa8a6fc4bd7` |
 | `.superpowers/sdd/2026-10-28-p1-remaining-production-development/task-12-brief.md` | `2b2a68c85f4da49341ca208447c537f011be2fbc164290721cc4176401983a4e` |
 | `.superpowers/sdd/2026-10-28-p1-remaining-production-development/task-12-report.md` | `47bae8175c878d98f500e833481747006f0523bfc948e02af57ade546b65aa28` |
@@ -499,7 +499,7 @@ SHA-256 values bind the current Task36 documentation/evidence handoff. The wrapp
 | `.superpowers/sdd/2026-10-28-p1-remaining-production-development/task-22-report.md` | `3f8aebe87557d1d90c1d188ad82e7efd9d616964d53e2e11a197fa3a64e88745` |
 | `.superpowers/sdd/2026-10-28-p1-remaining-production-development/task-23-report.md` | `78079f921b52425a101cbb0cdb4ecaad8e65072eecf7bd91c4da4ff616b8af23` |
 | `.superpowers/sdd/2026-10-28-p1-remaining-production-development/task-25-report.md` | `69f0798aaad67df3791601b6095ca48fff2cef2dbbdb41297162ce193a75a28f` |
-| `.superpowers/sdd/2026-10-28-p1-remaining-production-development/task-25-review.md` | `fd89d1c0891b68855fadb3e3b852b34441275b0415455ceba2cc5e9baded5fbf` |
+| `.superpowers/sdd/2026-10-28-p1-remaining-production-development/task-25-review.md` | `42de4ad70cc6192d03cd983359d30a8ca631fc52cf2dc6d8c8c2fd6ee0d08b8d` |
 | `.superpowers/sdd/2026-10-28-p1-remaining-production-development/task-26-build-report.md` | `da464f968a5e7c53420b372b527118453f52cf6aa54dd4e4b35e503501cb4c6b` |
 | `.superpowers/sdd/2026-10-28-p1-remaining-production-development/task-26-build-review.md` | `0f6d93d74769560657572789416efd838ec8bcff31db3e06826894d2e20601af` |
 | `.superpowers/sdd/2026-10-28-p1-remaining-production-development/task-28-report.md` | `277e5f65953a5f19dcc327a5062211fc3abcaceae2955c14ff952b46f05ef3dc` |
@@ -525,7 +525,7 @@ SHA-256 values bind the current Task36 documentation/evidence handoff. The wrapp
 | `docs/v4/evidence-lock.json` | `09100cb7aee864227d78112aa7729a1cded7790d34cc33687c5e2a3732188e55` |
 | `docs/v4/p0-release.json` | `0a0f1969e0497cbec535fb3f854b51cef870a4746eb92f8a67a127566dc9ff75` |
 | `docs/v4/p1-production-policy-revocation-evidence.json` | `e5a5a3d424157479cacaf00eae39614a5abe12ecdb04ac38af0c95692dbd982b` |
-| `docs/v4/p1-qualification-matrix.json` | `6fa2cc23f371557cb333f0a88e3ff9734d6b8df05e8ff6161c23e531dcbfa617` |
+| `docs/v4/p1-qualification-matrix.json` | `fb3ae1b5af6844bcf6e2d72c5c2d8f2444c6f2156c30e5d4cdd17f0cdd24768e` |
 | `docs/v4/p1-remaining-production-development-evidence.json` | `9712af1be052ae418a26d4c0ac600ce15a191d49b31517885926e3cc72d598ad` |
 | `docs/v4/p1-rg0-rg1-external-acceptance.schema.json` | `0086353075c823f92f78b2d4f5e48005e62660537b70c95864b5f4ed5e2c945c` |
 | `docs/v4/p1-rg0-rg1-initial-gap-audit.json` | `33fe485384dcf60e36df8d48ace6394c80bce0d1bd9e6b9b39c7a905d65676b1` |

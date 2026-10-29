@@ -1,13 +1,25 @@
+# Task25 review record — implementation history and final rereview
+
+The current final mixed-host fix at source `546ac4ed794afc123ea02586a37d4a4457590582` received an independent fix-loop rereview against parent `951ee1a00fb31040765140679720bf02ec7e3d5a`. The verdict is **Spec: PASS; Quality: PASS — CLEAN; Findings: 0 Critical / 0 Important / 0 Minor**. The complete review is preserved below; earlier review rounds remain bound to their respective commits.
+
+## Source and durable-content binding
+
+- Supplied source report: `/tmp/salience-task25-dns-timeout-review.md`; 9,728 bytes; SHA-256 `6d26fc9717cfd888eea26025d442dbbf1a42174343d967d85b3dcb92c2131644`.
+- Durable review body: 9744 bytes; SHA-256 `e7b0aa6b0885b4a452be64ce01da490889bf82b81127b082ffd5bb06a86e94b4`.
+- Normalization: eight Markdown trailing-space hard breaks (`two spaces + LF`) were written as `<br> + LF` to satisfy repository whitespace checks. Every other body byte is unchanged. The Task36 final report and audit bind this complete durable review record by its own raw-file hash.
+
+---
+
 # Task 25 DNS timeout implementation review
 
-**Reviewed commit:** `cf070328d035f9010b760431173845c6afdfedee`
-**Base:** `7641f6cf1d5d889146b5ff5153ed5b73968ae78c`
+**Reviewed commit:** `cf070328d035f9010b760431173845c6afdfedee`<br>
+**Base:** `7641f6cf1d5d889146b5ff5153ed5b73968ae78c`<br>
 **Scope:** Compared the implementation diff, the Task 25 plan, the independent review, and the implementation report. Inspected the production source and unit tests at the cited lines. No tests, builds, Docker commands, or external services were run, as required by the review task.
 
 ## Verdict
 
-**Spec: PASS**
-**Quality: PASS — CLEAN**
+**Spec: PASS**<br>
+**Quality: PASS — CLEAN**<br>
 **Findings: 0 Critical / 0 Important / 0 Minor**
 
 ## Review notes
@@ -28,8 +40,8 @@ The commit changes only `src/salience/cycles/temporal_schedule_control.py` and `
 
 **Compared:** `8c31e84c9d71d0043b1ca736d9bc4db05cfeee7d` against parent `843d95346090f278721deb8c3299628b1293996d`, with the original Task25 requirements, the independent rereview, and updated implementation report.
 
-**Spec: PASS**
-**Quality: PASS — CLEAN**
+**Spec: PASS**<br>
+**Quality: PASS — CLEAN**<br>
 **Findings: 0 Critical / 0 Important / 0 Minor**
 
 Both Important findings from the rereview are resolved in the inspected source and tests.
@@ -41,9 +53,18 @@ All public/timed plan paths continue to receive explicit per-operation endpoints
 
 The fix is confined to the production endpoint handling and its unit tests. The updated report records focused and full readback-unit results; they were not rerun during this read-only rereview. No tests, builds, Docker commands, network access, or external services were used for this rereview.
 
+## Fix-loop rereview round 2: commit `546ac4e`
 
-## Successor correction — mixed-host Unix hostaddr list
+**Compared:** `546ac4ed794afc123ea02586a37d4a4457590582` against parent `951ee1a00fb31040765140679720bf02ec7e3d5a`, with `/tmp/salience-final-gpt61-rereview2.md` and the updated implementation report.
 
-The independent rereview at `/tmp/salience-final-gpt61-rereview2.md` found that the source reviewed above still retained an original multi-host `hostaddr` list when a Unix socket was selected. The later Task25 fix-round-2 implementation report records the correction at source `546ac4ed794afc123ea02586a37d4a4457590582`: the captured empty Unix `hostaddr` is now passed explicitly to clear the original list, while TCP endpoints remain pinned to a numeric address and scalar port. The report records the mixed Unix/TCP regression and **29 passed** for the complete readback unit file. Task35 group 03 also ran that current unit file alongside the three existing schedule integration files and records 80 passed.
+**Spec: PASS**<br>
+**Quality: PASS — CLEAN**<br>
+**Findings: 0 Critical / 0 Important / 0 Minor**
 
-This is a precise successor evidence note, not an extension of the `8c31e84` PASS/CLEAN verdict above. No independent post-fix review of source `546ac4e` was supplied; the earlier review remains bound to its reviewed commit. The Task34 build review and Task35 exact-candidate qualification independently bind the later source/artifact and their stated scopes.
+The mixed Unix/TCP hostaddr-list finding is resolved. `_plan_async()` now explicitly supplies scalar `host`, `hostaddr`, and `port` for every plan connect (`src/salience/cycles/temporal_schedule_control.py:97-123`). A Unix endpoint accepts only an absent or empty captured hostaddr, then supplies `hostaddr=""`; TCP still requires a numeric address and passes that selected value (`:97-108`). Psycopg merges non-`None` overrides, so the explicit empty string clears a stale address list while the path host avoids DNS resolution. The new regression starts with a valid two-entry mixed Unix/TCP host, address, and port conninfo, then parses the merged options and verifies exactly one selected Unix attempt with an empty address and scalar port (`tests/unit/test_temporal_schedule_readback.py:274-348`).
+
+The other shapes are covered by the same override path: the multi-host TCP parser test verifies selected hostname, numeric address, and scalar per-host port while retaining TLS and other DSN options (`tests/unit/test_temporal_schedule_readback.py:143-215`); the single Unix case asserts the explicit empty address (`:410-453`); and the public Unix `describe()` path runs pin through plan connection with the empty driver-reported address (`:488-552`). TCP endpoints with missing, empty, or invalid addresses still fail before async connect, as do invalid ports, with generic errors and no DSN/password in captured output (`:380-485`).
+
+The DNS bypass remains intact because TCP connects always carry the pinned numeric address; the hostname is retained for TLS verification. All timed plan reads continue to receive per-call endpoints, including both resume pins, and the first resume preflight still precedes `super().resume_after()` and its durable local mutation (`src/salience/cycles/temporal_schedule_control.py:270-357`). Timeout values, close-before-cancel cleanup, retry limits, and single application calls for pause/update are unchanged by this commit. The diff remains limited to the production endpoint connect options and readback tests.
+
+The updated report records RED/GREEN and full readback-unit results; those tests were not rerun in this read-only review. No tests, builds, Docker commands, network access, or external services were used.
