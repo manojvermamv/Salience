@@ -58,8 +58,6 @@ def _readback_fixture(monkeypatch, outcomes):
         "postgresql://unused", workspace_id=WORKSPACE_ID,
         temporal_target="temporal-fixture", task_queue=TASK_QUEUE,
     )
-    monkeypatch.setattr(control, "_plan", lambda row, required=False: None)
-
     async def no_plan(row, *, required=False):
         return None
 
@@ -202,6 +200,9 @@ def test_temporal_operation_deadlines_cover_bounded_read_phases():
         control_module._PLAN_CONNECT_TIMEOUT_SECONDS
         + control_module._PLAN_STATEMENT_TIMEOUT_SECONDS
     )
+    assert control_module._PLAN_PREFLIGHT_OPERATION_TIMEOUT_SECONDS == (
+        control_module._PLAN_IO_BOUND_SECONDS + 1
+    )
     assert control_module._PLAN_CONNECT_TIMEOUT_SECONDS == 3
     assert control_module._PLAN_STATEMENT_TIMEOUT_SECONDS == 3
     assert control_module._PLAN_STATEMENT_TIMEOUT_COMMAND == "SET LOCAL statement_timeout='3s'"
@@ -329,7 +330,7 @@ def test_public_describe_deadline_does_not_wait_for_plan_worker(monkeypatch):
             return await original_describe(*args)
 
     monkeypatch.setattr(control, "_pin", lambda schedule_id: (row, "fixture-schedule"))
-    monkeypatch.setattr(control, "_plan", slow_sync_plan)
+    monkeypatch.setattr(control, "_plan", slow_sync_plan, raising=False)
     monkeypatch.setattr(control, "_plan_async", slow_async_plan, raising=False)
     monkeypatch.setattr(control, "_describe", scaled_describe)
 
@@ -342,6 +343,62 @@ def test_public_describe_deadline_does_not_wait_for_plan_worker(monkeypatch):
     assert plan_started.is_set()
     assert plan_cancelled.is_set()
     assert not sync_plan_called.is_set()
+
+
+def test_public_resume_preflight_timeout_prevents_local_rollback_mutation(monkeypatch):
+    control, _, _, _, row = _readback_fixture(monkeypatch, [])
+    plan_async_started = threading.Event()
+    plan_async_cancelled = threading.Event()
+    sync_plan_started = threading.Event()
+    local_resume_calls = []
+
+    def slow_sync_plan(_row, *, required=False):
+        sync_plan_started.set()
+        time.sleep(0.2)
+        return {"goal_id": "fixture-goal"}
+
+    async def slow_async_plan(_row, *, required=False):
+        assert required is True
+        plan_async_started.set()
+        try:
+            await asyncio.sleep(0.2)
+        except asyncio.CancelledError:
+            plan_async_cancelled.set()
+            raise
+        return {"goal_id": "fixture-goal"}
+
+    def local_resume(self, schedule_id, after_slot, *, subject_id=None):
+        local_resume_calls.append((schedule_id, after_slot, subject_id))
+
+    async def no_remote_resume(_row, _remote_id, _after_slot):
+        return None
+
+    monkeypatch.setattr(control, "_pin", lambda schedule_id: (row, "fixture-schedule"))
+    monkeypatch.setattr(control, "_plan", slow_sync_plan, raising=False)
+    monkeypatch.setattr(control, "_plan_async", slow_async_plan)
+    monkeypatch.setattr(control, "_resume", no_remote_resume)
+    monkeypatch.setattr(
+        temporal_schedule_control.FixtureLegacyScheduleControl,
+        "resume_after",
+        local_resume,
+    )
+    monkeypatch.setattr(
+        temporal_schedule_control,
+        "_PLAN_PREFLIGHT_OPERATION_TIMEOUT_SECONDS",
+        0.03,
+        raising=False,
+    )
+
+    started_at = time.monotonic()
+    with pytest.raises(TimeoutError):
+        control.resume_after(row["id"], datetime(2025, 1, 1, tzinfo=timezone.utc))
+    elapsed = time.monotonic() - started_at
+
+    assert elapsed < 0.15
+    assert local_resume_calls == []
+    assert plan_async_started.is_set()
+    assert plan_async_cancelled.is_set()
+    assert not sync_plan_started.is_set()
 
 
 @pytest.mark.asyncio

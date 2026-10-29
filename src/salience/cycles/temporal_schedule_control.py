@@ -27,6 +27,7 @@ _PLAN_CONNECT_TIMEOUT_SECONDS = 3
 _PLAN_STATEMENT_TIMEOUT_SECONDS = 3
 _PLAN_STATEMENT_TIMEOUT_COMMAND = "SET LOCAL statement_timeout='3s'"
 _PLAN_IO_BOUND_SECONDS = _PLAN_CONNECT_TIMEOUT_SECONDS + _PLAN_STATEMENT_TIMEOUT_SECONDS
+_PLAN_PREFLIGHT_OPERATION_TIMEOUT_SECONDS = _PLAN_IO_BOUND_SECONDS + 1
 _TEMPORAL_DESCRIBE_TIMEOUT_SECONDS = 2
 _TEMPORAL_DESCRIBE_ATTEMPTS = 2
 _TEMPORAL_DESCRIBE_RETRY_DELAY_SECONDS = 0.05
@@ -58,21 +59,6 @@ class TemporalFixtureLegacyScheduleControl(FixtureLegacyScheduleControl):
             raise PermissionError("original native schedule worker route required")
         return row,expected
 
-    def _plan(self, row, *, required=False):
-        import psycopg
-        from psycopg.rows import dict_row
-        with psycopg.connect(
-            self.database_url,
-            row_factory=dict_row,
-            connect_timeout=_PLAN_CONNECT_TIMEOUT_SECONDS,
-        ) as connection:
-            connection.execute(_PLAN_STATEMENT_TIMEOUT_COMMAND)
-            plan = connection.execute(
-                _PLAN_LOOKUP_QUERY,
-                (row["id"], self.workspace_id, row["id"], self.workspace_id),
-            ).fetchone()
-        return self._validate_plan(row, plan, required=required)
-
     async def _plan_async(self, row, *, required=False):
         import psycopg
         from psycopg.rows import dict_row
@@ -93,6 +79,11 @@ class TemporalFixtureLegacyScheduleControl(FixtureLegacyScheduleControl):
             # the server, so cancellation never waits for a blocking executor.
             await connection.close()
         return self._validate_plan(row, plan, required=required)
+
+    async def _preflight_resume_plan(self, row):
+        # 6s for connection and statement bounds, plus 1s for cancellation/close.
+        async with asyncio.timeout(_PLAN_PREFLIGHT_OPERATION_TIMEOUT_SECONDS):
+            return await self._plan_async(row, required=True)
 
     def _validate_plan(self, row, plan, *, required=False):
         if plan and plan["task_queue"] != self.task_queue:
@@ -254,7 +245,7 @@ class TemporalFixtureLegacyScheduleControl(FixtureLegacyScheduleControl):
 
     def resume_after(self,schedule_id,after_slot,*,subject_id=None):
         row,remote_id = self._pin(schedule_id)
-        self._plan(row, required=True)
+        asyncio.run(self._preflight_resume_plan(row))
         # Canonical rollback_pending fences V4 throughout the remote boundary.
         # If the remote acknowledgment is unknown, keep that fence for retry.
         super().resume_after(schedule_id,after_slot,subject_id=subject_id)
