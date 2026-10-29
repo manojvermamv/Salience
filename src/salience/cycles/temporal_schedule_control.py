@@ -38,6 +38,7 @@ class TemporalFixtureLegacyScheduleControl(FixtureLegacyScheduleControl):
         import psycopg
         from psycopg.rows import dict_row
         with psycopg.connect(self.database_url, row_factory=dict_row, connect_timeout=3) as connection:
+            connection.execute("SET LOCAL statement_timeout='3s'")
             plan = connection.execute("""SELECT plan.goal_id,plan.workspace_id,plan.actor_id,plan.goal_revision,
                        plan.task_queue,plan.niche,NULL::uuid AS schedule_id,'intelligence' AS stage,
                        NULL::uuid AS publication_schedule_id
@@ -95,7 +96,9 @@ class TemporalFixtureLegacyScheduleControl(FixtureLegacyScheduleControl):
             argument = (await client.data_converter.decode([argument.payload],[dict]))[0]
         elif isinstance(argument,Payload):
             argument = (await client.data_converter.decode([argument],[dict]))[0]
-        plan = self._plan(row, required=action.workflow == LEGACY_SCHEDULE_INGRESS)
+        plan = await asyncio.to_thread(
+            self._plan, row, required=action.workflow == LEGACY_SCHEDULE_INGRESS
+        )
         if row.get("native_publication_source") and plan and plan["stage"] != "publication":
             raise PermissionError("native publication schedule requires publication-stage binding")
         if action.workflow == LEGACY_SCHEDULE_INGRESS and argument != self._ingress_payload(row, plan):
@@ -177,7 +180,7 @@ class TemporalFixtureLegacyScheduleControl(FixtureLegacyScheduleControl):
         async with asyncio.timeout(7):
             client = await Client.connect(self.temporal_target)
             handle = client.get_schedule_handle(remote_id)
-            plan = self._plan(row, required=True)
+            plan = await asyncio.to_thread(self._plan, row, required=True)
             async def update(argument):
                 await self._verified(client, handle, row, description=argument.description)
                 schedule = argument.description.schedule
