@@ -134,6 +134,8 @@ def upgrade() -> None:
                        '(Z|[+-][0-9]{2}:[0-9]{2})$'
                    AND event.created_at <=
                        (event.payload->>'database_time')::timestamptz
+                   AND (event.payload->>'database_time')::timestamptz <=
+                       claim.claimed_at
                )
                INTO total_events, exact_events
                FROM public.v4_production_effect_permit_claims claim

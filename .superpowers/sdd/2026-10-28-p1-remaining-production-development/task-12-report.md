@@ -94,3 +94,57 @@ DATABASE_URL=postgresql+asyncpg://salience:salience@172.21.0.2:5432/salience \
 The project was removed with `docker compose -p salience-task12-fix1-20261029 down --volumes --remove-orphans` (exit 0); follow-up container, volume, and network label queries returned no resources. No host-wide prune, artifact/evidence regeneration, push, or merge was performed.
 
 Pre-commit fresh verification: `COMPOSE_PROJECT_NAME=salience-task12-fix1-verify-20261029 PYTHONPATH=src .venv/bin/pytest -q tests/integration/test_p1_production_policy_revocation.py -k '0051_rollback_inventory_binds_distinct_issue_and_claim_decisions or 0051_rollback_inventory_rejects_claim_event_payload_drift'` passed **8 tests, 124 deselected** in 14.91s (exit 0) after a separate fresh full migration to 0051. Exact project cleanup completed with `docker compose -p salience-task12-fix1-verify-20261029 down --volumes --remove-orphans` (exit 0); its container, volume, and network label queries were empty.
+
+## Fix round 2/5 — bind claim database time to claim receipt
+
+The rereview found that the canonical payload comparison used the event's own `database_time` value when reconstructing the expected event. The validator required an explicit timezone and `event.created_at <= database_time`, but the timestamp could be changed to a valid far-future value and still satisfy both checks. The claim row already retains immutable `claimed_at`; the actual claim path captures database time before inserting the claim and writes the event in that transaction. The exact-event predicate now also requires `database_time <= claim.claimed_at`, retaining the existing lower bound and every canonical payload field comparison. The current-pointer validator shares this predicate, so it is bound to the same validated claim receipt.
+
+The new regression mutates only the claim event's `database_time` to `2099-01-01T00:00:00+00:00` in an isolated migrated clone. Against the pre-fix validator it failed at the intended assertion because neither `production_permit_claim_mismatch` nor `production_current_pointer_claim_mismatch` appeared.
+
+Red command, using one unique disposable Compose project (`salience-task12-fix2-20261029`; local Postgres and Temporal only):
+
+```sh
+COMPOSE_PROJECT_NAME=salience-task12-fix2-20261029 PYTHONPATH=src \
+.venv/bin/pytest -q tests/integration/test_p1_production_policy_revocation.py \
+-k '0051_rollback_inventory_rejects_claim_event_payload_drift and database-time-future'
+```
+
+Result: **1 failed, 132 deselected**, exit 1, pytest duration 4.33s (command wall time 13.30s including initial Compose startup and fresh Alembic upgrade). The failure was the intended missing claim mismatch blocker.
+
+Green focused regression command (same disposable project; exact database/Temporal endpoint environment):
+
+```sh
+PYTHONPATH=src COMPOSE_PROJECT_NAME=salience-task12-fix2-20261029 \
+TEST_DATABASE_URL=postgresql://salience:salience@172.21.0.2:5432/salience \
+TEST_TEMPORAL_TARGET=172.21.0.3:7233 \
+DATABASE_URL=postgresql+asyncpg://salience:salience@172.21.0.2:5432/salience \
+.venv/bin/pytest -q tests/integration/test_p1_production_policy_revocation.py \
+-k '0051_rollback_inventory_binds_distinct_issue_and_claim_decisions or 0051_rollback_inventory_rejects_claim_event_payload_drift'
+```
+
+Result: **9 passed, 124 deselected**, exit 0, pytest duration 14.70s (command wall time 15.00s). This includes the eight payload corruption cases and the real distinct issue/claim decision regression.
+
+The focused fresh 0050→0051 upgrade and irreversible downgrade selection used the same endpoint environment:
+
+```sh
+PYTHONPATH=src COMPOSE_PROJECT_NAME=salience-task12-fix2-20261029 \
+TEST_DATABASE_URL=postgresql://salience:salience@172.21.0.2:5432/salience \
+TEST_TEMPORAL_TARGET=172.21.0.3:7233 \
+DATABASE_URL=postgresql+asyncpg://salience:salience@172.21.0.2:5432/salience \
+.venv/bin/pytest -q tests/integration/test_v4_migrations.py -k '0051'
+```
+
+Result: **1 passed, 72 deselected**, exit 0, pytest duration 6.97s (command wall time 7.17s). Static checks also passed: `PYTHONPATH=src .venv/bin/python -m compileall -q src migrations tests/integration/test_p1_production_policy_revocation.py` (exit 0) and `git diff --check` (exit 0).
+
+Cleanup command `docker compose -p salience-task12-fix2-20261029 down --volumes --remove-orphans` exited 0 in 2.44s. Follow-up container, volume, and network lookups filtered by that exact Compose project label returned no resources. No host-wide prune, production/provider/remote target, artifact/evidence regeneration, push, or merge was performed.
+
+Pre-commit verification reran the focused policy/revocation claim regressions and the 0051 migration selection together on a second fresh database in unique project `salience-task12-fix2-verify-20261029`:
+
+```sh
+COMPOSE_PROJECT_NAME=salience-task12-fix2-verify-20261029 PYTHONPATH=src \
+.venv/bin/pytest -q tests/integration/test_p1_production_policy_revocation.py \
+tests/integration/test_v4_migrations.py \
+-k '(0051_rollback_inventory_binds_distinct_issue_and_claim_decisions or 0051_rollback_inventory_rejects_claim_event_payload_drift or 0051)'
+```
+
+Result: **10 passed, 196 deselected**, exit 0, pytest duration 22.80s. The fresh database reached Alembic head 0051 before the selected tests ran. Cleanup command `docker compose -p salience-task12-fix2-verify-20261029 down --volumes --remove-orphans` exited 0 in 2.48s; exact-project container, volume, and network queries returned no resources.

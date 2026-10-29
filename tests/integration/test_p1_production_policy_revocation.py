@@ -3128,6 +3128,7 @@ def test_0051_rollback_inventory_binds_distinct_issue_and_claim_decisions(accoun
         ("budget_reservation_id", "00000000-0000-0000-0000-000000000002"),
         ("approval_expires_at", "2099-01-01T00:00:00+00:00"),
         ("required_scopes", ["tampered:scope"]),
+        ("database_time", "2099-01-01T00:00:00+00:00"),
     ),
     ids=(
         "idempotency-key",
@@ -3137,6 +3138,7 @@ def test_0051_rollback_inventory_binds_distinct_issue_and_claim_decisions(accoun
         "budget-reservation-id",
         "approval-expiry",
         "required-scopes",
+        "database-time-future",
     ),
 )
 def test_0051_rollback_inventory_rejects_claim_event_payload_drift(
