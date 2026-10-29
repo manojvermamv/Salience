@@ -86,33 +86,21 @@ These digests bind each independent verdict to the exact text it reviewed. The f
 | --- | --- |
 | `docs/v4/p1-rg0-rg1-initial-gap-audit.json` | `33fe485384dcf60e36df8d48ace6394c80bce0d1bd9e6b9b39c7a905d65676b1` |
 | `docs/v4/p1-rg0-rg1-initial-gap-audit.md` | `62aab5afb39f7c47e355a68ccf56e319a72955247515dfbdba8913fd797a5944` |
-| `docs/v4/p0-release.json` | `5038fa02bd73d176cbad6df99a66537fb25cdebc0f8c972f33419070e1145757` |
-| `docs/v4/p1-qualification-matrix.json` | `c36bca335575d0b128d8d2232b1b50c741566d2d2a6d8fbb43d404e2ad5e3237` |
+| `docs/v4/p0-release.json` | `0a0f1969e0497cbec535fb3f854b51cef870a4746eb92f8a67a127566dc9ff75` |
+| `docs/v4/p1-qualification-matrix.json` | `7bd051023bb9dc6af4f491fc88984ca5a37de27b4b4533078881c112ef66655b` |
 | `docs/superpowers/specs/2026-10-13-p1-production-policy-and-revocation-design.md` | `6be8f5ec6c48491a45a734510cc20af98e2cd7554fdc0409e77c6d9667d42fe2` |
-| `docs/superpowers/specs/2026-10-13-p1-production-routing-and-worker-fencing-design.md` | `d4d2c06a1f0925d2826b29a4e2c053f7f7773f660397fe986883c370aee78f67` |
-| `docs/superpowers/specs/2026-10-13-p1-live-schedule-fencing-design.md` | `04ed59e2ed61ca17dc2c01df3a2964e1569e03e79f0aef2bbfe2ca2d96d5129a` |
-| `docs/superpowers/specs/2026-10-13-p1-production-recovery-and-alerts-design.md` | `1c731ee595be6582902aa79f9ebb52d520f6fd18ad6054ca304709ce16aea61c` |
-| `docs/superpowers/specs/2026-10-13-rg0-rg1-external-acceptance-design.md` | `2a5d6cff0dd44070b1942e79f073906527b8e2650b62b3473d63542f00bfbcd8` |
-| `docs/v4/test_checks.py` | `bfa9cb319b49bca3a9904b967ebb5fd4cf4a46b5809b75b907e85ae084aca471` |
+| `docs/superpowers/specs/2026-10-13-p1-production-routing-and-worker-fencing-design.md` | `76921a085e352f86ae77895c824917832a49847c306b76bc56ae2c7e44a23e90` |
+| `docs/superpowers/specs/2026-10-13-p1-live-schedule-fencing-design.md` | `de5e961bbd1ea756a98e5694b5f079982c5d7958c4b71a86a2de680189717e99` |
+| `docs/superpowers/specs/2026-10-13-p1-production-recovery-and-alerts-design.md` | `4d7076fd968c28d78307678fa0b186d446dff6e3f3a88d5507646a828b2605cc` |
+| `docs/superpowers/specs/2026-10-13-rg0-rg1-external-acceptance-design.md` | `7334364e5417cbb29143877334a80ea90125e9ce61bff71f67de77a86f61069e` |
+| `docs/v4/test_checks.py` | `c915b137417c53b3b3f773eacbfcfea3d62584a21ca11df8288e0c2b4281cf6e` |
 | `README.md` | `3f672a0e4bd804a0cc2280c7a57b2a350dbde4991a3ae4e941e3380b16ee3d44` |
-| `docs/README.md` | `2c2ff50f38b4d5924e7a23fa3b3586acac18528b7a69df0dcc540c71ed1c42f5` |
-| `docs/v4/IMPLEMENTATION-BLUEPRINT.md` | `6e717aae30c9eb3714d760d5e04f8689a33db0b5e0a3d8dcb4e8e63137c7c58b` |
-| `docs/v4/progress.md` | `63bbb93983b1b93af53a10fc75a2051605ee278daa1fab826f303be1909f54d0` |
-| `docs/v4/validation.md` | `4afc4def5a5e4df09b1a0ba0f061f073f974fa719072f4bfe33f7d7438d1021d` |
+| `docs/README.md` | `a4a4ecf415eb38c9947d7632b4ffccbe03dc4629c8ce6b6988082b4386db2c39` |
+| `docs/v4/IMPLEMENTATION-BLUEPRINT.md` | `8ceb85b83e452c10d4b323a709ac6706935013c2d9193bd1bff2b1b8c83d2703` |
+| `docs/v4/progress.md` | `053befb5881473f11013232339df407d0ed38100522edb957c83b0fc5dc15791` |
+| `docs/v4/validation.md` | `64c021233a1fcaa423c21e33ba8553b2a9cdef69c6f6d565436dd15fdb180fd2` |
 | `docs/superpowers/specs/2026-10-13-v4-multiplatform-autonomy-program-sequence.md` | `ba64032ca707c4348c97651fa06beced3df90d1612c38c56de50fed1558947ca` |
 | `docs/superpowers/plans/2026-10-27-p1-rg0-rg1-initial-gap-audit.md` | `5d1dd8a86718184d03324144643dfb009cb36243a5bd0c0f14c46844eb3c5cd4` |
-
-## Final whole-change documentation review
-
-**Status:** `documentation_whole_change_review: PASS_AFTER_FIX_ROUND_1` for reviewed candidate manifest SHA-256 `cafa0bd46ede2cc8aef51058f46541068a07cd031774c8b5501270bc2385ee9a` (30 candidate files).
-
-| Stage | Durable report | SHA-256 | Result |
-| --- | --- | --- | --- |
-| Initial whole-change review | [`final-whole-change-review.md.txt`](reviews/final-whole-change-review.md.txt) | `0f1b136cbb0f24adb596bcb628848f1ec5fdf7723178cd9c0b6bfad31b1aa104` | FAIL: 0 Critical / 3 Important / 0 Minor. |
-| Bounded fix round | [`final-whole-change-fix.md.txt`](reviews/final-whole-change-fix.md.txt) | `d2449d8760eb4978f796d29c4b3f88a49ccb658aaeb01bd1c2df37fa0b5d8e8f` | F1–F3 fixed within documentation/evidence scope; no runtime implementation or sixth increment. |
-| Scoped rereview | [`final-whole-change-rereview.md.txt`](reviews/final-whole-change-rereview.md.txt) | `a9618776e2114435b12f147a4221a8018914517e4e21900130a5b259da2c0b5b` | PASS: F1–F3 addressed; 0 new Critical / 0 new Important. |
-
-This whole-change verdict applies only to the exact reviewer-reported documentation candidate manifest recorded above; it does not transfer to later content changes or establish exact-candidate CI or live qualification. The manifest is not a commit SHA. Separately, the final exact-candidate/environment P1/RG0/RG1 audit remains NOT RUN and BLOCKED until the five required increments are implemented and current external acceptance evidence exists for one frozen final candidate/environment. Separately, the **final exact-candidate/environment P1/RG0/RG1 audit** remains **NOT RUN** and **BLOCKED** until the five required increments are implemented and current external acceptance evidence exists for one frozen final candidate/environment. All 22 final-entry rows remain non-PASS, RG0/RG1 remain HELD, P2/Slice 7 remain BLOCKED, production remains disabled, and `main` remains unmerged.
 
 ## Orchestrator meta-review
 
@@ -303,3 +291,15 @@ The preserved `docs/v4/check.py` evidence lock still describes the earlier 376-f
 | `.superpowers/sdd/2026-10-28-p1-remaining-production-development/task-11-report.md` | `c722351383d9ba935128cb634ceac79ffc2f45cd9173de0a91675a6895a14ad2` |
 | `.superpowers/sdd/2026-10-28-p1-remaining-production-development/final-evidence-report.md` | `062d622171e1a6b8c05392592c49569ba564f5f4b141bec28dba3d927f5787e9` |
 | `.superpowers/sdd/2026-10-28-p1-remaining-production-development/final-review-fix-report.md` | `14b4ee16ba0e71c59313104632c939ce3f0d5df3a04568226d1ac0c5b77ae8a4` |
+
+## Historical whole-change documentation review receipt
+
+The documentation/evidence whole-change review completed as `PASS_AFTER_FIX_ROUND_1` for candidate manifest SHA-256 `cafa0bd46ede2cc8aef51058f46541068a07cd031774c8b5501270bc2385ee9a`. Its scope is the reviewed documentation/evidence change and does not qualify a later exact application candidate. The final exact-candidate/environment P1/RG0/RG1 audit remains NOT RUN and BLOCKED.
+
+| Review record | SHA-256 |
+| --- | --- |
+| [`final-whole-change-review.md.txt`](reviews/final-whole-change-review.md.txt) | `0f1b136cbb0f24adb596bcb628848f1ec5fdf7723178cd9c0b6bfad31b1aa104` |
+| [`final-whole-change-fix.md.txt`](reviews/final-whole-change-fix.md.txt) | `d2449d8760eb4978f796d29c4b3f88a49ccb658aaeb01bd1c2df37fa0b5d8e8f` |
+| [`final-whole-change-rereview.md.txt`](reviews/final-whole-change-rereview.md.txt) | `a9618776e2114435b12f147a4221a8018914517e4e21900130a5b259da2c0b5b` |
+
+`documentation_whole_change_review: PASS_AFTER_FIX_ROUND_1`

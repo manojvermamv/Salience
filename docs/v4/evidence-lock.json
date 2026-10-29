@@ -1,6 +1,6 @@
 {
   "baseline_commit": "ec12763e38143f52f1af2661e00932158982f11a",
-  "scope": "Current Slice 2 application/source candidate ec12763e38143f52f1af2661e00932158982f11a content lock for source, migrations, tests, scripts, named deployment/dependency configuration, and the durable Docker build-context boundary. It covers 369 application evidence paths plus seven configuration/build-context paths (376 total checker evidence files). The historical 211-path artifact source manifest and earlier qualification locks retain their original scopes. This lock records current repository file bytes and path coverage; it is not artifact identity, independent review, exact-head CI, or production acceptance.",
+  "scope": "Current exact application/source content lock for Task 13 implementation source 8d26aa15ef8d6bf7c9248bdd1899cf01a352cb2a (tree 435f7b6cea818c96790e890da9485ce08fd18ac6). It covers 409 current files under src, tests, migrations, and scripts plus 7 established deployment/dependency/build-context boundary files (416 total). The Task 13 artifact candidate is recorded separately at e805c277577da8491dca51933dadb5c36acc805b. This lock records current repository bytes and exact path coverage; it is not external artifact trust, independent review, production qualification, or acceptance.",
   "files": [
     {
       "path": ".dockerignore",
@@ -219,6 +219,26 @@
       "sha256": "fa04dadd12658b6eb092c6c024ce6764f14086eaa45680536f87df57f5dddb00"
     },
     {
+      "path": "migrations/versions/0047_p1_production_recovery_work_events.py",
+      "sha256": "783eba229cf062ee303b4d79fb0141134d36de4b2acba7183177b3e80a56ed99"
+    },
+    {
+      "path": "migrations/versions/0048_p1_production_schedule_bindings.py",
+      "sha256": "f232d428e31a0538a8a915e20de575c24c92958aa626e37fbab3c16600f72426"
+    },
+    {
+      "path": "migrations/versions/0049_p1_production_recovery_decision_evidence.py",
+      "sha256": "e3631771531e344d69dc5f90d3ea2b0fb7c8a450b4d1d381eef5b5524cc9195f"
+    },
+    {
+      "path": "migrations/versions/0050_p1_production_dispatch_reissue.py",
+      "sha256": "66118cd2135ca182859e00df3ccef4a898b07a0b948a46ca7ab97efa5d9912ae"
+    },
+    {
+      "path": "migrations/versions/0051_p1_recovery_rollback_v2.py",
+      "sha256": "358b296465e32e81bea7729be4e2bb3a574ee2215a3cb4d8f327df36baeb9768"
+    },
+    {
       "path": "migrations/versions/__init__.py",
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
@@ -228,15 +248,23 @@
     },
     {
       "path": "scripts/build_publication_worker_launch_lock.py",
-      "sha256": "7bb7bce018a2f1e3fcb73004b94f95afb4bd38e50e48db1cf1da443deb4fe4d2"
+      "sha256": "d781121299b9ec7f2dac85c76b5f7eb18082eb8e11dffdc5806976430dc92d8e"
+    },
+    {
+      "path": "scripts/check-p1-external-acceptance.py",
+      "sha256": "f7bd0ea30441816c57c8b36f8936b9c9e7ba1d0b1fcf7dff16e3c57237e0ca6b"
     },
     {
       "path": "scripts/launch-v4-publication-worker.py",
-      "sha256": "2c8f072e05a4ca6ce695e73d5e0f6f8d17e01b4f79562c202fd61ae4b9b68f11"
+      "sha256": "9c07477c6ff5b10c3801db3c29039ee336b16b16ffa24388e9acd4f6b44b426b"
     },
     {
       "path": "scripts/verify-browser-evidence.sh",
       "sha256": "90fe5f0cffeb0e0a7cf4456095a99cfa2523da12f0345e0594a75762ba8c58b8"
+    },
+    {
+      "path": "scripts/verify-p1-recovery-rollback-v2.py",
+      "sha256": "0164945328085a27030084f4d1ed674f795d0fe5b8a2f6ea5e793512c96a6a2d"
     },
     {
       "path": "scripts/verify-phase-9.sh",
@@ -277,6 +305,46 @@
     {
       "path": "src/salience/a2a/sdk_adapter.py",
       "sha256": "cf0d58092e6343b585b348063f15b25c8e0a08f7ae5ab78df594ffcc7ca87fa9"
+    },
+    {
+      "path": "src/salience/acceptance/_audit_validation.py",
+      "sha256": "ee0515c8455d82a2fc5c0422dd7ed83b3b1e40fe2d37c9e3229d524cd7e96e9b"
+    },
+    {
+      "path": "src/salience/acceptance/_canonical.py",
+      "sha256": "e4afdf982648ff3feb4512424c554184df8cd99d52ac7cb0890ec3b5dd7baebd"
+    },
+    {
+      "path": "src/salience/acceptance/_contracts.py",
+      "sha256": "8bb675c86aa32448816d0a6bacf760988d13e5c1bf647f769d619cc7a6aac383"
+    },
+    {
+      "path": "src/salience/acceptance/_evidence_validation.py",
+      "sha256": "97782b538b1ef9aa8e08a3e28fa69f27995e2ce2e029296e07072016fe0c92ed"
+    },
+    {
+      "path": "src/salience/acceptance/_manifest_validation.py",
+      "sha256": "ed1c262ffaefbe7952e01a5bf635a2f005198ec67fabf093da85761d89e2a01f"
+    },
+    {
+      "path": "src/salience/acceptance/_reconciliation.py",
+      "sha256": "ee97a5e9d455981f2ab5196a53316c0ffc7ccf58f9343c14ba772e8acfcbb139"
+    },
+    {
+      "path": "src/salience/acceptance/_row_checks.py",
+      "sha256": "a2aad2557b8d106efcda3fb7115f8b71e459383c8e532cf09b0d7f79ac055ec0"
+    },
+    {
+      "path": "src/salience/acceptance/_row_validation.py",
+      "sha256": "61e048a4b3bff97fedb25debe2d6de24608cc7905aea114f90a1193c52269faa"
+    },
+    {
+      "path": "src/salience/acceptance/_scope_binding.py",
+      "sha256": "50b4cdd42b0c0fce015a49178255f334f75d91a8c8e99de0d2f183590fd4efc6"
+    },
+    {
+      "path": "src/salience/acceptance/p1_external_evidence.py",
+      "sha256": "a5071907b7984d370be5221fa23458f13f02119e7adf9d0e53b9d9dd85833497"
     },
     {
       "path": "src/salience/agents/__init__.py",
@@ -519,6 +587,42 @@
       "sha256": "dbe40e450cda71a75bda21b5d7c1a553a2f61578f55ff46b4d2d8637337a9206"
     },
     {
+      "path": "src/salience/cycles/_production_recovery_alerts.py",
+      "sha256": "c56c00b684c3da6b8d6dc9bd85fceae8b13de9a7ed0fc3fe9bd777d06122edcf"
+    },
+    {
+      "path": "src/salience/cycles/_production_recovery_contracts.py",
+      "sha256": "481eaa0d78eb18318fbce057d1880b14e44564f22055b325d54f69c1703fa147"
+    },
+    {
+      "path": "src/salience/cycles/_production_recovery_control.py",
+      "sha256": "8f89e86fb17605d37447d83415ed2746581ffbcfd087e5cd3d1a7cf0494f3f3e"
+    },
+    {
+      "path": "src/salience/cycles/_production_recovery_coordinator.py",
+      "sha256": "6eb0230472667d62d0a04d0e2db8a9ba13f8f9c4a4f9f38e741a3ff05affb7a1"
+    },
+    {
+      "path": "src/salience/cycles/_production_recovery_work.py",
+      "sha256": "b0b849c796c30d1e69f4b4f34d836a05748fa5103f3a820483ae73e345e9adbe"
+    },
+    {
+      "path": "src/salience/cycles/_production_schedule_contracts.py",
+      "sha256": "1c1c1c9c50128b852ce2e13bc951d2f4b9752cb9c1c42535d683ed2de65f61e5"
+    },
+    {
+      "path": "src/salience/cycles/_production_schedule_core.py",
+      "sha256": "b6f8d76b1ebf1787a2723884169ead83a7cb30094b32e2a2c501c394306aefc6"
+    },
+    {
+      "path": "src/salience/cycles/_production_schedule_inventory.py",
+      "sha256": "380c5b4a5bae65dd51ce251a5079c07fb958071922e3f250f626928c258107fc"
+    },
+    {
+      "path": "src/salience/cycles/_production_schedule_target.py",
+      "sha256": "18b6c73fcde672e5f11512fb6d451dc93fe80bf3fb4a9ad5e61906214c50f989"
+    },
+    {
       "path": "src/salience/cycles/admission.py",
       "sha256": "49b6b21b888bb30fd025b5d88480dad30927a45d290874bd1e9273d6e2cb823a"
     },
@@ -579,12 +683,40 @@
       "sha256": "59a62f5672fb10886eb9795e3f4099e4308bfccc0db1ba245467ec1c5f8ef213"
     },
     {
+      "path": "src/salience/cycles/p1_recovery_rollback.py",
+      "sha256": "8bba6edc9f9d6069bfadcfb6c0f544bc85e74993e3173c733a74e9d454deef71"
+    },
+    {
+      "path": "src/salience/cycles/p1_recovery_rollback_fixtures.py",
+      "sha256": "a1efe4ca357d0042e798e811bc1fe2f1631f94e1bcf64e7307a317fac1034f6c"
+    },
+    {
       "path": "src/salience/cycles/production_dispatch.py",
-      "sha256": "7363f11366fb2ffa4561455508a9bef4552d5439220b574b8781895223a3eddf"
+      "sha256": "33fd64af0b73bbc5f09ce72f3ccbed3f8e880f871b4bf5cb0c6c1f3bacb384f3"
+    },
+    {
+      "path": "src/salience/cycles/production_intent_enrollment.py",
+      "sha256": "7fee0bbcdfbcfd1d993eb60dc7dc37c7341e28cb7962052e7c95781492cf19f0"
+    },
+    {
+      "path": "src/salience/cycles/production_recovery.py",
+      "sha256": "3b3f2d95ef90e004e34ba6396d05c956c0a239cd0ad5c7d232b75a6b7a54ed4e"
     },
     {
       "path": "src/salience/cycles/production_rollback_reader.py",
       "sha256": "44a5cfaea52b99f56907e4462a0fc8492a8d4687b3690a9bfa8127f9b49c8110"
+    },
+    {
+      "path": "src/salience/cycles/production_routing.py",
+      "sha256": "d58170dd919266e9abfba09d5ca8d3709904423105113307fc6072773af45276"
+    },
+    {
+      "path": "src/salience/cycles/production_schedule_control.py",
+      "sha256": "de801254c8cb03ac60e1fe70ce868f038de8a692a8a9d47bd9f369bd3905fb02"
+    },
+    {
+      "path": "src/salience/cycles/production_schedule_cutover.py",
+      "sha256": "0a054e71f153633b6292852e85d39d494f1692594616707ef9755d6b5a15a497"
     },
     {
       "path": "src/salience/cycles/publication_recovery.py",
@@ -592,7 +724,7 @@
     },
     {
       "path": "src/salience/cycles/publication_recovery_compatibility.py",
-      "sha256": "e19c8d8aa3c9ec24f6e2e70e572144e07fac45242a0d95315a67c196be6eec15"
+      "sha256": "359c43777084429ec88f6b39ab286d9033869f3f9dcf8593f0f1d542492a5a9a"
     },
     {
       "path": "src/salience/cycles/runtime.py",
@@ -604,7 +736,7 @@
     },
     {
       "path": "src/salience/cycles/schedule_cutover.py",
-      "sha256": "1604ef46201cf5d9cc45403ea7ee0fca81068f54b4259837cc67c09975aec7a3"
+      "sha256": "5300f2c55ccb36b660bb9ae3d85926dba3f31307cabfa32207c94b2a079166d0"
     },
     {
       "path": "src/salience/cycles/temporal_schedule_control.py",
@@ -919,8 +1051,12 @@
       "sha256": "6daccb988a15e105672e9519b1bf7d8239a2a48363b7be517b4fc2fd3b110cbf"
     },
     {
+      "path": "src/salience/workflows/temporal_readback.py",
+      "sha256": "5a283b9e35c3e65cd24308865a6a40c4f6668df832018beb160d642a4eafad04"
+    },
+    {
       "path": "src/salience/workflows/worker.py",
-      "sha256": "5acf9f8b4ce1595ce241245c1dcbdf84c3ad7cfe6d2fe1a7cd08853e8e73723c"
+      "sha256": "03135efa32b23527f0153e2efb4b36433ec6d8e5e797feb29cd1dfee7a139079"
     },
     {
       "path": "tests/conftest.py",
@@ -1148,7 +1284,7 @@
     },
     {
       "path": "tests/integration/test_durable_parallel_teams.py",
-      "sha256": "c3ff19a374fe2f486accf945355d91d5228a823d9bbf0ff68d35f964fcaa973f"
+      "sha256": "715b9e45cdd3afb49156e39893681f697f594869983d4a24218b07781581f535"
     },
     {
       "path": "tests/integration/test_fixture_publisher.py",
@@ -1188,7 +1324,19 @@
     },
     {
       "path": "tests/integration/test_p1_production_policy_revocation.py",
-      "sha256": "b16184881ebff23e5606488f69bcb86f90d381eca434862af662236ea4cb415a"
+      "sha256": "1b9ac2a1d10e62bdef4fb30406de54c7670bf49d8bb6fc9c8e3a8abf9fc5c7d6"
+    },
+    {
+      "path": "tests/integration/test_p1_production_recovery.py",
+      "sha256": "01cb6f0b9829a87399ea4fa9c7f1c0bdf4312449e09d15c6c05ce20ad0952629"
+    },
+    {
+      "path": "tests/integration/test_p1_production_routing.py",
+      "sha256": "6e55a9ac1f47e1ade5a4966c56ea28b6a6d72604bf8f6aa585807dd970d86c1d"
+    },
+    {
+      "path": "tests/integration/test_p1_production_schedule_fencing.py",
+      "sha256": "5f26aaaf7b748e79df340e56f28efd629995cdf000106d547caaef0d340b7731"
     },
     {
       "path": "tests/integration/test_publication_control_api.py",
@@ -1260,15 +1408,15 @@
     },
     {
       "path": "tests/integration/test_v4_legacy_creative.py",
-      "sha256": "742d3661aa874b30b52421686c4eb690bd53942951da133651c55a665a6c1b71"
+      "sha256": "959d17980efe65f3b0c6263a94bcca27ac8db797e0af1a08de6847e60c74d4b2"
     },
     {
       "path": "tests/integration/test_v4_legacy_dispatch.py",
-      "sha256": "4d08b7b9a008d075f9d0ba9ac4ac68e1b7c87c7929e9b4379a232890be093fc6"
+      "sha256": "1d0ac47b17f7400fcc3bf7466530055a999f74faecf2648aaa3922f2702db244"
     },
     {
       "path": "tests/integration/test_v4_legacy_dummy.py",
-      "sha256": "543e87bfbdef5e7635758c983153baa629ac13792a925edfc46473aa7fdc7a06"
+      "sha256": "0121587f98d4643647e2b6cf8c215601f0e7448527a6c5c6662b9c6870f57720"
     },
     {
       "path": "tests/integration/test_v4_legacy_publication.py",
@@ -1280,15 +1428,15 @@
     },
     {
       "path": "tests/integration/test_v4_migrations.py",
-      "sha256": "baf3b32f2c10c2bf4606d462854f27d5e5baec7cfaaed18f73fe9bf349f5315b"
+      "sha256": "469dfdba64d480e341957de82db490da6db4cff35745107cb6a14d9f46012ba0"
     },
     {
       "path": "tests/integration/test_v4_native_publication_schedules.py",
-      "sha256": "9cd0e4747b7c6b9272277b5d3ee8cdb9ae30d3d41ab6196822f346c35a3c4823"
+      "sha256": "ca695cf61287659a4c1e69ba2f0c908141dad2fe03f21ad8cf7441cf8758c1be"
     },
     {
       "path": "tests/integration/test_v4_native_schedules.py",
-      "sha256": "841ad097d57232e84562f0c641ea6460ee164544adfc5027f6e20c6fb7a60e44"
+      "sha256": "207f500bd212a72d0da2409de40852da802838bf9ab191138c247174e5dc56ae"
     },
     {
       "path": "tests/integration/test_v4_object_retention.py",
@@ -1308,7 +1456,7 @@
     },
     {
       "path": "tests/integration/test_v4_publication_recovery_floor.py",
-      "sha256": "03236fecdd8c227efd24802bd9003fdaea27ba86ed0059503eeed458c728ef4b"
+      "sha256": "225a737718d5ef6e1289afc1643b55f3392d362337b5b53082fd602a53defa9a"
     },
     {
       "path": "tests/integration/test_v4_publication_recovery_holds.py",
@@ -1316,7 +1464,7 @@
     },
     {
       "path": "tests/integration/test_v4_runtime_waits.py",
-      "sha256": "cf2105eb0abe3c4159aae8298d54ee9424321195e19ca3798992d7067cb46061"
+      "sha256": "801037309d46df5a301522eaa5b91f0aca4ac04530150d447156b1fd927f929d"
     },
     {
       "path": "tests/integration/test_v4_s3_service.py",
@@ -1361,6 +1509,10 @@
     {
       "path": "tests/scripts/test_verify_phase_9_cleanup.sh",
       "sha256": "c3b5eb957369bf33483a804e5753d03380431bc35b501ef0ad379beb24cc3225"
+    },
+    {
+      "path": "tests/support/production_route_authority.py",
+      "sha256": "5ddf7a20f2db1617305846f5c02dd200b3eb769d52a28f8411bc26bb7f8509a5"
     },
     {
       "path": "tests/test_config.py",
@@ -1439,6 +1591,10 @@
       "sha256": "49e5a626443f2a2803a90bc4a2975478ab6865802b8ae224f7be513cc796fc57"
     },
     {
+      "path": "tests/unit/test_p1_external_acceptance.py",
+      "sha256": "30f4cbf5efe04677cf30ee39227814f10fcb95eddf8b610544ee614a0ba8b354"
+    },
+    {
       "path": "tests/unit/test_parallel_agent_teams.py",
       "sha256": "624a17233b4989d79864fea68b99d340b9c3470a2dad2cb98017651086c0d26b"
     },
@@ -1449,6 +1605,10 @@
     {
       "path": "tests/unit/test_production_policy.py",
       "sha256": "c1bf81ce5194c4b1c17ab44fdf994dfb7485dd8cd038c1944deb5e9456f31d95"
+    },
+    {
+      "path": "tests/unit/test_production_routing.py",
+      "sha256": "4a6044264506e42e8e6df1c8c2032b683c3b84ba15e20451ebe60990b24d2f04"
     },
     {
       "path": "tests/unit/test_publication_contracts.py",
@@ -1507,8 +1667,8 @@
       "sha256": "7f76114852b4b9d95b3517c49718ccf2e007d64d442a1b4e05ef696dd37a8bbc"
     }
   ],
-  "reviewed_at": "2026-10-27T17:36:40Z",
-  "review_scope": "Current local content lock for application/source candidate ec12763e38143f52f1af2661e00932158982f11a: 369 files under src, tests, migrations, and scripts plus seven deployment/dependency/build-context files. The fixture qualification result remains separately bound to the sanitized verifier log recorded in the P1 evidence report. This lock does not imply a built artifact, independent review, current exact-head CI, or production acceptance; production remains disabled, RG0/full RG1 are HELD, and P2 is BLOCKED.",
+  "reviewed_at": "2026-10-29T01:49:35Z",
+  "review_scope": "Active local source lock for exact Task 13 source candidate 8d26aa15ef8d6bf7c9248bdd1899cf01a352cb2a, tree 435f7b6cea818c96790e890da9485ce08fd18ac6: 409 files under src, tests, migrations, and scripts plus the seven established boundary files. It binds repository bytes and path coverage only. Development artifact identity and local test results are recorded in the Task 13 evidence reports; external trust, independent review, exact-head CI, production target qualification, and acceptance remain outstanding. Production effects remain disabled, RG0/full RG1 remain HELD, and P2 remains BLOCKED.",
   "historical_task_10_lock": {
     "baseline_commit": "14801007310232f59708566ca9a3eefb80bfea87",
     "application_commit": "5cb57910c2c6dc2f6ea37da75640c5c947c8907b",
@@ -1516,7 +1676,7 @@
     "file_count": 360,
     "meaning": "Retained Task 10 source inventory; historical contents remain available in the original committed evidence lock."
   },
-  "application_commit": "ec12763e38143f52f1af2661e00932158982f11a",
+  "application_commit": "8d26aa15ef8d6bf7c9248bdd1899cf01a352cb2a",
   "superseded_0043_386d4bc_lock": {
     "baseline_commit": "386d4bc7cc5acb794858d3c3c14400a0659a83ef",
     "application_commit": "386d4bc7cc5acb794858d3c3c14400a0659a83ef",

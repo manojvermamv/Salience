@@ -1,7 +1,7 @@
 # P1 Remaining Production Development — Final Evidence Report
 
 
-> **Current authoritative refresh:** the exact-candidate evidence now binds source `b4865d115c225c828e54777024f1de726fa4cd86` / tree `2d34ef60e603eda8582aabc18ed21284e961d1b3` to artifact commit `3c62a4f01e974d97225100bb2afc3a3665ef601d` / tree `512aaa7046232973e6725c3e10de2c721aef06ca`. The complete current result is recorded in the **Exact-candidate refresh** section below. Earlier Task 11 results remain historical and are superseded for current-candidate claims.
+> **Current authoritative refresh:** the exact-candidate evidence binds source `8d26aa15ef8d6bf7c9248bdd1899cf01a352cb2a` / tree `435f7b6cea818c96790e890da9485ce08fd18ac6` to artifact commit `e805c277577da8491dca51933dadb5c36acc805b` / tree `2e7213cf989f8b7dcfd489afb076be54c4858a8b`. Task 11 records below remain historical; see [`task-13-report.md`](task-13-report.md) for current exact-candidate results.
 
 Date: 2026-10-28
 
@@ -273,5 +273,13 @@ It returned the required exit 1 with `structural_status: VALID`, `disposition: N
 The EXIT cleanup trap returned 0 and removed the exact Compose project's containers, Postgres volume, and network; follow-up counts were zero containers, zero volumes, and zero networks. The temporary image-build container and image were also removed by exact name. No prune command ran, and shared host images or other Compose projects were left untouched. Production effects stayed disabled; no provider, production database, remote schedule, alert destination, RG0/RG1 procedure, push, or merge was used. This is local synthetic development evidence, not external qualification.
 
 A machine-readable scoped consistency check found all source/artifact/route fields in the package consistent with the generated lock and all external rows/gates still held. Independent scoped rereview is pending the parent agent; this report does not claim that a self-check is independent review.
+
+## Task 13 exact-candidate refresh — 2026-10-29
+
+The current local candidate binds source `8d26aa15ef8d6bf7c9248bdd1899cf01a352cb2a` / tree `435f7b6cea818c96790e890da9485ce08fd18ac6` to artifact commit `e805c277577da8491dca51933dadb5c36acc805b` / tree `2e7213cf989f8b7dcfd489afb076be54c4858a8b`. Two wheel builds match at SHA-256 `267c793ea403f79fe35bcb5f6a33edca32d5affa0dcf41d14eb633ef47cddc6a`; the local development image digest is `24ff7e27e99cb978307bf0b16390749536a29ad30fe36bc47150de67ac61e13d`; the v2 lock JSON and companion content SHA-256 is `c788d439807855822b3e23091545f31109c333fab79fcca319c4ca9c71c26ab1`. The v1 lock remains byte-identical.
+
+The seven focused non-live groups passed with counts 34, 39, 51, 54, 4, 133, and 45. The one full non-live run passed 1,150, skipped 26 absent Task 8 candidate fixtures, and produced 3 Alembic deprecation warnings in 2,414.18 seconds. The synthetic package checker returned its expected exit 1 with `VALID` / `NO_GO` / `UNCHANGED` for 22 rows that remain `NOT RUN`. Production effects are disabled, RG0/full RG1 remain `HELD`, and P2 remains `BLOCKED`; no external acceptance is claimed.
+
+The active source lock now covers 416 paths: 409 application/source paths plus the seven established boundary files. The normal and self-test documentation checker modes pass; remaining documentation/static check outputs, exact commands, hashes, and cleanup details are in [`task-13-report.md`](task-13-report.md). The unique local Compose cleanup found zero project resources. No push or merge occurred; final independent reviews remain controller-owned.
 
 The current documentation metadata was reconciled after the initial `docs/v4/test_checks.py` run found a 291-versus-300 artifact inventory mismatch and a stale progress digest in the append-only review wrapper. The refreshed active audit covers 300 documentation artifacts and 125 Markdown files; the contract now passes 25/25. Compileall, all five documentation shell contracts, Archify validation, and `git diff --check` passed. `docs/v4/check.py --self-test` and its normal mode each returned 1 because the preserved application evidence lock has 376 evidence files against 360 inventory entries and predates the exact source candidate's changes/additions. No frozen historical application inventory was rewritten. The detailed commands, exits, durations, and distinction between current metadata and frozen evidence are recorded in [`task-11-report.md`](task-11-report.md).

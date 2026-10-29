@@ -1,7 +1,7 @@
 # Task 11 report — exact-candidate development acceptance
 
 
-> **Current authoritative refresh:** the exact-candidate evidence now binds source `b4865d115c225c828e54777024f1de726fa4cd86` / tree `2d34ef60e603eda8582aabc18ed21284e961d1b3` to artifact commit `3c62a4f01e974d97225100bb2afc3a3665ef601d` / tree `512aaa7046232973e6725c3e10de2c721aef06ca`. The complete current result is recorded in the **Exact-candidate refresh** section below. Earlier Task 11 results remain historical and are superseded for current-candidate claims.
+> **Superseded by Task 13:** the latest exact-candidate evidence binds source `8d26aa15ef8d6bf7c9248bdd1899cf01a352cb2a` / tree `435f7b6cea818c96790e890da9485ce08fd18ac6` to artifact commit `e805c277577da8491dca51933dadb5c36acc805b` / tree `2e7213cf989f8b7dcfd489afb076be54c4858a8b`. Task 11 records below remain historical; see [`task-13-report.md`](task-13-report.md) for complete current evidence.
 
 Date: 2026-10-28
 
@@ -296,3 +296,13 @@ After the planned checks, a collection-only probe was attempted to inspect the r
 ```
 
 It exited 3 before collection. The repository's `tests/conftest.py::pytest_sessionstart` starts the default Compose project whenever either `TEST_DATABASE_URL` or `TEST_TEMPORAL_TARGET` is absent; because this probe did not provide those test variables, it invoked `docker compose up -d postgres temporal` for project `salience`, then Alembic failed while importing `salience` (`ModuleNotFoundError`) before any database connection. Compose reported both services as already running. Read-only inspection afterward showed containers created at 2026-10-28T02:07Z, Postgres started at 02:07Z, Temporal started at 05:29Z, and restart counts of zero, all predating this probe. No migration or database connection occurred, no stop/restart/prune command ran, and the required unique Task 11 Compose project had already been removed. This probe was not part of the candidate test results and is recorded here as a harness limitation.
+
+## Task 13 exact-candidate refresh — source `8d26aa1`, artifact `e805c27`
+
+Task 13 supersedes the preceding Task 11 candidate for current-source claims. Exact source is `8d26aa15ef8d6bf7c9248bdd1899cf01a352cb2a` / tree `435f7b6cea818c96790e890da9485ce08fd18ac6`; the generated-artifact commit measured by every test is `e805c277577da8491dca51933dadb5c36acc805b` / tree `2e7213cf989f8b7dcfd489afb076be54c4858a8b`.
+
+- Two independent wheel builds were byte-identical at SHA-256 `267c793ea403f79fe35bcb5f6a33edca32d5affa0dcf41d14eb633ef47cddc6a` (455,511 bytes). The development image digest is `24ff7e27e99cb978307bf0b16390749536a29ad30fe36bc47150de67ac61e13d`; source-manifest digest is `b1834357f140bef0a855c096eb4b8d5e4b2acc38862d911af4e440d1da743c15`. The v2 lock JSON/companion content SHA-256 is `c788d439807855822b3e23091545f31109c333fab79fcca319c4ca9c71c26ab1`; v1 remains byte-identical at `1c8ac4ff92e589e27dc0af2c6dd0bc69c4295435df5a318174a2c77f3b1f2c9c`.
+- Focused groups passed serially: route/launcher 34; migrations 0047–0051 39 (88 deselected); schedule/native 51; complete recovery/alerts 54; rollback-v2 handoff 4; policy/revocation 133; external-acceptance checker unit suite 45. The single full non-live suite passed 1,150, skipped 26 documented absent Task 8 fixtures, and produced 3 Alembic deprecation warnings in 2,414.18 seconds. The full suite ran once, with no rerun.
+- Synthetic package digest is `ef310caaa0653e14629d3e87cc72f1e29cdffa7edb52e03263a02a819cf2181d`; manifest SHA-256 is `d9a2f2054b408f8d206bca05b2b226e9c31cd4374e43013704c4ccfc6cb29b84`. Its 22 rows remain `NOT RUN`, identities are synthetic and unverified, effects are disabled, final audit remains `NOT RUN`, and disposition remains `NO_GO`. The acceptance checker returned its expected exit 1 with `VALID` / `NO_GO` / `UNCHANGED`.
+- The active `docs/v4/evidence-lock.json` now covers 409 current files under `src`, `tests`, `migrations`, and `scripts` plus the seven established boundary files (416 total), preserving nested historical lock data. Both normal and self-test checker modes pass. Exact commands, results, active-lock digest, and limits are in [`task-13-report.md`](task-13-report.md).
+- The unique local Compose project was removed with zero remaining containers, volumes, and networks. No external target, provider, production database, push, or merge was used. RG0/full RG1 remain HELD; P2 remains BLOCKED; independent review remains controller-owned.
