@@ -23,3 +23,20 @@ Endpoint threading is explicit and no mutable instance state is added. `describe
 Existing safety and timeout behavior is preserved in the diff. The plan, preflight, operation, cleanup, Temporal describe, and update timeout constants are unchanged. The close-before-cancel implementation and named task lifecycle are unchanged. The only added connection behavior is the pinned endpoint. Describe retries remain limited to `DEADLINE_EXCEEDED` read-only describes; pause is still called once and is followed by readback; resume still makes one update call, without adding an application retry loop. The tests’ updated private-method fakes accept/pass `endpoint`, including the existing deadline, cancellation, and preflight-fence cases (`tests/unit/test_temporal_schedule_readback.py:327-354`, `:403-481`, `:484-531`, `:624-757`, `:760-794`).
 
 The commit changes only `src/salience/cycles/temporal_schedule_control.py` and `tests/unit/test_temporal_schedule_readback.py`, matching the implementation scope; no unrelated source or evidence files are touched.
+
+## Fix-loop rereview: commit `8c31e84`
+
+**Compared:** `8c31e84c9d71d0043b1ca736d9bc4db05cfeee7d` against parent `843d95346090f278721deb8c3299628b1293996d`, with the original Task25 requirements, the independent rereview, and updated implementation report.
+
+**Spec: PASS**
+**Quality: PASS — CLEAN**
+**Findings: 0 Critical / 0 Important / 0 Minor**
+
+Both Important findings from the rereview are resolved in the inspected source and tests.
+
+- `_pin()` now normalizes `hostaddr == ""` to `None` only when the captured host is a slash-prefixed Unix-socket path (`src/salience/cycles/temporal_schedule_control.py:71-79`). Empty or invalid addresses for TCP hosts still reach `ipaddress.ip_address()` and fail closed (`:99-106`). The capture test models the driver's empty-string value for a Unix socket and verifies the normalized endpoint (`tests/unit/test_temporal_schedule_readback.py:274-301`); another public `describe()` regression traverses pin, normalization, and plan connect using that driver-shaped value (`:411-475`).
+- `_DatabaseEndpoint` now includes the active port. `_pin()` captures `connection.info.port` while the connection is open (`src/salience/cycles/temporal_schedule_control.py:50-79`); `_plan_async()` validates that it is an integer in the valid TCP port range, explicitly rejects bools, and overrides the original port list with the selected scalar port (`:88-123`). The multi-host test sends the actual merged conninfo through psycopg's parser and checks that the single attempt has the selected host, numeric address, and `5433` port, while retaining `sslmode=verify-full`, `application_name`, and `target_session_attrs` (`tests/unit/test_temporal_schedule_readback.py:143-215`). The preserved hostname supports TLS identity verification; `hostaddr` bypasses hostname resolution.
+
+All public/timed plan paths continue to receive explicit per-operation endpoints: describe, both pause verifications, resume's preflight, the second pin for remote resume, and every resume verification/read (`src/salience/cycles/temporal_schedule_control.py:270-356`). Resume still runs preflight before `super().resume_after()` and therefore before local rollback mutation. The update and pause calls remain single application calls; the fix adds no retry. Endpoint validation errors remain generic and the added tests check that invalid host addresses and ports do not reach async connect or expose the DSN/password (`tests/unit/test_temporal_schedule_readback.py:304-409`).
+
+The fix is confined to the production endpoint handling and its unit tests. The updated report records focused and full readback-unit results; they were not rerun during this read-only rereview. No tests, builds, Docker commands, network access, or external services were used for this rereview.

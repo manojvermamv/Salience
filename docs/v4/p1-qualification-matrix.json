@@ -3,7 +3,7 @@
   "requirements": [
     {
       "id": "R02",
-      "requirement": "§1: deterministic activities, compatible workflow upgrades and bounded histories",
+      "requirement": "\u00a71: deterministic activities, compatible workflow upgrades and bounded histories",
       "phase": "P1",
       "dependencies": "P0,R01",
       "acceptance": "Replay captured old histories on compatible worker; external I/O absent from coordinator; Continue-As-New preserves cycle/context/operation and finite history limits.",
@@ -67,7 +67,7 @@
     },
     {
       "id": "R03",
-      "requirement": "§1: atomic business transition/outbox, acknowledged ordered delivery and deduplication",
+      "requirement": "\u00a71: atomic business transition/outbox, acknowledged ordered delivery and deduplication",
       "phase": "P1",
       "dependencies": "P0,R01",
       "acceptance": "Local test_v4_outbox, test_v4_auto_dispatch and test_v4_outbox_recovery prove atomic enqueue, ordered bounded fixture dispatch, final-attempt escalation, consumer-ack loss, killed-worker restart and deduplication; item-5a public fixture admission/closure uses the same outbox, and item-5c cutover poll reuses it without a direct Temporal start. Root-qualified isolated publication start/outbox plus original native publication schedule resumed ingress are recorded in legacy-publication-evidence.json; production dispatch and live legacy routing remain unqualified.",
@@ -77,7 +77,7 @@
       "local_verifier_status": "PASS; covers implemented local fixtures, not unimplemented production acceptance",
       "independent_review_status": "PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE; production acceptance remains HELD",
       "production_release_status": "HELD",
-      "remaining_acceptance": "Production routing/worker ownership, live schedule inventory/fencing, scoped remote reconciliation, and complete RG1 acceptance remain unqualified. The corrected-publication rereview applies only to historical application A4/d031172; 7878208 is the earlier Task 1–8 application candidate, while this audit separately freezes local application 182c4e4 and audit source 7c1ddcd.",
+      "remaining_acceptance": "Production routing/worker ownership, live schedule inventory/fencing, scoped remote reconciliation, and complete RG1 acceptance remain unqualified. The corrected-publication rereview applies only to historical application A4/d031172; 7878208 is the earlier Task 1\u20138 application candidate, while this audit separately freezes local application 182c4e4 and audit source 7c1ddcd.",
       "independent_review_evidence": [
         "docs/v4/item7-runtime-review.json"
       ],
@@ -172,10 +172,10 @@
     },
     {
       "id": "R05",
-      "requirement": "§2: versioned GoalSpec, complete scope/metric/cadence/budget/stop fields and approved baseline",
+      "requirement": "\u00a72: versioned GoalSpec, complete scope/metric/cadence/budget/stop fields and approved baseline",
       "phase": "P1",
       "dependencies": "P0,R01",
-      "acceptance": "Local revision/baseline and test_v4_cadence_policy prove V2 program/account/channel/policy/resource/stop envelopes, exact retries, explicit fixture approval and no implicit trial; test_v4_cycle_accounting adds immutable V3 allocation policy and fixture G0 caps; items 5a–5b verify exact signed goal creation, revision/state and baseline revocation; production baseline qualification remains required. The isolated publication extension binds a fixture account to the approved goal revision/baseline and rechecks exact account scope/current native authorization; general registry and production baseline eligibility remain required.",
+      "acceptance": "Local revision/baseline and test_v4_cadence_policy prove V2 program/account/channel/policy/resource/stop envelopes, exact retries, explicit fixture approval and no implicit trial; test_v4_cycle_accounting adds immutable V3 allocation policy and fixture G0 caps; items 5a\u20135b verify exact signed goal creation, revision/state and baseline revocation; production baseline qualification remains required. The isolated publication extension binds a fixture account to the approved goal revision/baseline and rechecks exact account scope/current native authorization; general registry and production baseline eligibility remain required.",
       "migration_rollback": "M1: new revisions, no authority inferred from program rows; disable new goals on rollback.",
       "gate": "RG1",
       "executed_verifier_cases": 97,
@@ -238,7 +238,7 @@
     },
     {
       "id": "R06",
-      "requirement": "§2: stable CycleIntent/cycle ID, slots and manual/event idempotency across revisions",
+      "requirement": "\u00a72: stable CycleIntent/cycle ID, slots and manual/event idempotency across revisions",
       "phase": "P1",
       "dependencies": "R03,R05",
       "acceptance": "Local cadence tests prove concurrent manual/event/scheduled coalescing, bounded source-event identity, stable cross-revision/interval retries and crash rollback; V1/V2 worker-kill replay preserves canonical IDs. Items 5a/5c signed requests and scoped schedule cutover preserve one intent/cycle/context/outbox across competing origins and restart; actual original native publication schedule conversion and resumed canonical outbox ingress are locally qualified in the effects-disabled fixture; production conversion remains gated. Actual resumed publication ticks preserve the distinct original job/publication schedule identities and atomically commit one canonical outbox operation under the original goal/cycle/context.",
@@ -337,7 +337,7 @@
     },
     {
       "id": "R07",
-      "requirement": "§2: single G0 checks scope, goal, freshness/due time, overlap, capacity, quota, budget and trial eligibility",
+      "requirement": "\u00a72: single G0 checks scope, goal, freshness/due time, overlap, capacity, quota, budget and trial eligibility",
       "phase": "P1",
       "dependencies": "R05,R06",
       "acceptance": "Local cadence/admission races enforce current scope, G0 freshness, due time, overlap, current-revision pending caps, quota and review without duplicate cycles. Fixture G0 canonical allocations add scoped period/currency caps; item-5a public and item-5c fixture-auto admission invoke this same gate after a committed schedule batch, with crash recovery but no stage-start bypass. Production and trial eligibility remain later gates.",
@@ -393,7 +393,7 @@
     },
     {
       "id": "R08",
-      "requirement": "§2: bounded overlap/catch-up/stale/backfill policies and independent cadence",
+      "requirement": "\u00a72: bounded overlap/catch-up/stale/backfill policies and independent cadence",
       "phase": "P1",
       "dependencies": "R07",
       "acceptance": "Local cadence tests prove bounded skip/latest/catch-up, stale-slot denial, scoped reviewed backfill, overlap and capacity-aware coalescing. Item-5c opt-in independent fixture poller uses a durable first-V4 watermark, pause/readback and rollback fence; original native intelligence and paired governed-publication schedules now have separate root-qualified no-effects SDK conversion/rollback reports; production inventory, routing, fencing and observation-independent execution remain required.",
@@ -467,7 +467,7 @@
     },
     {
       "id": "R09",
-      "requirement": "§2: strategic defer/abstain closes cycle; pre-admission deferral and recovery retain their own identities",
+      "requirement": "\u00a72: strategic defer/abstain closes cycle; pre-admission deferral and recovery retain their own identities",
       "phase": "P1",
       "dependencies": "R07,R08",
       "acceptance": "test_v4_cycle_admission proves pre-admission wake reuses intent without an earlier cycle, retry/reconcile retains cycle/operation, and strategic closure needs an authorized coalesced successor; item-6 real Temporal timers and PostgreSQL tests exercise all three identities through restart and finite expiry; production qualification remains required.",
@@ -522,7 +522,7 @@
     },
     {
       "id": "R10",
-      "requirement": "§3: authoritative immutable context resolved after admission and before affected work",
+      "requirement": "\u00a73: authoritative immutable context resolved after admission and before affected work",
       "phase": "P1",
       "dependencies": "R07",
       "acceptance": "Local V2 tests validate typed immutable RunContext with canonical scope/IDs, current grant snapshot, approved bundle, trace/lineage, evidence cutoff and resource deadline; no assignment or fallback. Full candidate/plan and effect integration remain gated.",
@@ -595,10 +595,10 @@
     },
     {
       "id": "R13",
-      "requirement": "§3: current revocation constrains pinned context; revisions invalidate approvals",
+      "requirement": "\u00a73: current revocation constrains pinned context; revisions invalidate approvals",
       "phase": "P1",
       "dependencies": "R10",
-      "acceptance": "Local V2 non-owner/race tests serialize grant and program revocation, pin current authority, reject stale/expired recovery and hold consumption without rewriting context; item-3 fixture permits/reviews recheck current authority, baseline and frozen binding. Items 5a–5c signed public fixture commands and restricted non-owner roles recheck separate current schedule/review grants without authority UPDATE privilege; a revoked cutover actor auto-polls nothing. Full version revocation remains required.",
+      "acceptance": "Local V2 non-owner/race tests serialize grant and program revocation, pin current authority, reject stale/expired recovery and hold consumption without rewriting context; item-3 fixture permits/reviews recheck current authority, baseline and frozen binding. Items 5a\u20135c signed public fixture commands and restricted non-owner roles recheck separate current schedule/review grants without authority UPDATE privilege; a revoked cutover actor auto-polls nothing. Full version revocation remains required.",
       "migration_rollback": "M1: append linked revisions/invalidations; do not restore revoked approval on rollback.",
       "gate": "RG1",
       "executed_verifier_cases": 123,
@@ -667,7 +667,7 @@
     },
     {
       "id": "R15",
-      "requirement": "§4: one versioned policy model, exact approval purpose/effect/artifact/account/expiry binding",
+      "requirement": "\u00a74: one versioned policy model, exact approval purpose/effect/artifact/account/expiry binding",
       "phase": "P1",
       "dependencies": "P0,R05",
       "acceptance": "Item-3 fixture review DTO and item-5b signed review route reject wrong context/operation/hash/account/purpose/version/expiry and store immutable decisions; a general versioned policy model, LLM-text denial and production effect gates remain to be qualified. The publication fixture path also revalidates native profile, disclosure, policy, rights, approval, exact account and zero budget at bind/intake/activity/reconciliation boundaries; this is not a general policy model or production effect gate.",
@@ -749,7 +749,7 @@
     },
     {
       "id": "R17",
-      "requirement": "§4: atomically claim one bounded dispatch permit with serialized stop/revocation",
+      "requirement": "\u00a74: atomically claim one bounded dispatch permit with serialized stop/revocation",
       "phase": "P1",
       "dependencies": "R03,R15",
       "acceptance": "Item-3 PostgreSQL races prove stop-before-claim denial and one claim-before-stop send authority; item-4 mock adapter invokes only after the true claim, never on duplicate activity or uncertain outcome. V3 liability changes share the claim transaction; actual providers remain gated.",
@@ -837,10 +837,10 @@
     },
     {
       "id": "R18",
-      "requirement": "§4: emergency stop and policy outage fail closed; independent read reconciliation allowed only with scope",
+      "requirement": "\u00a74: emergency stop and policy outage fail closed; independent read reconciliation allowed only with scope",
       "phase": "P1",
       "dependencies": "R17",
-      "acceptance": "Item-3 workspace/goal stop and item-5b signed stop commands deny new fixture claims/recovery under revoked authority; unavailable authority DB issues no permit. Item-5c fixture activation, auto poll and legacy resume hold on current stop; production live-scheduler cancellation and production remote read-only reconciliation remain unqualified. The isolated publication fixture permits receipt readback after permit expiry only under a separate exact account reconciliation grant, only for an immutable already-accepted receipt, and then holds for typed recovery; no second submit, blind status progression or fabricated close-race projection is authorized. Task 1–8 and Task 10 additionally qualify immutable durable hold creation/replay, both-reason read-only pre-restart verification and preserved liabilities in the local fixture; production-wide revocation and live schedule fencing remain unqualified.",
+      "acceptance": "Item-3 workspace/goal stop and item-5b signed stop commands deny new fixture claims/recovery under revoked authority; unavailable authority DB issues no permit. Item-5c fixture activation, auto poll and legacy resume hold on current stop; production live-scheduler cancellation and production remote read-only reconciliation remain unqualified. The isolated publication fixture permits receipt readback after permit expiry only under a separate exact account reconciliation grant, only for an immutable already-accepted receipt, and then holds for typed recovery; no second submit, blind status progression or fabricated close-race projection is authorized. Task 1\u20138 and Task 10 additionally qualify immutable durable hold creation/replay, both-reason read-only pre-restart verification and preserved liabilities in the local fixture; production-wide revocation and live schedule fencing remain unqualified.",
       "migration_rollback": "M1: stop revision persists across restart/rollback; renewed authority required to resume.",
       "gate": "RG1",
       "executed_verifier_cases": 76,
@@ -964,10 +964,10 @@
     },
     {
       "id": "R32",
-      "requirement": "§6: typed recovery states/actions, failure records, ownership and limits",
+      "requirement": "\u00a76: typed recovery states/actions, failure records, ownership and limits",
       "phase": "P1",
       "dependencies": "R03,R15",
-      "acceptance": "Item-3 fixture cases and item-5b scoped signed case commands persist retry_due/reconciling/rework_due/awaiting_review/suspended/terminal/resolved with owner, deadline and bounded actions; reconciliation/rework cannot masquerade as retry, and pre-admission review targets the same intent. Item-6 fixture timers suspend existing cases at bounded deadlines; production recovery workers remain required. Expired publication permits with no durable receipt deny before provider readback; exact accepted receipts can be read back only under the separately scoped account grant and then remain held for typed recovery. Task 1–8 and Task 10 additionally qualify durable publication recovery-hold ownership, exact replay, crash recovery and two-reason read-only verification plus the Task 10 retained-wheel actual-image rehearsal in local fixtures; production recovery workers and external delivery remain unqualified.",
+      "acceptance": "Item-3 fixture cases and item-5b scoped signed case commands persist retry_due/reconciling/rework_due/awaiting_review/suspended/terminal/resolved with owner, deadline and bounded actions; reconciliation/rework cannot masquerade as retry, and pre-admission review targets the same intent. Item-6 fixture timers suspend existing cases at bounded deadlines; production recovery workers remain required. Expired publication permits with no durable receipt deny before provider readback; exact accepted receipts can be read back only under the separately scoped account grant and then remain held for typed recovery. Task 1\u20138 and Task 10 additionally qualify durable publication recovery-hold ownership, exact replay, crash recovery and two-reason read-only verification plus the Task 10 retained-wheel actual-image rehearsal in local fixtures; production recovery workers and external delivery remain unqualified.",
       "migration_rollback": "M1: cases reference existing identities; terminal cases stay closed on rollback.",
       "gate": "RG1",
       "executed_verifier_cases": 81,
@@ -1030,7 +1030,7 @@
     },
     {
       "id": "R33",
-      "requirement": "§6: exact idempotent resume command and current stage reauthorization",
+      "requirement": "\u00a76: exact idempotent resume command and current stage reauthorization",
       "phase": "P1",
       "dependencies": "R17,R32",
       "acceptance": "Item-3 command CAS and item-5b signed resume route reject stale case/context/operation and resumes only the original intent revision or cycle/operation, with case state and recovery outbox atomic under injected crash; delivery and stage-specific production gate remain required.",
@@ -1070,7 +1070,7 @@
     },
     {
       "id": "R34",
-      "requirement": "§6: authorized bound review with expiry, deduplicated notification/ack/escalation",
+      "requirement": "\u00a76: authorized bound review with expiry, deduplicated notification/ack/escalation",
       "phase": "P1",
       "dependencies": "R32,R33",
       "acceptance": "Item-3 owner/scope/revision/artifact binding and item-5b signed review/ack parity, immutable decision, deadline escalation and deduplicated acknowledgment pass PostgreSQL tests; item-6 durable fixture timers, deduplicated database notification acceptance and process-crash redelivery are qualified separately; external alert delivery remains required.",
@@ -1110,7 +1110,7 @@
     },
     {
       "id": "R35",
-      "requirement": "§6: durable idempotent archive with reason/evidence/retention and no implicit reuse",
+      "requirement": "\u00a76: durable idempotent archive with reason/evidence/retention and no implicit reuse",
       "phase": "P1",
       "dependencies": "R32",
       "acceptance": "Item-3 archive and item-5b signed archive route reject pre-disposition calls, deduplicates committed reason/evidence/retention and preserves immutable history; rights-filtered discovery and later record families remain to qualify.",
@@ -1155,17 +1155,17 @@
     },
     {
       "id": "R53",
-      "requirement": "§10: schema envelope, unique business/events, superseding correction and audited mutable pointers",
+      "requirement": "\u00a710: schema envelope, unique business/events, superseding correction and audited mutable pointers",
       "phase": "P1",
       "dependencies": "P0,R03",
-      "acceptance": "Local V2/V3 DTO/SQL tests enforce immutable context and accounting receipts; migrations 0026–0034 add scoped stop/permit/case, cutover-transition and runtime-wait guards, unique dead-letter/fixture-acceptance events, immutable goal-create/state/runtime-hold/notification receipts and canonical delivery scope and populated rollback refusal. Later record families still require envelope tests. M0040 adds immutable publication stage/account/receipt guards and M0041 adds separate immutable original native publication schedule source/progress/plan guards; empty downgrade preserves prior guards and populated history refuses destructive rollback.",
+      "acceptance": "Local V2/V3 DTO/SQL tests enforce immutable context and accounting receipts; migrations 0026\u20130034 add scoped stop/permit/case, cutover-transition and runtime-wait guards, unique dead-letter/fixture-acceptance events, immutable goal-create/state/runtime-hold/notification receipts and canonical delivery scope and populated rollback refusal. Later record families still require envelope tests. M0040 adds immutable publication stage/account/receipt guards and M0041 adds separate immutable original native publication schedule source/progress/plan guards; empty downgrade preserves prior guards and populated history refuses destructive rollback.",
       "migration_rollback": "M1: additive common envelope and exact-match migration; never invent historical scope.",
       "gate": "RG1",
       "executed_verifier_cases": 146,
       "local_verifier_status": "PASS; covers implemented local fixtures, not unimplemented production acceptance",
       "independent_review_status": "PASS_IMPLEMENTED_LOCAL_FIXTURE_SCOPE; production acceptance remains HELD",
       "production_release_status": "HELD",
-      "remaining_acceptance": "Current P1 envelopes, immutable state/other command receipts, canonical delivery scope and additive 0032–0034 ownership/rollback guards are independently reviewed and locally tested; later record families require envelope tests in their assigned phases.",
+      "remaining_acceptance": "Current P1 envelopes, immutable state/other command receipts, canonical delivery scope and additive 0032\u20130034 ownership/rollback guards are independently reviewed and locally tested; later record families require envelope tests in their assigned phases.",
       "independent_review_evidence": [
         "docs/v4/item7-admission-review.json",
         "docs/v4/item7-governance-review.json",
@@ -1620,7 +1620,7 @@
     "focused_tests": 21,
     "full_non_live_tests": 604,
     "source_files": 352,
-    "status": "HISTORICAL_A4 fixture qualification; 21 focused / 604 full non-live / 352 source hashes. Corrected-publication rereview completed only for A4/d031172; it predates the historical Task 1–8 application candidate 7878208 and the later local application candidate 182c4e4, and does not review either candidate. The initial residual audit separately uses source 7c1ddcd. RG0/RG1 HELD.",
+    "status": "HISTORICAL_A4 fixture qualification; 21 focused / 604 full non-live / 352 source hashes. Corrected-publication rereview completed only for A4/d031172; it predates the historical Task 1\u20138 application candidate 7878208 and the later local application candidate 182c4e4, and does not review either candidate. The initial residual audit separately uses source 7c1ddcd. RG0/RG1 HELD.",
     "qualified_application_commit": "a4b2368cdb463939d093020224a5b5667392aee6",
     "source_lock_sha256": "a972dfadd0f72bdf86c52969a55c94c2fa17ff29a07b4cf8c8d21ff9dc55b08c",
     "base_commit": "5683cfab4a3a8f20cb83506de5debb0b5692f010",
@@ -1700,7 +1700,7 @@
     "qualification_report": ".superpowers/sdd/2026-10-13-p1-publication-recovery-floor-repair/task-8-report.md",
     "qualification_results": "Exact-candidate command outcomes are recorded in the referenced Task 8 report. This pin record does not transfer counts from Task 10, 9e4f2aa, 7878208, or superseded artifact builds."
   },
-  "superseded_386d_qualified_application_commit_scope": "Task 10 local fixture results remain historical at 5cb5791; Task 11 found floor/evidence gaps, so that candidate is unsupported as the rollback floor. The exact 0043 candidate at 386d4bc7cc5acb794858d3c3c14400a0659a83ef has a built and authenticated wheel/image/lock recorded in .superpowers/sdd/2026-10-13-p1-publication-recovery-floor-repair/task-8-report.md. Its candidate-specific qualification results are reported there; no counts transfer from 5cb5791 or 7878208. Final independent review/meta-review and exact-head CI remain required; production acceptance, RG0/full RG1 remain HELD and P2–P7 gated.",
+  "superseded_386d_qualified_application_commit_scope": "Task 10 local fixture results remain historical at 5cb5791; Task 11 found floor/evidence gaps, so that candidate is unsupported as the rollback floor. The exact 0043 candidate at 386d4bc7cc5acb794858d3c3c14400a0659a83ef has a built and authenticated wheel/image/lock recorded in .superpowers/sdd/2026-10-13-p1-publication-recovery-floor-repair/task-8-report.md. Its candidate-specific qualification results are reported there; no counts transfer from 5cb5791 or 7878208. Final independent review/meta-review and exact-head CI remain required; production acceptance, RG0/full RG1 remain HELD and P2\u2013P7 gated.",
   "superseded_task10_source_lock_sha256": "62fa6a44498d891bcc8ff6911f243a65573174ff44b6985bdbdc26097fd10fe0",
   "superseded_386d_review_status": "Task 8 recovery-hold evidence review PASS with zero findings for its bounded fixture scope. Corrected-publication rereview/meta-review accepted the A4 fixture-correction slice only (application a4b2368; documentation/observed HEAD d031172); it predates and does not review 7878208. RG0/RG1 remain HELD.",
   "historical_branch_review_and_ci": {
@@ -2460,7 +2460,7 @@
     "record_scope": "Historical Slice 2 candidate snapshot; retain candidate-bound counts and docs CI details for traceability.",
     "latest_local_candidate_record": "latest_local_candidate"
   },
-  "source_lock_scope": "Top-level source_lock_sha256 remains the historical 0043 artifact qualification lock and is not active today. The active exact source lock is docs/v4/evidence-lock.json for Task25/26/29 source cf070328d035f9010b760431173845c6afdfedee; historical nested locks remain preserved.",
+  "source_lock_scope": "The active exact source lock is docs/v4/evidence-lock.json for Task31/32 source 8c31e84c9d71d0043b1ca736d9bc4db05cfeee7d (tree 8118c869150624292d741847e77c75c60992a61a); its SHA-256 is 6797c12e18d74f4fea5992c031db76ecef0fd4456e17d41bfed5194f17509e6a and it covers 417 paths. The Task25/26/28/29 candidate and qualification remain preserved in historical_task25_task26_task28_task29_candidate.",
   "current_documentation_ci": {
     "head_commit": "62b5a5e6afc8bd6477bbd14a951166edc97ea683",
     "short_head": "62b5a5e",
@@ -2572,6 +2572,339 @@
   "current_qualification_successor": "latest_local_candidate",
   "latest_local_candidate": {
     "record_kind": "latest_local_development_candidate",
+    "task": "Task25 Unix-socket/multi-host endpoint compatibility fix / Task31 exact development artifact / Task32 exact local qualification",
+    "status": "PASS_LOCAL_DEVELOPMENT_QUALIFICATION; EXTERNAL_ACCEPTANCE_NOT_RUN; PRODUCTION_GATES_HELD",
+    "source_commit": "8c31e84c9d71d0043b1ca736d9bc4db05cfeee7d",
+    "source_tree": "8118c869150624292d741847e77c75c60992a61a",
+    "artifact_commit": "cc9d55fd67f10f7f8d831e21b9331ecae08cf039",
+    "artifact_tree": "c7d22a3df59356274aaef342baed68d44b42d64b",
+    "artifact_parent_is_source": true,
+    "artifact_changed_files": [
+      "deployment/v4/publication-worker-launch-lock-v2-development.json",
+      "deployment/v4/publication-worker-launch-lock-v2-development.sha256"
+    ],
+    "artifact_build": {
+      "source_date_epoch": 1793285677,
+      "source_archive_sha256": "940f35a28aff258d79bea2850e2c9fd6dcbc71d1032c73d26bde6f765042c9f4",
+      "source_archive_bytes": 23408640,
+      "source_manifest_file_count": 250,
+      "source_manifest_sha256": "831484f13eb3daa3cea94133e9f07ee2df00f2b7bebefdadeca8c417dd5f0205",
+      "wheel_bytes": 459436,
+      "wheel_sha256": "607c8278688f318d223d1c8a8d4417b12b6dab313be77ea2a59195f8fc9429ce",
+      "image_sha256": "1e68764b582b1ef853a4ddb8b91ced1c03a6e3d13eb47c714600b6bca2123b4f",
+      "image_config_sha256": "cca8c53458a45ec7a0f6244caaa419fc084e9f0753879d936683cfcf7df417a3",
+      "image_layer_count": 14,
+      "image_interpreter_sha256": "73b68fc2dac176af16098180a2c98a03ee9f1f1b02db25d42d44d782e79e2330",
+      "image_record_sha256": "adf21d08172e80c67c0b8311c265634c12d715e313d05d762f165c9af90b6340",
+      "installed_runtime_distribution_count": 73,
+      "installed_runtime_inventory_sha256": "349782ff04770a3543668323fd5bcd88783e5b2b34fb90ce6a7cf1f3f2867c06",
+      "route_bundle_file_sha256": "b4e46090c54b23b2ebf79d4dbed13711e919df759789d81ccb94968fcb36c19b",
+      "route_tuple_sha256": "789cdd50c79afb4289ededa5381ec6f57a91bd6f4e5058425fc21a4f70a26b8b",
+      "authenticated_route_manifest_sha256": "66cf3e5f8a2e98e84a076b14ee8cab400f88825f95731c9c88a7d7ed0ead62ed",
+      "v2_lock_json_and_companion_content_sha256": "0b48c85e6ebad29424416e3604a46bfba3a41acb9f299a36d8b4f1cf440f2bd4",
+      "v2_lock_companion_file_sha256": "c327480a4975409fe358b20cb896b4ced381d61b82e36b625ee5fcb4c84d28a6",
+      "v1_lock_sha256": "1c8ac4ff92e589e27dc0af2c6dd0bc69c4295435df5a318174a2c77f3b1f2c9c",
+      "base_image_identity": "sha256:51f38f1ae8c31c86601eda50116f4e19a0b68915dcbdfcdd708bb2e6f62cd79d",
+      "image_identity_kind": "linux/amd64 OCI image manifest (application/vnd.oci.image.manifest.v1+json)",
+      "image_manifest_size_bytes": 2951,
+      "oci_reproducibility_scope": "Two offline OCI outputs share the selected manifest, config, all 14 layers, and referenced blob bytes. Root index created annotations and archive hashes differ, so OCI root-layout and archive reproducibility are not claimed.",
+      "oci_root_index_created_annotations": [
+        "2026-10-29T15:00:08Z",
+        "2026-10-29T15:00:22Z"
+      ],
+      "oci_archive_sha256_by_build": [
+        "4d355eae3d389f9520c0f349d18d6c5c5ab8f8a854838690522948d2077288cf",
+        "56595bebc1512f4c996de9a9ebe70fa8792dcbadfcade71328ddf3ea79e5870c"
+      ],
+      "source_dockerfile_fidelity": "NOT ESTABLISHED; offline temporary Dockerfile used the cached Task15 runtime base because the source Dockerfile base was unavailable locally.",
+      "production_trust": "NOT PROVISIONED"
+    },
+    "route_identity": {
+      "deployment_id": "00000000-0000-0000-0000-000000000311",
+      "environment_id": "00000000-0000-0000-0000-000000000312",
+      "route_id": "00000000-0000-0000-0000-000000000313",
+      "slot_id": "00000000-0000-0000-0000-000000000314",
+      "build_id": "p1-task31-development-only",
+      "route_bundle_sha256": "b4e46090c54b23b2ebf79d4dbed13711e919df759789d81ccb94968fcb36c19b",
+      "route_tuple_sha256": "789cdd50c79afb4289ededa5381ec6f57a91bd6f4e5058425fc21a4f70a26b8b",
+      "authenticated_route_manifest_sha256": "66cf3e5f8a2e98e84a076b14ee8cab400f88825f95731c9c88a7d7ed0ead62ed",
+      "identity_provisioning": "synthetic and unverified",
+      "temporal_endpoint": "development-temporal.task31.unprovisioned",
+      "temporal_namespace": "salience-task31-development",
+      "task_queue": "salience-publication-task31-development",
+      "producer_bindings": []
+    },
+    "migration_head": "0051_p1_recovery_rollback_v2",
+    "rollback_verifier_abi": "salience.p1-recovery-rollback-verifier.v2",
+    "focused_non_live": {
+      "evidence_report": ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-32-report.md",
+      "groups": 7,
+      "passed": 421,
+      "passed_by_group": [
+        38,
+        39,
+        79,
+        79,
+        4,
+        137,
+        45
+      ],
+      "log_sha256_by_group": [
+        "06c5db13b07d190b9016715651b9a3fc0900178a56cea32c53355e6660e2f4d5",
+        "1abccb36a37eacf2657c6b65d82413e7bde1d96747e70df68e716fdbac1ddb66",
+        "46542dfd4ebba489a59995402a0b106a5ede1dcb51618041df84101a003a6230",
+        "bf39dec771c447be680d1ee1e221d17982bd765d46eca58ca9cdc9aad216a85e",
+        "54d23ef0b56f99d2cbe2d50ca07723596b53070e1dcae86069f33fb176336fed",
+        "39116698e2245ec9965c94c2a8dda1450de40dfc14be9fa7f8e8075bf0b2495c",
+        "13ab501ab5fde914398d1befa6c431d69c8bc400893a76415093350cc6d2c670"
+      ],
+      "group_results": [
+        {
+          "name": "focused-01-routing-files-lock-builder",
+          "started_at": "2026-10-29T15:22:40Z",
+          "ended_at": "2026-10-29T15:22:43Z",
+          "elapsed_seconds": 2.998,
+          "passed": 38,
+          "log_sha256": "06c5db13b07d190b9016715651b9a3fc0900178a56cea32c53355e6660e2f4d5"
+        },
+        {
+          "name": "focused-02-migrations-0047-0051-schema-safety",
+          "started_at": "2026-10-29T15:22:43Z",
+          "ended_at": "2026-10-29T15:26:54Z",
+          "elapsed_seconds": 251.398,
+          "passed": 39,
+          "log_sha256": "1abccb36a37eacf2657c6b65d82413e7bde1d96747e70df68e716fdbac1ddb66"
+        },
+        {
+          "name": "focused-03-schedule-native-readback",
+          "started_at": "2026-10-29T15:26:54Z",
+          "ended_at": "2026-10-29T15:31:12Z",
+          "elapsed_seconds": 257.885,
+          "passed": 79,
+          "log_sha256": "46542dfd4ebba489a59995402a0b106a5ede1dcb51618041df84101a003a6230"
+        },
+        {
+          "name": "focused-04-complete-production-recovery",
+          "started_at": "2026-10-29T15:31:12Z",
+          "ended_at": "2026-10-29T15:40:22Z",
+          "elapsed_seconds": 549.295,
+          "passed": 79,
+          "log_sha256": "bf39dec771c447be680d1ee1e221d17982bd765d46eca58ca9cdc9aad216a85e"
+        },
+        {
+          "name": "focused-05-rollback-v2-handoff",
+          "started_at": "2026-10-29T15:40:22Z",
+          "ended_at": "2026-10-29T15:40:23Z",
+          "elapsed_seconds": 1.495,
+          "passed": 4,
+          "log_sha256": "54d23ef0b56f99d2cbe2d50ca07723596b53070e1dcae86069f33fb176336fed"
+        },
+        {
+          "name": "focused-06-complete-policy-revocation",
+          "started_at": "2026-10-29T15:40:23Z",
+          "ended_at": "2026-10-29T15:41:40Z",
+          "elapsed_seconds": 77.29,
+          "passed": 137,
+          "log_sha256": "39116698e2245ec9965c94c2a8dda1450de40dfc14be9fa7f8e8075bf0b2495c"
+        },
+        {
+          "name": "focused-07-external-acceptance-unit",
+          "started_at": "2026-10-29T15:41:40Z",
+          "ended_at": "2026-10-29T15:44:50Z",
+          "elapsed_seconds": 189.311,
+          "passed": 45,
+          "log_sha256": "13ab501ab5fde914398d1befa6c431d69c8bc400893a76415093350cc6d2c670"
+        }
+      ],
+      "all_groups_passed": true,
+      "serially_once": true
+    },
+    "full_non_live": {
+      "evidence_report": ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-32-report.md",
+      "runs": 1,
+      "passed": 1211,
+      "skipped": 26,
+      "warnings": 3,
+      "log_sha256": "0e6e0f882833c338e653056cb4b85fc73fe3adfc671ccd0d4088e12453eb01b8",
+      "runner_seconds": 2600.014,
+      "pytest_seconds": 2596.44,
+      "started_at": "2026-10-29T15:44:50Z",
+      "completed_at": "2026-10-29T16:28:10Z"
+    },
+    "local_run": {
+      "compose_project": "salience-p1-task32-q-9b9a51dae757",
+      "evidence_directory": "/tmp/salience-task32-exact-qualification-20261029T152227Z-9b9a51dae757",
+      "started_at": "2026-10-29T15:22:30Z",
+      "completed_at": "2026-10-29T16:28:13Z",
+      "cleanup_exit_code": 0,
+      "cleanup_log_sha256": "c702a2463241a5fc6f7b10c511ac8176e27067441c8ec69f817e610aec4970d6",
+      "remaining_containers": 0,
+      "remaining_networks": 0,
+      "remaining_volumes": 0,
+      "cleanup_verification_log_sha256": "d950b4e86f37941c3520e2f6072e72fac7dd04015e53cf27644030cfef1c1216"
+    },
+    "superseded_runner_attempt": {
+      "task": "Task28 exact-candidate qualification attempt (superseded)",
+      "status": "FAILED_RUNNER_ENVIRONMENT; NOT AUTHORITATIVE QUALIFICATION",
+      "compose_project": "salience-p1-task28-q-276c0a98819e",
+      "failed_group": "02",
+      "focused_counts": {
+        "passed": 412,
+        "failed": 1,
+        "deselected": 113
+      },
+      "full_non_live": "NOT RUN",
+      "cause": "The runner omitted COMPOSE_PROJECT_NAME, so a docker compose exec schema-dump helper selected the wrong project. Group 02 was not rerun. Task29 repeated all seven groups serially with the correct project environment and passed.",
+      "cleanup_counts": {
+        "containers": 0,
+        "networks": 0,
+        "volumes": 0
+      },
+      "evidence_report": ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-28-report.md"
+    },
+    "qualification_scope": "development-only; exact Task31/32 local candidate qualification, not externally trusted or production-qualified",
+    "external_gates": {
+      "external_rows": "NOT RUN (22 rows)",
+      "identities": "synthetic and unverified",
+      "provider_acceptance": "NOT RUN",
+      "external_final_audit": "NOT RUN",
+      "production_effects_enabled": false,
+      "publication_budget": 0,
+      "package_disposition": "NO_GO / UNCHANGED",
+      "RG0": "HELD",
+      "RG1": "HELD (full)",
+      "P2": "BLOCKED",
+      "later_phases": "GATED",
+      "main": "UNMERGED"
+    },
+    "evidence_reports": [
+      ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-25-report.md",
+      ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-25-review.md",
+      ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-31-build-report.md",
+      ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-31-build-review.md",
+      ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-32-report.md"
+    ],
+    "active_source_lock_sha256": "6797c12e18d74f4fea5992c031db76ecef0fd4456e17d41bfed5194f17509e6a",
+    "pre_test_readiness_diagnostic": {
+      "status": "SETUP_DIAGNOSTIC_ONLY; STOPPED_BEFORE_MIGRATIONS_OR_TESTS",
+      "attempt_project": "salience-p1-task32-q-98039f582cae",
+      "attempt_evidence_directory": "/tmp/salience-task32-exact-qualification-20261029T151755Z-98039f582cae",
+      "cause": "A single immediate local Temporal TCP readiness probe received connection-refused. No migration or test command ran in this preliminary attempt.",
+      "diagnostic_project": "salience-p1-task32-diag-425992f46057",
+      "diagnostic_evidence_directory": "/tmp/salience-task32-temporal-diagnostic-20261029T152114Z-425992f46057",
+      "timing_observation": "errno 111 at t+0s; successful local TCP connection at t+1s.",
+      "preliminary_report_sha256": "54ebb13cb35902d892aabcebf732314116fb186ce849cf5f47f2aa23f6aebb04",
+      "cleanup_counts_each_project": {
+        "containers": 0,
+        "networks": 0,
+        "volumes": 0
+      },
+      "qualification_effect": "None; authoritative Task32 qualification waited for local Temporal readiness and passed."
+    },
+    "producer_bindings": []
+  },
+  "historical_task22_task23_local_candidate": {
+    "record_kind": "historical_task22_task23_local_candidate",
+    "task": "Task22 build / Task23 exact-candidate qualification (historical)",
+    "status": "HISTORICAL_PASS_LOCAL_DEVELOPMENT_QUALIFICATION; SUPERSEDED_BY_TASK29; EXTERNAL_ACCEPTANCE_NOT_RUN; PRODUCTION_GATES_HELD",
+    "source_commit": "db3613482ac78cd708f6aa62e64854626ba7a906",
+    "source_tree": "f6ed4a172065985dd13b92994cb781318e0960f9",
+    "artifact_commit": "c1c78dd25e467d0ae48e9c949de6aeb555875ea8",
+    "artifact_tree": "7212ba6537bcdde0196c55152ac0814c59787073",
+    "artifact_parent_is_source": true,
+    "artifact_changed_files": [
+      "deployment/v4/publication-worker-launch-lock-v2-development.json",
+      "deployment/v4/publication-worker-launch-lock-v2-development.sha256"
+    ],
+    "artifact_build": {
+      "wheel_bytes": 459013,
+      "wheel_sha256": "7e3073d66ffc6f6d0eb9aa4a27e08e506d82b7ecf58d749558cd6544d805a5b6",
+      "image_sha256": "24084cf14fadcb711bccefb9ab24c72444c0740ad819d79a3756831b2e008fd6",
+      "source_manifest_sha256": "b4fbe57aacde546f7733f839211cf211d7a4d12ac35cc901f2c74f90e2c33fe8",
+      "v2_lock_json_and_companion_content_sha256": "d7cc873fe32beffcf042db7133b7b134be23d6ad9774b75568f337482a4e7bc1",
+      "v2_lock_companion_file_sha256": "7d30bce4d395dcd3242dff345ecc88f4fe45e2485e8ae6dba43c418d61d6420f",
+      "v1_lock_sha256": "1c8ac4ff92e589e27dc0af2c6dd0bc69c4295435df5a318174a2c77f3b1f2c9c",
+      "image_interpreter_sha256": "73b68fc2dac176af16098180a2c98a03ee9f1f1b02db25d42d44d782e79e2330",
+      "installed_runtime_inventory_sha256": "349782ff04770a3543668323fd5bcd88783e5b2b34fb90ce6a7cf1f3f2867c06",
+      "route_bundle_file_sha256": "934d70443c41ea81f46be6638d39e51a2ca1b55419e6f4fa3c6bf278660165ec"
+    },
+    "route_identity": {
+      "deployment_id": "00000000-0000-0000-0000-000000000221",
+      "environment_id": "00000000-0000-0000-0000-000000000222",
+      "route_id": "00000000-0000-0000-0000-000000000223",
+      "slot_id": "00000000-0000-0000-0000-000000000224",
+      "build_id": "p1-task22-development-only",
+      "route_tuple_sha256": "6f56661b24a5032deb6f5bfea8459b17d4efdbdee03d6131ac8ff441f47cd25c",
+      "authenticated_route_manifest_sha256": "baf5884f361937459d47e3d6467565acc54d2f6a28d0584978556b60e37935dc",
+      "identity_provisioning": "synthetic and unverified"
+    },
+    "migration_head": "0051_p1_recovery_rollback_v2",
+    "rollback_verifier_abi": "salience.p1-recovery-rollback-verifier.v2",
+    "focused_non_live": {
+      "groups": 7,
+      "passed": 406,
+      "passed_by_group": [
+        38,
+        39,
+        64,
+        79,
+        4,
+        137,
+        45
+      ],
+      "log_sha256_by_group": [
+        "1e2f03e2c7f7898678530c1434fbacb0dd85bd230bc1f8e269e1076b4848906c",
+        "17d975604e32040b266ca345452e5587e0475f91478573be629d3f606d3d38b7",
+        "d624d348256670eee3945e6cae22e470ef93c645f5676657312ac2a64c500044",
+        "63c0a23d0807d1eba71750a13b9c95998ad9a659279eb3b2d73b741e1877584a",
+        "54d23ef0b56f99d2cbe2d50ca07723596b53070e1dcae86069f33fb176336fed",
+        "474620bd421e188a028928a72ee6623c9410d1e2476bd6be3e9759699383a5e5",
+        "a5a14ddee7e0936ab0472d927680395144b73883794f8faac009c9b88fc78f5b"
+      ],
+      "evidence_report": ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-23-report.md"
+    },
+    "full_non_live": {
+      "runs": 1,
+      "passed": 1196,
+      "skipped": 26,
+      "warnings": 3,
+      "log_sha256": "228705c455ab4dad8f0216bc67bef1ac31563dcae9871a3d1252a5d27b928111",
+      "evidence_report": ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-23-report.md"
+    },
+    "local_run": {
+      "compose_project": "salience-p1-task23-q-a1dc00a2cc82",
+      "evidence_directory": "/tmp/salience-p1-task23-qualification-a1dc00a2cc82",
+      "cleanup_exit_code": 0,
+      "remaining_containers": 0,
+      "remaining_networks": 0,
+      "remaining_volumes": 0,
+      "cleanup_log_sha256": "54801e153aa3141f9684c5491140e4b15c68569091eacf3847e787277dd9c2b6"
+    },
+    "qualification_scope": "development-only; local candidate qualification, not externally trusted or production-qualified",
+    "external_gates": {
+      "external_rows": "NOT RUN (22 rows)",
+      "identities": "synthetic and unverified",
+      "external_final_audit": "NOT RUN",
+      "production_effects_enabled": false,
+      "publication_budget": 0,
+      "package_disposition": "NO_GO / UNCHANGED",
+      "RG0": "HELD",
+      "RG1": "HELD",
+      "P2": "BLOCKED",
+      "main": "UNMERGED"
+    },
+    "evidence_reports": [
+      ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-22-report.md",
+      ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-23-report.md"
+    ],
+    "superseded_by": {
+      "task": "Task25/26/29",
+      "source_commit": "cf070328d035f9010b760431173845c6afdfedee",
+      "artifact_commit": "33cac5cffff973e9cba5e03be6b493065e5f817d"
+    }
+  },
+  "historical_task25_task26_task28_task29_candidate": {
+    "record_kind": "historical_task25_task26_task28_task29_local_candidate",
     "task": "Task25 DNS-bounded connection fix / Task26 exact development artifact / Task29 exact-candidate qualification",
     "status": "PASS_LOCAL_DEVELOPMENT_QUALIFICATION; EXTERNAL_ACCEPTANCE_NOT_RUN; PRODUCTION_GATES_HELD",
     "source_commit": "cf070328d035f9010b760431173845c6afdfedee",
@@ -2716,106 +3049,11 @@
       ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-26-build-review.md",
       ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-28-report.md",
       ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-29-report.md"
-    ]
-  },
-  "historical_task22_task23_local_candidate": {
-    "record_kind": "historical_task22_task23_local_candidate",
-    "task": "Task22 build / Task23 exact-candidate qualification (historical)",
-    "status": "HISTORICAL_PASS_LOCAL_DEVELOPMENT_QUALIFICATION; SUPERSEDED_BY_TASK29; EXTERNAL_ACCEPTANCE_NOT_RUN; PRODUCTION_GATES_HELD",
-    "source_commit": "db3613482ac78cd708f6aa62e64854626ba7a906",
-    "source_tree": "f6ed4a172065985dd13b92994cb781318e0960f9",
-    "artifact_commit": "c1c78dd25e467d0ae48e9c949de6aeb555875ea8",
-    "artifact_tree": "7212ba6537bcdde0196c55152ac0814c59787073",
-    "artifact_parent_is_source": true,
-    "artifact_changed_files": [
-      "deployment/v4/publication-worker-launch-lock-v2-development.json",
-      "deployment/v4/publication-worker-launch-lock-v2-development.sha256"
-    ],
-    "artifact_build": {
-      "wheel_bytes": 459013,
-      "wheel_sha256": "7e3073d66ffc6f6d0eb9aa4a27e08e506d82b7ecf58d749558cd6544d805a5b6",
-      "image_sha256": "24084cf14fadcb711bccefb9ab24c72444c0740ad819d79a3756831b2e008fd6",
-      "source_manifest_sha256": "b4fbe57aacde546f7733f839211cf211d7a4d12ac35cc901f2c74f90e2c33fe8",
-      "v2_lock_json_and_companion_content_sha256": "d7cc873fe32beffcf042db7133b7b134be23d6ad9774b75568f337482a4e7bc1",
-      "v2_lock_companion_file_sha256": "7d30bce4d395dcd3242dff345ecc88f4fe45e2485e8ae6dba43c418d61d6420f",
-      "v1_lock_sha256": "1c8ac4ff92e589e27dc0af2c6dd0bc69c4295435df5a318174a2c77f3b1f2c9c",
-      "image_interpreter_sha256": "73b68fc2dac176af16098180a2c98a03ee9f1f1b02db25d42d44d782e79e2330",
-      "installed_runtime_inventory_sha256": "349782ff04770a3543668323fd5bcd88783e5b2b34fb90ce6a7cf1f3f2867c06",
-      "route_bundle_file_sha256": "934d70443c41ea81f46be6638d39e51a2ca1b55419e6f4fa3c6bf278660165ec"
-    },
-    "route_identity": {
-      "deployment_id": "00000000-0000-0000-0000-000000000221",
-      "environment_id": "00000000-0000-0000-0000-000000000222",
-      "route_id": "00000000-0000-0000-0000-000000000223",
-      "slot_id": "00000000-0000-0000-0000-000000000224",
-      "build_id": "p1-task22-development-only",
-      "route_tuple_sha256": "6f56661b24a5032deb6f5bfea8459b17d4efdbdee03d6131ac8ff441f47cd25c",
-      "authenticated_route_manifest_sha256": "baf5884f361937459d47e3d6467565acc54d2f6a28d0584978556b60e37935dc",
-      "identity_provisioning": "synthetic and unverified"
-    },
-    "migration_head": "0051_p1_recovery_rollback_v2",
-    "rollback_verifier_abi": "salience.p1-recovery-rollback-verifier.v2",
-    "focused_non_live": {
-      "groups": 7,
-      "passed": 406,
-      "passed_by_group": [
-        38,
-        39,
-        64,
-        79,
-        4,
-        137,
-        45
-      ],
-      "log_sha256_by_group": [
-        "1e2f03e2c7f7898678530c1434fbacb0dd85bd230bc1f8e269e1076b4848906c",
-        "17d975604e32040b266ca345452e5587e0475f91478573be629d3f606d3d38b7",
-        "d624d348256670eee3945e6cae22e470ef93c645f5676657312ac2a64c500044",
-        "63c0a23d0807d1eba71750a13b9c95998ad9a659279eb3b2d73b741e1877584a",
-        "54d23ef0b56f99d2cbe2d50ca07723596b53070e1dcae86069f33fb176336fed",
-        "474620bd421e188a028928a72ee6623c9410d1e2476bd6be3e9759699383a5e5",
-        "a5a14ddee7e0936ab0472d927680395144b73883794f8faac009c9b88fc78f5b"
-      ],
-      "evidence_report": ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-23-report.md"
-    },
-    "full_non_live": {
-      "runs": 1,
-      "passed": 1196,
-      "skipped": 26,
-      "warnings": 3,
-      "log_sha256": "228705c455ab4dad8f0216bc67bef1ac31563dcae9871a3d1252a5d27b928111",
-      "evidence_report": ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-23-report.md"
-    },
-    "local_run": {
-      "compose_project": "salience-p1-task23-q-a1dc00a2cc82",
-      "evidence_directory": "/tmp/salience-p1-task23-qualification-a1dc00a2cc82",
-      "cleanup_exit_code": 0,
-      "remaining_containers": 0,
-      "remaining_networks": 0,
-      "remaining_volumes": 0,
-      "cleanup_log_sha256": "54801e153aa3141f9684c5491140e4b15c68569091eacf3847e787277dd9c2b6"
-    },
-    "qualification_scope": "development-only; local candidate qualification, not externally trusted or production-qualified",
-    "external_gates": {
-      "external_rows": "NOT RUN (22 rows)",
-      "identities": "synthetic and unverified",
-      "external_final_audit": "NOT RUN",
-      "production_effects_enabled": false,
-      "publication_budget": 0,
-      "package_disposition": "NO_GO / UNCHANGED",
-      "RG0": "HELD",
-      "RG1": "HELD",
-      "P2": "BLOCKED",
-      "main": "UNMERGED"
-    },
-    "evidence_reports": [
-      ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-22-report.md",
-      ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-23-report.md"
     ],
     "superseded_by": {
-      "task": "Task25/26/29",
-      "source_commit": "cf070328d035f9010b760431173845c6afdfedee",
-      "artifact_commit": "33cac5cffff973e9cba5e03be6b493065e5f817d"
+      "task": "Task31/32",
+      "source_commit": "8c31e84c9d71d0043b1ca736d9bc4db05cfeee7d",
+      "artifact_commit": "cc9d55fd67f10f7f8d831e21b9331ecae08cf039"
     }
   }
 }
