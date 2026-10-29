@@ -1,11 +1,11 @@
 # P1 Remaining Production Development — Final Evidence Report
 
 
-> **Current authoritative refresh:** the exact-candidate evidence binds source `8d26aa15ef8d6bf7c9248bdd1899cf01a352cb2a` / tree `435f7b6cea818c96790e890da9485ce08fd18ac6` to artifact commit `e805c277577da8491dca51933dadb5c36acc805b` / tree `2e7213cf989f8b7dcfd489afb076be54c4858a8b`. Task 11 records below remain historical; see [`task-13-report.md`](task-13-report.md) for current exact-candidate results.
+> **Current authoritative refresh — Task18 exact candidate:** implementation source `c23c4cca72021ce6621eaacd66f2bfc23f4cc129` / tree `d587cda6011bb0b974346353cec7a4856fbaf778`; tested artifact commit `be6f713b255f6b654b73ae4343db1db5c07e3840` / tree `419a33459a022d96c843313ffe5112c4e863c862`. Task11–14 results below retain their historical scopes. See [`task-15-report.md`](task-15-report.md) for the failed Task15 attempt, Task16 correction, exact hashes, seven focused commands/timings/log hashes, and one full non-live run.
 
-Date: 2026-10-28
+Date: 2026-10-29
 
-## Historical result — superseded by the exact-candidate refresh
+## Historical result — Task13 candidate, superseded by Task18
 
 The exact local development candidate completed the final serial non-live test run successfully: 1,120 passed, 26 skipped, and 3 Alembic deprecation warnings; pytest exited 0 after 2,346.13 seconds. This is local development evidence only. The acceptance package is structurally valid and the read-only checker correctly returns exit 1 with `NO_GO` and `UNCHANGED`. No external production acceptance is claimed.
 
@@ -86,6 +86,14 @@ Package: [`docs/v4/p1-remaining-production-development-evidence.json`](../../../
   Expected and observed exit: 1, with `structural_status: VALID`, `disposition: NO_GO`, and `gate_state: UNCHANGED`. Exit 2 would indicate invalid evidence. The package file SHA-256 is `7802433872dd87dd2a18fe4a79a1e9c2de49945b08b6c738d35d11eee3451230`.
 
 The unique Compose project was removed with its containers, volume, and network by the cleanup trap. A subsequent `docker compose --project-name salience-p1-task11-final-full-1793217725-2697832 ps -a` returned no services. No live/provider path, remote schedule, production database, alert target, push, or merge was used. Independent review of the exact committed diff remains the next handoff; it does not change the local `NO_GO` or held external status.
+
+## Task18 final exact-candidate local evidence — 2026-10-29
+
+Task18’s reviewed candidate is source `c23c4cca72021ce6621eaacd66f2bfc23f4cc129` / tree `d587cda6011bb0b974346353cec7a4856fbaf778` and artifact `be6f713b255f6b654b73ae4343db1db5c07e3840` / tree `419a33459a022d96c843313ffe5112c4e863c862`. Task17 reproduced two identical PEP517 wheels (SHA-256 `b6d48ce34584cc38ad946d4503ff3b3ad04783f6da38b2198d58b75f70d143e2`), local OCI image (`sha256:b5745f9b890da2ea5205a482de3238b2a907fa4d741107024663982119985d25`), source manifest (`25ddd9ea50638e014205bd1a6f82af557e29ffd0be712e12166ccf1ef9a7e99c`), v2 JSON/companion digest (`6095fe2f1a7c02666c1824e916bcb8dc7f91e598234276adef62af83d0026f00`), and v2 companion-file digest (`acf0080aa7a19dc73f2687e94d4a1d793425818d14265d2988315d5f9f05f0f4`). The v1 lock remains byte-identical at `1c8ac4ff92e589e27dc0af2c6dd0bc69c4295435df5a318174a2c77f3b1f2c9c`.
+
+The exact artifact passed seven serial focused groups totaling **399 passed** and one full non-live command totaling **1,189 passed, 26 skipped, and 3 warnings**. The full log SHA-256 is `fd55c83d541c0f9778b3a557fa1c76355e431dfd944c0ca81caa5add4fe9d705`; exact focused commands, timings, and hashes are recorded in [`task-15-report.md`](task-15-report.md). The disposable Task18 project cleanup exited 0 with zero remaining containers, volumes, and networks (log SHA-256 `8bf3662c57698217b8f716c07d0ec717881bc7b930aec012ce0cc77c8c4efe32`).
+
+This is local development evidence. All 22 external acceptance rows remain `NOT RUN`; identities remain synthetic and unverified; production effects remain disabled and budget zero; final audit remains `NOT RUN`; package disposition remains `NO_GO`; external production trust is unprovisioned; RG0/full RG1 remain `HELD`; P2 remains `BLOCKED`. No provider or external production system was contacted, and this report does not claim external qualification.
 
 ## Historical focused evidence follow-up — review fix round 1
 
@@ -283,3 +291,9 @@ The seven focused non-live groups passed with counts 34, 39, 51, 54, 4, 133, and
 The active source lock now covers 416 paths: 409 application/source paths plus the seven established boundary files. The normal and self-test documentation checker modes pass; remaining documentation/static check outputs, exact commands, hashes, and cleanup details are in [`task-13-report.md`](task-13-report.md). The unique local Compose cleanup found zero project resources. No push or merge occurred; final independent reviews remain controller-owned.
 
 The current documentation metadata was reconciled after the initial `docs/v4/test_checks.py` run found a 291-versus-300 artifact inventory mismatch and a stale progress digest in the append-only review wrapper. The refreshed active audit covers 300 documentation artifacts and 125 Markdown files; the contract now passes 25/25. Compileall, all five documentation shell contracts, Archify validation, and `git diff --check` passed. `docs/v4/check.py --self-test` and its normal mode each returned 1 because the preserved application evidence lock has 376 evidence files against 360 inventory entries and predates the exact source candidate's changes/additions. No frozen historical application inventory was rewritten. The detailed commands, exits, durations, and distinction between current metadata and frozen evidence are recorded in [`task-11-report.md`](task-11-report.md).
+
+## Task19 documentation and evidence refresh — 2026-10-29
+
+The active local evidence now points to Task18 source `c23c4cca72021ce6621eaacd66f2bfc23f4cc129` / tree `d587cda6011bb0b974346353cec7a4856fbaf778` and tested artifact `be6f713b255f6b654b73ae4343db1db5c07e3840` / tree `419a33459a022d96c843313ffe5112c4e863c862`. The active source lock contains 410 source files plus seven boundary files, including the Temporal readback unit file; historical nested locks remain preserved. The synthetic acceptance package is bound to these exact pins, has manifest SHA-256 `a0f7cfbc0011a6b45eb30c876041f8849acba4d21cd4e3908110f75a24e4060b` and package digest `75b1b6b7aec281001ccd7e65f30b3b1802fecd68c44444f860fec6683d2b78ce`, and preserves all 22 rows as `NOT RUN`, synthetic/unverified identities, effects disabled, zero budget, final audit `NOT RUN`, `NO_GO`, RG0/full RG1 `HELD`, and P2 `BLOCKED`.
+
+Task19 documentation verification passed: AgentTube reference tests (17), AgentTube verifier, `docs/v4/test_checks.py` (25), `docs/v4/check.py` and self-test (75 requirements; six negative controls), required browser/phase shell contracts, `compileall src/tests`, Archify validation (nine checks, zero errors/warnings), and `git diff --check`. The synthetic acceptance checker exited 1 as expected with `VALID` / `NO_GO` / `UNCHANGED`. Exact commands, durations, and log hashes are in [`task-15-report.md`](task-15-report.md).

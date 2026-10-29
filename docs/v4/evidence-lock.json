@@ -1,6 +1,6 @@
 {
-  "baseline_commit": "ec12763e38143f52f1af2661e00932158982f11a",
-  "scope": "Current exact application/source content lock for Task 13 implementation source 8d26aa15ef8d6bf7c9248bdd1899cf01a352cb2a (tree 435f7b6cea818c96790e890da9485ce08fd18ac6). It covers 409 current files under src, tests, migrations, and scripts plus 7 established deployment/dependency/build-context boundary files (416 total). The Task 13 artifact candidate is recorded separately at e805c277577da8491dca51933dadb5c36acc805b. This lock records current repository bytes and exact path coverage; it is not external artifact trust, independent review, production qualification, or acceptance.",
+  "baseline_commit": "c23c4cca72021ce6621eaacd66f2bfc23f4cc129",
+  "scope": "Current exact application/source content lock for Task 18 implementation source c23c4cca72021ce6621eaacd66f2bfc23f4cc129 (tree d587cda6011bb0b974346353cec7a4856fbaf778). It covers 410 files under src, tests, migrations, and scripts plus 7 established deployment/dependency/build-context boundary files (417 total), including tests/unit/test_temporal_schedule_readback.py. The exact Task 18 artifact candidate is be6f713b255f6b654b73ae4343db1db5c07e3840 (tree 419a33459a022d96c843313ffe5112c4e863c862). This lock records source-tree bytes and exact path coverage; it is not external artifact trust, independent review, production qualification, or acceptance.",
   "files": [
     {
       "path": ".dockerignore",
@@ -236,7 +236,7 @@
     },
     {
       "path": "migrations/versions/0051_p1_recovery_rollback_v2.py",
-      "sha256": "358b296465e32e81bea7729be4e2bb3a574ee2215a3cb4d8f327df36baeb9768"
+      "sha256": "9019dc8a5610e1c5c81046efd01bcf34c56c626e820076b428f48ec177afe2a7"
     },
     {
       "path": "migrations/versions/__init__.py",
@@ -588,7 +588,7 @@
     },
     {
       "path": "src/salience/cycles/_production_recovery_alerts.py",
-      "sha256": "c56c00b684c3da6b8d6dc9bd85fceae8b13de9a7ed0fc3fe9bd777d06122edcf"
+      "sha256": "3a927c88fee78ae6ada9431d1b541d3c2144034a8f8f9516abc7ef725cf9f01c"
     },
     {
       "path": "src/salience/cycles/_production_recovery_contracts.py",
@@ -740,7 +740,7 @@
     },
     {
       "path": "src/salience/cycles/temporal_schedule_control.py",
-      "sha256": "edc2c5be37bcc7ea9d1c55c3cf000080d2864f2bb5a1d8fd18898fa5dc3fceef"
+      "sha256": "0b422683bce274fe77881e3b673a9ebbf4fb990910eefb7a9e3446a7916fa063"
     },
     {
       "path": "src/salience/cycles/wait_workflow.py",
@@ -1056,7 +1056,7 @@
     },
     {
       "path": "src/salience/workflows/worker.py",
-      "sha256": "03135efa32b23527f0153e2efb4b36433ec6d8e5e797feb29cd1dfee7a139079"
+      "sha256": "06e013bc9f0ebcec8be4cb522a9c783709496cf747fad89836a161b07b4b2434"
     },
     {
       "path": "tests/conftest.py",
@@ -1324,15 +1324,15 @@
     },
     {
       "path": "tests/integration/test_p1_production_policy_revocation.py",
-      "sha256": "1b9ac2a1d10e62bdef4fb30406de54c7670bf49d8bb6fc9c8e3a8abf9fc5c7d6"
+      "sha256": "7da8ccdf7d7cfaed2c3fea6a598d112788c4c6e50985bce67cf937cf0d3a620a"
     },
     {
       "path": "tests/integration/test_p1_production_recovery.py",
-      "sha256": "01cb6f0b9829a87399ea4fa9c7f1c0bdf4312449e09d15c6c05ce20ad0952629"
+      "sha256": "4100af985b720551b0cb5a466b79e4c6afbbe790617c52e02c7686c82af50c5a"
     },
     {
       "path": "tests/integration/test_p1_production_routing.py",
-      "sha256": "6e55a9ac1f47e1ade5a4966c56ea28b6a6d72604bf8f6aa585807dd970d86c1d"
+      "sha256": "6fa7e24c82641ecff278b9903383a16c9fac3f98b445e381598e69021fe57a83"
     },
     {
       "path": "tests/integration/test_p1_production_schedule_fencing.py",
@@ -1655,6 +1655,10 @@
       "sha256": "3003b9db1fdd2d04f4ca7dc6806d79118102cbf6a47bbbd719be2b4b312c7bc0"
     },
     {
+      "path": "tests/unit/test_temporal_schedule_readback.py",
+      "sha256": "00641212d01c06b84e9f326a8b44bf8b3c6d6339fe230beee1cd3511d64d3e0b"
+    },
+    {
       "path": "tests/unit/test_tracing.py",
       "sha256": "4484be252caad699b036301b1516134d3f40d2a1269c3889b83f1eb466c895e2"
     },
@@ -1667,8 +1671,8 @@
       "sha256": "7f76114852b4b9d95b3517c49718ccf2e007d64d442a1b4e05ef696dd37a8bbc"
     }
   ],
-  "reviewed_at": "2026-10-29T01:49:35Z",
-  "review_scope": "Active local source lock for exact Task 13 source candidate 8d26aa15ef8d6bf7c9248bdd1899cf01a352cb2a, tree 435f7b6cea818c96790e890da9485ce08fd18ac6: 409 files under src, tests, migrations, and scripts plus the seven established boundary files. It binds repository bytes and path coverage only. Development artifact identity and local test results are recorded in the Task 13 evidence reports; external trust, independent review, exact-head CI, production target qualification, and acceptance remain outstanding. Production effects remain disabled, RG0/full RG1 remain HELD, and P2 remains BLOCKED.",
+  "reviewed_at": "2026-10-29T07:56:08Z",
+  "review_scope": "Active local source lock for exact Task 18 source c23c4cca72021ce6621eaacd66f2bfc23f4cc129, tree d587cda6011bb0b974346353cec7a4856fbaf778: 410 files under src, tests, migrations, and scripts plus the 7 established boundary files. The separate tested development artifact is be6f713b255f6b654b73ae4343db1db5c07e3840, tree 419a33459a022d96c843313ffe5112c4e863c862. This lock binds repository source bytes and path coverage only. Local artifact and qualification results are recorded in the Task 15 report; external trust, production target qualification, and acceptance remain outstanding. Production effects remain disabled, RG0/full RG1 remain HELD, and P2 remains BLOCKED.",
   "historical_task_10_lock": {
     "baseline_commit": "14801007310232f59708566ca9a3eefb80bfea87",
     "application_commit": "5cb57910c2c6dc2f6ea37da75640c5c947c8907b",
@@ -1676,7 +1680,7 @@
     "file_count": 360,
     "meaning": "Retained Task 10 source inventory; historical contents remain available in the original committed evidence lock."
   },
-  "application_commit": "8d26aa15ef8d6bf7c9248bdd1899cf01a352cb2a",
+  "application_commit": "c23c4cca72021ce6621eaacd66f2bfc23f4cc129",
   "superseded_0043_386d4bc_lock": {
     "baseline_commit": "386d4bc7cc5acb794858d3c3c14400a0659a83ef",
     "application_commit": "386d4bc7cc5acb794858d3c3c14400a0659a83ef",

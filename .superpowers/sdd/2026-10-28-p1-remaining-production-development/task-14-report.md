@@ -1,7 +1,9 @@
 # Task 14 report — final review corrections
 
+> **Historical implementation report:** Task14’s source/test corrections and focused results remain bound to their recorded Task14 commits. Task17 rebuilt the later exact candidate from reviewed source `c23c4cca72021ce6621eaacd66f2bfc23f4cc129`, and Task18 qualified artifact `be6f713b255f6b654b73ae4343db1db5c07e3840`; current evidence is in [`task-15-report.md`](task-15-report.md).
+
 Date: 2026-10-29
-Status: the initial four source corrections and four subsequent recipient-tier recovery corrections are implemented and focused verification complete; exact-candidate artifact/evidence refresh remains controller-owned.
+Historical status: Task14 source corrections and focused verification are complete. Task17 later rebuilt the reviewed source as artifact `be6f713b255f6b654b73ae4343db1db5c07e3840`; Task18 qualified it, and Task19 refreshed the durable evidence. Current details are in [`task-15-report.md`](task-15-report.md).
 
 ## Source changes
 
@@ -85,6 +87,10 @@ Task 13's artifact, synthetic acceptance package, and active evidence lock remai
 
   Normal alert delivery/acknowledgment/escalation controls: **3 passed, 74 deselected** (21.94 seconds). Touched-file compileall and `git diff --check` passed.
 - No full suite, artifact/evidence-lock rebuild, push, merge, provider, or live-system use. Task 13 evidence remains historical for controller regeneration. Production remains disabled; synthetic package `NO_GO`; RG0/full RG1 `HELD`; P2 `BLOCKED`; external qualification `NOT RUN`.
+
+## Historical-scope follow-up — exact candidate now qualified locally
+
+The Task14 statement that Task13 artifacts and the evidence lock were awaiting controller regeneration was true at that report’s time and is now historical. Task17 rebuilt the deterministic wheel/image/launch-lock candidate from the reviewed Task16 source; Task18 ran all seven focused groups and one full non-live suite on that exact artifact. Task19 refreshes the active lock and synthetic package to those exact pins. The package remains synthetic `NO_GO`: all 22 external rows are `NOT RUN`, effects stay disabled, budget remains zero, the final audit is `NOT RUN`, RG0/full RG1 remain `HELD`, and P2 remains `BLOCKED`. No external qualification is claimed.
 
 ## Follow-up — atomic owner escalation retry — 2026-10-29
 

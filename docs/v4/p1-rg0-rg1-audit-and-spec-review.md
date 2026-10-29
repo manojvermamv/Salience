@@ -4,7 +4,7 @@
 
 **Disposition:** Initial audit and design evaluation **COMPLETE_REVIEWED**.
 
-**Reviewed artifacts:** [audit report](p1-rg0-rg1-initial-gap-audit.md), [row inventory](p1-rg0-rg1-initial-gap-audit.json), and the five linked design specs in the [program sequence](../superpowers/specs/2026-10-13-v4-multiplatform-autonomy-program-sequence.md). Five bounded increments are **REQUIRED** and all five designs are **COMPLETE_REVIEWED**. Implementation and target qualification are **NOT RUN**. All 22 final-entry rows remain non-PASS; RG0/RG1 remain **HELD**; Slice 7 and P2 remain **BLOCKED**. Production effects remain disabled; `main` remains unmerged.
+**Frozen initial-audit scope:** [audit report](p1-rg0-rg1-initial-gap-audit.md), [row inventory](p1-rg0-rg1-initial-gap-audit.json), and the five linked design specs in the [program sequence](../superpowers/specs/2026-10-13-v4-multiplatform-autonomy-program-sequence.md) were reviewed against their recorded 2026-10-27 source/environment. At that initial snapshot, five bounded increments were **REQUIRED**, all five designs were **COMPLETE_REVIEWED**, and implementation/target qualification were **NOT RUN**. This is historical audit scope. All 22 final-entry rows remain non-PASS; RG0/RG1 remain **HELD**; Slice 7 and P2 remain **BLOCKED**; production effects remain disabled; `main` remains unmerged.
 
 ## Review chain
 
@@ -278,11 +278,11 @@ The following hashes bind the current spec/plan/report/ledger text only. The sta
 | `.superpowers/sdd/2026-10-28-p1-remaining-production-development/planning-report.md` | `5ead73f3b32307f59fd4887c353c17616c2024f4d55cb6e3e55a1483e58359a6` |
 | `.superpowers/sdd/2026-10-28-p1-remaining-production-development/progress.md` | `93b4e00185656d0e0431bbd3c5a1b6725c9622d0ffae76c48152e366156797d2` |
 
-## Task 11 current documentation inventory refresh — 2026-10-28
+## Historical Task 11 documentation inventory refresh — 2026-10-28
 
-This append-only note refreshes the active documentation path/hash inventory after the exact-source Task 11 report, synthetic evidence package, and progress checkpoint were added. The inventory now covers 300 documentation artifacts and 125 Markdown files; `docs/v4/test_checks.py` passes 25/25 after this refresh. The initial audit's source commit, environment manifest, row findings, review digests, and `COMPLETE_REVIEWED` decision above remain frozen to their recorded scope. This current hash index does not extend that review or qualify a production target.
+This dated Task11 note refreshed the documentation path/hash inventory after the exact-source Task 11 report, synthetic evidence package, and progress checkpoint were added. At that time it covered 300 documentation artifacts and 125 Markdown files. The initial audit's source commit, environment manifest, row findings, review digests, and `COMPLETE_REVIEWED` decision above remain frozen to their recorded scope. Task19 later refreshed the active inventory to 307 documentation artifacts and 132 Markdown files; that hash index does not extend the initial review or qualify a production target.
 
-The preserved `docs/v4/check.py` evidence lock still describes the earlier 376-file/360-inventory application snapshot. Both checker modes return exit 1 on the later candidate's changed source pins and added 0047–0051 paths; no historical application lock was rewritten. The current exact-source results and local-only scope are recorded in [`Task 11 report`](../../.superpowers/sdd/2026-10-28-p1-remaining-production-development/task-11-report.md). RG0/RG1 remain HELD, P2 remains BLOCKED, effects remain disabled, and this note does not claim external qualification.
+At the Task11 checkpoint, the 376-file/360-inventory lock predated the then-current source paths and both checker modes returned exit 1. Task19 refreshed the active `docs/v4/evidence-lock.json` to 417 exact source/boundary files; normal and self-test checker modes now pass. The Task11 report remains historical. Current exact-candidate outcomes and local-only scope are in [`Task15 report`](../../.superpowers/sdd/2026-10-28-p1-remaining-production-development/task-15-report.md). RG0/full RG1 remain HELD, P2 remains BLOCKED, effects remain disabled, and this note does not claim external qualification.
 
 | Current file | SHA-256 |
 | --- | --- |
@@ -303,3 +303,41 @@ The documentation/evidence whole-change review completed as `PASS_AFTER_FIX_ROUN
 | [`final-whole-change-rereview.md.txt`](reviews/final-whole-change-rereview.md.txt) | `a9618776e2114435b12f147a4221a8018914517e4e21900130a5b259da2c0b5b` |
 
 `documentation_whole_change_review: PASS_AFTER_FIX_ROUND_1`
+
+## Task19 current exact-candidate evidence and gate disposition — 2026-10-29
+
+The current local development evidence is bound to source `c23c4cca72021ce6621eaacd66f2bfc23f4cc129` / tree `d587cda6011bb0b974346353cec7a4856fbaf778` and artifact `be6f713b255f6b654b73ae4343db1db5c07e3840` / tree `419a33459a022d96c843313ffe5112c4e863c862`. The exact artifact passed seven focused groups (399 total) and one full non-live run (1,189 passed, 26 skipped, 3 warnings). The active [evidence lock](evidence-lock.json) and [synthetic acceptance package](p1-remaining-production-development-evidence.json) now bind these current pins; detailed hashes and logs are in the [Task15 report](../../.superpowers/sdd/2026-10-28-p1-remaining-production-development/task-15-report.md).
+
+This local candidate record does not change the frozen initial audit, historical review verdicts, or external gate state. The package remains `SYNTHETIC` / `NO_GO`; all 22 external rows remain `NOT RUN`; synthetic identities remain unverified; production effects remain disabled; publication budget is zero; final audit remains `NOT RUN`; external production trust remains unprovisioned; RG0/full RG1 remain `HELD`; P2 remains `BLOCKED`; and no external qualification is claimed.
+
+## Task19 current documentation digest reconciliation — 2026-10-29
+
+This append-only inventory binds the current navigation, status, source-lock, synthetic-package, and Task13–15 report bytes after the Task19 refresh. It does not revise the frozen initial audit, historical review verdicts, or production qualification. The status audit records this wrapper's final digest and current handoff hashes; the audit omits its own digest, and this table omits the audit file to avoid a recursive hash.
+
+| Path | Current SHA-256 |
+|---|---|
+| `docs/v4/p1-rg0-rg1-initial-gap-audit.json` | `33fe485384dcf60e36df8d48ace6394c80bce0d1bd9e6b9b39c7a905d65676b1` |
+| `docs/v4/p1-rg0-rg1-initial-gap-audit.md` | `62aab5afb39f7c47e355a68ccf56e319a72955247515dfbdba8913fd797a5944` |
+| `docs/v4/p0-release.json` | `0a0f1969e0497cbec535fb3f854b51cef870a4746eb92f8a67a127566dc9ff75` |
+| `docs/v4/p1-qualification-matrix.json` | `b81b8a573d535946162d031519602ed311e56490ab5f23e4b5c2fee1d5fe28fb` |
+| `docs/superpowers/specs/2026-10-13-p1-production-policy-and-revocation-design.md` | `6be8f5ec6c48491a45a734510cc20af98e2cd7554fdc0409e77c6d9667d42fe2` |
+| `docs/superpowers/specs/2026-10-13-p1-production-routing-and-worker-fencing-design.md` | `76921a085e352f86ae77895c824917832a49847c306b76bc56ae2c7e44a23e90` |
+| `docs/superpowers/specs/2026-10-13-p1-live-schedule-fencing-design.md` | `de5e961bbd1ea756a98e5694b5f079982c5d7958c4b71a86a2de680189717e99` |
+| `docs/superpowers/specs/2026-10-13-p1-production-recovery-and-alerts-design.md` | `4d7076fd968c28d78307678fa0b186d446dff6e3f3a88d5507646a828b2605cc` |
+| `docs/superpowers/specs/2026-10-13-rg0-rg1-external-acceptance-design.md` | `7334364e5417cbb29143877334a80ea90125e9ce61bff71f67de77a86f61069e` |
+| `docs/v4/test_checks.py` | `c915b137417c53b3b3f773eacbfcfea3d62584a21ca11df8288e0c2b4281cf6e` |
+| `README.md` | `43fab88e0c2a5ff49fb615fa885f2dbcd8183828a435bf710e7b828e8ed673ac` |
+| `docs/README.md` | `3fe8cbfcca70081668a84bcc5b6fe45628736908a17cc68df2866f1140f1a392` |
+| `docs/v4/IMPLEMENTATION-BLUEPRINT.md` | `8ceb85b83e452c10d4b323a709ac6706935013c2d9193bd1bff2b1b8c83d2703` |
+| `docs/v4/progress.md` | `98e54a32219fbf727e8e5d2a168e809a04f5ad1a7fa692c45968b782df0b2763` |
+| `docs/v4/validation.md` | `c1fb44b8d425b4f866c8d72f6734a10f1e4c6f494046c2a7ddc590e38feb8932` |
+| `docs/superpowers/specs/2026-10-13-v4-multiplatform-autonomy-program-sequence.md` | `ba64032ca707c4348c97651fa06beced3df90d1612c38c56de50fed1558947ca` |
+| `docs/superpowers/plans/2026-10-27-p1-rg0-rg1-initial-gap-audit.md` | `5d1dd8a86718184d03324144643dfb009cb36243a5bd0c0f14c46844eb3c5cd4` |
+| `docs/v4/evidence-lock.json` | `f659d348d37e0b873eec45cbcbb37611acf9c86357fed8f9279b5e3949341686` |
+| `docs/v4/p1-remaining-production-development-evidence.json` | `5449adc8de5321d15212d771abfc5fab367f80ac683eb0b97077a9a887bd95ac` |
+| `.superpowers/sdd/2026-10-28-p1-remaining-production-development/progress.md` | `6f01a4c7837be9dfa3490027d28d4c5684e9f03c56227513fa783edb3f26126a` |
+| `.superpowers/sdd/2026-10-28-p1-remaining-production-development/task-13-report.md` | `fbe06aacca15603465b85ed79a1274c619b267217bea252919d28a84bb56428f` |
+| `.superpowers/sdd/2026-10-28-p1-remaining-production-development/task-14-report.md` | `745aa6dfee6a86f5911d881ff235a0a29cc02a834c55edbfaf559e5751df77f1` |
+| `.superpowers/sdd/2026-10-28-p1-remaining-production-development/task-15-brief.md` | `0dcc031842b3198898b1163689e47873ed9932698c8f4e2812c3b5f56768754d` |
+| `.superpowers/sdd/2026-10-28-p1-remaining-production-development/task-15-report.md` | `9bfdcd17eee5288d415dc101b337c6b05dd1a1b66f255aa1994c48a47c4c5f7b` |
+| `.superpowers/sdd/2026-10-28-p1-remaining-production-development/final-evidence-report.md` | `3a13c72f58ff08e66f42de20d693db2db1a26b98168cb09ea952e1a1abaa4ade` |

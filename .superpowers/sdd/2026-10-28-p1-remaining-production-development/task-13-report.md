@@ -1,5 +1,7 @@
 # Task 13 report — final exact candidate and active evidence lock
 
+> **Historical candidate:** this report records source `8d26aa15ef8d6bf7c9248bdd1899cf01a352cb2a` and artifact `e805c277577da8491dca51933dadb5c36acc805b`. Task18 later qualified source `c23c4cca72021ce6621eaacd66f2bfc23f4cc129` and artifact `be6f713b255f6b654b73ae4343db1db5c07e3840`; current evidence is in [`task-15-report.md`](task-15-report.md) and the [final evidence report](final-evidence-report.md).
+
 Date: 2026-10-29
 Status: local candidate build and tests complete; documentation/evidence verification recorded below. External qualification and final independent review remain outstanding.
 
@@ -134,3 +136,7 @@ The correction is documentation-only. The focused documentation integrity test, 
 The final review correction commit is `becb3951d96f395b2c3ec9303e578dfb1e7eda5d` / tree `3d9bd870d2a46b805106602cfcacb92bbba7b55a`. It corrects routed lease-renewal identity, alert restart after a committed-attempt crash, exact 0051 permit-issue payload validation, and publication-hold source/reason revalidation. Focused regressions and red/green results are recorded in [`task-14-report.md`](task-14-report.md); route (4), alert crash/retry (12), normal delivery/escalation (3), issue/claim event (13), and hold/liability (8) selected cases pass. Touched files compile and whitespace validation passes. No full suite or exact-candidate artifact/evidence rebuild was performed.
 
 The Task 13 wheel, candidate lock, synthetic package, and active evidence lock remain historical and still identify source `8d26aa15`. They are not evidence for the Task 14 source. The controller owns creating and validating the new exact candidate after review. Production effects remain disabled; RG0/full RG1 remain `HELD`; P2 remains `BLOCKED`; external qualification remains `NOT RUN`; no push, merge, or live-system contact occurred.
+
+## Historical-scope follow-up — Task18 supersession
+
+Task13’s build, 360 focused tests, 1,150-pass full suite, artifact hashes, and then-current lock remain valid only for the Task13 source/artifact stated above. They are superseded as the current local candidate record by Task18’s exact qualification: source `c23c4cca72021ce6621eaacd66f2bfc23f4cc129` / tree `d587cda6011bb0b974346353cec7a4856fbaf778`, artifact `be6f713b255f6b654b73ae4343db1db5c07e3840` / tree `419a33459a022d96c843313ffe5112c4e863c862`, 399 focused passes, and 1,189 passed / 26 skipped / 3 warnings in the one full non-live run. The active source lock and synthetic package now bind the newer exact candidate. Task13’s prior record is retained with its original scope.
