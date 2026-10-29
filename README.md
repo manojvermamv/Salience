@@ -33,7 +33,7 @@ The parallel-agent extension is a separate fixture qualification at `2653d2ecb3f
 | Current P1 local development candidate | Source `db3613482ac78cd708f6aa62e64854626ba7a906`; artifact `c1c78dd25e467d0ae48e9c949de6aeb555875ea8`; 406 focused and 1,196 passed / 26 skipped / 3 warnings in one full non-live run | Development-only local qualification; all external acceptance remains NOT RUN; effects disabled; RG0 and full RG1 are **HELD** |
 | Historical frozen 0043 application candidate | `182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f`; 796 passed / 17 skipped / 3 warnings in the final clean non-live run | Candidate-scoped local fixture qualification; effects disabled; RG0 and full RG1 are **HELD** |
 | Reviewed and pushed feature head | `6f5edc77edbfe189e46de4254c2fdb21c5652bce`; GPT-6.1 0/0/1 Minor, GPT-5.6 meta-review accepted; Actions run 38592066455 passed both required jobs (787/26/3) | Formal PR approval **NOT RUN**; `main` is unmerged |
-| Latest pushed documentation head | `67effe8c9c176c0bd1c17fdef20b841c0e14b6de`; Actions run 38610329330 completed successfully, with `verify` and `p0-regression` passed | Docs-only CI; no application test counts attributed |
+| Latest pushed documentation/evidence head | `62b5a5e6afc8bd6477bbd14a951166edc97ea683`; Actions run 40553244096 completed successfully, with `verify` and `p0-regression` passed | Docs-only CI; no application test counts attributed |
 | Initial audit source head | 7c1ddcda280b510048ad61106c406171edd64f18; Actions run 40443346020 passed verify and p0-regression | Audit execution complete for the frozen source/environment; formal PR approval NOT RUN, main unmerged |
 | Main branch | `8e50d68efbf2bec2aabfb2fe3226e01635de2adb` | Unmerged; formal independent PR approval remains NOT RUN |
 

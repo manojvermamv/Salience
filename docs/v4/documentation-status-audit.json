@@ -77,7 +77,7 @@
       ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-15-report.md": "74d105938bcfdfd94af814d985a3c759c84e54c4e1e6566a91a134696ca90863",
       ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-22-report.md": "3f8aebe87557d1d90c1d188ad82e7efd9d616964d53e2e11a197fa3a64e88745",
       ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-23-report.md": "78079f921b52425a101cbb0cdb4ecaad8e65072eecf7bd91c4da4ff616b8af23",
-      "README.md": "03a966bec447f9bc91e8d1067bbb97f5428057b4ca8295e6a5bf486a6c64f18e",
+      "README.md": "b9ba4540df38eac723c81d4be8907c79c216752682d42e1430f8f28da4fe2ebe",
       "docs/README.md": "47a3bb86f4fc31e1fc836852dcb8c6f4f3f32433b46451f34af5e7af32e623a6",
       "docs/superpowers/plans/2026-10-27-p1-production-policy-and-revocation.md": "c1564a7ec7d09f63b5aba105678c8b5929619fecc49e5b4bb3e415ed1340672e",
       "docs/superpowers/plans/2026-10-27-p1-rg0-rg1-initial-gap-audit.md": "5d1dd8a86718184d03324144643dfb009cb36243a5bd0c0f14c46844eb3c5cd4",
@@ -94,7 +94,7 @@
       "docs/v4/p1-production-policy-revocation-evidence.json": "e5a5a3d424157479cacaf00eae39614a5abe12ecdb04ac38af0c95692dbd982b",
       "docs/v4/p1-qualification-matrix.json": "fac0cd91cbe9e94376596fd596b771c5efb966b40184df657220d56a6392cbd3",
       "docs/v4/p1-remaining-production-development-evidence.json": "cb76e5c076df6850c8f122d43905c16cd5eb815921a4960574b5108c0388eb49",
-      "docs/v4/p1-rg0-rg1-audit-and-spec-review.md": "c02e14ea977a253a1742820b77ee99d40bf032e5bc01b7dfdad45fb7da7a1fbb",
+      "docs/v4/p1-rg0-rg1-audit-and-spec-review.md": "b713ee4712977473c822a77812dee934011448f766910450dbdaf336589586a4",
       "docs/v4/p1-rg0-rg1-external-acceptance.schema.json": "0086353075c823f92f78b2d4f5e48005e62660537b70c95864b5f4ed5e2c945c",
       "docs/v4/p1-rg0-rg1-initial-gap-audit.json": "33fe485384dcf60e36df8d48ace6394c80bce0d1bd9e6b9b39c7a905d65676b1",
       "docs/v4/p1-rg0-rg1-initial-gap-audit.md": "62aab5afb39f7c47e355a68ccf56e319a72955247515dfbdba8913fd797a5944",
@@ -1426,7 +1426,7 @@
     },
     {
       "path": "README.md",
-      "sha256": "03a966bec447f9bc91e8d1067bbb97f5428057b4ca8295e6a5bf486a6c64f18e",
+      "sha256": "b9ba4540df38eac723c81d4be8907c79c216752682d42e1430f8f28da4fe2ebe",
       "disposition": "current Task22/23 exact local candidate status; external acceptance remains NOT RUN/HELD"
     },
     {
@@ -2426,7 +2426,7 @@
     },
     {
       "path": "docs/v4/p1-rg0-rg1-audit-and-spec-review.md",
-      "sha256": "c02e14ea977a253a1742820b77ee99d40bf032e5bc01b7dfdad45fb7da7a1fbb",
+      "sha256": "b713ee4712977473c822a77812dee934011448f766910450dbdaf336589586a4",
       "disposition": "frozen initial audit/review scope plus current Task22/23 local candidate addendum; external gates HELD"
     },
     {
@@ -3027,7 +3027,7 @@
     ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-15-report.md": "74d105938bcfdfd94af814d985a3c759c84e54c4e1e6566a91a134696ca90863",
     ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-22-report.md": "3f8aebe87557d1d90c1d188ad82e7efd9d616964d53e2e11a197fa3a64e88745",
     ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-23-report.md": "78079f921b52425a101cbb0cdb4ecaad8e65072eecf7bd91c4da4ff616b8af23",
-    "README.md": "03a966bec447f9bc91e8d1067bbb97f5428057b4ca8295e6a5bf486a6c64f18e",
+    "README.md": "b9ba4540df38eac723c81d4be8907c79c216752682d42e1430f8f28da4fe2ebe",
     "docs/README.md": "47a3bb86f4fc31e1fc836852dcb8c6f4f3f32433b46451f34af5e7af32e623a6",
     "docs/superpowers/plans/2026-10-27-p1-production-policy-and-revocation.md": "c1564a7ec7d09f63b5aba105678c8b5929619fecc49e5b4bb3e415ed1340672e",
     "docs/superpowers/plans/2026-10-27-p1-rg0-rg1-initial-gap-audit.md": "5d1dd8a86718184d03324144643dfb009cb36243a5bd0c0f14c46844eb3c5cd4",
@@ -3044,7 +3044,7 @@
     "docs/v4/p1-production-policy-revocation-evidence.json": "e5a5a3d424157479cacaf00eae39614a5abe12ecdb04ac38af0c95692dbd982b",
     "docs/v4/p1-qualification-matrix.json": "fac0cd91cbe9e94376596fd596b771c5efb966b40184df657220d56a6392cbd3",
     "docs/v4/p1-remaining-production-development-evidence.json": "cb76e5c076df6850c8f122d43905c16cd5eb815921a4960574b5108c0388eb49",
-    "docs/v4/p1-rg0-rg1-audit-and-spec-review.md": "c02e14ea977a253a1742820b77ee99d40bf032e5bc01b7dfdad45fb7da7a1fbb",
+    "docs/v4/p1-rg0-rg1-audit-and-spec-review.md": "b713ee4712977473c822a77812dee934011448f766910450dbdaf336589586a4",
     "docs/v4/p1-rg0-rg1-external-acceptance.schema.json": "0086353075c823f92f78b2d4f5e48005e62660537b70c95864b5f4ed5e2c945c",
     "docs/v4/p1-rg0-rg1-initial-gap-audit.json": "33fe485384dcf60e36df8d48ace6394c80bce0d1bd9e6b9b39c7a905d65676b1",
     "docs/v4/p1-rg0-rg1-initial-gap-audit.md": "62aab5afb39f7c47e355a68ccf56e319a72955247515dfbdba8913fd797a5944",

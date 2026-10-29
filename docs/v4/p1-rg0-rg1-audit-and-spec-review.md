@@ -372,7 +372,7 @@ SHA-256 values below bind the current Task22/23 documentation handoff after this
 | `.superpowers/sdd/2026-10-28-p1-remaining-production-development/task-15-report.md` | `74d105938bcfdfd94af814d985a3c759c84e54c4e1e6566a91a134696ca90863` |
 | `.superpowers/sdd/2026-10-28-p1-remaining-production-development/task-22-report.md` | `3f8aebe87557d1d90c1d188ad82e7efd9d616964d53e2e11a197fa3a64e88745` |
 | `.superpowers/sdd/2026-10-28-p1-remaining-production-development/task-23-report.md` | `78079f921b52425a101cbb0cdb4ecaad8e65072eecf7bd91c4da4ff616b8af23` |
-| `README.md` | `03a966bec447f9bc91e8d1067bbb97f5428057b4ca8295e6a5bf486a6c64f18e` |
+| `README.md` | `b9ba4540df38eac723c81d4be8907c79c216752682d42e1430f8f28da4fe2ebe` |
 | `docs/README.md` | `47a3bb86f4fc31e1fc836852dcb8c6f4f3f32433b46451f34af5e7af32e623a6` |
 | `docs/superpowers/plans/2026-10-27-p1-production-policy-and-revocation.md` | `c1564a7ec7d09f63b5aba105678c8b5929619fecc49e5b4bb3e415ed1340672e` |
 | `docs/superpowers/plans/2026-10-27-p1-rg0-rg1-initial-gap-audit.md` | `5d1dd8a86718184d03324144643dfb009cb36243a5bd0c0f14c46844eb3c5cd4` |
