@@ -525,6 +525,15 @@ async def run_routed_worker(
             if not isinstance(renewed, RouteLease):
                 raise PermissionError("route authority returned an invalid renewal")
             _validate_routed_lease(route, renewed, route_authority, now=now())
+            if (
+                renewed.route_id != current.route_id
+                or renewed.slot_id != current.slot_id
+                or renewed.owner_id != current.owner_id
+                or renewed.fencing_epoch != current.fencing_epoch
+                or renewed.route_manifest_sha256 != current.route_manifest_sha256
+                or renewed.artifact_lock_sha256 != current.artifact_lock_sha256
+            ):
+                raise PermissionError("route lease renewal changed immutable lease identity")
             current = renewed
     except asyncio.CancelledError as error:
         cancellation = error

@@ -159,6 +159,276 @@ def upgrade() -> None:
     )
 
     op.execute(
+        """CREATE FUNCTION public.v4_p1_rollback_issue_event_matches_v1(
+               p_permit_id uuid
+           ) RETURNS boolean LANGUAGE plpgsql STABLE SECURITY DEFINER
+           SET search_path = pg_catalog, public AS $$
+           DECLARE
+               total_events integer;
+               exact_events integer;
+           BEGIN
+               SELECT count(*), count(*) FILTER (WHERE
+                   event.workspace_id = permit.workspace_id
+                   AND event.goal_id = permit.goal_id
+                   AND event.intent_id = permit.intent_id
+                   AND event.cycle_id = permit.cycle_id
+                   AND event.subject_id = permit.subject_id
+                   AND event.payload = (
+                       jsonb_build_object(
+                           'schema_version',
+                               'salience.p1-production-authorization-event.v1',
+                           'action', 'issue',
+                           'outcome', 'allow',
+                           'operation_id', permit.operation_id::text,
+                           'permit_id', permit.permit_id::text,
+                           'claim_id', NULL,
+                           'decision_id', permit.route_fence_decision_id::text,
+                           'reason_code', NULL,
+                           'workspace_id', permit.workspace_id::text,
+                           'goal_id', permit.goal_id::text,
+                           'goal_revision', permit.goal_revision,
+                           'intent_id', permit.intent_id::text,
+                           'cycle_id', permit.cycle_id::text,
+                           'context_id', permit.context_id::text,
+                           'subject_id', permit.subject_id::text,
+                           'subject_revision', permit.subject_revision,
+                           'grant_ids', permit.grant_ids,
+                           'policy_version_id', permit.policy_version_id::text,
+                           'policy_document_hash', permit.policy_document_hash,
+                           'approval_request_id', permit.approval_request_id::text,
+                           'approval_expires_at',
+                               permit.request_snapshot->'approval_expires_at',
+                           'required_scopes',
+                               permit.request_snapshot->'required_scopes',
+                           'effect_type', permit.effect_type,
+                           'purpose', permit.purpose,
+                           'artifact_sha256', permit.artifact_sha256,
+                           'account_id', permit.account_id,
+                           'budget_id', permit.request_snapshot->'budget_id',
+                           'budget_reservation_id',
+                               permit.request_snapshot->'budget_reservation_id',
+                           'provider_id', permit.provider_id,
+                           'idempotency_key',
+                               permit.request_snapshot->'idempotency_key',
+                           'workspace_stop_revision',
+                               permit.request_snapshot->'workspace_stop_revision',
+                           'goal_stop_revision',
+                               permit.request_snapshot->'goal_stop_revision',
+                           'database_time', event.payload->'database_time'
+                       )
+                       || CASE
+                           WHEN permit.request_snapshot ?| ARRAY[
+                               'publication_request_id', 'job_id', 'workflow_id',
+                               'workflow_run_id', 'publication_plan_id',
+                               'publication_attempt_id', 'external_effect_id',
+                               'remote_receipt_id'
+                           ]::text[] THEN jsonb_build_object(
+                               'publication_binding', jsonb_strip_nulls(
+                                   jsonb_build_object(
+                                       'publication_request_id',
+                                           permit.request_snapshot->'publication_request_id',
+                                       'job_id', permit.request_snapshot->'job_id',
+                                       'workflow_id', permit.request_snapshot->'workflow_id',
+                                       'workflow_run_id',
+                                           permit.request_snapshot->'workflow_run_id',
+                                       'publication_plan_id',
+                                           permit.request_snapshot->'publication_plan_id',
+                                       'publication_attempt_id',
+                                           permit.request_snapshot->'publication_attempt_id',
+                                       'external_effect_id',
+                                           permit.request_snapshot->'external_effect_id',
+                                       'remote_receipt_id',
+                                           permit.request_snapshot->'remote_receipt_id'
+                                   )
+                               )
+                           )
+                           ELSE '{}'::jsonb
+                       END
+                   )
+                   AND jsonb_typeof(event.payload->'database_time') = 'string'
+                   AND event.payload->>'database_time' ~*
+                       '(Z|[+-][0-9]{2}:[0-9]{2})$'
+                   AND event.created_at <=
+                       (event.payload->>'database_time')::timestamptz
+                   AND (event.payload->>'database_time')::timestamptz <=
+                       permit.issued_at
+               )
+               INTO total_events, exact_events
+               FROM public.v4_production_effect_permits permit
+               JOIN public.v4_cycle_events event
+                 ON event.kind = 'production_permit_issued'
+                AND event.payload->>'permit_id' = permit.permit_id::text
+               WHERE permit.permit_id = p_permit_id;
+
+               RETURN total_events = 1 AND exact_events = 1;
+           EXCEPTION WHEN OTHERS THEN
+               RETURN false;
+           END
+           $$"""
+    )
+    op.execute(
+        "REVOKE ALL ON FUNCTION public.v4_p1_rollback_issue_event_matches_v1(uuid) FROM PUBLIC"
+    )
+
+    op.execute(
+        """CREATE FUNCTION public.v4_p1_rollback_production_hold_matches_v1(
+               p_work_id uuid
+           ) RETURNS boolean LANGUAGE plpgsql STABLE SECURITY DEFINER
+           SET search_path = pg_catalog, public AS $$
+           DECLARE
+               work_row public.v4_production_recovery_work%ROWTYPE;
+               enrollment_row public.v4_production_intent_enrollments%ROWTYPE;
+               cycle_row public.v4_cycles%ROWTYPE;
+               dispatch_row public.v4_production_current_dispatch%ROWTYPE;
+               permit_row public.v4_production_effect_permits%ROWTYPE;
+               expected_snapshot jsonb;
+               source_material jsonb;
+               expected_fingerprint text;
+           BEGIN
+               SELECT * INTO work_row
+               FROM public.v4_production_recovery_work work
+               WHERE work.work_id = p_work_id
+                 AND work.source_discriminant = 'production_publication_hold';
+               IF NOT FOUND
+                  OR work_row.source_id IS DISTINCT FROM work_row.operation_id
+                  OR work_row.case_revision IS NOT NULL
+                  OR work_row.state IS DISTINCT FROM 'held'
+                  OR work_row.due_at IS NOT NULL
+                  OR work_row.expires_at IS NOT NULL THEN
+                   RETURN false;
+               END IF;
+
+               SELECT * INTO enrollment_row
+               FROM public.v4_production_intent_enrollments enrollment
+               WHERE enrollment.intent_id = work_row.intent_id
+                 AND enrollment.eligibility_revision = work_row.eligibility_revision
+                 AND enrollment.workspace_id = work_row.workspace_id
+                 AND enrollment.goal_id = work_row.goal_id;
+               IF NOT FOUND THEN
+                   RETURN false;
+               END IF;
+
+               SELECT * INTO cycle_row
+               FROM public.v4_cycles cycle
+               WHERE cycle.id = work_row.cycle_id
+                 AND cycle.intent_id = work_row.intent_id
+                 AND cycle.context_id = work_row.context_id
+                 AND cycle.operation_id = work_row.operation_id;
+               IF NOT FOUND THEN
+                   RETURN false;
+               END IF;
+
+               SELECT dispatch.* INTO dispatch_row
+               FROM public.v4_production_current_dispatch dispatch
+               WHERE dispatch.operation_id = work_row.operation_id
+                 AND dispatch.generation = work_row.source_revision
+                 AND dispatch.current_claim_id IS NOT NULL
+                 AND EXISTS (
+                     SELECT 1
+                     FROM public.v4_production_effect_permits permit
+                     JOIN public.v4_production_effect_permit_claims claim
+                       ON claim.claim_id = dispatch.current_claim_id
+                      AND claim.permit_id = permit.permit_id
+                      AND claim.operation_id = permit.operation_id
+                      AND claim.generation = permit.generation
+                     WHERE permit.permit_id = dispatch.current_permit_id
+                       AND permit.operation_id = dispatch.operation_id
+                       AND permit.generation = dispatch.generation
+                       AND permit.intent_id = work_row.intent_id
+                       AND permit.cycle_id = work_row.cycle_id
+                       AND permit.context_id = work_row.context_id
+                 );
+               IF NOT FOUND THEN
+                   RETURN false;
+               END IF;
+
+               SELECT * INTO permit_row
+               FROM public.v4_production_effect_permits permit
+               WHERE permit.permit_id = dispatch_row.current_permit_id
+                 AND permit.operation_id = dispatch_row.operation_id
+                 AND permit.generation = dispatch_row.generation;
+               IF NOT FOUND
+                  OR work_row.target_alias IS DISTINCT FROM permit_row.provider_id
+                  OR work_row.remote_account_id IS DISTINCT FROM permit_row.account_id
+                  OR work_row.owner_id IS DISTINCT FROM permit_row.subject_id
+                  OR work_row.request_fingerprint IS DISTINCT FROM
+                     encode(public.digest(permit_row.request_snapshot::text, 'sha256'), 'hex')
+                  OR NOT (
+                      (work_row.reason = 'expired_permit_receipt'
+                       AND cycle_row.state <> 'closed'
+                       AND permit_row.expires_at <= clock_timestamp())
+                      OR
+                      (work_row.reason = 'published_during_cancel'
+                       AND cycle_row.state = 'closed'
+                       AND cycle_row.disposition = 'cancelled')
+                  ) THEN
+                   RETURN false;
+               END IF;
+
+               expected_snapshot :=
+                   public.v4_production_recovery_publication_snapshot_v1(
+                       work_row.operation_id
+                   );
+               IF expected_snapshot IS NULL
+                  OR work_row.snapshot IS DISTINCT FROM expected_snapshot
+                  OR work_row.snapshot_version IS DISTINCT FROM
+                     'salience.p1-production-publication-liability.v1'
+                  OR work_row.snapshot_sha256 IS DISTINCT FROM
+                     encode(public.digest(work_row.snapshot::text, 'sha256'), 'hex')
+                  OR jsonb_typeof(work_row.snapshot) IS DISTINCT FROM 'object'
+                  OR NOT (work_row.snapshot ?& ARRAY[
+                     'production_intent_enrollment','goal','intent','cycle','context','job',
+                     'production_current_dispatch','production_permits',
+                     'production_permit_claims','publication_request','publication_plan',
+                     'publication_attempt','external_effect','budget_reservation','output',
+                     'remote_publication_receipts','publication_status_events','cycle_events',
+                     'cycle_outbox','job_checkpoints','audit_events','provenance_records']::text[])
+                  OR (work_row.snapshot - ARRAY[
+                     'production_intent_enrollment','goal','intent','cycle','context','job',
+                     'production_current_dispatch','production_permits',
+                     'production_permit_claims','publication_request','publication_plan',
+                     'publication_attempt','external_effect','budget_reservation','output',
+                     'remote_publication_receipts','publication_status_events','cycle_events',
+                     'cycle_outbox','job_checkpoints','audit_events','provenance_records']::text[])
+                     <> '{}'::jsonb
+                  OR (work_row.remote_resource_id IS NOT NULL AND NOT EXISTS (
+                     SELECT 1
+                     FROM jsonb_array_elements(
+                         expected_snapshot->'remote_publication_receipts'
+                     ) receipt
+                     WHERE receipt->>'remote_id' = work_row.remote_resource_id
+                  )) THEN
+                   RETURN false;
+               END IF;
+
+               source_material := jsonb_build_object(
+                   'source_discriminant', work_row.source_discriminant,
+                   'source_id', work_row.source_id,
+                   'enrollment', to_jsonb(enrollment_row),
+                   'cycle', to_jsonb(cycle_row),
+                   'production_current_dispatch', to_jsonb(dispatch_row),
+                   'production_permit', to_jsonb(permit_row),
+                   'reason', work_row.reason,
+                   'state', work_row.state,
+                   'target_alias', work_row.target_alias,
+                   'remote_account_id', work_row.remote_account_id,
+                   'remote_resource_id', work_row.remote_resource_id,
+                   'snapshot_sha256', work_row.snapshot_sha256
+               );
+               expected_fingerprint := encode(
+                   public.digest(source_material::text, 'sha256'), 'hex'
+               );
+               RETURN work_row.source_fingerprint = expected_fingerprint;
+           EXCEPTION WHEN OTHERS THEN
+               RETURN false;
+           END
+           $$"""
+    )
+    op.execute(
+        "REVOKE ALL ON FUNCTION public.v4_p1_rollback_production_hold_matches_v1(uuid) FROM PUBLIC"
+    )
+
+    op.execute(
         """CREATE FUNCTION public.v4_p1_recovery_rollback_inventory_v2(
             p_workspace_id uuid
         ) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER
@@ -494,51 +764,9 @@ def upgrade() -> None:
                 WHERE permit.workspace_id = p_workspace_id
                 ORDER BY permit.operation_id, permit.generation, permit.permit_id
             LOOP
-                IF (SELECT count(*)
-                    FROM public.v4_cycle_events event
-                    WHERE event.kind = 'production_permit_issued'
-                      AND event.workspace_id = permit_row.workspace_id
-                      AND event.goal_id = permit_row.goal_id
-                      AND event.intent_id = permit_row.intent_id
-                      AND event.cycle_id = permit_row.cycle_id
-                      AND event.subject_id = permit_row.subject_id
-                      AND event.payload->>'schema_version' =
-                          'salience.p1-production-authorization-event.v1'
-                      AND event.payload->>'action' = 'issue'
-                      AND event.payload->>'outcome' = 'allow'
-                      AND event.payload->>'operation_id' = permit_row.operation_id::text
-                      AND event.payload->>'permit_id' = permit_row.permit_id::text
-                      AND event.payload ? 'claim_id'
-                      AND event.payload->'claim_id' = 'null'::jsonb
-                      AND event.payload->>'decision_id' =
-                          permit_row.route_fence_decision_id::text
-                      AND event.payload->>'workspace_id' = permit_row.workspace_id::text
-                      AND event.payload->>'goal_id' = permit_row.goal_id::text
-                      AND event.payload->>'goal_revision' = permit_row.goal_revision::text
-                      AND event.payload->>'intent_id' = permit_row.intent_id::text
-                      AND event.payload->>'cycle_id' = permit_row.cycle_id::text
-                      AND event.payload->>'context_id' = permit_row.context_id::text
-                      AND event.payload->>'subject_id' = permit_row.subject_id::text
-                      AND event.payload->>'subject_revision' =
-                          permit_row.subject_revision::text
-                      AND event.payload->'grant_ids' = permit_row.grant_ids
-                      AND event.payload->>'policy_version_id' =
-                          permit_row.policy_version_id::text
-                      AND event.payload->>'policy_document_hash' =
-                          permit_row.policy_document_hash
-                      AND event.payload->>'approval_request_id' =
-                          permit_row.approval_request_id::text
-                      AND event.payload->>'effect_type' = permit_row.effect_type
-                      AND event.payload->>'purpose' = permit_row.purpose
-                      AND event.payload->>'account_id' = permit_row.account_id
-                      AND event.payload->>'provider_id' = permit_row.provider_id
-                      AND event.payload->>'artifact_sha256' = permit_row.artifact_sha256
-                      AND event.payload->>'idempotency_key' =
-                          permit_row.request_snapshot->>'idempotency_key'
-                      AND event.payload->>'workspace_stop_revision' =
-                          permit_row.request_snapshot->>'workspace_stop_revision'
-                      AND event.payload->>'goal_stop_revision' =
-                          permit_row.request_snapshot->>'goal_stop_revision') <> 1 THEN
+                IF NOT public.v4_p1_rollback_issue_event_matches_v1(
+                    permit_row.permit_id
+                ) THEN
                     blockers := blockers || jsonb_build_array(jsonb_build_object(
                         'kind', 'production_permit_issue_event_mismatch',
                         'permit_id', permit_row.permit_id,
@@ -732,6 +960,15 @@ def upgrade() -> None:
                 ORDER BY work.operation_id, work.reason, work.work_id
             LOOP
                 BEGIN
+                    IF NOT public.v4_p1_rollback_production_hold_matches_v1(
+                        recovery_row.work_id
+                    ) THEN
+                        blockers := blockers || jsonb_build_array(jsonb_build_object(
+                            'kind', 'production_publication_hold_source_mismatch',
+                            'operation_id', recovery_row.operation_id,
+                            'work_id', recovery_row.work_id,
+                            'reason', recovery_row.reason));
+                    END IF;
                     liability_snapshot :=
                         public.v4_production_recovery_publication_snapshot_v1(
                             recovery_row.operation_id

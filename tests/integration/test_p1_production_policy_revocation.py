@@ -3210,6 +3210,77 @@ def test_0051_rollback_inventory_rejects_claim_event_payload_drift(
         _drop_database_for_task12(case["database"], clone_name)
 
 
+@pytest.mark.parametrize(
+    "drift",
+    ["omitted_required_scopes", "unknown_field", "malformed_database_time", "future_database_time"],
+)
+def test_0051_rollback_inventory_rejects_permit_issue_event_drift(accounting, drift):
+    case, _ = _production_rollback_case(accounting)
+    issued = case["dispatch"].issue_permit(case["request"])
+    clone_name, rollback_database = _clone_database_for_task12(
+        case["database"], "task14_0051_issue_payload_"
+    )
+    try:
+        with psycopg.connect(rollback_database) as connection:
+            connection.execute(
+                "DROP FUNCTION public.v4_p1_recovery_rollback_inventory_v2(uuid)"
+            )
+            connection.execute(
+                "UPDATE alembic_version SET version_num='0050_p1_production_dispatch_reissue'"
+            )
+        migration_tests = import_module("test_v4_migrations")
+        upgraded = migration_tests._migration(rollback_database, "upgrade", "head")
+        assert upgraded.returncode == 0, upgraded.stdout + upgraded.stderr
+
+        with psycopg.connect(rollback_database, row_factory=dict_row) as connection:
+            issue_event = connection.execute(
+                "SELECT id FROM v4_cycle_events WHERE kind='production_permit_issued' "
+                "AND payload->>'permit_id'=%s",
+                (str(issued.permit_id),),
+            ).fetchone()
+            assert issue_event is not None
+            if drift == "omitted_required_scopes":
+                connection.execute("SET session_replication_role=replica")
+                connection.execute(
+                    "UPDATE v4_cycle_events SET payload=payload-'required_scopes' WHERE id=%s",
+                    (issue_event["id"],),
+                )
+                connection.execute("SET session_replication_role=origin")
+            elif drift == "unknown_field":
+                connection.execute("SET session_replication_role=replica")
+                connection.execute(
+                    "UPDATE v4_cycle_events SET payload=payload||'{\"unexpected\":true}'::jsonb WHERE id=%s",
+                    (issue_event["id"],),
+                )
+                connection.execute("SET session_replication_role=origin")
+            else:
+                database_time = (
+                    "not-an-instant"
+                    if drift == "malformed_database_time"
+                    else "2099-01-01T00:00:00+00:00"
+                )
+                connection.execute("SET session_replication_role=replica")
+                connection.execute(
+                    """UPDATE v4_cycle_events
+                       SET payload=jsonb_set(payload,'{database_time}',to_jsonb(%s::text))
+                       WHERE id=%s""",
+                    (database_time, issue_event["id"]),
+                )
+                connection.execute("SET session_replication_role=origin")
+
+            inventory = connection.execute(
+                "SELECT public.v4_p1_recovery_rollback_inventory_v2(%s) AS inventory",
+                (case["workspace_id"],),
+            ).fetchone()["inventory"]
+            assert any(
+                blocker["kind"] == "production_permit_issue_event_mismatch"
+                and blocker["permit_id"] == str(issued.permit_id)
+                for blocker in inventory["blockers"]
+            ), drift
+    finally:
+        _drop_database_for_task12(case["database"], clone_name)
+
+
 def test_rollback_inventory_is_deterministic_and_read_only(accounting):
     case, _ = _production_rollback_case(accounting)
     case["dispatch"].issue_permit(case["request"])

@@ -930,6 +930,134 @@ async def test_route_renewal_loss_drains_before_expiry_and_preserves_identity():
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "renewal_mismatch",
+    ["alternate_slot_owner", "fencing_epoch", "route_manifest_sha256", "artifact_lock_sha256"],
+)
+async def test_route_renewal_identity_mismatch_drains_under_last_trusted_lease(
+    renewal_mismatch,
+):
+    from dataclasses import replace
+
+    from salience.cycles.production_routing import RouteSlotReadback, route_manifest_sha256
+    from salience.workflows import worker
+
+    clock = _Clock()
+    authority = _authority(clock)
+    route = _publication_route()
+    lease = _route_lease(authority, route)
+    if renewal_mismatch == "alternate_slot_owner":
+        renewed = _route_lease(
+            authority, route, owner_id=_OWNER_B, slot_id=_SLOT_B
+        )
+    elif renewal_mismatch == "fencing_epoch":
+        renewed = replace(lease, fencing_epoch=lease.fencing_epoch + 1)
+    elif renewal_mismatch == "route_manifest_sha256":
+        renewed = replace(lease, route_manifest_sha256="c" * 64)
+    else:
+        renewed = replace(lease, artifact_lock_sha256="d" * 64)
+
+    class MismatchedRenewalAuthority:
+        protocol_version = authority.protocol_version
+        renewal_returned = False
+
+        def read_slot(self, route_id, slot_id):
+            if (
+                self.renewal_returned
+                and renewal_mismatch == "fencing_epoch"
+                and slot_id == lease.slot_id
+            ):
+                return RouteSlotReadback(
+                    route_id=route_id,
+                    slot_id=slot_id,
+                    available=True,
+                    state="leased",
+                    lease=renewed,
+                    fencing_epoch=renewed.fencing_epoch,
+                )
+            return authority.read_slot(route_id, slot_id)
+
+        def renew_slot(self, current):
+            self.renewal_returned = True
+            return renewed
+
+        def claim_slot(self, request):
+            return authority.claim_slot(request)
+
+        def authorize_action(self, request):
+            return authority.authorize_action(request)
+
+        def release_slot(self, current):
+            return authority.release_slot(current)
+
+        def terminate_slot(self, current):
+            return authority.terminate_slot(current)
+
+    assert lease.route_manifest_sha256 == route_manifest_sha256(route)
+    shutdown_called = asyncio.Event()
+    worker_stopped = asyncio.Event()
+    readbacks = []
+    sleep_calls = 0
+
+    class RunningWorker:
+        async def run(self):
+            await worker_stopped.wait()
+
+        async def shutdown(self):
+            shutdown_called.set()
+            worker_stopped.set()
+
+    class Readback:
+        def read_worker(self, route_id, slot_id):
+            readbacks.append((route_id, slot_id))
+            observed_lease = (
+                renewed
+                if renewal_mismatch == "alternate_slot_owner"
+                and slot_id == renewed.slot_id
+                else lease
+            )
+            return _worker_readback(route, observed_lease, observed_at=clock())
+
+    async def wait_for_renewal(interval):
+        nonlocal sleep_calls
+        sleep_calls += 1
+        if sleep_calls > 1:
+            worker_stopped.set()
+            await asyncio.sleep(0)
+            return
+        clock.advance(timedelta(seconds=interval))
+
+    result = await worker.run_routed_worker(
+        RunningWorker(),
+        route=route,
+        lease=lease,
+        route_authority=MismatchedRenewalAuthority(),
+        temporal_readback=Readback(),
+        sleep=wait_for_renewal,
+        now=clock,
+    )
+
+    assert result.status == "lease_lost"
+    assert shutdown_called.is_set()
+    assert readbacks == [(route.route_id, lease.slot_id)]
+    assert (
+        result.route_id,
+        result.slot_id,
+        result.owner_id,
+        result.fencing_epoch,
+        result.route_manifest_sha256,
+        result.artifact_lock_sha256,
+    ) == (
+        lease.route_id,
+        lease.slot_id,
+        lease.owner_id,
+        lease.fencing_epoch,
+        lease.route_manifest_sha256,
+        lease.artifact_lock_sha256,
+    )
+
+
+@pytest.mark.asyncio
 async def test_route_run_error_awaits_async_shutdown_before_readback():
     from salience.workflows import worker
 
