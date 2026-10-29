@@ -579,11 +579,71 @@ class ProductionRecoveryAlerts:
         attempt: int,
         policy_decision_id: UUID,
     ) -> datetime:
+        return self._schedule_retry_events(
+            work,
+            request,
+            attempt=attempt,
+            policy_decision_id=policy_decision_id,
+        )
+
+    def _schedule_owner_unavailable_retry(
+        self,
+        work: ProductionRecoveryWork,
+        owner_request: ProductionAlertRequest,
+        retry_request: ProductionAlertRequest,
+        *,
+        attempt: int,
+        owner_policy_decision_id: UUID,
+        retry_policy_decision_id: UUID,
+    ) -> datetime:
+        if (
+            owner_request.recipient_tier != "owner"
+            or replace(owner_request, recipient_tier="on_call") != retry_request
+        ):
+            raise RecoveryIdentityConflict(
+                "owner-unavailable retry must preserve the exact on-call request"
+            )
+        return self._schedule_retry_events(
+            work,
+            retry_request,
+            attempt=attempt,
+            policy_decision_id=retry_policy_decision_id,
+            owner_unavailable_request=owner_request,
+            owner_unavailable_policy_decision_id=owner_policy_decision_id,
+        )
+
+    def _schedule_retry_events(
+        self,
+        work: ProductionRecoveryWork,
+        request: ProductionAlertRequest,
+        *,
+        attempt: int,
+        policy_decision_id: UUID,
+        owner_unavailable_request: ProductionAlertRequest | None = None,
+        owner_unavailable_policy_decision_id: UUID | None = None,
+    ) -> datetime:
+        if (owner_unavailable_request is None) != (
+            owner_unavailable_policy_decision_id is None
+        ):
+            raise ValueError(
+                "owner-unavailable evidence and its policy decision must be paired"
+            )
         delay = request.retry_policy.retry_intervals[attempt - 1]
+        # Keep an owner-unavailable marker and the tier-changing retry event
+        # in this same transaction; validation and waiting happen after commit.
         with self.repository._connect() as connection:
             now = connection.execute(
                 "SELECT clock_timestamp() AS now"
             ).fetchone()["now"]
+            if owner_unavailable_request is not None:
+                self._record_owner_unavailable(
+                    connection,
+                    work,
+                    owner_unavailable_request,
+                    "owner_unavailable_escalated",
+                    owner_unavailable_policy_decision_id,
+                    occurred_at=now,
+                )
             self.repository._append_event(
                 connection,
                 work,
@@ -660,6 +720,8 @@ class ProductionRecoveryAlerts:
         request: ProductionAlertRequest,
         reason_code: str,
         policy_decision_id: UUID,
+        *,
+        occurred_at: datetime | None = None,
     ) -> None:
         event_key = f"owner-unavailable:{request.alert_event_id}"
         existing = connection.execute(
@@ -682,6 +744,7 @@ class ProductionRecoveryAlerts:
                 status="owner_unavailable",
                 error_code=reason_code,
             ),
+            occurred_at=occurred_at,
         )
 
     def send(self, alert: ProductionAlertRequest) -> ProductionAlertReceipt:
@@ -871,19 +934,13 @@ class ProductionRecoveryAlerts:
                         policy_decision_id=current.decision_id,
                     )
                 next_alert = replace(pending_alert, recipient_tier="on_call")
-                with self.repository._connect() as connection:
-                    self._record_owner_unavailable(
-                        connection,
-                        work,
-                        pending_alert,
-                        "owner_unavailable_escalated",
-                        current.decision_id,
-                    )
-                self._schedule_retry(
+                self._schedule_owner_unavailable_retry(
                     work,
+                    pending_alert,
                     next_alert,
                     attempt=pending_number,
-                    policy_decision_id=pending_attempt["policy_decision_id"],
+                    owner_policy_decision_id=current.decision_id,
+                    retry_policy_decision_id=pending_attempt["policy_decision_id"],
                 )
                 alert = next_alert
                 locked_retry = True
