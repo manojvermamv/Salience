@@ -329,8 +329,10 @@ class ProductionRecoveryAlerts:
         if len(attempts) > request.retry_policy.maximum_attempts:
             raise RecoveryIdentityConflict("persisted alert attempt count exceeds its policy")
 
-        for index, row in enumerate(attempts, start=1):
+        attempt_requests = [
             self._validate_attempt_event(work, request, row, attempt=index)
+            for index, row in enumerate(attempts, start=1)
+        ]
 
         expected_retry_count = min(
             len(attempts), request.retry_policy.maximum_attempts - 1
@@ -356,6 +358,23 @@ class ProductionRecoveryAlerts:
             if not isinstance(payload, Mapping):
                 raise RecoveryIdentityConflict("persisted retry payload is malformed")
             recorded_request = self._recorded_recipient_tier(request, payload)
+            previous_attempt_request = attempt_requests[failed_attempt - 1]
+            if recorded_request.recipient_tier != previous_attempt_request.recipient_tier:
+                if (
+                    previous_attempt_request.recipient_tier != "owner"
+                    or recorded_request.recipient_tier != "on_call"
+                    or not recorded_request.recipient_profile.on_call_group_ids
+                ):
+                    raise RecoveryIdentityConflict(
+                        "persisted retry changes the recipient tier without an authorized escalation"
+                    )
+                self._validate_owner_unavailable_escalation(
+                    connection,
+                    work,
+                    previous_attempt_request,
+                    attempts[failed_attempt - 1],
+                    row,
+                )
             expected = self._event_payload(
                 work,
                 recorded_request,
@@ -394,6 +413,15 @@ class ProductionRecoveryAlerts:
                 raise RecoveryIdentityConflict(
                     "persisted alert retry timing or decision conflicts with its attempt"
                 )
+            if failed_attempt < len(attempt_requests):
+                next_attempt_request = attempt_requests[failed_attempt]
+                if (
+                    recorded_request.recipient_tier
+                    != next_attempt_request.recipient_tier
+                ):
+                    raise RecoveryIdentityConflict(
+                        "persisted retry recipient tier conflicts with its next attempt"
+                    )
             last_retry_at = retry_at
 
         if (
@@ -402,6 +430,52 @@ class ProductionRecoveryAlerts:
         ):
             return len(attempts), last_retry_at, pending_attempt
         return len(attempts), None, pending_attempt
+
+    def _validate_owner_unavailable_escalation(
+        self,
+        connection,
+        work: ProductionRecoveryWork,
+        owner_request: ProductionAlertRequest,
+        attempt_row: Mapping[str, object],
+        retry_row: Mapping[str, object],
+    ) -> None:
+        event_key = f"owner-unavailable:{owner_request.alert_event_id}"
+        events = connection.execute(
+            """SELECT event_key,work_id,event_kind,occurred_at,payload
+               FROM v4_production_recovery_events
+               WHERE event_key=%s OR payload->>'event_key'=%s
+               ORDER BY occurred_at,event_id""",
+            (event_key, event_key),
+        ).fetchall()
+        expected = self._event_payload(
+            work,
+            owner_request,
+            status="owner_unavailable",
+            error_code="owner_unavailable_escalated",
+        )
+        if (
+            len(events) != 1
+            or events[0]["event_key"] != event_key
+            or events[0]["work_id"] != work.work_id
+            or events[0]["event_kind"] != "owner_unavailable"
+            or events[0]["payload"] != expected
+        ):
+            raise RecoveryIdentityConflict(
+                "persisted recipient escalation lacks exact owner-unavailable evidence"
+            )
+        unavailable_at = _require_aware(
+            events[0]["occurred_at"], "persisted owner-unavailable event time"
+        )
+        attempt_at = _require_aware(
+            attempt_row["occurred_at"], "persisted alert attempt time"
+        )
+        retry_event_at = _require_aware(
+            retry_row["occurred_at"], "persisted alert retry event time"
+        )
+        if not attempt_at <= unavailable_at <= retry_event_at:
+            raise RecoveryIdentityConflict(
+                "persisted owner-unavailable evidence is outside its retry boundary"
+            )
 
     def _wait_until_retry_at(self, retry_at: datetime) -> None:
         retry_at = _require_aware(retry_at, "persisted alert retry time")
@@ -696,45 +770,67 @@ class ProductionRecoveryAlerts:
                     return self._receipt_from_event(event, pending_alert)
 
             self._require_escalation_due(due_at)
-            current = self.authority.authorize_alert(work, alert)
+            # A committed attempt binds the exact recipient request. Reauthorize
+            # and resend that request after its claim TTL; a tier change can only
+            # take effect at the following retry boundary.
+            current = self.authority.authorize_alert(work, pending_alert)
             if not isinstance(current, ProductionRecoveryDecision) or not current.allowed:
                 raise PermissionError("alert authority changed before resuming a delivery attempt")
-            if alert.recipient_tier == "owner" and not self._owner_is_current(work):
-                if not alert.recipient_profile.on_call_group_ids:
+            advanced_to_next_tier = False
+            if pending_alert.recipient_tier == "owner" and not self._owner_is_current(work):
+                if not pending_alert.recipient_profile.on_call_group_ids:
                     return self._held_receipt(
                         work,
-                        alert,
+                        pending_alert,
                         reason_code="owner_unavailable_no_backup",
                         policy_decision_id=current.decision_id,
                     )
+                if pending_number >= pending_alert.retry_policy.maximum_attempts:
+                    return self._held_receipt(
+                        work,
+                        pending_alert,
+                        reason_code="owner_unavailable_attempts_exhausted",
+                        policy_decision_id=current.decision_id,
+                    )
+                next_alert = replace(pending_alert, recipient_tier="on_call")
                 with self.repository._connect() as connection:
                     self._record_owner_unavailable(
                         connection,
                         work,
-                        alert,
+                        pending_alert,
                         "owner_unavailable_escalated",
                         current.decision_id,
                     )
-                alert = replace(alert, recipient_tier="on_call")
-
-            receipt = self._send_and_lookup(alert, key)
-            if receipt is not None and receipt.status == "accepted":
-                with self.repository._connect() as connection:
-                    event = self._receipt_event(
-                        connection,
-                        work,
-                        alert,
-                        receipt,
-                        policy_decision_id=current.decision_id,
-                    )
-                    return self._receipt_from_event(event, alert)
-            if pending_number < alert.retry_policy.maximum_attempts:
                 self._schedule_retry(
                     work,
-                    alert,
+                    next_alert,
                     attempt=pending_number,
                     policy_decision_id=pending_attempt["policy_decision_id"],
                 )
+                alert = next_alert
+                advanced_to_next_tier = True
+
+            else:
+                alert = pending_alert
+            if not advanced_to_next_tier:
+                receipt = self._send_and_lookup(pending_alert, key)
+                if receipt is not None and receipt.status == "accepted":
+                    with self.repository._connect() as connection:
+                        event = self._receipt_event(
+                            connection,
+                            work,
+                            pending_alert,
+                            receipt,
+                            policy_decision_id=current.decision_id,
+                        )
+                        return self._receipt_from_event(event, pending_alert)
+                if pending_number < pending_alert.retry_policy.maximum_attempts:
+                    self._schedule_retry(
+                        work,
+                        pending_alert,
+                        attempt=pending_number,
+                        policy_decision_id=pending_attempt["policy_decision_id"],
+                    )
         else:
             decision = self.authority.authorize_alert(work, alert)
             if not isinstance(decision, ProductionRecoveryDecision) or not decision.allowed:

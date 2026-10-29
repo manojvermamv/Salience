@@ -1186,7 +1186,8 @@ class _CrashBeforeProviderSendTarget(_AlertTarget):
 
 @contextmanager
 def _crashed_alert_attempt_case(prefix, *, outcome="accepted", lookup_error=False,
-                                maximum_attempts=2):
+                                maximum_attempts=2,
+                                owner_unavailable_before_attempt=False):
     module = import_module("salience.cycles.production_recovery")
     schedule_tests = import_module("test_p1_production_schedule_fencing")
     with schedule_tests._production_enrollment_fixture(prefix) as (
@@ -1213,6 +1214,12 @@ def _crashed_alert_attempt_case(prefix, *, outcome="accepted", lookup_error=Fals
             module, outcome=outcome, lookup_error=lookup_error
         )
         authority = _RecoveryAuthority(module)
+        if owner_unavailable_before_attempt:
+            with psycopg.connect(database) as connection:
+                connection.execute(
+                    "UPDATE identity_subjects SET enabled=false WHERE id=%s",
+                    (work.owner_id,),
+                )
         first_process = module.ProductionRecoveryAlerts(
             repository,
             target=target,
@@ -1688,9 +1695,237 @@ def test_alert_restart_rechecks_unavailable_owner_after_committed_attempt_claim_
             ).fetchone()[0] == 1
 
 
+def test_alert_restart_preserves_committed_on_call_tier_when_owner_returns():
+    module = import_module("salience.cycles.production_recovery")
+    with _crashed_alert_attempt_case(
+        "task14_alert_on_call_tier_resume_",
+        owner_unavailable_before_attempt=True,
+    ) as case:
+        request = case["request"]
+        assert case["target"].calls[0][0].recipient_tier == "on_call"
+        with psycopg.connect(case["database"]) as connection:
+            connection.execute(
+                "UPDATE identity_subjects SET enabled=true WHERE id=%s",
+                (case["work"].owner_id,),
+            )
+
+        claim_expires_at = case["attempt"]["occurred_at"] + request.retry_policy.claim_ttl
+        clock_value = [claim_expires_at]
+        authorized_tiers = []
+        authorized_times = []
+        authorize_alert = case["authority"].authorize_alert
+
+        def track_authorization(work, alert):
+            authorized_tiers.append(alert.recipient_tier)
+            authorized_times.append(clock_value[0])
+            return authorize_alert(work, alert)
+
+        case["authority"].authorize_alert = track_authorization
+        restart = module.ProductionRecoveryAlerts(
+            case["repository"],
+            target=case["target"],
+            authority=case["authority"],
+            recipient_profile=request.recipient_profile,
+            retry_policy=request.retry_policy,
+            wait=lambda _delay: pytest.fail("expired attempt claim must not wait"),
+            now=lambda: clock_value[0],
+            schedule_hold_target=lambda *_args: None,
+        )
+
+        receipt = restart.send(request)
+
+        assert receipt.status == "accepted"
+        assert authorized_tiers == ["on_call"]
+        assert authorized_times == [claim_expires_at]
+        assert [call[0].recipient_tier for call in case["target"].calls] == [
+            "on_call",
+            "on_call",
+        ]
+        assert {call[1] for call in case["target"].calls} == {
+            request.idempotency_key
+        }
+        with psycopg.connect(case["database"]) as connection:
+            assert connection.execute(
+                """SELECT count(*) FROM v4_production_recovery_events
+                   WHERE work_id=%s AND event_kind='delivery_attempt'""",
+                (case["work"].work_id,),
+            ).fetchone()[0] == 1
+
+
+def test_alert_restart_changes_owner_tier_only_at_authorized_retry_boundary():
+    module = import_module("salience.cycles.production_recovery")
+    with _crashed_alert_attempt_case("task14_alert_owner_tier_retry_") as case:
+        request = case["request"]
+        with psycopg.connect(case["database"]) as connection:
+            connection.execute(
+                "UPDATE identity_subjects SET enabled=false WHERE id=%s",
+                (case["work"].owner_id,),
+            )
+
+        claim_expires_at = case["attempt"]["occurred_at"] + request.retry_policy.claim_ttl
+        clock_value = [case["attempt"]["occurred_at"]]
+        waits = []
+        authorized_tiers = []
+        authorized_times = []
+        authorize_alert = case["authority"].authorize_alert
+
+        def advance_clock(delay):
+            waits.append(delay)
+            clock_value[0] += delay
+
+        def track_authorization(work, alert):
+            authorized_tiers.append(alert.recipient_tier)
+            authorized_times.append(clock_value[0])
+            return authorize_alert(work, alert)
+
+        case["authority"].authorize_alert = track_authorization
+        restart = module.ProductionRecoveryAlerts(
+            case["repository"],
+            target=case["target"],
+            authority=case["authority"],
+            recipient_profile=request.recipient_profile,
+            retry_policy=request.retry_policy,
+            wait=advance_clock,
+            now=lambda: clock_value[0],
+            schedule_hold_target=lambda *_args: None,
+        )
+
+        receipt = restart.send(request)
+
+        assert receipt.status == "accepted"
+        assert waits[0] == request.retry_policy.claim_ttl
+        assert authorized_tiers == ["owner", "on_call"]
+        assert authorized_times[0] >= claim_expires_at
+        assert [call[0].recipient_tier for call in case["target"].calls] == [
+            "owner",
+            "on_call",
+        ]
+        assert {call[1] for call in case["target"].calls} == {
+            request.idempotency_key
+        }
+        with psycopg.connect(case["database"], row_factory=dict_row) as connection:
+            attempt_events = connection.execute(
+                """SELECT event_key,payload,policy_decision_id,occurred_at
+                   FROM v4_production_recovery_events
+                   WHERE work_id=%s AND event_kind='delivery_attempt'
+                   ORDER BY occurred_at,event_id""",
+                (case["work"].work_id,),
+            ).fetchall()
+            retry_event = connection.execute(
+                """SELECT * FROM v4_production_recovery_events
+                   WHERE work_id=%s AND event_kind='retry_scheduled'""",
+                (case["work"].work_id,),
+            ).fetchone()
+            owner_event = connection.execute(
+                """SELECT * FROM v4_production_recovery_events
+                   WHERE work_id=%s AND event_kind='owner_unavailable'""",
+                (case["work"].work_id,),
+            ).fetchone()
+            assert len(attempt_events) == 2
+            assert [event["event_key"] for event in attempt_events] == [
+                f"delivery-attempt:{request.alert_event_id}:1",
+                f"delivery-attempt:{request.alert_event_id}:2",
+            ]
+            assert "owner_id" in attempt_events[0]["payload"]
+            assert "owner_id" not in attempt_events[1]["payload"]
+            assert retry_event is not None
+            assert retry_event["payload"]["attempt"] == 2
+            assert "owner_id" not in retry_event["payload"]
+            assert authorized_times[1] >= datetime.fromisoformat(
+                retry_event["payload"]["retry_at"]
+            )
+            assert retry_event["policy_decision_id"] == attempt_events[0]["policy_decision_id"]
+            assert owner_event is not None
+            assert owner_event["payload"]["status"] == "owner_unavailable"
+            assert owner_event["payload"]["error_code"] == "owner_unavailable_escalated"
+            assert owner_event["occurred_at"] <= retry_event["occurred_at"]
+            assert retry_event["occurred_at"] <= attempt_events[1]["occurred_at"]
+
+
+@pytest.mark.parametrize("hold_reason", ["final_attempt", "no_backup"])
+def test_alert_restart_holds_instead_of_changing_pending_owner_attempt_tier(hold_reason):
+    from dataclasses import replace
+
+    module = import_module("salience.cycles.production_recovery")
+    maximum_attempts = 1 if hold_reason == "final_attempt" else 2
+    with _crashed_alert_attempt_case(
+        f"task14_alert_owner_tier_hold_{hold_reason}_",
+        maximum_attempts=maximum_attempts,
+    ) as case:
+        request = case["request"]
+        if hold_reason == "no_backup":
+            request = replace(
+                request,
+                recipient_profile=replace(
+                    request.recipient_profile, on_call_group_ids=()
+                ),
+            )
+        with psycopg.connect(case["database"]) as connection:
+            connection.execute(
+                "UPDATE identity_subjects SET enabled=false WHERE id=%s",
+                (case["work"].owner_id,),
+            )
+
+        claim_expires_at = case["attempt"]["occurred_at"] + request.retry_policy.claim_ttl
+        clock_value = [case["attempt"]["occurred_at"]]
+        waits = []
+
+        def advance_clock(delay):
+            waits.append(delay)
+            clock_value[0] += delay
+
+        restart = module.ProductionRecoveryAlerts(
+            case["repository"],
+            target=case["target"],
+            authority=case["authority"],
+            recipient_profile=request.recipient_profile,
+            retry_policy=request.retry_policy,
+            wait=advance_clock,
+            now=lambda: clock_value[0],
+            schedule_hold_target=lambda *_args: None,
+        )
+
+        receipt = restart.send(request)
+
+        assert receipt.status == "held"
+        assert waits == [request.retry_policy.claim_ttl]
+        assert clock_value[0] >= claim_expires_at
+        assert [call[0].recipient_tier for call in case["target"].calls] == ["owner"]
+        assert {call[1] for call in case["target"].calls} == {
+            request.idempotency_key
+        }
+        with psycopg.connect(case["database"]) as connection:
+            assert connection.execute(
+                """SELECT count(*) FROM v4_production_recovery_events
+                   WHERE work_id=%s AND event_kind='delivery_attempt'""",
+                (case["work"].work_id,),
+            ).fetchone()[0] == 1
+            assert connection.execute(
+                """SELECT count(*) FROM v4_production_recovery_events
+                   WHERE work_id=%s AND event_kind='retry_scheduled'""",
+                (case["work"].work_id,),
+            ).fetchone()[0] == 0
+            assert connection.execute(
+                """SELECT count(*) FROM v4_production_recovery_events
+                   WHERE work_id=%s AND event_kind='owner_unavailable'""",
+                (case["work"].work_id,),
+            ).fetchone()[0] == 1
+            assert connection.execute(
+                """SELECT count(*) FROM v4_production_recovery_events
+                   WHERE work_id=%s AND event_kind='held_conflict'""",
+                (case["work"].work_id,),
+            ).fetchone()[0] == 1
+
+
 @pytest.mark.parametrize(
     "corruption",
-    ["missing_prior_retry", "malformed_retry_at", "conflicting", "policy_mismatch"],
+    [
+        "missing_prior_retry",
+        "malformed_retry_at",
+        "conflicting",
+        "policy_mismatch",
+        "unbacked_tier_transition",
+    ],
 )
 def test_alert_restart_rejects_invalid_persisted_retry_evidence(corruption):
     module = import_module("salience.cycles.production_recovery")
@@ -1722,6 +1957,17 @@ def test_alert_restart_rejects_invalid_persisted_retry_evidence(corruption):
                 connection.execute("SET session_replication_role=replica")
                 connection.execute(
                     "DELETE FROM v4_production_recovery_events WHERE event_id=%s",
+                    (event["event_id"],),
+                )
+                connection.execute("SET session_replication_role=origin")
+            elif corruption == "unbacked_tier_transition":
+                connection.execute("SET session_replication_role=replica")
+                connection.execute(
+                    """UPDATE v4_production_recovery_events
+                       SET payload=payload-'owner_id',
+                           payload_sha256=encode(public.digest(
+                               (payload-'owner_id')::text,'sha256'),'hex')
+                       WHERE event_id=%s""",
                     (event["event_id"],),
                 )
                 connection.execute("SET session_replication_role=origin")
