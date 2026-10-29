@@ -53,6 +53,38 @@ class _Client:
         return self.handle
 
 
+class _CancellationSensitiveConnection:
+    """Model psycopg wait(): cancellation settles only after close wakes I/O."""
+
+    def __init__(self):
+        self.query_started = threading.Event()
+        self.closed = threading.Event()
+        self.events = []
+        self.close_calls = 0
+
+    async def execute(self, query, params=None):
+        if query != temporal_schedule_control._PLAN_LOOKUP_QUERY:
+            return None
+        self.query_started.set()
+        try:
+            await asyncio.Future()
+        except asyncio.CancelledError:
+            self.events.append("query_cancelled")
+            await asyncio.to_thread(self.closed.wait)
+            self.events.append("query_released")
+            raise
+
+    async def close(self):
+        if not self.closed.is_set():
+            self.close_calls += 1
+            self.events.append("connection_closed")
+            self.closed.set()
+
+    def release_for_test_cleanup(self):
+        # Lets a RED test recover the deliberately stuck old implementation.
+        self.closed.set()
+
+
 def _readback_fixture(monkeypatch, outcomes):
     control = temporal_schedule_control.TemporalFixtureLegacyScheduleControl(
         "postgresql://unused", workspace_id=WORKSPACE_ID,
@@ -161,36 +193,34 @@ async def test_async_plan_closes_connection_when_cancelled(monkeypatch):
     control, _, _, _, row = _readback_fixture(monkeypatch, [])
     real_async_plan = temporal_schedule_control.TemporalFixtureLegacyScheduleControl._plan_async.__get__(control)
     monkeypatch.setattr(control, "_plan_async", real_async_plan)
-    query_started = asyncio.Event()
-    connection_closed = asyncio.Event()
-
-    class Connection:
-        async def execute(self, query, params=None):
-            if query == temporal_schedule_control._PLAN_LOOKUP_QUERY:
-                query_started.set()
-                await asyncio.Future()
-
-        async def close(self):
-            connection_closed.set()
+    connection = _CancellationSensitiveConnection()
 
     async def connect(cls, conninfo, **kwargs):
-        return Connection()
+        return connection
 
     monkeypatch.setattr(psycopg.AsyncConnection, "connect", classmethod(connect))
     task = asyncio.create_task(control._plan_async(row))
-    await query_started.wait()
+    assert await asyncio.to_thread(connection.query_started.wait, 1)
+    started_at = time.monotonic()
     task.cancel()
-
-    with pytest.raises(asyncio.CancelledError):
-        await task
-
-    assert connection_closed.is_set()
+    try:
+        done, _ = await asyncio.wait({task}, timeout=0.25)
+        assert task in done, "cancelled plan read must close its socket and drain within the cleanup bound"
+        with pytest.raises(asyncio.CancelledError):
+            task.result()
+        assert time.monotonic() - started_at < 0.25
+        assert connection.events == ["connection_closed", "query_cancelled", "query_released"]
+    finally:
+        connection.release_for_test_cleanup()
+        if not task.done():
+            task.cancel()
+            await asyncio.wait({task}, timeout=0.25)
 
 
 def test_temporal_operation_deadlines_cover_bounded_read_phases():
     control_module = temporal_schedule_control
     describe_phase = (
-        control_module._PLAN_IO_BOUND_SECONDS
+        control_module._PLAN_TOTAL_BOUND_SECONDS
         + control_module._TEMPORAL_DESCRIBE_ATTEMPTS
         * control_module._TEMPORAL_DESCRIBE_TIMEOUT_SECONDS
         + (control_module._TEMPORAL_DESCRIBE_ATTEMPTS - 1)
@@ -200,8 +230,11 @@ def test_temporal_operation_deadlines_cover_bounded_read_phases():
         control_module._PLAN_CONNECT_TIMEOUT_SECONDS
         + control_module._PLAN_STATEMENT_TIMEOUT_SECONDS
     )
+    assert control_module._PLAN_OPERATION_TIMEOUT_SECONDS == 6
+    assert control_module._PLAN_CLEANUP_TIMEOUT_SECONDS == 0.5
+    assert control_module._PLAN_TOTAL_BOUND_SECONDS == 6.5
     assert control_module._PLAN_PREFLIGHT_OPERATION_TIMEOUT_SECONDS == (
-        control_module._PLAN_IO_BOUND_SECONDS + 1
+        control_module._PLAN_TOTAL_BOUND_SECONDS + 0.5
     )
     assert control_module._PLAN_CONNECT_TIMEOUT_SECONDS == 3
     assert control_module._PLAN_STATEMENT_TIMEOUT_SECONDS == 3
@@ -209,22 +242,25 @@ def test_temporal_operation_deadlines_cover_bounded_read_phases():
     assert control_module._TEMPORAL_DESCRIBE_TIMEOUT_SECONDS == 2
     assert control_module._TEMPORAL_DESCRIBE_ATTEMPTS == 2
     assert control_module._TEMPORAL_UPDATE_TIMEOUT_SECONDS == 2
-    assert control_module._DESCRIBE_OPERATION_TIMEOUT_SECONDS >= describe_phase + 0.95
-    assert control_module._DESCRIBE_OPERATION_TIMEOUT_SECONDS == 11
+    assert control_module._DESCRIBE_PLAN_PHASE_BOUND_SECONDS == describe_phase
+    assert control_module._DESCRIBE_OPERATION_TIMEOUT_SECONDS >= describe_phase + 1.45
+    assert control_module._DESCRIBE_OPERATION_TIMEOUT_SECONDS == 12
     assert control_module._PAUSE_OPERATION_TIMEOUT_SECONDS >= (
-        2 * describe_phase + control_module._TEMPORAL_UPDATE_TIMEOUT_SECONDS + 2.9
+        2 * describe_phase + control_module._TEMPORAL_UPDATE_TIMEOUT_SECONDS + 3.9
     )
-    assert control_module._PAUSE_OPERATION_TIMEOUT_SECONDS == 25
+    assert control_module._PAUSE_OPERATION_TIMEOUT_SECONDS == 27
     resume_phase = (
-        3 * control_module._PLAN_IO_BOUND_SECONDS
+        3 * control_module._PLAN_TOTAL_BOUND_SECONDS
+        + control_module._TEMPORAL_DESCRIBE_TIMEOUT_SECONDS
         + control_module._TEMPORAL_UPDATE_TIMEOUT_SECONDS
         + control_module._TEMPORAL_DESCRIBE_ATTEMPTS
         * control_module._TEMPORAL_DESCRIBE_TIMEOUT_SECONDS
         + (control_module._TEMPORAL_DESCRIBE_ATTEMPTS - 1)
         * control_module._TEMPORAL_DESCRIBE_RETRY_DELAY_SECONDS
     )
-    assert control_module._RESUME_OPERATION_TIMEOUT_SECONDS >= resume_phase + 2.95
-    assert control_module._RESUME_OPERATION_TIMEOUT_SECONDS == 27
+    assert resume_phase == 27.55  # Includes the SDK's initial update description.
+    assert control_module._RESUME_OPERATION_TIMEOUT_SECONDS >= resume_phase + 7.45
+    assert control_module._RESUME_OPERATION_TIMEOUT_SECONDS == 35
 
 
 @pytest.mark.asyncio
@@ -303,46 +339,126 @@ async def test_resume_plan_lookup_does_not_exceed_async_deadline(monkeypatch):
     assert handle.update_calls == []
 
 
-def test_public_describe_deadline_does_not_wait_for_plan_worker(monkeypatch):
+def test_public_describe_deadline_closes_driver_connection_before_draining(monkeypatch):
+    import psycopg
+
     control, _, _, _, row = _readback_fixture(monkeypatch, [])
-    plan_started = asyncio.Event()
-    plan_cancelled = asyncio.Event()
-    sync_plan_called = threading.Event()
+    connection = _CancellationSensitiveConnection()
 
-    def slow_sync_plan(_row, *, required=False):
-        sync_plan_called.set()
-        time.sleep(0.2)
-        return None
+    async def connect(cls, conninfo, **kwargs):
+        return connection
 
-    async def slow_async_plan(_row, *, required=False):
-        plan_started.set()
-        try:
-            await asyncio.sleep(0.2)
-        except asyncio.CancelledError:
-            plan_cancelled.set()
-            raise
-        return None
-
-    original_describe = control._describe
-
-    async def scaled_describe(*args):
-        async with asyncio.timeout(0.03):
-            return await original_describe(*args)
-
+    monkeypatch.setattr(psycopg.AsyncConnection, "connect", classmethod(connect))
+    real_async_plan = temporal_schedule_control.TemporalFixtureLegacyScheduleControl._plan_async.__get__(control)
+    monkeypatch.setattr(control, "_plan_async", real_async_plan)
     monkeypatch.setattr(control, "_pin", lambda schedule_id: (row, "fixture-schedule"))
-    monkeypatch.setattr(control, "_plan", slow_sync_plan, raising=False)
-    monkeypatch.setattr(control, "_plan_async", slow_async_plan, raising=False)
-    monkeypatch.setattr(control, "_describe", scaled_describe)
+    monkeypatch.setattr(temporal_schedule_control, "_DESCRIBE_OPERATION_TIMEOUT_SECONDS", 0.03)
+    finished = threading.Event()
+    outcome = []
 
+    def call_public_describe():
+        try:
+            control.describe(row["id"])
+        except BaseException as error:
+            outcome.append(error)
+        finally:
+            finished.set()
+
+    caller = threading.Thread(target=call_public_describe, daemon=True)
     started_at = time.monotonic()
-    with pytest.raises(TimeoutError):
-        control.describe(row["id"])
-    elapsed = time.monotonic() - started_at
+    caller.start()
+    try:
+        assert connection.query_started.wait(1)
+        returned_before_rescue = finished.wait(0.25)
+        elapsed = time.monotonic() - started_at
+        close_calls_before_rescue = connection.close_calls
+        events_before_rescue = list(connection.events)
+    finally:
+        connection.release_for_test_cleanup()
+        caller.join(timeout=1)
 
-    assert elapsed < 0.15
-    assert plan_started.is_set()
-    assert plan_cancelled.is_set()
-    assert not sync_plan_called.is_set()
+    assert returned_before_rescue, "asyncio.run() must not wait for psycopg's cancelled socket read"
+    assert elapsed < 0.25
+    assert close_calls_before_rescue == 1
+    assert events_before_rescue == ["connection_closed", "query_cancelled", "query_released"]
+    assert len(outcome) == 1 and isinstance(outcome[0], TimeoutError)
+    assert not caller.is_alive()
+
+
+@pytest.mark.asyncio
+async def test_internal_plan_deadline_closes_and_drains_driver_task(monkeypatch):
+    import psycopg
+
+    control, _, _, _, row = _readback_fixture(monkeypatch, [])
+    real_async_plan = temporal_schedule_control.TemporalFixtureLegacyScheduleControl._plan_async.__get__(control)
+    monkeypatch.setattr(control, "_plan_async", real_async_plan)
+    monkeypatch.setattr(
+        temporal_schedule_control, "_PLAN_OPERATION_TIMEOUT_SECONDS", 0.03, raising=False
+    )
+    connection = _CancellationSensitiveConnection()
+
+    async def connect(cls, conninfo, **kwargs):
+        return connection
+
+    monkeypatch.setattr(psycopg.AsyncConnection, "connect", classmethod(connect))
+    started_at = time.monotonic()
+    task = asyncio.create_task(control._plan_async(row))
+    try:
+        assert await asyncio.to_thread(connection.query_started.wait, 1)
+        done, _ = await asyncio.wait({task}, timeout=0.25)
+        assert task in done, "the internal plan deadline must close and drain the owned database task"
+        assert isinstance(task.exception(), TimeoutError)
+        assert time.monotonic() - started_at < 0.25
+        assert connection.events == ["connection_closed", "query_cancelled", "query_released"]
+        assert not [
+            task for task in asyncio.all_tasks()
+            if task is not asyncio.current_task()
+            and task.get_name().startswith("temporal-plan-read-")
+            and not task.done()
+        ]
+    finally:
+        connection.release_for_test_cleanup()
+        if not task.done():
+            task.cancel()
+            await asyncio.wait({task}, timeout=0.25)
+
+
+@pytest.mark.asyncio
+async def test_internal_plan_deadline_cancels_connect_stage(monkeypatch):
+    import psycopg
+
+    control, _, _, _, row = _readback_fixture(monkeypatch, [])
+    real_async_plan = temporal_schedule_control.TemporalFixtureLegacyScheduleControl._plan_async.__get__(control)
+    monkeypatch.setattr(control, "_plan_async", real_async_plan)
+    monkeypatch.setattr(
+        temporal_schedule_control, "_PLAN_OPERATION_TIMEOUT_SECONDS", 0.03
+    )
+    connect_started = asyncio.Event()
+    connect_cancelled = asyncio.Event()
+
+    async def connect(cls, conninfo, **kwargs):
+        assert kwargs["connect_timeout"] == 3
+        connect_started.set()
+        try:
+            await asyncio.Future()
+        except asyncio.CancelledError:
+            connect_cancelled.set()
+            raise
+
+    monkeypatch.setattr(psycopg.AsyncConnection, "connect", classmethod(connect))
+    task = asyncio.create_task(control._plan_async(row))
+    done, _ = await asyncio.wait({task}, timeout=0.25)
+
+    assert task in done
+    assert isinstance(task.exception(), TimeoutError)
+    assert connect_started.is_set()
+    assert connect_cancelled.is_set()
+    assert not [
+        pending for pending in asyncio.all_tasks()
+        if pending is not asyncio.current_task()
+        and pending.get_name().startswith("temporal-plan-read-")
+        and not pending.done()
+    ]
 
 
 def test_public_resume_preflight_timeout_prevents_local_rollback_mutation(monkeypatch):

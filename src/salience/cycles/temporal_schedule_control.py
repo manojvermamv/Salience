@@ -27,14 +27,22 @@ _PLAN_CONNECT_TIMEOUT_SECONDS = 3
 _PLAN_STATEMENT_TIMEOUT_SECONDS = 3
 _PLAN_STATEMENT_TIMEOUT_COMMAND = "SET LOCAL statement_timeout='3s'"
 _PLAN_IO_BOUND_SECONDS = _PLAN_CONNECT_TIMEOUT_SECONDS + _PLAN_STATEMENT_TIMEOUT_SECONDS
-_PLAN_PREFLIGHT_OPERATION_TIMEOUT_SECONDS = _PLAN_IO_BOUND_SECONDS + 1
+_PLAN_OPERATION_TIMEOUT_SECONDS = _PLAN_IO_BOUND_SECONDS
+_PLAN_CLEANUP_TIMEOUT_SECONDS = 0.5
+_PLAN_TOTAL_BOUND_SECONDS = _PLAN_OPERATION_TIMEOUT_SECONDS + _PLAN_CLEANUP_TIMEOUT_SECONDS
+_PLAN_PREFLIGHT_OPERATION_TIMEOUT_SECONDS = _PLAN_TOTAL_BOUND_SECONDS + 0.5
 _TEMPORAL_DESCRIBE_TIMEOUT_SECONDS = 2
 _TEMPORAL_DESCRIBE_ATTEMPTS = 2
 _TEMPORAL_DESCRIBE_RETRY_DELAY_SECONDS = 0.05
 _TEMPORAL_UPDATE_TIMEOUT_SECONDS = 2
-_DESCRIBE_OPERATION_TIMEOUT_SECONDS = 11
-_PAUSE_OPERATION_TIMEOUT_SECONDS = 25
-_RESUME_OPERATION_TIMEOUT_SECONDS = 27
+_DESCRIBE_PLAN_PHASE_BOUND_SECONDS = (
+    _PLAN_TOTAL_BOUND_SECONDS
+    + _TEMPORAL_DESCRIBE_ATTEMPTS * _TEMPORAL_DESCRIBE_TIMEOUT_SECONDS
+    + (_TEMPORAL_DESCRIBE_ATTEMPTS - 1) * _TEMPORAL_DESCRIBE_RETRY_DELAY_SECONDS
+)
+_DESCRIBE_OPERATION_TIMEOUT_SECONDS = 12
+_PAUSE_OPERATION_TIMEOUT_SECONDS = 27
+_RESUME_OPERATION_TIMEOUT_SECONDS = 35
 
 
 class TemporalFixtureLegacyScheduleControl(FixtureLegacyScheduleControl):
@@ -62,26 +70,75 @@ class TemporalFixtureLegacyScheduleControl(FixtureLegacyScheduleControl):
     async def _plan_async(self, row, *, required=False):
         import psycopg
         from psycopg.rows import dict_row
-        connection = await psycopg.AsyncConnection.connect(
-            self.database_url,
-            row_factory=dict_row,
-            connect_timeout=_PLAN_CONNECT_TIMEOUT_SECONDS,
-        )
-        try:
-            await connection.execute(_PLAN_STATEMENT_TIMEOUT_COMMAND)
-            cursor = await connection.execute(
-                _PLAN_LOOKUP_QUERY,
-                (row["id"], self.workspace_id, row["id"], self.workspace_id),
+
+        owned_connection = None
+
+        async def read_plan():
+            nonlocal owned_connection
+            connection = await psycopg.AsyncConnection.connect(
+                self.database_url,
+                row_factory=dict_row,
+                connect_timeout=_PLAN_CONNECT_TIMEOUT_SECONDS,
             )
-            plan = await cursor.fetchone()
-        finally:
-            # AsyncConnection.close() finishes the libpq handle without awaiting
-            # the server, so cancellation never waits for a blocking executor.
-            await connection.close()
-        return self._validate_plan(row, plan, required=required)
+            owned_connection = connection
+            try:
+                await connection.execute(_PLAN_STATEMENT_TIMEOUT_COMMAND)
+                cursor = await connection.execute(
+                    _PLAN_LOOKUP_QUERY,
+                    (row["id"], self.workspace_id, row["id"], self.workspace_id),
+                )
+                plan = await cursor.fetchone()
+            finally:
+                await connection.close()
+            return self._validate_plan(row, plan, required=required)
+
+        # Shield the driver task so this owner can close its socket before
+        # cancellation enters psycopg's AsyncConnection.wait() recovery path.
+        task = asyncio.create_task(
+            read_plan(), name=f"temporal-plan-read-{row['id']}"
+        )
+        operation_timeout = asyncio.timeout(_PLAN_OPERATION_TIMEOUT_SECONDS)
+        try:
+            async with operation_timeout:
+                return await asyncio.shield(task)
+        except TimeoutError:
+            if operation_timeout.expired():
+                await self._cancel_plan_read(task, owned_connection)
+            raise
+        except asyncio.CancelledError:
+            await self._cancel_plan_read(task, owned_connection)
+            raise
+
+    async def _cancel_plan_read(self, task, connection):
+        close_error = None
+        if connection is not None:
+            try:
+                # psycopg 3.3.5 waits on the original socket after cancellation.
+                # Finishing libpq first wakes that wait without a server reply.
+                await connection.close()
+            except Exception as error:
+                close_error = error
+
+        cleanup_deadline = asyncio.get_running_loop().time() + _PLAN_CLEANUP_TIMEOUT_SECONDS
+        while not task.done():
+            task.cancel()
+            remaining = cleanup_deadline - asyncio.get_running_loop().time()
+            if remaining <= 0:
+                break
+            await asyncio.wait({task}, timeout=remaining)
+        if not task.done():
+            raise RuntimeError("Temporal plan read did not drain after connection close")
+
+        if task.done() and not task.cancelled():
+            try:
+                task.exception()
+            except BaseException:
+                pass
+        if close_error is not None:
+            raise RuntimeError("Temporal plan connection failed to close") from close_error
 
     async def _preflight_resume_plan(self, row):
-        # 6s for connection and statement bounds, plus 1s for cancellation/close.
+        # The 6s plan deadline leaves a bounded 0.5s drain and 0.5s margin.
         async with asyncio.timeout(_PLAN_PREFLIGHT_OPERATION_TIMEOUT_SECONDS):
             return await self._plan_async(row, required=True)
 
@@ -169,7 +226,7 @@ class TemporalFixtureLegacyScheduleControl(FixtureLegacyScheduleControl):
         return description
 
     async def _describe(self,row,remote_id):
-        # 6s plan IO + 4s for two describe RPCs + retry delay + connection margin.
+        # 6.5s plan/drain + 4.05s for two read-only describes, with 1.45s margin.
         async with asyncio.timeout(_DESCRIBE_OPERATION_TIMEOUT_SECONDS):
             client = await Client.connect(self.temporal_target)
             description = await self._verified(client,client.get_schedule_handle(remote_id),row)
@@ -195,7 +252,7 @@ class TemporalFixtureLegacyScheduleControl(FixtureLegacyScheduleControl):
         return result
 
     async def _pause(self,row,remote_id):
-        # Two 10.05s verified reads + one 2s pause RPC + 2.9s overhead margin.
+        # Two 10.55s verified reads + one 2s pause RPC + 3.9s overhead margin.
         async with asyncio.timeout(_PAUSE_OPERATION_TIMEOUT_SECONDS):
             client = await Client.connect(self.temporal_target)
             handle = client.get_schedule_handle(remote_id)
@@ -217,8 +274,8 @@ class TemporalFixtureLegacyScheduleControl(FixtureLegacyScheduleControl):
         super().pause(schedule_id)
 
     async def _resume(self,row,remote_id,after_slot):
-        # Direct plan + one updater plan + final verified plan/read + one update
-        # RPC fit in 24.05s; this allows 2.95s overhead and caps SDK retries.
+        # Three 6.5s plan/drain phases, the SDK's 2s initial description, one
+        # 2s update, and a 4.05s final read total 27.55s; 35s leaves 7.45s.
         async with asyncio.timeout(_RESUME_OPERATION_TIMEOUT_SECONDS):
             client = await Client.connect(self.temporal_target)
             handle = client.get_schedule_handle(remote_id)
