@@ -2074,6 +2074,132 @@ def test_alert_restart_holds_when_outstanding_owner_retry_is_unavailable():
         assert held["payload"]["status"] == "held"
 
 
+def test_alert_restart_holds_owner_retry_if_owner_loses_eligibility_during_wait():
+    module = import_module("salience.cycles.production_recovery")
+    with _crashed_alert_retry_case(
+        "task14_alert_owner_retry_lost_during_wait_"
+    ) as case:
+        request = case["request"]
+        retry_at = datetime.fromisoformat(case["retry_event"]["payload"]["retry_at"])
+        clock_value = [retry_at - timedelta(seconds=1)]
+        authorized = []
+        authorize_alert = case["authority"].authorize_alert
+
+        def track_authorization(work, alert):
+            decision = authorize_alert(work, alert)
+            authorized.append((alert.recipient_tier, decision.decision_id))
+            return decision
+
+        case["authority"].authorize_alert = track_authorization
+
+        def owner_loses_eligibility(delay):
+            with psycopg.connect(case["database"]) as connection:
+                connection.execute(
+                    "UPDATE identity_subjects SET enabled=false WHERE id=%s",
+                    (case["work"].owner_id,),
+                )
+            clock_value[0] += delay
+
+        restart = module.ProductionRecoveryAlerts(
+            case["repository"],
+            target=case["channel"],
+            authority=case["authority"],
+            recipient_profile=request.recipient_profile,
+            retry_policy=request.retry_policy,
+            wait=owner_loses_eligibility,
+            now=lambda: clock_value[0],
+            schedule_hold_target=lambda *_args: None,
+        )
+
+        receipt = restart.send(request)
+
+        assert receipt.status == "held"
+        assert [tier for tier, _decision_id in authorized] == ["owner", "owner"]
+        assert len({decision_id for _tier, decision_id in authorized}) == 2
+        assert [call[0].recipient_tier for call in case["channel"].calls] == ["owner"]
+        with psycopg.connect(case["database"], row_factory=dict_row) as connection:
+            attempts = connection.execute(
+                """SELECT event_key,payload,policy_decision_id
+                   FROM v4_production_recovery_events
+                   WHERE work_id=%s AND event_kind='delivery_attempt'
+                   ORDER BY occurred_at,event_id""",
+                (case["work"].work_id,),
+            ).fetchall()
+            unavailable = connection.execute(
+                """SELECT payload FROM v4_production_recovery_events
+                   WHERE work_id=%s AND event_kind='owner_unavailable'""",
+                (case["work"].work_id,),
+            ).fetchone()
+            held = connection.execute(
+                """SELECT payload FROM v4_production_recovery_events
+                   WHERE work_id=%s AND event_kind='held_conflict'""",
+                (case["work"].work_id,),
+            ).fetchone()
+        assert len(attempts) == 1
+        assert attempts[0]["event_key"] == f"delivery-attempt:{request.alert_event_id}:1"
+        assert "owner_id" in attempts[0]["payload"]
+        assert unavailable is not None
+        assert unavailable["payload"]["error_code"] == "owner_unavailable_retry_tier"
+        assert held is not None
+        assert held["payload"]["status"] == "held"
+        assert "owner_id" in held["payload"]
+
+
+def test_owner_to_on_call_transition_uses_fresh_on_call_authorization():
+    module = import_module("salience.cycles.production_recovery")
+    schedule_tests = import_module("test_p1_production_schedule_fencing")
+    with schedule_tests._production_enrollment_fixture(
+        "task14_alert_owner_transition_authorization_"
+    ) as (database, control, binding, key, _authority, _route_authority):
+        _enroll_production_intent(control, binding, key)
+        repository = module.ProductionRecoveryWorkRepository(database)
+        policy = _recovery_policy(module)
+        work = repository.bind_pre_admission_intent(key.intent_id, policy=policy)
+        with psycopg.connect(database) as connection:
+            connection.execute(
+                "UPDATE identity_subjects SET enabled=false WHERE id=%s",
+                (work.owner_id,),
+            )
+        request = _alert_request(repository, module, work, policy)
+        authority = _RecoveryAuthority(module)
+        authorized = []
+        authorize_alert = authority.authorize_alert
+
+        def track_authorization(authorized_work, alert):
+            decision = authorize_alert(authorized_work, alert)
+            authorized.append((alert.recipient_tier, decision.decision_id))
+            return decision
+
+        authority.authorize_alert = track_authorization
+        channel = _AlertTarget(module)
+        alerts = module.ProductionRecoveryAlerts(
+            repository,
+            target=channel,
+            authority=authority,
+            recipient_profile=request.recipient_profile,
+            retry_policy=request.retry_policy,
+            wait=lambda _delay: None,
+            now=repository._now,
+            schedule_hold_target=lambda *_args: None,
+        )
+
+        receipt = alerts.send(request)
+
+        assert receipt.status == "accepted"
+        assert [tier for tier, _decision_id in authorized] == ["owner", "on_call"]
+        assert authorized[0][1] != authorized[1][1]
+        assert [call[0].recipient_tier for call in channel.calls] == ["on_call"]
+        with psycopg.connect(database, row_factory=dict_row) as connection:
+            attempt = connection.execute(
+                """SELECT payload,policy_decision_id
+                   FROM v4_production_recovery_events
+                   WHERE work_id=%s AND event_kind='delivery_attempt'""",
+                (work.work_id,),
+            ).fetchone()
+        assert "owner_id" not in attempt["payload"]
+        assert attempt["policy_decision_id"] == authorized[1][1]
+
+
 @pytest.mark.parametrize("hold_reason", ["final_attempt", "no_backup"])
 def test_alert_restart_holds_instead_of_changing_pending_owner_attempt_tier(hold_reason):
     from dataclasses import replace

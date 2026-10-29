@@ -816,6 +816,10 @@ class ProductionRecoveryAlerts:
                 pending_attempt,
                 outstanding_retry_request,
             ) = self._validate_retry_history(connection, work, alert)
+        # A retry event commits the exact request for the next attempt. Keep
+        # that tier immutable until a later authorized retry boundary records
+        # a different request.
+        locked_retry = outstanding_retry_request is not None
         if pending_attempt is not None:
             pending_payload = pending_attempt["payload"]
             assert isinstance(pending_payload, Mapping)
@@ -882,6 +886,7 @@ class ProductionRecoveryAlerts:
                     policy_decision_id=pending_attempt["policy_decision_id"],
                 )
                 alert = next_alert
+                locked_retry = True
                 advanced_to_next_tier = True
 
             else:
@@ -905,6 +910,8 @@ class ProductionRecoveryAlerts:
                         attempt=pending_number,
                         policy_decision_id=pending_attempt["policy_decision_id"],
                     )
+                    alert = pending_alert
+                    locked_retry = True
         else:
             if outstanding_retry_request is not None:
                 alert = outstanding_retry_request
@@ -953,6 +960,13 @@ class ProductionRecoveryAlerts:
             if not isinstance(current, ProductionRecoveryDecision) or not current.allowed:
                 raise PermissionError("alert authority changed before a delivery attempt")
             if alert.recipient_tier == "owner" and not self._owner_is_current(work):
+                if locked_retry:
+                    return self._held_receipt(
+                        work,
+                        alert,
+                        reason_code="owner_unavailable_retry_tier",
+                        policy_decision_id=current.decision_id,
+                    )
                 if not alert.recipient_profile.on_call_group_ids:
                     return self._held_receipt(
                         work,
@@ -969,6 +983,13 @@ class ProductionRecoveryAlerts:
                         current.decision_id,
                     )
                 alert = replace(alert, recipient_tier="on_call")
+                # This is a new request identity. The owner decision above
+                # cannot authorize its on-call delivery attempt.
+                current = self.authority.authorize_alert(work, alert)
+                if not isinstance(current, ProductionRecoveryDecision) or not current.allowed:
+                    raise PermissionError(
+                        "current alert authority denied the escalated delivery request"
+                    )
             payload = self._event_payload(
                 work, alert, status="attempting", attempt=attempt
             )
@@ -999,6 +1020,7 @@ class ProductionRecoveryAlerts:
                     attempt=attempt,
                     policy_decision_id=current.decision_id,
                 )
+                locked_retry = True
         with self.repository._connect() as connection:
             last_decision = self.authority.authorize_alert(work, alert)
             if not isinstance(last_decision, ProductionRecoveryDecision) or not last_decision.allowed:
