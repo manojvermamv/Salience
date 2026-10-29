@@ -1,11 +1,11 @@
 # Task 14 report — final review corrections
 
 Date: 2026-10-29
-Status: source corrections implemented and focused verification complete; exact-candidate artifact/evidence refresh remains controller-owned.
+Status: the initial four source corrections and the subsequent recipient-tier recovery correction are implemented and focused verification complete; exact-candidate artifact/evidence refresh remains controller-owned.
 
 ## Source changes
 
-Source commit: `becb3951d96f395b2c3ec9303e578dfb1e7eda5d`
+Initial source commit: `becb3951d96f395b2c3ec9303e578dfb1e7eda5d`
 Tree: `3d9bd870d2a46b805106602cfcacb92bbba7b55a`
 
 1. Routed worker renewal now requires route ID, slot ID, owner ID, fencing epoch, route-manifest digest, and artifact-lock digest to remain identical to the last trusted lease. Expiry can advance. A mismatch is lease loss, and drain/readback continues with the last trusted identity.
@@ -46,3 +46,12 @@ Touched Python files compile with `.venv/bin/python -m compileall -q` over the s
 ## Evidence boundary
 
 Task 13's artifact, synthetic acceptance package, and active evidence lock remain historical and still identify source `8d26aa15`; they were not rebuilt or edited here. The controller will generate a new exact candidate after review. The synthetic package remains `NO_GO`; production effects remain disabled; RG0 and full RG1 remain `HELD`; P2 remains `BLOCKED`; external qualification remains `NOT RUN`; and no push, merge, or live-system contact occurred.
+
+## Luna follow-up — committed alert recipient tier — 2026-10-29
+
+- Source/test commit: `2dc31a0d0b0652ad01c62f57ac7351b335eb66d0`; tree `4025192ce4139063ed59070a59cfe17c24575983`.
+- Pending-attempt recovery now reauthorizes and resends the exact recipient request recorded on the committed attempt. A pending on-call attempt stays on-call if the owner returns. When a committed owner attempt resumes after the owner became unavailable, recovery records owner-unavailable evidence and persists the retry boundary before advancing to on-call for the next attempt; final attempts and profiles without backup hold without resending the committed owner attempt under a different tier. Provider idempotency keys and bounded attempt numbers remain unchanged.
+- Retry-history validation now permits only the backed owner-to-on-call transition, requiring exact owner-unavailable evidence within that attempt/retry interval. The retry's tier must match the next attempt where present; other tier drift and conflicting evidence fail closed.
+- Focused red command: `PYTHONPATH=src TEST_DATABASE_URL=postgresql://salience:salience@172.20.0.2:5432/salience TEST_TEMPORAL_TARGET=172.20.0.3:7233 .venv/bin/pytest -q tests/integration/test_p1_production_recovery.py -k 'preserves_committed_on_call_tier_when_owner_returns or changes_owner_tier_only_at_authorized_retry_boundary or holds_instead_of_changing_pending_owner_attempt_tier or rejects_invalid_persisted_retry_evidence'` — **4 failed, 5 passed, 63 deselected**. The failures reproduced owner-to-on-call in-place resend, on-call-to-owner reauthorization, missing final-attempt hold, and acceptance of an unbacked recorded-tier transition.
+- Focused green command with the same selector: **9 passed, 63 deselected** in 63.07 seconds. Adjacent claim-TTL, receipt reconciliation, bounded retry, final-hold, owner-unavailable, and retry-corruption selectors: **12 passed, 60 deselected** in 83.66 seconds. Existing delivery/acknowledgment/on-call escalation controls: **3 passed, 69 deselected** in 22.21 seconds. Python compileall and `git diff --check` passed.
+- No broad/full suite, artifact/evidence-lock rebuild, live target, push, or merge was performed. Task 13 artifacts remain historical; a new exact candidate is controller-owned. Production remains disabled; the synthetic package is `NO_GO`; RG0/full RG1 are `HELD`; P2 is `BLOCKED`; external qualification is `NOT RUN`.
