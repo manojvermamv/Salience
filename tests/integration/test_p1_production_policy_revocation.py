@@ -3118,6 +3118,96 @@ def test_0051_rollback_inventory_binds_distinct_issue_and_claim_decisions(accoun
         _drop_database_for_task12(case["database"], clone_name)
 
 
+@pytest.mark.parametrize(
+    ("field", "corrupt_value"),
+    (
+        ("idempotency_key", "task12-corrupted-original-idempotency"),
+        ("workspace_stop_revision", 999999),
+        ("goal_stop_revision", 999999),
+        ("budget_id", "00000000-0000-0000-0000-000000000001"),
+        ("budget_reservation_id", "00000000-0000-0000-0000-000000000002"),
+        ("approval_expires_at", "2099-01-01T00:00:00+00:00"),
+        ("required_scopes", ["tampered:scope"]),
+    ),
+    ids=(
+        "idempotency-key",
+        "workspace-stop-revision",
+        "goal-stop-revision",
+        "budget-id",
+        "budget-reservation-id",
+        "approval-expiry",
+        "required-scopes",
+    ),
+)
+def test_0051_rollback_inventory_rejects_claim_event_payload_drift(
+    accounting, field, corrupt_value
+):
+    case, _ = _production_rollback_case(accounting)
+    issued = case["dispatch"].issue_permit(case["request"])
+    _insert_task7_no_effect_command(case, case["request"])
+    claimed = case["dispatch"].claim_permit(case["operation_id"], issued.permit_id)
+    governance = CycleGovernance(
+        case["database"],
+        workspace_id=case["workspace_id"],
+        subject_id=case["subject_id"],
+    )
+    governance.set_stop(
+        stopped=True,
+        expected_revision=1,
+        idempotency_key="task12-claim-payload-workspace-stop",
+        reason="Bind payload drift inventory to a current workspace stop",
+    )
+    governance.set_stop(
+        goal_id=case["goal_id"],
+        stopped=True,
+        expected_revision=1,
+        idempotency_key="task12-claim-payload-goal-stop",
+        reason="Bind payload drift inventory to a current goal stop",
+    )
+
+    clone_name, rollback_database = _clone_database_for_task12(
+        case["database"], "task12_0051_claim_payload_"
+    )
+    try:
+        with psycopg.connect(rollback_database) as connection:
+            connection.execute(
+                "DROP FUNCTION public.v4_p1_recovery_rollback_inventory_v2(uuid)"
+            )
+            connection.execute(
+                "UPDATE alembic_version SET version_num='0050_p1_production_dispatch_reissue'"
+            )
+        migration_tests = import_module("test_v4_migrations")
+        upgraded = migration_tests._migration(rollback_database, "upgrade", "head")
+        assert upgraded.returncode == 0, upgraded.stdout + upgraded.stderr
+
+        with psycopg.connect(rollback_database, row_factory=dict_row) as connection:
+            claim_event = connection.execute(
+                "SELECT id FROM v4_cycle_events WHERE kind='production_permit_claimed' "
+                "AND payload->>'claim_id'=%s",
+                (str(claimed.claim_id),),
+            ).fetchone()
+            assert claim_event is not None
+            connection.execute("SET session_replication_role=replica")
+            changed = connection.execute(
+                """UPDATE v4_cycle_events
+                   SET payload=jsonb_set(payload,ARRAY[%s]::text[],%s::jsonb,true)
+                   WHERE id=%s""",
+                (field, Jsonb(corrupt_value), claim_event["id"]),
+            )
+            assert changed.rowcount == 1
+            connection.execute("SET session_replication_role=origin")
+
+            inventory = connection.execute(
+                "SELECT public.v4_p1_recovery_rollback_inventory_v2(%s) AS inventory",
+                (case["workspace_id"],),
+            ).fetchone()["inventory"]
+            blocker_kinds = {blocker["kind"] for blocker in inventory["blockers"]}
+            assert "production_permit_claim_mismatch" in blocker_kinds
+            assert "production_current_pointer_claim_mismatch" in blocker_kinds
+    finally:
+        _drop_database_for_task12(case["database"], clone_name)
+
+
 def test_rollback_inventory_is_deterministic_and_read_only(accounting):
     case, _ = _production_rollback_case(accounting)
     case["dispatch"].issue_permit(case["request"])

@@ -58,3 +58,39 @@ docker compose -p salience-task12-20261028-final-corr-9241 down --volumes --remo
 ```
 
 No host-wide Docker prune or unrelated resource cleanup was used. The regression helpers drop their temporary database clones in `finally` blocks. Controller-owned lock/evidence regeneration and final independent review remain outstanding. No push or merge was performed.
+
+## Fix round 1/5 — complete 0051 claim-event binding
+
+Review finding: the initial 0051 correction matched a claim decision UUID to a `production_permit_claimed` event but only compared part of the dispatch-emitted payload. An event with a changed idempotency key, workspace/goal stop revisions, budget IDs, approval expiry, or required scopes could avoid both the claim and current-pointer blockers.
+
+The red-first regression mutates each omitted field in an isolated 0050→0051 database clone while preserving the claim row and current pointer. All seven cases failed against the pre-fix validator because neither blocker was returned. The fix adds `v4_p1_rollback_claim_event_matches_v1`, which compares exact JSONB payload equality against the immutable permit columns/request snapshot for every canonical `_write_event` field, including structured required scopes and optional publication binding, and validates event envelope identities and database-time shape. The helper requires exactly one event for the claim and is used by both the claim inventory check and current-pointer check. Claim decision IDs remain distinct from issue decision IDs.
+
+Red command (pytest session startup created the named disposable Compose project and upgraded its fresh database):
+
+```sh
+COMPOSE_PROJECT_NAME=salience-task12-fix1-20261029 PYTHONPATH=src \
+.venv/bin/pytest -q tests/integration/test_p1_production_policy_revocation.py \
+-k '0051_rollback_inventory_rejects_claim_event_payload_drift'
+```
+
+Result: **7 failed, 125 deselected**, exit 1, 14.15s. Each failure was the intended missing `production_permit_claim_mismatch` assertion; the pre-fix validator also omitted `production_current_pointer_claim_mismatch` for all seven corruptions.
+
+Green verification used this exact prefix for the existing disposable project:
+
+```sh
+PYTHONPATH=src COMPOSE_PROJECT_NAME=salience-task12-fix1-20261029 \
+TEST_DATABASE_URL=postgresql://salience:salience@172.21.0.2:5432/salience \
+TEST_TEMPORAL_TARGET=172.21.0.3:7233 \
+DATABASE_URL=postgresql+asyncpg://salience:salience@172.21.0.2:5432/salience \
+.venv/bin/pytest -q
+```
+
+- `tests/integration/test_p1_production_policy_revocation.py -k '0051_rollback_inventory_binds_distinct_issue_and_claim_decisions or 0051_rollback_inventory_rejects_claim_event_payload_drift'`: **8 passed, 124 deselected**, exit 0, 13.40s.
+- `tests/integration/test_v4_migrations.py -k '0051'`: **1 passed, 72 deselected**, exit 0, 6.97s.
+- `tests/integration/test_p1_production_recovery.py -k 'rollback_v2'`: **12 passed, 42 deselected**, exit 0, 95.95s.
+- `tests/integration/test_p1_production_policy_revocation.py`: **132 passed**, exit 0, 69.80s.
+- `PYTHONPATH=src .venv/bin/python -m compileall -q src migrations tests/integration/test_p1_production_recovery.py tests/integration/test_p1_production_schedule_fencing.py tests/integration/test_p1_production_policy_revocation.py`: exit 0. `git diff --check`: exit 0.
+
+The project was removed with `docker compose -p salience-task12-fix1-20261029 down --volumes --remove-orphans` (exit 0); follow-up container, volume, and network label queries returned no resources. No host-wide prune, artifact/evidence regeneration, push, or merge was performed.
+
+Pre-commit fresh verification: `COMPOSE_PROJECT_NAME=salience-task12-fix1-verify-20261029 PYTHONPATH=src .venv/bin/pytest -q tests/integration/test_p1_production_policy_revocation.py -k '0051_rollback_inventory_binds_distinct_issue_and_claim_decisions or 0051_rollback_inventory_rejects_claim_event_payload_drift'` passed **8 tests, 124 deselected** in 14.91s (exit 0) after a separate fresh full migration to 0051. Exact project cleanup completed with `docker compose -p salience-task12-fix1-verify-20261029 down --volumes --remove-orphans` (exit 0); its container, volume, and network label queries were empty.
