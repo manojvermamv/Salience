@@ -3014,6 +3014,28 @@ def _drop_database_for_task12(source, name):
         )
 
 
+def _prepare_task12_0050_migration_clone(rollback_database):
+    """Restore the cloned schema to 0050 before replaying migration 0051."""
+    with psycopg.connect(rollback_database) as connection:
+        # These clones start at the current 0051 head. Drop the dependent
+        # inventory first, then every function owned or replaced by 0051.
+        connection.execute(
+            "DROP FUNCTION public.v4_p1_recovery_rollback_inventory_v2(uuid)"
+        )
+        connection.execute(
+            "DROP FUNCTION public.v4_p1_rollback_production_hold_matches_v1(uuid)"
+        )
+        connection.execute(
+            "DROP FUNCTION public.v4_p1_rollback_issue_event_matches_v1(uuid)"
+        )
+        connection.execute(
+            "DROP FUNCTION public.v4_p1_rollback_claim_event_matches_v1(uuid)"
+        )
+        connection.execute(
+            "UPDATE alembic_version SET version_num='0050_p1_production_dispatch_reissue'"
+        )
+
+
 def test_0051_rollback_inventory_binds_distinct_issue_and_claim_decisions(accounting):
     case, _ = _production_rollback_case(accounting)
     issued = case["dispatch"].issue_permit(case["request"])
@@ -3042,13 +3064,7 @@ def test_0051_rollback_inventory_binds_distinct_issue_and_claim_decisions(accoun
         case["database"], "task12_0051_claim_inventory_"
     )
     try:
-        with psycopg.connect(rollback_database) as connection:
-            connection.execute(
-                "DROP FUNCTION public.v4_p1_recovery_rollback_inventory_v2(uuid)"
-            )
-            connection.execute(
-                "UPDATE alembic_version SET version_num='0050_p1_production_dispatch_reissue'"
-            )
+        _prepare_task12_0050_migration_clone(rollback_database)
         migration_tests = import_module("test_v4_migrations")
         upgraded = migration_tests._migration(rollback_database, "upgrade", "head")
         assert upgraded.returncode == 0, upgraded.stdout + upgraded.stderr
@@ -3171,13 +3187,7 @@ def test_0051_rollback_inventory_rejects_claim_event_payload_drift(
         case["database"], "task12_0051_claim_payload_"
     )
     try:
-        with psycopg.connect(rollback_database) as connection:
-            connection.execute(
-                "DROP FUNCTION public.v4_p1_recovery_rollback_inventory_v2(uuid)"
-            )
-            connection.execute(
-                "UPDATE alembic_version SET version_num='0050_p1_production_dispatch_reissue'"
-            )
+        _prepare_task12_0050_migration_clone(rollback_database)
         migration_tests = import_module("test_v4_migrations")
         upgraded = migration_tests._migration(rollback_database, "upgrade", "head")
         assert upgraded.returncode == 0, upgraded.stdout + upgraded.stderr
@@ -3221,13 +3231,7 @@ def test_0051_rollback_inventory_rejects_permit_issue_event_drift(accounting, dr
         case["database"], "task14_0051_issue_payload_"
     )
     try:
-        with psycopg.connect(rollback_database) as connection:
-            connection.execute(
-                "DROP FUNCTION public.v4_p1_recovery_rollback_inventory_v2(uuid)"
-            )
-            connection.execute(
-                "UPDATE alembic_version SET version_num='0050_p1_production_dispatch_reissue'"
-            )
+        _prepare_task12_0050_migration_clone(rollback_database)
         migration_tests = import_module("test_v4_migrations")
         upgraded = migration_tests._migration(rollback_database, "upgrade", "head")
         assert upgraded.returncode == 0, upgraded.stdout + upgraded.stderr
