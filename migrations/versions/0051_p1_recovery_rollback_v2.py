@@ -24,13 +24,16 @@ def upgrade() -> None:
             original_definition := pg_get_functiondef(
                 'public.v4_validate_production_schedule_inventory_v1(uuid)'::regprocedure
             );
-            definition := replace(
-                original_definition,
-                'WHERE inventory_id = p_inventory_id FOR UPDATE;',
-                'WHERE inventory_id = p_inventory_id;'
-            );
-            IF definition = original_definition
-               OR position('FOR UPDATE' IN definition) > 0 THEN
+            IF position('FOR UPDATE' IN original_definition) > 0 THEN
+                definition := replace(
+                    original_definition,
+                    'WHERE inventory_id = p_inventory_id FOR UPDATE;',
+                    'WHERE inventory_id = p_inventory_id;'
+                );
+            ELSE
+                definition := original_definition;
+            END IF;
+            IF position('FOR UPDATE' IN definition) > 0 THEN
                 RAISE EXCEPTION
                     'failed to remove the validator-local schedule inventory lock';
             END IF;
@@ -196,24 +199,27 @@ def upgrade() -> None:
                             WHERE historical_stop.workspace_id = p_workspace_id
                               AND historical_stop.scope_key = stop_scope_row.scope_key
                               AND historical_stop.resulting_revision = 1
+                              AND historical_stop.stopped IS TRUE
                         )
                     ) OR (
                         stop_scope_row.bound_revision > 1
                         AND (
-                            (SELECT count(*)
-                             FROM public.v4_stop_commands historical_stop
-                             WHERE historical_stop.workspace_id = p_workspace_id
-                               AND historical_stop.scope_key = stop_scope_row.scope_key
-                               AND historical_stop.resulting_revision =
-                                   stop_scope_row.bound_revision) <> 1
-                            OR
-                            (SELECT count(*)
+                            EXISTS (
+                                SELECT 1
+                                FROM public.v4_stop_commands historical_stop
+                                WHERE historical_stop.workspace_id = p_workspace_id
+                                  AND historical_stop.scope_key = stop_scope_row.scope_key
+                                  AND historical_stop.resulting_revision =
+                                      stop_scope_row.bound_revision
+                                  AND historical_stop.stopped IS TRUE
+                            )
+                            OR (SELECT count(*)
                              FROM public.v4_stop_commands historical_stop
                              WHERE historical_stop.workspace_id = p_workspace_id
                                AND historical_stop.scope_key = stop_scope_row.scope_key
                                AND historical_stop.resulting_revision =
                                    stop_scope_row.bound_revision
-                               AND historical_stop.stopped IS FALSE) <> 1
+                               AND historical_stop.stopped IS FALSE) < 1
                         )
                     ) THEN
                         blockers := blockers || jsonb_build_array(jsonb_build_object(
@@ -227,13 +233,17 @@ def upgrade() -> None:
                     IF stop_scope_row.current_revision IS NULL
                        OR stop_scope_row.current_revision < stop_scope_row.bound_revision
                        OR stop_scope_row.current_stopped IS DISTINCT FROM TRUE
-                       OR (SELECT count(*)
+                       OR EXISTS (
+                           SELECT 1
                            FROM public.v4_stop_commands current_stop
                            WHERE current_stop.workspace_id = p_workspace_id
                              AND current_stop.scope_key = stop_scope_row.scope_key
                              AND current_stop.resulting_revision =
-                                 stop_scope_row.current_revision) <> 1
-                       OR (SELECT count(*)
+                                 stop_scope_row.current_revision
+                             AND current_stop.stopped IS FALSE
+                       )
+                       OR NOT EXISTS (
+                           SELECT 1
                            FROM public.v4_stop_commands current_stop
                            WHERE current_stop.workspace_id = p_workspace_id
                              AND current_stop.scope_key = stop_scope_row.scope_key
@@ -241,7 +251,7 @@ def upgrade() -> None:
                                  stop_scope_row.current_revision
                              AND current_stop.stopped IS TRUE
                              AND current_stop.actor_id IS NOT DISTINCT FROM
-                                 stop_scope_row.current_actor_id) <> 1 THEN
+                                 stop_scope_row.current_actor_id) THEN
                         blockers := blockers || jsonb_build_array(jsonb_build_object(
                             'kind', 'rollback_stop_scope_not_active_or_receipted',
                             'intent_id', enrollment_row.intent_id,
@@ -362,6 +372,65 @@ def upgrade() -> None:
                     'generation', permit_row.generation));
             END LOOP;
 
+            FOR permit_row IN
+                SELECT permit.*
+                FROM public.v4_production_effect_permits permit
+                WHERE permit.workspace_id = p_workspace_id
+                ORDER BY permit.operation_id, permit.generation, permit.permit_id
+            LOOP
+                IF (SELECT count(*)
+                    FROM public.v4_cycle_events event
+                    WHERE event.kind = 'production_permit_issued'
+                      AND event.workspace_id = permit_row.workspace_id
+                      AND event.goal_id = permit_row.goal_id
+                      AND event.intent_id = permit_row.intent_id
+                      AND event.cycle_id = permit_row.cycle_id
+                      AND event.subject_id = permit_row.subject_id
+                      AND event.payload->>'schema_version' =
+                          'salience.p1-production-authorization-event.v1'
+                      AND event.payload->>'action' = 'issue'
+                      AND event.payload->>'outcome' = 'allow'
+                      AND event.payload->>'operation_id' = permit_row.operation_id::text
+                      AND event.payload->>'permit_id' = permit_row.permit_id::text
+                      AND event.payload ? 'claim_id'
+                      AND event.payload->'claim_id' = 'null'::jsonb
+                      AND event.payload->>'decision_id' =
+                          permit_row.route_fence_decision_id::text
+                      AND event.payload->>'workspace_id' = permit_row.workspace_id::text
+                      AND event.payload->>'goal_id' = permit_row.goal_id::text
+                      AND event.payload->>'goal_revision' = permit_row.goal_revision::text
+                      AND event.payload->>'intent_id' = permit_row.intent_id::text
+                      AND event.payload->>'cycle_id' = permit_row.cycle_id::text
+                      AND event.payload->>'context_id' = permit_row.context_id::text
+                      AND event.payload->>'subject_id' = permit_row.subject_id::text
+                      AND event.payload->>'subject_revision' =
+                          permit_row.subject_revision::text
+                      AND event.payload->'grant_ids' = permit_row.grant_ids
+                      AND event.payload->>'policy_version_id' =
+                          permit_row.policy_version_id::text
+                      AND event.payload->>'policy_document_hash' =
+                          permit_row.policy_document_hash
+                      AND event.payload->>'approval_request_id' =
+                          permit_row.approval_request_id::text
+                      AND event.payload->>'effect_type' = permit_row.effect_type
+                      AND event.payload->>'purpose' = permit_row.purpose
+                      AND event.payload->>'account_id' = permit_row.account_id
+                      AND event.payload->>'provider_id' = permit_row.provider_id
+                      AND event.payload->>'artifact_sha256' = permit_row.artifact_sha256
+                      AND event.payload->>'idempotency_key' =
+                          permit_row.request_snapshot->>'idempotency_key'
+                      AND event.payload->>'workspace_stop_revision' =
+                          permit_row.request_snapshot->>'workspace_stop_revision'
+                      AND event.payload->>'goal_stop_revision' =
+                          permit_row.request_snapshot->>'goal_stop_revision') <> 1 THEN
+                    blockers := blockers || jsonb_build_array(jsonb_build_object(
+                        'kind', 'production_permit_issue_event_mismatch',
+                        'permit_id', permit_row.permit_id,
+                        'operation_id', permit_row.operation_id,
+                        'generation', permit_row.generation));
+                END IF;
+            END LOOP;
+
             FOR claim_row IN
                 SELECT claim.*
                 FROM public.v4_production_effect_permit_claims claim
@@ -370,17 +439,58 @@ def upgrade() -> None:
                  AND permit.operation_id = claim.operation_id
                  AND permit.generation = claim.generation
                 WHERE permit.workspace_id = p_workspace_id
-                  AND claim.route_fence_decision_id IS DISTINCT FROM
-                      permit.route_fence_decision_id
                 ORDER BY claim.operation_id, claim.generation, claim.claimed_at,
                          claim.claim_id
             LOOP
-                blockers := blockers || jsonb_build_array(jsonb_build_object(
-                    'kind', 'production_permit_claim_mismatch',
-                    'claim_id', claim_row.claim_id,
-                    'permit_id', claim_row.permit_id,
-                    'operation_id', claim_row.operation_id,
-                    'generation', claim_row.generation));
+                IF (SELECT count(*)
+                    FROM public.v4_production_effect_permits permit
+                    JOIN public.v4_cycle_events event
+                      ON event.kind = 'production_permit_claimed'
+                     AND event.workspace_id = permit.workspace_id
+                     AND event.goal_id = permit.goal_id
+                     AND event.intent_id = permit.intent_id
+                     AND event.cycle_id = permit.cycle_id
+                     AND event.subject_id = permit.subject_id
+                     AND event.payload->>'schema_version' =
+                         'salience.p1-production-authorization-event.v1'
+                     AND event.payload->>'action' = 'claim'
+                     AND event.payload->>'outcome' = 'allow'
+                     AND event.payload->>'operation_id' = claim_row.operation_id::text
+                     AND event.payload->>'permit_id' = claim_row.permit_id::text
+                     AND event.payload->>'claim_id' = claim_row.claim_id::text
+                     AND event.payload->>'decision_id' =
+                         claim_row.route_fence_decision_id::text
+                     AND event.payload->>'workspace_id' = permit.workspace_id::text
+                     AND event.payload->>'goal_id' = permit.goal_id::text
+                     AND event.payload->>'goal_revision' = permit.goal_revision::text
+                     AND event.payload->>'intent_id' = permit.intent_id::text
+                     AND event.payload->>'cycle_id' = permit.cycle_id::text
+                     AND event.payload->>'context_id' = permit.context_id::text
+                     AND event.payload->>'subject_id' = permit.subject_id::text
+                     AND event.payload->>'subject_revision' =
+                         permit.subject_revision::text
+                     AND event.payload->'grant_ids' = permit.grant_ids
+                     AND event.payload->>'policy_version_id' =
+                         permit.policy_version_id::text
+                     AND event.payload->>'policy_document_hash' =
+                         permit.policy_document_hash
+                     AND event.payload->>'approval_request_id' =
+                         permit.approval_request_id::text
+                     AND event.payload->>'effect_type' = permit.effect_type
+                     AND event.payload->>'purpose' = permit.purpose
+                     AND event.payload->>'account_id' = permit.account_id
+                     AND event.payload->>'provider_id' = permit.provider_id
+                     AND event.payload->>'artifact_sha256' = permit.artifact_sha256
+                    WHERE permit.permit_id = claim_row.permit_id
+                      AND permit.operation_id = claim_row.operation_id
+                      AND permit.generation = claim_row.generation) <> 1 THEN
+                    blockers := blockers || jsonb_build_array(jsonb_build_object(
+                        'kind', 'production_permit_claim_mismatch',
+                        'claim_id', claim_row.claim_id,
+                        'permit_id', claim_row.permit_id,
+                        'operation_id', claim_row.operation_id,
+                        'generation', claim_row.generation));
+                END IF;
             END LOOP;
 
             FOR dispatch_row IN
@@ -399,7 +509,25 @@ def upgrade() -> None:
                         AND claim.permit_id = permit.permit_id
                         AND claim.operation_id = permit.operation_id
                         AND claim.generation = permit.generation
-                        AND claim.route_fence_decision_id = permit.route_fence_decision_id
+                        AND EXISTS (
+                            SELECT 1
+                            FROM public.v4_cycle_events event
+                            WHERE event.kind = 'production_permit_claimed'
+                              AND event.workspace_id = permit.workspace_id
+                              AND event.goal_id = permit.goal_id
+                              AND event.intent_id = permit.intent_id
+                              AND event.cycle_id = permit.cycle_id
+                              AND event.subject_id = permit.subject_id
+                              AND event.payload->>'schema_version' =
+                                  'salience.p1-production-authorization-event.v1'
+                              AND event.payload->>'action' = 'claim'
+                              AND event.payload->>'outcome' = 'allow'
+                              AND event.payload->>'operation_id' = permit.operation_id::text
+                              AND event.payload->>'permit_id' = permit.permit_id::text
+                              AND event.payload->>'claim_id' = claim.claim_id::text
+                              AND event.payload->>'decision_id' =
+                                  claim.route_fence_decision_id::text
+                        )
                   )
                 ORDER BY dispatch.operation_id, dispatch.generation
             LOOP

@@ -139,6 +139,7 @@ class ProductionRecoveryWorkRepository:
         policy_decision_id: UUID,
         payload: Mapping[str, object],
         actor_id: UUID | None = None,
+        occurred_at: datetime | None = None,
     ) -> ProductionRecoveryEvent:
         if not isinstance(event_key, str) or not event_key or len(event_key) > 256:
             raise ValueError("bounded stable recovery event key required")
@@ -147,6 +148,8 @@ class ProductionRecoveryWorkRepository:
         _require_uuid(policy_decision_id, "policy decision ID")
         if actor_id is not None:
             _require_uuid(actor_id, "event actor ID")
+        if occurred_at is not None:
+            occurred_at = _require_aware(occurred_at, "event occurrence time")
         safe_payload = _scalar_payload(payload)
         enrollment = connection.execute(
             """SELECT route_id,slot_id,fencing_epoch
@@ -174,15 +177,19 @@ class ProductionRecoveryWorkRepository:
                 or prior["payload"] != safe_payload
                 or prior["policy_decision_id"] != policy_decision_id
                 or prior["actor_id"] != actor_id
+                or (
+                    occurred_at is not None
+                    and prior["occurred_at"] != occurred_at
+                )
             ):
                 raise RecoveryEventConflict("recovery event key was reused with different evidence")
             return self._event(prior)
         encoded = Jsonb(safe_payload)
         inserted = connection.execute(
             """INSERT INTO v4_production_recovery_events(
-                      event_id,work_id,event_key,event_kind,actor_id,route_id,slot_id,
-                      fencing_epoch,policy_decision_id,payload,payload_sha256)
-               VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
+                      event_id,work_id,event_key,event_kind,occurred_at,actor_id,
+                      route_id,slot_id,fencing_epoch,policy_decision_id,payload,payload_sha256)
+               VALUES(%s,%s,%s,%s,COALESCE(%s,clock_timestamp()),%s,%s,%s,%s,%s,%s,
                       encode(public.digest(%s::jsonb::text,'sha256'),'hex'))
                RETURNING *""",
             (
@@ -190,6 +197,7 @@ class ProductionRecoveryWorkRepository:
                 work.work_id,
                 event_key,
                 event_kind,
+                occurred_at,
                 actor_id,
                 enrollment["route_id"],
                 enrollment["slot_id"],

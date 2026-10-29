@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import replace
 from datetime import datetime, timedelta
 from hashlib import sha256
@@ -257,6 +257,147 @@ class ProductionRecoveryAlerts:
         if due_at is not None and _require_aware(self.now(), "alert delivery time") < due_at:
             raise ValueError("production alert escalation is not due")
 
+    @staticmethod
+    def _recorded_recipient_tier(
+        request: ProductionAlertRequest, payload: Mapping[str, object]
+    ) -> ProductionAlertRequest:
+        owner_id = payload.get("owner_id")
+        if owner_id is not None and owner_id != str(
+            request.recipient_profile.owner_subject_id
+        ):
+            raise RecoveryIdentityConflict(
+                "persisted alert event names a different recipient owner"
+            )
+        tier = "owner" if owner_id is not None else "on_call"
+        if request.escalation_level > 0 and tier != "on_call":
+            raise RecoveryIdentityConflict(
+                "persisted alert event has a recipient tier inconsistent with escalation"
+            )
+        return replace(request, recipient_tier=tier)
+
+    def _validate_attempt_event(
+        self,
+        work: ProductionRecoveryWork,
+        request: ProductionAlertRequest,
+        row: Mapping[str, object],
+        *,
+        attempt: int,
+    ) -> ProductionAlertRequest:
+        payload = row["payload"]
+        if not isinstance(payload, Mapping):
+            raise RecoveryIdentityConflict("persisted alert attempt payload is malformed")
+        recorded_request = self._recorded_recipient_tier(request, payload)
+        expected_key = f"delivery-attempt:{request.alert_event_id}:{attempt}"
+        expected = self._event_payload(
+            work, recorded_request, status="attempting", attempt=attempt
+        )
+        if (
+            row["event_key"] != expected_key
+            or type(payload.get("attempt")) is not int
+            or payload != expected
+        ):
+            raise RecoveryIdentityConflict(
+                "persisted alert attempt does not match its exact request and policy"
+            )
+        return recorded_request
+
+    def _validate_retry_history(
+        self,
+        connection,
+        work: ProductionRecoveryWork,
+        request: ProductionAlertRequest,
+    ) -> tuple[int, datetime | None]:
+        key = request.idempotency_key
+        attempt_prefix = f"delivery-attempt:{request.alert_event_id}:%"
+        retry_prefix = f"retry-scheduled:{request.alert_event_id}:%"
+        attempts = connection.execute(
+            """SELECT event_key,occurred_at,policy_decision_id,payload
+               FROM v4_production_recovery_events
+               WHERE work_id=%s AND event_kind='delivery_attempt'
+                 AND (event_key LIKE %s OR payload->>'event_key'=%s)
+               ORDER BY occurred_at,event_id""",
+            (work.work_id, attempt_prefix, key),
+        ).fetchall()
+        retry_events = connection.execute(
+            """SELECT event_key,occurred_at,policy_decision_id,payload
+               FROM v4_production_recovery_events
+               WHERE work_id=%s AND event_kind='retry_scheduled'
+                 AND (event_key LIKE %s OR payload->>'event_key'=%s)
+               ORDER BY occurred_at,event_id""",
+            (work.work_id, retry_prefix, key),
+        ).fetchall()
+        if len(attempts) > request.retry_policy.maximum_attempts:
+            raise RecoveryIdentityConflict("persisted alert attempt count exceeds its policy")
+
+        for index, row in enumerate(attempts, start=1):
+            self._validate_attempt_event(work, request, row, attempt=index)
+
+        expected_retry_count = min(
+            len(attempts), request.retry_policy.maximum_attempts - 1
+        )
+        if len(retry_events) != expected_retry_count:
+            raise RecoveryIdentityConflict(
+                "persisted alert retry schedule is missing or conflicting"
+            )
+
+        last_retry_at = None
+        for failed_attempt, row in enumerate(retry_events, start=1):
+            payload = row["payload"]
+            if not isinstance(payload, Mapping):
+                raise RecoveryIdentityConflict("persisted retry payload is malformed")
+            recorded_request = self._recorded_recipient_tier(request, payload)
+            expected = self._event_payload(
+                work,
+                recorded_request,
+                status="retry_scheduled",
+                attempt=failed_attempt + 1,
+                error_code="target_unavailable",
+            )
+            retry_at_text = payload.get("retry_at")
+            if (
+                row["event_key"]
+                != f"retry-scheduled:{request.alert_event_id}:{failed_attempt}"
+                or type(payload.get("attempt")) is not int
+                or set(payload) != set(expected) | {"retry_at"}
+                or any(payload.get(name) != value for name, value in expected.items())
+                or not isinstance(retry_at_text, str)
+            ):
+                raise RecoveryIdentityConflict(
+                    "persisted alert retry does not match its exact request and policy"
+                )
+            try:
+                retry_at = _require_aware(
+                    datetime.fromisoformat(retry_at_text), "persisted alert retry time"
+                )
+            except (TypeError, ValueError) as error:
+                raise RecoveryIdentityConflict(
+                    "persisted alert retry time is malformed"
+                ) from error
+            expected_retry_at = _require_aware(
+                row["occurred_at"], "persisted alert retry event time"
+            ) + request.retry_policy.retry_intervals[failed_attempt - 1]
+            if (
+                retry_at != expected_retry_at
+                or row["policy_decision_id"]
+                != attempts[failed_attempt - 1]["policy_decision_id"]
+            ):
+                raise RecoveryIdentityConflict(
+                    "persisted alert retry timing or decision conflicts with its attempt"
+                )
+            last_retry_at = retry_at
+
+        if len(attempts) and len(attempts) < request.retry_policy.maximum_attempts:
+            return len(attempts), last_retry_at
+        return len(attempts), None
+
+    def _wait_until_retry_at(self, retry_at: datetime) -> None:
+        retry_at = _require_aware(retry_at, "persisted alert retry time")
+        now = _require_aware(self.now(), "alert delivery time")
+        if now < retry_at:
+            self.wait(retry_at - now)
+            if _require_aware(self.now(), "alert delivery time") < retry_at:
+                raise RuntimeError("alert retry wait returned before persisted retry time")
+
     def _held_receipt(
         self,
         work: ProductionRecoveryWork,
@@ -376,6 +517,54 @@ class ProductionRecoveryAlerts:
             ).fetchone()
             if local_receipt is not None:
                 return self._receipt_from_event(self.repository._event(local_receipt), alert)
+
+        key = alert.idempotency_key
+        # Reconcile a provider acceptance before applying a retry delay or
+        # requiring a new current delivery decision.
+        try:
+            readback = self.target.lookup(key)
+        except Exception:
+            readback = None
+        if readback is not None:
+            attempt_prefix = f"delivery-attempt:{alert.alert_event_id}:%"
+            with self.repository._connect() as connection:
+                prior_attempts = connection.execute(
+                    """SELECT event_key,occurred_at,policy_decision_id,payload
+                       FROM v4_production_recovery_events
+                       WHERE work_id=%s AND event_kind='delivery_attempt'
+                         AND (event_key LIKE %s OR payload->>'event_key'=%s)
+                       ORDER BY occurred_at,event_id""",
+                    (work.work_id, attempt_prefix, key),
+                ).fetchall()
+                if not prior_attempts:
+                    raise RecoveryInventoryGap(
+                        "provider alert receipt lacks a committed exact delivery attempt"
+                    )
+                latest_attempt = prior_attempts[-1]
+                latest_payload = latest_attempt["payload"]
+                if (
+                    not isinstance(latest_payload, Mapping)
+                    or type(latest_payload.get("attempt")) is not int
+                ):
+                    raise RecoveryIdentityConflict(
+                        "provider alert receipt has malformed delivery attempt evidence"
+                    )
+                recorded_alert = self._validate_attempt_event(
+                    work,
+                    alert,
+                    latest_attempt,
+                    attempt=latest_payload["attempt"],
+                )
+                event = self._receipt_event(
+                    connection,
+                    work,
+                    recorded_alert,
+                    readback,
+                    policy_decision_id=latest_attempt["policy_decision_id"],
+                )
+                return self._receipt_from_event(event, recorded_alert)
+
+        with self.repository._connect() as connection:
             held_receipt = connection.execute(
                 """SELECT * FROM v4_production_recovery_events
                    WHERE event_key=%s AND work_id=%s AND event_kind='held_conflict'""",
@@ -405,33 +594,13 @@ class ProductionRecoveryAlerts:
                 )
             alert = replace(alert, recipient_tier="on_call")
 
-        key = alert.idempotency_key
-        # A readback is required before any repeated send. The same idempotency
-        # key remains in every path, including process-restart recovery.
-        try:
-            readback = self.target.lookup(key)
-        except Exception:
-            readback = None
-        if readback is not None:
-            with self.repository._connect() as connection:
-                event = self._receipt_event(
-                    connection,
-                    work,
-                    alert,
-                    readback,
-                    policy_decision_id=decision.decision_id,
-                )
-                return self._receipt_from_event(event, alert)
-
         self._require_escalation_due(due_at)
         with self.repository._connect() as connection:
-            attempts = connection.execute(
-                """SELECT count(*) AS count
-                   FROM v4_production_recovery_events
-                   WHERE work_id=%s AND event_kind='delivery_attempt'
-                     AND payload->>'event_key'=%s""",
-                (work.work_id, key),
-            ).fetchone()["count"]
+            attempts, retry_at = self._validate_retry_history(
+                connection, work, alert
+            )
+        if retry_at is not None:
+            self._wait_until_retry_at(retry_at)
         next_attempt = attempts + 1
         for attempt in range(next_attempt, alert.retry_policy.maximum_attempts + 1):
             self._require_escalation_due(due_at)
@@ -504,8 +673,17 @@ class ProductionRecoveryAlerts:
                             error_code="target_unavailable",
                             retry_at=now + delay,
                         ),
+                        occurred_at=now,
                     )
-                self.wait(delay)
+                with self.repository._connect() as connection:
+                    attempt_count, retry_at = self._validate_retry_history(
+                        connection, work, alert
+                    )
+                if attempt_count != attempt or retry_at is None:
+                    raise RecoveryIdentityConflict(
+                        "persisted alert retry does not authorize the next attempt"
+                    )
+                self._wait_until_retry_at(retry_at)
         with self.repository._connect() as connection:
             last_decision = self.authority.authorize_alert(work, alert)
             if not isinstance(last_decision, ProductionRecoveryDecision) or not last_decision.allowed:

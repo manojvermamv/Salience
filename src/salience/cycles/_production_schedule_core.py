@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from uuid import UUID
 
 import psycopg
@@ -146,46 +147,105 @@ class ProductionTemporalScheduleControl(
         approval_id: UUID,
         policy_version_id: UUID,
         policy_document_hash: str,
-    ) -> tuple[UUID, ...]:
+        allow_committed_stop: bool = False,
+        expected_request_context: Mapping[str, object] | None = None,
+    ) -> dict[str, object] | None:
         current_authority(connection, workspace_id, operator_id, "cycles:schedule")
         policy = connection.execute(
-            """SELECT id,status,document_hash FROM public.policy_versions
+            """SELECT id,workspace_id,status,document_hash FROM public.policy_versions
                WHERE id=%s AND workspace_id=%s FOR SHARE""",
             (policy_version_id, workspace_id),
         ).fetchone()
         approval = connection.execute(
-            """SELECT status,decided_by,decided_at,request_context,
+            """SELECT id,workspace_id,policy_version_id,effect_type,
+                      status,decided_by,decided_at,request_context,
                       (request_context->>'expires_at')::timestamptz AS expires_at
                FROM public.approval_requests
                WHERE id=%s AND workspace_id=%s AND policy_version_id=%s
                  AND effect_type='production_schedule_binding' FOR SHARE""",
             (approval_id, workspace_id, policy_version_id),
         ).fetchone()
+        valid_approval_statuses = {"approved"}
+        if allow_committed_stop:
+            # A committed stop is an emergency-only path. A decided approval
+            # that has since been revoked or expired still identifies the
+            # immutable binding, but cannot authorize forward control.
+            valid_approval_statuses.update({"revoked", "expired"})
         if (
             policy is None
-            or policy["status"] != "active"
             or policy["document_hash"] != policy_document_hash
             or approval is None
-            or approval["status"] != "approved"
+            or approval["status"] not in valid_approval_statuses
             or approval["decided_by"] is None
             or approval["decided_at"] is None
             or approval["expires_at"] is None
-            or approval["expires_at"] <= connection.execute(
-                "SELECT clock_timestamp() AS now"
-            ).fetchone()["now"]
+            or not isinstance(approval["request_context"], Mapping)
             or approval["request_context"].get("policy_document_hash") != policy_document_hash
         ):
-            raise PermissionError("current schedule policy and approval are required")
+            raise PermissionError("immutable schedule policy and approval binding are required")
+        if expected_request_context is not None:
+            request_context = approval["request_context"]
+            if (
+                not isinstance(request_context, Mapping)
+                or set(request_context) != set(expected_request_context)
+                or any(
+                    request_context.get(key) != value
+                    for key, value in expected_request_context.items()
+                )
+            ):
+                raise PermissionError("immutable schedule approval identity is inconsistent")
         stops = connection.execute(
-            """SELECT scope_key,revision,stopped FROM public.v4_stop_scopes
+            """SELECT scope_key,revision,stopped,changed_by
+               FROM public.v4_stop_scopes
                WHERE workspace_id=%s AND scope_key=ANY(%s) FOR SHARE""",
             (workspace_id, ["workspace", "goal:" + str(goal_id)]),
         ).fetchall()
         stop_by_scope = {row["scope_key"]: row for row in stops}
-        if set(stop_by_scope) != {"workspace", "goal:" + str(goal_id)} or any(
-            row["stopped"] is not False for row in stop_by_scope.values()
-        ):
+        if set(stop_by_scope) != {"workspace", "goal:" + str(goal_id)}:
+            raise PermissionError("current workspace and goal stop scopes are required")
+
+        stopped_rows = [row for row in stops if row["stopped"] is True]
+        if stopped_rows and not allow_committed_stop:
             raise PermissionError("current workspace and goal stops block schedule control")
+
+        stop_grant_ids: dict[str, tuple[UUID, ...]] = {}
+        for row in stopped_rows:
+            stop_actor_id = row["changed_by"]
+            if not isinstance(stop_actor_id, UUID):
+                raise PermissionError("current committed stop actor is required")
+            current_authority(
+                connection, workspace_id, stop_actor_id, "cycles:stop"
+            )
+            receipts = connection.execute(
+                """SELECT id FROM public.v4_stop_commands
+                   WHERE workspace_id=%s AND scope_key=%s
+                     AND resulting_revision=%s AND stopped IS TRUE
+                     AND actor_id=%s
+                   ORDER BY id FOR SHARE""",
+                (
+                    workspace_id,
+                    row["scope_key"],
+                    row["revision"],
+                    stop_actor_id,
+                ),
+            ).fetchall()
+            if not receipts:
+                raise PermissionError("exact current committed stop receipt required")
+            grants = connection.execute(
+                """SELECT id FROM public.permission_grants
+                   WHERE workspace_id=%s AND principal_type='identity'
+                     AND principal_id=%s AND scope='cycles:stop'
+                     AND effect='allow' AND constraints='{}'::jsonb
+                     AND expires_at>clock_timestamp()
+                   ORDER BY id FOR SHARE""",
+                (workspace_id, str(stop_actor_id)),
+            ).fetchall()
+            if not grants:
+                raise PermissionError("current cycles:stop grant required")
+            stop_grant_ids[row["scope_key"]] = tuple(
+                grant["id"] for grant in grants
+            )
+
         grants = connection.execute(
             """SELECT id FROM public.permission_grants
                WHERE workspace_id=%s AND principal_type='identity' AND principal_id=%s
@@ -197,7 +257,35 @@ class ProductionTemporalScheduleControl(
         ).fetchall()
         if not grants:
             raise PermissionError("current cycles:schedule grant required")
-        return tuple(row["id"] for row in grants)
+        schedule_grants = tuple(grant["id"] for grant in grants)
+        if stopped_rows:
+            return {
+                "schedule_grant_ids": tuple(str(grant_id) for grant_id in schedule_grants),
+                "scopes": tuple(
+                    (
+                        row["scope_key"],
+                        row["revision"],
+                        row["stopped"],
+                        str(row["changed_by"]) if row["changed_by"] is not None else None,
+                        tuple(
+                            str(grant_id)
+                            for grant_id in stop_grant_ids.get(row["scope_key"], ())
+                        ),
+                    )
+                    for row in sorted(stops, key=lambda item: item["scope_key"])
+                ),
+            }
+
+        if any(row["stopped"] is not False for row in stop_by_scope.values()):
+            raise PermissionError("current workspace and goal stops block schedule control")
+        now = connection.execute("SELECT clock_timestamp() AS now").fetchone()["now"]
+        if (
+            approval["status"] != "approved"
+            or policy["status"] != "active"
+            or approval["expires_at"] <= now
+        ):
+            raise PermissionError("current schedule policy and approval are required")
+        return None
 
 
     def _route_decision(

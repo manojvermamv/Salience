@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from hashlib import sha256
+import json
 from uuid import NAMESPACE_URL, UUID, uuid5
 
 from salience.cycles._production_schedule_contracts import (
@@ -59,11 +61,11 @@ class _ProductionScheduleTargetAdapter:
         if action == "pause":
             if status not in {"active", "paused"}:
                 raise PermissionError("invalid local schedule status for pause")
-            required_cutover_state = "pending"
+            required_cutover_states = {"pending", "active"}
         elif action == "resume_after":
             if status != "paused":
                 raise PermissionError("invalid local schedule status for resume")
-            required_cutover_state = "rollback_pending"
+            required_cutover_states = {"rollback_pending"}
         else:
             raise ValueError("bounded production schedule action required")
 
@@ -134,13 +136,12 @@ class _ProductionScheduleTargetAdapter:
             cutover["legacy_schedule_id"],
             cutover["actor_id"],
             cutover["first_v4_slot"],
-        ) != (
-            required_cutover_state,
+        )[1:] != (
             binding.goal_revision,
             binding.schedule_id,
             binding.schedule_operator_subject_id,
             binding.first_v4_slot,
-        ):
+        ) or cutover["state"] not in required_cutover_states:
             raise PermissionError("exact pending or rollback-pending cutover source required")
 
         if binding.publication_schedule_id is not None:
@@ -152,6 +153,19 @@ class _ProductionScheduleTargetAdapter:
             ).fetchone()
             if publication is None:
                 raise PermissionError("current bound publication schedule required")
+
+        if action == "pause":
+            stop_fence = self._assert_binding(
+                connection, binding, action_kind="schedule_pause"
+            )
+            if cutover["state"] == "active" and (
+                status != "paused" or stop_fence is None
+            ):
+                raise PermissionError(
+                    "locally paused predecessor and committed stop required for active cutover"
+                )
+            return stop_fence
+        return None
 
 
     def _command_key(self, binding: ProductionScheduleBinding, action: str, suffix: str = "") -> str:
@@ -169,6 +183,16 @@ class _ProductionScheduleTargetAdapter:
                 ),
             )
         )
+
+
+    @staticmethod
+    def _stop_pause_command_suffix(stop_fence) -> str:
+        if stop_fence is None:
+            return ""
+        material = json.dumps(
+            stop_fence, sort_keys=True, separators=(",", ":")
+        ).encode("utf-8")
+        return "stop:" + sha256(material).hexdigest()
 
 
     def _hold(self, binding: ProductionScheduleBinding, reason_code: str, evidence: object) -> None:
@@ -345,11 +369,18 @@ class _ProductionScheduleTargetAdapter:
     def pause(self, schedule_id):
         schedule_id = UUID(str(schedule_id))
         binding = self.binding_for_schedule(schedule_id)
-        command_key = self._command_key(binding, "pause")
+        command_key = None
         mutation_error = None
         with self._connect() as connection:
             connection.execute("SET LOCAL statement_timeout='3s'")
-            self._assert_current_action_source(connection, binding, action="pause")
+            stop_fence = self._assert_current_action_source(
+                connection, binding, action="pause"
+            )
+            command_key = self._command_key(
+                binding,
+                "pause",
+                self._stop_pause_command_suffix(stop_fence),
+            )
             # Read the exact remote schedule before the command. This prevents
             # an out-of-band source or route change from being discovered only
             # after a pause has already been sent.

@@ -12,10 +12,13 @@ import re
 import time
 from threading import Event, Thread
 from types import SimpleNamespace
+from importlib import import_module
 from psycopg.conninfo import make_conninfo
+from urllib.parse import urlsplit, urlunsplit
 from uuid import UUID, uuid4
 
 import psycopg
+from psycopg import sql
 from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
 import pytest
@@ -2981,6 +2984,138 @@ def test_rollback_inventory_covers_fixture_and_production_modes(accounting):
         and str(production_claim.claim_id) in entry["identity"]
         for entry in inventory.inventory
     )
+
+
+def _clone_database_for_task12(source, prefix):
+    name = prefix + uuid4().hex[:12]
+    source_name = urlsplit(source).path.lstrip("/")
+    target = urlunsplit(urlsplit(source)._replace(path="/" + name))
+    admin_url = make_conninfo(source, dbname="postgres")
+    with psycopg.connect(admin_url, autocommit=True) as connection:
+        connection.execute(
+            sql.SQL("CREATE DATABASE {} WITH TEMPLATE {}").format(
+                sql.Identifier(name), sql.Identifier(source_name)
+            )
+        )
+    return name, target
+
+
+def _drop_database_for_task12(source, name):
+    admin_url = make_conninfo(source, dbname="postgres")
+    with psycopg.connect(admin_url, autocommit=True) as connection:
+        connection.execute(
+            "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname=%s",
+            (name,),
+        )
+        connection.execute(
+            sql.SQL("DROP DATABASE IF EXISTS {} WITH (FORCE)").format(
+                sql.Identifier(name)
+            )
+        )
+
+
+def test_0051_rollback_inventory_binds_distinct_issue_and_claim_decisions(accounting):
+    case, _ = _production_rollback_case(accounting)
+    issued = case["dispatch"].issue_permit(case["request"])
+    _insert_task7_no_effect_command(case, case["request"])
+    claimed = case["dispatch"].claim_permit(case["operation_id"], issued.permit_id)
+    governance = CycleGovernance(
+        case["database"],
+        workspace_id=case["workspace_id"],
+        subject_id=case["subject_id"],
+    )
+    governance.set_stop(
+        stopped=True,
+        expected_revision=1,
+        idempotency_key="task12-rollback-workspace-stop",
+        reason="Bind rollback inventory to a current workspace stop",
+    )
+    governance.set_stop(
+        goal_id=case["goal_id"],
+        stopped=True,
+        expected_revision=1,
+        idempotency_key="task12-rollback-goal-stop",
+        reason="Bind rollback inventory to a current goal stop",
+    )
+
+    clone_name, rollback_database = _clone_database_for_task12(
+        case["database"], "task12_0051_claim_inventory_"
+    )
+    try:
+        with psycopg.connect(rollback_database) as connection:
+            connection.execute(
+                "DROP FUNCTION public.v4_p1_recovery_rollback_inventory_v2(uuid)"
+            )
+            connection.execute(
+                "UPDATE alembic_version SET version_num='0050_p1_production_dispatch_reissue'"
+            )
+        migration_tests = import_module("test_v4_migrations")
+        upgraded = migration_tests._migration(rollback_database, "upgrade", "head")
+        assert upgraded.returncode == 0, upgraded.stdout + upgraded.stderr
+
+        with psycopg.connect(rollback_database, row_factory=dict_row) as connection:
+            issue = connection.execute(
+                "SELECT route_fence_decision_id FROM v4_production_effect_permits "
+                "WHERE permit_id=%s",
+                (issued.permit_id,),
+            ).fetchone()
+            claim = connection.execute(
+                "SELECT route_fence_decision_id FROM v4_production_effect_permit_claims "
+                "WHERE claim_id=%s",
+                (claimed.claim_id,),
+            ).fetchone()
+            assert issue["route_fence_decision_id"] != claim["route_fence_decision_id"]
+            valid = connection.execute(
+                "SELECT public.v4_p1_recovery_rollback_inventory_v2(%s) AS inventory",
+                (case["workspace_id"],),
+            ).fetchone()["inventory"]
+            assert not any(
+                blocker["kind"]
+                in {
+                    "production_permit_claim_mismatch",
+                    "production_current_pointer_claim_mismatch",
+                }
+                for blocker in valid["blockers"]
+            )
+
+            connection.execute("SET session_replication_role=replica")
+            connection.execute(
+                "UPDATE v4_production_effect_permit_claims "
+                "SET route_fence_decision_id=%s WHERE claim_id=%s",
+                (uuid4(), claimed.claim_id),
+            )
+            connection.execute("SET session_replication_role=origin")
+            corrupted_claim = connection.execute(
+                "SELECT public.v4_p1_recovery_rollback_inventory_v2(%s) AS inventory",
+                (case["workspace_id"],),
+            ).fetchone()["inventory"]
+            assert any(
+                blocker["kind"] == "production_permit_claim_mismatch"
+                for blocker in corrupted_claim["blockers"]
+            )
+
+            connection.execute("SET session_replication_role=replica")
+            connection.execute(
+                "UPDATE v4_production_effect_permit_claims "
+                "SET route_fence_decision_id=%s WHERE claim_id=%s",
+                (claim["route_fence_decision_id"], claimed.claim_id),
+            )
+            connection.execute(
+                "UPDATE v4_production_current_dispatch SET current_claim_id=%s "
+                "WHERE operation_id=%s",
+                (uuid4(), case["operation_id"]),
+            )
+            connection.execute("SET session_replication_role=origin")
+            corrupted_pointer = connection.execute(
+                "SELECT public.v4_p1_recovery_rollback_inventory_v2(%s) AS inventory",
+                (case["workspace_id"],),
+            ).fetchone()["inventory"]
+            assert any(
+                blocker["kind"] == "production_current_pointer_claim_mismatch"
+                for blocker in corrupted_pointer["blockers"]
+            )
+    finally:
+        _drop_database_for_task12(case["database"], clone_name)
 
 
 def test_rollback_inventory_is_deterministic_and_read_only(accounting):

@@ -1079,6 +1079,62 @@ def _alert_event_time(database, request):
         ).fetchone()[0]
 
 
+@contextmanager
+def _crashed_alert_retry_case(prefix):
+    module = import_module("salience.cycles.production_recovery")
+    schedule_tests = import_module("test_p1_production_schedule_fencing")
+    with schedule_tests._production_enrollment_fixture(prefix) as (
+        database,
+        control,
+        binding,
+        key,
+        _authority,
+        _route_authority,
+    ):
+        _enroll_production_intent(control, binding, key)
+        repository = module.ProductionRecoveryWorkRepository(database)
+        policy = _recovery_policy(module)
+        work = repository.bind_pre_admission_intent(key.intent_id, policy=policy)
+        request = _alert_request(repository, module, work, policy)
+        channel = _AlertTarget(module, fail_attempts=1)
+        authority = _RecoveryAuthority(module)
+
+        def crash_after_retry_is_persisted(_delay):
+            raise RuntimeError("simulated process crash after retry persistence")
+
+        first_process = module.ProductionRecoveryAlerts(
+            repository,
+            target=channel,
+            authority=authority,
+            recipient_profile=request.recipient_profile,
+            retry_policy=request.retry_policy,
+            wait=crash_after_retry_is_persisted,
+            now=repository._now,
+            schedule_hold_target=lambda *_args: None,
+        )
+        with pytest.raises(RuntimeError, match="simulated process crash"):
+            first_process.send(request)
+        with psycopg.connect(database, row_factory=dict_row) as connection:
+            retry_event = connection.execute(
+                """SELECT * FROM v4_production_recovery_events
+                   WHERE work_id=%s AND event_kind='retry_scheduled'
+                     AND payload->>'event_key'=%s""",
+                (work.work_id, request.idempotency_key),
+            ).fetchone()
+        assert retry_event is not None
+        yield {
+            "module": module,
+            "database": database,
+            "repository": repository,
+            "work": work,
+            "request": request,
+            "policy": policy,
+            "channel": channel,
+            "authority": authority,
+            "retry_event": retry_event,
+        }
+
+
 def test_alert_delivery_and_acknowledgment():
     module = import_module("salience.cycles.production_recovery")
     schedule_tests = import_module("test_p1_production_schedule_fencing")
@@ -1103,7 +1159,7 @@ def test_alert_delivery_and_acknowledgment():
             authority=_RecoveryAuthority(module),
             recipient_profile=request.recipient_profile,
             retry_policy=request.retry_policy,
-            wait=lambda _delay: None,
+            wait=lambda delay: time.sleep(delay.total_seconds()),
             now=repository._now,
             schedule_hold_target=lambda *args: hold_calls.append(args),
         )
@@ -1139,6 +1195,116 @@ def test_alert_delivery_and_acknowledgment():
                    WHERE work_id=%s AND event_kind='acknowledgment'""",
                 (work.work_id,),
             ).fetchone()[0] == 1
+
+
+def test_alert_restart_waits_for_persisted_retry_at_before_sending():
+    module = import_module("salience.cycles.production_recovery")
+    with _crashed_alert_retry_case("task12_alert_retry_wait_") as case:
+        request = case["request"]
+        retry_at = datetime.fromisoformat(case["retry_event"]["payload"]["retry_at"])
+        clock_value = [retry_at - timedelta(milliseconds=500)]
+        observed_delays = []
+
+        def stop_if_still_early(delay):
+            observed_delays.append(delay)
+            raise RuntimeError("restart attempted to wait until persisted retry time")
+
+        early_restart = module.ProductionRecoveryAlerts(
+            case["repository"],
+            target=case["channel"],
+            authority=case["authority"],
+            recipient_profile=request.recipient_profile,
+            retry_policy=request.retry_policy,
+            wait=stop_if_still_early,
+            now=lambda: clock_value[0],
+            schedule_hold_target=lambda *_args: None,
+        )
+        with pytest.raises(RuntimeError, match="persisted retry time"):
+            early_restart.send(request)
+        assert observed_delays == [timedelta(milliseconds=500)]
+        assert len(case["channel"].calls) == 1
+
+        clock_value[0] = retry_at
+        due_restart = module.ProductionRecoveryAlerts(
+            case["repository"],
+            target=case["channel"],
+            authority=case["authority"],
+            recipient_profile=request.recipient_profile,
+            retry_policy=request.retry_policy,
+            wait=lambda _delay: pytest.fail("due retry must not wait again"),
+            now=lambda: clock_value[0],
+            schedule_hold_target=lambda *_args: None,
+        )
+        receipt = due_restart.send(request)
+        assert receipt.status == "accepted"
+        assert len(case["channel"].calls) == 2
+        assert {call[1] for call in case["channel"].calls} == {
+            request.idempotency_key
+        }
+
+
+@pytest.mark.parametrize(
+    "corruption",
+    ["missing", "malformed_retry_at", "conflicting", "policy_mismatch"],
+)
+def test_alert_restart_rejects_invalid_persisted_retry_evidence(corruption):
+    module = import_module("salience.cycles.production_recovery")
+    with _crashed_alert_retry_case(f"task12_alert_retry_{corruption}_") as case:
+        event = case["retry_event"]
+        repository = case["repository"]
+        work = case["work"]
+        request = case["request"]
+        with psycopg.connect(case["database"], row_factory=dict_row) as connection:
+            if corruption == "missing":
+                connection.execute("SET session_replication_role=replica")
+                connection.execute(
+                    "DELETE FROM v4_production_recovery_events WHERE event_id=%s",
+                    (event["event_id"],),
+                )
+                connection.execute("SET session_replication_role=origin")
+            elif corruption in {"malformed_retry_at", "policy_mismatch"}:
+                path = "{retry_at}" if corruption == "malformed_retry_at" else "{policy_revision}"
+                value = "not-an-instant" if corruption == "malformed_retry_at" else "999"
+                connection.execute("SET session_replication_role=replica")
+                connection.execute(
+                    """UPDATE v4_production_recovery_events
+                       SET payload=jsonb_set(payload,%s,to_jsonb(%s::text)),
+                           payload_sha256=encode(public.digest(
+                               jsonb_set(payload,%s,to_jsonb(%s::text))::text,
+                               'sha256'),'hex')
+                       WHERE event_id=%s""",
+                    (path, value, path, value, event["event_id"]),
+                )
+                connection.execute("SET session_replication_role=origin")
+            else:
+                existing = connection.execute(
+                    "SELECT policy_decision_id FROM v4_production_recovery_events WHERE event_id=%s",
+                    (event["event_id"],),
+                ).fetchone()["policy_decision_id"]
+                with connection.transaction():
+                    repository._append_event(
+                        connection,
+                        work,
+                        event_key=event["event_key"] + ":conflict",
+                        event_kind="retry_scheduled",
+                        policy_decision_id=existing,
+                        payload=event["payload"],
+                    )
+
+        retry_at = datetime.fromisoformat(event["payload"]["retry_at"])
+        restart = module.ProductionRecoveryAlerts(
+            repository,
+            target=case["channel"],
+            authority=case["authority"],
+            recipient_profile=request.recipient_profile,
+            retry_policy=request.retry_policy,
+            wait=lambda _delay: None,
+            now=lambda: retry_at,
+            schedule_hold_target=lambda *_args: None,
+        )
+        with pytest.raises((ValueError, module.RecoveryIdentityConflict)):
+            restart.send(request)
+        assert len(case["channel"].calls) == 1
 
 
 def test_alert_request_rejects_escalation_before_policy_due():
@@ -2639,6 +2805,96 @@ def test_rollback_v2_accepts_current_active_stops_after_historical_enrollment():
         assert inventory["enrollments"][0]["goal_stop_revision"] == 1
 
 
+def test_rollback_v2_accepts_revision_one_false_stop_noops():
+    from salience.cycles.governance import CycleGovernance
+
+    with _rollback_v2_valid_operation(
+        "task12_revision_one_stop_noops_", active_stops=False
+    ) as (database, authority, enrollment, _work, _route_authority):
+        assert enrollment["workspace_stop_revision"] == 1
+        assert enrollment["goal_stop_revision"] == 1
+        governance = CycleGovernance(
+            database,
+            workspace_id=authority["workspace_id"],
+            subject_id=authority["subject_id"],
+        )
+        for goal_scope_id in (None, authority["cycle"]["goal_id"]):
+            for suffix in ("first", "second"):
+                governance.set_stop(
+                    goal_id=goal_scope_id,
+                    stopped=False,
+                    expected_revision=1,
+                    idempotency_key=f"task12-rev1-{suffix}-{goal_scope_id}",
+                    reason="Record an allowed same-state false stop command",
+                )
+        for goal_scope_id in (None, authority["cycle"]["goal_id"]):
+            governance.set_stop(
+                goal_id=goal_scope_id,
+                stopped=True,
+                expected_revision=1,
+                idempotency_key=f"task12-rev1-commit-stop-{goal_scope_id}",
+                reason="Commit a current active rollback stop",
+            )
+
+        with psycopg.connect(database) as connection:
+            inventory = connection.execute(
+                "SELECT public.v4_p1_recovery_rollback_inventory_v2(%s)",
+                (authority["workspace_id"],),
+            ).fetchone()[0]
+        assert inventory["blockers"] == []
+
+
+def test_rollback_v2_accepts_historical_and_active_stop_noops():
+    from salience.cycles.governance import CycleGovernance
+
+    with _rollback_v2_valid_operation(
+        "task12_historical_stop_noops_",
+        historical_stop_binding=True,
+        active_stops=False,
+    ) as (database, authority, enrollment, _work, _route_authority):
+        assert enrollment["workspace_stop_revision"] == 3
+        assert enrollment["goal_stop_revision"] == 3
+        governance = CycleGovernance(
+            database,
+            workspace_id=authority["workspace_id"],
+            subject_id=authority["subject_id"],
+        )
+        for goal_scope_id in (None, authority["cycle"]["goal_id"]):
+            scope_key = (
+                "workspace"
+                if goal_scope_id is None
+                else "goal:" + str(goal_scope_id)
+            )
+            governance.set_stop(
+                goal_id=goal_scope_id,
+                stopped=False,
+                expected_revision=3,
+                idempotency_key="task12-historical-noop-" + scope_key,
+                reason="Record a historical same-state false stop command",
+            )
+            governance.set_stop(
+                goal_id=goal_scope_id,
+                stopped=True,
+                expected_revision=3,
+                idempotency_key="task12-historical-stop-transition-" + scope_key,
+                reason="Commit the current active rollback stop",
+            )
+            governance.set_stop(
+                goal_id=goal_scope_id,
+                stopped=True,
+                expected_revision=4,
+                idempotency_key="task12-current-noop-" + scope_key,
+                reason="Record a current same-state true stop command",
+            )
+
+        with psycopg.connect(database) as connection:
+            inventory = connection.execute(
+                "SELECT public.v4_p1_recovery_rollback_inventory_v2(%s)",
+                (authority["workspace_id"],),
+            ).fetchone()[0]
+        assert inventory["blockers"] == []
+
+
 def test_rollback_v2_validates_noninitial_historical_stop_receipts():
     with _rollback_v2_valid_operation(
         "task9_historical_stop_receipt_", historical_stop_binding=True
@@ -3285,6 +3541,14 @@ def _rollback_v2_valid_operation(
                           clock_timestamp()+interval '1 day') RETURNING id""",
                 (workspace_id, str(subject_id)),
             ).fetchone()[0]
+            connection.execute(
+                """INSERT INTO permission_grants(
+                           workspace_id,principal_type,principal_id,scope,effect,
+                           constraints,expires_at)
+                   VALUES(%s,'identity',%s,'cycles:stop','allow','{}',
+                          clock_timestamp()+interval '1 day')""",
+                (workspace_id, str(subject_id)),
+            )
             subject_revision = connection.execute(
                 "SELECT revision FROM identity_subjects WHERE id=%s",
                 (subject_id,),
@@ -3296,7 +3560,24 @@ def _rollback_v2_valid_operation(
             connection.execute(
                 """INSERT INTO v4_goal_revisions(goal_id,revision,payload)
                    VALUES(%s,1,%s)""",
-                (goal_id, Jsonb({"schema_version": "GoalSpec.local.v1"})),
+                (
+                    goal_id,
+                    Jsonb(
+                        {
+                            "schema_version": "GoalSpec.local.v1",
+                            "objective": "Task 9 rollback fixture",
+                            "metric_versions": ["task9-fixture"],
+                            "audience": "local test fixture",
+                            "account_refs": ["fixture-account"],
+                            "brand_scope": "fixture-only",
+                            "source_policy": "fixture-only",
+                            "horizon_end": (
+                                datetime.now(timezone.utc)
+                                + timedelta(days=2)
+                            ).isoformat(),
+                        }
+                    ),
+                ),
             )
             connection.execute(
                 """INSERT INTO v4_cycle_intents(
@@ -3396,25 +3677,31 @@ def _rollback_v2_valid_operation(
         )
         assert upgraded.returncode == 0, upgraded.stdout + upgraded.stderr
         if active_stops:
-            active_stop_revision = 4 if historical_stop_binding else 2
-            with psycopg.connect(database) as connection:
-                _task9_set_stop_scope(
-                    connection,
-                    authority["workspace_id"],
-                    "workspace",
-                    active_stop_revision,
-                    True,
-                    authority["subject_id"],
-                    "task9-current-workspace-stop",
+            from salience.cycles.governance import CycleGovernance
+
+            governance = CycleGovernance(
+                database,
+                workspace_id=authority["workspace_id"],
+                subject_id=authority["subject_id"],
+            )
+            for goal_scope_id in (None, authority["cycle"]["goal_id"]):
+                scope_key = (
+                    "workspace"
+                    if goal_scope_id is None
+                    else "goal:" + str(goal_scope_id)
                 )
-                _task9_set_stop_scope(
-                    connection,
-                    authority["workspace_id"],
-                    "goal:" + str(authority["cycle"]["goal_id"]),
-                    active_stop_revision,
-                    True,
-                    authority["subject_id"],
-                    "task9-current-goal-stop",
+                with psycopg.connect(database) as connection:
+                    current_revision = connection.execute(
+                        "SELECT revision FROM v4_stop_scopes "
+                        "WHERE workspace_id=%s AND scope_key=%s",
+                        (authority["workspace_id"], scope_key),
+                    ).fetchone()[0]
+                governance.set_stop(
+                    goal_id=goal_scope_id,
+                    stopped=True,
+                    expected_revision=current_revision,
+                    idempotency_key="task9-current-stop-" + scope_key,
+                    reason="Task 9 canonical active stop",
                 )
         yield database, authority, enrollment, work, None
 

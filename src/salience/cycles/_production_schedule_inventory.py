@@ -897,7 +897,92 @@ class _ProductionScheduleInventoryWriter:
             raise PermissionError("finalized source binding does not match the current route")
 
 
-    def assert_binding(self, binding: ProductionScheduleBinding, *, action_kind: str) -> None:
+    def _approval_context_for_binding(self, binding, row):
+        snapshot = binding.member_snapshot
+        context = row["request_context"]
+        expected = {
+            "schema_version": _APPROVAL_SCHEMA,
+            "target_alias": binding.target_alias,
+            "namespace": binding.namespace,
+            "inventory_id": str(binding.inventory_id),
+            "inventory_sha256": binding.inventory_sha256,
+            "source_kind": binding.source_kind,
+            "schedule_id": str(binding.schedule_id),
+            "publication_schedule_id": (
+                str(binding.publication_schedule_id)
+                if binding.publication_schedule_id is not None
+                else None
+            ),
+            "workspace_id": str(binding.workspace_id),
+            "goal_id": str(binding.goal_id),
+            "goal_revision": binding.goal_revision,
+            "source_actor_id": str(binding.source_actor_id),
+            "source_owner_subject_id": str(binding.source_owner_subject_id),
+            "schedule_operator_subject_id": str(
+                binding.schedule_operator_subject_id
+            ),
+            "remote_schedule_id": binding.remote_schedule_id,
+            "task_queue": snapshot["task_queue"],
+            "workflow_type": snapshot["workflow_type"],
+            "action_id": snapshot["action_id"],
+            "argument_sha256": snapshot["argument_sha256"],
+            "route_id": str(binding.route_id),
+            "route_tuple_sha256": binding.route_tuple_sha256,
+            "slot_id": str(binding.slot_id),
+            "owner_id": str(binding.owner_id),
+            "fencing_epoch": binding.fencing_epoch,
+            "route_manifest_sha256": binding.route_manifest_sha256,
+            "artifact_lock_sha256": binding.artifact_lock_sha256,
+            "cadence_policy_revision": snapshot["cadence_policy_revision"],
+            "first_v4_slot": snapshot["first_v4_slot"],
+            "history_watermark_sha256": snapshot["history_watermark_sha256"],
+            "policy_version_id": str(row["policy_version_id"]),
+            "policy_document_hash": row["policy_document_hash"],
+            "expires_at": context.get("expires_at")
+            if isinstance(context, Mapping)
+            else None,
+        }
+        if set(expected) != set(_APPROVAL_FIELDS):
+            raise AssertionError("production schedule approval context drifted from 0048")
+        return expected
+
+
+    def _assert_binding(self, connection, binding, *, action_kind):
+        row = self._binding_row(connection, schedule_id=binding.schedule_id)
+        current = self._binding_value(row)
+        if current != binding:
+            raise PermissionError("production source binding changed after controller setup")
+        self._validate_binding_route(current)
+        stop_fence = self._require_current_schedule_authority(
+            connection,
+            workspace_id=current.workspace_id,
+            goal_id=current.goal_id,
+            operator_id=current.schedule_operator_subject_id,
+            approval_id=current.source_approval_id,
+            policy_version_id=UUID(str(row["policy_version_id"])),
+            policy_document_hash=row["policy_document_hash"],
+            allow_committed_stop=action_kind
+            in {"schedule_pause", "schedule_readback"},
+            expected_request_context=self._approval_context_for_binding(
+                current, row
+            ),
+        )
+        self._route_decision(
+            route_id=current.route_id,
+            route_tuple_sha256=current.route_tuple_sha256,
+            slot_id=current.slot_id,
+            owner_id=current.owner_id,
+            fencing_epoch=current.fencing_epoch,
+            route_manifest_sha256=current.route_manifest_sha256,
+            artifact_lock_sha256=current.artifact_lock_sha256,
+            operation_id=current.goal_id,
+            permit_id=current.source_approval_id,
+            action_kind=action_kind,
+        )
+        return stop_fence
+
+
+    def assert_binding(self, binding: ProductionScheduleBinding, *, action_kind: str):
         if not isinstance(binding, ProductionScheduleBinding):
             raise ValueError("typed immutable production schedule binding required")
         if action_kind not in {
@@ -913,29 +998,6 @@ class _ProductionScheduleInventoryWriter:
             raise ValueError("bounded production schedule action kind required")
         with self._connect() as connection:
             connection.execute("SET LOCAL statement_timeout='3s'")
-            row = self._binding_row(connection, schedule_id=binding.schedule_id)
-            current = self._binding_value(row)
-            if current != binding:
-                raise PermissionError("production source binding changed after controller setup")
-            self._validate_binding_route(current)
-            self._require_current_schedule_authority(
-                connection,
-                workspace_id=current.workspace_id,
-                goal_id=current.goal_id,
-                operator_id=current.schedule_operator_subject_id,
-                approval_id=current.source_approval_id,
-                policy_version_id=UUID(str(row["policy_version_id"])),
-                policy_document_hash=row["policy_document_hash"],
-            )
-            self._route_decision(
-                route_id=current.route_id,
-                route_tuple_sha256=current.route_tuple_sha256,
-                slot_id=current.slot_id,
-                owner_id=current.owner_id,
-                fencing_epoch=current.fencing_epoch,
-                route_manifest_sha256=current.route_manifest_sha256,
-                artifact_lock_sha256=current.artifact_lock_sha256,
-                operation_id=current.goal_id,
-                permit_id=current.source_approval_id,
-                action_kind=action_kind,
+            return self._assert_binding(
+                connection, binding, action_kind=action_kind
             )

@@ -1204,6 +1204,7 @@ def test_production_schedule_binding_rechecks_current_cycles_schedule_policy_sto
     fake_row = {
         "policy_version_id": binding.source_approval_id,
         "policy_document_hash": "a" * 64,
+        "request_context": {},
     }
     control._connect = lambda: _ReadbackConnection(None)
     control._binding_row = lambda *_, **__: fake_row
@@ -1542,6 +1543,181 @@ def test_pending_activation_retry_accepts_exact_paused_source():
         assert activated["state"] == "active"
         assert len(target.pause_calls) == 2
         assert target.pause_calls[1] == first_pause
+
+
+@pytest.mark.parametrize(
+    "revocation",
+    ("policy", "approval_revoked", "approval_expired", "approval_deadline_elapsed"),
+)
+def test_committed_stop_preserves_revision_bound_pause_after_policy_revocation(revocation):
+    from salience.cycles.governance import CycleGovernance
+
+    with _production_cutover_fixture("task12_stop_pause_revoked_policy_") as (
+        database,
+        control,
+        binding,
+        target,
+        production,
+        prepared,
+    ):
+        assert prepared["state"] == "pending"
+        governance = CycleGovernance(
+            database,
+            workspace_id=binding.workspace_id,
+            subject_id=binding.schedule_operator_subject_id,
+        )
+        governance.set_stop(
+            goal_id=binding.goal_id,
+            stopped=True,
+            expected_revision=1,
+            idempotency_key="task12-pending-goal-stop",
+            reason="Pause the exact predecessor after a committed stop",
+        )
+        with psycopg.connect(database) as connection:
+            if revocation == "policy":
+                connection.execute(
+                    "UPDATE policy_versions SET status='revoked' "
+                    "WHERE id=(SELECT policy_version_id FROM approval_requests WHERE id=%s)",
+                    (binding.source_approval_id,),
+                )
+            else:
+                # The finalized schedule binding and decision identity remain exact;
+                # model only the approval's changed current validity for the
+                # safety-only stop branch, bypassing its immutable-row trigger.
+                connection.execute("SET LOCAL session_replication_role=replica")
+                if revocation == "approval_deadline_elapsed":
+                    connection.execute(
+                        "UPDATE approval_requests SET request_context=jsonb_set("
+                        "request_context,'{expires_at}',"
+                        "to_jsonb((clock_timestamp()-interval '1 second')::text)) "
+                        "WHERE id=%s",
+                        (binding.source_approval_id,),
+                    )
+                else:
+                    connection.execute(
+                        "UPDATE approval_requests SET status=%s WHERE id=%s",
+                        ("revoked" if revocation == "approval_revoked" else "expired",
+                         binding.source_approval_id),
+                    )
+
+        with pytest.raises(PermissionError):
+            production.activate(binding.goal_id, idempotency_key="task12-block-activate")
+        with pytest.raises(PermissionError):
+            production.poll(
+                binding.goal_id,
+                expected_revision=binding.goal_revision,
+                idempotency_key="task12-block-poll",
+            )
+        with pytest.raises(PermissionError):
+            control.resume_after(
+                binding.schedule_id,
+                binding.first_v4_slot,
+                subject_id=binding.schedule_operator_subject_id,
+            )
+
+        control.pause(binding.schedule_id)
+        first_stop_pause = target.pause_calls[-1]
+        control.pause(binding.schedule_id)
+        same_revision_replay = target.pause_calls[-1]
+        assert first_stop_pause == same_revision_replay
+        assert first_stop_pause[0] == binding.remote_schedule_id
+        assert target.resume_calls == []
+        assert control.describe(binding.schedule_id)["paused"] is True
+
+        governance.set_stop(
+            goal_id=binding.goal_id,
+            stopped=False,
+            expected_revision=2,
+            idempotency_key="task12-clear-pending-goal-stop",
+            reason="Advance the stop revision for command-key fencing",
+        )
+        with pytest.raises(PermissionError):
+            production.activate(
+                binding.goal_id, idempotency_key="task12-block-after-stop-clear-activate"
+            )
+        with pytest.raises(PermissionError):
+            production.poll(
+                binding.goal_id,
+                expected_revision=binding.goal_revision,
+                idempotency_key="task12-block-after-stop-clear-poll",
+            )
+        with pytest.raises(PermissionError):
+            control.resume_after(
+                binding.schedule_id,
+                binding.first_v4_slot,
+                subject_id=binding.schedule_operator_subject_id,
+            )
+        governance.set_stop(
+            goal_id=binding.goal_id,
+            stopped=True,
+            expected_revision=3,
+            idempotency_key="task12-recommit-pending-goal-stop",
+            reason="Commit a new stop revision for command-key fencing",
+        )
+        control.pause(binding.schedule_id)
+        next_stop_pause = target.pause_calls[-1]
+        assert next_stop_pause[0] == binding.remote_schedule_id
+        assert next_stop_pause[1] != first_stop_pause[1]
+
+
+def test_active_cutover_stop_allows_exact_out_of_band_unpause_repause():
+    from salience.cycles.governance import CycleGovernance
+
+    with _production_cutover_fixture("task12_active_repause_") as (
+        database,
+        control,
+        binding,
+        target,
+        production,
+        _prepared,
+    ):
+        active = production.activate(
+            binding.goal_id, idempotency_key="task12-active-activate"
+        )
+        assert active["state"] == "active"
+        assert len(target.pause_calls) == 1
+        governance = CycleGovernance(
+            database,
+            workspace_id=binding.workspace_id,
+            subject_id=binding.schedule_operator_subject_id,
+        )
+        governance.set_stop(
+            goal_id=binding.goal_id,
+            stopped=True,
+            expected_revision=1,
+            idempotency_key="task12-active-goal-stop",
+            reason="Fence active cutover work",
+        )
+        target.readback = replace(target.readback, paused=False)
+
+        control.pause(binding.schedule_id)
+
+        assert len(target.pause_calls) == 2
+        assert target.pause_calls[-1][0] == binding.remote_schedule_id
+        assert target.readback.paused is True
+        assert control.describe(binding.schedule_id)["paused"] is True
+        assert target.resume_calls == []
+        with psycopg.connect(database) as connection:
+            assert connection.execute(
+                "SELECT state FROM v4_schedule_cutovers WHERE goal_id=%s",
+                (binding.goal_id,),
+            ).fetchone()[0] == "active"
+        with pytest.raises(PermissionError):
+            production.poll(
+                binding.goal_id,
+                expected_revision=binding.goal_revision,
+                idempotency_key="task12-active-block-poll",
+            )
+        with pytest.raises(PermissionError):
+            production.rollback(
+                binding.goal_id, idempotency_key="task12-active-block-rollback"
+            )
+        with pytest.raises(PermissionError):
+            control.resume_after(
+                binding.schedule_id,
+                binding.first_v4_slot,
+                subject_id=binding.schedule_operator_subject_id,
+            )
 
 
 def test_production_schedule_pause_rejects_invalid_local_status():
