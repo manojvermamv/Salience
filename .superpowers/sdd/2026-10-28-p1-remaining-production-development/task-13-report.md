@@ -128,3 +128,9 @@ The correction is documentation-only. The focused documentation integrity test, 
 - Checker self-test: `.venv/bin/python docs/v4/check.py --self-test` — exit 0; same counts, six negative controls, zero errors.
 - Synthetic acceptance checker: `.venv/bin/python scripts/check-p1-external-acceptance.py --package docs/v4/p1-remaining-production-development-evidence.json --schema docs/v4/p1-rg0-rg1-external-acceptance.schema.json` — expected exit 1; `structural_status=VALID`, `disposition=NO_GO`, `gate_state=UNCHANGED`.
 - `git diff --check` — exit 0. The refreshed wrapper has 304 artifact rows, 303 verified non-self hashes, one intentional null self-hash, and 36 verified current handoff hashes.
+
+## Task 14 source-review corrections — 2026-10-29
+
+The final review correction commit is `becb3951d96f395b2c3ec9303e578dfb1e7eda5d` / tree `3d9bd870d2a46b805106602cfcacb92bbba7b55a`. It corrects routed lease-renewal identity, alert restart after a committed-attempt crash, exact 0051 permit-issue payload validation, and publication-hold source/reason revalidation. Focused regressions and red/green results are recorded in [`task-14-report.md`](task-14-report.md); route (4), alert crash/retry (12), normal delivery/escalation (3), issue/claim event (13), and hold/liability (8) selected cases pass. Touched files compile and whitespace validation passes. No full suite or exact-candidate artifact/evidence rebuild was performed.
+
+The Task 13 wheel, candidate lock, synthetic package, and active evidence lock remain historical and still identify source `8d26aa15`. They are not evidence for the Task 14 source. The controller owns creating and validating the new exact candidate after review. Production effects remain disabled; RG0/full RG1 remain `HELD`; P2 remains `BLOCKED`; external qualification remains `NOT RUN`; no push, merge, or live-system contact occurred.
