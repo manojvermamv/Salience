@@ -1,6 +1,6 @@
 {
-  "baseline_commit": "8c31e84c9d71d0043b1ca736d9bc4db05cfeee7d",
-  "scope": "Current exact application/source content lock for Task31 source 8c31e84c9d71d0043b1ca736d9bc4db05cfeee7d (tree 8118c869150624292d741847e77c75c60992a61a). This lock covers 410 files under src, tests, migrations, and scripts plus seven established deployment/dependency/build-context boundary files (417 total). The exact Task31 development artifact is cc9d55fd67f10f7f8d831e21b9331ecae08cf039 (tree c7d22a3df59356274aaef342baed68d44b42d64b), whose sole parent is source. This lock records source-tree Git bytes and exact path coverage only; it is not external artifact trust, independent review, production qualification, or acceptance.",
+  "baseline_commit": "546ac4ed794afc123ea02586a37d4a4457590582",
+  "scope": "Current exact application/source content lock for Task34/35 source 546ac4ed794afc123ea02586a37d4a4457590582 (tree 278e2bbf074fdf07b701f87f925c537dd916e118). This lock covers 410 files under src, tests, migrations, and scripts plus seven established deployment/dependency/build-context boundary files (417 total). The exact Task34 development artifact is fe6b3795ce4453beb6c6bbafcc20cd3be91b3b87 (tree 124037b25c754751e2447c7d8639800f9f35d238), whose sole parent is source. This lock records source-tree Git bytes and exact path coverage only; it is not external artifact trust, independent review, production qualification, or acceptance.",
   "files": [
     {
       "path": ".dockerignore",
@@ -740,7 +740,7 @@
     },
     {
       "path": "src/salience/cycles/temporal_schedule_control.py",
-      "sha256": "c538dc4def2db418b9c9c35924464287a75159d4b4f99fc6f5c3a65a08570053"
+      "sha256": "9e9ca347329fab52b914342610e50a0161d08e5a473b9a4f19f2b8bc46270d3d"
     },
     {
       "path": "src/salience/cycles/wait_workflow.py",
@@ -1656,7 +1656,7 @@
     },
     {
       "path": "tests/unit/test_temporal_schedule_readback.py",
-      "sha256": "68692750db02df64eaa9860fae699e9274874adeb8e5272933a5bb14163f29f6"
+      "sha256": "3691e275ef60440e82c8851b181b35499350f8a7a86bb665646db2206905e31f"
     },
     {
       "path": "tests/unit/test_tracing.py",
@@ -1671,8 +1671,8 @@
       "sha256": "7f76114852b4b9d95b3517c49718ccf2e007d64d442a1b4e05ef696dd37a8bbc"
     }
   ],
-  "reviewed_at": "2026-10-29T16:42:36Z",
-  "review_scope": "Active local source lock for Task31 exact source 8c31e84c9d71d0043b1ca736d9bc4db05cfeee7d, tree 8118c869150624292d741847e77c75c60992a61a: 410 application/source files plus seven established boundary files. The exact Task31 development artifact is cc9d55fd67f10f7f8d831e21b9331ecae08cf039, tree c7d22a3df59356274aaef342baed68d44b42d64b, directly parented by source. This lock binds repository source bytes and path coverage only. Task31 build and Task32 qualification reports are in .superpowers/sdd/2026-10-28-p1-remaining-production-development/task-31-build-report.md and task-32-report.md; external trust, production target qualification, and acceptance remain outstanding. Production effects remain disabled, RG0/full RG1 remain HELD, and P2 remains BLOCKED.",
+  "reviewed_at": "2026-10-29T18:51:30Z",
+  "review_scope": "Active local source lock for Task34 exact source 546ac4ed794afc123ea02586a37d4a4457590582, tree 278e2bbf074fdf07b701f87f925c537dd916e118: 410 application/source files plus seven established boundary files. The exact Task34 development artifact is fe6b3795ce4453beb6c6bbafcc20cd3be91b3b87, tree 124037b25c754751e2447c7d8639800f9f35d238, directly parented by source. This lock binds repository source bytes and path coverage only. Task34 build/review and Task35 qualification reports are in .superpowers/sdd/2026-10-28-p1-remaining-production-development/task-34-build-report.md, task-34-build-review.md, and task-35-report.md; external trust, production target qualification, and acceptance remain outstanding. Production effects remain disabled, RG0/full RG1 remain HELD, and P2 remains BLOCKED.",
   "historical_task_10_lock": {
     "baseline_commit": "14801007310232f59708566ca9a3eefb80bfea87",
     "application_commit": "5cb57910c2c6dc2f6ea37da75640c5c947c8907b",
@@ -1680,7 +1680,7 @@
     "file_count": 360,
     "meaning": "Retained Task 10 source inventory; historical contents remain available in the original committed evidence lock."
   },
-  "application_commit": "8c31e84c9d71d0043b1ca736d9bc4db05cfeee7d",
+  "application_commit": "546ac4ed794afc123ea02586a37d4a4457590582",
   "superseded_0043_386d4bc_lock": {
     "baseline_commit": "386d4bc7cc5acb794858d3c3c14400a0659a83ef",
     "application_commit": "386d4bc7cc5acb794858d3c3c14400a0659a83ef",
@@ -3153,5 +3153,5 @@
     ],
     "meaning": "Exact prior 0043 386d4bc Task 8 content lock retained byte-for-byte as historical evidence; it is superseded as the active lock by successor 182c4e4."
   },
-  "qualification_harness_observed_head": "cc9d55fd67f10f7f8d831e21b9331ecae08cf039"
+  "qualification_harness_observed_head": "fe6b3795ce4453beb6c6bbafcc20cd3be91b3b87"
 }

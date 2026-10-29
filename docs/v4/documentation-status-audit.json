@@ -1,82 +1,85 @@
 {
-  "audited_at": "2026-10-29T16:42:36Z",
+  "audited_at": "2026-10-29T19:05:14Z",
   "base_commit": "7c1ddcda280b510048ad61106c406171edd64f18",
-  "scope": "Frozen initial P1/RG0/RG1 audit and five-spec design review remain COMPLETE_REVIEWED only for source 7c1ddcda280b510048ad61106c406171edd64f18 and its recorded environment manifest. Latest local development evidence is Task31/32 source 8c31e84c9d71d0043b1ca736d9bc4db05cfeee7d / tree 8118c869150624292d741847e77c75c60992a61a and exact artifact cc9d55fd67f10f7f8d831e21b9331ecae08cf039 / tree c7d22a3df59356274aaef342baed68d44b42d64b; it is development-only. External/provider acceptance remains NOT RUN, production effects disabled, RG0/full RG1 HELD, P2 BLOCKED, later phases gated, and main unmerged.",
-  "tracked_markdown_files": 144,
-  "documentation_artifacts": 319,
+  "scope": "Frozen initial P1/RG0/RG1 audit and five-spec design review remain COMPLETE_REVIEWED only for source 7c1ddcda280b510048ad61106c406171edd64f18 and its recorded environment manifest. Current latest local development evidence is Task34/35 source 546ac4ed794afc123ea02586a37d4a4457590582 / tree 278e2bbf074fdf07b701f87f925c537dd916e118 and exact artifact fe6b3795ce4453beb6c6bbafcc20cd3be91b3b87 / tree 124037b25c754751e2447c7d8639800f9f35d238. Task34/35 evidence does not change the held production/external gates or assert exact-head hosted CI for this documentation commit.",
+  "tracked_markdown_files": 147,
+  "documentation_artifacts": 322,
   "summary": {
-    "Current release ledger preserves frozen application scope and records exact pushed documentation/evidence CI PASS for 62b5a5e/run 40553244096; next status-only commit CI pending after push; release gates retained": 1,
-    "Historical exact feature-head readback preserved; exact pushed documentation/evidence CI PASS for 62b5a5e/run 40553244096 and next status-only candidate pending recorded separately": 1,
-    "Successor evidence preserves frozen application result and historical review, records exact documentation CI PASS for 62b5a5e/run 40553244096, and marks only the next status-only commit CI pending": 1,
-    "active 417-file exact-hash source lock for Task31 source 8c31e84c9d71d0043b1ca736d9bc4db05cfeee7d; historical nested locks preserved": 1,
+    "preserved plugin instructions, references and examples; independent skill scope": 57,
+    "preserved dated qualification report": 20,
+    "preserved historical Slice 2 final local non-live verification report for candidate ec12763; superseded by Task35 for latest local evidence": 1,
+    "current Task34/35 final local evidence; external acceptance remains unqualified": 1,
+    "historical Task11 candidate report; superseded as latest local qualification by Task18; external acceptance remains unqualified": 1,
+    "current effects-disabled P1 remaining-production planning artifacts; external qualification remains NOT RUN/HELD": 2,
+    "current Task34/35 candidate progress; external gates HELD": 1,
+    "preserved dated preparation report": 3,
+    "historical Task11 exact-source report; superseded as latest local evidence by Task35": 1,
+    "historical Task12 implementation brief; later local candidate qualified by Task35": 1,
+    "historical Task12 implementation report; later local candidate qualified by Task35": 1,
+    "historical Task13 exact-candidate evidence brief; superseded as latest by Task35": 1,
+    "historical Task13 exact-candidate report; superseded as latest by Task35": 1,
+    "historical Task14 source correction report; later exact candidate superseded by Task35": 1,
+    "preserved historical Task15 brief; later candidate snapshots superseded by Task35 current evidence": 1,
+    "historical Task18 exact-candidate qualification and Task19 refresh; superseded as latest by Task35": 1,
+    "historical Task22 development build report; superseded by Task26 final corrected artifact": 1,
+    "historical Task23 exact-candidate qualification; superseded by Task35 authoritative qualification": 1,
+    "current Task25 final mixed-host fix implementation report; 29 readback unit tests passed": 1,
+    "Task25 review history preserved; prior PASS/CLEAN scope ends at 8c31e84; final mixed-host fix has no post-fix independent review": 1,
+    "historical Task26 development artifact build; superseded by Task34": 1,
+    "historical Task26 build review; superseded by Task34": 1,
+    "historical Task28 runner-environment failure; superseded as latest qualification by Task35": 1,
+    "historical Task29 exact-candidate qualification; superseded as latest qualification by Task35": 1,
+    "historical Task30 final evidence report; preserved verbatim and superseded by Task36 current record": 1,
+    "historical Task31 exact development artifact build report; superseded by Task34": 1,
+    "historical Task31 independent build artifact review; superseded by Task34": 1,
+    "historical Task32 exact-candidate local qualification report; superseded by Task35; external gates remain HELD": 1,
+    "current Task34 exact development artifact build report": 1,
+    "current Task34 independent build artifact review": 1,
+    "current Task35 exact-candidate local qualification report; external gates HELD": 1,
     "active user-authored project instructions; preserved verbatim": 1,
+    "current Task34/35 candidate and evidence status; external gates HELD": 1,
+    "preserved original design source or historical diagram": 7,
+    "historical capture-time documentation/status scope; Task18 latest local candidate is source c23c4cca72021ce6621eaacd66f2bfc23f4cc129 / artifact be6f713b255f6b654b73ae4343db1db5c07e3840; external rows remain NOT RUN and gates HELD": 75,
+    "current Task34/35 candidate and documentation navigation; external gates HELD": 1,
+    "preserved immutable historical snapshot; bytes retained verbatim": 1,
+    "preserved immutable historical snapshot": 62,
+    "preserved YouTube-agent reference research": 5,
+    "preserved historical architecture visual": 8,
+    "preserved dated preparation plan": 3,
     "already current approved Task 6 implementation plan": 1,
     "current P1 recovery rollback v2 development plan; external qualification remains NOT RUN/HELD": 1,
-    "current Task25 compatibility fix-round implementation report; exact source evidence preserved": 1,
-    "current Task25 fix-loop review; compatibility findings resolved and independently rereviewed": 1,
-    "current Task31 exact development artifact build report": 1,
-    "current Task31 independent build artifact review": 1,
-    "current Task31/32 candidate and documentation navigation; external gates HELD": 1,
-    "current Task31/32 candidate and evidence status; external gates HELD": 1,
-    "current Task31/32 candidate progress; external gates HELD": 1,
-    "current Task31/32 exact-candidate progress; external acceptance NOT RUN/HELD": 1,
-    "current Task31/32 final local evidence; external acceptance remains unqualified": 1,
-    "current Task32 exact-candidate local qualification report; external gates HELD": 1,
-    "current Task32 exact-candidate local validation; earlier candidate results historical": 1,
+    "preserved dated design specification": 3,
+    "preserved dated initial P1/RG0/RG1 subaudit report": 3,
+    "preserved unscanned P1 policy-routing subaudit payload": 1,
+    "preserved source, archive or coverage manifest": 4,
     "current documentation audit; self hash omitted to avoid a recursive digest": 1,
-    "current effects-disabled P1 remaining-production planning artifacts; external qualification remains NOT RUN/HELD": 2,
+    "active 417-path exact-hash source lock for Task34/35 source 546ac4ed794afc123ea02586a37d4a4457590582; historical nested locks preserved": 1,
+    "preserved dated independent item7 qualification report": 6,
+    "durable local canonical dry creative qualification report": 1,
+    "preserved dated legacy intelligence qualification report": 1,
+    "preserved dated canonical no-send dummy qualification report": 1,
+    "historical A4 publication qualification with current recovery-hold evidence pointer and exact A4/d031172 rereview scope": 1,
+    "preserved dated legacy brief and scheduled ingress qualification report": 1,
+    "preserved dated original native schedule qualification report": 1,
+    "Current release ledger preserves frozen application scope and records exact pushed documentation/evidence CI PASS for 62b5a5e/run 40553244096; next status-only commit CI pending after push; release gates retained": 1,
+    "latest Task34/35 candidate; historical Task31/32 and earlier records retained": 1,
+    "current synthetic Task34/35 acceptance package bound to exact source/artifact; 22 rows NOT RUN; NO_GO/UNCHANGED": 1,
+    "frozen initial audit/review scope plus current Task36 candidate addendum; external gates HELD": 1,
     "current external acceptance schema; identities and production values remain unprovisioned": 1,
     "current initial commit-bound P1/RG0/RG1 audit evidence; COMPLETE_REVIEWED at source 7c1ddcd; 22 rows non-PASS; implementation/target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2 BLOCKED": 1,
-    "current synthetic Task32 acceptance package bound to exact source/artifact; 22 rows NOT RUN; NO_GO/UNCHANGED": 1,
-    "durable local canonical dry creative qualification report": 1,
-    "frozen initial audit/review scope plus current Task33 candidate addendum; external gates HELD": 1,
-    "historical A4 publication qualification with current recovery-hold evidence pointer and exact A4/d031172 rereview scope": 1,
-    "historical Task11 candidate report; superseded as latest local qualification by Task18; external acceptance remains unqualified": 1,
-    "historical Task11 exact-source report; superseded as latest local evidence by Task32": 1,
-    "historical Task12 implementation brief; later local candidate qualified by Task32": 1,
-    "historical Task12 implementation report; later local candidate qualified by Task32": 1,
-    "historical Task13 exact-candidate evidence brief; superseded as latest by Task32": 1,
-    "historical Task13 exact-candidate report; superseded as latest by Task32": 1,
-    "historical Task14 source correction report; later exact candidate qualified by Task32": 1,
-    "historical Task18 exact-candidate qualification and Task19 refresh; superseded as latest by Task32": 1,
-    "historical Task22 development build report; superseded by Task26 final corrected artifact": 1,
-    "historical Task23 exact-candidate qualification; superseded by Task32 authoritative qualification": 1,
-    "historical Task26 build review; superseded by Task31": 1,
-    "historical Task26 development artifact build; superseded by Task31": 1,
-    "historical Task28 runner-environment failure; superseded as latest qualification by Task32": 1,
-    "historical Task29 exact-candidate qualification; superseded as latest qualification by Task32": 1,
-    "historical Task30 final evidence report; preserved verbatim and superseded by Task33 current record": 1,
-    "historical capture-time documentation/status scope; Task18 latest local candidate is source c23c4cca72021ce6621eaacd66f2bfc23f4cc129 / artifact be6f713b255f6b654b73ae4343db1db5c07e3840; external rows remain NOT RUN and gates HELD": 75,
-    "latest Task31/32 candidate; historical Task25/26/28/29 and earlier records retained": 1,
-    "preserved YouTube-agent reference research": 5,
-    "preserved dated canonical no-send dummy qualification report": 1,
-    "preserved dated design specification": 3,
-    "preserved dated independent item7 qualification report": 6,
-    "preserved dated initial P1/RG0/RG1 subaudit report": 3,
-    "preserved dated legacy brief and scheduled ingress qualification report": 1,
-    "preserved dated legacy intelligence qualification report": 1,
-    "preserved dated original native schedule qualification report": 1,
     "preserved dated parallel qualification report": 1,
-    "preserved dated preparation plan": 3,
-    "preserved dated preparation report": 3,
-    "preserved dated qualification report": 20,
-    "preserved durable P1 audit/spec review and repair report payload": 10,
-    "preserved historical Slice 2 final local non-live verification report for candidate ec12763; superseded by Task32 for latest local evidence": 1,
+    "current Task34/35 exact-candidate progress; external acceptance NOT RUN/HELD": 1,
     "preserved historical Task 10 publication recovery-hold evidence and original P0-pinned bytes": 1,
-    "preserved historical Task15 brief; Task18/19 then Task22/23 and later Task25/26/29 superseded its snapshot": 1,
-    "preserved historical architecture visual": 8,
-    "preserved immutable historical snapshot": 62,
-    "preserved immutable historical snapshot; bytes retained verbatim": 1,
-    "preserved original design source or historical diagram": 7,
-    "preserved plugin instructions, references and examples; independent skill scope": 57,
-    "preserved source, archive or coverage manifest": 4,
-    "preserved unscanned P1 policy-routing subaudit payload": 1,
+    "Successor evidence preserves frozen application result and historical review, records exact documentation CI PASS for 62b5a5e/run 40553244096, and marks only the next status-only commit CI pending": 1,
+    "Historical exact feature-head readback preserved; exact pushed documentation/evidence CI PASS for 62b5a5e/run 40553244096 and next status-only candidate pending recorded separately": 1,
+    "preserved durable P1 audit/spec review and repair report payload": 10,
+    "current Task34/35 exact-candidate local validation; earlier candidate results historical": 1,
     "current_handoff_hashes": {
       ".superpowers/sdd/2026-10-27-p1-production-policy-and-revocation/final-evidence-report.md": "551c40b4d6852ab3ab4f42bc2cd26ffd1a0339fa03a5f7c2c0f0d39814d05307",
-      ".superpowers/sdd/2026-10-28-p1-remaining-production-development/final-evidence-report.md": "55212d47280d5c2a6b90beadd58a355100c05b1a061f4a6f3d78bb8754390f69",
+      ".superpowers/sdd/2026-10-28-p1-remaining-production-development/final-evidence-report.md": "813503a7aee7f3a2864f852d49428fe2ccbb7da0a4d2918242ce1171af2d827b",
       ".superpowers/sdd/2026-10-28-p1-remaining-production-development/final-review-fix-report.md": "14b4ee16ba0e71c59313104632c939ce3f0d5df3a04568226d1ac0c5b77ae8a4",
       ".superpowers/sdd/2026-10-28-p1-remaining-production-development/planning-report.md": "5ead73f3b32307f59fd4887c353c17616c2024f4d55cb6e3e55a1483e58359a6",
-      ".superpowers/sdd/2026-10-28-p1-remaining-production-development/progress.md": "ea3a47b724ae7155753f6bb4fd9e0a94630be993c4dfcc9248e3b73c071faeea",
+      ".superpowers/sdd/2026-10-28-p1-remaining-production-development/progress.md": "46822f758172b87d883298c30a119e8284dace21cb4d7fdaccc349f99b333aeb",
       ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-11-report.md": "65a04c815c0a3a243d3c4d099dca058d79d5f3ca909cba30e607aaa8a6fc4bd7",
       ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-12-brief.md": "2b2a68c85f4da49341ca208447c537f011be2fbc164290721cc4176401983a4e",
       ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-12-report.md": "47bae8175c878d98f500e833481747006f0523bfc948e02af57ade546b65aa28",
@@ -87,8 +90,8 @@
       ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-15-report.md": "74d105938bcfdfd94af814d985a3c759c84e54c4e1e6566a91a134696ca90863",
       ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-22-report.md": "3f8aebe87557d1d90c1d188ad82e7efd9d616964d53e2e11a197fa3a64e88745",
       ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-23-report.md": "78079f921b52425a101cbb0cdb4ecaad8e65072eecf7bd91c4da4ff616b8af23",
-      ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-25-report.md": "d21746cbd5aa02ca39ce95be0a3dca7b195f1fb091130b3fdfdaa232ef74e08b",
-      ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-25-review.md": "7bd9dc639e0afa65a5f4cf21a2ad3d213ed1d6de85cab6c10f58d840e6ff6509",
+      ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-25-report.md": "69f0798aaad67df3791601b6095ca48fff2cef2dbbdb41297162ce193a75a28f",
+      ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-25-review.md": "fd89d1c0891b68855fadb3e3b852b34441275b0415455ceba2cc5e9baded5fbf",
       ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-26-build-report.md": "da464f968a5e7c53420b372b527118453f52cf6aa54dd4e4b35e503501cb4c6b",
       ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-26-build-review.md": "0f6d93d74769560657572789416efd838ec8bcff31db3e06826894d2e20601af",
       ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-28-report.md": "277e5f65953a5f19dcc327a5062211fc3abcaceae2955c14ff952b46f05ef3dc",
@@ -96,8 +99,11 @@
       ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-31-build-report.md": "2e5f23066d852f52b95e6dcbe76ad3101d6d94f0d03c170ec25cd9ecec291978",
       ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-31-build-review.md": "03a219e829ac9d34fb9ed5001fdea7c5851d88b90262e7bcb5bd0e0ca84211b9",
       ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-32-report.md": "02f40cf48c0802a329e74575b6085c4163e7c708918047dcb47df74af4e76cc1",
-      "README.md": "90c6f187f3fae205a5c5a1bb2495d200446a3ef07f6d93725f14058696e697fc",
-      "docs/README.md": "d98ca9b3953340a1f175258fbe8ec3e8c4beedd0fc8d3002903dd863b816eba7",
+      ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-34-build-report.md": "f2191f02a28df94d1cf9d08fc8f315f02e270f2ee63fbcf681ef96e4e05d85c4",
+      ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-34-build-review.md": "6992a5f72cc184c939b2375b660a86ae4bf453275cf5c1ff1db5abc8a0637d43",
+      ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-35-report.md": "4fbce11cd0daeefd3c6d2dc4be378b022e9123e66a28c59ece20992268013781",
+      "README.md": "c94d99cabf8bd76f2dd29d807b3446eae4bc8a75a897969d853633d703faeaa4",
+      "docs/README.md": "5bb6b385761cf2d82812ec93b86b4115f7b556b20dc39e96b45a36905fdd783f",
       "docs/superpowers/plans/2026-10-27-p1-production-policy-and-revocation.md": "c1564a7ec7d09f63b5aba105678c8b5929619fecc49e5b4bb3e415ed1340672e",
       "docs/superpowers/plans/2026-10-27-p1-rg0-rg1-initial-gap-audit.md": "5d1dd8a86718184d03324144643dfb009cb36243a5bd0c0f14c46844eb3c5cd4",
       "docs/superpowers/plans/2026-10-28-p1-recovery-rollback-v2.md": "e4548b283023d31bba22a0a73a8472d5cb0e9e4ef0dee77fc058605c58d54787",
@@ -108,21 +114,20 @@
       "docs/superpowers/specs/2026-10-13-p1-production-routing-and-worker-fencing-design.md": "76921a085e352f86ae77895c824917832a49847c306b76bc56ae2c7e44a23e90",
       "docs/superpowers/specs/2026-10-13-rg0-rg1-external-acceptance-design.md": "7334364e5417cbb29143877334a80ea90125e9ce61bff71f67de77a86f61069e",
       "docs/v4/IMPLEMENTATION-BLUEPRINT.md": "8ceb85b83e452c10d4b323a709ac6706935013c2d9193bd1bff2b1b8c83d2703",
-      "docs/v4/evidence-lock.json": "6797c12e18d74f4fea5992c031db76ecef0fd4456e17d41bfed5194f17509e6a",
+      "docs/v4/evidence-lock.json": "09100cb7aee864227d78112aa7729a1cded7790d34cc33687c5e2a3732188e55",
       "docs/v4/p0-release.json": "0a0f1969e0497cbec535fb3f854b51cef870a4746eb92f8a67a127566dc9ff75",
       "docs/v4/p1-production-policy-revocation-evidence.json": "e5a5a3d424157479cacaf00eae39614a5abe12ecdb04ac38af0c95692dbd982b",
-      "docs/v4/p1-qualification-matrix.json": "55e64b0295e6db889d51adb4bf2c7e197dcf45b100bb872bc59a65f62fb14914",
-      "docs/v4/p1-remaining-production-development-evidence.json": "3f78511a73a67e568cdc86c2058bc0da12f3f99acaeed24aa75bd355dce33faa",
+      "docs/v4/p1-qualification-matrix.json": "6fa2cc23f371557cb333f0a88e3ff9734d6b8df05e8ff6161c23e531dcbfa617",
+      "docs/v4/p1-remaining-production-development-evidence.json": "9712af1be052ae418a26d4c0ac600ce15a191d49b31517885926e3cc72d598ad",
       "docs/v4/p1-rg0-rg1-external-acceptance.schema.json": "0086353075c823f92f78b2d4f5e48005e62660537b70c95864b5f4ed5e2c945c",
       "docs/v4/p1-rg0-rg1-initial-gap-audit.json": "33fe485384dcf60e36df8d48ace6394c80bce0d1bd9e6b9b39c7a905d65676b1",
       "docs/v4/p1-rg0-rg1-initial-gap-audit.md": "62aab5afb39f7c47e355a68ccf56e319a72955247515dfbdba8913fd797a5944",
-      "docs/v4/progress.md": "539fd10258686595c6b67520dc8cd9a3cbfd45e03c8c5f80b6f02f3c321319ff",
+      "docs/v4/progress.md": "ee9fb3c67f7d3054cfd821cb2206ebb6ebc1fa22751e68c1c4ac401aba04660c",
       "docs/v4/publication-recovery-hold-evidence.json": "3cce88e4d692f726be710c1f4db46b1428c9546561424a2ab0ad120363becc66",
       "docs/v4/publication-recovery-hold-successor-evidence.json": "6bb3ce696cffec2629838f5f30b8eea4acb837cbb81c1bcbc1b4de4f19e8764a",
       "docs/v4/repository-enforcement-evidence.json": "fc69f901036971bd64588cf3247d1701939e7525442f196daeab7f1919de11a2",
       "docs/v4/test_checks.py": "c915b137417c53b3b3f773eacbfcfea3d62584a21ca11df8288e0c2b4281cf6e",
-      "docs/v4/validation.md": "a01edbc3ed704ffa12534b7181c2405b97fd08b34b9897a8371e7319ba860756",
-      "docs/v4/p1-rg0-rg1-audit-and-spec-review.md": "c1fa940e53e3dd6ae58c250ad42f9c759e75c293eb223a7d0c4ba8f13ba6accb"
+      "docs/v4/validation.md": "ea9a8542919690e417e575c37e5f50e804d47edf4c87a179502674256319e2ed"
     }
   },
   "application_source_files_verified": 410,
@@ -146,21 +151,21 @@
   ],
   "mermaid_source_blocks_preserved": 12,
   "item7_status": "COMPLETE_IMPLEMENTED_LOCAL_FIXTURE_QUALIFICATION; historical item7 scope preserved",
-  "independent_review": "Historical GPT-6.1/GPT-5.6 whole-branch review and Actions run 38592066455 remain scoped to their recorded feature head; the initial commit-bound audit remains COMPLETE_REVIEWED only for source 7c1ddcda and its recorded environment. Those review/CI results do not cover current Task25/31/32 source 8c31e84c9d71d0043b1ca736d9bc4db05cfeee7d / artifact cc9d55fd67f10f7f8d831e21b9331ecae08cf039 or this Task33 documentation refresh. Task25\u2019s final compatibility fix round was independently rereviewed PASS/CLEAN with zero findings; its readback unit file passed 28 tests. No independent whole-change review or exact-head hosted CI is asserted for this documentation update. All 22 external rows remain NOT RUN, effects disabled, RG0/full RG1 HELD, P2 BLOCKED, and main unmerged.",
+  "independent_review": "Task25 fix round 2 at source 546ac4e clears the original mixed-host hostaddr list when selecting a Unix socket; its complete readback unit file passed 29 tests. The earlier independent PASS/CLEAN review remains scoped to source 8c31e84 and does not review this final fix. Task34 build review is PASS/CLEAN for artifact fe6b379; Task35 exact-candidate local qualification passed 422 focused and 1,212 full non-live tests (26 skipped, 3 warnings). Historical whole-branch reviews and Actions runs retain their original scopes; no independent whole-change review or exact-head hosted CI is asserted for this documentation commit. All 22 external rows remain NOT RUN; identities are synthetic/unverified; provider acceptance and final external audit are NOT RUN; effects are disabled; budget is zero; RG0/full RG1 are HELD; P2 is BLOCKED; main is unmerged.",
   "next_queue_item": "production_policy_and_cross_service_revocation",
   "RG0": "HELD",
   "RG1": "HELD",
   "verification": {
-    "status": "PASS_TASK33_DOCUMENTATION_REFRESH_AND_CHECKS",
-    "documentation_tests": "Task33: all 14 serial documentation/evidence contracts passed their required exit contracts. Check 6 exited 1 as expected with structural VALID / NO_GO / UNCHANGED and 22 rows NOT RUN; staged and unstaged diff checks passed. Exact commands, outputs, times, and SHA-256 values are in verification.task33_documentation_checks and /tmp/salience-task33-final-evidence-report.md.",
+    "status": "PASS_TASK36_SERIAL_DOCUMENTATION_EVIDENCE_CONTRACTS",
+    "documentation_tests": "PASS: all 14 Task36 serial documentation/evidence contracts returned their expected exits in the recorded local capture runs.",
     "mapped_obligations": 75,
     "negative_controls": 6,
     "documentation_shell_contracts": 5,
     "preserved_documentation_artifacts": 168,
     "independent_reviewers": 3,
     "reviewed_p1_rows": 17,
-    "independent_review_scope": "Historical GPT-6.1/GPT-5.6 whole-branch review and Actions run 38592066455 remain scoped to their recorded feature head; the initial commit-bound audit remains COMPLETE_REVIEWED only for source 7c1ddcda and its recorded environment. Those review/CI results do not cover current Task25/31/32 source 8c31e84c9d71d0043b1ca736d9bc4db05cfeee7d / artifact cc9d55fd67f10f7f8d831e21b9331ecae08cf039 or this Task33 documentation refresh. Task25\u2019s final compatibility fix round was independently rereviewed PASS/CLEAN with zero findings; its readback unit file passed 28 tests. No independent whole-change review or exact-head hosted CI is asserted for this documentation update. All 22 external rows remain NOT RUN, effects disabled, RG0/full RG1 HELD, P2 BLOCKED, and main unmerged.",
-    "tracked_markdown_files": 144,
+    "independent_review_scope": "Task25 fix round 2 at source 546ac4e clears the original mixed-host hostaddr list when selecting a Unix socket; its complete readback unit file passed 29 tests. The earlier independent PASS/CLEAN review remains scoped to source 8c31e84 and does not review this final fix. Task34 build review is PASS/CLEAN for artifact fe6b379; Task35 exact-candidate local qualification passed 422 focused and 1,212 full non-live tests (26 skipped, 3 warnings). Historical whole-branch reviews and Actions runs retain their original scopes; no independent whole-change review or exact-head hosted CI is asserted for this documentation commit. All 22 external rows remain NOT RUN; identities are synthetic/unverified; provider acceptance and final external audit are NOT RUN; effects are disabled; budget is zero; RG0/full RG1 are HELD; P2 is BLOCKED; main is unmerged.",
+    "tracked_markdown_files": 147,
     "active_project_markdown_files": 111,
     "active_integration_contracts": 1,
     "tracked_markdown_paths": [
@@ -208,6 +213,9 @@
       ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-31-build-report.md",
       ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-31-build-review.md",
       ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-32-report.md",
+      ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-34-build-report.md",
+      ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-34-build-review.md",
+      ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-35-report.md",
       "AGENTS.md",
       "README.md",
       "docs-new-arch/ArchV3-implementation-notes.md",
@@ -302,22 +310,22 @@
       "docs/v4/validation.md",
       "docs/verification.md",
       "docs/workflows.md",
-      "prompts/Build Creative Production Loop \u2014 Phases 7\u20138 End-to-End.md",
-      "prompts/Build Phase 10 \u2014 Multi-Platform Production Publishing, Analytics, Attribution & Experiments.md",
-      "prompts/Build Phases 1\u20134 End-to-End.md",
-      "prompts/Build Real Intelligence Loop \u2014 Pre-Phase 5 + Phases 5\u20136 End-to-End.md",
-      "prompts/Complete Phase 7\u20138 Release Gate, Then Build Phase 9 Governed Publishing.md",
+      "prompts/Build Creative Production Loop — Phases 7–8 End-to-End.md",
+      "prompts/Build Phase 10 — Multi-Platform Production Publishing, Analytics, Attribution & Experiments.md",
+      "prompts/Build Phases 1–4 End-to-End.md",
+      "prompts/Build Real Intelligence Loop — Pre-Phase 5 + Phases 5–6 End-to-End.md",
+      "prompts/Complete Phase 7–8 Release Gate, Then Build Phase 9 Governed Publishing.md",
       "prompts/Install and Verify Browser Evidence on Linux EC2.md"
     ],
     "mermaid_source_blocks_preserved": 12,
     "legacy_publication_root_qualification": "PASS_IMPLEMENTED_LOCAL_LEGACY_PUBLICATION_AND_NATIVE_SCHEDULE_FIXTURE_SCOPE_AFTER_ACCEPTED_REVIEW_CORRECTIONS",
     "root_qualification_scope": "isolated no-effects fixture only; production RG0/RG1 remain HELD",
-    "current_local_application_commit": "8c31e84c9d71d0043b1ca736d9bc4db05cfeee7d",
-    "current_focused_tests": 421,
-    "current_full_non_live_tests": 1211,
+    "current_local_application_commit": "546ac4ed794afc123ea02586a37d4a4457590582",
+    "current_focused_tests": 422,
+    "current_full_non_live_tests": 1212,
     "published_base_ci_protection_status": "PASS for historical published base 20be781; whole-branch review remains scoped to 6f5edc7; exact initial-audit source 7c1ddcd passed run 40443346020; documentation/evidence head 62b5a5e passed run 40553244096; the next status-only record commit requires exact-head CI after push.",
     "published_base_commit": "20be7815d5e5c95fea2161c908ce8ac5cae88ce6",
-    "current_qualification_application": "8c31e84c9d71d0043b1ca736d9bc4db05cfeee7d",
+    "current_qualification_application": "546ac4ed794afc123ea02586a37d4a4457590582",
     "focused_tests": 406,
     "full_non_live_tests": 1196,
     "source_files": 410,
@@ -502,10 +510,10 @@
       },
       "record_scope": "Historical Task13 documentation verification; does not validate Task24 documentation."
     },
-    "current_full_non_live_application_commit": "8c31e84c9d71d0043b1ca736d9bc4db05cfeee7d",
-    "current_full_non_live_status": "Task32 exact-artifact full non-live suite: 1,211 passed, 26 skipped, 3 warnings; log SHA-256 0e6e0f882833c338e653056cb4b85fc73fe3adfc671ccd0d4088e12453eb01b8.",
-    "current_independent_review_scope": "Task25 final compatibility fix at source 8c31e84c9d71d0043b1ca736d9bc4db05cfeee7d was independently rereviewed PASS/CLEAN with zero findings; its readback unit file passed 28 tests. Task31 build/review and Task32 qualification bind source 8c31e84c9d71d0043b1ca736d9bc4db05cfeee7d / artifact cc9d55fd67f10f7f8d831e21b9331ecae08cf039; Task32 passed 421 focused and 1,211 full non-live tests (26 skipped, 3 warnings). Historical branch review and Actions runs retain their recorded scopes and do not review this documentation refresh. No independent whole-change review, exact-head hosted CI, or formal PR approval is asserted. All 22 external rows remain NOT RUN; identities are synthetic/unverified; provider acceptance and external final audit NOT RUN; production effects disabled; RG0/full RG1 HELD; P2 BLOCKED; main unmerged.",
-    "current_documentation_artifacts": 319,
+    "current_full_non_live_application_commit": "546ac4ed794afc123ea02586a37d4a4457590582",
+    "current_full_non_live_status": "Task35 exact-artifact full non-live suite: 1,212 passed, 26 skipped, 3 warnings; log SHA-256 10f3722e943361a0323311b5be06816f40faa0dde805736182ea6aef748b023c; started 2026-10-29T18:00:50Z, completed 2026-10-29T18:44:17Z.",
+    "current_independent_review_scope": "Task25 fix round 2 at source 546ac4e clears the original mixed-host hostaddr list when selecting a Unix socket; its complete readback unit file passed 29 tests. The earlier independent PASS/CLEAN review remains scoped to source 8c31e84 and does not review this final fix. Task34 build review is PASS/CLEAN for artifact fe6b379; Task35 exact-candidate local qualification passed 422 focused and 1,212 full non-live tests (26 skipped, 3 warnings). Historical whole-branch reviews and Actions runs retain their original scopes; no independent whole-change review or exact-head hosted CI is asserted for this documentation commit. All 22 external rows remain NOT RUN; identities are synthetic/unverified; provider acceptance and final external audit are NOT RUN; effects are disabled; budget is zero; RG0/full RG1 are HELD; P2 is BLOCKED; main is unmerged.",
+    "current_documentation_artifacts": 322,
     "mermaid_source_blocks_updated": 1,
     "current_task6_fixture_checkpoint": {
       "scope": "fixture",
@@ -550,11 +558,11 @@
       "candidate_documentation_ci": "PASS_FOR_62B5A5E (run 40553244096); NEXT_STATUS_ONLY_COMMIT_CI_REQUIRED_AFTER_PUSH",
       "documentation_commit_relationship": "The documentation commit carrying this record is distinct from application_commit and does not replace the tested application/source candidate.",
       "record_kind_at_event": "final_local_non_live_verification",
-      "record_status": "HISTORICAL; SUPERSEDED_AS_LATEST_LOCAL_CANDIDATE_BY_TASK32",
+      "record_status": "HISTORICAL; SUPERSEDED_AS_LATEST_LOCAL_CANDIDATE_BY_TASK35",
       "historical_record_scope": "Historical ec12763/Slice2 local fixture record; its original 908/26/3, 60-test gate, and verifier hashes remain unchanged.",
-      "superseded_by": "Task31/32 source 8c31e84c9d71d0043b1ca736d9bc4db05cfeee7d / artifact cc9d55fd67f10f7f8d831e21b9331ecae08cf039.",
+      "superseded_by": "Task35 source 546ac4ed794afc123ea02586a37d4a4457590582 / artifact fe6b3795ce4453beb6c6bbafcc20cd3be91b3b87.",
       "record_scope": "Historical Task6/ec12763 fixture snapshot retained under a legacy field name for contract compatibility; not current candidate evidence.",
-      "compatibility_alias": "current_task6_fixture_checkpoint; preserved historical value, superseded as latest local evidence by Task32."
+      "compatibility_alias": "current_task6_fixture_checkpoint; historical fixture value preserved and superseded by Task35."
     },
     "task6_documentation_checks": {
       "docs_v4_test_checks": "PASS: .venv/bin/python docs/v4/test_checks.py; 24 tests passed.",
@@ -569,8 +577,8 @@
         "disposition": "Historical diagnosis before the exact final candidate; not the current verifier result."
       }
     },
-    "current_focused_status": "Task32 PASS: seven serial focused groups on exact artifact cc9d55fd67f10f7f8d831e21b9331ecae08cf039; counts 38, 39, 79, 79, 4, 137, 45 (421 total). Exact group log hashes/times are in task-32-report.md.",
-    "current_application_artifact_status": "Task31 development-only artifact from source 8c31e84c9d71d0043b1ca736d9bc4db05cfeee7d / tree 8118c869150624292d741847e77c75c60992a61a: artifact cc9d55fd67f10f7f8d831e21b9331ecae08cf039 / tree c7d22a3df59356274aaef342baed68d44b42d64b, sole parent is source; only generated v2 development lock JSON and companion changed. Two wheels are 459,436 bytes / SHA-256 607c8278688f318d223d1c8a8d4417b12b6dab313be77ea2a59195f8fc9429ce; typed linux/amd64 OCI image manifest 1e68764b582b1ef853a4ddb8b91ced1c03a6e3d13eb47c714600b6bca2123b4f; config cca8c53458a45ec7a0f6244caaa419fc084e9f0753879d936683cfcf7df417a3; 14 layers. Selected manifest/config/layers/referenced blobs match, while root-index annotations and archive hashes differ; archive reproducibility is not claimed. The cached Task15 base does not establish source-Dockerfile fidelity. Source manifest 831484f13eb3daa3cea94133e9f07ee2df00f2b7bebefdadeca8c417dd5f0205; route bundle b4e46090c54b23b2ebf79d4dbed13711e919df759789d81ccb94968fcb36c19b; tuple 789cdd50c79afb4289ededa5381ec6f57a91bd6f4e5058425fc21a4f70a26b8b; authenticated route manifest 66cf3e5f8a2e98e84a076b14ee8cab400f88825f95731c9c88a7d7ed0ead62ed; v2 lock content 0b48c85e6ebad29424416e3604a46bfba3a41acb9f299a36d8b4f1cf440f2bd4; companion file c327480a4975409fe358b20cb896b4ced381d61b82e36b625ee5fcb4c84d28a6. Production trust is unprovisioned.",
+    "current_focused_status": "Task35 PASS: seven serial focused groups on exact artifact fe6b3795ce4453beb6c6bbafcc20cd3be91b3b87; counts 38, 39, 80, 79, 4, 137, 45 (422 total). Exact per-group timestamps and log hashes are in .superpowers/sdd/2026-10-28-p1-remaining-production-development/task-35-report.md.",
+    "current_application_artifact_status": "Task34 development-only artifact from source 546ac4ed794afc123ea02586a37d4a4457590582 / tree 278e2bbf074fdf07b701f87f925c537dd916e118: artifact fe6b3795ce4453beb6c6bbafcc20cd3be91b3b87 / tree 124037b25c754751e2447c7d8639800f9f35d238, sole parent is source; only generated v2 development lock JSON and companion changed. The 250-entry source manifest is bc73519f454a95ada057dae27b6a71ac1c0ad1b73db419175666b23e65c410d4; two source exports match at 20fd5248161ef33bc6d5e4dbeb4f359a25fde1142bf86736c9cda75fb90af565 (23,521,280 bytes). Two wheels are 459,449 bytes / SHA-256 49d5c34e7d6770d963e6dc065a6b058fe6e08e8880bf8ea0ebbffd34e072d12f. Typed linux/amd64 OCI manifest f1c69d4a45caa33310162335eaf084057017e667b46fc925f93a6ea3b9f9b4af (2,951 bytes); config b93060c5466a0a90b4c3b2e0fcff8dc77c087748dc43100cdc6e23949a039f7a (9,777 bytes); all 14 layer hashes and sizes are retained in task-34-build-report.md. Selected payload blobs match across builds, while created annotations and OCI archive hashes differ, so root-layout/archive reproducibility is not claimed. The offline cached Task15 base and temporary Dockerfile do not establish source-Dockerfile fidelity. Route bundle 2bfbcd68ae8f76cc612cfb58f2000c49ef5167a0537200c42e6256a4903885d9; tuple 4e49460c7a89ea69a2268fc4d680906be56635a9983f20d1ababb1da4f75714f; authenticated route manifest 40198749291c758d22815def2281a7c5b6860ae8bb43f732d6f42e3765cf2a78; v2 lock d5b8e5b7ce0a97ce92bc2259fc2961ad23bc38808262159ca9e1c136c8cc6317; companion 6a91e79eb67b6fa779deafff1c48f1e1d5b2f6bad7ab280469a75fe3f08d01c0; runtime inventory 349782ff04770a3543668323fd5bcd88783e5b2b34fb90ce6a7cf1f3f2867c06; RECORD fdc6905faa6d807e3aeda7420fb03341b125f5fa9cc1a6030681716e34ce1183; interpreter 73b68fc2dac176af16098180a2c98a03ee9f1f1b02db25d42d44d782e79e2330. Production trust remains absent.",
     "historical_0043_candidate_artifact_pins": {
       "application_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
       "scope": "HISTORICAL_0043_ARTIFACT_FIXTURE_QUALIFICATION",
@@ -584,197 +592,276 @@
     },
     "current_application_candidate": {
       "record_kind": "latest_local_development_candidate",
-      "task": "Task25 Unix-socket/multi-host endpoint compatibility fix / Task31 exact development artifact / Task32 exact local qualification",
+      "task": "Task25 final mixed Unix/TCP endpoint compatibility fix / Task34 exact development artifact / Task35 exact local qualification",
       "status": "PASS_LOCAL_DEVELOPMENT_QUALIFICATION; EXTERNAL_ACCEPTANCE_NOT_RUN; PRODUCTION_GATES_HELD",
-      "source_commit": "8c31e84c9d71d0043b1ca736d9bc4db05cfeee7d",
-      "source_tree": "8118c869150624292d741847e77c75c60992a61a",
-      "artifact_commit": "cc9d55fd67f10f7f8d831e21b9331ecae08cf039",
-      "artifact_tree": "c7d22a3df59356274aaef342baed68d44b42d64b",
+      "source_commit": "546ac4ed794afc123ea02586a37d4a4457590582",
+      "source_tree": "278e2bbf074fdf07b701f87f925c537dd916e118",
+      "artifact_commit": "fe6b3795ce4453beb6c6bbafcc20cd3be91b3b87",
+      "artifact_tree": "124037b25c754751e2447c7d8639800f9f35d238",
       "artifact_parent_is_source": true,
       "artifact_changed_files": [
         "deployment/v4/publication-worker-launch-lock-v2-development.json",
         "deployment/v4/publication-worker-launch-lock-v2-development.sha256"
       ],
       "artifact_build": {
-        "source_date_epoch": 1793285677,
-        "source_archive_sha256": "940f35a28aff258d79bea2850e2c9fd6dcbc71d1032c73d26bde6f765042c9f4",
-        "source_archive_bytes": 23408640,
+        "source_date_epoch": 1793294462,
+        "source_archive_sha256": "20fd5248161ef33bc6d5e4dbeb4f359a25fde1142bf86736c9cda75fb90af565",
+        "source_archive_bytes": 23521280,
         "source_manifest_file_count": 250,
-        "source_manifest_sha256": "831484f13eb3daa3cea94133e9f07ee2df00f2b7bebefdadeca8c417dd5f0205",
-        "wheel_bytes": 459436,
-        "wheel_sha256": "607c8278688f318d223d1c8a8d4417b12b6dab313be77ea2a59195f8fc9429ce",
-        "image_sha256": "1e68764b582b1ef853a4ddb8b91ced1c03a6e3d13eb47c714600b6bca2123b4f",
-        "image_config_sha256": "cca8c53458a45ec7a0f6244caaa419fc084e9f0753879d936683cfcf7df417a3",
+        "source_manifest_sha256": "bc73519f454a95ada057dae27b6a71ac1c0ad1b73db419175666b23e65c410d4",
+        "wheel_bytes": 459449,
+        "wheel_sha256": "49d5c34e7d6770d963e6dc065a6b058fe6e08e8880bf8ea0ebbffd34e072d12f",
+        "image_sha256": "f1c69d4a45caa33310162335eaf084057017e667b46fc925f93a6ea3b9f9b4af",
+        "image_media_type": "application/vnd.oci.image.manifest.v1+json",
+        "image_manifest_size_bytes": 2951,
+        "image_config_sha256": "b93060c5466a0a90b4c3b2e0fcff8dc77c087748dc43100cdc6e23949a039f7a",
+        "image_config_bytes": 9777,
         "image_layer_count": 14,
+        "image_layers": [
+          {
+            "sha256": "59e22667830bf04fb35e15ed9c70023e9d121719bb87f0db7f3159ee7c7e0b8d",
+            "bytes": 28230270
+          },
+          {
+            "sha256": "19f81082f6f0f5682c46ad2fe5283898a3719396e2e8659b150a99de365e1e95",
+            "bytes": 3514146
+          },
+          {
+            "sha256": "799df5177ae295959cf5eb8486412f5107481f1e7c10f96adf4d438795fbcbc0",
+            "bytes": 12579705
+          },
+          {
+            "sha256": "66cd357cf7a1518288e019f7c1ab383d267fa738ec8962e05a3dc84c614019b5",
+            "bytes": 250
+          },
+          {
+            "sha256": "289b4a62af7aabeb23942d0a4f4ca36a021a36c7ba04037e6e23a06e7d848b2a",
+            "bytes": 93
+          },
+          {
+            "sha256": "77a595e41773f62dbe762f455f56e0dff6eeff70d94d2e7d07e10da7fa37f29e",
+            "bytes": 441131
+          },
+          {
+            "sha256": "bc32d0e31694eb5c9a43320201c4d47fd5d6a5736f1c8406ebd915b0d7b5898f",
+            "bytes": 62068415
+          },
+          {
+            "sha256": "e5e38aa2ad83d4b1730d1d401e945870bed07271d2f9836fe1d2b0cfca88e5d3",
+            "bytes": 550
+          },
+          {
+            "sha256": "92c36760cdec5a4e98c511a10cccd66aa5bc83522a4c50b1756a0d8243444d5d",
+            "bytes": 81387
+          },
+          {
+            "sha256": "4f4fb700ef54461cfa02571ae0db9a0dc1e0cdb5577484a6d75e68dc38e8acc1",
+            "bytes": 32
+          },
+          {
+            "sha256": "dbec4f415ac36bca7c64b00b89c69d9ae680cda14c904bcd38631aad5c012525",
+            "bytes": 442957
+          },
+          {
+            "sha256": "7de16a388cf4a091e08f60e529254ca0d473bcfd8499d3e3ee26ec456c3563a6",
+            "bytes": 380055
+          },
+          {
+            "sha256": "a9869c791fdb37bc48f72aad94a8a4b0521304a9dc239920d2b91cbb2d3ff0f5",
+            "bytes": 550
+          },
+          {
+            "sha256": "531595b3bd1daaf995f7b1452d9a34f92fe752acd6316fba97140b2d0be2587a",
+            "bytes": 81385
+          }
+        ],
         "image_interpreter_sha256": "73b68fc2dac176af16098180a2c98a03ee9f1f1b02db25d42d44d782e79e2330",
-        "image_record_sha256": "adf21d08172e80c67c0b8311c265634c12d715e313d05d762f165c9af90b6340",
+        "image_record_sha256": "fdc6905faa6d807e3aeda7420fb03341b125f5fa9cc1a6030681716e34ce1183",
         "installed_runtime_distribution_count": 73,
         "installed_runtime_inventory_sha256": "349782ff04770a3543668323fd5bcd88783e5b2b34fb90ce6a7cf1f3f2867c06",
-        "route_bundle_file_sha256": "b4e46090c54b23b2ebf79d4dbed13711e919df759789d81ccb94968fcb36c19b",
-        "route_tuple_sha256": "789cdd50c79afb4289ededa5381ec6f57a91bd6f4e5058425fc21a4f70a26b8b",
-        "authenticated_route_manifest_sha256": "66cf3e5f8a2e98e84a076b14ee8cab400f88825f95731c9c88a7d7ed0ead62ed",
-        "v2_lock_json_and_companion_content_sha256": "0b48c85e6ebad29424416e3604a46bfba3a41acb9f299a36d8b4f1cf440f2bd4",
-        "v2_lock_companion_file_sha256": "c327480a4975409fe358b20cb896b4ced381d61b82e36b625ee5fcb4c84d28a6",
+        "route_bundle_file_sha256": "2bfbcd68ae8f76cc612cfb58f2000c49ef5167a0537200c42e6256a4903885d9",
+        "route_tuple_sha256": "4e49460c7a89ea69a2268fc4d680906be56635a9983f20d1ababb1da4f75714f",
+        "authenticated_route_manifest_sha256": "40198749291c758d22815def2281a7c5b6860ae8bb43f732d6f42e3765cf2a78",
+        "v2_lock_json_and_companion_content_sha256": "d5b8e5b7ce0a97ce92bc2259fc2961ad23bc38808262159ca9e1c136c8cc6317",
+        "v2_lock_json_bytes": 52067,
+        "v2_lock_companion_file_sha256": "6a91e79eb67b6fa779deafff1c48f1e1d5b2f6bad7ab280469a75fe3f08d01c0",
         "v1_lock_sha256": "1c8ac4ff92e589e27dc0af2c6dd0bc69c4295435df5a318174a2c77f3b1f2c9c",
         "base_image_identity": "sha256:51f38f1ae8c31c86601eda50116f4e19a0b68915dcbdfcdd708bb2e6f62cd79d",
         "image_identity_kind": "linux/amd64 OCI image manifest (application/vnd.oci.image.manifest.v1+json)",
-        "image_manifest_size_bytes": 2951,
         "oci_reproducibility_scope": "Two offline OCI outputs share the selected manifest, config, all 14 layers, and referenced blob bytes. Root index created annotations and archive hashes differ, so OCI root-layout and archive reproducibility are not claimed.",
+        "oci_root_index_sha256_by_build": [
+          "b37e7dc191879c3ea4a28d90734cf6db7593fb3ba5c1c7f484914154b93222ac",
+          "99dfc1d20c4448d47bc53afa07095f8796380ce062cf373220e56e41490b7df4"
+        ],
         "oci_root_index_created_annotations": [
-          "2026-10-29T15:00:08Z",
-          "2026-10-29T15:00:22Z"
+          "2026-10-29T17:24:56Z",
+          "2026-10-29T17:25:00Z"
         ],
         "oci_archive_sha256_by_build": [
-          "4d355eae3d389f9520c0f349d18d6c5c5ab8f8a854838690522948d2077288cf",
-          "56595bebc1512f4c996de9a9ebe70fa8792dcbadfcade71328ddf3ea79e5870c"
+          "962643bb06a2d5c3efa9d8fed1fe69e1c6d9d4026f0ca2c10139b80ed0cd664a",
+          "ea1e617cb72be1482a2f5bd10c952bc5ca38670d78088f2aacb821c082cbea79"
         ],
+        "oci_archive_bytes_by_build": [
+          107850752,
+          107850752
+        ],
+        "typed_image_identity_sha256": "d4ab628431c525adcbb1d66fe44290e589f9b091d89b913235434f3d9686587f",
         "source_dockerfile_fidelity": "NOT ESTABLISHED; offline temporary Dockerfile used the cached Task15 runtime base because the source Dockerfile base was unavailable locally.",
         "production_trust": "NOT PROVISIONED"
       },
       "route_identity": {
-        "deployment_id": "00000000-0000-0000-0000-000000000311",
-        "environment_id": "00000000-0000-0000-0000-000000000312",
-        "route_id": "00000000-0000-0000-0000-000000000313",
-        "slot_id": "00000000-0000-0000-0000-000000000314",
-        "build_id": "p1-task31-development-only",
-        "route_bundle_sha256": "b4e46090c54b23b2ebf79d4dbed13711e919df759789d81ccb94968fcb36c19b",
-        "route_tuple_sha256": "789cdd50c79afb4289ededa5381ec6f57a91bd6f4e5058425fc21a4f70a26b8b",
-        "authenticated_route_manifest_sha256": "66cf3e5f8a2e98e84a076b14ee8cab400f88825f95731c9c88a7d7ed0ead62ed",
+        "deployment_id": "00000000-0000-0000-0000-000000000341",
+        "environment_id": "00000000-0000-0000-0000-000000000342",
+        "route_id": "00000000-0000-0000-0000-000000000343",
+        "slot_id": "00000000-0000-0000-0000-000000000344",
+        "build_id": "p1-task34-development-only",
+        "route_bundle_sha256": "2bfbcd68ae8f76cc612cfb58f2000c49ef5167a0537200c42e6256a4903885d9",
+        "route_tuple_sha256": "4e49460c7a89ea69a2268fc4d680906be56635a9983f20d1ababb1da4f75714f",
+        "authenticated_route_manifest_sha256": "40198749291c758d22815def2281a7c5b6860ae8bb43f732d6f42e3765cf2a78",
         "identity_provisioning": "synthetic and unverified",
-        "temporal_endpoint": "development-temporal.task31.unprovisioned",
-        "temporal_namespace": "salience-task31-development",
-        "task_queue": "salience-publication-task31-development",
+        "temporal_endpoint": "development-temporal.task34.unprovisioned",
+        "temporal_namespace": "salience-task34-development",
+        "task_queue": "salience-publication-task34-development",
         "producer_bindings": []
       },
       "migration_head": "0051_p1_recovery_rollback_v2",
       "rollback_verifier_abi": "salience.p1-recovery-rollback-verifier.v2",
       "focused_non_live": {
-        "evidence_report": ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-32-report.md",
+        "evidence_report": ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-35-report.md",
         "groups": 7,
-        "passed": 421,
+        "passed": 422,
         "passed_by_group": [
           38,
           39,
-          79,
+          80,
           79,
           4,
           137,
           45
         ],
         "log_sha256_by_group": [
-          "06c5db13b07d190b9016715651b9a3fc0900178a56cea32c53355e6660e2f4d5",
-          "1abccb36a37eacf2657c6b65d82413e7bde1d96747e70df68e716fdbac1ddb66",
-          "46542dfd4ebba489a59995402a0b106a5ede1dcb51618041df84101a003a6230",
-          "bf39dec771c447be680d1ee1e221d17982bd765d46eca58ca9cdc9aad216a85e",
-          "54d23ef0b56f99d2cbe2d50ca07723596b53070e1dcae86069f33fb176336fed",
-          "39116698e2245ec9965c94c2a8dda1450de40dfc14be9fa7f8e8075bf0b2495c",
-          "13ab501ab5fde914398d1befa6c431d69c8bc400893a76415093350cc6d2c670"
+          "1e2f03e2c7f7898678530c1434fbacb0dd85bd230bc1f8e269e1076b4848906c",
+          "63bbfaebe88ce53e5813f1a610853bbe3d6877927b298fbd9e9ae2f1f45aa7cf",
+          "2f27aeb500a20727249b8d9546a906d57702d9d76deeb4638ff21de650791634",
+          "ebbd669b06d1549b315800e00c0027fe700121c50753607aab726d396eeb5153",
+          "6a8ee765aa85750ad3157354082112da148050828ccd0a44a85396fbcd87f37c",
+          "474620bd421e188a028928a72ee6623c9410d1e2476bd6be3e9759699383a5e5",
+          "955ca05367e7f02636472f108cb875842db80fd885188674f587a692e2694c68"
         ],
         "group_results": [
           {
             "name": "focused-01-routing-files-lock-builder",
-            "started_at": "2026-10-29T15:22:40Z",
-            "ended_at": "2026-10-29T15:22:43Z",
-            "elapsed_seconds": 2.998,
+            "started_at": "2026-10-29T17:39:20Z",
+            "ended_at": "2026-10-29T17:39:22Z",
+            "elapsed_seconds": 2.58,
             "passed": 38,
-            "log_sha256": "06c5db13b07d190b9016715651b9a3fc0900178a56cea32c53355e6660e2f4d5"
+            "log_sha256": "1e2f03e2c7f7898678530c1434fbacb0dd85bd230bc1f8e269e1076b4848906c"
           },
           {
             "name": "focused-02-migrations-0047-0051-schema-safety",
-            "started_at": "2026-10-29T15:22:43Z",
-            "ended_at": "2026-10-29T15:26:54Z",
-            "elapsed_seconds": 251.398,
+            "started_at": "2026-10-29T17:39:22Z",
+            "ended_at": "2026-10-29T17:43:35Z",
+            "elapsed_seconds": 253.133,
             "passed": 39,
-            "log_sha256": "1abccb36a37eacf2657c6b65d82413e7bde1d96747e70df68e716fdbac1ddb66"
+            "log_sha256": "63bbfaebe88ce53e5813f1a610853bbe3d6877927b298fbd9e9ae2f1f45aa7cf"
           },
           {
             "name": "focused-03-schedule-native-readback",
-            "started_at": "2026-10-29T15:26:54Z",
-            "ended_at": "2026-10-29T15:31:12Z",
-            "elapsed_seconds": 257.885,
-            "passed": 79,
-            "log_sha256": "46542dfd4ebba489a59995402a0b106a5ede1dcb51618041df84101a003a6230"
+            "started_at": "2026-10-29T17:43:35Z",
+            "ended_at": "2026-10-29T17:47:12Z",
+            "elapsed_seconds": 217.02,
+            "passed": 80,
+            "log_sha256": "2f27aeb500a20727249b8d9546a906d57702d9d76deeb4638ff21de650791634"
           },
           {
             "name": "focused-04-complete-production-recovery",
-            "started_at": "2026-10-29T15:31:12Z",
-            "ended_at": "2026-10-29T15:40:22Z",
-            "elapsed_seconds": 549.295,
+            "started_at": "2026-10-29T17:47:12Z",
+            "ended_at": "2026-10-29T17:56:21Z",
+            "elapsed_seconds": 548.871,
             "passed": 79,
-            "log_sha256": "bf39dec771c447be680d1ee1e221d17982bd765d46eca58ca9cdc9aad216a85e"
+            "log_sha256": "ebbd669b06d1549b315800e00c0027fe700121c50753607aab726d396eeb5153"
           },
           {
             "name": "focused-05-rollback-v2-handoff",
-            "started_at": "2026-10-29T15:40:22Z",
-            "ended_at": "2026-10-29T15:40:23Z",
-            "elapsed_seconds": 1.495,
+            "started_at": "2026-10-29T17:56:21Z",
+            "ended_at": "2026-10-29T17:56:23Z",
+            "elapsed_seconds": 1.441,
             "passed": 4,
-            "log_sha256": "54d23ef0b56f99d2cbe2d50ca07723596b53070e1dcae86069f33fb176336fed"
+            "log_sha256": "6a8ee765aa85750ad3157354082112da148050828ccd0a44a85396fbcd87f37c"
           },
           {
             "name": "focused-06-complete-policy-revocation",
-            "started_at": "2026-10-29T15:40:23Z",
-            "ended_at": "2026-10-29T15:41:40Z",
-            "elapsed_seconds": 77.29,
+            "started_at": "2026-10-29T17:56:23Z",
+            "ended_at": "2026-10-29T17:57:41Z",
+            "elapsed_seconds": 78.065,
             "passed": 137,
-            "log_sha256": "39116698e2245ec9965c94c2a8dda1450de40dfc14be9fa7f8e8075bf0b2495c"
+            "log_sha256": "474620bd421e188a028928a72ee6623c9410d1e2476bd6be3e9759699383a5e5"
           },
           {
             "name": "focused-07-external-acceptance-unit",
-            "started_at": "2026-10-29T15:41:40Z",
-            "ended_at": "2026-10-29T15:44:50Z",
-            "elapsed_seconds": 189.311,
+            "started_at": "2026-10-29T17:57:41Z",
+            "ended_at": "2026-10-29T18:00:50Z",
+            "elapsed_seconds": 189.769,
             "passed": 45,
-            "log_sha256": "13ab501ab5fde914398d1befa6c431d69c8bc400893a76415093350cc6d2c670"
+            "log_sha256": "955ca05367e7f02636472f108cb875842db80fd885188674f587a692e2694c68"
           }
         ],
         "all_groups_passed": true,
-        "serially_once": true
+        "serially_once": true,
+        "total_passed_arithmetic": "38 + 39 + 80 + 79 + 4 + 137 + 45 = 422"
       },
       "full_non_live": {
-        "evidence_report": ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-32-report.md",
+        "evidence_report": ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-35-report.md",
         "runs": 1,
-        "passed": 1211,
+        "passed": 1212,
         "skipped": 26,
         "warnings": 3,
-        "log_sha256": "0e6e0f882833c338e653056cb4b85fc73fe3adfc671ccd0d4088e12453eb01b8",
-        "runner_seconds": 2600.014,
-        "pytest_seconds": 2596.44,
-        "started_at": "2026-10-29T15:44:50Z",
-        "completed_at": "2026-10-29T16:28:10Z"
+        "log_sha256": "10f3722e943361a0323311b5be06816f40faa0dde805736182ea6aef748b023c",
+        "runner_seconds": 2606.357,
+        "pytest_seconds": 2602.63,
+        "started_at": "2026-10-29T18:00:50Z",
+        "completed_at": "2026-10-29T18:44:17Z"
       },
       "local_run": {
-        "compose_project": "salience-p1-task32-q-9b9a51dae757",
-        "evidence_directory": "/tmp/salience-task32-exact-qualification-20261029T152227Z-9b9a51dae757",
-        "started_at": "2026-10-29T15:22:30Z",
-        "completed_at": "2026-10-29T16:28:13Z",
+        "compose_project": "salience-p1-task35-q-35a80dc40a2a",
+        "evidence_directory": "/tmp/salience-task35-exact-qualification-20261029T173910Z-35a80dc40a2a",
+        "started_at": "2026-10-29T17:39:10Z",
+        "completed_at": "2026-10-29T18:44:20Z",
         "cleanup_exit_code": 0,
-        "cleanup_log_sha256": "c702a2463241a5fc6f7b10c511ac8176e27067441c8ec69f817e610aec4970d6",
+        "cleanup_log_sha256": "d972190b218ef6a2a272c249f759834564698de67e25badbf3ac44fe3ce9f2cf",
         "remaining_containers": 0,
         "remaining_networks": 0,
         "remaining_volumes": 0,
-        "cleanup_verification_log_sha256": "d950b4e86f37941c3520e2f6072e72fac7dd04015e53cf27644030cfef1c1216"
+        "cleanup_verification_log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
       },
-      "superseded_runner_attempt": {
-        "task": "Task28 exact-candidate qualification attempt (superseded)",
-        "status": "FAILED_RUNNER_ENVIRONMENT; NOT AUTHORITATIVE QUALIFICATION",
-        "compose_project": "salience-p1-task28-q-276c0a98819e",
-        "failed_group": "02",
-        "focused_counts": {
-          "passed": 412,
-          "failed": 1,
-          "deselected": 113
-        },
+      "superseded_harness_attempt": {
+        "task": "Task35 initial exact-candidate harness attempt (superseded setup failure)",
+        "status": "HARNESS_SETUP_ERROR; NONAUTHORITATIVE; NOT CANDIDATE FAILURE",
+        "compose_project": "salience-p1-task35-q-50400cc11b6f",
+        "evidence_directory": "/tmp/salience-task35-exact-qualification-20261029T173417Z-50400cc11b6f",
+        "evidence_report": "/tmp/salience-task35-exact-qualification-20261029T173417Z-50400cc11b6f/attempt-1-report.md",
+        "evidence_report_sha256": "3f0f5366963de446ae1887ef6b1310c0e605afded6790bf45e2bde2e5f869c05",
+        "status_scope": "Harness setup only; used async SQLAlchemy URL scheme for TEST_DATABASE_URL consumed by direct psycopg fixtures, so focused database groups failed before candidate behavior was qualified.",
+        "focused_groups_run": 7,
+        "focused_groups_passed": 3,
         "full_non_live": "NOT RUN",
-        "cause": "The runner omitted COMPOSE_PROJECT_NAME, so a docker compose exec schema-dump helper selected the wrong project. Group 02 was not rerun. Task29 repeated all seven groups serially with the correct project environment and passed.",
         "cleanup_counts": {
           "containers": 0,
           "networks": 0,
           "volumes": 0
         },
-        "evidence_report": ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-28-report.md"
+        "cleanup_log_sha256": "d59b95e500c3bcd7046a5cc902d6b2e0d6da601e2297de96b42bdfc1a2c1a252"
       },
-      "qualification_scope": "development-only; exact Task31/32 local candidate qualification, not externally trusted or production-qualified",
+      "readback_unit_collection_reconciliation": {
+        "task32_collected_cases": 28,
+        "task35_collected_cases": 29,
+        "task35_collection_only_executed_test_bodies": false,
+        "group03_task32_passed": 79,
+        "group03_task35_passed": 80,
+        "collection_log_sha256": "916694c44a1df8287ef4e0d284d391584db91c830475c7d558db8c96c203f9c6"
+      },
+      "qualification_scope": "development-only; exact Task34/35 local candidate qualification, not externally trusted or production-qualified",
+      "review_scope": "Task34 build artifact independently reviewed PASS/CLEAN; Task25 final mixed-host source fix has no independent post-fix review supplied; Task35 is exact-candidate local qualification only.",
       "external_gates": {
         "external_rows": "NOT RUN (22 rows)",
         "identities": "synthetic and unverified",
@@ -792,32 +879,16 @@
       "evidence_reports": [
         ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-25-report.md",
         ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-25-review.md",
-        ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-31-build-report.md",
-        ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-31-build-review.md",
-        ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-32-report.md"
+        ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-34-build-report.md",
+        ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-34-build-review.md",
+        ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-35-report.md"
       ],
-      "active_source_lock_sha256": "6797c12e18d74f4fea5992c031db76ecef0fd4456e17d41bfed5194f17509e6a",
-      "pre_test_readiness_diagnostic": {
-        "status": "SETUP_DIAGNOSTIC_ONLY; STOPPED_BEFORE_MIGRATIONS_OR_TESTS",
-        "attempt_project": "salience-p1-task32-q-98039f582cae",
-        "attempt_evidence_directory": "/tmp/salience-task32-exact-qualification-20261029T151755Z-98039f582cae",
-        "cause": "A single immediate local Temporal TCP readiness probe received connection-refused. No migration or test command ran in this preliminary attempt.",
-        "diagnostic_project": "salience-p1-task32-diag-425992f46057",
-        "diagnostic_evidence_directory": "/tmp/salience-task32-temporal-diagnostic-20261029T152114Z-425992f46057",
-        "timing_observation": "errno 111 at t+0s; successful local TCP connection at t+1s.",
-        "preliminary_report_sha256": "54ebb13cb35902d892aabcebf732314116fb186ce849cf5f47f2aa23f6aebb04",
-        "cleanup_counts_each_project": {
-          "containers": 0,
-          "networks": 0,
-          "volumes": 0
-        },
-        "qualification_effect": "None; authoritative Task32 qualification waited for local Temporal readiness and passed."
-      },
+      "active_source_lock_sha256": "09100cb7aee864227d78112aa7729a1cded7790d34cc33687c5e2a3732188e55",
       "producer_bindings": []
     },
     "historical_0043_qualification_application": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
     "historical_0043_focused_test_subset": 60,
-    "current_focused_test_scope": "Task32 seven serial focused non-live groups on exact artifact cc9d55fd67f10f7f8d831e21b9331ecae08cf039; 421 passed; group counts and actual log hashes are in task-32-report.md.",
+    "current_focused_test_scope": "Task35 seven serial focused non-live groups on exact artifact fe6b3795ce4453beb6c6bbafcc20cd3be91b3b87; 422 passed; exact group commands, timestamps, counts, and log hashes are in .superpowers/sdd/2026-10-28-p1-remaining-production-development/task-35-report.md.",
     "historical_task11_application_candidate": {
       "application_commit": "b4865d115c225c828e54777024f1de726fa4cd86",
       "artifact_commit": "3c62a4f01e974d97225100bb2afc3a3665ef601d",
@@ -1083,7 +1154,7 @@
           "expected_exit_code": 0,
           "ok": true,
           "log_sha256": "89113f253b9a76eeffe5a080c1a2b1603da5db9b4c0882ab7f86678e926aa0d6",
-          "result_summary": "Phase 7\u20138 documentation contract passed.",
+          "result_summary": "Phase 7–8 documentation contract passed.",
           "elapsed_seconds": 0.025
         },
         {
@@ -1136,24 +1207,24 @@
       "record_scope": "Synthetic Task19/Task18 local route identity; retained as historical and superseded by Task29 route identity."
     },
     "current_route_identity": {
-      "deployment_id": "00000000-0000-0000-0000-000000000311",
-      "environment_id": "00000000-0000-0000-0000-000000000312",
-      "route_id": "00000000-0000-0000-0000-000000000313",
-      "slot_id": "00000000-0000-0000-0000-000000000314",
-      "build_id": "p1-task31-development-only",
-      "route_bundle_sha256": "b4e46090c54b23b2ebf79d4dbed13711e919df759789d81ccb94968fcb36c19b",
-      "route_tuple_sha256": "789cdd50c79afb4289ededa5381ec6f57a91bd6f4e5058425fc21a4f70a26b8b",
-      "authenticated_route_manifest_sha256": "66cf3e5f8a2e98e84a076b14ee8cab400f88825f95731c9c88a7d7ed0ead62ed",
+      "deployment_id": "00000000-0000-0000-0000-000000000341",
+      "environment_id": "00000000-0000-0000-0000-000000000342",
+      "route_id": "00000000-0000-0000-0000-000000000343",
+      "slot_id": "00000000-0000-0000-0000-000000000344",
+      "build_id": "p1-task34-development-only",
+      "route_bundle_sha256": "2bfbcd68ae8f76cc612cfb58f2000c49ef5167a0537200c42e6256a4903885d9",
+      "route_tuple_sha256": "4e49460c7a89ea69a2268fc4d680906be56635a9983f20d1ababb1da4f75714f",
+      "authenticated_route_manifest_sha256": "40198749291c758d22815def2281a7c5b6860ae8bb43f732d6f42e3765cf2a78",
       "identity_provisioning": "synthetic and unverified",
-      "temporal_endpoint": "development-temporal.task31.unprovisioned",
-      "temporal_namespace": "salience-task31-development",
-      "task_queue": "salience-publication-task31-development",
+      "temporal_endpoint": "development-temporal.task34.unprovisioned",
+      "temporal_namespace": "salience-task34-development",
+      "task_queue": "salience-publication-task34-development",
       "producer_bindings": []
     },
     "task30_documentation_checks": {
       "status": "PASS",
       "count": 14,
-      "expected_checker_contract": "Checks 1\u20135 and 7\u201313 exit 0. Check 6 exits 1 by design and reports structural VALID, NO_GO, UNCHANGED, 22 of 22 external rows NOT RUN, production effects disabled, RG0/full RG1 HELD. Check 14 runs after staging and must pass.",
+      "expected_checker_contract": "Checks 1–5 and 7–13 exit 0. Check 6 exits 1 by design and reports structural VALID, NO_GO, UNCHANGED, 22 of 22 external rows NOT RUN, production effects disabled, RG0/full RG1 HELD. Check 14 runs after staging and must pass.",
       "source_commit": "cf070328d035f9010b760431173845c6afdfedee",
       "development_artifact_commit": "33cac5cffff973e9cba5e03be6b493065e5f817d",
       "results": [
@@ -1297,7 +1368,7 @@
           "status": "PASS",
           "elapsed_seconds": 0.023,
           "log_sha256": "89113f253b9a76eeffe5a080c1a2b1603da5db9b4c0882ab7f86678e926aa0d6",
-          "result_summary": "Phase 7\u20138 documentation contract passed",
+          "result_summary": "Phase 7–8 documentation contract passed",
           "log_path": "/tmp/salience-task30-checks/11-phase-7-8-documentation-shell.log"
         },
         {
@@ -1377,7 +1448,7 @@
         }
       ]
     },
-    "current_documentation_checks_status": "PASS_TASK33_SERIAL_CHECKS",
+    "current_documentation_checks_status": "PENDING_TASK36_SERIAL_CHECKS",
     "task33_report_copy_integrity": {
       "task-25-report.md": {
         "source_sha256": "d21746cbd5aa02ca39ce95be0a3dca7b195f1fb091130b3fdfdaa232ef74e08b",
@@ -1413,7 +1484,7 @@
     "task33_documentation_checks": {
       "status": "PASS",
       "count": 14,
-      "expected_checker_contract": "Checks 1\u20135 and 7\u201313 exit 0. Check 6 exits 1 by design and reports structural VALID, NO_GO, UNCHANGED, 22 of 22 external rows NOT RUN, production effects disabled, RG0/full RG1 HELD. Check 14 runs after staging and passes.",
+      "expected_checker_contract": "Checks 1–5 and 7–13 exit 0. Check 6 exits 1 by design and reports structural VALID, NO_GO, UNCHANGED, 22 of 22 external rows NOT RUN, production effects disabled, RG0/full RG1 HELD. Check 14 runs after staging and passes.",
       "source_commit": "8c31e84c9d71d0043b1ca736d9bc4db05cfeee7d",
       "development_artifact_commit": "cc9d55fd67f10f7f8d831e21b9331ecae08cf039",
       "results": [
@@ -1558,7 +1629,7 @@
           "elapsed_seconds": 0.024,
           "log_sha256": "89113f253b9a76eeffe5a080c1a2b1603da5db9b4c0882ab7f86678e926aa0d6",
           "log_path": "/tmp/salience-task33-checks/11-11-phase-7-8-documentation-shell.log",
-          "result_summary": "Phase 7\u20138 documentation contract passed"
+          "result_summary": "Phase 7–8 documentation contract passed"
         },
         {
           "name": "12-python-compileall",
@@ -1620,6 +1691,277 @@
         "combined_output_bytes": 0,
         "combined_log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
       }
+    },
+    "task36_documentation_checks": {
+      "status": "PASS",
+      "scope": "Fourteen established serial documentation/evidence contracts; no application suite, build, Docker, network, or external action.",
+      "log_directory": "/tmp/salience-task36-checks",
+      "expected_contracts": 14,
+      "capture_run": {
+        "started_at": "2026-10-29T19:14:48Z",
+        "ended_at": "2026-10-29T19:14:54Z",
+        "serial": true,
+        "all_expected_exits": true
+      },
+      "results": [
+        {
+          "number": 1,
+          "contract": "python3 docs/v4/test_agenttube_reference.py",
+          "command": "python3 docs/v4/test_agenttube_reference.py",
+          "expected_exit": 0,
+          "exit": 0,
+          "elapsed_seconds": 2.141,
+          "started_at": "2026-10-29T19:14:48Z",
+          "ended_at": "2026-10-29T19:14:50Z",
+          "log_path": "/tmp/salience-task36-checks/01.log",
+          "log_sha256": "3e1d27a4698adf01341be8c7708c9d2be20bd61d58796df6f05a8ad48667508a",
+          "output_bytes": 116,
+          "expected_contract_passed": true
+        },
+        {
+          "number": 2,
+          "contract": "python3 docs/v4/verify_agenttube_reference.py",
+          "command": "python3 docs/v4/verify_agenttube_reference.py",
+          "expected_exit": 0,
+          "exit": 0,
+          "elapsed_seconds": 0.989,
+          "started_at": "2026-10-29T19:14:50Z",
+          "ended_at": "2026-10-29T19:14:51Z",
+          "log_path": "/tmp/salience-task36-checks/02.log",
+          "log_sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431",
+          "output_bytes": 5,
+          "expected_contract_passed": true
+        },
+        {
+          "number": 3,
+          "contract": ".venv/bin/python docs/v4/test_checks.py",
+          "command": ".venv/bin/python docs/v4/test_checks.py",
+          "expected_exit": 0,
+          "exit": 0,
+          "elapsed_seconds": 0.347,
+          "started_at": "2026-10-29T19:14:51Z",
+          "ended_at": "2026-10-29T19:14:51Z",
+          "log_path": "/tmp/salience-task36-checks/03.log",
+          "log_sha256": "1c33c0aa42d0ed108cc2d935fe4083f9c21537d69a524fdc0a765e95df75f31b",
+          "output_bytes": 124,
+          "expected_contract_passed": true
+        },
+        {
+          "number": 4,
+          "contract": ".venv/bin/python docs/v4/check.py",
+          "command": ".venv/bin/python docs/v4/check.py",
+          "expected_exit": 0,
+          "exit": 0,
+          "elapsed_seconds": 0.475,
+          "started_at": "2026-10-29T19:14:51Z",
+          "ended_at": "2026-10-29T19:14:52Z",
+          "log_path": "/tmp/salience-task36-checks/04.log",
+          "log_sha256": "9580690f117cb4be2aeff1ef11c84066fceaf391fc4ea7321f151e0c00c3a85b",
+          "output_bytes": 219,
+          "expected_contract_passed": true
+        },
+        {
+          "number": 5,
+          "contract": ".venv/bin/python docs/v4/check.py --self-test",
+          "command": ".venv/bin/python docs/v4/check.py --self-test",
+          "expected_exit": 0,
+          "exit": 0,
+          "elapsed_seconds": 0.484,
+          "started_at": "2026-10-29T19:14:52Z",
+          "ended_at": "2026-10-29T19:14:52Z",
+          "log_path": "/tmp/salience-task36-checks/05.log",
+          "log_sha256": "8a5c3203901bde8ddcd64cefde57b8e02512ea47263a0dcecab48d7d21a01422",
+          "output_bytes": 245,
+          "expected_contract_passed": true
+        },
+        {
+          "number": 6,
+          "contract": ".venv/bin/python scripts/check-p1-external-acceptance.py --package docs/v4/p1-remaining-production-development-evidence.json --schema docs/v4/p1-rg0-rg1-external-acceptance.schema.json",
+          "command": ".venv/bin/python scripts/check-p1-external-acceptance.py --package docs/v4/p1-remaining-production-development-evidence.json --schema docs/v4/p1-rg0-rg1-external-acceptance.schema.json",
+          "expected_exit": 1,
+          "exit": 1,
+          "elapsed_seconds": 0.753,
+          "started_at": "2026-10-29T19:14:52Z",
+          "ended_at": "2026-10-29T19:14:53Z",
+          "log_path": "/tmp/salience-task36-checks/06.log",
+          "log_sha256": "17482b4ffafc9894c167b1c2ee6d200497c19e54ac64b7709832f89db1af68cd",
+          "output_bytes": 7593,
+          "expected_contract_passed": true
+        },
+        {
+          "number": 7,
+          "contract": "bash tests/scripts/test_browser_documentation.sh",
+          "command": "bash tests/scripts/test_browser_documentation.sh",
+          "expected_exit": 0,
+          "exit": 0,
+          "elapsed_seconds": 0.018,
+          "started_at": "2026-10-29T19:14:53Z",
+          "ended_at": "2026-10-29T19:14:53Z",
+          "log_path": "/tmp/salience-task36-checks/07.log",
+          "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "output_bytes": 0,
+          "expected_contract_passed": true
+        },
+        {
+          "number": 8,
+          "contract": "bash tests/scripts/test_verify_browser_evidence.sh",
+          "command": "bash tests/scripts/test_verify_browser_evidence.sh",
+          "expected_exit": 0,
+          "exit": 0,
+          "elapsed_seconds": 0.016,
+          "started_at": "2026-10-29T19:14:53Z",
+          "ended_at": "2026-10-29T19:14:53Z",
+          "log_path": "/tmp/salience-task36-checks/08.log",
+          "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "output_bytes": 0,
+          "expected_contract_passed": true
+        },
+        {
+          "number": 9,
+          "contract": "bash tests/scripts/test_phase_9_documentation.sh",
+          "command": "bash tests/scripts/test_phase_9_documentation.sh",
+          "expected_exit": 0,
+          "exit": 0,
+          "elapsed_seconds": 0.017,
+          "started_at": "2026-10-29T19:14:53Z",
+          "ended_at": "2026-10-29T19:14:53Z",
+          "log_path": "/tmp/salience-task36-checks/09.log",
+          "log_sha256": "ce5cda11bdfaa8726cfc69f803cb469b45658592275f8f95dbd0777a4eb9e25b",
+          "output_bytes": 38,
+          "expected_contract_passed": true
+        },
+        {
+          "number": 10,
+          "contract": "bash tests/scripts/test_verify_phase_9_cleanup.sh",
+          "command": "bash tests/scripts/test_verify_phase_9_cleanup.sh",
+          "expected_exit": 0,
+          "exit": 0,
+          "elapsed_seconds": 0.216,
+          "started_at": "2026-10-29T19:14:53Z",
+          "ended_at": "2026-10-29T19:14:53Z",
+          "log_path": "/tmp/salience-task36-checks/10.log",
+          "log_sha256": "593b167e22589dd2966b393a71ae8b7ade87702d7f98e2095ca085f230eb922d",
+          "output_bytes": 41,
+          "expected_contract_passed": true
+        },
+        {
+          "number": 11,
+          "contract": "bash tests/scripts/test_phase_7_8_documentation.sh",
+          "command": "bash tests/scripts/test_phase_7_8_documentation.sh",
+          "expected_exit": 0,
+          "exit": 0,
+          "elapsed_seconds": 0.022,
+          "started_at": "2026-10-29T19:14:53Z",
+          "ended_at": "2026-10-29T19:14:53Z",
+          "log_path": "/tmp/salience-task36-checks/11.log",
+          "log_sha256": "89113f253b9a76eeffe5a080c1a2b1603da5db9b4c0882ab7f86678e926aa0d6",
+          "output_bytes": 42,
+          "expected_contract_passed": true
+        },
+        {
+          "number": 12,
+          "contract": ".venv/bin/python -m compileall -q src tests",
+          "command": ".venv/bin/python -m compileall -q src tests",
+          "expected_exit": 0,
+          "exit": 0,
+          "elapsed_seconds": 0.047,
+          "started_at": "2026-10-29T19:14:53Z",
+          "ended_at": "2026-10-29T19:14:53Z",
+          "log_path": "/tmp/salience-task36-checks/12.log",
+          "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "output_bytes": 0,
+          "expected_contract_passed": true
+        },
+        {
+          "number": 13,
+          "contract": "node .agents/skills/archify/bin/archify.mjs validate architecture docs/salience-phase-1-9.architecture.json --quality showcase --repo-root . --json",
+          "command": "node .agents/skills/archify/bin/archify.mjs validate architecture docs/salience-phase-1-9.architecture.json --quality showcase --repo-root . --json",
+          "expected_exit": 0,
+          "exit": 0,
+          "elapsed_seconds": 0.347,
+          "started_at": "2026-10-29T19:14:53Z",
+          "ended_at": "2026-10-29T19:14:54Z",
+          "log_path": "/tmp/salience-task36-checks/13.log",
+          "log_sha256": "ae2fe60e8fad4438a346db1c88607d53796684eaa6f7913587cd17be8637e785",
+          "output_bytes": 1897,
+          "expected_contract_passed": true
+        },
+        {
+          "number": 14,
+          "contract": "git diff --check; git diff --cached --check",
+          "commands": [
+            [
+              "git",
+              "diff",
+              "--check"
+            ],
+            [
+              "git",
+              "diff",
+              "--cached",
+              "--check"
+            ]
+          ],
+          "started_at": "2026-10-29T19:18:50Z",
+          "ended_at": "2026-10-29T19:18:50Z",
+          "elapsed_seconds": 0.031,
+          "subcommand_exits": [
+            0,
+            0
+          ],
+          "exit": 0,
+          "output_bytes": 0,
+          "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "expected_exit": 0,
+          "expected_contract_passed": true
+        }
+      ],
+      "final_staged_whitespace_check": {
+        "number": 14,
+        "contract": "git diff --check; git diff --cached --check",
+        "commands": [
+          [
+            "git",
+            "diff",
+            "--check"
+          ],
+          [
+            "git",
+            "diff",
+            "--cached",
+            "--check"
+          ]
+        ],
+        "started_at": "2026-10-29T19:18:50Z",
+        "ended_at": "2026-10-29T19:18:50Z",
+        "elapsed_seconds": 0.031,
+        "subcommand_exits": [
+          0,
+          0
+        ],
+        "exit": 0,
+        "output_bytes": 0,
+        "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "expected_exit": 0,
+        "expected_contract_passed": true
+      },
+      "all_expected_contracts_passed": true,
+      "capture_runs": [
+        {
+          "scope": "contracts 1-13; pre-stage serial capture",
+          "started_at": "2026-10-29T19:14:48Z",
+          "ended_at": "2026-10-29T19:14:54Z",
+          "serial": true,
+          "all_expected_exits": true
+        },
+        {
+          "scope": "contract 14 staged whitespace check",
+          "started_at": "2026-10-29T19:18:50Z",
+          "ended_at": "2026-10-29T19:18:50Z",
+          "serial": true,
+          "all_expected_exits": true
+        }
+      ]
     }
   },
   "files": [
@@ -1921,7 +2263,7 @@
     {
       "path": ".superpowers/sdd/2026-10-27-p1-production-policy-and-revocation/final-evidence-report.md",
       "sha256": "551c40b4d6852ab3ab4f42bc2cd26ffd1a0339fa03a5f7c2c0f0d39814d05307",
-      "disposition": "preserved historical Slice 2 final local non-live verification report for candidate ec12763; superseded by Task32 for latest local evidence"
+      "disposition": "preserved historical Slice 2 final local non-live verification report for candidate ec12763; superseded by Task35 for latest local evidence"
     },
     {
       "path": ".superpowers/sdd/2026-10-27-p1-production-policy-and-revocation/final-fix-report.md",
@@ -1935,8 +2277,8 @@
     },
     {
       "path": ".superpowers/sdd/2026-10-28-p1-remaining-production-development/final-evidence-report.md",
-      "sha256": "55212d47280d5c2a6b90beadd58a355100c05b1a061f4a6f3d78bb8754390f69",
-      "disposition": "current Task31/32 final local evidence; external acceptance remains unqualified"
+      "sha256": "813503a7aee7f3a2864f852d49428fe2ccbb7da0a4d2918242ce1171af2d827b",
+      "disposition": "current Task34/35 final local evidence; external acceptance remains unqualified"
     },
     {
       "path": ".superpowers/sdd/2026-10-28-p1-remaining-production-development/final-review-fix-report.md",
@@ -1950,8 +2292,8 @@
     },
     {
       "path": ".superpowers/sdd/2026-10-28-p1-remaining-production-development/progress.md",
-      "sha256": "ea3a47b724ae7155753f6bb4fd9e0a94630be993c4dfcc9248e3b73c071faeea",
-      "disposition": "current Task31/32 candidate progress; external gates HELD"
+      "sha256": "46822f758172b87d883298c30a119e8284dace21cb4d7fdaccc349f99b333aeb",
+      "disposition": "current Task34/35 candidate progress; external gates HELD"
     },
     {
       "path": ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-10-brief.md",
@@ -1971,42 +2313,42 @@
     {
       "path": ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-11-report.md",
       "sha256": "65a04c815c0a3a243d3c4d099dca058d79d5f3ca909cba30e607aaa8a6fc4bd7",
-      "disposition": "historical Task11 exact-source report; superseded as latest local evidence by Task32"
+      "disposition": "historical Task11 exact-source report; superseded as latest local evidence by Task35"
     },
     {
       "path": ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-12-brief.md",
       "sha256": "2b2a68c85f4da49341ca208447c537f011be2fbc164290721cc4176401983a4e",
-      "disposition": "historical Task12 implementation brief; later local candidate qualified by Task32"
+      "disposition": "historical Task12 implementation brief; later local candidate qualified by Task35"
     },
     {
       "path": ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-12-report.md",
       "sha256": "47bae8175c878d98f500e833481747006f0523bfc948e02af57ade546b65aa28",
-      "disposition": "historical Task12 implementation report; later local candidate qualified by Task32"
+      "disposition": "historical Task12 implementation report; later local candidate qualified by Task35"
     },
     {
       "path": ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-13-brief.md",
       "sha256": "3eb7c64461d399c8d51854ef6bcd29d68bdd649c9a0342a061d7ed18b23f8bd0",
-      "disposition": "historical Task13 exact-candidate evidence brief; superseded as latest by Task32"
+      "disposition": "historical Task13 exact-candidate evidence brief; superseded as latest by Task35"
     },
     {
       "path": ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-13-report.md",
       "sha256": "e428a660c9d543834fd98a988ed7d0eea80ce5addefb00af931ab46026848ec3",
-      "disposition": "historical Task13 exact-candidate report; superseded as latest by Task32"
+      "disposition": "historical Task13 exact-candidate report; superseded as latest by Task35"
     },
     {
       "path": ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-14-report.md",
       "sha256": "48cc7f44429a719c6efb7b6e6d7fe0013662608f67a14f32789436c14d8437aa",
-      "disposition": "historical Task14 source correction report; later exact candidate qualified by Task32"
+      "disposition": "historical Task14 source correction report; later exact candidate superseded by Task35"
     },
     {
       "path": ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-15-brief.md",
       "sha256": "0dcc031842b3198898b1163689e47873ed9932698c8f4e2812c3b5f56768754d",
-      "disposition": "preserved historical Task15 brief; Task18/19 then Task22/23 and later Task25/26/29 superseded its snapshot"
+      "disposition": "preserved historical Task15 brief; later candidate snapshots superseded by Task35 current evidence"
     },
     {
       "path": ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-15-report.md",
       "sha256": "74d105938bcfdfd94af814d985a3c759c84e54c4e1e6566a91a134696ca90863",
-      "disposition": "historical Task18 exact-candidate qualification and Task19 refresh; superseded as latest by Task32"
+      "disposition": "historical Task18 exact-candidate qualification and Task19 refresh; superseded as latest by Task35"
     },
     {
       "path": ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-22-report.md",
@@ -2016,57 +2358,72 @@
     {
       "path": ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-23-report.md",
       "sha256": "78079f921b52425a101cbb0cdb4ecaad8e65072eecf7bd91c4da4ff616b8af23",
-      "disposition": "historical Task23 exact-candidate qualification; superseded by Task32 authoritative qualification"
+      "disposition": "historical Task23 exact-candidate qualification; superseded by Task35 authoritative qualification"
     },
     {
       "path": ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-25-report.md",
-      "sha256": "d21746cbd5aa02ca39ce95be0a3dca7b195f1fb091130b3fdfdaa232ef74e08b",
-      "disposition": "current Task25 compatibility fix-round implementation report; exact source evidence preserved"
+      "sha256": "69f0798aaad67df3791601b6095ca48fff2cef2dbbdb41297162ce193a75a28f",
+      "disposition": "current Task25 final mixed-host fix implementation report; 29 readback unit tests passed"
     },
     {
       "path": ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-25-review.md",
-      "sha256": "7bd9dc639e0afa65a5f4cf21a2ad3d213ed1d6de85cab6c10f58d840e6ff6509",
-      "disposition": "current Task25 fix-loop review; compatibility findings resolved and independently rereviewed"
+      "sha256": "fd89d1c0891b68855fadb3e3b852b34441275b0415455ceba2cc5e9baded5fbf",
+      "disposition": "Task25 review history preserved; prior PASS/CLEAN scope ends at 8c31e84; final mixed-host fix has no post-fix independent review"
     },
     {
       "path": ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-26-build-report.md",
       "sha256": "da464f968a5e7c53420b372b527118453f52cf6aa54dd4e4b35e503501cb4c6b",
-      "disposition": "historical Task26 development artifact build; superseded by Task31"
+      "disposition": "historical Task26 development artifact build; superseded by Task34"
     },
     {
       "path": ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-26-build-review.md",
       "sha256": "0f6d93d74769560657572789416efd838ec8bcff31db3e06826894d2e20601af",
-      "disposition": "historical Task26 build review; superseded by Task31"
+      "disposition": "historical Task26 build review; superseded by Task34"
     },
     {
       "path": ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-28-report.md",
       "sha256": "277e5f65953a5f19dcc327a5062211fc3abcaceae2955c14ff952b46f05ef3dc",
-      "disposition": "historical Task28 runner-environment failure; superseded as latest qualification by Task32"
+      "disposition": "historical Task28 runner-environment failure; superseded as latest qualification by Task35"
     },
     {
       "path": ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-29-report.md",
       "sha256": "f954f25db4be2e3eb4e0e2e59da85ac525c90f84ba719399c1b5bd646470638c",
-      "disposition": "historical Task29 exact-candidate qualification; superseded as latest qualification by Task32"
+      "disposition": "historical Task29 exact-candidate qualification; superseded as latest qualification by Task35"
     },
     {
       "path": ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-30-final-evidence-report.md",
       "sha256": "7fe3bf369adf70e57d1a5cbfe5446d2c767d6fccc81ba2cb00983eae534026c2",
-      "disposition": "historical Task30 final evidence report; preserved verbatim and superseded by Task33 current record"
+      "disposition": "historical Task30 final evidence report; preserved verbatim and superseded by Task36 current record"
     },
     {
       "path": ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-31-build-report.md",
       "sha256": "2e5f23066d852f52b95e6dcbe76ad3101d6d94f0d03c170ec25cd9ecec291978",
-      "disposition": "current Task31 exact development artifact build report"
+      "disposition": "historical Task31 exact development artifact build report; superseded by Task34"
     },
     {
       "path": ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-31-build-review.md",
       "sha256": "03a219e829ac9d34fb9ed5001fdea7c5851d88b90262e7bcb5bd0e0ca84211b9",
-      "disposition": "current Task31 independent build artifact review"
+      "disposition": "historical Task31 independent build artifact review; superseded by Task34"
     },
     {
       "path": ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-32-report.md",
       "sha256": "02f40cf48c0802a329e74575b6085c4163e7c708918047dcb47df74af4e76cc1",
-      "disposition": "current Task32 exact-candidate local qualification report; external gates HELD"
+      "disposition": "historical Task32 exact-candidate local qualification report; superseded by Task35; external gates remain HELD"
+    },
+    {
+      "path": ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-34-build-report.md",
+      "sha256": "f2191f02a28df94d1cf9d08fc8f315f02e270f2ee63fbcf681ef96e4e05d85c4",
+      "disposition": "current Task34 exact development artifact build report"
+    },
+    {
+      "path": ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-34-build-review.md",
+      "sha256": "6992a5f72cc184c939b2375b660a86ae4bf453275cf5c1ff1db5abc8a0637d43",
+      "disposition": "current Task34 independent build artifact review"
+    },
+    {
+      "path": ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-35-report.md",
+      "sha256": "4fbce11cd0daeefd3c6d2dc4be378b022e9123e66a28c59ece20992268013781",
+      "disposition": "current Task35 exact-candidate local qualification report; external gates HELD"
     },
     {
       "path": "AGENTS.md",
@@ -2075,8 +2432,8 @@
     },
     {
       "path": "README.md",
-      "sha256": "90c6f187f3fae205a5c5a1bb2495d200446a3ef07f6d93725f14058696e697fc",
-      "disposition": "current Task31/32 candidate and evidence status; external gates HELD"
+      "sha256": "c94d99cabf8bd76f2dd29d807b3446eae4bc8a75a897969d853633d703faeaa4",
+      "disposition": "current Task34/35 candidate and evidence status; external gates HELD"
     },
     {
       "path": "docs-new-arch/ArchCurrent.mermaid",
@@ -2120,8 +2477,8 @@
     },
     {
       "path": "docs/README.md",
-      "sha256": "d98ca9b3953340a1f175258fbe8ec3e8c4beedd0fc8d3002903dd863b816eba7",
-      "disposition": "current Task31/32 candidate and documentation navigation; external gates HELD"
+      "sha256": "5bb6b385761cf2d82812ec93b86b4115f7b556b20dc39e96b45a36905fdd783f",
+      "disposition": "current Task34/35 candidate and documentation navigation; external gates HELD"
     },
     {
       "path": "docs/adr/0001-durable-runtime.md",
@@ -2454,27 +2811,27 @@
       "disposition": "preserved immutable historical snapshot"
     },
     {
-      "path": "docs/archive/2026-09-22/prompts/Build Creative Production Loop \u2014 Phases 7\u20138 End-to-End.md.snapshot.b64",
+      "path": "docs/archive/2026-09-22/prompts/Build Creative Production Loop — Phases 7–8 End-to-End.md.snapshot.b64",
       "sha256": "968ff9305b92e00907c7a2b7e493959b8f66c64f05bc431c975c1ca97d75b9e0",
       "disposition": "preserved immutable historical snapshot"
     },
     {
-      "path": "docs/archive/2026-09-22/prompts/Build Phase 10 \u2014 Multi-Platform Production Publishing, Analytics, Attribution & Experiments.md.snapshot.b64",
+      "path": "docs/archive/2026-09-22/prompts/Build Phase 10 — Multi-Platform Production Publishing, Analytics, Attribution & Experiments.md.snapshot.b64",
       "sha256": "bb7ee354bb59b4f599aeef44e0a18b17f1f672826454621ed56b0f1055aa55ed",
       "disposition": "preserved immutable historical snapshot"
     },
     {
-      "path": "docs/archive/2026-09-22/prompts/Build Phases 1\u20134 End-to-End.md.snapshot",
+      "path": "docs/archive/2026-09-22/prompts/Build Phases 1–4 End-to-End.md.snapshot",
       "sha256": "4486a0868585423a951e1a874eb55714cd35242963f9a0f47c9d53420d7c101a",
       "disposition": "preserved immutable historical snapshot"
     },
     {
-      "path": "docs/archive/2026-09-22/prompts/Build Real Intelligence Loop \u2014 Pre-Phase 5 + Phases 5\u20136 End-to-End.md.snapshot.b64",
+      "path": "docs/archive/2026-09-22/prompts/Build Real Intelligence Loop — Pre-Phase 5 + Phases 5–6 End-to-End.md.snapshot.b64",
       "sha256": "d009ce7b7d6b309591554a39a9841afaf8b470ff63a366d134a9535fdf977a93",
       "disposition": "preserved immutable historical snapshot"
     },
     {
-      "path": "docs/archive/2026-09-22/prompts/Complete Phase 7\u20138 Release Gate, Then Build Phase 9 Governed Publishing.md.snapshot.b64",
+      "path": "docs/archive/2026-09-22/prompts/Complete Phase 7–8 Release Gate, Then Build Phase 9 Governed Publishing.md.snapshot.b64",
       "sha256": "6f3bd7a20b4831fc95da3583d636ea6f4b6cccfa3e270425027cec63a6bcec95",
       "disposition": "preserved immutable historical snapshot"
     },
@@ -2925,8 +3282,8 @@
     },
     {
       "path": "docs/v4/evidence-lock.json",
-      "sha256": "6797c12e18d74f4fea5992c031db76ecef0fd4456e17d41bfed5194f17509e6a",
-      "disposition": "active 417-file exact-hash source lock for Task31 source 8c31e84c9d71d0043b1ca736d9bc4db05cfeee7d; historical nested locks preserved"
+      "sha256": "09100cb7aee864227d78112aa7729a1cded7790d34cc33687c5e2a3732188e55",
+      "disposition": "active 417-path exact-hash source lock for Task34/35 source 546ac4ed794afc123ea02586a37d4a4457590582; historical nested locks preserved"
     },
     {
       "path": "docs/v4/goal-revision-evidence.json",
@@ -3065,18 +3422,18 @@
     },
     {
       "path": "docs/v4/p1-qualification-matrix.json",
-      "sha256": "55e64b0295e6db889d51adb4bf2c7e197dcf45b100bb872bc59a65f62fb14914",
-      "disposition": "latest Task31/32 candidate; historical Task25/26/28/29 and earlier records retained"
+      "sha256": "6fa2cc23f371557cb333f0a88e3ff9734d6b8df05e8ff6161c23e531dcbfa617",
+      "disposition": "latest Task34/35 candidate; historical Task31/32 and earlier records retained"
     },
     {
       "path": "docs/v4/p1-remaining-production-development-evidence.json",
-      "sha256": "3f78511a73a67e568cdc86c2058bc0da12f3f99acaeed24aa75bd355dce33faa",
-      "disposition": "current synthetic Task32 acceptance package bound to exact source/artifact; 22 rows NOT RUN; NO_GO/UNCHANGED"
+      "sha256": "9712af1be052ae418a26d4c0ac600ce15a191d49b31517885926e3cc72d598ad",
+      "disposition": "current synthetic Task34/35 acceptance package bound to exact source/artifact; 22 rows NOT RUN; NO_GO/UNCHANGED"
     },
     {
       "path": "docs/v4/p1-rg0-rg1-audit-and-spec-review.md",
-      "sha256": "c1fa940e53e3dd6ae58c250ad42f9c759e75c293eb223a7d0c4ba8f13ba6accb",
-      "disposition": "frozen initial audit/review scope plus current Task33 candidate addendum; external gates HELD"
+      "sha256": "ab9236332a917c13a9a251dd2ce6a9c188d6590c573bad01aab0907ec84ad6fc",
+      "disposition": "frozen initial audit/review scope plus current Task36 candidate addendum; external gates HELD"
     },
     {
       "path": "docs/v4/p1-rg0-rg1-external-acceptance.schema.json",
@@ -3105,8 +3462,8 @@
     },
     {
       "path": "docs/v4/progress.md",
-      "sha256": "539fd10258686595c6b67520dc8cd9a3cbfd45e03c8c5f80b6f02f3c321319ff",
-      "disposition": "current Task31/32 exact-candidate progress; external acceptance NOT RUN/HELD"
+      "sha256": "ee9fb3c67f7d3054cfd821cb2206ebb6ebc1fa22751e68c1c4ac401aba04660c",
+      "disposition": "current Task34/35 exact-candidate progress; external acceptance NOT RUN/HELD"
     },
     {
       "path": "docs/v4/publication-recovery-hold-evidence.json",
@@ -3175,8 +3532,8 @@
     },
     {
       "path": "docs/v4/validation.md",
-      "sha256": "a01edbc3ed704ffa12534b7181c2405b97fd08b34b9897a8371e7319ba860756",
-      "disposition": "current Task32 exact-candidate local validation; earlier candidate results historical"
+      "sha256": "ea9a8542919690e417e575c37e5f50e804d47edf4c87a179502674256319e2ed",
+      "disposition": "current Task34/35 exact-candidate local validation; earlier candidate results historical"
     },
     {
       "path": "docs/verification.md",
@@ -3189,27 +3546,27 @@
       "disposition": "historical capture-time documentation/status scope; Task18 latest local candidate is source c23c4cca72021ce6621eaacd66f2bfc23f4cc129 / artifact be6f713b255f6b654b73ae4343db1db5c07e3840; external rows remain NOT RUN and gates HELD"
     },
     {
-      "path": "prompts/Build Creative Production Loop \u2014 Phases 7\u20138 End-to-End.md",
+      "path": "prompts/Build Creative Production Loop — Phases 7–8 End-to-End.md",
       "sha256": "6d77d56568933cdcd79b5ab5723efa2312d72bd57f12547664772618b700cc4b",
       "disposition": "historical capture-time documentation/status scope; Task18 latest local candidate is source c23c4cca72021ce6621eaacd66f2bfc23f4cc129 / artifact be6f713b255f6b654b73ae4343db1db5c07e3840; external rows remain NOT RUN and gates HELD"
     },
     {
-      "path": "prompts/Build Phase 10 \u2014 Multi-Platform Production Publishing, Analytics, Attribution & Experiments.md",
+      "path": "prompts/Build Phase 10 — Multi-Platform Production Publishing, Analytics, Attribution & Experiments.md",
       "sha256": "756651d83b0e132c22bdd0ecdcf9de218dd00922570c29b30ca912a3cee46b00",
       "disposition": "historical capture-time documentation/status scope; Task18 latest local candidate is source c23c4cca72021ce6621eaacd66f2bfc23f4cc129 / artifact be6f713b255f6b654b73ae4343db1db5c07e3840; external rows remain NOT RUN and gates HELD"
     },
     {
-      "path": "prompts/Build Phases 1\u20134 End-to-End.md",
+      "path": "prompts/Build Phases 1–4 End-to-End.md",
       "sha256": "cfb5fca0452db58c216b889786eb42b91641730fa0e27dca6fc57535ea5ba88c",
       "disposition": "historical capture-time documentation/status scope; Task18 latest local candidate is source c23c4cca72021ce6621eaacd66f2bfc23f4cc129 / artifact be6f713b255f6b654b73ae4343db1db5c07e3840; external rows remain NOT RUN and gates HELD"
     },
     {
-      "path": "prompts/Build Real Intelligence Loop \u2014 Pre-Phase 5 + Phases 5\u20136 End-to-End.md",
+      "path": "prompts/Build Real Intelligence Loop — Pre-Phase 5 + Phases 5–6 End-to-End.md",
       "sha256": "93621fa3332bf11c3f2e9ab24cf27a7b3381353aaa80634ea864f30d3253dfea",
       "disposition": "historical capture-time documentation/status scope; Task18 latest local candidate is source c23c4cca72021ce6621eaacd66f2bfc23f4cc129 / artifact be6f713b255f6b654b73ae4343db1db5c07e3840; external rows remain NOT RUN and gates HELD"
     },
     {
-      "path": "prompts/Complete Phase 7\u20138 Release Gate, Then Build Phase 9 Governed Publishing.md",
+      "path": "prompts/Complete Phase 7–8 Release Gate, Then Build Phase 9 Governed Publishing.md",
       "sha256": "cab9fb272101f8011067c79c5ac0611c0809d66cb066ce5a6f2023ff1d465af0",
       "disposition": "historical capture-time documentation/status scope; Task18 latest local candidate is source c23c4cca72021ce6621eaacd66f2bfc23f4cc129 / artifact be6f713b255f6b654b73ae4343db1db5c07e3840; external rows remain NOT RUN and gates HELD"
     },
@@ -3219,13 +3576,13 @@
       "disposition": "historical capture-time documentation/status scope; Task18 latest local candidate is source c23c4cca72021ce6621eaacd66f2bfc23f4cc129 / artifact be6f713b255f6b654b73ae4343db1db5c07e3840; external rows remain NOT RUN and gates HELD"
     }
   ],
-  "qualified_application_commit": "8c31e84c9d71d0043b1ca736d9bc4db05cfeee7d",
-  "next_action": "Task33 binds current Task31/32 source 8c31e84c9d71d0043b1ca736d9bc4db05cfeee7d / tree 8118c869150624292d741847e77c75c60992a61a and artifact cc9d55fd67f10f7f8d831e21b9331ecae08cf039 / tree c7d22a3df59356274aaef342baed68d44b42d64b. Task32 passed seven focused groups (421 total) and one full non-live run (1,211 passed / 26 skipped / 3 warnings). Task26/29 and Task28 remain historical; no exact-head hosted CI or formal PR approval is claimed. External acceptance remains NOT RUN, production effects disabled, RG0/full RG1 HELD, P2 BLOCKED, and main unmerged.",
+  "qualified_application_commit": "546ac4ed794afc123ea02586a37d4a4457590582",
+  "next_action": "Task36 binds Task34/35 source 546ac4ed794afc123ea02586a37d4a4457590582 / tree 278e2bbf074fdf07b701f87f925c537dd916e118 and artifact fe6b3795ce4453beb6c6bbafcc20cd3be91b3b87 / tree 124037b25c754751e2447c7d8639800f9f35d238. Task35 passed seven serial focused groups (422 total) and one full non-live run (1,212 passed / 26 skipped / 3 warnings). Task31/32 and earlier candidate records remain historical; no exact-head hosted CI or formal PR approval is claimed. External acceptance remains NOT RUN; effects are disabled; budget is zero; RG0/full RG1 are HELD; P2 is BLOCKED; later phases are gated; main is unmerged.",
   "parallel_agents_status": "PASS_IMPLEMENTED_LOCAL_PARALLEL_AGENT_FIXTURE_SCOPE",
   "parallel_qualified_application_commit": "2653d2ecb3f0d5bb8ea6560de274137dd6032a96",
   "legacy_intelligence_status": "PASS_LOCAL_LEGACY_INTELLIGENCE_AND_PUBLICATION_FIXTURE_STAGES; ORIGINAL_NATIVE_INTELLIGENCE_AND_PUBLICATION_SCHEDULES_QUALIFIED",
   "goal_status": "ACTIVE",
-  "independent_review_scope": "Historical GPT-6.1/GPT-5.6 whole-branch review and Actions run 38592066455 remain scoped to their recorded feature head; the initial commit-bound audit remains COMPLETE_REVIEWED only for source 7c1ddcda and its recorded environment. Those review/CI results do not cover current Task25/31/32 source 8c31e84c9d71d0043b1ca736d9bc4db05cfeee7d / artifact cc9d55fd67f10f7f8d831e21b9331ecae08cf039 or this Task33 documentation refresh. Task25\u2019s final compatibility fix round was independently rereviewed PASS/CLEAN with zero findings; its readback unit file passed 28 tests. No independent whole-change review or exact-head hosted CI is asserted for this documentation update. All 22 external rows remain NOT RUN, effects disabled, RG0/full RG1 HELD, P2 BLOCKED, and main unmerged.",
+  "independent_review_scope": "Task25 fix round 2 at source 546ac4e clears the original mixed-host hostaddr list when selecting a Unix socket; its complete readback unit file passed 29 tests. The earlier independent PASS/CLEAN review remains scoped to source 8c31e84 and does not review this final fix. Task34 build review is PASS/CLEAN for artifact fe6b379; Task35 exact-candidate local qualification passed 422 focused and 1,212 full non-live tests (26 skipped, 3 warnings). Historical whole-branch reviews and Actions runs retain their original scopes; no independent whole-change review or exact-head hosted CI is asserted for this documentation commit. All 22 external rows remain NOT RUN; identities are synthetic/unverified; provider acceptance and final external audit are NOT RUN; effects are disabled; budget is zero; RG0/full RG1 are HELD; P2 is BLOCKED; main is unmerged.",
   "tracked_markdown_paths": [
     ".agents/skills/archify/SKILL.md",
     ".agents/skills/archify/THIRD_PARTY_NOTICES.md",
@@ -3271,6 +3628,9 @@
     ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-31-build-report.md",
     ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-31-build-review.md",
     ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-32-report.md",
+    ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-34-build-report.md",
+    ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-34-build-review.md",
+    ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-35-report.md",
     "AGENTS.md",
     "README.md",
     "docs-new-arch/ArchV3-implementation-notes.md",
@@ -3365,11 +3725,11 @@
     "docs/v4/validation.md",
     "docs/verification.md",
     "docs/workflows.md",
-    "prompts/Build Creative Production Loop \u2014 Phases 7\u20138 End-to-End.md",
-    "prompts/Build Phase 10 \u2014 Multi-Platform Production Publishing, Analytics, Attribution & Experiments.md",
-    "prompts/Build Phases 1\u20134 End-to-End.md",
-    "prompts/Build Real Intelligence Loop \u2014 Pre-Phase 5 + Phases 5\u20136 End-to-End.md",
-    "prompts/Complete Phase 7\u20138 Release Gate, Then Build Phase 9 Governed Publishing.md",
+    "prompts/Build Creative Production Loop — Phases 7–8 End-to-End.md",
+    "prompts/Build Phase 10 — Multi-Platform Production Publishing, Analytics, Attribution & Experiments.md",
+    "prompts/Build Phases 1–4 End-to-End.md",
+    "prompts/Build Real Intelligence Loop — Pre-Phase 5 + Phases 5–6 End-to-End.md",
+    "prompts/Complete Phase 7–8 Release Gate, Then Build Phase 9 Governed Publishing.md",
     "prompts/Install and Verify Browser Evidence on Linux EC2.md"
   ],
   "historical_repository_readback": {
@@ -3416,17 +3776,17 @@
     "production_effects_enabled": false,
     "fixture_publication_budget": 0
   },
-  "current_local_application_commit": "8c31e84c9d71d0043b1ca736d9bc4db05cfeee7d",
-  "current_focused_tests": 421,
-  "current_full_non_live_tests": 1211,
-  "current_full_non_live_application_commit": "8c31e84c9d71d0043b1ca736d9bc4db05cfeee7d",
-  "current_full_non_live_status": "Task32 exact-artifact full non-live suite: 1,211 passed, 26 skipped, 3 warnings; log SHA-256 0e6e0f882833c338e653056cb4b85fc73fe3adfc671ccd0d4088e12453eb01b8.",
-  "current_qualification_application": "8c31e84c9d71d0043b1ca736d9bc4db05cfeee7d",
+  "current_local_application_commit": "546ac4ed794afc123ea02586a37d4a4457590582",
+  "current_focused_tests": 422,
+  "current_full_non_live_tests": 1212,
+  "current_full_non_live_application_commit": "546ac4ed794afc123ea02586a37d4a4457590582",
+  "current_full_non_live_status": "Task35 exact-artifact full non-live suite: 1,212 passed, 26 skipped, 3 warnings; log SHA-256 10f3722e943361a0323311b5be06816f40faa0dde805736182ea6aef748b023c; started 2026-10-29T18:00:50Z, completed 2026-10-29T18:44:17Z.",
+  "current_qualification_application": "546ac4ed794afc123ea02586a37d4a4457590582",
   "previous_full_non_live_tests": 614,
   "previous_full_non_live_application_commit": "7878208e7a353f93bb70279ad0dd7f0760f93ec4",
   "source_files": 410,
   "corrected_head_rereview": "COMPLETE only for application `a4b2368cdb463939d093020224a5b5667392aee6` with documentation/observed HEAD `d0311725686d81b7b4747c2d6225986e5ea3a524`; it does not cover `7878208` or `5cb5791`.",
-  "documentation_tests": "Task33: all 14 serial documentation/evidence contracts passed their required exit contracts. Check 6 exited 1 as expected with structural VALID / NO_GO / UNCHANGED and 22 rows NOT RUN; staged and unstaged diff checks passed. Exact commands, outputs, times, and SHA-256 values are in verification.task33_documentation_checks and /tmp/salience-task33-final-evidence-report.md.",
+  "documentation_tests": "PASS: all 14 Task36 serial documentation/evidence contracts returned their expected exits in the recorded local capture runs.",
   "task_8_exact_candidate_artifact_build": {
     "status": "SUCCESSOR_EXACT_CANDIDATE_ARTIFACT_BUILD_AND_LOCAL_QUALIFICATION_RECORDED",
     "application_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
@@ -3448,7 +3808,7 @@
     "qualification_report": ".superpowers/sdd/2026-10-13-p1-publication-recovery-floor-repair/task-8-report.md",
     "qualification_results": "Exact-image matrix: 12 passed; I1 replay-focused gate: 9 passed; actual-retry producer: 1 passed; Compose restart recovery: 1 passed; final clean non-live suite: 796 passed, 17 skipped, 3 warnings, all bound to application 182c4e4. Whole-branch review and CI remain bound to pushed feature head 6f5edc77edbfe189e46de4254c2fdb21c5652bce (run 38592066455). Exact initial-audit source CI run 40443346020 passed on 7c1ddcda280b510048ad61106c406171edd64f18. The final documentation commit is distinct from this historical application record and requires exact-head CI after push."
   },
-  "current_focused_status": "Task32 PASS: seven serial focused groups on exact artifact cc9d55fd67f10f7f8d831e21b9331ecae08cf039; counts 38, 39, 79, 79, 4, 137, 45 (421 total). Exact group log hashes/times are in task-32-report.md.",
+  "current_focused_status": "Task35 PASS: seven serial focused groups on exact artifact fe6b3795ce4453beb6c6bbafcc20cd3be91b3b87; counts 38, 39, 80, 79, 4, 137, 45 (422 total). Exact per-group timestamps and log hashes are in .superpowers/sdd/2026-10-28-p1-remaining-production-development/task-35-report.md.",
   "superseded_candidate_artifact_build_386d4bc": {
     "status": "EXACT_CANDIDATE_ARTIFACT_BUILD_RECORDED",
     "application_commit": "386d4bc7cc5acb794858d3c3c14400a0659a83ef",
@@ -3630,11 +3990,11 @@
       "docs/v4/validation.md",
       "docs/verification.md",
       "docs/workflows.md",
-      "prompts/Build Creative Production Loop \u2014 Phases 7\u20138 End-to-End.md",
-      "prompts/Build Phase 10 \u2014 Multi-Platform Production Publishing, Analytics, Attribution & Experiments.md",
-      "prompts/Build Phases 1\u20134 End-to-End.md",
-      "prompts/Build Real Intelligence Loop \u2014 Pre-Phase 5 + Phases 5\u20136 End-to-End.md",
-      "prompts/Complete Phase 7\u20138 Release Gate, Then Build Phase 9 Governed Publishing.md",
+      "prompts/Build Creative Production Loop — Phases 7–8 End-to-End.md",
+      "prompts/Build Phase 10 — Multi-Platform Production Publishing, Analytics, Attribution & Experiments.md",
+      "prompts/Build Phases 1–4 End-to-End.md",
+      "prompts/Build Real Intelligence Loop — Pre-Phase 5 + Phases 5–6 End-to-End.md",
+      "prompts/Complete Phase 7–8 Release Gate, Then Build Phase 9 Governed Publishing.md",
       "prompts/Install and Verify Browser Evidence on Linux EC2.md"
     ],
     "mermaid_source_blocks_preserved": 13,
@@ -3672,10 +4032,10 @@
   },
   "current_handoff_hashes": {
     ".superpowers/sdd/2026-10-27-p1-production-policy-and-revocation/final-evidence-report.md": "551c40b4d6852ab3ab4f42bc2cd26ffd1a0339fa03a5f7c2c0f0d39814d05307",
-    ".superpowers/sdd/2026-10-28-p1-remaining-production-development/final-evidence-report.md": "55212d47280d5c2a6b90beadd58a355100c05b1a061f4a6f3d78bb8754390f69",
+    ".superpowers/sdd/2026-10-28-p1-remaining-production-development/final-evidence-report.md": "813503a7aee7f3a2864f852d49428fe2ccbb7da0a4d2918242ce1171af2d827b",
     ".superpowers/sdd/2026-10-28-p1-remaining-production-development/final-review-fix-report.md": "14b4ee16ba0e71c59313104632c939ce3f0d5df3a04568226d1ac0c5b77ae8a4",
     ".superpowers/sdd/2026-10-28-p1-remaining-production-development/planning-report.md": "5ead73f3b32307f59fd4887c353c17616c2024f4d55cb6e3e55a1483e58359a6",
-    ".superpowers/sdd/2026-10-28-p1-remaining-production-development/progress.md": "ea3a47b724ae7155753f6bb4fd9e0a94630be993c4dfcc9248e3b73c071faeea",
+    ".superpowers/sdd/2026-10-28-p1-remaining-production-development/progress.md": "46822f758172b87d883298c30a119e8284dace21cb4d7fdaccc349f99b333aeb",
     ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-11-report.md": "65a04c815c0a3a243d3c4d099dca058d79d5f3ca909cba30e607aaa8a6fc4bd7",
     ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-12-brief.md": "2b2a68c85f4da49341ca208447c537f011be2fbc164290721cc4176401983a4e",
     ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-12-report.md": "47bae8175c878d98f500e833481747006f0523bfc948e02af57ade546b65aa28",
@@ -3686,8 +4046,8 @@
     ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-15-report.md": "74d105938bcfdfd94af814d985a3c759c84e54c4e1e6566a91a134696ca90863",
     ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-22-report.md": "3f8aebe87557d1d90c1d188ad82e7efd9d616964d53e2e11a197fa3a64e88745",
     ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-23-report.md": "78079f921b52425a101cbb0cdb4ecaad8e65072eecf7bd91c4da4ff616b8af23",
-    ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-25-report.md": "d21746cbd5aa02ca39ce95be0a3dca7b195f1fb091130b3fdfdaa232ef74e08b",
-    ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-25-review.md": "7bd9dc639e0afa65a5f4cf21a2ad3d213ed1d6de85cab6c10f58d840e6ff6509",
+    ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-25-report.md": "69f0798aaad67df3791601b6095ca48fff2cef2dbbdb41297162ce193a75a28f",
+    ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-25-review.md": "fd89d1c0891b68855fadb3e3b852b34441275b0415455ceba2cc5e9baded5fbf",
     ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-26-build-report.md": "da464f968a5e7c53420b372b527118453f52cf6aa54dd4e4b35e503501cb4c6b",
     ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-26-build-review.md": "0f6d93d74769560657572789416efd838ec8bcff31db3e06826894d2e20601af",
     ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-28-report.md": "277e5f65953a5f19dcc327a5062211fc3abcaceae2955c14ff952b46f05ef3dc",
@@ -3695,8 +4055,11 @@
     ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-31-build-report.md": "2e5f23066d852f52b95e6dcbe76ad3101d6d94f0d03c170ec25cd9ecec291978",
     ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-31-build-review.md": "03a219e829ac9d34fb9ed5001fdea7c5851d88b90262e7bcb5bd0e0ca84211b9",
     ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-32-report.md": "02f40cf48c0802a329e74575b6085c4163e7c708918047dcb47df74af4e76cc1",
-    "README.md": "90c6f187f3fae205a5c5a1bb2495d200446a3ef07f6d93725f14058696e697fc",
-    "docs/README.md": "d98ca9b3953340a1f175258fbe8ec3e8c4beedd0fc8d3002903dd863b816eba7",
+    ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-34-build-report.md": "f2191f02a28df94d1cf9d08fc8f315f02e270f2ee63fbcf681ef96e4e05d85c4",
+    ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-34-build-review.md": "6992a5f72cc184c939b2375b660a86ae4bf453275cf5c1ff1db5abc8a0637d43",
+    ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-35-report.md": "4fbce11cd0daeefd3c6d2dc4be378b022e9123e66a28c59ece20992268013781",
+    "README.md": "c94d99cabf8bd76f2dd29d807b3446eae4bc8a75a897969d853633d703faeaa4",
+    "docs/README.md": "5bb6b385761cf2d82812ec93b86b4115f7b556b20dc39e96b45a36905fdd783f",
     "docs/superpowers/plans/2026-10-27-p1-production-policy-and-revocation.md": "c1564a7ec7d09f63b5aba105678c8b5929619fecc49e5b4bb3e415ed1340672e",
     "docs/superpowers/plans/2026-10-27-p1-rg0-rg1-initial-gap-audit.md": "5d1dd8a86718184d03324144643dfb009cb36243a5bd0c0f14c46844eb3c5cd4",
     "docs/superpowers/plans/2026-10-28-p1-recovery-rollback-v2.md": "e4548b283023d31bba22a0a73a8472d5cb0e9e4ef0dee77fc058605c58d54787",
@@ -3707,21 +4070,20 @@
     "docs/superpowers/specs/2026-10-13-p1-production-routing-and-worker-fencing-design.md": "76921a085e352f86ae77895c824917832a49847c306b76bc56ae2c7e44a23e90",
     "docs/superpowers/specs/2026-10-13-rg0-rg1-external-acceptance-design.md": "7334364e5417cbb29143877334a80ea90125e9ce61bff71f67de77a86f61069e",
     "docs/v4/IMPLEMENTATION-BLUEPRINT.md": "8ceb85b83e452c10d4b323a709ac6706935013c2d9193bd1bff2b1b8c83d2703",
-    "docs/v4/evidence-lock.json": "6797c12e18d74f4fea5992c031db76ecef0fd4456e17d41bfed5194f17509e6a",
+    "docs/v4/evidence-lock.json": "09100cb7aee864227d78112aa7729a1cded7790d34cc33687c5e2a3732188e55",
     "docs/v4/p0-release.json": "0a0f1969e0497cbec535fb3f854b51cef870a4746eb92f8a67a127566dc9ff75",
     "docs/v4/p1-production-policy-revocation-evidence.json": "e5a5a3d424157479cacaf00eae39614a5abe12ecdb04ac38af0c95692dbd982b",
-    "docs/v4/p1-qualification-matrix.json": "55e64b0295e6db889d51adb4bf2c7e197dcf45b100bb872bc59a65f62fb14914",
-    "docs/v4/p1-remaining-production-development-evidence.json": "3f78511a73a67e568cdc86c2058bc0da12f3f99acaeed24aa75bd355dce33faa",
+    "docs/v4/p1-qualification-matrix.json": "6fa2cc23f371557cb333f0a88e3ff9734d6b8df05e8ff6161c23e531dcbfa617",
+    "docs/v4/p1-remaining-production-development-evidence.json": "9712af1be052ae418a26d4c0ac600ce15a191d49b31517885926e3cc72d598ad",
     "docs/v4/p1-rg0-rg1-external-acceptance.schema.json": "0086353075c823f92f78b2d4f5e48005e62660537b70c95864b5f4ed5e2c945c",
     "docs/v4/p1-rg0-rg1-initial-gap-audit.json": "33fe485384dcf60e36df8d48ace6394c80bce0d1bd9e6b9b39c7a905d65676b1",
     "docs/v4/p1-rg0-rg1-initial-gap-audit.md": "62aab5afb39f7c47e355a68ccf56e319a72955247515dfbdba8913fd797a5944",
-    "docs/v4/progress.md": "539fd10258686595c6b67520dc8cd9a3cbfd45e03c8c5f80b6f02f3c321319ff",
+    "docs/v4/progress.md": "ee9fb3c67f7d3054cfd821cb2206ebb6ebc1fa22751e68c1c4ac401aba04660c",
     "docs/v4/publication-recovery-hold-evidence.json": "3cce88e4d692f726be710c1f4db46b1428c9546561424a2ab0ad120363becc66",
     "docs/v4/publication-recovery-hold-successor-evidence.json": "6bb3ce696cffec2629838f5f30b8eea4acb837cbb81c1bcbc1b4de4f19e8764a",
     "docs/v4/repository-enforcement-evidence.json": "fc69f901036971bd64588cf3247d1701939e7525442f196daeab7f1919de11a2",
     "docs/v4/test_checks.py": "c915b137417c53b3b3f773eacbfcfea3d62584a21ca11df8288e0c2b4281cf6e",
-    "docs/v4/validation.md": "a01edbc3ed704ffa12534b7181c2405b97fd08b34b9897a8371e7319ba860756",
-    "docs/v4/p1-rg0-rg1-audit-and-spec-review.md": "c1fa940e53e3dd6ae58c250ad42f9c759e75c293eb223a7d0c4ba8f13ba6accb"
+    "docs/v4/validation.md": "ea9a8542919690e417e575c37e5f50e804d47edf4c87a179502674256319e2ed"
   },
   "historical_documentation_refresh": {
     "plan_task": "docs/superpowers/plans/2026-10-27-p1-rg0-rg1-initial-gap-audit.md",
@@ -3789,57 +4151,60 @@
     "record_scope": "Historical initial-audit documentation refresh; its application candidate field does not identify current Slice 2 source."
   },
   "tracked_markdown_disposition_counts": {
-    "tracked_markdown_paths": 144,
+    "tracked_markdown_paths": 147,
     "update_now_paths": 92,
-    "non_update_paths_preserved": 52,
-    "historical_immutable": 35,
+    "non_update_paths_preserved": 55,
+    "historical_immutable": 38,
     "generated_vendor": 12,
     "already_current": 5,
     "dispositions": {
+      "preserved plugin instructions, references and examples; independent skill scope": 12,
+      "preserved dated qualification report": 5,
+      "preserved historical Slice 2 final local non-live verification report for candidate ec12763; superseded by Task35 for latest local evidence": 1,
+      "current Task34/35 final local evidence; external acceptance remains unqualified": 1,
+      "historical Task11 candidate report; superseded as latest local qualification by Task18; external acceptance remains unqualified": 1,
+      "current effects-disabled P1 remaining-production planning artifacts; external qualification remains NOT RUN/HELD": 2,
+      "current Task34/35 candidate progress; external gates HELD": 1,
+      "preserved dated preparation report": 2,
+      "historical Task11 exact-source report; superseded as latest local evidence by Task35": 1,
+      "historical Task12 implementation brief; later local candidate qualified by Task35": 1,
+      "historical Task12 implementation report; later local candidate qualified by Task35": 1,
+      "historical Task13 exact-candidate evidence brief; superseded as latest by Task35": 1,
+      "historical Task13 exact-candidate report; superseded as latest by Task35": 1,
+      "historical Task14 source correction report; later exact candidate superseded by Task35": 1,
+      "preserved historical Task15 brief; later candidate snapshots superseded by Task35 current evidence": 1,
+      "historical Task18 exact-candidate qualification and Task19 refresh; superseded as latest by Task35": 1,
+      "historical Task22 development build report; superseded by Task26 final corrected artifact": 1,
+      "historical Task23 exact-candidate qualification; superseded by Task35 authoritative qualification": 1,
+      "current Task25 final mixed-host fix implementation report; 29 readback unit tests passed": 1,
+      "Task25 review history preserved; prior PASS/CLEAN scope ends at 8c31e84; final mixed-host fix has no post-fix independent review": 1,
+      "historical Task26 development artifact build; superseded by Task34": 1,
+      "historical Task26 build review; superseded by Task34": 1,
+      "historical Task28 runner-environment failure; superseded as latest qualification by Task35": 1,
+      "historical Task29 exact-candidate qualification; superseded as latest qualification by Task35": 1,
+      "historical Task30 final evidence report; preserved verbatim and superseded by Task36 current record": 1,
+      "historical Task31 exact development artifact build report; superseded by Task34": 1,
+      "historical Task31 independent build artifact review; superseded by Task34": 1,
+      "historical Task32 exact-candidate local qualification report; superseded by Task35; external gates remain HELD": 1,
+      "current Task34 exact development artifact build report": 1,
+      "current Task34 independent build artifact review": 1,
+      "current Task35 exact-candidate local qualification report; external gates HELD": 1,
       "active user-authored project instructions; preserved verbatim": 1,
+      "current Task34/35 candidate and evidence status; external gates HELD": 1,
+      "preserved original design source or historical diagram": 2,
+      "historical capture-time documentation/status scope; Task18 latest local candidate is source c23c4cca72021ce6621eaacd66f2bfc23f4cc129 / artifact be6f713b255f6b654b73ae4343db1db5c07e3840; external rows remain NOT RUN and gates HELD": 74,
+      "current Task34/35 candidate and documentation navigation; external gates HELD": 1,
+      "preserved immutable historical snapshot; bytes retained verbatim": 1,
+      "preserved YouTube-agent reference research": 4,
+      "preserved dated preparation plan": 3,
       "already current approved Task 6 implementation plan": 1,
       "current P1 recovery rollback v2 development plan; external qualification remains NOT RUN/HELD": 1,
-      "current Task25 compatibility fix-round implementation report; exact source evidence preserved": 1,
-      "current Task25 fix-loop review; compatibility findings resolved and independently rereviewed": 1,
-      "current Task31 exact development artifact build report": 1,
-      "current Task31 independent build artifact review": 1,
-      "current Task31/32 candidate and documentation navigation; external gates HELD": 1,
-      "current Task31/32 candidate and evidence status; external gates HELD": 1,
-      "current Task31/32 candidate progress; external gates HELD": 1,
-      "current Task31/32 exact-candidate progress; external acceptance NOT RUN/HELD": 1,
-      "current Task31/32 final local evidence; external acceptance remains unqualified": 1,
-      "current Task32 exact-candidate local qualification report; external gates HELD": 1,
-      "current Task32 exact-candidate local validation; earlier candidate results historical": 1,
-      "current effects-disabled P1 remaining-production planning artifacts; external qualification remains NOT RUN/HELD": 2,
-      "frozen initial audit/review scope plus current Task33 candidate addendum; external gates HELD": 1,
-      "historical Task11 candidate report; superseded as latest local qualification by Task18; external acceptance remains unqualified": 1,
-      "historical Task11 exact-source report; superseded as latest local evidence by Task32": 1,
-      "historical Task12 implementation brief; later local candidate qualified by Task32": 1,
-      "historical Task12 implementation report; later local candidate qualified by Task32": 1,
-      "historical Task13 exact-candidate evidence brief; superseded as latest by Task32": 1,
-      "historical Task13 exact-candidate report; superseded as latest by Task32": 1,
-      "historical Task14 source correction report; later exact candidate qualified by Task32": 1,
-      "historical Task18 exact-candidate qualification and Task19 refresh; superseded as latest by Task32": 1,
-      "historical Task22 development build report; superseded by Task26 final corrected artifact": 1,
-      "historical Task23 exact-candidate qualification; superseded by Task32 authoritative qualification": 1,
-      "historical Task26 build review; superseded by Task31": 1,
-      "historical Task26 development artifact build; superseded by Task31": 1,
-      "historical Task28 runner-environment failure; superseded as latest qualification by Task32": 1,
-      "historical Task29 exact-candidate qualification; superseded as latest qualification by Task32": 1,
-      "historical Task30 final evidence report; preserved verbatim and superseded by Task33 current record": 1,
-      "historical capture-time documentation/status scope; Task18 latest local candidate is source c23c4cca72021ce6621eaacd66f2bfc23f4cc129 / artifact be6f713b255f6b654b73ae4343db1db5c07e3840; external rows remain NOT RUN and gates HELD": 74,
-      "preserved YouTube-agent reference research": 4,
       "preserved dated design specification": 3,
-      "preserved dated independent item7 qualification report": 1,
       "preserved dated initial P1/RG0/RG1 subaudit report": 3,
-      "preserved dated preparation plan": 3,
-      "preserved dated preparation report": 2,
-      "preserved dated qualification report": 5,
-      "preserved historical Slice 2 final local non-live verification report for candidate ec12763; superseded by Task32 for latest local evidence": 1,
-      "preserved historical Task15 brief; Task18/19 then Task22/23 and later Task25/26/29 superseded its snapshot": 1,
-      "preserved immutable historical snapshot; bytes retained verbatim": 1,
-      "preserved original design source or historical diagram": 2,
-      "preserved plugin instructions, references and examples; independent skill scope": 12
+      "preserved dated independent item7 qualification report": 1,
+      "frozen initial audit/review scope plus current Task36 candidate addendum; external gates HELD": 1,
+      "current Task34/35 exact-candidate progress; external acceptance NOT RUN/HELD": 1,
+      "current Task34/35 exact-candidate local validation; earlier candidate results historical": 1
     }
   },
   "mermaid_source_blocks_updated": 1,
@@ -3902,7 +4267,7 @@
   "Slice7": "BLOCKED",
   "final_entry_audit_status": "NOT RUN",
   "main_merge": "UNMERGED",
-  "current_documentation_artifacts": 319,
+  "current_documentation_artifacts": 322,
   "current_task6_fixture_checkpoint": {
     "scope": "fixture",
     "record_kind": "historical_task6_slice2_fixture_checkpoint",
@@ -3946,11 +4311,11 @@
     "candidate_documentation_ci": "PASS_FOR_62B5A5E (run 40553244096); Task30 docs exact-head CI not asserted",
     "documentation_commit_relationship": "The documentation commit carrying this record is distinct from application_commit and does not replace the tested application/source candidate.",
     "historical_record_scope": "Historical ec12763/Slice2 local fixture record; its original 908/26/3, 60-test gate, and verifier hashes remain unchanged.",
-    "superseded_by": "Task31/32 source 8c31e84c9d71d0043b1ca736d9bc4db05cfeee7d / artifact cc9d55fd67f10f7f8d831e21b9331ecae08cf039.",
+    "superseded_by": "Task35 source 546ac4ed794afc123ea02586a37d4a4457590582 / artifact fe6b3795ce4453beb6c6bbafcc20cd3be91b3b87.",
     "record_kind_at_event": "final_local_non_live_verification",
-    "record_status": "HISTORICAL; SUPERSEDED_AS_LATEST_LOCAL_CANDIDATE_BY_TASK32",
+    "record_status": "HISTORICAL; SUPERSEDED_AS_LATEST_LOCAL_CANDIDATE_BY_TASK35",
     "record_scope": "Historical Task6/ec12763 fixture snapshot retained under a legacy field name for contract compatibility; not current candidate evidence.",
-    "compatibility_alias": "current_task6_fixture_checkpoint; preserved historical value, superseded as latest local evidence by Task32."
+    "compatibility_alias": "current_task6_fixture_checkpoint; historical fixture value preserved and superseded by Task35."
   },
   "historical_task6_fixture_checkpoint": {
     "scope": "fixture",
@@ -3984,8 +4349,8 @@
     "candidate_documentation_ci": "REQUIRED_AFTER_PUSH"
   },
   "active_project_markdown_files": 111,
-  "current_application_artifact_status": "Task31 development-only artifact from source 8c31e84c9d71d0043b1ca736d9bc4db05cfeee7d / tree 8118c869150624292d741847e77c75c60992a61a: artifact cc9d55fd67f10f7f8d831e21b9331ecae08cf039 / tree c7d22a3df59356274aaef342baed68d44b42d64b, sole parent is source; only generated v2 development lock JSON and companion changed. Two wheels are 459,436 bytes / SHA-256 607c8278688f318d223d1c8a8d4417b12b6dab313be77ea2a59195f8fc9429ce; typed linux/amd64 OCI image manifest 1e68764b582b1ef853a4ddb8b91ced1c03a6e3d13eb47c714600b6bca2123b4f; config cca8c53458a45ec7a0f6244caaa419fc084e9f0753879d936683cfcf7df417a3; 14 layers. Selected manifest/config/layers/referenced blobs match, while root-index annotations and archive hashes differ; archive reproducibility is not claimed. The cached Task15 base does not establish source-Dockerfile fidelity. Source manifest 831484f13eb3daa3cea94133e9f07ee2df00f2b7bebefdadeca8c417dd5f0205; route bundle b4e46090c54b23b2ebf79d4dbed13711e919df759789d81ccb94968fcb36c19b; tuple 789cdd50c79afb4289ededa5381ec6f57a91bd6f4e5058425fc21a4f70a26b8b; authenticated route manifest 66cf3e5f8a2e98e84a076b14ee8cab400f88825f95731c9c88a7d7ed0ead62ed; v2 lock content 0b48c85e6ebad29424416e3604a46bfba3a41acb9f299a36d8b4f1cf440f2bd4; companion file c327480a4975409fe358b20cb896b4ced381d61b82e36b625ee5fcb4c84d28a6. Production trust is unprovisioned.",
-  "current_independent_review_scope": "Task25 final compatibility fix at source 8c31e84c9d71d0043b1ca736d9bc4db05cfeee7d was independently rereviewed PASS/CLEAN with zero findings; its readback unit file passed 28 tests. Task31 build/review and Task32 qualification bind source 8c31e84c9d71d0043b1ca736d9bc4db05cfeee7d / artifact cc9d55fd67f10f7f8d831e21b9331ecae08cf039; Task32 passed 421 focused and 1,211 full non-live tests (26 skipped, 3 warnings). Historical branch review and Actions runs retain their recorded scopes and do not review this documentation refresh. No independent whole-change review, exact-head hosted CI, or formal PR approval is asserted. All 22 external rows remain NOT RUN; identities are synthetic/unverified; provider acceptance and external final audit NOT RUN; production effects disabled; RG0/full RG1 HELD; P2 BLOCKED; main unmerged.",
+  "current_application_artifact_status": "Task34 development-only artifact from source 546ac4ed794afc123ea02586a37d4a4457590582 / tree 278e2bbf074fdf07b701f87f925c537dd916e118: artifact fe6b3795ce4453beb6c6bbafcc20cd3be91b3b87 / tree 124037b25c754751e2447c7d8639800f9f35d238, sole parent is source; only generated v2 development lock JSON and companion changed. The 250-entry source manifest is bc73519f454a95ada057dae27b6a71ac1c0ad1b73db419175666b23e65c410d4; two source exports match at 20fd5248161ef33bc6d5e4dbeb4f359a25fde1142bf86736c9cda75fb90af565 (23,521,280 bytes). Two wheels are 459,449 bytes / SHA-256 49d5c34e7d6770d963e6dc065a6b058fe6e08e8880bf8ea0ebbffd34e072d12f. Typed linux/amd64 OCI manifest f1c69d4a45caa33310162335eaf084057017e667b46fc925f93a6ea3b9f9b4af (2,951 bytes); config b93060c5466a0a90b4c3b2e0fcff8dc77c087748dc43100cdc6e23949a039f7a (9,777 bytes); all 14 layer hashes and sizes are retained in task-34-build-report.md. Selected payload blobs match across builds, while created annotations and OCI archive hashes differ, so root-layout/archive reproducibility is not claimed. The offline cached Task15 base and temporary Dockerfile do not establish source-Dockerfile fidelity. Route bundle 2bfbcd68ae8f76cc612cfb58f2000c49ef5167a0537200c42e6256a4903885d9; tuple 4e49460c7a89ea69a2268fc4d680906be56635a9983f20d1ababb1da4f75714f; authenticated route manifest 40198749291c758d22815def2281a7c5b6860ae8bb43f732d6f42e3765cf2a78; v2 lock d5b8e5b7ce0a97ce92bc2259fc2961ad23bc38808262159ca9e1c136c8cc6317; companion 6a91e79eb67b6fa779deafff1c48f1e1d5b2f6bad7ab280469a75fe3f08d01c0; runtime inventory 349782ff04770a3543668323fd5bcd88783e5b2b34fb90ce6a7cf1f3f2867c06; RECORD fdc6905faa6d807e3aeda7420fb03341b125f5fa9cc1a6030681716e34ce1183; interpreter 73b68fc2dac176af16098180a2c98a03ee9f1f1b02db25d42d44d782e79e2330. Production trust remains absent.",
+  "current_independent_review_scope": "Task25 fix round 2 at source 546ac4e clears the original mixed-host hostaddr list when selecting a Unix socket; its complete readback unit file passed 29 tests. The earlier independent PASS/CLEAN review remains scoped to source 8c31e84 and does not review this final fix. Task34 build review is PASS/CLEAN for artifact fe6b379; Task35 exact-candidate local qualification passed 422 focused and 1,212 full non-live tests (26 skipped, 3 warnings). Historical whole-branch reviews and Actions runs retain their original scopes; no independent whole-change review or exact-head hosted CI is asserted for this documentation commit. All 22 external rows remain NOT RUN; identities are synthetic/unverified; provider acceptance and final external audit are NOT RUN; effects are disabled; budget is zero; RG0/full RG1 are HELD; P2 is BLOCKED; main is unmerged.",
   "historical_0043_candidate_artifact_pins": {
     "application_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
     "scope": "HISTORICAL_0043_ARTIFACT_FIXTURE_QUALIFICATION",
@@ -3999,8 +4364,676 @@
   },
   "current_application_candidate": {
     "record_kind": "latest_local_development_candidate",
-    "task": "Task25 Unix-socket/multi-host endpoint compatibility fix / Task31 exact development artifact / Task32 exact local qualification",
+    "task": "Task25 final mixed Unix/TCP endpoint compatibility fix / Task34 exact development artifact / Task35 exact local qualification",
     "status": "PASS_LOCAL_DEVELOPMENT_QUALIFICATION; EXTERNAL_ACCEPTANCE_NOT_RUN; PRODUCTION_GATES_HELD",
+    "source_commit": "546ac4ed794afc123ea02586a37d4a4457590582",
+    "source_tree": "278e2bbf074fdf07b701f87f925c537dd916e118",
+    "artifact_commit": "fe6b3795ce4453beb6c6bbafcc20cd3be91b3b87",
+    "artifact_tree": "124037b25c754751e2447c7d8639800f9f35d238",
+    "artifact_parent_is_source": true,
+    "artifact_changed_files": [
+      "deployment/v4/publication-worker-launch-lock-v2-development.json",
+      "deployment/v4/publication-worker-launch-lock-v2-development.sha256"
+    ],
+    "artifact_build": {
+      "source_date_epoch": 1793294462,
+      "source_archive_sha256": "20fd5248161ef33bc6d5e4dbeb4f359a25fde1142bf86736c9cda75fb90af565",
+      "source_archive_bytes": 23521280,
+      "source_manifest_file_count": 250,
+      "source_manifest_sha256": "bc73519f454a95ada057dae27b6a71ac1c0ad1b73db419175666b23e65c410d4",
+      "wheel_bytes": 459449,
+      "wheel_sha256": "49d5c34e7d6770d963e6dc065a6b058fe6e08e8880bf8ea0ebbffd34e072d12f",
+      "image_sha256": "f1c69d4a45caa33310162335eaf084057017e667b46fc925f93a6ea3b9f9b4af",
+      "image_media_type": "application/vnd.oci.image.manifest.v1+json",
+      "image_manifest_size_bytes": 2951,
+      "image_config_sha256": "b93060c5466a0a90b4c3b2e0fcff8dc77c087748dc43100cdc6e23949a039f7a",
+      "image_config_bytes": 9777,
+      "image_layer_count": 14,
+      "image_layers": [
+        {
+          "sha256": "59e22667830bf04fb35e15ed9c70023e9d121719bb87f0db7f3159ee7c7e0b8d",
+          "bytes": 28230270
+        },
+        {
+          "sha256": "19f81082f6f0f5682c46ad2fe5283898a3719396e2e8659b150a99de365e1e95",
+          "bytes": 3514146
+        },
+        {
+          "sha256": "799df5177ae295959cf5eb8486412f5107481f1e7c10f96adf4d438795fbcbc0",
+          "bytes": 12579705
+        },
+        {
+          "sha256": "66cd357cf7a1518288e019f7c1ab383d267fa738ec8962e05a3dc84c614019b5",
+          "bytes": 250
+        },
+        {
+          "sha256": "289b4a62af7aabeb23942d0a4f4ca36a021a36c7ba04037e6e23a06e7d848b2a",
+          "bytes": 93
+        },
+        {
+          "sha256": "77a595e41773f62dbe762f455f56e0dff6eeff70d94d2e7d07e10da7fa37f29e",
+          "bytes": 441131
+        },
+        {
+          "sha256": "bc32d0e31694eb5c9a43320201c4d47fd5d6a5736f1c8406ebd915b0d7b5898f",
+          "bytes": 62068415
+        },
+        {
+          "sha256": "e5e38aa2ad83d4b1730d1d401e945870bed07271d2f9836fe1d2b0cfca88e5d3",
+          "bytes": 550
+        },
+        {
+          "sha256": "92c36760cdec5a4e98c511a10cccd66aa5bc83522a4c50b1756a0d8243444d5d",
+          "bytes": 81387
+        },
+        {
+          "sha256": "4f4fb700ef54461cfa02571ae0db9a0dc1e0cdb5577484a6d75e68dc38e8acc1",
+          "bytes": 32
+        },
+        {
+          "sha256": "dbec4f415ac36bca7c64b00b89c69d9ae680cda14c904bcd38631aad5c012525",
+          "bytes": 442957
+        },
+        {
+          "sha256": "7de16a388cf4a091e08f60e529254ca0d473bcfd8499d3e3ee26ec456c3563a6",
+          "bytes": 380055
+        },
+        {
+          "sha256": "a9869c791fdb37bc48f72aad94a8a4b0521304a9dc239920d2b91cbb2d3ff0f5",
+          "bytes": 550
+        },
+        {
+          "sha256": "531595b3bd1daaf995f7b1452d9a34f92fe752acd6316fba97140b2d0be2587a",
+          "bytes": 81385
+        }
+      ],
+      "image_interpreter_sha256": "73b68fc2dac176af16098180a2c98a03ee9f1f1b02db25d42d44d782e79e2330",
+      "image_record_sha256": "fdc6905faa6d807e3aeda7420fb03341b125f5fa9cc1a6030681716e34ce1183",
+      "installed_runtime_distribution_count": 73,
+      "installed_runtime_inventory_sha256": "349782ff04770a3543668323fd5bcd88783e5b2b34fb90ce6a7cf1f3f2867c06",
+      "route_bundle_file_sha256": "2bfbcd68ae8f76cc612cfb58f2000c49ef5167a0537200c42e6256a4903885d9",
+      "route_tuple_sha256": "4e49460c7a89ea69a2268fc4d680906be56635a9983f20d1ababb1da4f75714f",
+      "authenticated_route_manifest_sha256": "40198749291c758d22815def2281a7c5b6860ae8bb43f732d6f42e3765cf2a78",
+      "v2_lock_json_and_companion_content_sha256": "d5b8e5b7ce0a97ce92bc2259fc2961ad23bc38808262159ca9e1c136c8cc6317",
+      "v2_lock_json_bytes": 52067,
+      "v2_lock_companion_file_sha256": "6a91e79eb67b6fa779deafff1c48f1e1d5b2f6bad7ab280469a75fe3f08d01c0",
+      "v1_lock_sha256": "1c8ac4ff92e589e27dc0af2c6dd0bc69c4295435df5a318174a2c77f3b1f2c9c",
+      "base_image_identity": "sha256:51f38f1ae8c31c86601eda50116f4e19a0b68915dcbdfcdd708bb2e6f62cd79d",
+      "image_identity_kind": "linux/amd64 OCI image manifest (application/vnd.oci.image.manifest.v1+json)",
+      "oci_reproducibility_scope": "Two offline OCI outputs share the selected manifest, config, all 14 layers, and referenced blob bytes. Root index created annotations and archive hashes differ, so OCI root-layout and archive reproducibility are not claimed.",
+      "oci_root_index_sha256_by_build": [
+        "b37e7dc191879c3ea4a28d90734cf6db7593fb3ba5c1c7f484914154b93222ac",
+        "99dfc1d20c4448d47bc53afa07095f8796380ce062cf373220e56e41490b7df4"
+      ],
+      "oci_root_index_created_annotations": [
+        "2026-10-29T17:24:56Z",
+        "2026-10-29T17:25:00Z"
+      ],
+      "oci_archive_sha256_by_build": [
+        "962643bb06a2d5c3efa9d8fed1fe69e1c6d9d4026f0ca2c10139b80ed0cd664a",
+        "ea1e617cb72be1482a2f5bd10c952bc5ca38670d78088f2aacb821c082cbea79"
+      ],
+      "oci_archive_bytes_by_build": [
+        107850752,
+        107850752
+      ],
+      "typed_image_identity_sha256": "d4ab628431c525adcbb1d66fe44290e589f9b091d89b913235434f3d9686587f",
+      "source_dockerfile_fidelity": "NOT ESTABLISHED; offline temporary Dockerfile used the cached Task15 runtime base because the source Dockerfile base was unavailable locally.",
+      "production_trust": "NOT PROVISIONED"
+    },
+    "route_identity": {
+      "deployment_id": "00000000-0000-0000-0000-000000000341",
+      "environment_id": "00000000-0000-0000-0000-000000000342",
+      "route_id": "00000000-0000-0000-0000-000000000343",
+      "slot_id": "00000000-0000-0000-0000-000000000344",
+      "build_id": "p1-task34-development-only",
+      "route_bundle_sha256": "2bfbcd68ae8f76cc612cfb58f2000c49ef5167a0537200c42e6256a4903885d9",
+      "route_tuple_sha256": "4e49460c7a89ea69a2268fc4d680906be56635a9983f20d1ababb1da4f75714f",
+      "authenticated_route_manifest_sha256": "40198749291c758d22815def2281a7c5b6860ae8bb43f732d6f42e3765cf2a78",
+      "identity_provisioning": "synthetic and unverified",
+      "temporal_endpoint": "development-temporal.task34.unprovisioned",
+      "temporal_namespace": "salience-task34-development",
+      "task_queue": "salience-publication-task34-development",
+      "producer_bindings": []
+    },
+    "migration_head": "0051_p1_recovery_rollback_v2",
+    "rollback_verifier_abi": "salience.p1-recovery-rollback-verifier.v2",
+    "focused_non_live": {
+      "evidence_report": ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-35-report.md",
+      "groups": 7,
+      "passed": 422,
+      "passed_by_group": [
+        38,
+        39,
+        80,
+        79,
+        4,
+        137,
+        45
+      ],
+      "log_sha256_by_group": [
+        "1e2f03e2c7f7898678530c1434fbacb0dd85bd230bc1f8e269e1076b4848906c",
+        "63bbfaebe88ce53e5813f1a610853bbe3d6877927b298fbd9e9ae2f1f45aa7cf",
+        "2f27aeb500a20727249b8d9546a906d57702d9d76deeb4638ff21de650791634",
+        "ebbd669b06d1549b315800e00c0027fe700121c50753607aab726d396eeb5153",
+        "6a8ee765aa85750ad3157354082112da148050828ccd0a44a85396fbcd87f37c",
+        "474620bd421e188a028928a72ee6623c9410d1e2476bd6be3e9759699383a5e5",
+        "955ca05367e7f02636472f108cb875842db80fd885188674f587a692e2694c68"
+      ],
+      "group_results": [
+        {
+          "name": "focused-01-routing-files-lock-builder",
+          "started_at": "2026-10-29T17:39:20Z",
+          "ended_at": "2026-10-29T17:39:22Z",
+          "elapsed_seconds": 2.58,
+          "passed": 38,
+          "log_sha256": "1e2f03e2c7f7898678530c1434fbacb0dd85bd230bc1f8e269e1076b4848906c"
+        },
+        {
+          "name": "focused-02-migrations-0047-0051-schema-safety",
+          "started_at": "2026-10-29T17:39:22Z",
+          "ended_at": "2026-10-29T17:43:35Z",
+          "elapsed_seconds": 253.133,
+          "passed": 39,
+          "log_sha256": "63bbfaebe88ce53e5813f1a610853bbe3d6877927b298fbd9e9ae2f1f45aa7cf"
+        },
+        {
+          "name": "focused-03-schedule-native-readback",
+          "started_at": "2026-10-29T17:43:35Z",
+          "ended_at": "2026-10-29T17:47:12Z",
+          "elapsed_seconds": 217.02,
+          "passed": 80,
+          "log_sha256": "2f27aeb500a20727249b8d9546a906d57702d9d76deeb4638ff21de650791634"
+        },
+        {
+          "name": "focused-04-complete-production-recovery",
+          "started_at": "2026-10-29T17:47:12Z",
+          "ended_at": "2026-10-29T17:56:21Z",
+          "elapsed_seconds": 548.871,
+          "passed": 79,
+          "log_sha256": "ebbd669b06d1549b315800e00c0027fe700121c50753607aab726d396eeb5153"
+        },
+        {
+          "name": "focused-05-rollback-v2-handoff",
+          "started_at": "2026-10-29T17:56:21Z",
+          "ended_at": "2026-10-29T17:56:23Z",
+          "elapsed_seconds": 1.441,
+          "passed": 4,
+          "log_sha256": "6a8ee765aa85750ad3157354082112da148050828ccd0a44a85396fbcd87f37c"
+        },
+        {
+          "name": "focused-06-complete-policy-revocation",
+          "started_at": "2026-10-29T17:56:23Z",
+          "ended_at": "2026-10-29T17:57:41Z",
+          "elapsed_seconds": 78.065,
+          "passed": 137,
+          "log_sha256": "474620bd421e188a028928a72ee6623c9410d1e2476bd6be3e9759699383a5e5"
+        },
+        {
+          "name": "focused-07-external-acceptance-unit",
+          "started_at": "2026-10-29T17:57:41Z",
+          "ended_at": "2026-10-29T18:00:50Z",
+          "elapsed_seconds": 189.769,
+          "passed": 45,
+          "log_sha256": "955ca05367e7f02636472f108cb875842db80fd885188674f587a692e2694c68"
+        }
+      ],
+      "all_groups_passed": true,
+      "serially_once": true,
+      "total_passed_arithmetic": "38 + 39 + 80 + 79 + 4 + 137 + 45 = 422"
+    },
+    "full_non_live": {
+      "evidence_report": ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-35-report.md",
+      "runs": 1,
+      "passed": 1212,
+      "skipped": 26,
+      "warnings": 3,
+      "log_sha256": "10f3722e943361a0323311b5be06816f40faa0dde805736182ea6aef748b023c",
+      "runner_seconds": 2606.357,
+      "pytest_seconds": 2602.63,
+      "started_at": "2026-10-29T18:00:50Z",
+      "completed_at": "2026-10-29T18:44:17Z"
+    },
+    "local_run": {
+      "compose_project": "salience-p1-task35-q-35a80dc40a2a",
+      "evidence_directory": "/tmp/salience-task35-exact-qualification-20261029T173910Z-35a80dc40a2a",
+      "started_at": "2026-10-29T17:39:10Z",
+      "completed_at": "2026-10-29T18:44:20Z",
+      "cleanup_exit_code": 0,
+      "cleanup_log_sha256": "d972190b218ef6a2a272c249f759834564698de67e25badbf3ac44fe3ce9f2cf",
+      "remaining_containers": 0,
+      "remaining_networks": 0,
+      "remaining_volumes": 0,
+      "cleanup_verification_log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "superseded_harness_attempt": {
+      "task": "Task35 initial exact-candidate harness attempt (superseded setup failure)",
+      "status": "HARNESS_SETUP_ERROR; NONAUTHORITATIVE; NOT CANDIDATE FAILURE",
+      "compose_project": "salience-p1-task35-q-50400cc11b6f",
+      "evidence_directory": "/tmp/salience-task35-exact-qualification-20261029T173417Z-50400cc11b6f",
+      "evidence_report": "/tmp/salience-task35-exact-qualification-20261029T173417Z-50400cc11b6f/attempt-1-report.md",
+      "evidence_report_sha256": "3f0f5366963de446ae1887ef6b1310c0e605afded6790bf45e2bde2e5f869c05",
+      "status_scope": "Harness setup only; used async SQLAlchemy URL scheme for TEST_DATABASE_URL consumed by direct psycopg fixtures, so focused database groups failed before candidate behavior was qualified.",
+      "focused_groups_run": 7,
+      "focused_groups_passed": 3,
+      "full_non_live": "NOT RUN",
+      "cleanup_counts": {
+        "containers": 0,
+        "networks": 0,
+        "volumes": 0
+      },
+      "cleanup_log_sha256": "d59b95e500c3bcd7046a5cc902d6b2e0d6da601e2297de96b42bdfc1a2c1a252"
+    },
+    "readback_unit_collection_reconciliation": {
+      "task32_collected_cases": 28,
+      "task35_collected_cases": 29,
+      "task35_collection_only_executed_test_bodies": false,
+      "group03_task32_passed": 79,
+      "group03_task35_passed": 80,
+      "collection_log_sha256": "916694c44a1df8287ef4e0d284d391584db91c830475c7d558db8c96c203f9c6"
+    },
+    "qualification_scope": "development-only; exact Task34/35 local candidate qualification, not externally trusted or production-qualified",
+    "review_scope": "Task34 build artifact independently reviewed PASS/CLEAN; Task25 final mixed-host source fix has no independent post-fix review supplied; Task35 is exact-candidate local qualification only.",
+    "external_gates": {
+      "external_rows": "NOT RUN (22 rows)",
+      "identities": "synthetic and unverified",
+      "provider_acceptance": "NOT RUN",
+      "external_final_audit": "NOT RUN",
+      "production_effects_enabled": false,
+      "publication_budget": 0,
+      "package_disposition": "NO_GO / UNCHANGED",
+      "RG0": "HELD",
+      "RG1": "HELD (full)",
+      "P2": "BLOCKED",
+      "later_phases": "GATED",
+      "main": "UNMERGED"
+    },
+    "evidence_reports": [
+      ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-25-report.md",
+      ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-25-review.md",
+      ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-34-build-report.md",
+      ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-34-build-review.md",
+      ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-35-report.md"
+    ],
+    "active_source_lock_sha256": "09100cb7aee864227d78112aa7729a1cded7790d34cc33687c5e2a3732188e55",
+    "producer_bindings": []
+  },
+  "historical_0043_qualification_application": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
+  "historical_0043_focused_test_subset": 9,
+  "current_focused_test_scope": "Task35 seven serial focused non-live groups on exact artifact fe6b3795ce4453beb6c6bbafcc20cd3be91b3b87; 422 passed; exact group commands, timestamps, counts, and log hashes are in .superpowers/sdd/2026-10-28-p1-remaining-production-development/task-35-report.md.",
+  "historical_0043_candidate_artifact_build": {
+    "status": "SUCCESSOR_EXACT_CANDIDATE_ARTIFACT_BUILD_AND_LOCAL_QUALIFICATION_RECORDED",
+    "application_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
+    "artifact_build_result": "PASS",
+    "image_ref": "salience-p1-floor-182c4e4-worker:latest",
+    "image_id": "sha256:c880a41e4a20f1322ad579b0b8d3f8b5ae14fcdf13635458d33cdc8c747e09a0",
+    "wheel_sha256": "425b7122f6431459a15bc4fe7bbdd169692b152356a0f36c6895e3fd452e3d04",
+    "record_sha256": "f3fbd4bd43c25786969016b1d0c806c9591b5aea07dcd4753b87a3980dc1b74b",
+    "record_entry_count": 172,
+    "launch_lock_sha256": "1c8ac4ff92e589e27dc0af2c6dd0bc69c4295435df5a318174a2c77f3b1f2c9c",
+    "source_path_count": 211,
+    "source_path_set_sha256": "14bddb59e1d7ad1f3d4fceb6b20e7ae0748848a93e89dc470a7af7b325dc88fe",
+    "source_manifest_sha256": "58f27973abc9b3d34fa9f2eea1738c914659ff84f5151f64fdc493acca1c3005",
+    "interpreter_sha256": "73b68fc2dac176af16098180a2c98a03ee9f1f1b02db25d42d44d782e79e2330",
+    "runtime_root": "/usr/local/lib/python3.13/site-packages",
+    "runtime_manifest_sha256": "3d58423ee9119db38c9a670c726c83692bef126d402e69f2a9ad98e05377b644",
+    "runtime_file_count": 9151,
+    "pyc_files": [],
+    "qualification_report": ".superpowers/sdd/2026-10-13-p1-publication-recovery-floor-repair/task-8-report.md",
+    "qualification_results": "Exact-image matrix: 12 passed; I1 replay-focused gate: 9 passed; actual-retry producer: 1 passed; Compose restart recovery: 1 passed; final clean non-live suite: 796 passed, 17 skipped, 3 warnings, all bound to application 182c4e4. Whole-branch review remains bound to 6f5edc77edbfe189e46de4254c2fdb21c5652bce (run 38592066455). Separately, exact CI run 40443346020 passed on initial audit source 7c1ddcda280b510048ad61106c406171edd64f18. The final documentation commit is distinct from this historical application record and requires exact-head CI after push."
+  },
+  "historical_0043_successor_qualification": {
+    "i1_replay_focused": {
+      "passed": 9,
+      "seconds": 129.46,
+      "exit_code": 0
+    },
+    "exact_image_prerequisite_and_overlay_matrix": {
+      "passed": 12,
+      "seconds": 47.26,
+      "exit_code": 0,
+      "coverage": [
+        "wholly absent and partial candidate state before DB setup",
+        "exact candidate loader",
+        "hostile PYTHONPATH/PYTHONHOME/cwd",
+        "valid malicious pyc with positive execution control",
+        "real empty-0042",
+        "physical extra/missing/changed/down_revision migration inventory overlays"
+      ]
+    },
+    "task8_actual_pending_activity_retry_producer": {
+      "passed": 1,
+      "seconds": 194.14,
+      "exit_code": 0,
+      "reasons": [
+        {
+          "reason": "expired_permit_receipt",
+          "activity": "salience.publication.submit_or_reconcile",
+          "attempt": 2,
+          "worker_container_id": "7474278e13c37fc53f1640bbaab444595d479e823dacba3260c0f1a4faa82ac6",
+          "recorder_run_id": "243c8119-bdda-4241-a708-601c49448755",
+          "worker_id": "cdd47a20-93f1-470d-896b-f884a189065e",
+          "history_event_boundary": 27,
+          "recorded_adapter_operations": 0
+        },
+        {
+          "reason": "published_during_cancel",
+          "activity": "salience.publication.cancel",
+          "attempt": 2,
+          "worker_container_id": "ca838159ff2d9855442136242ab07c820635d52935b5d810d83d95fa6228de00",
+          "recorder_run_id": "e66bea22-9a8f-48b9-8d00-82f2e731c4c4",
+          "worker_id": "8c88c87b-8d2f-4163-953e-adbc36102723",
+          "history_event_boundary": 44,
+          "recorded_adapter_operations": 0
+        }
+      ],
+      "readback_sha256": "722723b7d6d18d9e37ec84d0945a7486ea9d3fd2e06018ce1dac482bcc29edc4"
+    },
+    "compose_restart_recovery": {
+      "passed": 1,
+      "seconds": 88.19,
+      "exit_code": 0,
+      "log_sha256": "e7eae0123edd77c395199598edc7ae289526bd4f5890f169b971a75bfff3b8ad"
+    },
+    "full_non_live": {
+      "command": "SALIENCE_DEPLOYMENT_MODE=fixture .venv/bin/python -m pytest -p no:cacheprovider tests/contracts tests/unit tests/integration tests/e2e tests/evals -m 'not live' -q -rs",
+      "application_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
+      "passed": 796,
+      "skipped": 17,
+      "failed": 0,
+      "warnings": 3,
+      "seconds": 1576.95,
+      "exit_code": 0,
+      "log_path": "/tmp/p1-publication-recovery-successor-182c4e4/attempt-6/full-run-final/run.log",
+      "log_sha256": "9948122a8b2749f33ac20a5c26b60dfd072519bbd24c07a584d0896fc45fd27d"
+    },
+    "failed_diagnostic_run": {
+      "result": "The exact-image fail-closed gate correctly rejected a stale global wheel in the test harness; harness fix pinned exact candidate wheel/lock before the successful rerun.",
+      "passed": 795,
+      "skipped": 17,
+      "failed": 1,
+      "log_sha256": "0a2352d6a1e05244208d7ae97199002cd87f08771932d90a97f4430fb0b4869e"
+    },
+    "candidate_invalidation_audit": {
+      "status": "PASS",
+      "all_source_rows_match": 211,
+      "path_set_sha256": "14bddb59e1d7ad1f3d4fceb6b20e7ae0748848a93e89dc470a7af7b325dc88fe",
+      "source_manifest_sha256": "58f27973abc9b3d34fa9f2eea1738c914659ff84f5151f64fdc493acca1c3005",
+      "runtime_entries": 9151,
+      "pyc_entries": 0,
+      "log_sha256": "6cf617f53485317d5f9c618849e2ce25537558036ae6a6813971005d88bf246a"
+    },
+    "post_run_cleanup": {
+      "status": "PASS",
+      "removed_only_inactive_test_images_and_seven_private_build_cache_records": true,
+      "candidate_image_preserved": true,
+      "active_service_containers_and_volumes_unchanged": true,
+      "tmp_free_mib": 891,
+      "root_free_gib": 9.2,
+      "available_ram_gib": 2.3
+    }
+  },
+  "historical_0043_publication_recovery_hold_evidence": "docs/v4/publication-recovery-hold-successor-evidence.json",
+  "historical_0043_publication_recovery_hold_evidence_sha256": "4baef4a2328b26a47abc150f4b2ba47aa7c3d3afa6260c651986142b110054c1",
+  "historical_branch_review_and_ci": {
+    "branch": "feat/archv4-p0-foundation",
+    "head_commit": "6f5edc77edbfe189e46de4254c2fdb21c5652bce",
+    "review": "GPT-6.1 whole-branch review: 59 commits / 38 files; 0 Critical / 0 Important / 1 nonblocking Minor.",
+    "meta_review": "GPT-5.6 ACCEPT; approved pushing unchanged 6f5edc7.",
+    "pushed": true,
+    "workflow_run_id": 38592066455,
+    "workflow_run_url": "https://github.com/manojvermamv/Salience/actions/runs/38592066455",
+    "required_jobs": {
+      "verify": "success",
+      "p0-regression": "success"
+    },
+    "hosted_suite_summary": {
+      "passed": 787,
+      "expected_skips": 26,
+      "warnings": 3
+    },
+    "historical_docs_only_head_ci": "Historical: PASS_FOR_67EFFE8 (run 38610329330); initial-audit source 7C1DDCD passed run 40443346020.",
+    "latest_pushed_documentation_head_ci": {
+      "head_commit": "62b5a5e6afc8bd6477bbd14a951166edc97ea683",
+      "short_head": "62b5a5e",
+      "workflow_run_id": 40553244096,
+      "workflow_run_url": "https://github.com/manojvermamv/Salience/actions/runs/40553244096",
+      "event": "push",
+      "workflow": "V4 documentation contract",
+      "created_at": "2026-10-27T17:43:21Z",
+      "updated_at": "2026-10-27T18:02:44Z",
+      "status": "completed",
+      "conclusion": "success",
+      "required_jobs": {
+        "verify": {
+          "job_id": 122362339840,
+          "conclusion": "success",
+          "started_at": "2026-10-27T17:43:24Z",
+          "completed_at": "2026-10-27T17:43:32Z"
+        },
+        "p0-regression": {
+          "job_id": 122362339085,
+          "conclusion": "success",
+          "started_at": "2026-10-27T17:43:23Z",
+          "completed_at": "2026-10-27T18:02:43Z"
+        }
+      },
+      "hosted_suite_summary": {
+        "migration_head": "0046_production_policy_approval_id_immutability",
+        "passed": 908,
+        "skipped": 26,
+        "warnings": 3,
+        "elapsed_seconds": 1082.53
+      },
+      "scope": "Exact pushed documentation/evidence head; no application candidate or production qualification transfer."
+    },
+    "current_documentation_candidate_post_push_exact_head_ci": "PASS_FOR_62B5A5E (run 40553244096); NEXT_STATUS_ONLY_COMMIT_CI_REQUIRED_AFTER_PUSH",
+    "initial_audit_source_ci": {
+      "head_commit": "7c1ddcda280b510048ad61106c406171edd64f18",
+      "run_id": 40443346020,
+      "url": "https://github.com/manojvermamv/Salience/actions/runs/40443346020",
+      "workflow": "V4 documentation contract",
+      "status": "completed",
+      "conclusion": "success",
+      "required_jobs": {
+        "verify": "success",
+        "p0-regression": "success"
+      },
+      "scope": "Exact frozen initial-audit source commit; result does not transfer to the documentation candidate carrying final evidence."
+    },
+    "record_scope": "Historical feature review and CI remain scoped to their recorded head. Exact documentation/evidence CI passes for pushed head 62b5a5e; this does not transfer application qualification. The next status-only record commit requires exact-head CI after push."
+  },
+  "current_documentation_checks_status": "PASS_TASK36_SERIAL_DOCUMENTATION_EVIDENCE_CONTRACTS",
+  "status": "PASS_LOCAL_TASK35_EXACT_CANDIDATE; EXTERNAL_ACCEPTANCE_NOT_RUN; PRODUCTION_GATES_HELD",
+  "current_route_identity": {
+    "deployment_id": "00000000-0000-0000-0000-000000000341",
+    "environment_id": "00000000-0000-0000-0000-000000000342",
+    "route_id": "00000000-0000-0000-0000-000000000343",
+    "slot_id": "00000000-0000-0000-0000-000000000344",
+    "build_id": "p1-task34-development-only",
+    "route_bundle_sha256": "2bfbcd68ae8f76cc612cfb58f2000c49ef5167a0537200c42e6256a4903885d9",
+    "route_tuple_sha256": "4e49460c7a89ea69a2268fc4d680906be56635a9983f20d1ababb1da4f75714f",
+    "authenticated_route_manifest_sha256": "40198749291c758d22815def2281a7c5b6860ae8bb43f732d6f42e3765cf2a78",
+    "identity_provisioning": "synthetic and unverified",
+    "temporal_endpoint": "development-temporal.task34.unprovisioned",
+    "temporal_namespace": "salience-task34-development",
+    "task_queue": "salience-publication-task34-development",
+    "producer_bindings": []
+  },
+  "historical_slice2_documentation_ci_repair_snapshot": {
+    "scope": "Historical Slice2 documentation evidence-lock repair only; no application behavior changed.",
+    "hosted_failure": {
+      "head": "e3245ee5d4a2a6a4949b1dedb42b8a1b04909f65",
+      "short_head": "e3245ee",
+      "run_id": 40551540958,
+      "status": "FAILED",
+      "failed_command": "python3 docs/v4/check.py --self-test",
+      "other_documentation_commands": "PASS; the self-test was the only reported failure"
+    },
+    "root_cause": "The active evidence lock had not been refreshed for the current Slice 2 source tree; the checker correctly rejected changed hashes and newly added application evidence paths.",
+    "application_candidate": "ec12763e38143f52f1af2661e00932158982f11a",
+    "previous_active_lock": {
+      "file_count": 366,
+      "sha256": "472d603c1110a0ebe8082f598b7d02a892e6591a9f6b400c48979321551af674",
+      "application_candidate": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f"
+    },
+    "local_self_test": {
+      "command": "python3 docs/v4/check.py --self-test",
+      "status": "PASS",
+      "requirements": 75,
+      "evidence_files": 376,
+      "inventory_files": 360,
+      "negative_controls": 6
+    },
+    "preserved_application_verifier_log": {
+      "path": "docs/v4/audits/p1-policy-revocation-ec12763-verifier.log",
+      "sha256": "c643740f100210bad8428433db31ecd2852a538b26ad702224cd28c3f5432020"
+    },
+    "repair_commit_ci": "PASS_FOR_EXACT_PUSHED_HEAD_62B5A5E_RUN_40553244096; NEXT_STATUS_ONLY_COMMIT_CI_REQUIRED_AFTER_PUSH",
+    "production_effects_enabled": false,
+    "provider_acceptance": "NOT RUN",
+    "production_acceptance": "NOT RUN",
+    "RG0": "HELD",
+    "RG1": "HELD",
+    "P2": "BLOCKED",
+    "main_merge": "UNMERGED",
+    "verification_commands": [
+      {
+        "command": "python3 docs/v4/test_agenttube_reference.py",
+        "status": "PASS",
+        "passed": 17
+      },
+      {
+        "command": "python3 docs/v4/verify_agenttube_reference.py",
+        "status": "PASS"
+      },
+      {
+        "command": "python3 docs/v4/test_checks.py",
+        "status": "PASS",
+        "passed": 24
+      },
+      {
+        "command": "python3 docs/v4/check.py --self-test",
+        "status": "PASS",
+        "requirements": 75,
+        "evidence_files": 376,
+        "inventory_files": 360,
+        "markdown_files_checked": 109,
+        "html_files_checked": 4,
+        "negative_controls": 6
+      }
+    ],
+    "git_diff_check": "PASS",
+    "audit_artifact_and_handoff_hashes": "PASS",
+    "hosted_success": {
+      "head_commit": "62b5a5e6afc8bd6477bbd14a951166edc97ea683",
+      "short_head": "62b5a5e",
+      "workflow_run_id": 40553244096,
+      "workflow_run_url": "https://github.com/manojvermamv/Salience/actions/runs/40553244096",
+      "event": "push",
+      "workflow": "V4 documentation contract",
+      "created_at": "2026-10-27T17:43:21Z",
+      "updated_at": "2026-10-27T18:02:44Z",
+      "status": "completed",
+      "conclusion": "success",
+      "required_jobs": {
+        "verify": {
+          "job_id": 122362339840,
+          "conclusion": "success",
+          "started_at": "2026-10-27T17:43:24Z",
+          "completed_at": "2026-10-27T17:43:32Z"
+        },
+        "p0-regression": {
+          "job_id": 122362339085,
+          "conclusion": "success",
+          "started_at": "2026-10-27T17:43:23Z",
+          "completed_at": "2026-10-27T18:02:43Z"
+        }
+      },
+      "hosted_suite_summary": {
+        "migration_head": "0046_production_policy_approval_id_immutability",
+        "passed": 908,
+        "skipped": 26,
+        "warnings": 3,
+        "elapsed_seconds": 1082.53
+      },
+      "scope": "Exact pushed documentation/evidence head; no application candidate or production qualification transfer."
+    },
+    "next_status_only_commit_ci": "REQUIRED_AFTER_PUSH; the future run ID cannot be recorded before this status-only commit is pushed.",
+    "record_kind": "historical_slice2_documentation_ci_repair_snapshot",
+    "record_scope": "Historical 2026-10-27 repair at the ec12763 Slice2 snapshot. Its 366- and 376-file lock facts and hosted CI remain bound to that event; the active lock today is the Task22/23 source-db361 lock.",
+    "lock_active_at_historical_event": {
+      "path": "docs/v4/evidence-lock.json",
+      "sha256": "b44978d42ed635c8a8b59f2df2bd988a871c47eff3afd3a770d92290a39a771e",
+      "file_count": 376,
+      "application_paths": 369,
+      "configuration_and_build_context_paths": 7,
+      "new_application_paths": 10,
+      "updated_existing_hashes": 17,
+      "record_scope": "Lock active during the historical ec12763 repair event; not today’s active lock. The current active lock is Task31/32 source 8c31e84c9d71d0043b1ca736d9bc4db05cfeee7d / artifact cc9d55fd67f10f7f8d831e21b9331ecae08cf039."
+    }
+  },
+  "Current release ledger preserves frozen application scope and records exact pushed documentation/evidence CI PASS for 62b5a5e/run 40553244096; next status-only commit CI pending after push; release gates retained": 1,
+  "Historical exact feature-head readback preserved; exact pushed documentation/evidence CI PASS for 62b5a5e/run 40553244096 and next status-only candidate pending recorded separately": 1,
+  "Successor evidence preserves frozen application result and historical review, records exact documentation CI PASS for 62b5a5e/run 40553244096, and marks only the next status-only commit CI pending": 1,
+  "active 417-file exact-hash source lock for Task31/32 source 8c31e84c9d71d0043b1ca736d9bc4db05cfeee7d / artifact cc9d55fd67f10f7f8d831e21b9331ecae08cf039; historical nested locks preserved": 1,
+  "active user-authored project instructions; preserved verbatim": 1,
+  "already current approved Task 6 implementation plan": 1,
+  "current P1 recovery rollback v2 development plan; external qualification remains NOT RUN/HELD": 1,
+  "current Task25 compatibility, Task31 artifact, and Task32 qualification reports; exact evidence scope preserved": 6,
+  "current Task31/32 candidate and documentation navigation; external gates HELD": 1,
+  "current Task31/32 candidate and evidence status; external gates HELD": 1,
+  "current Task31/32 candidate progress; gates HELD": 1,
+  "current Task31/32 exact-candidate progress; external acceptance NOT RUN/HELD": 1,
+  "current Task31/32 final local evidence; external acceptance remains unqualified": 1,
+  "current Task32 exact-candidate local validation; earlier candidate results historical": 1,
+  "current documentation audit; self hash omitted to avoid a recursive digest": 1,
+  "current effects-disabled P1 remaining-production planning artifacts; external qualification remains NOT RUN/HELD": 2,
+  "current external acceptance schema; identities and production values remain unprovisioned": 1,
+  "current initial commit-bound P1/RG0/RG1 audit evidence; COMPLETE_REVIEWED at source 7c1ddcd; 22 rows non-PASS; implementation/target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2 BLOCKED": 1,
+  "current synthetic Task32 acceptance package bound to exact source/artifact; 22 rows NOT RUN; NO_GO/UNCHANGED": 1,
+  "durable local canonical dry creative qualification report": 1,
+  "frozen initial audit/review scope plus current Task30 candidate addendum; external gates HELD": 1,
+  "historical A4 publication qualification with current recovery-hold evidence pointer and exact A4/d031172 rereview scope": 1,
+  "historical Task11 candidate report; superseded as latest local qualification by Task18; external acceptance remains unqualified": 1,
+  "historical Task11 exact-source report; superseded as latest local evidence by Task32": 1,
+  "historical Task12 implementation brief; later local candidate qualified by Task32": 1,
+  "historical Task12 implementation report; later local candidate qualified by Task32": 1,
+  "historical Task13 exact-candidate evidence brief; superseded as latest by Task32": 1,
+  "historical Task13 exact-candidate report; superseded as latest by Task32": 1,
+  "historical Task14 source correction report; later exact candidate qualified by Task32": 1,
+  "historical Task18 exact-candidate qualification and Task19 refresh; superseded as latest by Task32": 1,
+  "historical Task22 development build report; superseded by Task26 final corrected artifact": 1,
+  "historical Task23 exact-candidate qualification; superseded by Task32 authoritative qualification": 1,
+  "historical capture-time documentation/status scope; Task18 latest local candidate is source c23c4cca72021ce6621eaacd66f2bfc23f4cc129 / artifact be6f713b255f6b654b73ae4343db1db5c07e3840; external rows remain NOT RUN and gates HELD": 75,
+  "latest Task31/32 candidate; historical Task25/26/28/29, Task22/23, and earlier qualification records retained": 1,
+  "preserved YouTube-agent reference research": 5,
+  "preserved dated canonical no-send dummy qualification report": 1,
+  "preserved dated design specification": 3,
+  "preserved dated independent item7 qualification report": 6,
+  "preserved dated initial P1/RG0/RG1 subaudit report": 3,
+  "preserved dated legacy brief and scheduled ingress qualification report": 1,
+  "preserved dated legacy intelligence qualification report": 1,
+  "preserved dated original native schedule qualification report": 1,
+  "preserved dated parallel qualification report": 1,
+  "preserved dated preparation plan": 3,
+  "preserved dated preparation report": 3,
+  "preserved dated qualification report": 20,
+  "preserved durable P1 audit/spec review and repair report payload": 10,
+  "preserved historical Slice 2 final local non-live verification report for candidate ec12763; superseded by Task32 for latest local evidence": 1,
+  "preserved historical Task 10 publication recovery-hold evidence and original P0-pinned bytes": 1,
+  "preserved historical Task15 brief; Task18/19 then Task22/23 and later Task25/26/29 superseded its snapshot": 1,
+  "preserved historical architecture visual": 8,
+  "preserved immutable historical snapshot": 62,
+  "preserved immutable historical snapshot; bytes retained verbatim": 1,
+  "preserved original design source or historical diagram": 7,
+  "preserved plugin instructions, references and examples; independent skill scope": 57,
+  "preserved source, archive or coverage manifest": 4,
+  "preserved unscanned P1 policy-routing subaudit payload": 1,
+  "historical_task31_task32_local_candidate": {
+    "record_kind": "historical_task31_task32_local_candidate",
+    "task": "Task25 Unix-socket/multi-host endpoint compatibility fix / Task31 exact development artifact / Task32 exact local qualification",
+    "status": "HISTORICAL_PASS_LOCAL_DEVELOPMENT_QUALIFICATION; SUPERSEDED_AS_LATEST_LOCAL_CANDIDATE_BY_TASK35; PRODUCTION_GATES_HELD",
     "source_commit": "8c31e84c9d71d0043b1ca736d9bc4db05cfeee7d",
     "source_tree": "8118c869150624292d741847e77c75c60992a61a",
     "artifact_commit": "cc9d55fd67f10f7f8d831e21b9331ecae08cf039",
@@ -4228,378 +5261,8 @@
       },
       "qualification_effect": "None; authoritative Task32 qualification waited for local Temporal readiness and passed."
     },
-    "producer_bindings": []
-  },
-  "historical_0043_qualification_application": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
-  "historical_0043_focused_test_subset": 9,
-  "current_focused_test_scope": "Task32 seven serial focused non-live groups on exact artifact cc9d55fd67f10f7f8d831e21b9331ecae08cf039; 421 passed; group counts and actual log hashes are in task-32-report.md.",
-  "historical_0043_candidate_artifact_build": {
-    "status": "SUCCESSOR_EXACT_CANDIDATE_ARTIFACT_BUILD_AND_LOCAL_QUALIFICATION_RECORDED",
-    "application_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
-    "artifact_build_result": "PASS",
-    "image_ref": "salience-p1-floor-182c4e4-worker:latest",
-    "image_id": "sha256:c880a41e4a20f1322ad579b0b8d3f8b5ae14fcdf13635458d33cdc8c747e09a0",
-    "wheel_sha256": "425b7122f6431459a15bc4fe7bbdd169692b152356a0f36c6895e3fd452e3d04",
-    "record_sha256": "f3fbd4bd43c25786969016b1d0c806c9591b5aea07dcd4753b87a3980dc1b74b",
-    "record_entry_count": 172,
-    "launch_lock_sha256": "1c8ac4ff92e589e27dc0af2c6dd0bc69c4295435df5a318174a2c77f3b1f2c9c",
-    "source_path_count": 211,
-    "source_path_set_sha256": "14bddb59e1d7ad1f3d4fceb6b20e7ae0748848a93e89dc470a7af7b325dc88fe",
-    "source_manifest_sha256": "58f27973abc9b3d34fa9f2eea1738c914659ff84f5151f64fdc493acca1c3005",
-    "interpreter_sha256": "73b68fc2dac176af16098180a2c98a03ee9f1f1b02db25d42d44d782e79e2330",
-    "runtime_root": "/usr/local/lib/python3.13/site-packages",
-    "runtime_manifest_sha256": "3d58423ee9119db38c9a670c726c83692bef126d402e69f2a9ad98e05377b644",
-    "runtime_file_count": 9151,
-    "pyc_files": [],
-    "qualification_report": ".superpowers/sdd/2026-10-13-p1-publication-recovery-floor-repair/task-8-report.md",
-    "qualification_results": "Exact-image matrix: 12 passed; I1 replay-focused gate: 9 passed; actual-retry producer: 1 passed; Compose restart recovery: 1 passed; final clean non-live suite: 796 passed, 17 skipped, 3 warnings, all bound to application 182c4e4. Whole-branch review remains bound to 6f5edc77edbfe189e46de4254c2fdb21c5652bce (run 38592066455). Separately, exact CI run 40443346020 passed on initial audit source 7c1ddcda280b510048ad61106c406171edd64f18. The final documentation commit is distinct from this historical application record and requires exact-head CI after push."
-  },
-  "historical_0043_successor_qualification": {
-    "i1_replay_focused": {
-      "passed": 9,
-      "seconds": 129.46,
-      "exit_code": 0
-    },
-    "exact_image_prerequisite_and_overlay_matrix": {
-      "passed": 12,
-      "seconds": 47.26,
-      "exit_code": 0,
-      "coverage": [
-        "wholly absent and partial candidate state before DB setup",
-        "exact candidate loader",
-        "hostile PYTHONPATH/PYTHONHOME/cwd",
-        "valid malicious pyc with positive execution control",
-        "real empty-0042",
-        "physical extra/missing/changed/down_revision migration inventory overlays"
-      ]
-    },
-    "task8_actual_pending_activity_retry_producer": {
-      "passed": 1,
-      "seconds": 194.14,
-      "exit_code": 0,
-      "reasons": [
-        {
-          "reason": "expired_permit_receipt",
-          "activity": "salience.publication.submit_or_reconcile",
-          "attempt": 2,
-          "worker_container_id": "7474278e13c37fc53f1640bbaab444595d479e823dacba3260c0f1a4faa82ac6",
-          "recorder_run_id": "243c8119-bdda-4241-a708-601c49448755",
-          "worker_id": "cdd47a20-93f1-470d-896b-f884a189065e",
-          "history_event_boundary": 27,
-          "recorded_adapter_operations": 0
-        },
-        {
-          "reason": "published_during_cancel",
-          "activity": "salience.publication.cancel",
-          "attempt": 2,
-          "worker_container_id": "ca838159ff2d9855442136242ab07c820635d52935b5d810d83d95fa6228de00",
-          "recorder_run_id": "e66bea22-9a8f-48b9-8d00-82f2e731c4c4",
-          "worker_id": "8c88c87b-8d2f-4163-953e-adbc36102723",
-          "history_event_boundary": 44,
-          "recorded_adapter_operations": 0
-        }
-      ],
-      "readback_sha256": "722723b7d6d18d9e37ec84d0945a7486ea9d3fd2e06018ce1dac482bcc29edc4"
-    },
-    "compose_restart_recovery": {
-      "passed": 1,
-      "seconds": 88.19,
-      "exit_code": 0,
-      "log_sha256": "e7eae0123edd77c395199598edc7ae289526bd4f5890f169b971a75bfff3b8ad"
-    },
-    "full_non_live": {
-      "command": "SALIENCE_DEPLOYMENT_MODE=fixture .venv/bin/python -m pytest -p no:cacheprovider tests/contracts tests/unit tests/integration tests/e2e tests/evals -m 'not live' -q -rs",
-      "application_commit": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f",
-      "passed": 796,
-      "skipped": 17,
-      "failed": 0,
-      "warnings": 3,
-      "seconds": 1576.95,
-      "exit_code": 0,
-      "log_path": "/tmp/p1-publication-recovery-successor-182c4e4/attempt-6/full-run-final/run.log",
-      "log_sha256": "9948122a8b2749f33ac20a5c26b60dfd072519bbd24c07a584d0896fc45fd27d"
-    },
-    "failed_diagnostic_run": {
-      "result": "The exact-image fail-closed gate correctly rejected a stale global wheel in the test harness; harness fix pinned exact candidate wheel/lock before the successful rerun.",
-      "passed": 795,
-      "skipped": 17,
-      "failed": 1,
-      "log_sha256": "0a2352d6a1e05244208d7ae97199002cd87f08771932d90a97f4430fb0b4869e"
-    },
-    "candidate_invalidation_audit": {
-      "status": "PASS",
-      "all_source_rows_match": 211,
-      "path_set_sha256": "14bddb59e1d7ad1f3d4fceb6b20e7ae0748848a93e89dc470a7af7b325dc88fe",
-      "source_manifest_sha256": "58f27973abc9b3d34fa9f2eea1738c914659ff84f5151f64fdc493acca1c3005",
-      "runtime_entries": 9151,
-      "pyc_entries": 0,
-      "log_sha256": "6cf617f53485317d5f9c618849e2ce25537558036ae6a6813971005d88bf246a"
-    },
-    "post_run_cleanup": {
-      "status": "PASS",
-      "removed_only_inactive_test_images_and_seven_private_build_cache_records": true,
-      "candidate_image_preserved": true,
-      "active_service_containers_and_volumes_unchanged": true,
-      "tmp_free_mib": 891,
-      "root_free_gib": 9.2,
-      "available_ram_gib": 2.3
-    }
-  },
-  "historical_0043_publication_recovery_hold_evidence": "docs/v4/publication-recovery-hold-successor-evidence.json",
-  "historical_0043_publication_recovery_hold_evidence_sha256": "4baef4a2328b26a47abc150f4b2ba47aa7c3d3afa6260c651986142b110054c1",
-  "historical_branch_review_and_ci": {
-    "branch": "feat/archv4-p0-foundation",
-    "head_commit": "6f5edc77edbfe189e46de4254c2fdb21c5652bce",
-    "review": "GPT-6.1 whole-branch review: 59 commits / 38 files; 0 Critical / 0 Important / 1 nonblocking Minor.",
-    "meta_review": "GPT-5.6 ACCEPT; approved pushing unchanged 6f5edc7.",
-    "pushed": true,
-    "workflow_run_id": 38592066455,
-    "workflow_run_url": "https://github.com/manojvermamv/Salience/actions/runs/38592066455",
-    "required_jobs": {
-      "verify": "success",
-      "p0-regression": "success"
-    },
-    "hosted_suite_summary": {
-      "passed": 787,
-      "expected_skips": 26,
-      "warnings": 3
-    },
-    "historical_docs_only_head_ci": "Historical: PASS_FOR_67EFFE8 (run 38610329330); initial-audit source 7C1DDCD passed run 40443346020.",
-    "latest_pushed_documentation_head_ci": {
-      "head_commit": "62b5a5e6afc8bd6477bbd14a951166edc97ea683",
-      "short_head": "62b5a5e",
-      "workflow_run_id": 40553244096,
-      "workflow_run_url": "https://github.com/manojvermamv/Salience/actions/runs/40553244096",
-      "event": "push",
-      "workflow": "V4 documentation contract",
-      "created_at": "2026-10-27T17:43:21Z",
-      "updated_at": "2026-10-27T18:02:44Z",
-      "status": "completed",
-      "conclusion": "success",
-      "required_jobs": {
-        "verify": {
-          "job_id": 122362339840,
-          "conclusion": "success",
-          "started_at": "2026-10-27T17:43:24Z",
-          "completed_at": "2026-10-27T17:43:32Z"
-        },
-        "p0-regression": {
-          "job_id": 122362339085,
-          "conclusion": "success",
-          "started_at": "2026-10-27T17:43:23Z",
-          "completed_at": "2026-10-27T18:02:43Z"
-        }
-      },
-      "hosted_suite_summary": {
-        "migration_head": "0046_production_policy_approval_id_immutability",
-        "passed": 908,
-        "skipped": 26,
-        "warnings": 3,
-        "elapsed_seconds": 1082.53
-      },
-      "scope": "Exact pushed documentation/evidence head; no application candidate or production qualification transfer."
-    },
-    "current_documentation_candidate_post_push_exact_head_ci": "PASS_FOR_62B5A5E (run 40553244096); NEXT_STATUS_ONLY_COMMIT_CI_REQUIRED_AFTER_PUSH",
-    "initial_audit_source_ci": {
-      "head_commit": "7c1ddcda280b510048ad61106c406171edd64f18",
-      "run_id": 40443346020,
-      "url": "https://github.com/manojvermamv/Salience/actions/runs/40443346020",
-      "workflow": "V4 documentation contract",
-      "status": "completed",
-      "conclusion": "success",
-      "required_jobs": {
-        "verify": "success",
-        "p0-regression": "success"
-      },
-      "scope": "Exact frozen initial-audit source commit; result does not transfer to the documentation candidate carrying final evidence."
-    },
-    "record_scope": "Historical feature review and CI remain scoped to their recorded head. Exact documentation/evidence CI passes for pushed head 62b5a5e; this does not transfer application qualification. The next status-only record commit requires exact-head CI after push."
-  },
-  "current_documentation_checks_status": "PASS_TASK33_SERIAL_CHECKS",
-  "status": "PASS_LOCAL_TASK32_EXACT_CANDIDATE; EXTERNAL_ACCEPTANCE_NOT_RUN; PRODUCTION_GATES_HELD",
-  "current_route_identity": {
-    "deployment_id": "00000000-0000-0000-0000-000000000311",
-    "environment_id": "00000000-0000-0000-0000-000000000312",
-    "route_id": "00000000-0000-0000-0000-000000000313",
-    "slot_id": "00000000-0000-0000-0000-000000000314",
-    "build_id": "p1-task31-development-only",
-    "route_bundle_sha256": "b4e46090c54b23b2ebf79d4dbed13711e919df759789d81ccb94968fcb36c19b",
-    "route_tuple_sha256": "789cdd50c79afb4289ededa5381ec6f57a91bd6f4e5058425fc21a4f70a26b8b",
-    "authenticated_route_manifest_sha256": "66cf3e5f8a2e98e84a076b14ee8cab400f88825f95731c9c88a7d7ed0ead62ed",
-    "identity_provisioning": "synthetic and unverified",
-    "temporal_endpoint": "development-temporal.task31.unprovisioned",
-    "temporal_namespace": "salience-task31-development",
-    "task_queue": "salience-publication-task31-development",
-    "producer_bindings": []
-  },
-  "historical_slice2_documentation_ci_repair_snapshot": {
-    "scope": "Historical Slice2 documentation evidence-lock repair only; no application behavior changed.",
-    "hosted_failure": {
-      "head": "e3245ee5d4a2a6a4949b1dedb42b8a1b04909f65",
-      "short_head": "e3245ee",
-      "run_id": 40551540958,
-      "status": "FAILED",
-      "failed_command": "python3 docs/v4/check.py --self-test",
-      "other_documentation_commands": "PASS; the self-test was the only reported failure"
-    },
-    "root_cause": "The active evidence lock had not been refreshed for the current Slice 2 source tree; the checker correctly rejected changed hashes and newly added application evidence paths.",
-    "application_candidate": "ec12763e38143f52f1af2661e00932158982f11a",
-    "previous_active_lock": {
-      "file_count": 366,
-      "sha256": "472d603c1110a0ebe8082f598b7d02a892e6591a9f6b400c48979321551af674",
-      "application_candidate": "182c4e43d3666a7c21c22d4d8fa3e8c994e6ce7f"
-    },
-    "local_self_test": {
-      "command": "python3 docs/v4/check.py --self-test",
-      "status": "PASS",
-      "requirements": 75,
-      "evidence_files": 376,
-      "inventory_files": 360,
-      "negative_controls": 6
-    },
-    "preserved_application_verifier_log": {
-      "path": "docs/v4/audits/p1-policy-revocation-ec12763-verifier.log",
-      "sha256": "c643740f100210bad8428433db31ecd2852a538b26ad702224cd28c3f5432020"
-    },
-    "repair_commit_ci": "PASS_FOR_EXACT_PUSHED_HEAD_62B5A5E_RUN_40553244096; NEXT_STATUS_ONLY_COMMIT_CI_REQUIRED_AFTER_PUSH",
-    "production_effects_enabled": false,
-    "provider_acceptance": "NOT RUN",
-    "production_acceptance": "NOT RUN",
-    "RG0": "HELD",
-    "RG1": "HELD",
-    "P2": "BLOCKED",
-    "main_merge": "UNMERGED",
-    "verification_commands": [
-      {
-        "command": "python3 docs/v4/test_agenttube_reference.py",
-        "status": "PASS",
-        "passed": 17
-      },
-      {
-        "command": "python3 docs/v4/verify_agenttube_reference.py",
-        "status": "PASS"
-      },
-      {
-        "command": "python3 docs/v4/test_checks.py",
-        "status": "PASS",
-        "passed": 24
-      },
-      {
-        "command": "python3 docs/v4/check.py --self-test",
-        "status": "PASS",
-        "requirements": 75,
-        "evidence_files": 376,
-        "inventory_files": 360,
-        "markdown_files_checked": 109,
-        "html_files_checked": 4,
-        "negative_controls": 6
-      }
-    ],
-    "git_diff_check": "PASS",
-    "audit_artifact_and_handoff_hashes": "PASS",
-    "hosted_success": {
-      "head_commit": "62b5a5e6afc8bd6477bbd14a951166edc97ea683",
-      "short_head": "62b5a5e",
-      "workflow_run_id": 40553244096,
-      "workflow_run_url": "https://github.com/manojvermamv/Salience/actions/runs/40553244096",
-      "event": "push",
-      "workflow": "V4 documentation contract",
-      "created_at": "2026-10-27T17:43:21Z",
-      "updated_at": "2026-10-27T18:02:44Z",
-      "status": "completed",
-      "conclusion": "success",
-      "required_jobs": {
-        "verify": {
-          "job_id": 122362339840,
-          "conclusion": "success",
-          "started_at": "2026-10-27T17:43:24Z",
-          "completed_at": "2026-10-27T17:43:32Z"
-        },
-        "p0-regression": {
-          "job_id": 122362339085,
-          "conclusion": "success",
-          "started_at": "2026-10-27T17:43:23Z",
-          "completed_at": "2026-10-27T18:02:43Z"
-        }
-      },
-      "hosted_suite_summary": {
-        "migration_head": "0046_production_policy_approval_id_immutability",
-        "passed": 908,
-        "skipped": 26,
-        "warnings": 3,
-        "elapsed_seconds": 1082.53
-      },
-      "scope": "Exact pushed documentation/evidence head; no application candidate or production qualification transfer."
-    },
-    "next_status_only_commit_ci": "REQUIRED_AFTER_PUSH; the future run ID cannot be recorded before this status-only commit is pushed.",
-    "record_kind": "historical_slice2_documentation_ci_repair_snapshot",
-    "record_scope": "Historical 2026-10-27 repair at the ec12763 Slice2 snapshot. Its 366- and 376-file lock facts and hosted CI remain bound to that event; the active lock today is the Task22/23 source-db361 lock.",
-    "lock_active_at_historical_event": {
-      "path": "docs/v4/evidence-lock.json",
-      "sha256": "b44978d42ed635c8a8b59f2df2bd988a871c47eff3afd3a770d92290a39a771e",
-      "file_count": 376,
-      "application_paths": 369,
-      "configuration_and_build_context_paths": 7,
-      "new_application_paths": 10,
-      "updated_existing_hashes": 17,
-      "record_scope": "Lock active during the historical ec12763 repair event; not today\u2019s active lock. The current active lock is Task31/32 source 8c31e84c9d71d0043b1ca736d9bc4db05cfeee7d / artifact cc9d55fd67f10f7f8d831e21b9331ecae08cf039."
-    }
-  },
-  "Current release ledger preserves frozen application scope and records exact pushed documentation/evidence CI PASS for 62b5a5e/run 40553244096; next status-only commit CI pending after push; release gates retained": 1,
-  "Historical exact feature-head readback preserved; exact pushed documentation/evidence CI PASS for 62b5a5e/run 40553244096 and next status-only candidate pending recorded separately": 1,
-  "Successor evidence preserves frozen application result and historical review, records exact documentation CI PASS for 62b5a5e/run 40553244096, and marks only the next status-only commit CI pending": 1,
-  "active 417-file exact-hash source lock for Task31/32 source 8c31e84c9d71d0043b1ca736d9bc4db05cfeee7d / artifact cc9d55fd67f10f7f8d831e21b9331ecae08cf039; historical nested locks preserved": 1,
-  "active user-authored project instructions; preserved verbatim": 1,
-  "already current approved Task 6 implementation plan": 1,
-  "current P1 recovery rollback v2 development plan; external qualification remains NOT RUN/HELD": 1,
-  "current Task25 compatibility, Task31 artifact, and Task32 qualification reports; exact evidence scope preserved": 6,
-  "current Task31/32 candidate and documentation navigation; external gates HELD": 1,
-  "current Task31/32 candidate and evidence status; external gates HELD": 1,
-  "current Task31/32 candidate progress; gates HELD": 1,
-  "current Task31/32 exact-candidate progress; external acceptance NOT RUN/HELD": 1,
-  "current Task31/32 final local evidence; external acceptance remains unqualified": 1,
-  "current Task32 exact-candidate local validation; earlier candidate results historical": 1,
-  "current documentation audit; self hash omitted to avoid a recursive digest": 1,
-  "current effects-disabled P1 remaining-production planning artifacts; external qualification remains NOT RUN/HELD": 2,
-  "current external acceptance schema; identities and production values remain unprovisioned": 1,
-  "current initial commit-bound P1/RG0/RG1 audit evidence; COMPLETE_REVIEWED at source 7c1ddcd; 22 rows non-PASS; implementation/target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2 BLOCKED": 1,
-  "current synthetic Task32 acceptance package bound to exact source/artifact; 22 rows NOT RUN; NO_GO/UNCHANGED": 1,
-  "durable local canonical dry creative qualification report": 1,
-  "frozen initial audit/review scope plus current Task30 candidate addendum; external gates HELD": 1,
-  "historical A4 publication qualification with current recovery-hold evidence pointer and exact A4/d031172 rereview scope": 1,
-  "historical Task11 candidate report; superseded as latest local qualification by Task18; external acceptance remains unqualified": 1,
-  "historical Task11 exact-source report; superseded as latest local evidence by Task32": 1,
-  "historical Task12 implementation brief; later local candidate qualified by Task32": 1,
-  "historical Task12 implementation report; later local candidate qualified by Task32": 1,
-  "historical Task13 exact-candidate evidence brief; superseded as latest by Task32": 1,
-  "historical Task13 exact-candidate report; superseded as latest by Task32": 1,
-  "historical Task14 source correction report; later exact candidate qualified by Task32": 1,
-  "historical Task18 exact-candidate qualification and Task19 refresh; superseded as latest by Task32": 1,
-  "historical Task22 development build report; superseded by Task26 final corrected artifact": 1,
-  "historical Task23 exact-candidate qualification; superseded by Task32 authoritative qualification": 1,
-  "historical capture-time documentation/status scope; Task18 latest local candidate is source c23c4cca72021ce6621eaacd66f2bfc23f4cc129 / artifact be6f713b255f6b654b73ae4343db1db5c07e3840; external rows remain NOT RUN and gates HELD": 75,
-  "latest Task31/32 candidate; historical Task25/26/28/29, Task22/23, and earlier qualification records retained": 1,
-  "preserved YouTube-agent reference research": 5,
-  "preserved dated canonical no-send dummy qualification report": 1,
-  "preserved dated design specification": 3,
-  "preserved dated independent item7 qualification report": 6,
-  "preserved dated initial P1/RG0/RG1 subaudit report": 3,
-  "preserved dated legacy brief and scheduled ingress qualification report": 1,
-  "preserved dated legacy intelligence qualification report": 1,
-  "preserved dated original native schedule qualification report": 1,
-  "preserved dated parallel qualification report": 1,
-  "preserved dated preparation plan": 3,
-  "preserved dated preparation report": 3,
-  "preserved dated qualification report": 20,
-  "preserved durable P1 audit/spec review and repair report payload": 10,
-  "preserved historical Slice 2 final local non-live verification report for candidate ec12763; superseded by Task32 for latest local evidence": 1,
-  "preserved historical Task 10 publication recovery-hold evidence and original P0-pinned bytes": 1,
-  "preserved historical Task15 brief; Task18/19 then Task22/23 and later Task25/26/29 superseded its snapshot": 1,
-  "preserved historical architecture visual": 8,
-  "preserved immutable historical snapshot": 62,
-  "preserved immutable historical snapshot; bytes retained verbatim": 1,
-  "preserved original design source or historical diagram": 7,
-  "preserved plugin instructions, references and examples; independent skill scope": 57,
-  "preserved source, archive or coverage manifest": 4,
-  "preserved unscanned P1 policy-routing subaudit payload": 1
+    "producer_bindings": [],
+    "status_at_event": "PASS_LOCAL_DEVELOPMENT_QUALIFICATION; EXTERNAL_ACCEPTANCE_NOT_RUN; PRODUCTION_GATES_HELD",
+    "superseded_by": "Task35 exact local qualification of source 546ac4ed794afc123ea02586a37d4a4457590582 / artifact fe6b3795ce4453beb6c6bbafcc20cd3be91b3b87."
+  }
 }

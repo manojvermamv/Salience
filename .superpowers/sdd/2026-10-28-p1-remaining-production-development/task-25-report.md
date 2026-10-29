@@ -77,3 +77,31 @@ TEST_DATABASE_URL=postgresql://127.0.0.1:1/unused TEST_TEMPORAL_TARGET=127.0.0.1
 ```
 
 A repository search found no other unit tests using `_DatabaseEndpoint`, `_pin()`, or `_plan_async`; the remaining references are integration tests requiring external fixture services and were not run. `git diff --check` passed. Self-review found changes limited to the production endpoint capture/validation/connect options and the readback unit tests. Existing timeout, close-before-cancel, retry, one-call pause/update, and resume-fencing regressions all pass in the complete file. No Docker, build, live endpoint, or external system was used in this fix round.
+
+## Fix round 2 — Clear mixed-host Unix address lists
+
+The second rereview found that omitting `hostaddr` for a selected Unix socket retained the original conninfo's address list. This fix supersedes fix round 1's normalization of a Unix empty address to `None`: the captured endpoint now preserves psycopg's `hostaddr=""`, and the async connect explicitly overrides `hostaddr` for every endpoint.
+
+### RED evidence
+
+Before changing production code, I added a regression that parses the valid original mixed-host conninfo with psycopg's real parser and splitter, runs `_pin()` with driver-shaped `host='/var/run/postgresql'`, `hostaddr=''`, `port=5432`, then parses the async plan's merged options. The original conninfo split into two valid attempts, but the current plan merge retained `hostaddr=,192.0.2.55` after selecting one host and scalar port. The test failed as expected with `could not match 1 host names with 2 hostaddr values`:
+
+```text
+TEST_DATABASE_URL=postgresql://127.0.0.1:1/unused TEST_TEMPORAL_TARGET=127.0.0.1:1 .venv/bin/python -m pytest -p no:cacheprovider tests/unit/test_temporal_schedule_readback.py::test_unix_pin_clears_original_mixed_hostaddr_list -q
+1 failed in 1.00s
+```
+
+### GREEN and compatibility evidence
+
+`_pin()` now retains the psycopg empty address. `_plan_async()` recognizes a slash-prefixed Unix socket only when its address is empty or absent, then passes `hostaddr=""` explicitly to clear any original list. TCP endpoints still require a numeric address; their selected host and numeric address are both passed explicitly. All plan connects now override host, hostaddr, and port together, so no original host/address/port list survives endpoint selection.
+
+The mixed Unix/TCP regression verifies the original two-entry configuration is valid and the merged plan attempt contains only the selected Unix host, empty address, and scalar `5432` port. The existing multi-host TCP parser regression verifies the selected hostname/address/scalar port and retained TLS/application/session options. Direct Unix plan and public describe coverage both assert the explicit empty-address override. TCP absent, empty, and invalid addresses and invalid ports remain fail-closed.
+
+The relevant focused cases passed `14 passed in 0.56s`. The complete serial readback unit file passed:
+
+```text
+TEST_DATABASE_URL=postgresql://127.0.0.1:1/unused TEST_TEMPORAL_TARGET=127.0.0.1:1 .venv/bin/python -m pytest -p no:cacheprovider tests/unit/test_temporal_schedule_readback.py -q
+29 passed in 1.61s
+```
+
+The final diff contains production endpoint validation/connect options and readback unit tests only. Existing DNS avoidance, deadlines, close-before-cancel behavior, retry limits, pause/update one-call behavior, and resume fencing remain covered by the passing full unit file. No docs, evidence, artifacts, build, Docker, full suite, or external systems were touched in this round.
