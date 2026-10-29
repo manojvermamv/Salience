@@ -70,8 +70,6 @@ class TemporalFixtureLegacyScheduleControl(FixtureLegacyScheduleControl):
             row = self._schedule(connection,schedule_id)
             host = connection.info.host
             hostaddr = connection.info.hostaddr
-            if isinstance(host, str) and host.startswith("/") and hostaddr == "":
-                hostaddr = None
             endpoint = _DatabaseEndpoint(
                 host=host,
                 hostaddr=hostaddr,
@@ -96,14 +94,18 @@ class TemporalFixtureLegacyScheduleControl(FixtureLegacyScheduleControl):
             raise RuntimeError("pinned database endpoint required for Temporal plan read")
         if isinstance(port, bool) or not isinstance(port, int) or not 1 <= port <= 65535:
             raise RuntimeError("valid numeric database endpoint port required for Temporal plan read")
-        if hostaddr is None:
-            if not host.startswith("/"):
-                raise RuntimeError("numeric database endpoint address required for Temporal plan read")
+        if host.startswith("/"):
+            if hostaddr not in (None, ""):
+                raise RuntimeError("empty database endpoint address required for Unix socket plan read")
+            connect_hostaddr = ""
         else:
             try:
                 ipaddress.ip_address(hostaddr)
             except (TypeError, ValueError) as error:
-                raise RuntimeError("numeric database endpoint address required for Temporal plan read") from error
+                raise RuntimeError(
+                    "numeric database endpoint address required for Temporal plan read"
+                ) from error
+            connect_hostaddr = hostaddr
 
         owned_connection = None
 
@@ -113,10 +115,9 @@ class TemporalFixtureLegacyScheduleControl(FixtureLegacyScheduleControl):
                 "row_factory": dict_row,
                 "connect_timeout": _PLAN_CONNECT_TIMEOUT_SECONDS,
                 "host": host,
+                "hostaddr": connect_hostaddr,
                 "port": str(port),
             }
-            if hostaddr is not None:
-                connect_options["hostaddr"] = hostaddr
             connection = await psycopg.AsyncConnection.connect(
                 self.database_url,
                 **connect_options,

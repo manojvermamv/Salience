@@ -271,15 +271,91 @@ def _install_pin_connection(monkeypatch, control, row, *, host, hostaddr, port):
     return connection_states
 
 
+@pytest.mark.asyncio
+async def test_unix_pin_clears_original_mixed_hostaddr_list(monkeypatch):
+    import psycopg
+    from psycopg._conninfo_utils import split_attempts
+    from psycopg.conninfo import conninfo_to_dict
+    from psycopg.rows import dict_row
+
+    control, _, _, _, row = _readback_fixture(monkeypatch, [])
+    control.database_url = (
+        "host=/var/run/postgresql,db2.example.test "
+        "hostaddr=,192.0.2.55 port=5432,5433 dbname=salience"
+    )
+    original_params = conninfo_to_dict(control.database_url)
+    original_attempts = split_attempts(original_params)
+    assert len(original_attempts) == 2
+    assert original_attempts[0]["host"] == "/var/run/postgresql"
+    assert original_attempts[0]["hostaddr"] == ""
+    assert original_attempts[0]["port"] == "5432"
+
+    _install_pin_connection(
+        monkeypatch,
+        control,
+        row,
+        host="/var/run/postgresql",
+        hostaddr="",
+        port=5432,
+    )
+    _, _, endpoint = control._pin(row["id"])
+    real_async_plan = temporal_schedule_control.TemporalFixtureLegacyScheduleControl._plan_async.__get__(control)
+    monkeypatch.setattr(control, "_plan_async", real_async_plan)
+
+    class Cursor:
+        async def fetchone(self):
+            return None
+
+    class Connection:
+        async def execute(self, query, params=None):
+            return Cursor()
+
+        async def close(self):
+            return None
+
+    connect_calls = []
+
+    async def connect(cls, conninfo, **kwargs):
+        connect_calls.append((conninfo, kwargs))
+        params = conninfo_to_dict(
+            conninfo, **{key: value for key, value in kwargs.items() if key != "row_factory"}
+        )
+        attempts = split_attempts(params)
+        assert len(attempts) == 1
+        assert attempts[0]["host"] == "/var/run/postgresql"
+        assert attempts[0]["hostaddr"] == ""
+        assert attempts[0]["port"] == "5432"
+        return Connection()
+
+    monkeypatch.setattr(psycopg.AsyncConnection, "connect", classmethod(connect))
+
+    result = await control._plan_async(row, endpoint=endpoint)
+
+    assert result is None
+    assert endpoint.host == "/var/run/postgresql"
+    assert endpoint.hostaddr == ""
+    assert endpoint.port == 5432
+    assert connect_calls == [(
+        control.database_url,
+        {
+            "row_factory": dict_row,
+            "connect_timeout": temporal_schedule_control._PLAN_CONNECT_TIMEOUT_SECONDS,
+            "host": "/var/run/postgresql",
+            "hostaddr": "",
+            "port": "5432",
+        },
+    )]
+
+
 @pytest.mark.parametrize(
     ("host", "hostaddr", "expected_hostaddr", "port"),
     [
         ("db.example.test", "192.0.2.55", "192.0.2.55", 5432),
-        ("/var/run/postgresql", "", None, 5432),
+        ("/var/run/postgresql", "", "", 5432),
         ("db.example.test", "", "", 5433),
     ],
 )
-def test_pin_captures_active_endpoint_and_normalizes_empty_unix_address(
+def test_pin_captures_active_endpoint_and_preserves_empty_unix_address(
     monkeypatch, host, hostaddr, expected_hostaddr, port
 ):
     control, _, _, _, row = _readback_fixture(monkeypatch, [])
@@ -372,6 +448,7 @@ async def test_async_plan_keeps_local_unix_socket_endpoint_without_hostaddr(monk
         "row_factory": dict_row,
         "connect_timeout": temporal_schedule_control._PLAN_CONNECT_TIMEOUT_SECONDS,
         "host": "/var/run/postgresql",
+        "hostaddr": "",
         "port": "5432",
     })]
 
@@ -408,7 +485,7 @@ async def test_async_plan_rejects_invalid_pinned_port_without_logging_conninfo(
     assert "postgresql://" not in caplog.text
 
 
-def test_public_describe_uses_normalized_unix_pin_endpoint(monkeypatch):
+def test_public_describe_clears_unix_pin_address(monkeypatch):
     import psycopg
     from psycopg.rows import dict_row
 
@@ -462,6 +539,7 @@ def test_public_describe_uses_normalized_unix_pin_endpoint(monkeypatch):
         "row_factory": dict_row,
         "connect_timeout": temporal_schedule_control._PLAN_CONNECT_TIMEOUT_SECONDS,
         "host": "/var/run/postgresql",
+        "hostaddr": "",
         "port": "5432",
     })]
     assert plan_calls == [
