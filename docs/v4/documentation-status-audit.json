@@ -75,7 +75,7 @@
     "current Task34/35 exact-candidate local validation; earlier candidate results historical": 1,
     "current_handoff_hashes": {
       ".superpowers/sdd/2026-10-27-p1-production-policy-and-revocation/final-evidence-report.md": "551c40b4d6852ab3ab4f42bc2cd26ffd1a0339fa03a5f7c2c0f0d39814d05307",
-      ".superpowers/sdd/2026-10-28-p1-remaining-production-development/final-evidence-report.md": "72ef2f56f09801891e0ba34fcf880d19535a43c0e790172c35717fa7529807e6",
+      ".superpowers/sdd/2026-10-28-p1-remaining-production-development/final-evidence-report.md": "bf9b9bf5e0356449b6bedcddf97b3858463c2f52742d3a40113a489ee26b163f",
       ".superpowers/sdd/2026-10-28-p1-remaining-production-development/final-review-fix-report.md": "14b4ee16ba0e71c59313104632c939ce3f0d5df3a04568226d1ac0c5b77ae8a4",
       ".superpowers/sdd/2026-10-28-p1-remaining-production-development/planning-report.md": "5ead73f3b32307f59fd4887c353c17616c2024f4d55cb6e3e55a1483e58359a6",
       ".superpowers/sdd/2026-10-28-p1-remaining-production-development/progress.md": "2a1a9251350588f5fbd8ba74dbfc368c12f527af7f14e88395ff58e7e72ffbad",
@@ -2277,7 +2277,7 @@
     },
     {
       "path": ".superpowers/sdd/2026-10-28-p1-remaining-production-development/final-evidence-report.md",
-      "sha256": "72ef2f56f09801891e0ba34fcf880d19535a43c0e790172c35717fa7529807e6",
+      "sha256": "bf9b9bf5e0356449b6bedcddf97b3858463c2f52742d3a40113a489ee26b163f",
       "disposition": "current Task34/35 final local evidence; external acceptance remains unqualified"
     },
     {
@@ -3432,7 +3432,7 @@
     },
     {
       "path": "docs/v4/p1-rg0-rg1-audit-and-spec-review.md",
-      "sha256": "92fe76838a199d4a5ac5750a99a523499481650ba9cda52a536bf1fbbfd0a7e8",
+      "sha256": "7c8484be05457854c20bac34e09d8e8ccf497d087d2d86d5d8a14de555f58b2c",
       "disposition": "frozen initial audit/review scope plus current Task36 candidate addendum; external gates HELD"
     },
     {
@@ -4032,7 +4032,7 @@
   },
   "current_handoff_hashes": {
     ".superpowers/sdd/2026-10-27-p1-production-policy-and-revocation/final-evidence-report.md": "551c40b4d6852ab3ab4f42bc2cd26ffd1a0339fa03a5f7c2c0f0d39814d05307",
-    ".superpowers/sdd/2026-10-28-p1-remaining-production-development/final-evidence-report.md": "72ef2f56f09801891e0ba34fcf880d19535a43c0e790172c35717fa7529807e6",
+    ".superpowers/sdd/2026-10-28-p1-remaining-production-development/final-evidence-report.md": "bf9b9bf5e0356449b6bedcddf97b3858463c2f52742d3a40113a489ee26b163f",
     ".superpowers/sdd/2026-10-28-p1-remaining-production-development/final-review-fix-report.md": "14b4ee16ba0e71c59313104632c939ce3f0d5df3a04568226d1ac0c5b77ae8a4",
     ".superpowers/sdd/2026-10-28-p1-remaining-production-development/planning-report.md": "5ead73f3b32307f59fd4887c353c17616c2024f4d55cb6e3e55a1483e58359a6",
     ".superpowers/sdd/2026-10-28-p1-remaining-production-development/progress.md": "2a1a9251350588f5fbd8ba74dbfc368c12f527af7f14e88395ff58e7e72ffbad",

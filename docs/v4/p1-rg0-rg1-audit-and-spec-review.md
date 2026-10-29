@@ -465,7 +465,7 @@ SHA-256 values bind the current Task30 documentation/evidence handoff after the 
 
 ## Task36 current candidate and gate disposition — 2026-10-29
 
-The active source lock is bound to Task34/35 source `546ac4ed794afc123ea02586a37d4a4457590582` / tree `546ac4ed794afc123ea02586a37d4a4457590582_TREE` and covers 417 paths; its raw SHA-256 is `09100cb7aee864227d78112aa7729a1cded7790d34cc33687c5e2a3732188e55`. The exact Task34 development artifact is `fe6b3795ce4453beb6c6bbafcc20cd3be91b3b87` / tree `124037b25c754751e2447c7d8639800f9f35d238`, directly parented by source and changing only the generated v2 development lock JSON and companion.
+The active source lock is bound to Task34/35 source `546ac4ed794afc123ea02586a37d4a4457590582` / tree `278e2bbf074fdf07b701f87f925c537dd916e118` and covers 417 paths; its raw SHA-256 is `09100cb7aee864227d78112aa7729a1cded7790d34cc33687c5e2a3732188e55`. The exact Task34 development artifact is `fe6b3795ce4453beb6c6bbafcc20cd3be91b3b87` / tree `124037b25c754751e2447c7d8639800f9f35d238`, directly parented by source and changing only the generated v2 development lock JSON and companion.
 
 Task25 fix round 2 explicitly clears the original mixed Unix/TCP `hostaddr` list when a Unix socket is selected, while TCP remains numerically pinned. The complete current readback unit file passed 29 tests. An independent fix-loop rereview of source `546ac4e` against parent `951ee1a00fb31040765140679720bf02ec7e3d5a` returned Spec PASS, Quality PASS — CLEAN, and zero findings; the earlier `8c31e84` review remains scoped to its source. The full review is durably preserved in [the Task25 review record](../../.superpowers/sdd/2026-10-28-p1-remaining-production-development/task-25-review.md): source report SHA-256 `6d26fc9717cfd888eea26025d442dbbf1a42174343d967d85b3dcb92c2131644`, durable record SHA-256 `42de4ad70cc6192d03cd983359d30a8ca631fc52cf2dc6d8c8c2fd6ee0d08b8d`. Eight Markdown hard-break suffixes were normalized to `<br>`; all other review-body bytes are unchanged.
 
@@ -484,7 +484,7 @@ SHA-256 values bind the current Task36 documentation/evidence handoff. The wrapp
 | Path | SHA-256 |
 | --- | --- |
 | `.superpowers/sdd/2026-10-27-p1-production-policy-and-revocation/final-evidence-report.md` | `551c40b4d6852ab3ab4f42bc2cd26ffd1a0339fa03a5f7c2c0f0d39814d05307` |
-| `.superpowers/sdd/2026-10-28-p1-remaining-production-development/final-evidence-report.md` | `72ef2f56f09801891e0ba34fcf880d19535a43c0e790172c35717fa7529807e6` |
+| `.superpowers/sdd/2026-10-28-p1-remaining-production-development/final-evidence-report.md` | `bf9b9bf5e0356449b6bedcddf97b3858463c2f52742d3a40113a489ee26b163f` |
 | `.superpowers/sdd/2026-10-28-p1-remaining-production-development/final-review-fix-report.md` | `14b4ee16ba0e71c59313104632c939ce3f0d5df3a04568226d1ac0c5b77ae8a4` |
 | `.superpowers/sdd/2026-10-28-p1-remaining-production-development/planning-report.md` | `5ead73f3b32307f59fd4887c353c17616c2024f4d55cb6e3e55a1483e58359a6` |
 | `.superpowers/sdd/2026-10-28-p1-remaining-production-development/progress.md` | `2a1a9251350588f5fbd8ba74dbfc368c12f527af7f14e88395ff58e7e72ffbad` |

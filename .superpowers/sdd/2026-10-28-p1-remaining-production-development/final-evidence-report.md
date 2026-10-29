@@ -50,3 +50,8 @@ The table records each captured command, actual/expected exit, exact output byte
 | 14 | `git diff --check; git diff --cached --check` | 0 / 0 | 2026-10-29T19:18:50Z–2026-10-29T19:18:50Z | 0 | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
 
 The exact captured command outputs are retained under `/tmp/salience-task36-checks/`.
+## Fix-loop rereview 3 documentation correction — 2026-10-29
+
+The independent rereview report `/tmp/salience-final-gpt61-rereview3.md` (7712 bytes; SHA-256 `b104fbf594cb9f3a328573460328131c2b3d0cf6190221436b05c1dcdf630285`) returned 0 Critical / 0 Important / 1 Minor. Its sole finding was the Task36 wrapper source-tree placeholder. The wrapper now records the actual source tree `278e2bbf074fdf07b701f87f925c537dd916e118`; this is an evidence identity correction only. The Task25 source review remains PASS / CLEAN with 0 findings as recorded above. This note does not claim a new independent rereview after the documentation correction.
+
+Focused follow-up verification after the correction: `python3 docs/v4/check.py` passed with 75 requirements, 417 evidence files, 360 inventory files, 111 Markdown files, and 4 HTML files; `python3 docs/v4/verify_agenttube_reference.py` passed. The external acceptance checker returned its expected exit 1 with structural status VALID, disposition NO_GO, gate state UNCHANGED, all 22 rows NOT RUN, and package digest `e7dcb0307a7f77c646dff921cce4e097d0d065dd38adc93ef27711227f14d6e7`. A byte-level audit assertion verified 321 non-self audit hashes, a null audit self-hash, and all 53 handoff hashes against current bytes and the rendered wrapper. Both unstaged and staged whitespace checks returned exit 0 with no output after staging.
