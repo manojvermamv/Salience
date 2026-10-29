@@ -12,6 +12,30 @@ from salience.cycles.legacy_schedule_workflow import LEGACY_SCHEDULE_INGRESS
 from salience.cycles.native_schedules import schedule_metadata
 
 
+_PLAN_LOOKUP_QUERY = """SELECT plan.goal_id,plan.workspace_id,plan.actor_id,plan.goal_revision,
+                       plan.task_queue,plan.niche,NULL::uuid AS schedule_id,'intelligence' AS stage,
+                       NULL::uuid AS publication_schedule_id
+                FROM v4_legacy_schedule_plans plan JOIN v4_schedule_cutovers cutover ON cutover.goal_id=plan.goal_id
+                WHERE cutover.legacy_schedule_id=%s AND plan.workspace_id=%s
+                UNION ALL
+                SELECT plan.goal_id,plan.workspace_id,plan.actor_id,plan.goal_revision,plan.task_queue,
+                       NULL::text AS niche,plan.schedule_id,'publication' AS stage,plan.publication_schedule_id
+                FROM v4_legacy_publication_schedule_plans plan
+                JOIN v4_schedule_cutovers cutover ON cutover.goal_id=plan.goal_id
+                WHERE cutover.legacy_schedule_id=%s AND plan.workspace_id=%s"""
+_PLAN_CONNECT_TIMEOUT_SECONDS = 3
+_PLAN_STATEMENT_TIMEOUT_SECONDS = 3
+_PLAN_STATEMENT_TIMEOUT_COMMAND = "SET LOCAL statement_timeout='3s'"
+_PLAN_IO_BOUND_SECONDS = _PLAN_CONNECT_TIMEOUT_SECONDS + _PLAN_STATEMENT_TIMEOUT_SECONDS
+_TEMPORAL_DESCRIBE_TIMEOUT_SECONDS = 2
+_TEMPORAL_DESCRIBE_ATTEMPTS = 2
+_TEMPORAL_DESCRIBE_RETRY_DELAY_SECONDS = 0.05
+_TEMPORAL_UPDATE_TIMEOUT_SECONDS = 2
+_DESCRIBE_OPERATION_TIMEOUT_SECONDS = 11
+_PAUSE_OPERATION_TIMEOUT_SECONDS = 25
+_RESUME_OPERATION_TIMEOUT_SECONDS = 27
+
+
 class TemporalFixtureLegacyScheduleControl(FixtureLegacyScheduleControl):
     supports_temporal = True
     def __init__(self,database_url,*,workspace_id,temporal_target,task_queue):
@@ -37,20 +61,40 @@ class TemporalFixtureLegacyScheduleControl(FixtureLegacyScheduleControl):
     def _plan(self, row, *, required=False):
         import psycopg
         from psycopg.rows import dict_row
-        with psycopg.connect(self.database_url, row_factory=dict_row, connect_timeout=3) as connection:
-            connection.execute("SET LOCAL statement_timeout='3s'")
-            plan = connection.execute("""SELECT plan.goal_id,plan.workspace_id,plan.actor_id,plan.goal_revision,
-                       plan.task_queue,plan.niche,NULL::uuid AS schedule_id,'intelligence' AS stage,
-                       NULL::uuid AS publication_schedule_id
-                FROM v4_legacy_schedule_plans plan JOIN v4_schedule_cutovers cutover ON cutover.goal_id=plan.goal_id
-                WHERE cutover.legacy_schedule_id=%s AND plan.workspace_id=%s
-                UNION ALL
-                SELECT plan.goal_id,plan.workspace_id,plan.actor_id,plan.goal_revision,plan.task_queue,
-                       NULL::text AS niche,plan.schedule_id,'publication' AS stage,plan.publication_schedule_id
-                FROM v4_legacy_publication_schedule_plans plan
-                JOIN v4_schedule_cutovers cutover ON cutover.goal_id=plan.goal_id
-                WHERE cutover.legacy_schedule_id=%s AND plan.workspace_id=%s""",
-                (row["id"], self.workspace_id, row["id"], self.workspace_id)).fetchone()
+        with psycopg.connect(
+            self.database_url,
+            row_factory=dict_row,
+            connect_timeout=_PLAN_CONNECT_TIMEOUT_SECONDS,
+        ) as connection:
+            connection.execute(_PLAN_STATEMENT_TIMEOUT_COMMAND)
+            plan = connection.execute(
+                _PLAN_LOOKUP_QUERY,
+                (row["id"], self.workspace_id, row["id"], self.workspace_id),
+            ).fetchone()
+        return self._validate_plan(row, plan, required=required)
+
+    async def _plan_async(self, row, *, required=False):
+        import psycopg
+        from psycopg.rows import dict_row
+        connection = await psycopg.AsyncConnection.connect(
+            self.database_url,
+            row_factory=dict_row,
+            connect_timeout=_PLAN_CONNECT_TIMEOUT_SECONDS,
+        )
+        try:
+            await connection.execute(_PLAN_STATEMENT_TIMEOUT_COMMAND)
+            cursor = await connection.execute(
+                _PLAN_LOOKUP_QUERY,
+                (row["id"], self.workspace_id, row["id"], self.workspace_id),
+            )
+            plan = await cursor.fetchone()
+        finally:
+            # AsyncConnection.close() finishes the libpq handle without awaiting
+            # the server, so cancellation never waits for a blocking executor.
+            await connection.close()
+        return self._validate_plan(row, plan, required=required)
+
+    def _validate_plan(self, row, plan, *, required=False):
         if plan and plan["task_queue"] != self.task_queue:
             raise PermissionError("original schedule worker route required")
         if row.get("native_publication_source") and plan and (
@@ -77,14 +121,17 @@ class TemporalFixtureLegacyScheduleControl(FixtureLegacyScheduleControl):
 
     async def _verified(self,client,handle,row,*,allow_running=False,description=None):
         if description is None:
-            for attempt in range(2):
+            for attempt in range(_TEMPORAL_DESCRIBE_ATTEMPTS):
                 try:
-                    description = await handle.describe(rpc_timeout=timedelta(seconds=2))
+                    description = await handle.describe(
+                        rpc_timeout=timedelta(seconds=_TEMPORAL_DESCRIBE_TIMEOUT_SECONDS)
+                    )
                     break
                 except RPCError as error:
-                    if error.status != RPCStatusCode.DEADLINE_EXCEEDED or attempt == 1:
+                    if (error.status != RPCStatusCode.DEADLINE_EXCEEDED
+                            or attempt == _TEMPORAL_DESCRIBE_ATTEMPTS - 1):
                         raise
-                    await asyncio.sleep(0.05)
+                    await asyncio.sleep(_TEMPORAL_DESCRIBE_RETRY_DELAY_SECONDS)
         action = description.schedule.action
         original_workflow = "GovernedPublicationWorkflow" if row.get("native_publication_source") else "IntelligenceLoopWorkflow"
         if not isinstance(action,ScheduleActionStartWorkflow) or action.workflow not in {original_workflow, LEGACY_SCHEDULE_INGRESS} or action.task_queue != self.task_queue or len(action.args)!=1:
@@ -96,8 +143,8 @@ class TemporalFixtureLegacyScheduleControl(FixtureLegacyScheduleControl):
             argument = (await client.data_converter.decode([argument.payload],[dict]))[0]
         elif isinstance(argument,Payload):
             argument = (await client.data_converter.decode([argument],[dict]))[0]
-        plan = await asyncio.to_thread(
-            self._plan, row, required=action.workflow == LEGACY_SCHEDULE_INGRESS
+        plan = await self._plan_async(
+            row, required=action.workflow == LEGACY_SCHEDULE_INGRESS
         )
         if row.get("native_publication_source") and plan and plan["stage"] != "publication":
             raise PermissionError("native publication schedule requires publication-stage binding")
@@ -131,8 +178,8 @@ class TemporalFixtureLegacyScheduleControl(FixtureLegacyScheduleControl):
         return description
 
     async def _describe(self,row,remote_id):
-        # Leave room for two bounded describe RPCs and connection overhead.
-        async with asyncio.timeout(5):
+        # 6s plan IO + 4s for two describe RPCs + retry delay + connection margin.
+        async with asyncio.timeout(_DESCRIBE_OPERATION_TIMEOUT_SECONDS):
             client = await Client.connect(self.temporal_target)
             description = await self._verified(client,client.get_schedule_handle(remote_id),row)
             return description
@@ -157,13 +204,16 @@ class TemporalFixtureLegacyScheduleControl(FixtureLegacyScheduleControl):
         return result
 
     async def _pause(self,row,remote_id):
-        # This encloses two verified reads and one single-attempt pause RPC.
-        async with asyncio.timeout(11):
+        # Two 10.05s verified reads + one 2s pause RPC + 2.9s overhead margin.
+        async with asyncio.timeout(_PAUSE_OPERATION_TIMEOUT_SECONDS):
             client = await Client.connect(self.temporal_target)
             handle = client.get_schedule_handle(remote_id)
             await self._verified(client,handle,row,allow_running=True)
             try:
-                await handle.pause(note="V4 no-effects fixture cutover",rpc_timeout=timedelta(seconds=2))
+                await handle.pause(
+                    note="V4 no-effects fixture cutover",
+                    rpc_timeout=timedelta(seconds=_TEMPORAL_UPDATE_TIMEOUT_SECONDS),
+                )
             except TimeoutError:
                 pass
             description = await self._verified(client,handle,row)
@@ -176,11 +226,12 @@ class TemporalFixtureLegacyScheduleControl(FixtureLegacyScheduleControl):
         super().pause(schedule_id)
 
     async def _resume(self,row,remote_id,after_slot):
-        # The update remains single-attempt; the final readback can use two RPCs.
-        async with asyncio.timeout(7):
+        # Direct plan + one updater plan + final verified plan/read + one update
+        # RPC fit in 24.05s; this allows 2.95s overhead and caps SDK retries.
+        async with asyncio.timeout(_RESUME_OPERATION_TIMEOUT_SECONDS):
             client = await Client.connect(self.temporal_target)
             handle = client.get_schedule_handle(remote_id)
-            plan = await asyncio.to_thread(self._plan, row, required=True)
+            plan = await self._plan_async(row, required=True)
             async def update(argument):
                 await self._verified(client, handle, row, description=argument.description)
                 schedule = argument.description.schedule
@@ -193,7 +244,10 @@ class TemporalFixtureLegacyScheduleControl(FixtureLegacyScheduleControl):
                 schedule.state.paused = False
                 schedule.state.note = "V4 no-effects rollback watermark:"+after_slot.isoformat()
                 return ScheduleUpdate(schedule=schedule)
-            await handle.update(update,rpc_timeout=timedelta(seconds=2))
+            await handle.update(
+                update,
+                rpc_timeout=timedelta(seconds=_TEMPORAL_UPDATE_TIMEOUT_SECONDS),
+            )
             description = await self._verified(client,handle,row)
             if description.schedule.state.paused or description.schedule.spec.start_at <= after_slot:
                 raise ValueError("Temporal rollback watermark readback required")
