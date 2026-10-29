@@ -1222,7 +1222,7 @@
       }
     }
   ],
-  "review_status": "PASS_FIXTURE_ONLY_SLICE2_EC12763_QUALIFICATION; HISTORICAL_0043_182C4E4_796_17_3; HISTORICAL_REVIEW_AND_CI_AT_6F5EDC7; DOCUMENTATION_CI_PASS_FOR_62B5A5E_RUN_40553244096; NEXT_STATUS_ONLY_COMMIT_CI_REQUIRED_AFTER_PUSH; PRODUCTION_RELEASE_HELD.; LATEST_TASK29_LOCAL_DEVELOPMENT_QUALIFICATION; EXTERNAL_ACCEPTANCE_NOT_RUN; PRODUCTION_RELEASE_HELD",
+  "review_status": "PASS_FIXTURE_ONLY_SLICE2_EC12763_QUALIFICATION; HISTORICAL_0043_182C4E4_796_17_3; HISTORICAL_REVIEW_AND_CI_AT_6F5EDC7; DOCUMENTATION_CI_PASS_FOR_62B5A5E_RUN_40553244096; NEXT_STATUS_ONLY_COMMIT_CI_REQUIRED_AFTER_PUSH; PRODUCTION_RELEASE_HELD.; LATEST_TASK31_32_LOCAL_DEVELOPMENT_QUALIFICATION; EXTERNAL_ACCEPTANCE_NOT_RUN; PRODUCTION_RELEASE_HELD",
   "production_effects_enabled": false,
   "RG0": "HELD",
   "RG1": "HELD",
@@ -1407,7 +1407,7 @@
     "source_files": 316,
     "status": "PASS independent implemented-fixture qualification; RG0/RG1 HELD"
   },
-  "qualified_application_commit_scope": "The legacy qualified_application_commit alias remains the historical Slice 2 fixture qualification at ec12763, migration 0046, Phase 9 gate 60, and full non-live 908/26/3. Task18 and Task22/23 are retained as historical local development candidates. The latest Task25/26/29 local development candidate is recorded under latest_local_candidate with source cf070328d035f9010b760431173845c6afdfedee and artifact 33cac5cffff973e9cba5e03be6b493065e5f817d. External acceptance remains NOT RUN; gates remain held.",
+  "qualified_application_commit_scope": "The legacy qualified_application_commit alias remains the historical Slice 2 fixture qualification at ec12763, migration 0046, Phase 9 gate 60, and full non-live 908/26/3. Task18 and Task22/23 are retained as historical local development candidates. The current Task31/32 local development candidate is recorded under latest_local_candidate with source 8c31e84c9d71d0043b1ca736d9bc4db05cfeee7d / tree 8118c869150624292d741847e77c75c60992a61a and artifact cc9d55fd67f10f7f8d831e21b9331ecae08cf039 / tree c7d22a3df59356274aaef342baed68d44b42d64b; Task25/26/28/29 remains preserved under historical_task25_task26_task28_task29_candidate. External acceptance remains NOT RUN; gates remain held.",
   "historical_parallel_qualification": {
     "evidence": "docs/v4/parallel-agents-evidence.json",
     "full_non_live_tests": 540,
@@ -1416,7 +1416,7 @@
     "status": "PASS root-reviewed bounded parallel-agent local extension; historical item7 independent review retained; RG0/RG1/RG5 HELD",
     "qualified_application_commit": "2653d2ecb3f0d5bb8ea6560de274137dd6032a96"
   },
-  "current_independent_review_scope": "Historical GPT-6.1/GPT-5.6 whole-branch review and Actions run 38592066455 remain scoped to their recorded feature head; the initial commit-bound audit and five-spec design review remain COMPLETE_REVIEWED for source 7c1ddcda280b510048ad61106c406171edd64f18 and environment 18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436. Those review/CI results do not cover current Task25/26/29 local candidate source cf070328d035f9010b760431173845c6afdfedee / artifact 33cac5cffff973e9cba5e03be6b493065e5f817d, or this documentation refresh. Task25 received a separate clean review with zero findings; no independent whole-change review or exact-head hosted CI is asserted for this documentation commit. Production gates remain held.",
+  "current_independent_review_scope": "Historical GPT-6.1/GPT-5.6 whole-branch review and Actions run 38592066455 remain scoped to their recorded feature head; the initial commit-bound audit and five-spec design review remain COMPLETE_REVIEWED for source 7c1ddcda280b510048ad61106c406171edd64f18 and environment 18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436. Those review/CI results do not cover the current Task31/32 local candidate source 8c31e84c9d71d0043b1ca736d9bc4db05cfeee7d / artifact cc9d55fd67f10f7f8d831e21b9331ecae08cf039, or this documentation refresh. Task25 received a separate clean review with zero findings; no independent whole-change review or exact-head hosted CI is asserted for this documentation commit. Production gates remain held.",
   "historical_legacy_intelligence_qualification": {
     "evidence": "docs/v4/legacy-dispatch-evidence.json",
     "full_non_live_tests": 556,
@@ -2425,7 +2425,7 @@
   },
   "current_qualification": {
     "record_kind": "historical_slice2_fixture_qualification",
-    "status": "HISTORICAL_PASS_FIXTURE_ONLY_SLICE2_EC12763; SUPERSEDED_AS_LATEST_LOCAL_CANDIDATE_BY_TASK29; PRODUCTION_RELEASE_HELD",
+    "status": "HISTORICAL_PASS_FIXTURE_ONLY_SLICE2_EC12763; SUPERSEDED_AS_LATEST_LOCAL_CANDIDATE_BY_TASK32; PRODUCTION_RELEASE_HELD",
     "application_commit": "ec12763e38143f52f1af2661e00932158982f11a",
     "qualified_application_commit": "ec12763e38143f52f1af2661e00932158982f11a",
     "application_commit_source": "SOURCE_COMMIT in the SHA-256-bound sanitized final verifier log.",
@@ -2493,13 +2493,13 @@
       "warnings": 3,
       "elapsed_seconds": 1082.53
     },
-    "scope": "Historical hosted documentation/evidence CI for exact pushed head 62b5a5e6afc8bd6477bbd14a951166edc97ea683 (run 40553244096); it does not validate the current Task30 documentation commit or the Task25/26/29 application candidate.",
+    "scope": "Historical hosted documentation/evidence CI for exact pushed head 62b5a5e6afc8bd6477bbd14a951166edc97ea683 (run 40553244096); it does not validate the current Task33 documentation update or the current Task31/32 application candidate.",
     "next_status_only_commit_ci": "REQUIRED_AFTER_PUSH",
     "record_kind": "historical_documentation_ci"
   },
   "task18_local_development_candidate": {
     "record_kind": "historical_local_development_candidate",
-    "status": "HISTORICAL_PASS_LOCAL_DEVELOPMENT_QUALIFICATION; SUPERSEDED_AS_LATEST_BY_TASK29; EXTERNAL_ACCEPTANCE_NOT_RUN; PRODUCTION_GATES_HELD",
+    "status": "HISTORICAL_PASS_LOCAL_DEVELOPMENT_QUALIFICATION; SUPERSEDED_AS_LATEST_BY_TASK32; EXTERNAL_ACCEPTANCE_NOT_RUN; PRODUCTION_GATES_HELD",
     "source_commit": "c23c4cca72021ce6621eaacd66f2bfc23f4cc129",
     "source_tree": "d587cda6011bb0b974346353cec7a4856fbaf778",
     "artifact_commit": "be6f713b255f6b654b73ae4343db1db5c07e3840",
@@ -2806,7 +2806,7 @@
   "historical_task22_task23_local_candidate": {
     "record_kind": "historical_task22_task23_local_candidate",
     "task": "Task22 build / Task23 exact-candidate qualification (historical)",
-    "status": "HISTORICAL_PASS_LOCAL_DEVELOPMENT_QUALIFICATION; SUPERSEDED_BY_TASK29; EXTERNAL_ACCEPTANCE_NOT_RUN; PRODUCTION_GATES_HELD",
+    "status": "HISTORICAL_PASS_LOCAL_DEVELOPMENT_QUALIFICATION; SUPERSEDED_AS_LATEST_BY_TASK32; EXTERNAL_ACCEPTANCE_NOT_RUN; PRODUCTION_GATES_HELD",
     "source_commit": "db3613482ac78cd708f6aa62e64854626ba7a906",
     "source_tree": "f6ed4a172065985dd13b92994cb781318e0960f9",
     "artifact_commit": "c1c78dd25e467d0ae48e9c949de6aeb555875ea8",
@@ -2898,9 +2898,9 @@
       ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-23-report.md"
     ],
     "superseded_by": {
-      "task": "Task25/26/29",
-      "source_commit": "cf070328d035f9010b760431173845c6afdfedee",
-      "artifact_commit": "33cac5cffff973e9cba5e03be6b493065e5f817d"
+      "task": "Task31/32",
+      "source_commit": "8c31e84c9d71d0043b1ca736d9bc4db05cfeee7d",
+      "artifact_commit": "cc9d55fd67f10f7f8d831e21b9331ecae08cf039"
     }
   },
   "historical_task25_task26_task28_task29_candidate": {

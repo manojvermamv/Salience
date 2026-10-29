@@ -516,7 +516,7 @@ SHA-256 values bind the current Task33 documentation/evidence handoff after this
 | `docs/v4/evidence-lock.json` | `6797c12e18d74f4fea5992c031db76ecef0fd4456e17d41bfed5194f17509e6a` |
 | `docs/v4/p0-release.json` | `0a0f1969e0497cbec535fb3f854b51cef870a4746eb92f8a67a127566dc9ff75` |
 | `docs/v4/p1-production-policy-revocation-evidence.json` | `e5a5a3d424157479cacaf00eae39614a5abe12ecdb04ac38af0c95692dbd982b` |
-| `docs/v4/p1-qualification-matrix.json` | `e014578e2fe4d28fd68c84d1e0667567c2f75acef9c35953a91c89b768de080e` |
+| `docs/v4/p1-qualification-matrix.json` | `55e64b0295e6db889d51adb4bf2c7e197dcf45b100bb872bc59a65f62fb14914` |
 | `docs/v4/p1-remaining-production-development-evidence.json` | `3f78511a73a67e568cdc86c2058bc0da12f3f99acaeed24aa75bd355dce33faa` |
 | `docs/v4/p1-rg0-rg1-external-acceptance.schema.json` | `0086353075c823f92f78b2d4f5e48005e62660537b70c95864b5f4ed5e2c945c` |
 | `docs/v4/p1-rg0-rg1-initial-gap-audit.json` | `33fe485384dcf60e36df8d48ace6394c80bce0d1bd9e6b9b39c7a905d65676b1` |
