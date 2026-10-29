@@ -1,7 +1,7 @@
 # Task 14 report — final review corrections
 
 Date: 2026-10-29
-Status: the initial four source corrections and the subsequent recipient-tier recovery correction are implemented and focused verification complete; exact-candidate artifact/evidence refresh remains controller-owned.
+Status: the initial four source corrections and the two subsequent recipient-tier recovery corrections are implemented and focused verification complete; exact-candidate artifact/evidence refresh remains controller-owned.
 
 ## Source changes
 
@@ -55,3 +55,19 @@ Task 13's artifact, synthetic acceptance package, and active evidence lock remai
 - Focused red command: `PYTHONPATH=src TEST_DATABASE_URL=postgresql://salience:salience@172.20.0.2:5432/salience TEST_TEMPORAL_TARGET=172.20.0.3:7233 .venv/bin/pytest -q tests/integration/test_p1_production_recovery.py -k 'preserves_committed_on_call_tier_when_owner_returns or changes_owner_tier_only_at_authorized_retry_boundary or holds_instead_of_changing_pending_owner_attempt_tier or rejects_invalid_persisted_retry_evidence'` — **4 failed, 5 passed, 63 deselected**. The failures reproduced owner-to-on-call in-place resend, on-call-to-owner reauthorization, missing final-attempt hold, and acceptance of an unbacked recorded-tier transition.
 - Focused green command with the same selector: **9 passed, 63 deselected** in 63.07 seconds. Adjacent claim-TTL, receipt reconciliation, bounded retry, final-hold, owner-unavailable, and retry-corruption selectors: **12 passed, 60 deselected** in 83.66 seconds. Existing delivery/acknowledgment/on-call escalation controls: **3 passed, 69 deselected** in 22.21 seconds. Python compileall and `git diff --check` passed.
 - No broad/full suite, artifact/evidence-lock rebuild, live target, push, or merge was performed. Task 13 artifacts remain historical; a new exact candidate is controller-owned. Production remains disabled; the synthetic package is `NO_GO`; RG0/full RG1 are `HELD`; P2 is `BLOCKED`; external qualification is `NOT RUN`.
+
+## Follow-up — outstanding retry recipient tier — 2026-10-29
+
+- Source/test commit: `eb3e3382f14f0ff879ca240039a500a7f1212d96`; tree `7d64f04956b53c3d2a8a50741165bfd99c3e95f7`.
+- Retry-history validation now returns the exact request recorded in an outstanding latest retry event when the next attempt has not yet been appended. The no-pending-attempt path uses that request for authorization, owner checks, attempt evidence, and delivery. An outstanding on-call retry remains on-call if the owner returns. Owner-tier retries still use the owner when current; if unavailable after that retry request is persisted, recovery holds rather than changing that attempt to on-call. Owner-unavailable evidence that contradicts an owner-tier retry and retry-row tier drift fail closed.
+- Regression setup commits owner attempt 1, makes the owner unavailable, persists an owner-to-on-call retry, and crashes before attempt 2. After re-enabling the owner, recovery authorizes and sends attempt 2 on-call with the same provider key and exact event chain. A second regression mutates the outstanding retry tier to owner and recomputes its payload digest; recovery rejects it before another send.
+- RED: the two new persisted-tier/corruption regressions produced **2 failed, 72 deselected** at the intended owner-tier authorization and unbacked retry-history assertions. The outstanding owner-retry/unavailable hold regression produced **1 failed, 74 deselected** when the prior fallback behavior was restored for the red check.
+- GREEN command and result:
+
+  ```text
+  PYTHONPATH=src TEST_DATABASE_URL=postgresql://salience:salience@172.20.0.2:5432/salience TEST_TEMPORAL_TARGET=172.20.0.3:7233 .venv/bin/pytest -q tests/integration/test_p1_production_recovery.py -k 'uses_persisted_on_call_tier_after_retry_commit or rejects_corrupt_outstanding_retry_tier or holds_when_outstanding_owner_retry_is_unavailable or preserves_committed_on_call_tier_when_owner_returns or changes_owner_tier_only_at_authorized_retry_boundary or holds_instead_of_changing_pending_owner_attempt_tier or after_attempt_commit_waits_for_claim_ttl_and_reuses_attempt or reconciles_receipt_that_appears_during_claim_ttl or waits_for_claim_ttl_when_latest_retry_record_is_missing or after_attempt_crash_preserves_bounded_retry_schedule or holds_after_unavailable_final_attempt_reuses_committed_attempt or rechecks_unavailable_owner_after_committed_attempt_claim_ttl or rejects_invalid_persisted_retry_evidence or waits_for_persisted_retry_at_before_sending'
+  20 passed, 55 deselected in 140.52s
+  ```
+
+  Existing delivery/acknowledgment/escalation controls: **3 passed, 72 deselected** in 22.49 seconds. Touched-file compileall and `git diff --check` passed. No broad/full suite or live-system checks were run.
+- Task 13 artifact, synthetic package, and active evidence lock remain historical. No artifact rebuild, push, or merge occurred. Production effects remain disabled; package remains `NO_GO`; RG0/full RG1 remain `HELD`; P2 remains `BLOCKED`; external qualification remains `NOT RUN`.
