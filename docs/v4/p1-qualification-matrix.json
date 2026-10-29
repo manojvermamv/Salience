@@ -1222,7 +1222,7 @@
       }
     }
   ],
-  "review_status": "PASS_FIXTURE_ONLY_SLICE2_EC12763_QUALIFICATION; HISTORICAL_0043_182C4E4_796_17_3; HISTORICAL_REVIEW_AND_CI_AT_6F5EDC7; DOCUMENTATION_CI_PASS_FOR_62B5A5E_RUN_40553244096; NEXT_STATUS_ONLY_COMMIT_CI_REQUIRED_AFTER_PUSH; PRODUCTION_RELEASE_HELD.",
+  "review_status": "PASS_FIXTURE_ONLY_SLICE2_EC12763_QUALIFICATION; HISTORICAL_0043_182C4E4_796_17_3; HISTORICAL_REVIEW_AND_CI_AT_6F5EDC7; DOCUMENTATION_CI_PASS_FOR_62B5A5E_RUN_40553244096; NEXT_STATUS_ONLY_COMMIT_CI_REQUIRED_AFTER_PUSH; PRODUCTION_RELEASE_HELD.; LATEST_TASK23_LOCAL_DEVELOPMENT_QUALIFICATION; EXTERNAL_ACCEPTANCE_NOT_RUN; PRODUCTION_RELEASE_HELD",
   "production_effects_enabled": false,
   "RG0": "HELD",
   "RG1": "HELD",
@@ -1407,7 +1407,7 @@
     "source_files": 316,
     "status": "PASS independent implemented-fixture qualification; RG0/RG1 HELD"
   },
-  "qualified_application_commit_scope": "Historical Slice 2 local fixture qualification remains bound to ec12763, migration 0046, Phase 9 gate 60, full non-live 908/26/3, and verifier log c643740f... . It is not the latest candidate. Task18 local development qualification is separately recorded in task18_local_development_candidate at source c23c4cca/tree d587cda and artifact be6f713/tree 419a334. External acceptance remains NOT RUN; gates remain held.",
+  "qualified_application_commit_scope": "The legacy qualified_application_commit alias remains the historical Slice 2 fixture qualification at ec12763, migration 0046, Phase 9 gate 60, and full non-live 908/26/3. Task18 is preserved as a historical local development candidate. The latest local development candidate is Task22/23, recorded under latest_local_candidate with source db3613482ac78cd708f6aa62e64854626ba7a906 and artifact c1c78dd25e467d0ae48e9c949de6aeb555875ea8. External acceptance remains NOT RUN; gates remain held.",
   "historical_parallel_qualification": {
     "evidence": "docs/v4/parallel-agents-evidence.json",
     "full_non_live_tests": 540,
@@ -1416,7 +1416,7 @@
     "status": "PASS root-reviewed bounded parallel-agent local extension; historical item7 independent review retained; RG0/RG1/RG5 HELD",
     "qualified_application_commit": "2653d2ecb3f0d5bb8ea6560de274137dd6032a96"
   },
-  "current_independent_review_scope": "Historical GPT-6.1/GPT-5.6 whole-branch review and Actions run 38592066455 remain scoped to pushed feature head 6f5edc77edbfe189e46de4254c2fdb21c5652bce; the initial commit-bound audit and five-spec design review remain COMPLETE_REVIEWED for source 7c1ddcda280b510048ad61106c406171edd64f18 and environment 18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436. Those review/CI results do not cover the historical Slice 2 candidate ec12763 or the newer Task18 candidate. Pushed documentation/evidence head 62b5a5e passed run 40553244096; Task19 documentation commit requires its own exact-head CI after publication. Current local development candidate is separately recorded under task18_local_development_candidate. Production gates remain held.",
+  "current_independent_review_scope": "Historical GPT-6.1/GPT-5.6 whole-branch review and Actions run 38592066455 remain scoped to pushed feature head 6f5edc77edbfe189e46de4254c2fdb21c5652bce; the initial commit-bound audit and five-spec design review remain COMPLETE_REVIEWED for source 7c1ddcda280b510048ad61106c406171edd64f18 and environment 18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436. Those review/CI results do not cover the historical Slice 2 candidate ec12763 or the Task22/23 candidate. Pushed documentation/evidence head 62b5a5e passed run 40553244096; Task24 documentation changes require their own exact-head CI after publication. The current local development candidate is recorded under latest_local_candidate. Production gates remain held.",
   "historical_legacy_intelligence_qualification": {
     "evidence": "docs/v4/legacy-dispatch-evidence.json",
     "full_non_live_tests": 556,
@@ -2425,7 +2425,7 @@
   },
   "current_qualification": {
     "record_kind": "historical_slice2_fixture_qualification",
-    "status": "HISTORICAL_PASS_FIXTURE_ONLY_SLICE2_EC12763; SUPERSEDED_AS_LATEST_LOCAL_CANDIDATE_BY_TASK18; PRODUCTION_RELEASE_HELD",
+    "status": "HISTORICAL_PASS_FIXTURE_ONLY_SLICE2_EC12763; SUPERSEDED_AS_LATEST_LOCAL_CANDIDATE_BY_TASK23; PRODUCTION_RELEASE_HELD",
     "application_commit": "ec12763e38143f52f1af2661e00932158982f11a",
     "qualified_application_commit": "ec12763e38143f52f1af2661e00932158982f11a",
     "application_commit_source": "SOURCE_COMMIT in the SHA-256-bound sanitized final verifier log.",
@@ -2458,9 +2458,9 @@
       "authority": "Navigation only; production and phase release gates remain unchanged."
     },
     "record_scope": "Historical Slice 2 candidate snapshot; retain candidate-bound counts and docs CI details for traceability.",
-    "latest_local_candidate_record": "task18_local_development_candidate"
+    "latest_local_candidate_record": "latest_local_candidate"
   },
-  "source_lock_scope": "Top-level source_lock_sha256 is retained for the historical 0043 artifact qualification at application 182c4e4; it is not the source lock for Task18, which is recorded in docs/v4/evidence-lock.json.",
+  "source_lock_scope": "Top-level source_lock_sha256 remains the historical 0043 artifact qualification lock and is not active today. The active exact source lock is docs/v4/evidence-lock.json for Task22/23 source db3613482ac78cd708f6aa62e64854626ba7a906; historical nested locks remain preserved.",
   "current_documentation_ci": {
     "head_commit": "62b5a5e6afc8bd6477bbd14a951166edc97ea683",
     "short_head": "62b5a5e",
@@ -2493,12 +2493,13 @@
       "warnings": 3,
       "elapsed_seconds": 1082.53
     },
-    "scope": "Exact pushed documentation/evidence head; no application candidate or production qualification transfer.",
-    "next_status_only_commit_ci": "REQUIRED_AFTER_PUSH"
+    "scope": "Historical hosted documentation/evidence CI for exact pushed head 62b5a5e6afc8bd6477bbd14a951166edc97ea683 (run 40553244096); it does not validate the current Task24 documentation commit or the Task22/23 application candidate.",
+    "next_status_only_commit_ci": "REQUIRED_AFTER_PUSH",
+    "record_kind": "historical_documentation_ci"
   },
   "task18_local_development_candidate": {
-    "record_kind": "current_local_development_candidate",
-    "status": "PASS_LOCAL_DEVELOPMENT_QUALIFICATION; EXTERNAL_ACCEPTANCE_NOT_RUN; PRODUCTION_GATES_HELD",
+    "record_kind": "historical_local_development_candidate",
+    "status": "HISTORICAL_PASS_LOCAL_DEVELOPMENT_QUALIFICATION; SUPERSEDED_AS_LATEST_BY_TASK23; EXTERNAL_ACCEPTANCE_NOT_RUN; PRODUCTION_GATES_HELD",
     "source_commit": "c23c4cca72021ce6621eaacd66f2bfc23f4cc129",
     "source_tree": "d587cda6011bb0b974346353cec7a4856fbaf778",
     "artifact_commit": "be6f713b255f6b654b73ae4343db1db5c07e3840",
@@ -2565,7 +2566,103 @@
       "production_trust": "UNPROVISIONED"
     },
     "scope": "Local development evidence only; no external qualification or production trust claimed.",
-    "evidence_report": ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-15-report.md"
+    "evidence_report": ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-15-report.md",
+    "superseded_by": "latest_local_candidate"
   },
-  "current_qualification_successor": "task18_local_development_candidate"
+  "current_qualification_successor": "latest_local_candidate",
+  "latest_local_candidate": {
+    "record_kind": "latest_local_development_candidate",
+    "task": "Task22 build / Task23 exact-candidate qualification",
+    "status": "PASS_LOCAL_DEVELOPMENT_QUALIFICATION; EXTERNAL_ACCEPTANCE_NOT_RUN; PRODUCTION_GATES_HELD",
+    "source_commit": "db3613482ac78cd708f6aa62e64854626ba7a906",
+    "source_tree": "f6ed4a172065985dd13b92994cb781318e0960f9",
+    "artifact_commit": "c1c78dd25e467d0ae48e9c949de6aeb555875ea8",
+    "artifact_tree": "7212ba6537bcdde0196c55152ac0814c59787073",
+    "artifact_parent_is_source": true,
+    "artifact_changed_files": [
+      "deployment/v4/publication-worker-launch-lock-v2-development.json",
+      "deployment/v4/publication-worker-launch-lock-v2-development.sha256"
+    ],
+    "artifact_build": {
+      "wheel_bytes": 459013,
+      "wheel_sha256": "7e3073d66ffc6f6d0eb9aa4a27e08e506d82b7ecf58d749558cd6544d805a5b6",
+      "image_sha256": "24084cf14fadcb711bccefb9ab24c72444c0740ad819d79a3756831b2e008fd6",
+      "source_manifest_sha256": "b4fbe57aacde546f7733f839211cf211d7a4d12ac35cc901f2c74f90e2c33fe8",
+      "v2_lock_json_and_companion_content_sha256": "d7cc873fe32beffcf042db7133b7b134be23d6ad9774b75568f337482a4e7bc1",
+      "v2_lock_companion_file_sha256": "7d30bce4d395dcd3242dff345ecc88f4fe45e2485e8ae6dba43c418d61d6420f",
+      "v1_lock_sha256": "1c8ac4ff92e589e27dc0af2c6dd0bc69c4295435df5a318174a2c77f3b1f2c9c",
+      "image_interpreter_sha256": "73b68fc2dac176af16098180a2c98a03ee9f1f1b02db25d42d44d782e79e2330",
+      "installed_runtime_inventory_sha256": "349782ff04770a3543668323fd5bcd88783e5b2b34fb90ce6a7cf1f3f2867c06",
+      "route_bundle_file_sha256": "934d70443c41ea81f46be6638d39e51a2ca1b55419e6f4fa3c6bf278660165ec"
+    },
+    "route_identity": {
+      "deployment_id": "00000000-0000-0000-0000-000000000221",
+      "environment_id": "00000000-0000-0000-0000-000000000222",
+      "route_id": "00000000-0000-0000-0000-000000000223",
+      "slot_id": "00000000-0000-0000-0000-000000000224",
+      "build_id": "p1-task22-development-only",
+      "route_tuple_sha256": "6f56661b24a5032deb6f5bfea8459b17d4efdbdee03d6131ac8ff441f47cd25c",
+      "authenticated_route_manifest_sha256": "baf5884f361937459d47e3d6467565acc54d2f6a28d0584978556b60e37935dc",
+      "identity_provisioning": "synthetic and unverified"
+    },
+    "migration_head": "0051_p1_recovery_rollback_v2",
+    "rollback_verifier_abi": "salience.p1-recovery-rollback-verifier.v2",
+    "focused_non_live": {
+      "groups": 7,
+      "passed": 406,
+      "passed_by_group": [
+        38,
+        39,
+        64,
+        79,
+        4,
+        137,
+        45
+      ],
+      "log_sha256_by_group": [
+        "1e2f03e2c7f7898678530c1434fbacb0dd85bd230bc1f8e269e1076b4848906",
+        "17d975604e32040b266ca345452e5587e0475f91478573be629d3f606d3d38b7",
+        "d624d348256670eee3945e6cae22e470ef93c645f5676657312ac2a64c500044",
+        "63c0a23d0807d1eba71750a13b9c95998ad9a659279eb3b2d73b741e1877584a",
+        "54d23ef0b56f99d2cbe2d50ca07723596b53070e1dcae86069f33fb176336fed",
+        "474620bd421e188a028928a72ee6623c9410d1e2476bd6be3e9759699383a5e5",
+        "a5a14ddee7e0936ab0472d927680395144b73883794f8faac009c9b88fc78f5b"
+      ],
+      "evidence_report": ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-23-report.md"
+    },
+    "full_non_live": {
+      "runs": 1,
+      "passed": 1196,
+      "skipped": 26,
+      "warnings": 3,
+      "log_sha256": "228705c455ab4dad8f0216bc67bef1ac31563dcae9871a3d1252a5d27b928111",
+      "evidence_report": ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-23-report.md"
+    },
+    "local_run": {
+      "compose_project": "salience-p1-task23-q-a1dc00a2cc82",
+      "evidence_directory": "/tmp/salience-p1-task23-qualification-a1dc00a2cc82",
+      "cleanup_exit_code": 0,
+      "remaining_containers": 0,
+      "remaining_networks": 0,
+      "remaining_volumes": 0,
+      "cleanup_log_sha256": "54801e153aa3141f9684c5491140e4b15c68569091eacf3847e787277dd9c2b6"
+    },
+    "qualification_scope": "development-only; local candidate qualification, not externally trusted or production-qualified",
+    "external_gates": {
+      "external_rows": "NOT RUN (22 rows)",
+      "identities": "synthetic and unverified",
+      "external_final_audit": "NOT RUN",
+      "production_effects_enabled": false,
+      "publication_budget": 0,
+      "package_disposition": "NO_GO / UNCHANGED",
+      "RG0": "HELD",
+      "RG1": "HELD",
+      "P2": "BLOCKED",
+      "main": "UNMERGED"
+    },
+    "evidence_reports": [
+      ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-22-report.md",
+      ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-23-report.md"
+    ]
+  }
 }

@@ -1,7 +1,7 @@
 # Task 11 report — exact-candidate development acceptance
 
 
-> **Superseded by Task 13:** the latest exact-candidate evidence binds source `8d26aa15ef8d6bf7c9248bdd1899cf01a352cb2a` / tree `435f7b6cea818c96790e890da9485ce08fd18ac6` to artifact commit `e805c277577da8491dca51933dadb5c36acc805b` / tree `2e7213cf989f8b7dcfd489afb076be54c4858a8b`. Task 11 records below remain historical; see [`task-13-report.md`](task-13-report.md) for complete current evidence.
+> **Historical Task11 attribution:** The 1,120 passed / 26 skipped / 3 warnings suite whose output begins `salience-p1-task11-final-full` belongs to Task11 source `1ded0219c13fa478e3850956a30841d89cd80a38` / artifact `3e7f6798c652412d2992f83ed7f65974532a91c9`; it is not the Task13 result. Task13 is a separate candidate, source `8d26aa15ef8d6bf7c9248bdd1899cf01a352cb2a` / artifact `e805c277577da8491dca51933dadb5c36acc805b`, with 1,150 passed / 26 skipped / 3 warnings. The latest local evidence is Task22/23; see [`task-13-report.md`](task-13-report.md), [`task-22-report.md`](task-22-report.md), and [`task-23-report.md`](task-23-report.md).
 
 Date: 2026-10-28
 

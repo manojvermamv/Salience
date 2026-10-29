@@ -1,9 +1,9 @@
 # Task 14 report — final review corrections
 
-> **Historical implementation report:** Task14’s source/test corrections and focused results remain bound to their recorded Task14 commits. Task17 rebuilt the later exact candidate from reviewed source `c23c4cca72021ce6621eaacd66f2bfc23f4cc129`, and Task18 qualified artifact `be6f713b255f6b654b73ae4343db1db5c07e3840`; current evidence is in [`task-15-report.md`](task-15-report.md).
+> **Historical implementation report:** Task14's source/test corrections and focused results remain bound to their recorded Task14 commits. Task17/18 qualified the reviewed source as a later candidate, now superseded by the Task22/23 local development evidence for source `db3613482ac78cd708f6aa62e64854626ba7a906` and artifact `c1c78dd25e467d0ae48e9c949de6aeb555875ea8`. See [`task-22-report.md`](task-22-report.md), [`task-23-report.md`](task-23-report.md), and [`final-evidence-report.md`](final-evidence-report.md).
 
 Date: 2026-10-29
-Historical status: Task14 source corrections and focused verification are complete. Task17 later rebuilt the reviewed source as artifact `be6f713b255f6b654b73ae4343db1db5c07e3840`; Task18 qualified it, and Task19 refreshed the durable evidence. Current details are in [`task-15-report.md`](task-15-report.md).
+Historical status: Task14 source corrections and focused verification are complete. Task17/18 later rebuilt and qualified a reviewed source/artifact; Task22/23 now record the latest local development candidate at source `db3613482ac78cd708f6aa62e64854626ba7a906` and artifact `c1c78dd25e467d0ae48e9c949de6aeb555875ea8`. Current build and qualification details are in [`task-22-report.md`](task-22-report.md) and [`task-23-report.md`](task-23-report.md).
 
 ## Source changes
 
@@ -107,3 +107,8 @@ The Task14 statement that Task13 artifacts and the evidence lock were awaiting c
 - The rollback regression now proves a retry append failure leaves neither event and a subsequent restart can continue to an on-call attempt with the same key and exactly attempts 1 and 2. The crash-after-commit regression verifies both rows are visible with identical timestamps before crash, then reenables the owner and proves restart authorizes and sends the persisted on-call retry without another attempt event.
 - Final Task14 alert recovery selector result: **24 passed, 55 deselected** in 168.78 seconds. Normal delivery/acknowledgment/escalation controls: **3 passed, 76 deselected** in 22.08 seconds. Touched-file compileall and `git diff --check` passed.
 - No full suite, artifact/evidence-lock rebuild, push, merge, provider, or live-system use. Task 13 evidence remains historical for controller regeneration. Production remains disabled; synthetic package `NO_GO`; RG0/full RG1 `HELD`; P2 `BLOCKED`; external qualification `NOT RUN`.
+
+
+## Task22/23 successor pointer — 2026-10-29
+
+Task14's implementation and focused results remain scoped to its original commits. The latest exact local build and qualification are Task22/23, source `db3613482ac78cd708f6aa62e64854626ba7a906` / tree `f6ed4a172065985dd13b92994cb781318e0960f9`, artifact `c1c78dd25e467d0ae48e9c949de6aeb555875ea8` / tree `7212ba6537bcdde0196c55152ac0814c59787073`; see [`task-22-report.md`](task-22-report.md) and [`task-23-report.md`](task-23-report.md).

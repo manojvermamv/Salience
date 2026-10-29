@@ -341,3 +341,60 @@ This append-only inventory binds the current navigation, status, source-lock, sy
 | `.superpowers/sdd/2026-10-28-p1-remaining-production-development/task-15-brief.md` | `0dcc031842b3198898b1163689e47873ed9932698c8f4e2812c3b5f56768754d` |
 | `.superpowers/sdd/2026-10-28-p1-remaining-production-development/task-15-report.md` | `9bfdcd17eee5288d415dc101b337c6b05dd1a1b66f255aa1994c48a47c4c5f7b` |
 | `.superpowers/sdd/2026-10-28-p1-remaining-production-development/final-evidence-report.md` | `3a13c72f58ff08e66f42de20d693db2db1a26b98168cb09ea952e1a1abaa4ade` |
+
+
+## Task22/23 latest local candidate and gate disposition — 2026-10-29
+
+The latest local development evidence binds source `db3613482ac78cd708f6aa62e64854626ba7a906` / tree `f6ed4a172065985dd13b92994cb781318e0960f9` to exact artifact `c1c78dd25e467d0ae48e9c949de6aeb555875ea8` / tree `7212ba6537bcdde0196c55152ac0814c59787073`, whose sole parent is the source. Task22 changed only the generated development v2 lock JSON and companion; wheel size/hash are 459,013 bytes / `7e3073d66ffc6f6d0eb9aa4a27e08e506d82b7ecf58d749558cd6544d805a5b6`, local image digest is `24084cf14fadcb711bccefb9ab24c72444c0740ad819d79a3756831b2e008fd6`, source manifest is `b4fbe57aacde546f7733f839211cf211d7a4d12ac35cc901f2c74f90e2c33fe8`, and v2 lock JSON/content plus companion-file hashes are `d7cc873fe32beffcf042db7133b7b134be23d6ad9774b75568f337482a4e7bc1` / `7d30bce4d395dcd3242dff345ecc88f4fe45e2485e8ae6dba43c418d61d6420f`. The v1 lock remains unchanged. The synthetic route IDs are deployment/environment/route/slot `221/222/223/224`; tuple digest `6f56661b24a5032deb6f5bfea8459b17d4efdbdee03d6131ac8ff441f47cd25c`; route-manifest digest `baf5884f361937459d47e3d6467565acc54d2f6a28d0584978556b60e37935dc`. Migration head is `0051_p1_recovery_rollback_v2`, rollback ABI v2; endpoint remains unprovisioned and producer bindings empty.
+
+Task23 passed seven focused groups (38 + 39 + 64 + 79 + 4 + 137 + 45 = **406**) and one full non-live suite (**1,196 passed, 26 skipped, 3 warnings**, log SHA-256 `228705c455ab4dad8f0216bc67bef1ac31563dcae9871a3d1252a5d27b928111`). Exact group hashes and setup/cleanup records are in [Task23 qualification report](../../.superpowers/sdd/2026-10-28-p1-remaining-production-development/task-23-report.md); reproducible build commands and artifact evidence are in [Task22 build report](../../.superpowers/sdd/2026-10-28-p1-remaining-production-development/task-22-report.md).
+
+This addendum supersedes the Task19 current-candidate addendum above for latest local status only. It does not change the frozen initial audit, historical review verdicts, or external qualification. All 22 external/live rows remain `NOT RUN`; identities remain synthetic/unverified; final external audit remains `NOT RUN`; production trust remains unprovisioned; effects remain disabled; budget is zero; package disposition remains `NO_GO` / `UNCHANGED`; RG0/full RG1 remain `HELD`; P2 remains `BLOCKED`; and `main` remains unmerged.
+
+## Task24 current handoff hash inventory — 2026-10-29
+
+SHA-256 values below bind the current Task22/23 documentation handoff after this refresh. The wrapper and documentation-status audit are omitted here to avoid a cross-file digest cycle; the status audit continues to omit its own self-hash.
+
+| Path | SHA-256 |
+| --- | --- |
+| `.superpowers/sdd/2026-10-27-p1-production-policy-and-revocation/final-evidence-report.md` | `551c40b4d6852ab3ab4f42bc2cd26ffd1a0339fa03a5f7c2c0f0d39814d05307` |
+| `.superpowers/sdd/2026-10-28-p1-remaining-production-development/final-evidence-report.md` | `c1cef54b03b2766dfeacade2cbba570af437f436298babe10af43da49065a8f1` |
+| `.superpowers/sdd/2026-10-28-p1-remaining-production-development/final-review-fix-report.md` | `14b4ee16ba0e71c59313104632c939ce3f0d5df3a04568226d1ac0c5b77ae8a4` |
+| `.superpowers/sdd/2026-10-28-p1-remaining-production-development/planning-report.md` | `5ead73f3b32307f59fd4887c353c17616c2024f4d55cb6e3e55a1483e58359a6` |
+| `.superpowers/sdd/2026-10-28-p1-remaining-production-development/progress.md` | `3083a2c1ff420d435220ef719c95e49d43731c75376d76babcc0dc89a564d3c6` |
+| `.superpowers/sdd/2026-10-28-p1-remaining-production-development/task-11-report.md` | `65a04c815c0a3a243d3c4d099dca058d79d5f3ca909cba30e607aaa8a6fc4bd7` |
+| `.superpowers/sdd/2026-10-28-p1-remaining-production-development/task-12-brief.md` | `2b2a68c85f4da49341ca208447c537f011be2fbc164290721cc4176401983a4e` |
+| `.superpowers/sdd/2026-10-28-p1-remaining-production-development/task-12-report.md` | `47bae8175c878d98f500e833481747006f0523bfc948e02af57ade546b65aa28` |
+| `.superpowers/sdd/2026-10-28-p1-remaining-production-development/task-13-brief.md` | `3eb7c64461d399c8d51854ef6bcd29d68bdd649c9a0342a061d7ed18b23f8bd0` |
+| `.superpowers/sdd/2026-10-28-p1-remaining-production-development/task-13-report.md` | `e428a660c9d543834fd98a988ed7d0eea80ce5addefb00af931ab46026848ec3` |
+| `.superpowers/sdd/2026-10-28-p1-remaining-production-development/task-14-report.md` | `48cc7f44429a719c6efb7b6e6d7fe0013662608f67a14f32789436c14d8437aa` |
+| `.superpowers/sdd/2026-10-28-p1-remaining-production-development/task-15-brief.md` | `0dcc031842b3198898b1163689e47873ed9932698c8f4e2812c3b5f56768754d` |
+| `.superpowers/sdd/2026-10-28-p1-remaining-production-development/task-15-report.md` | `74d105938bcfdfd94af814d985a3c759c84e54c4e1e6566a91a134696ca90863` |
+| `.superpowers/sdd/2026-10-28-p1-remaining-production-development/task-22-report.md` | `3f8aebe87557d1d90c1d188ad82e7efd9d616964d53e2e11a197fa3a64e88745` |
+| `.superpowers/sdd/2026-10-28-p1-remaining-production-development/task-23-report.md` | `78079f921b52425a101cbb0cdb4ecaad8e65072eecf7bd91c4da4ff616b8af23` |
+| `README.md` | `03a966bec447f9bc91e8d1067bbb97f5428057b4ca8295e6a5bf486a6c64f18e` |
+| `docs/README.md` | `47a3bb86f4fc31e1fc836852dcb8c6f4f3f32433b46451f34af5e7af32e623a6` |
+| `docs/superpowers/plans/2026-10-27-p1-production-policy-and-revocation.md` | `c1564a7ec7d09f63b5aba105678c8b5929619fecc49e5b4bb3e415ed1340672e` |
+| `docs/superpowers/plans/2026-10-27-p1-rg0-rg1-initial-gap-audit.md` | `5d1dd8a86718184d03324144643dfb009cb36243a5bd0c0f14c46844eb3c5cd4` |
+| `docs/superpowers/plans/2026-10-28-p1-recovery-rollback-v2.md` | `e4548b283023d31bba22a0a73a8472d5cb0e9e4ef0dee77fc058605c58d54787` |
+| `docs/superpowers/plans/2026-10-28-p1-remaining-production-development.md` | `98142a4720b483e4cc04254e7482cdbbec3240e1bc992c230d921c7aaaea6a04` |
+| `docs/superpowers/specs/2026-10-13-p1-live-schedule-fencing-design.md` | `de5e961bbd1ea756a98e5694b5f079982c5d7958c4b71a86a2de680189717e99` |
+| `docs/superpowers/specs/2026-10-13-p1-production-policy-and-revocation-design.md` | `6be8f5ec6c48491a45a734510cc20af98e2cd7554fdc0409e77c6d9667d42fe2` |
+| `docs/superpowers/specs/2026-10-13-p1-production-recovery-and-alerts-design.md` | `4d7076fd968c28d78307678fa0b186d446dff6e3f3a88d5507646a828b2605cc` |
+| `docs/superpowers/specs/2026-10-13-p1-production-routing-and-worker-fencing-design.md` | `76921a085e352f86ae77895c824917832a49847c306b76bc56ae2c7e44a23e90` |
+| `docs/superpowers/specs/2026-10-13-rg0-rg1-external-acceptance-design.md` | `7334364e5417cbb29143877334a80ea90125e9ce61bff71f67de77a86f61069e` |
+| `docs/v4/IMPLEMENTATION-BLUEPRINT.md` | `8ceb85b83e452c10d4b323a709ac6706935013c2d9193bd1bff2b1b8c83d2703` |
+| `docs/v4/evidence-lock.json` | `dae4e866ade3a1a8adb6b7929b4c1416f5af8c987f4849170f4c3dfaa6ec3819` |
+| `docs/v4/p0-release.json` | `0a0f1969e0497cbec535fb3f854b51cef870a4746eb92f8a67a127566dc9ff75` |
+| `docs/v4/p1-production-policy-revocation-evidence.json` | `e5a5a3d424157479cacaf00eae39614a5abe12ecdb04ac38af0c95692dbd982b` |
+| `docs/v4/p1-qualification-matrix.json` | `fac0cd91cbe9e94376596fd596b771c5efb966b40184df657220d56a6392cbd3` |
+| `docs/v4/p1-remaining-production-development-evidence.json` | `cb76e5c076df6850c8f122d43905c16cd5eb815921a4960574b5108c0388eb49` |
+| `docs/v4/p1-rg0-rg1-external-acceptance.schema.json` | `0086353075c823f92f78b2d4f5e48005e62660537b70c95864b5f4ed5e2c945c` |
+| `docs/v4/p1-rg0-rg1-initial-gap-audit.json` | `33fe485384dcf60e36df8d48ace6394c80bce0d1bd9e6b9b39c7a905d65676b1` |
+| `docs/v4/p1-rg0-rg1-initial-gap-audit.md` | `62aab5afb39f7c47e355a68ccf56e319a72955247515dfbdba8913fd797a5944` |
+| `docs/v4/progress.md` | `575e447c4e32ad153606b63cd0ab4915780299f63340efde5c2282229c2d64dc` |
+| `docs/v4/publication-recovery-hold-evidence.json` | `3cce88e4d692f726be710c1f4db46b1428c9546561424a2ab0ad120363becc66` |
+| `docs/v4/publication-recovery-hold-successor-evidence.json` | `6bb3ce696cffec2629838f5f30b8eea4acb837cbb81c1bcbc1b4de4f19e8764a` |
+| `docs/v4/repository-enforcement-evidence.json` | `fc69f901036971bd64588cf3247d1701939e7525442f196daeab7f1919de11a2` |
+| `docs/v4/test_checks.py` | `c915b137417c53b3b3f773eacbfcfea3d62584a21ca11df8288e0c2b4281cf6e` |
+| `docs/v4/validation.md` | `b074e7ac8c9fb8b0ffee1faffbc736f048f77d137e49487603f65a7efd56ebf5` |

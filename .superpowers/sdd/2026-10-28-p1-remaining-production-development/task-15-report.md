@@ -1,8 +1,10 @@
 # Task 15 report — Task18 exact-candidate qualification and Task19 evidence refresh
 
+> **Historical Task18 candidate:** the result below is preserved for source `c23c4cca72021ce6621eaacd66f2bfc23f4cc129` and artifact `be6f713b255f6b654b73ae4343db1db5c07e3840`. Task22/23 supersede it as the latest local build and qualification; see [`task-22-report.md`](task-22-report.md) and [`task-23-report.md`](task-23-report.md).
+
 Date: 2026-10-29
 
-## Current exact candidate
+## Historical Task18 exact candidate
 
 This report supersedes the failed Task15 qualification attempt and the source/artifact pins in the Task13 and Task14 reports. The exact implementation source is commit `c23c4cca72021ce6621eaacd66f2bfc23f4cc129`, tree `d587cda6011bb0b974346353cec7a4856fbaf778`. The exact tested artifact is commit `be6f713b255f6b654b73ae4343db1db5c07e3840`, tree `419a33459a022d96c843313ffe5112c4e863c862`, directly parented by that source.
 
@@ -60,3 +62,8 @@ The documentation and contract checks ran after the final report text. The accep
 | compileall src/tests | `.venv/bin/python -m compileall -q src tests` | exit 0 (expected 0) | 0.048s | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
 | Archify validation | `node .agents/skills/archify/bin/archify.mjs validate architecture docs/salience-phase-1-9.architecture.json --quality showcase --repo-root . --json` | exit 0 (expected 0) | 0.367s | `ae2fe60e8fad4438a346db1c88607d53796684eaa6f7913587cd17be8637e785` |
 | git diff --check | `git diff --check` | exit 0 (expected 0) | 0.028s | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
+
+
+## Task22/23 successor pointer — 2026-10-29
+
+This Task15 report remains the exact historical Task18 qualification and Task19 documentation refresh. The latest local evidence is Task22/23 for source `db3613482ac78cd708f6aa62e64854626ba7a906` / tree `f6ed4a172065985dd13b92994cb781318e0960f9` and artifact `c1c78dd25e467d0ae48e9c949de6aeb555875ea8` / tree `7212ba6537bcdde0196c55152ac0814c59787073`; see [`task-22-report.md`](task-22-report.md) and [`task-23-report.md`](task-23-report.md).

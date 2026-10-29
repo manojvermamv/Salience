@@ -1,9 +1,11 @@
 # Task 13 report — final exact candidate and active evidence lock
 
-> **Historical candidate:** this report records source `8d26aa15ef8d6bf7c9248bdd1899cf01a352cb2a` and artifact `e805c277577da8491dca51933dadb5c36acc805b`. Task18 later qualified source `c23c4cca72021ce6621eaacd66f2bfc23f4cc129` and artifact `be6f713b255f6b654b73ae4343db1db5c07e3840`; current evidence is in [`task-15-report.md`](task-15-report.md) and the [final evidence report](final-evidence-report.md).
+> **Historical candidate:** this report records Task13 source `8d26aa15ef8d6bf7c9248bdd1899cf01a352cb2a` and artifact `e805c277577da8491dca51933dadb5c36acc805b`. Task18 later qualified a separate source/artifact; Task22/23 now hold the latest local evidence for source `db3613482ac78cd708f6aa62e64854626ba7a906` and artifact `c1c78dd25e467d0ae48e9c949de6aeb555875ea8`. See [`task-22-report.md`](task-22-report.md), [`task-23-report.md`](task-23-report.md), and [`final-evidence-report.md`](final-evidence-report.md).
 
 Date: 2026-10-29
 Status: local candidate build and tests complete; documentation/evidence verification recorded below. External qualification and final independent review remain outstanding.
+
+Task13’s 1,150 passed / 26 skipped / 3 warnings result belongs only to the source/artifact pair recorded here. It is separate from Task11’s 1,120 passed / 26 skipped / 3 warnings result, whose output begins `salience-p1-task11-final-full` and is documented in [`task-11-report.md`](task-11-report.md).
 
 ## Exact source and generated artifact
 
@@ -137,6 +139,11 @@ The final review correction commit is `becb3951d96f395b2c3ec9303e578dfb1e7eda5d`
 
 The Task 13 wheel, candidate lock, synthetic package, and active evidence lock remain historical and still identify source `8d26aa15`. They are not evidence for the Task 14 source. The controller owns creating and validating the new exact candidate after review. Production effects remain disabled; RG0/full RG1 remain `HELD`; P2 remains `BLOCKED`; external qualification remains `NOT RUN`; no push, merge, or live-system contact occurred.
 
-## Historical-scope follow-up — Task18 supersession
+## Historical-scope follow-up — Task18 supersession, now superseded by Task23
 
-Task13’s build, 360 focused tests, 1,150-pass full suite, artifact hashes, and then-current lock remain valid only for the Task13 source/artifact stated above. They are superseded as the current local candidate record by Task18’s exact qualification: source `c23c4cca72021ce6621eaacd66f2bfc23f4cc129` / tree `d587cda6011bb0b974346353cec7a4856fbaf778`, artifact `be6f713b255f6b654b73ae4343db1db5c07e3840` / tree `419a33459a022d96c843313ffe5112c4e863c862`, 399 focused passes, and 1,189 passed / 26 skipped / 3 warnings in the one full non-live run. The active source lock and synthetic package now bind the newer exact candidate. Task13’s prior record is retained with its original scope.
+Task13’s build, 360 focused tests, 1,150-pass full suite, artifact hashes, and then-current lock remain valid only for the Task13 source/artifact stated above. Task18 later superseded it for a time; Task22/23 now hold the latest local candidate record, with source `db3613482ac78cd708f6aa62e64854626ba7a906` / tree `f6ed4a172065985dd13b92994cb781318e0960f9`, artifact `c1c78dd25e467d0ae48e9c949de6aeb555875ea8` / tree `7212ba6537bcdde0196c55152ac0814c59787073`, 406 focused passes, and 1,196 passed / 26 skipped / 3 warnings in the full non-live run. Task13 and Task18 records remain bound to their original scopes.
+
+
+## Task22/23 successor pointer — 2026-10-29
+
+This Task13 candidate remains historical. The latest local development build and qualification are Task22/23, source `db3613482ac78cd708f6aa62e64854626ba7a906` / tree `f6ed4a172065985dd13b92994cb781318e0960f9`, artifact `c1c78dd25e467d0ae48e9c949de6aeb555875ea8` / tree `7212ba6537bcdde0196c55152ac0814c59787073`; see [`task-22-report.md`](task-22-report.md) and [`task-23-report.md`](task-23-report.md).
