@@ -4,6 +4,7 @@ import asyncio
 from datetime import timedelta, timezone
 
 from temporalio.client import Client, ScheduleActionStartWorkflow, ScheduleUpdate
+from temporalio.service import RPCError, RPCStatusCode
 
 from salience.cycles.legacy_dispatch import require_fixture
 from salience.cycles.schedule_cutover import FixtureLegacyScheduleControl
@@ -74,7 +75,15 @@ class TemporalFixtureLegacyScheduleControl(FixtureLegacyScheduleControl):
         return payload
 
     async def _verified(self,client,handle,row,*,allow_running=False,description=None):
-        description = description or await handle.describe(rpc_timeout=timedelta(seconds=2))
+        if description is None:
+            for attempt in range(2):
+                try:
+                    description = await handle.describe(rpc_timeout=timedelta(seconds=2))
+                    break
+                except RPCError as error:
+                    if error.status != RPCStatusCode.DEADLINE_EXCEEDED or attempt == 1:
+                        raise
+                    await asyncio.sleep(0.05)
         action = description.schedule.action
         original_workflow = "GovernedPublicationWorkflow" if row.get("native_publication_source") else "IntelligenceLoopWorkflow"
         if not isinstance(action,ScheduleActionStartWorkflow) or action.workflow not in {original_workflow, LEGACY_SCHEDULE_INGRESS} or action.task_queue != self.task_queue or len(action.args)!=1:
@@ -119,7 +128,8 @@ class TemporalFixtureLegacyScheduleControl(FixtureLegacyScheduleControl):
         return description
 
     async def _describe(self,row,remote_id):
-        async with asyncio.timeout(4):
+        # Leave room for two bounded describe RPCs and connection overhead.
+        async with asyncio.timeout(5):
             client = await Client.connect(self.temporal_target)
             description = await self._verified(client,client.get_schedule_handle(remote_id),row)
             return description
@@ -144,7 +154,8 @@ class TemporalFixtureLegacyScheduleControl(FixtureLegacyScheduleControl):
         return result
 
     async def _pause(self,row,remote_id):
-        async with asyncio.timeout(4):
+        # This encloses two verified reads and one single-attempt pause RPC.
+        async with asyncio.timeout(11):
             client = await Client.connect(self.temporal_target)
             handle = client.get_schedule_handle(remote_id)
             await self._verified(client,handle,row,allow_running=True)
@@ -162,7 +173,8 @@ class TemporalFixtureLegacyScheduleControl(FixtureLegacyScheduleControl):
         super().pause(schedule_id)
 
     async def _resume(self,row,remote_id,after_slot):
-        async with asyncio.timeout(4):
+        # The update remains single-attempt; the final readback can use two RPCs.
+        async with asyncio.timeout(7):
             client = await Client.connect(self.temporal_target)
             handle = client.get_schedule_handle(remote_id)
             plan = self._plan(row, required=True)
