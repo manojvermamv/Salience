@@ -3,8 +3,12 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from typing import Any
 
+from ._canonical import sha256_json
+
 
 def _route_binding(route: Mapping[str, Any]) -> dict[str, Any]:
+    if route.get("applicability") == "NOT_APPLICABLE":
+        return dict(route)
     return {
         "applicability": "ROUTE",
         "route_id": route.get("route_id"),
@@ -19,6 +23,48 @@ def _route_binding_from_row(row: Mapping[str, Any]) -> dict[str, Any]:
     scope = row.get("scope", {})
     route = scope.get("route", {})
     return _route_binding(route)
+
+
+def _target_scope_identity(target: Mapping[str, Any]) -> dict[str, Any]:
+    """Identify a target by its actual account, route and resource set."""
+    return {
+        "account": _applicable_scope(target.get("account", {})),
+        "route": _applicable_scope(target.get("route", {})),
+        "resource_ids": sorted(target.get("resource_ids", [])),
+    }
+
+
+def _applicable_scope(scope: Mapping[str, Any]) -> Mapping[str, Any] | None:
+    return None if scope.get("applicability") == "NOT_APPLICABLE" else scope
+
+
+def _target_manifest(
+    manifest: Mapping[str, Any], row_id: str, target_id: str
+) -> dict[str, Any]:
+    """Resolve a row target exclusively from the signed inventory."""
+    target = manifest.get("row_targets", {}).get(row_id, {}).get(target_id, {})
+    return {
+        **manifest,
+        "row_id": row_id,
+        "target_id": target_id,
+        "target": target,
+        "environment": {
+            **manifest.get("environment", {}),
+            "account_identity": target.get("account", {}),
+            "resource_ids": target.get("resource_ids", []),
+        },
+    }
+
+
+def _execution_records(payload: Mapping[str, Any]):
+    for i, row in enumerate(payload.get("rows", [])):
+        if isinstance(row, Mapping):
+            path = ("rows", str(i))
+            yield path, row
+            if payload.get("schema_version") == "1.1":
+                for j, child in enumerate(row.get("child_checks", [])):
+                    if isinstance(child, Mapping):
+                        yield (*path, "child_checks", str(j)), child
 
 
 def _route_set_binding(manifest: Mapping[str, Any]) -> dict[str, Any]:
@@ -49,6 +95,10 @@ def _scope_axes_from_manifest(manifest: Mapping[str, Any]) -> dict[str, Any]:
     database = deployment.get("database", {})
     temporal = deployment.get("temporal", {})
     return {
+        **({"row_id": manifest["row_id"], "target_id": manifest["target_id"]}
+           if "target" in manifest else {}),
+        **({"account_nonapplicability": dict(account)}
+           if account.get("applicability") == "NOT_APPLICABLE" else {}),
         "candidate_commit": candidate.get("source_commit"),
         "candidate_tree": candidate.get("source_tree"),
         "artifact_digests": sorted(
@@ -84,6 +134,8 @@ def _authorization_scope_from_manifest(
 ) -> dict[str, Any]:
     return {
         **_scope_axes_from_manifest(manifest),
+        **({"row_targets_sha256": sha256_json(manifest["row_targets"])}
+           if "row_targets" in manifest and route_binding.get("applicability") == "ROUTE_SET" else {}),
         "route_binding": dict(route_binding),
     }
 
@@ -158,3 +210,37 @@ def _route_binding_for_path(
             return {"applicability": "ROUTE", "route_id": None}
 
     return _route_set_binding(manifest)
+
+
+def _evidence_binding_for_path(
+    payload: Mapping[str, Any], path: tuple[str, ...]
+) -> dict[str, Any]:
+    manifest = payload.get("manifest", {})
+    row_id = target_id = None
+    if payload.get("schema_version") == "1.1":
+        if path[0] == "rows":
+            row = payload["rows"][int(path[1])]
+            row_id = row.get("row_id")
+            execution = row["child_checks"][int(path[3])] if path[2:3] == ("child_checks",) else row
+            target_id = execution.get("target_id")
+        elif path[:2] == ("final_audit", "row_rechecks") or path[0] == "invalidation_records":
+            if path[0] == "final_audit":
+                record = payload["final_audit"]["row_rechecks"][int(path[2])]
+                row_id = record.get("row_id")
+                if path[3:4] == ("child_rechecks",):
+                    target_id = record["child_rechecks"][int(path[4])].get("target_id")
+            else:
+                record = payload["invalidation_records"][int(path[1])]
+                if record.get("scope") == "ROW":
+                    row_id = record.get("source_row_id")
+            if row_id and target_id is None:
+                target_id = next((r.get("target_id") for r in payload["rows"]
+                                  if isinstance(r, Mapping) and r.get("row_id") == row_id), None)
+    if isinstance(row_id, str):
+        scoped = _target_manifest(manifest, row_id, target_id)
+        return {
+            "run_id": payload.get("run_id"),
+            **_scope_axes_from_manifest(scoped),
+            "route_binding": _route_binding(scoped["target"].get("route", {})),
+        }
+    return _evidence_binding_from_manifest(payload, _route_binding_for_path(payload, path))

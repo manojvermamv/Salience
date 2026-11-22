@@ -536,3 +536,20 @@ SHA-256 values bind the current Task36 documentation/evidence handoff. The wrapp
 | `docs/v4/repository-enforcement-evidence.json` | `fc69f901036971bd64588cf3247d1701939e7525442f196daeab7f1919de11a2` |
 | `docs/v4/test_checks.py` | `c915b137417c53b3b3f773eacbfcfea3d62584a21ca11df8288e0c2b4281cf6e` |
 | `docs/v4/validation.md` | `ea9a8542919690e417e575c37e5f50e804d47edf4c87a179502674256319e2ed` |
+
+## P1 follow-up handoff hashes — 2026-11-22
+
+The table binds the development handoff after the schedule, recovery, acceptance, and verifier follow-up. The Task36 tables retain their October 29 scope. The external target, final audit, and release gates remain held. See [current progress](progress.md#current-state).
+
+| Path | SHA-256 |
+| --- | --- |
+| `README.md` | `e33ff1b9e4b87d9394f273ef197fbc90f62711b6d97880fa50cb518edc12ea16` |
+| `docs/README.md` | `67719f215c8bb3e564073238805a8016a071e21b5c70facc79117f559c31371c` |
+| `docs/v4/IMPLEMENTATION-BLUEPRINT.md` | `812ae6dbfef9a9cb0a7e29fa7e80e228bbcee4d97f549e66d6575ad4a2c53506` |
+| `docs/v4/progress.md` | `1a518c682495ad3ea32602065883009652d7dc6a9fe18f656a583212d85de60b` |
+| `docs/v4/validation.md` | `6058dbac9fbe77e3c45dd48fcba2fa90ab4e5f87e5d81b1aee58f759df982755` |
+| `docs/v4/test_checks.py` | `8b753e4f977efeeeb3f90d70adc4d367730dbc9579d8f6ca83ae0ef5ed3aaf82` |
+| `docs/v4/evidence-lock.json` | `8a2ba41c0da37f20486d56b42446cfa3fa04d74215e982a5305b80b3b53536fe` |
+| `docs/v4/p1-qualification-matrix.json` | `c7de522514872cf4e6ec437db35491e0091e5bf517bfc13f9f0f1fc2d5c74c93` |
+| `docs/v4/p1-rg0-rg1-external-acceptance.schema.json` | `16cbdd59abc82c587d0d05de44dec0d867893d0bc8207df20d7f1bbe85805154` |
+| `docs/superpowers/specs/2026-10-13-v4-multiplatform-autonomy-program-sequence.md` | `2b3a10096385285418196450dc4a87797f2f9ef913994220b73d0fdf7af2ff3a` |

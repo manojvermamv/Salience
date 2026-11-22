@@ -233,6 +233,7 @@ class ProductionRecoveryAlerts:
         if (
             payload.get("escalation_level") != level
             or payload.get("severity") != alert.severity
+            or intent["policy_decision_id"] != alert.policy_decision_id
         ):
             raise RecoveryIdentityConflict(
                 "alert intent does not match the exact escalation request"
@@ -307,7 +308,7 @@ class ProductionRecoveryAlerts:
         work: ProductionRecoveryWork,
         request: ProductionAlertRequest,
     ) -> tuple[
-        int,
+        list[tuple[Mapping[str, object], ProductionAlertRequest]],
         datetime | None,
         Mapping[str, object] | None,
         ProductionAlertRequest | None,
@@ -454,12 +455,12 @@ class ProductionRecoveryAlerts:
             or len(attempts) < request.retry_policy.maximum_attempts
         ):
             return (
-                len(attempts),
+                list(zip(attempts, attempt_requests, strict=True)),
                 last_retry_at,
                 pending_attempt,
                 outstanding_retry_request,
             )
-        return len(attempts), None, pending_attempt, None
+        return list(zip(attempts, attempt_requests, strict=True)), None, pending_attempt, None
 
     def _reject_owner_unavailable_retry_conflict(
         self,
@@ -560,16 +561,46 @@ class ProductionRecoveryAlerts:
             if _require_aware(self.now(), "alert delivery time") < claim_expires_at:
                 raise RuntimeError("alert attempt claim wait returned before claim TTL")
 
-    def _send_and_lookup(
-        self, request: ProductionAlertRequest, idempotency_key: str
+    @staticmethod
+    def _validate_provider_receipt(
+        receipt: ProductionAlertReceipt | None,
+        *,
+        alert_event_id: UUID,
+        idempotency_key: str,
+    ) -> ProductionAlertReceipt | None:
+        if receipt is not None and (
+            not isinstance(receipt, ProductionAlertReceipt)
+            or receipt.alert_event_id != alert_event_id
+            or receipt.idempotency_key != idempotency_key
+        ):
+            raise ValueError("provider alert receipt is not bound to the exact intent")
+        return receipt
+
+    def _lookup_for_delivery(
+        self, request: ProductionAlertRequest
     ) -> ProductionAlertReceipt | None:
         try:
-            return self.target.send(request, idempotency_key)
+            receipt = self.target.lookup(request.idempotency_key)
         except Exception:
-            try:
-                return self.target.lookup(idempotency_key)
-            except Exception:
-                return None
+            return None
+        return self._validate_provider_receipt(
+            receipt,
+            alert_event_id=request.alert_event_id,
+            idempotency_key=request.idempotency_key,
+        )
+
+    def _send_and_lookup(
+        self, request: ProductionAlertRequest
+    ) -> ProductionAlertReceipt | None:
+        try:
+            receipt = self.target.send(request, request.idempotency_key)
+        except Exception:
+            return self._lookup_for_delivery(request)
+        return self._validate_provider_receipt(
+            receipt,
+            alert_event_id=request.alert_event_id,
+            idempotency_key=request.idempotency_key,
+        )
 
     def _schedule_retry(
         self,
@@ -578,72 +609,12 @@ class ProductionRecoveryAlerts:
         *,
         attempt: int,
         policy_decision_id: UUID,
-    ) -> datetime:
-        return self._schedule_retry_events(
-            work,
-            request,
-            attempt=attempt,
-            policy_decision_id=policy_decision_id,
-        )
-
-    def _schedule_owner_unavailable_retry(
-        self,
-        work: ProductionRecoveryWork,
-        owner_request: ProductionAlertRequest,
-        retry_request: ProductionAlertRequest,
-        *,
-        attempt: int,
-        owner_policy_decision_id: UUID,
-        retry_policy_decision_id: UUID,
-    ) -> datetime:
-        if (
-            owner_request.recipient_tier != "owner"
-            or replace(owner_request, recipient_tier="on_call") != retry_request
-        ):
-            raise RecoveryIdentityConflict(
-                "owner-unavailable retry must preserve the exact on-call request"
-            )
-        return self._schedule_retry_events(
-            work,
-            retry_request,
-            attempt=attempt,
-            policy_decision_id=retry_policy_decision_id,
-            owner_unavailable_request=owner_request,
-            owner_unavailable_policy_decision_id=owner_policy_decision_id,
-        )
-
-    def _schedule_retry_events(
-        self,
-        work: ProductionRecoveryWork,
-        request: ProductionAlertRequest,
-        *,
-        attempt: int,
-        policy_decision_id: UUID,
-        owner_unavailable_request: ProductionAlertRequest | None = None,
-        owner_unavailable_policy_decision_id: UUID | None = None,
-    ) -> datetime:
-        if (owner_unavailable_request is None) != (
-            owner_unavailable_policy_decision_id is None
-        ):
-            raise ValueError(
-                "owner-unavailable evidence and its policy decision must be paired"
-            )
+    ) -> None:
         delay = request.retry_policy.retry_intervals[attempt - 1]
-        # Keep an owner-unavailable marker and the tier-changing retry event
-        # in this same transaction; validation and waiting happen after commit.
         with self.repository._connect() as connection:
             now = connection.execute(
                 "SELECT clock_timestamp() AS now"
             ).fetchone()["now"]
-            if owner_unavailable_request is not None:
-                self._record_owner_unavailable(
-                    connection,
-                    work,
-                    owner_unavailable_request,
-                    "owner_unavailable_escalated",
-                    owner_unavailable_policy_decision_id,
-                    occurred_at=now,
-                )
             self.repository._append_event(
                 connection,
                 work,
@@ -661,14 +632,11 @@ class ProductionRecoveryAlerts:
                 occurred_at=now,
             )
         with self.repository._connect() as connection:
-            (
-                attempt_count,
-                retry_at,
-                pending_attempt,
-                outstanding_retry_request,
-            ) = self._validate_retry_history(connection, work, request)
+            attempts, retry_at, pending_attempt, outstanding_retry_request = (
+                self._validate_retry_history(connection, work, request)
+            )
         if (
-            attempt_count != attempt
+            len(attempts) != attempt
             or retry_at is None
             or pending_attempt is not None
             or outstanding_retry_request != request
@@ -677,7 +645,39 @@ class ProductionRecoveryAlerts:
                 "persisted alert retry does not authorize the next attempt"
             )
         self._wait_until_retry_at(retry_at)
-        return retry_at
+
+    def _fallback_if_due(
+        self,
+        work: ProductionRecoveryWork,
+        request: ProductionAlertRequest,
+        held: ProductionAlertReceipt,
+        *,
+        initial_intent: ProductionRecoveryEvent,
+        retry_at: datetime | None = None,
+    ) -> ProductionAlertReceipt:
+        if (
+            request.escalation_level != 0
+            or request.recipient_tier != "owner"
+            or not request.recipient_profile.on_call_group_ids
+            or not request.retry_policy.escalation_after
+        ):
+            return held
+        due_at = production_alert_escalation_due_at(initial_intent, request.retry_policy, 1)
+        if _require_aware(self.now(), "alert delivery time") < due_at:
+            return held
+        if retry_at is not None:
+            self._wait_until_retry_at(retry_at)
+        fallback = self.repository.alert_request(
+            work.work_id,
+            severity=request.severity,
+            escalation_level=1,
+            recipient_profile=request.recipient_profile,
+            retry_policy=request.retry_policy,
+            policy_decision_id=request.policy_decision_id,
+            _authorize=self.authority.authorize_alert,
+            _now=self.now,
+        )
+        return self.send(fallback)
 
     def _held_receipt(
         self,
@@ -686,32 +686,24 @@ class ProductionRecoveryAlerts:
         *,
         reason_code: str,
         policy_decision_id: UUID,
+        attempt: int,
     ) -> ProductionAlertReceipt:
         with self.repository._connect() as connection:
-            self._record_owner_unavailable(
-                connection, work, request, reason_code, policy_decision_id
-            )
-            self.repository._append_event(
+            if reason_code.startswith("owner_unavailable"):
+                self._record_owner_unavailable(
+                    connection, work, request, reason_code, policy_decision_id
+                )
+            event = self.repository._append_event(
                 connection,
                 work,
                 event_key=f"held-alert:{request.alert_event_id}",
                 event_kind="held_conflict",
                 policy_decision_id=policy_decision_id,
                 payload=self._event_payload(
-                    work,
-                    request,
-                    status="held",
-                    error_code=reason_code,
-                    attempt=0,
+                    work, request, status="held", error_code=reason_code, attempt=attempt
                 ),
             )
-        return ProductionAlertReceipt(
-            alert_event_id=request.alert_event_id,
-            idempotency_key=request.idempotency_key,
-            provider_message_id=None,
-            status="held",
-            accepted_at=None,
-        )
+        return self._receipt_from_event(event, request)
 
     def _record_owner_unavailable(
         self,
@@ -799,257 +791,125 @@ class ProductionRecoveryAlerts:
                    WHERE event_key=%s AND work_id=%s AND event_kind='delivery_receipt'""",
                 (f"delivery-receipt:{alert.alert_event_id}", alert.work_id),
             ).fetchone()
-            if local_receipt is not None:
-                attempts, _retry_at, _pending_attempt, _pending_retry = (
-                    self._validate_retry_history(connection, work, alert)
-                )
-                if attempts == 0:
-                    raise RecoveryInventoryGap(
-                        "persisted provider receipt lacks a committed delivery attempt"
-                    )
-                return self._receipt_from_event(self.repository._event(local_receipt), alert)
-
-        key = alert.idempotency_key
-        # Reconcile a provider acceptance before applying a retry delay or
-        # requiring a new current delivery decision.
-        try:
-            readback = self.target.lookup(key)
-        except Exception:
-            readback = None
-        if readback is not None:
-            attempt_prefix = f"delivery-attempt:{alert.alert_event_id}:%"
-            with self.repository._connect() as connection:
-                attempts, _retry_at, _pending_attempt, _pending_retry = (
-                    self._validate_retry_history(connection, work, alert)
-                )
-                if attempts == 0:
-                    raise RecoveryInventoryGap(
-                        "provider alert receipt lacks a committed exact delivery attempt"
-                    )
-                prior_attempts = connection.execute(
-                    """SELECT event_key,occurred_at,policy_decision_id,payload
-                       FROM v4_production_recovery_events
-                       WHERE work_id=%s AND event_kind='delivery_attempt'
-                         AND (event_key LIKE %s OR payload->>'event_key'=%s)
-                       ORDER BY occurred_at,event_id""",
-                    (work.work_id, attempt_prefix, key),
-                ).fetchall()
-                if not prior_attempts:
-                    raise RecoveryInventoryGap(
-                        "provider alert receipt lacks a committed exact delivery attempt"
-                    )
-                latest_attempt = prior_attempts[-1]
-                latest_payload = latest_attempt["payload"]
-                if (
-                    not isinstance(latest_payload, Mapping)
-                    or type(latest_payload.get("attempt")) is not int
-                ):
-                    raise RecoveryIdentityConflict(
-                        "provider alert receipt has malformed delivery attempt evidence"
-                    )
-                recorded_alert = self._validate_attempt_event(
-                    work,
-                    alert,
-                    latest_attempt,
-                    attempt=latest_payload["attempt"],
-                )
-                event = self._receipt_event(
-                    connection,
-                    work,
-                    recorded_alert,
-                    readback,
-                    policy_decision_id=latest_attempt["policy_decision_id"],
-                )
-                return self._receipt_from_event(event, recorded_alert)
-
-        with self.repository._connect() as connection:
-            held_receipt = connection.execute(
+            held_row = connection.execute(
                 """SELECT * FROM v4_production_recovery_events
                    WHERE event_key=%s AND work_id=%s AND event_kind='held_conflict'""",
                 (f"held-alert:{alert.alert_event_id}", alert.work_id),
             ).fetchone()
-            if held_receipt is not None:
+            attempts, retry_at, pending_attempt, outstanding_retry = (
                 self._validate_retry_history(connection, work, alert)
-                return self._receipt_from_event(self.repository._event(held_receipt), alert)
-
-        with self.repository._connect() as connection:
-            (
-                attempts,
-                retry_at,
-                pending_attempt,
-                outstanding_retry_request,
-            ) = self._validate_retry_history(connection, work, alert)
-        # A retry event commits the exact request for the next attempt. Keep
-        # that tier immutable until a later authorized retry boundary records
-        # a different request.
-        locked_retry = outstanding_retry_request is not None
-        if pending_attempt is not None:
-            pending_payload = pending_attempt["payload"]
-            assert isinstance(pending_payload, Mapping)
-            pending_number = pending_payload["attempt"]
-            pending_alert = self._validate_attempt_event(
-                work, alert, pending_attempt, attempt=pending_number
             )
+
+        initial_intent = self.repository._event(intent)
+        attempted_tiers = {request.recipient_tier for _row, request in attempts}
+        recorded_request = attempts[-1][1] if attempts else alert
+        ambiguous_recipient = len(attempted_tiers) > 1
+        legacy_retry = (
+            outstanding_retry is not None
+            and outstanding_retry.recipient_tier != recorded_request.recipient_tier
+        )
+
+        if local_receipt is not None:
+            if not attempts:
+                raise RecoveryInventoryGap(
+                    "persisted provider receipt lacks a committed delivery attempt"
+                )
+            if not ambiguous_recipient:
+                receipt_tier = self._recorded_recipient_tier(alert, local_receipt["payload"])
+                if receipt_tier != recorded_request:
+                    raise RecoveryIdentityConflict(
+                        "persisted provider receipt conflicts with its delivery attempt"
+                    )
+                return self._receipt_from_event(self.repository._event(local_receipt), alert)
+
+        # Readback can finish an authorized same-key attempt even when new
+        # delivery authority is unavailable. Mixed historical attempts cannot
+        # prove which recipient the provider accepted.
+        readback = self._lookup_for_delivery(alert)
+        if readback is not None and readback.status == "accepted":
+            if not attempts:
+                raise RecoveryInventoryGap(
+                    "provider alert receipt lacks a committed exact delivery attempt"
+                )
+            if not ambiguous_recipient:
+                return self._record_delivery(
+                    work, recorded_request, readback, attempts[-1][0]["policy_decision_id"]
+                )
+
+        if held_row is not None:
+            held = self._receipt_from_event(self.repository._event(held_row), alert)
+            return self._fallback_if_due(
+                work,
+                recorded_request if attempted_tiers == {"on_call"} else alert,
+                held,
+                initial_intent=initial_intent,
+                retry_at=retry_at,
+            )
+
+        if ambiguous_recipient or legacy_retry:
+            if pending_attempt is not None:
+                self._wait_until_attempt_claim_expires(
+                    pending_attempt["occurred_at"], alert.retry_policy.claim_ttl
+                )
+            current = self._authorize_delivery(work, alert)
+            held = self._held_receipt(
+                work,
+                alert,
+                reason_code="legacy_recipient_conflict",
+                policy_decision_id=current.decision_id,
+                attempt=len(attempts),
+            )
+            return self._fallback_if_due(
+                work, alert, held, initial_intent=initial_intent, retry_at=retry_at
+            )
+
+        alert = recorded_request
+        if pending_attempt is not None:
             if retry_at is not None:
                 self._wait_until_retry_at(retry_at)
             self._wait_until_attempt_claim_expires(
                 pending_attempt["occurred_at"], alert.retry_policy.claim_ttl
             )
-            try:
-                pending_readback = self.target.lookup(key)
-            except Exception:
-                pending_readback = None
-            if pending_readback is not None:
-                with self.repository._connect() as connection:
-                    event = self._receipt_event(
-                        connection,
-                        work,
-                        pending_alert,
-                        pending_readback,
-                        policy_decision_id=pending_attempt["policy_decision_id"],
-                    )
-                    return self._receipt_from_event(event, pending_alert)
-
-            self._require_escalation_due(due_at)
-            # A committed attempt binds the exact recipient request. Reauthorize
-            # and resend that request after its claim TTL; a tier change can only
-            # take effect at the following retry boundary.
-            current = self.authority.authorize_alert(work, pending_alert)
-            if not isinstance(current, ProductionRecoveryDecision) or not current.allowed:
-                raise PermissionError("alert authority changed before resuming a delivery attempt")
-            advanced_to_next_tier = False
-            if pending_alert.recipient_tier == "owner" and not self._owner_is_current(work):
-                if not pending_alert.recipient_profile.on_call_group_ids:
-                    return self._held_receipt(
-                        work,
-                        pending_alert,
-                        reason_code="owner_unavailable_no_backup",
-                        policy_decision_id=current.decision_id,
-                    )
-                if pending_number >= pending_alert.retry_policy.maximum_attempts:
-                    return self._held_receipt(
-                        work,
-                        pending_alert,
-                        reason_code="owner_unavailable_attempts_exhausted",
-                        policy_decision_id=current.decision_id,
-                    )
-                next_alert = replace(pending_alert, recipient_tier="on_call")
-                self._schedule_owner_unavailable_retry(
-                    work,
-                    pending_alert,
-                    next_alert,
-                    attempt=pending_number,
-                    owner_policy_decision_id=current.decision_id,
-                    retry_policy_decision_id=pending_attempt["policy_decision_id"],
+            readback = self._lookup_for_delivery(alert)
+            if readback is not None and readback.status == "accepted":
+                return self._record_delivery(
+                    work, alert, readback, pending_attempt["policy_decision_id"]
                 )
-                alert = next_alert
-                locked_retry = True
-                advanced_to_next_tier = True
-
-            else:
-                alert = pending_alert
-            if not advanced_to_next_tier:
-                receipt = self._send_and_lookup(pending_alert, key)
-                if receipt is not None and receipt.status == "accepted":
-                    with self.repository._connect() as connection:
-                        event = self._receipt_event(
-                            connection,
-                            work,
-                            pending_alert,
-                            receipt,
-                            policy_decision_id=current.decision_id,
-                        )
-                        return self._receipt_from_event(event, pending_alert)
-                if pending_number < pending_alert.retry_policy.maximum_attempts:
-                    self._schedule_retry(
-                        work,
-                        pending_alert,
-                        attempt=pending_number,
-                        policy_decision_id=pending_attempt["policy_decision_id"],
-                    )
-                    alert = pending_alert
-                    locked_retry = True
+            self._require_escalation_due(due_at)
+            current = self._authorize_delivery(work, alert)
+            attempt = len(attempts)
+            if alert.recipient_tier == "owner" and not self._owner_is_current(work):
+                return self._hold_unavailable_owner(
+                    work, alert, initial_intent, attempt=attempt, decision=current
+                )
+            receipt = self._send_and_lookup(alert)
+            if receipt is not None and receipt.status == "accepted":
+                return self._record_delivery(work, alert, receipt, current.decision_id)
+            if attempt < alert.retry_policy.maximum_attempts:
+                self._schedule_retry(
+                    work, alert, attempt=attempt,
+                    policy_decision_id=pending_attempt["policy_decision_id"],
+                )
         else:
-            if outstanding_retry_request is not None:
-                alert = outstanding_retry_request
-            decision = self.authority.authorize_alert(work, alert)
-            if not isinstance(decision, ProductionRecoveryDecision) or not decision.allowed:
-                raise PermissionError("current alert delivery authority denied")
-            if (
-                outstanding_retry_request is not None
-                and alert.recipient_tier == "owner"
-                and not self._owner_is_current(work)
-            ):
-                return self._held_receipt(
-                    work,
-                    alert,
-                    reason_code="owner_unavailable_retry_tier",
-                    policy_decision_id=decision.decision_id,
-                )
-            if (
-                outstanding_retry_request is None
-                and alert.recipient_tier == "owner"
-                and not self._owner_is_current(work)
-            ):
-                if not alert.recipient_profile.on_call_group_ids:
-                    return self._held_receipt(
-                        work,
-                        alert,
-                        reason_code="owner_unavailable_no_backup",
-                        policy_decision_id=decision.decision_id,
-                    )
-                with self.repository._connect() as connection:
-                    self._record_owner_unavailable(
-                        connection,
-                        work,
-                        alert,
-                        "owner_unavailable_escalated",
-                        decision.decision_id,
-                    )
-                alert = replace(alert, recipient_tier="on_call")
             self._require_escalation_due(due_at)
+            if alert.recipient_tier == "owner":
+                current = self._authorize_delivery(work, alert)
+                if not self._owner_is_current(work):
+                    return self._hold_unavailable_owner(
+                        work, alert, initial_intent, attempt=len(attempts), decision=current,
+                        retry_at=retry_at,
+                    )
             if retry_at is not None:
                 self._wait_until_retry_at(retry_at)
-        next_attempt = attempts + 1
-        for attempt in range(next_attempt, alert.retry_policy.maximum_attempts + 1):
+
+        for attempt in range(len(attempts) + 1, alert.retry_policy.maximum_attempts + 1):
             self._require_escalation_due(due_at)
-            current = self.authority.authorize_alert(work, alert)
-            if not isinstance(current, ProductionRecoveryDecision) or not current.allowed:
-                raise PermissionError("alert authority changed before a delivery attempt")
+            current = self._authorize_delivery(work, alert)
             if alert.recipient_tier == "owner" and not self._owner_is_current(work):
-                if locked_retry:
-                    return self._held_receipt(
-                        work,
-                        alert,
-                        reason_code="owner_unavailable_retry_tier",
-                        policy_decision_id=current.decision_id,
-                    )
-                if not alert.recipient_profile.on_call_group_ids:
-                    return self._held_receipt(
-                        work,
-                        alert,
-                        reason_code="owner_unavailable_no_backup",
-                        policy_decision_id=current.decision_id,
-                    )
-                with self.repository._connect() as connection:
-                    self._record_owner_unavailable(
-                        connection,
-                        work,
-                        alert,
-                        "owner_unavailable_escalated",
-                        current.decision_id,
-                    )
-                alert = replace(alert, recipient_tier="on_call")
-                # This is a new request identity. The owner decision above
-                # cannot authorize its on-call delivery attempt.
-                current = self.authority.authorize_alert(work, alert)
-                if not isinstance(current, ProductionRecoveryDecision) or not current.allowed:
-                    raise PermissionError(
-                        "current alert authority denied the escalated delivery request"
-                    )
-            payload = self._event_payload(
-                work, alert, status="attempting", attempt=attempt
-            )
+                return self._hold_unavailable_owner(
+                    work, alert, initial_intent, attempt=attempt - 1, decision=current,
+                    retry_at=retry_at,
+                )
             with self.repository._connect() as connection:
                 self.repository._append_event(
                     connection,
@@ -1057,57 +917,89 @@ class ProductionRecoveryAlerts:
                     event_key=f"delivery-attempt:{alert.alert_event_id}:{attempt}",
                     event_kind="delivery_attempt",
                     policy_decision_id=current.decision_id,
-                    payload=payload,
+                    payload=self._event_payload(
+                        work, alert, status="attempting", attempt=attempt
+                    ),
                 )
-            receipt = self._send_and_lookup(alert, key)
+            receipt = self._send_and_lookup(alert)
             if receipt is not None and receipt.status == "accepted":
-                with self.repository._connect() as connection:
-                    event = self._receipt_event(
-                        connection,
-                        work,
-                        alert,
-                        receipt,
-                        policy_decision_id=current.decision_id,
-                    )
-                    return self._receipt_from_event(event, alert)
+                return self._record_delivery(work, alert, receipt, current.decision_id)
             if attempt < alert.retry_policy.maximum_attempts:
                 self._schedule_retry(
-                    work,
-                    alert,
-                    attempt=attempt,
-                    policy_decision_id=current.decision_id,
+                    work, alert, attempt=attempt, policy_decision_id=current.decision_id
                 )
-                locked_retry = True
+
+        current = self._authorize_delivery(work, alert)
+        held = self._held_receipt(
+            work,
+            alert,
+            reason_code="retry_exhausted",
+            policy_decision_id=current.decision_id,
+            attempt=alert.retry_policy.maximum_attempts,
+        )
+        return self._fallback_if_due(work, alert, held, initial_intent=initial_intent)
+
+    def _authorize_delivery(
+        self, work: ProductionRecoveryWork, alert: ProductionAlertRequest
+    ) -> ProductionRecoveryDecision:
+        decision = self.authority.authorize_alert(work, alert)
+        if not isinstance(decision, ProductionRecoveryDecision) or not decision.allowed:
+            raise PermissionError("current alert delivery authority denied")
+        return decision
+
+    def _record_delivery(
+        self,
+        work: ProductionRecoveryWork,
+        alert: ProductionAlertRequest,
+        receipt: ProductionAlertReceipt,
+        policy_decision_id: UUID,
+    ) -> ProductionAlertReceipt:
         with self.repository._connect() as connection:
-            last_decision = self.authority.authorize_alert(work, alert)
-            if not isinstance(last_decision, ProductionRecoveryDecision) or not last_decision.allowed:
-                raise PermissionError("current alert authority denied held evidence")
-            self.repository._append_event(
-                connection,
-                work,
-                event_key=f"held-alert:{alert.alert_event_id}",
-                event_kind="held_conflict",
-                policy_decision_id=last_decision.decision_id,
-                payload=self._event_payload(
-                    work,
-                    alert,
-                    status="held",
-                    attempt=alert.retry_policy.maximum_attempts,
-                    error_code="retry_exhausted",
-                ),
+            event = self._receipt_event(
+                connection, work, alert, receipt, policy_decision_id=policy_decision_id
             )
-        return ProductionAlertReceipt(
-            alert_event_id=alert.alert_event_id,
-            idempotency_key=key,
-            provider_message_id=None,
-            status="held",
-            accepted_at=None,
+            return self._receipt_from_event(event, alert)
+
+    def _hold_unavailable_owner(
+        self,
+        work: ProductionRecoveryWork,
+        alert: ProductionAlertRequest,
+        initial_intent: ProductionRecoveryEvent,
+        *,
+        attempt: int,
+        decision: ProductionRecoveryDecision,
+        retry_at: datetime | None = None,
+    ) -> ProductionAlertReceipt:
+        reason = "owner_unavailable"
+        if not alert.recipient_profile.on_call_group_ids:
+            reason = "owner_unavailable_no_backup"
+        elif attempt >= alert.retry_policy.maximum_attempts:
+            reason = "owner_unavailable_attempts_exhausted"
+        elif retry_at is not None:
+            reason = "owner_unavailable_retry_tier"
+        held = self._held_receipt(
+            work, alert, reason_code=reason, policy_decision_id=decision.decision_id,
+            attempt=attempt,
+        )
+        return self._fallback_if_due(
+            work, alert, held, initial_intent=initial_intent, retry_at=retry_at
         )
 
     def lookup(self, idempotency_key: str) -> ProductionAlertReceipt | None:
-        if not isinstance(idempotency_key, str) or not idempotency_key:
+        prefix = "p1-recovery-alert:"
+        if not isinstance(idempotency_key, str) or not idempotency_key.startswith(prefix):
             raise ValueError("stable alert idempotency key required")
-        return self.target.lookup(idempotency_key)
+        try:
+            alert_event_id = UUID(idempotency_key[len(prefix):])
+        except ValueError as error:
+            raise ValueError("stable alert idempotency key required") from error
+        if idempotency_key != f"{prefix}{alert_event_id}":
+            raise ValueError("stable alert idempotency key required")
+        return self._validate_provider_receipt(
+            self.target.lookup(idempotency_key),
+            alert_event_id=alert_event_id,
+            idempotency_key=idempotency_key,
+        )
 
     def acknowledge(
         self, command: ProductionAlertAcknowledgment
@@ -1137,6 +1029,21 @@ class ProductionRecoveryAlerts:
             ).fetchone()
             if intent is None or receipt is None:
                 raise ValueError("acknowledgment must bind the exact alert intent and provider receipt")
+            recipient_count = connection.execute(
+                """SELECT count(DISTINCT (payload ? 'owner_id')) AS count
+                   FROM v4_production_recovery_events
+                   WHERE work_id=%s AND event_kind='delivery_attempt'
+                     AND (event_key LIKE %s OR payload->>'event_key'=%s)""",
+                (
+                    work.work_id,
+                    f"delivery-attempt:{command.alert_event_id}:%",
+                    f"p1-recovery-alert:{command.alert_event_id}",
+                ),
+            ).fetchone()["count"]
+            if recipient_count != 1:
+                raise RecoveryIdentityConflict(
+                    "provider receipt lacks an unambiguous delivery recipient"
+                )
             subject = connection.execute(
                 """SELECT workspace_id,enabled,expires_at
                    FROM identity_subjects WHERE id=%s""",

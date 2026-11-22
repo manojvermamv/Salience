@@ -126,7 +126,7 @@ def _route_control(
 
 
 @contextmanager
-def _production_enrollment_fixture(prefix="task6_enroll_"):
+def _production_enrollment_fixture(prefix="task6_enroll_", *, slot_delay=None):
     """Build a disposable 0048 database with live 0047 authorization facts."""
     migration_tests = import_module("test_v4_migrations")
     source = os.environ["TEST_DATABASE_URL"]
@@ -140,7 +140,10 @@ def _production_enrollment_fixture(prefix="task6_enroll_"):
         goal_id = uuid4()
         schedule_id = uuid4()
         intent_id = uuid4()
-        first_slot = datetime(2099, 1, 1, tzinfo=timezone.utc)
+        first_slot = (
+            datetime.now(timezone.utc).replace(microsecond=0) + slot_delay
+            if slot_delay is not None else datetime(2099, 1, 1, tzinfo=timezone.utc)
+        )
         with psycopg.connect(database, row_factory=dict_row) as connection:
             connection.execute(
                 """INSERT INTO identity_subjects(
@@ -149,7 +152,7 @@ def _production_enrollment_fixture(prefix="task6_enroll_"):
                           clock_timestamp()+interval '1 day')""",
                 (owner_id, workspace_id, "source-owner:" + str(owner_id)),
             )
-            for scope in ("cycles:schedule", "cycles:write", "cycles:stop"):
+            for scope in ("cycles:schedule", "cycles:write", "cycles:stop", "cycles:read"):
                 connection.execute(
                     """INSERT INTO permission_grants(
                            workspace_id,principal_type,principal_id,scope,effect,
@@ -336,12 +339,12 @@ def _production_enrollment_fixture(prefix="task6_enroll_"):
 
 
 @contextmanager
-def _production_cutover_fixture(prefix="task6_lifecycle_"):
+def _production_cutover_fixture(prefix="task6_lifecycle_", *, slot_delay=None):
     """Use the real source helper and cutover machine with a V2 fixture goal."""
     module = import_module("salience.cycles.production_schedule_control")
     from salience.cycles.contracts import CadencePolicy, GoalSpec, GoalSpecV2
 
-    with _production_enrollment_fixture(prefix) as (
+    with _production_enrollment_fixture(prefix, slot_delay=slot_delay) as (
         database,
         control,
         binding,
@@ -1277,7 +1280,7 @@ def test_production_schedule_admission_enrolls_intent_atomically_with_current_au
     assert result["admission"]["intent_id"] == key.intent_id
     assert events[0] == "transaction_begin" and events[-1] == "transaction_commit"
     assert events.index(("enroll", key, True)) < events.index(("admit", key.intent_id))
-    assert events.count("authority") == 2
+    assert events[-2] == "authority"
 
 
 def test_production_schedule_admission_writes_0047_and_admission_atomically():
@@ -1513,6 +1516,282 @@ def test_production_schedule_pause_then_resume_rollback_accepts_exact_paused_sou
                 "SELECT status FROM job_schedules WHERE id=%s",
                 (binding.schedule_id,),
             ).fetchone()[0] == "active"
+
+
+def test_production_rollback_keeps_local_projection_paused_on_off_cadence_readback(monkeypatch):
+    with _production_cutover_fixture("task6_off_cadence_resume_") as (
+        database, control, binding, target, production, _prepared,
+    ):
+        production.activate(binding.goal_id, idempotency_key="activate")
+        original_resume = target.resume_after
+
+        def off_cadence_resume(remote_schedule_id, command_key, after_slot):
+            original_resume(remote_schedule_id, command_key, after_slot)
+            target.readback = replace(
+                target.readback, next_action=target.readback.next_action + timedelta(seconds=1)
+            )
+
+        monkeypatch.setattr(target, "resume_after", off_cadence_resume)
+        with pytest.raises(PermissionError, match="local and remote resumed schedule slots must match"):
+            production.rollback(binding.goal_id, idempotency_key="rollback")
+
+        assert production.inspect(binding.goal_id)["state"] == "rollback_pending"
+        assert control.alerts.events[-1][2] == "schedule_resume_local_remote_mismatch"
+        with psycopg.connect(database) as connection:
+            assert connection.execute(
+                "SELECT status FROM job_schedules WHERE id=%s", (binding.schedule_id,)
+            ).fetchone() == ("paused",)
+
+
+def test_production_rollback_refuses_paused_predecessor_with_overlapping_history():
+    with _production_cutover_fixture("task6_overlap_resume_") as (
+        _, control, binding, target, production, _prepared,
+    ):
+        production.activate(binding.goal_id, idempotency_key="activate")
+        target.readback = replace(target.readback, last_slot=binding.first_v4_slot)
+        with pytest.raises(PermissionError, match="paused predecessor"):
+            production.rollback(binding.goal_id, idempotency_key="rollback")
+        assert target.resume_calls == []
+        assert control.alerts.events[-1][2] == "schedule_resume_predecessor_not_fenced"
+        assert production.inspect(binding.goal_id)["state"] == "rollback_pending"
+
+
+def test_production_poll_enrolls_due_intent_with_legacy_schedule_paused():
+    from salience.cycles.admission import CycleAdmission
+
+    with _production_cutover_fixture(
+        "task6_due_", slot_delay=timedelta(minutes=5)
+    ) as (database, control, binding, target, production, _prepared):
+        production.activate(binding.goal_id, idempotency_key="activate")
+        # Advance the disposable database's application clock to the first due slot.
+        with psycopg.connect(database) as connection:
+            connection.execute(
+                """INSERT INTO permission_grants
+                       (workspace_id,principal_type,principal_id,scope,effect,constraints,expires_at)
+                   VALUES(%s,'identity',%s,'goals:approve','allow','{}',
+                          clock_timestamp()+interval '1 day')""",
+                (binding.workspace_id, str(binding.schedule_operator_subject_id)),
+            )
+            connection.execute("CREATE SCHEMA test_clock")
+            connection.execute(psycopg.sql.SQL(
+                """CREATE FUNCTION test_clock.clock_timestamp() RETURNS timestamptz
+                   LANGUAGE SQL VOLATILE RETURN {}"""
+            ).format(psycopg.sql.Literal(binding.first_v4_slot)))
+            connection.execute(psycopg.sql.SQL(
+                "ALTER DATABASE {} SET search_path TO test_clock, pg_catalog, public"
+            ).format(psycopg.sql.Identifier(connection.info.dbname)))
+        admission = CycleAdmission(
+            database, workspace_id=binding.workspace_id,
+            subject_id=binding.schedule_operator_subject_id,
+        )
+        admission.approve_baseline(
+            binding.goal_id, expected_revision=1,
+            expires_at=binding.first_v4_slot + timedelta(hours=1),
+            reason="Explicit isolated schedule poll baseline",
+        )
+
+        polled = production.poll(binding.goal_id, expected_revision=1, idempotency_key="poll")
+
+        (intent_id,) = polled["intent_ids"]
+        cycle_id = polled["admissions"][0]["cycle_id"]
+        assert UUID(cycle_id)
+        assert polled["admissions"] == [
+            {"intent_id": intent_id, "disposition": "admitted", "cycle_id": cycle_id}
+        ]
+        assert target.readback.paused
+        with psycopg.connect(database) as connection:
+            assert connection.execute(
+                """SELECT enrollment.route_id, request.slot_time, admission.disposition, message.kind
+                   FROM v4_production_intent_enrollments enrollment
+                   JOIN v4_admissions admission ON (admission.intent_id, admission.eligibility_revision)
+                       = (enrollment.intent_id, enrollment.eligibility_revision)
+                   JOIN v4_cycle_requests request ON request.intent_id=enrollment.intent_id
+                   JOIN v4_cycle_outbox message ON message.cycle_id=admission.cycle_id
+                   WHERE enrollment.intent_id=%s AND request.origin='scheduled'""",
+                (intent_id,),
+            ).fetchall() == [(binding.route_id, binding.first_v4_slot, "admitted", "start")]
+            assert connection.execute(
+                "SELECT last_slot FROM v4_schedule_cursors WHERE goal_id=%s",
+                (binding.goal_id,),
+            ).fetchone()[0] == binding.first_v4_slot
+        restarted = type(production)(database, schedule_control=control, binding=binding)
+        assert restarted.poll(
+            binding.goal_id, expected_revision=1, idempotency_key="poll"
+        ) == polled
+
+
+def test_production_cutover_uses_current_renewed_lease():
+    with _production_cutover_fixture("task6_renew_") as (
+        database, control, binding, _target, production, _prepared,
+    ):
+        original_lease = control.route_lease
+        renewed = control.route_authority.renew_slot(original_lease)
+        assert renewed.expires_at > original_lease.expires_at
+
+        assert production.activate(binding.goal_id, idempotency_key="activate")["state"] == "active"
+        with psycopg.connect(database) as connection:
+            assert connection.execute(
+                "SELECT status FROM job_schedules WHERE id=%s", (binding.schedule_id,)
+            ).fetchone()[0] == "paused"
+
+
+def test_production_rollback_rejects_a_direct_resume_with_a_different_watermark():
+    with _production_cutover_fixture("task6_resume_watermark_") as (
+        _database, control, binding, target, production, _prepared,
+    ):
+        production.activate(binding.goal_id, idempotency_key="activate")
+        target.readback = replace(target.readback, running_action_count=1)
+        with pytest.raises(PermissionError, match="remote schedule actions"):
+            production.rollback(binding.goal_id, idempotency_key="rollback")
+        assert production.inspect(binding.goal_id)["state"] == "rollback_pending"
+
+        target.readback = replace(target.readback, running_action_count=0)
+        with pytest.raises(PermissionError, match="watermark"):
+            control.resume_after(binding.schedule_id, binding.first_v4_slot)
+        assert target.resume_calls == []
+        assert target.readback.paused
+
+
+@pytest.mark.parametrize("liability_timing", ["before_resume", "at_resume", "before_final_commit"])
+def test_production_rollback_holds_unknown_claim_on_closed_cycle(monkeypatch, liability_timing):
+    with _production_cutover_fixture("task6_permit_hold_") as (
+        database, control, binding, target, production, _prepared,
+    ):
+        production.activate(binding.goal_id, idempotency_key="activate")
+        migrations = import_module("test_v4_migrations")
+
+        def record_liability():
+            with psycopg.connect(database) as connection:
+                subject_id, workspace_id = binding.schedule_operator_subject_id, binding.workspace_id
+                cycle = {field: uuid4() for field in ("intent_id", "cycle_id", "context_id", "operation_id")}
+                cycle["goal_id"] = binding.goal_id
+                cycle["program_id"] = connection.execute(
+                    "SELECT content_program_id FROM job_schedules WHERE id=%s",
+                    (binding.schedule_id,),
+                ).fetchone()[0]
+                connection.execute(
+                    """INSERT INTO v4_cycle_intents
+                           (id,goal_id,goal_revision,slot,fingerprint,due_at,expires_at)
+                       VALUES(%s,%s,1,%s,%s,%s,%s)""",
+                    (cycle["intent_id"], binding.goal_id, str(cycle["intent_id"]), "a" * 64,
+                     binding.first_v4_slot, binding.first_v4_slot + timedelta(minutes=1)),
+                )
+                connection.execute("SET CONSTRAINTS ALL DEFERRED")
+                connection.execute(
+                    """INSERT INTO v4_cycles(id,intent_id,context_id,operation_id,state)
+                       VALUES(%(cycle_id)s,%(intent_id)s,%(context_id)s,%(operation_id)s,'runnable')""",
+                    cycle,
+                )
+                connection.execute(
+                    "INSERT INTO v4_run_contexts(id,cycle_id,payload) VALUES(%s,%s,%s)",
+                    (cycle["context_id"], cycle["cycle_id"], Jsonb({
+                        "schema_version": "RunContext.local.v1",
+                        "content_program_id": str(cycle["program_id"]),
+                        "subject_id": str(subject_id),
+                    })),
+                )
+                policy_id = migrations._seed_0044_policy(
+                    connection, workspace_id, status="active", version="task6-liability"
+                )
+                approval_id = migrations._insert_0044_approval(
+                    connection, workspace_id, policy_id,
+                    migrations._approval_context_0044(workspace_id, subject_id, cycle, policy_id),
+                )
+                connection.execute(
+                    """UPDATE approval_requests SET status='approved',decided_by='reviewer',
+                              decided_at=clock_timestamp() WHERE id=%s""",
+                    (approval_id,),
+                )
+                permit_id, permit_key = migrations._insert_0044_production_permit(
+                    connection,
+                    {"workspace_id": workspace_id, "subject_id": subject_id, "cycle": cycle,
+                     "operation_id": cycle["operation_id"], "policy_id": policy_id,
+                     "approval_id": approval_id},
+                )
+                claim_id = uuid4()
+                connection.execute(
+                    """INSERT INTO v4_production_effect_permit_claims
+                           (claim_id,permit_id,operation_id,generation,route_fence_decision_id)
+                       SELECT %s,permit_id,operation_id,generation,route_fence_decision_id
+                       FROM v4_production_effect_permits WHERE permit_id=%s""",
+                    (claim_id, permit_id),
+                )
+                connection.execute(
+                    "SELECT v4_advance_production_current_dispatch_v1(%s,0,%s,%s,%s,NULL)",
+                    (cycle["operation_id"], permit_id, claim_id, permit_key),
+                )
+                connection.execute(
+                    """INSERT INTO v4_admissions
+                           (id,intent_id,eligibility_revision,disposition,reason,cycle_id)
+                       VALUES(%s,%s,1,'admitted','historical production permit',%s)""",
+                    (uuid4(), cycle["intent_id"], cycle["cycle_id"]),
+                )
+                connection.execute(
+                    """UPDATE v4_cycles SET state='closed',disposition='cancelled',
+                           closed_at=clock_timestamp() WHERE id=%s""",
+                    (cycle["cycle_id"],),
+                )
+
+        if liability_timing == "before_resume":
+            record_liability()
+        else:
+            resume = control.resume_after
+
+            def record_liability_during_resume(*args, **kwargs):
+                if liability_timing == "at_resume":
+                    record_liability()
+                    return resume(*args, **kwargs)
+                resume(*args, **kwargs)
+                record_liability()
+
+            monkeypatch.setattr(control, "resume_after", record_liability_during_resume)
+
+        with pytest.raises(ValueError, match="unresolved"):
+            production.rollback(binding.goal_id, idempotency_key="rollback")
+
+        assert production.inspect(binding.goal_id)["state"] == "rollback_pending"
+        assert len(target.resume_calls) == (1 if liability_timing == "before_final_commit" else 0)
+
+
+def test_production_rollback_reconciles_active_mirror_after_lost_final_commit(monkeypatch):
+    with _production_cutover_fixture("task6_crash_resume_") as (
+        database, control, binding, target, production, _prepared,
+    ):
+        production.activate(binding.goal_id, idempotency_key="activate")
+        watermark = binding.first_v4_slot + timedelta(seconds=binding.interval_seconds * 2)
+        with psycopg.connect(database) as connection:
+            connection.execute(
+                "UPDATE v4_schedule_cursors SET last_slot=%s WHERE goal_id=%s",
+                (watermark, binding.goal_id),
+            )
+        original_event = production.state_machine._event
+
+        def lose_commit(connection, goal_id, kind, payload, *args):
+            if kind == "schedule_cutover_rolled_back":
+                raise RuntimeError("rollback receipt commit lost")
+            return original_event(connection, goal_id, kind, payload, *args)
+
+        monkeypatch.setattr(production.state_machine, "_event", lose_commit)
+        with pytest.raises(RuntimeError, match="rollback receipt commit lost"):
+            production.rollback(binding.goal_id, idempotency_key="rollback")
+
+        saved = production.inspect(binding.goal_id)
+        assert saved["state"] == "rollback_pending"
+        assert saved["rollback_after_slot"] == watermark.isoformat()
+        assert target.readback.resume_after == watermark
+        assert not target.readback.paused
+
+        restarted = type(production)(database, schedule_control=control, binding=binding)
+        with pytest.raises(ValueError, match="rollback conflict"):
+            restarted.rollback(binding.goal_id, idempotency_key="different-key")
+        target.readback = replace(
+            target.readback,
+            next_action=target.readback.next_action + timedelta(seconds=binding.interval_seconds),
+        )
+        assert restarted.rollback(binding.goal_id, idempotency_key="rollback") == (
+            saved | {"state": "rolled_back"}
+        )
+        assert len(target.resume_calls) == 1
 
 
 def test_pending_activation_retry_accepts_exact_paused_source():

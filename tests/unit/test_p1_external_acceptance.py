@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+from base64 import b64encode
 import hashlib
 import json
 import subprocess
@@ -89,6 +90,8 @@ def _ref(label: str) -> dict[str, str]:
 
 
 def _route_binding(route: dict[str, Any]) -> dict[str, Any]:
+    if route.get("applicability") == "NOT_APPLICABLE":
+        return dict(route)
     return {
         "applicability": "ROUTE",
         "route_id": route["route_id"],
@@ -566,7 +569,8 @@ def _bind_package_references(payload: dict[str, Any]) -> None:
         if row is None:
             continue
         route_context = _binding_context(payload, _route_binding(row["scope"]["route"]))
-        recheck["readback"]["binding"] = copy.deepcopy(route_context)
+        if payload["schema_version"] == "1.0":
+            recheck["readback"]["binding"] = copy.deepcopy(route_context)
         recheck["readback"].setdefault(
             "provenance",
             {"source_id": f"audit-source-{recheck['row_id']}", "operator_id": auditor_id},
@@ -586,11 +590,14 @@ def _seal(payload: dict[str, Any]) -> dict[str, Any]:
         "manifest_signature": payload["manifest_signature"],
         "rows": payload["rows"],
         "invalidation_records": payload["invalidation_records"],
-        "final_audit": payload.get("final_audit"),
     }
+    if payload["schema_version"] == "1.0":
+        refs_source["final_audit"] = payload.get("final_audit")
     payload["artifact_digest_index"] = _collect_refs(refs_source)
+    version = {"schema_version": payload["schema_version"]} if payload["schema_version"] != "1.0" else {}
     payload["package_digest"] = _digest(
         {
+            **version,
             "run_id": payload["run_id"],
             "manifest_sha256": payload["manifest_sha256"],
             "manifest_signature": payload["manifest_signature"],
@@ -777,10 +784,10 @@ def _valid_package(
     return _seal(payload)
 
 
-def _validate(payload: dict[str, Any]):
+def _validate(payload: dict[str, Any], **kwargs):
     from salience.acceptance.p1_external_evidence import validate_acceptance_package
 
-    return validate_acceptance_package(payload, now=NOW)
+    return validate_acceptance_package(payload, now=NOW, **kwargs)
 
 
 def _row_by_id(payload: dict[str, Any], row_id: str) -> dict[str, Any]:
@@ -1442,6 +1449,323 @@ def test_final_audit_is_separate_and_rechecks_every_row() -> None:
     result = _validate(package)
     assert result.to_dict()["disposition"] == "NO_GO"
     assert "FINAL_AUDIT_ROW_RECHECK_INCOMPLETE" in _blocker_codes(result)
+
+
+def _complete_external_package() -> dict[str, Any]:
+    package = _valid_package()
+    package["schema_version"] = "1.1"
+    package["manifest"]["package_scope"] = "EXTERNAL_PRODUCTION"
+    for row_id in ("R16F", "R22", "R23F"):
+        row = _row_by_id(package, row_id)
+        row["negative_control"].update(
+            required=True,
+            expected_outcome="DENIED",
+            observed_outcome="DENIED",
+            raw_denial=_ref(f"{row_id}:denial"),
+            independent_effect_readback=_ref(f"{row_id}:no-effects"),
+            observed_call_count=0,
+            observed_effect_count=0,
+        )
+    for row_id, proofs in {
+        "R01": (
+            "independent safety review",
+            "production collector and alert delivery",
+            "remote repository gate enforcement",
+        ),
+        "R16F": ("production identity and ingress",),
+        "R22": ("production identity and ingress",),
+        "R69": ("production storage and restore",),
+    }.items():
+        _row_by_id(package, row_id)["normalized_checks"].extend(
+            {
+                "check_id": proof,
+                "status": "PASS",
+                "scope_match": True,
+                "raw_result": _ref(f"{row_id}:{proof}"),
+            }
+            for proof in proofs
+        )
+    for row in package["rows"]:
+        row["target_id"] = "primary"
+    _prepare_target_bindings(package)
+    return package
+
+
+def _prepare_target_bindings(package):
+    """Build independently scoped fixture records before signing or fault injection."""
+    manifest = package["manifest"]
+    inventory = {}
+    for row in package["rows"]:
+        targets = inventory[row["row_id"]] = {}
+        for execution in [row, *row.get("child_checks", [])]:
+            scope = execution["scope"]
+            target_id = execution["target_id"]
+            targets[target_id] = {
+                key: copy.deepcopy(scope[key]) for key in ("account", "resource_ids", "route")
+            }
+            account = scope["account"]
+            context = _binding_context(package, _route_binding(scope["route"]))
+            context.update(
+                row_id=row["row_id"], target_id=target_id,
+                resource_ids=sorted(scope["resource_ids"]),
+                **{key: account.get(key) for key in ("account_id", "provider", "repository_id")},
+            )
+            if account.get("applicability") == "NOT_APPLICABLE":
+                context["account_nonapplicability"] = copy.deepcopy(account)
+            auth_scope = {key: val for key, val in context.items() if key != "run_id"}
+            for role in ("owner", "operator", "independent_reviewer"):
+                execution[role]["scope"] = copy.deepcopy(auth_scope)
+            execution["transition"]["rollback"]["scope"] = copy.deepcopy(scope)
+            correlation = execution["observability"]["correlation"]
+            correlation.update(account_alias=account.get("account_id"), resource_ids=scope["resource_ids"],
+                               route_id=scope["route"].get("route_id"), binding=copy.deepcopy(context))
+            execution["freshness"]["binding"] = copy.deepcopy(context)
+            for dep in execution["dependency_evidence"]:
+                dep.update(account_id=account.get("account_id"), resource_ids=scope["resource_ids"],
+                           binding=copy.deepcopy(context))
+            for _, ref in _reference_paths({k: v for k, v in execution.items() if k != "child_checks"}):
+                ref["binding"] = copy.deepcopy(context)
+                _bind_references(ref, context, execution["operator"]["person_id"])
+            execution["readback"]["provenance"]["operator_id"] = execution["independent_reviewer"]["person_id"]
+            if execution is not row:
+                execution.pop("record_sha256", None)
+                execution["record_sha256"] = _digest(execution)
+    manifest["row_targets"] = inventory
+    if audit := package.get("final_audit"):
+        audit["auditor"]["scope"]["row_targets_sha256"] = _digest(inventory)
+        for recheck in audit["row_rechecks"]:
+            row = _row_by_id(package, recheck["row_id"])
+            recheck["readback"]["binding"] = copy.deepcopy(row["raw_result"]["binding"])
+
+
+def _sign_external_package(package):
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+
+    producer = Ed25519PrivateKey.from_private_bytes(b"p" * 32)
+    auditor = Ed25519PrivateKey.from_private_bytes(b"a" * 32)
+
+    def sign(key, purpose, digest):
+        return key.sign(f"salience-external-acceptance-v1.1:{purpose}:{digest}".encode())
+
+    _seal(package)
+    signature = sign(producer, "manifest", package["manifest_sha256"])
+    signature_ref = package["manifest_signature"]["signature_evidence"]
+    digest = _sha_bytes(signature)
+    signature_ref.update(uri=f"artifact://sha256/{digest}", sha256=digest)
+    package["manifest_signature"]["signature_b64"] = b64encode(signature).decode()
+    _seal(package)
+    package["package_attestation"] = {
+        "key_id": package["manifest_signature"]["key_id"],
+        "signature_b64": b64encode(sign(producer, "package", package["package_digest"])).decode(),
+    }
+    if audit := package.get("final_audit"):
+        audit.pop("attestation", None)
+        audit.pop("record_sha256", None)
+        audit["attestation"] = {
+            "key_id": audit["auditor"]["person_id"],
+            "signature_b64": b64encode(sign(auditor, "audit", _digest(audit))).decode(),
+        }
+        _seal(package)
+    return {
+        "evidence_producers": {package["manifest_signature"]["key_id"]: b64encode(producer.public_key().public_bytes_raw()).decode()},
+        "final_auditors": {"auditor-01": b64encode(auditor.public_key().public_bytes_raw()).decode()},
+    }
+
+
+def test_current_package_is_ready_before_audit_while_release_ledgers_are_held() -> None:
+    package = _complete_external_package()
+    audit = package.pop("final_audit")
+    trust = _sign_external_package(package)
+    package_digest = package["package_digest"]
+
+    preaudit = _validate(package, trust=trust).to_dict()
+    assert preaudit["structural_status"] == "VALID", preaudit["blockers"]
+    assert preaudit["disposition"] == "READY_FOR_FINAL_AUDIT", preaudit["blockers"]
+    assert preaudit["ledger_status"]["p0"]["RG0"] == "HELD"
+    assert preaudit["ledger_status"]["p1"]["RG1"] == "HELD"
+    assert preaudit["gate_state"] == "UNCHANGED"
+
+    audit["status"] = "PASS"
+    audit["disposition"] = "FINAL_AUDIT_RECORDED"
+    for recheck in audit["row_rechecks"]:
+        recheck["status"] = "PASS"
+    package["final_audit"] = audit
+    _sign_external_package(package)
+    assert package["package_digest"] == package_digest
+    audited = _validate(package, trust=trust).to_dict()
+    assert audited["disposition"] == "FINAL_AUDIT_RECORDED", audited["blockers"]
+    assert audited["gate_state"] == "UNCHANGED"
+
+    package["final_audit"]["package_digest"] = "1" * 64
+    package["final_audit"].pop("record_sha256")
+    package["final_audit"]["record_sha256"] = _digest(package["final_audit"])
+    mismatch = _validate(package, trust=trust).to_dict()
+    assert mismatch["disposition"] == "NO_GO"
+    assert mismatch["structural_status"] == "INVALID"
+
+
+def test_current_external_package_requires_each_named_p0_proof() -> None:
+    package = _complete_external_package()
+    package.pop("final_audit")
+    row = _row_by_id(package, "R01")
+    row["normalized_checks"] = [
+        check for check in row["normalized_checks"]
+        if check["check_id"] != "independent safety review"
+    ]
+    trust = _sign_external_package(package)
+    result = _validate(package, trust=trust)
+    assert "REQUIRED_P0_PROOF_MISSING" in _result_row(result, "R01")["blockers"]
+    assert result.disposition == "NO_GO"
+
+
+def test_required_p0_proofs_use_distinct_evidence() -> None:
+    package = _complete_external_package()
+    package.pop("final_audit")
+    checks = _row_by_id(package, "R01")["normalized_checks"]
+    checks[-1]["raw_result"] = copy.deepcopy(checks[-2]["raw_result"])
+    trust = _sign_external_package(package)
+    result = _validate(package, trust=trust)
+    assert "REQUIRED_P0_PROOF_REUSED" in _result_row(result, "R01")["blockers"]
+    assert result.disposition == "NO_GO"
+
+
+def test_different_p0_proofs_cannot_reuse_evidence_across_rows() -> None:
+    package = _complete_external_package()
+    package.pop("final_audit")
+    raw = _row_by_id(package, "R01")["normalized_checks"][-1]["raw_result"]
+    storage = _row_by_id(package, "R69")["normalized_checks"][-1]["raw_result"]
+    storage.update({key: raw[key] for key in ("uri", "sha256")})
+    result = _validate(package, trust=_sign_external_package(package))
+    assert result.disposition == "NO_GO"
+    assert "REQUIRED_P0_PROOF_REUSED" in _result_row(result, "R69")["blockers"]
+
+
+def test_signed_final_audit_cannot_reuse_readback_across_rows() -> None:
+    package = _complete_external_package()
+    audit = package["final_audit"]
+    audit.update(status="PASS", disposition="FINAL_AUDIT_RECORDED")
+    for recheck in audit["row_rechecks"]:
+        recheck["status"] = "PASS"
+    from_other_row = _row_by_id(package, "R69")["raw_result"]
+    rechecks = audit["row_rechecks"]
+    for source in (from_other_row, rechecks[1]["readback"]):
+        rechecks[0]["readback"].update({key: source[key] for key in ("uri", "sha256")})
+        result = _validate(package, trust=_sign_external_package(package))
+        assert result.disposition == "NO_GO"
+        assert "FINAL_AUDIT_RECHECK_NOT_INDEPENDENT" in _blocker_codes(result)
+
+
+def test_signed_final_audit_cannot_predate_its_evidence() -> None:
+    package = _complete_external_package()
+    audit = package["final_audit"]
+    audit.update(status="PASS", disposition="FINAL_AUDIT_RECORDED", audited_at=PAST_TIME)
+    for recheck in audit["row_rechecks"]:
+        recheck["status"] = "PASS"
+    result = _validate(package, trust=_sign_external_package(package))
+    assert result.disposition == "NO_GO"
+    assert "FINAL_AUDIT_PRECEDES_EVIDENCE" in _blocker_codes(result)
+
+
+def test_signed_successor_requires_new_execution_after_invalidation() -> None:
+    package = _complete_external_package()
+    package.pop("final_audit")
+    predecessor = "prior-acceptance-run"
+    package["lineage"] = {
+        "kind": "SUCCESSOR", "predecessor_run_id": predecessor,
+        "predecessor_package_sha256": "a" * 64,
+    }
+    record = {
+        "invalidation_id": "invalidate-predecessor", "sequence": 1,
+        "source_run_id": predecessor, "source_package_sha256": "a" * 64,
+        "new_run_id": package["run_id"], "scope": "COMMON", "source_row_id": None,
+        "affected_row_ids": ROW_IDS, "reason": "candidate changed", "invalidated_at": PAST_TIME,
+    }
+    package["invalidation_records"] = [record]
+    result = _validate(package, trust=_sign_external_package(package))
+    assert result.disposition == "NO_GO"
+    assert "EVIDENCE_INVALIDATED" in _result_row(result, "R53")["blockers"]
+
+    fresh = (datetime.fromisoformat(PAST_TIME.replace("Z", "+00:00")) + timedelta(seconds=1))
+    observed = fresh.isoformat().replace("+00:00", "Z")
+    for row in package["rows"]:
+        row["procedure"]["started_at"] = observed
+        row["freshness"]["observed_at"] = observed
+    result = _validate(package, trust=_sign_external_package(package))
+    assert result.disposition == "READY_FOR_FINAL_AUDIT", result.to_dict()
+
+
+def test_current_external_package_requires_separate_trusted_signature() -> None:
+    package = _complete_external_package()
+    package.pop("final_audit")
+    trust = _sign_external_package(package)
+    no_trust = _validate(package)
+    assert "EXTERNAL_TRUST_UNAVAILABLE" in _blocker_codes(no_trust)
+    assert no_trust.disposition == "NO_GO"
+    assert _result_row(no_trust, "R01")["effective_status"] == "HELD"
+
+    package["package_attestation"]["signature_b64"] = b64encode(b"0" * 64).decode()
+    tampered = _validate(package, trust=trust)
+    assert "EXTERNAL_SIGNATURE_INVALID" in _blocker_codes(tampered)
+    assert tampered.disposition == "NO_GO"
+
+
+def test_current_external_schema_requires_signed_manifest_package_and_audit() -> None:
+    package = _complete_external_package()
+    trust = _sign_external_package(package)
+    for path in (
+        ("package_attestation",),
+        ("manifest_signature", "signature_b64"),
+        ("manifest_signature", "algorithm"),
+        ("final_audit", "attestation"),
+    ):
+        bad = copy.deepcopy(package)
+        record = bad if len(path) == 1 else bad[path[0]]
+        if path[-1] == "algorithm":
+            record["algorithm"] = "RSA-PSS-SHA256"
+        else:
+            record.pop(path[-1])
+        result = _validate(bad, trust=trust)
+        assert "SCHEMA_VALIDATION_FAILED" in _blocker_codes(result), path
+        assert result.structural_status == "INVALID"
+
+
+def test_external_preaudit_cli_uses_configured_trust_file(tmp_path) -> None:
+    package = _complete_external_package()
+    package.pop("final_audit")
+    current_time = datetime.now(timezone.utc) - timedelta(seconds=2)
+    original_times = (CURRENT_TIME, PAST_TIME, FUTURE_TIME)
+    current_times = (current_time, current_time - timedelta(minutes=5), current_time + timedelta(days=30))
+    shifted = json.dumps(package)
+    for original, replacement in zip(original_times, current_times, strict=True):
+        shifted = shifted.replace(original, replacement.isoformat().replace("+00:00", "Z"))
+    package = json.loads(shifted)
+    trust = _sign_external_package(package)
+    package_path = tmp_path / "package.json"
+    package_path.write_text(json.dumps(package))
+    trust_path = tmp_path / "trust.json"
+    trust_path.write_text(json.dumps(trust))
+    command = [
+        sys.executable,
+        str(ROOT / "scripts/check-p1-external-acceptance.py"),
+        "--package", str(package_path),
+        "--schema", str(ROOT / "docs/v4/p1-rg0-rg1-external-acceptance.schema.json"),
+    ]
+    missing_trust = subprocess.run(command, text=True, capture_output=True, check=False)
+    assert missing_trust.returncode == 1, missing_trust.stdout
+    assert json.loads(missing_trust.stdout)["disposition"] == "NO_GO"
+    verified = subprocess.run(
+        [*command, "--trust-file", str(trust_path)], text=True, capture_output=True, check=False,
+    )
+    assert verified.returncode == 0, verified.stdout
+    result = json.loads(verified.stdout)
+    assert result["disposition"] == "READY_FOR_FINAL_AUDIT"
+    assert result["gate_state"] == "UNCHANGED"
+    trust_path.write_bytes(b"\xff")
+    invalid_trust = subprocess.run(
+        [*command, "--trust-file", str(trust_path)], text=True, capture_output=True, check=False,
+    )
+    assert invalid_trust.returncode == 2, invalid_trust.stderr
+    assert json.loads(invalid_trust.stdout)["blockers"][0]["code"] == "TRUST_INPUT_INVALID"
 
 
 def test_rollback_requires_pre_state_action_and_exact_post_state_readback() -> None:
@@ -2164,3 +2488,99 @@ def test_fail_status_requires_an_executed_failed_normalized_assertion() -> None:
     result = _validate(package).to_dict()
     assert result["structural_status"] == "INVALID"
     assert "FAIL_WITHOUT_FAILED_ASSERTION" in result["rows"]["R01"]["blockers"]
+
+
+def test_signed_package_requires_manifest_target_inventory_for_all_rows():
+    package = _complete_external_package()
+    package.pop("final_audit")
+    del package["manifest"]["row_targets"]["R53"]
+    trust = _sign_external_package(package)
+    result = _validate(package, trust=trust)
+    assert result.disposition == "NO_GO"
+    assert "ROW_TARGET_INVENTORY_MISMATCH" in _blocker_codes(result)
+
+
+def test_signed_account_and_route_nonapplicability_binds_row_authorities():
+    package = _complete_external_package()
+    package.pop("final_audit")
+    row = _row_by_id(package, "R53")
+    approval = dict(applicability="NOT_APPLICABLE", row_id="R53", reason="Schema observation only",
+                    accountable_owner_id="owner-01", reviewer_id="reviewer-01", reviewer_confirmed=True)
+    row["scope"].update(account=approval.copy(), route=approval.copy(), route_evidence_required=False)
+    _prepare_target_bindings(package)
+    trust = _sign_external_package(package)
+    result = _validate(package, trust=trust)
+    assert result.disposition == "READY_FOR_FINAL_AUDIT", result.to_dict()["blockers"]
+    for axis, key in (("account", "row_id"), ("route", "accountable_owner_id"), ("account", "reviewer_id")):
+        bad = copy.deepcopy(package)
+        _row_by_id(bad, "R53")["scope"][axis][key] = "another"
+        _prepare_target_bindings(bad)
+        result = _validate(bad, trust=_sign_external_package(bad))
+        assert "NONAPPLICABILITY_APPROVAL_INVALID" in _blocker_codes(result)
+        assert result.disposition == "NO_GO"
+
+
+def test_signed_multi_account_row_requires_distinct_target_execution_and_audit():
+    package = _complete_external_package()
+    row = _row_by_id(package, "R53")
+    child = copy.deepcopy(row)
+    child["target_id"] = "warehouse"
+    child["scope"]["account"]["account_id"] = "warehouse-account"
+    child["scope"]["resource_ids"] = ["warehouse-catalog"]
+    for path, ref in _reference_paths(child):
+        if path == ("procedure", "runbook"):
+            ref["evidence_id"] = "warehouse-runbook"
+            continue
+        ref.clear()
+        ref.update(_ref("warehouse:" + "/".join(path)))
+    row["child_checks"] = [child]
+    _prepare_target_bindings(package)
+    audit = package.pop("final_audit")
+    trust = _sign_external_package(package)
+    result = _validate(package, trust=trust)
+    assert result.disposition == "READY_FOR_FINAL_AUDIT", result.to_dict()
+    for fault in ("missing", "transfer", "relabel", "runbook", "same_scope", "same_absent_scope"):
+        bad = copy.deepcopy(package)
+        parent = _row_by_id(bad, "R53")
+        item = parent["child_checks"][0]
+        if fault == "missing":
+            parent["child_checks"].clear()
+        elif fault == "transfer":
+            item["raw_result"]["binding"] = copy.deepcopy(parent["raw_result"]["binding"])
+        elif fault == "relabel":
+            item["raw_result"].update({k: parent["raw_result"][k] for k in ("uri", "sha256")})
+        elif fault == "runbook":
+            item["procedure"]["runbook_version"] = "unrelated"
+        else:
+            parent["scope"]["resource_ids"] = ["alpha", "beta"]
+            item["scope"] = copy.deepcopy(parent["scope"])
+            item["scope"]["resource_ids"].reverse()
+            if fault == "same_absent_scope":
+                approval = dict(applicability="NOT_APPLICABLE", row_id="R53", reason="Schema observation",
+                                accountable_owner_id="owner-01", reviewer_id="reviewer-01",
+                                reviewer_confirmed=True)
+                for execution in (parent, item):
+                    execution["scope"].update(account=approval.copy(), route=approval.copy(),
+                                              route_evidence_required=False)
+                item["scope"]["account"]["reason"] = "Database-only observation"
+                item["scope"]["route"]["reason"] = "No worker route involved"
+            _prepare_target_bindings(bad)
+        item.pop("record_sha256")
+        item["record_sha256"] = _digest(item)
+        result = _validate(bad, trust=_sign_external_package(bad))
+        assert result.disposition == "NO_GO", fault
+        if fault.startswith("same_"):
+            assert "ROW_TARGET_INVENTORY_MISMATCH" in _blocker_codes(result), fault
+    # Each target requires a fresh independently scoped readback in the signed final audit.
+    package["final_audit"] = audit
+    audit.update(status="PASS", disposition="FINAL_AUDIT_RECORDED")
+    for recheck in audit["row_rechecks"]:
+        recheck["status"] = "PASS"
+    result = _validate(package, trust=_sign_external_package(package))
+    assert result.disposition == "NO_GO"
+    recheck = next(item for item in audit["row_rechecks"] if item["row_id"] == "R53")
+    readback = _ref("warehouse-auditor-observation")
+    _bind_references(readback, child["raw_result"]["binding"], audit["auditor"]["person_id"])
+    recheck["child_rechecks"] = [{"target_id": "warehouse", "status": "PASS", "readback": readback}]
+    result = _validate(package, trust=_sign_external_package(package))
+    assert result.disposition == "FINAL_AUDIT_RECORDED", result.to_dict()["blockers"]

@@ -36,10 +36,10 @@
     "current Task34 independent build artifact review": 1,
     "current Task35 exact-candidate local qualification report; external gates HELD": 1,
     "active user-authored project instructions; preserved verbatim": 1,
-    "current Task34/35 candidate and evidence status; external gates HELD": 1,
+    "current P1 navigation and published fixture CI; external gates HELD": 1,
     "preserved original design source or historical diagram": 7,
     "historical capture-time documentation/status scope; Task18 latest local candidate is source c23c4cca72021ce6621eaacd66f2bfc23f4cc129 / artifact be6f713b255f6b654b73ae4343db1db5c07e3840; external rows remain NOT RUN and gates HELD": 75,
-    "current Task34/35 candidate and documentation navigation; external gates HELD": 1,
+    "current P1 documentation navigation; external gates HELD": 1,
     "preserved immutable historical snapshot; bytes retained verbatim": 1,
     "preserved immutable historical snapshot": 62,
     "preserved YouTube-agent reference research": 5,
@@ -52,7 +52,7 @@
     "preserved unscanned P1 policy-routing subaudit payload": 1,
     "preserved source, archive or coverage manifest": 4,
     "current documentation audit; self hash omitted to avoid a recursive digest": 1,
-    "active 417-path exact-hash source lock for Task34/35 source 546ac4ed794afc123ea02586a37d4a4457590582; historical nested locks preserved": 1,
+    "current P1 development source inventory; historical lock preserved at ea4cd3f": 1,
     "preserved dated independent item7 qualification report": 6,
     "durable local canonical dry creative qualification report": 1,
     "preserved dated legacy intelligence qualification report": 1,
@@ -61,18 +61,18 @@
     "preserved dated legacy brief and scheduled ingress qualification report": 1,
     "preserved dated original native schedule qualification report": 1,
     "Current release ledger preserves frozen application scope and records exact pushed documentation/evidence CI PASS for 62b5a5e/run 40553244096; next status-only commit CI pending after push; release gates retained": 1,
-    "latest Task34/35 candidate; historical Task31/32 and earlier records retained": 1,
+    "P1 qualification matrix with published fixture CI and current follow-up scope": 1,
     "current synthetic Task34/35 acceptance package bound to exact source/artifact; 22 rows NOT RUN; NO_GO/UNCHANGED": 1,
-    "frozen initial audit/review scope plus current Task36 candidate addendum; external gates HELD": 1,
+    "frozen review chain and successive handoff hashes; external gates HELD": 1,
     "current external acceptance schema; identities and production values remain unprovisioned": 1,
     "current initial commit-bound P1/RG0/RG1 audit evidence; COMPLETE_REVIEWED at source 7c1ddcd; 22 rows non-PASS; implementation/target qualification NOT RUN; production disabled; RG0/RG1 HELD; P2 BLOCKED": 1,
     "preserved dated parallel qualification report": 1,
-    "current Task34/35 exact-candidate progress; external acceptance NOT RUN/HELD": 1,
+    "current P1 development and release handoff; external gates HELD": 1,
     "preserved historical Task 10 publication recovery-hold evidence and original P0-pinned bytes": 1,
     "Successor evidence preserves frozen application result and historical review, records exact documentation CI PASS for 62b5a5e/run 40553244096, and marks only the next status-only commit CI pending": 1,
     "Historical exact feature-head readback preserved; exact pushed documentation/evidence CI PASS for 62b5a5e/run 40553244096 and next status-only candidate pending recorded separately": 1,
     "preserved durable P1 audit/spec review and repair report payload": 10,
-    "current Task34/35 exact-candidate local validation; earlier candidate results historical": 1,
+    "current P1 verification; historical checks remain candidate-bound": 1,
     "current_handoff_hashes": {
       ".superpowers/sdd/2026-10-27-p1-production-policy-and-revocation/final-evidence-report.md": "551c40b4d6852ab3ab4f42bc2cd26ffd1a0339fa03a5f7c2c0f0d39814d05307",
       ".superpowers/sdd/2026-10-28-p1-remaining-production-development/final-evidence-report.md": "bf9b9bf5e0356449b6bedcddf97b3858463c2f52742d3a40113a489ee26b163f",
@@ -101,8 +101,8 @@
       ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-34-build-report.md": "f2191f02a28df94d1cf9d08fc8f315f02e270f2ee63fbcf681ef96e4e05d85c4",
       ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-34-build-review.md": "6992a5f72cc184c939b2375b660a86ae4bf453275cf5c1ff1db5abc8a0637d43",
       ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-35-report.md": "4fbce11cd0daeefd3c6d2dc4be378b022e9123e66a28c59ece20992268013781",
-      "README.md": "c94d99cabf8bd76f2dd29d807b3446eae4bc8a75a897969d853633d703faeaa4",
-      "docs/README.md": "5bb6b385761cf2d82812ec93b86b4115f7b556b20dc39e96b45a36905fdd783f",
+      "README.md": "e33ff1b9e4b87d9394f273ef197fbc90f62711b6d97880fa50cb518edc12ea16",
+      "docs/README.md": "67719f215c8bb3e564073238805a8016a071e21b5c70facc79117f559c31371c",
       "docs/superpowers/plans/2026-10-27-p1-production-policy-and-revocation.md": "c1564a7ec7d09f63b5aba105678c8b5929619fecc49e5b4bb3e415ed1340672e",
       "docs/superpowers/plans/2026-10-27-p1-rg0-rg1-initial-gap-audit.md": "5d1dd8a86718184d03324144643dfb009cb36243a5bd0c0f14c46844eb3c5cd4",
       "docs/superpowers/plans/2026-10-28-p1-recovery-rollback-v2.md": "e4548b283023d31bba22a0a73a8472d5cb0e9e4ef0dee77fc058605c58d54787",
@@ -112,21 +112,21 @@
       "docs/superpowers/specs/2026-10-13-p1-production-recovery-and-alerts-design.md": "4d7076fd968c28d78307678fa0b186d446dff6e3f3a88d5507646a828b2605cc",
       "docs/superpowers/specs/2026-10-13-p1-production-routing-and-worker-fencing-design.md": "76921a085e352f86ae77895c824917832a49847c306b76bc56ae2c7e44a23e90",
       "docs/superpowers/specs/2026-10-13-rg0-rg1-external-acceptance-design.md": "7334364e5417cbb29143877334a80ea90125e9ce61bff71f67de77a86f61069e",
-      "docs/v4/IMPLEMENTATION-BLUEPRINT.md": "8ceb85b83e452c10d4b323a709ac6706935013c2d9193bd1bff2b1b8c83d2703",
-      "docs/v4/evidence-lock.json": "09100cb7aee864227d78112aa7729a1cded7790d34cc33687c5e2a3732188e55",
+      "docs/v4/IMPLEMENTATION-BLUEPRINT.md": "812ae6dbfef9a9cb0a7e29fa7e80e228bbcee4d97f549e66d6575ad4a2c53506",
+      "docs/v4/evidence-lock.json": "8a2ba41c0da37f20486d56b42446cfa3fa04d74215e982a5305b80b3b53536fe",
       "docs/v4/p0-release.json": "0a0f1969e0497cbec535fb3f854b51cef870a4746eb92f8a67a127566dc9ff75",
       "docs/v4/p1-production-policy-revocation-evidence.json": "e5a5a3d424157479cacaf00eae39614a5abe12ecdb04ac38af0c95692dbd982b",
-      "docs/v4/p1-qualification-matrix.json": "fb3ae1b5af6844bcf6e2d72c5c2d8f2444c6f2156c30e5d4cdd17f0cdd24768e",
+      "docs/v4/p1-qualification-matrix.json": "c7de522514872cf4e6ec437db35491e0091e5bf517bfc13f9f0f1fc2d5c74c93",
       "docs/v4/p1-remaining-production-development-evidence.json": "9712af1be052ae418a26d4c0ac600ce15a191d49b31517885926e3cc72d598ad",
-      "docs/v4/p1-rg0-rg1-external-acceptance.schema.json": "0086353075c823f92f78b2d4f5e48005e62660537b70c95864b5f4ed5e2c945c",
+      "docs/v4/p1-rg0-rg1-external-acceptance.schema.json": "16cbdd59abc82c587d0d05de44dec0d867893d0bc8207df20d7f1bbe85805154",
       "docs/v4/p1-rg0-rg1-initial-gap-audit.json": "33fe485384dcf60e36df8d48ace6394c80bce0d1bd9e6b9b39c7a905d65676b1",
       "docs/v4/p1-rg0-rg1-initial-gap-audit.md": "62aab5afb39f7c47e355a68ccf56e319a72955247515dfbdba8913fd797a5944",
-      "docs/v4/progress.md": "ee9fb3c67f7d3054cfd821cb2206ebb6ebc1fa22751e68c1c4ac401aba04660c",
+      "docs/v4/progress.md": "1a518c682495ad3ea32602065883009652d7dc6a9fe18f656a583212d85de60b",
       "docs/v4/publication-recovery-hold-evidence.json": "3cce88e4d692f726be710c1f4db46b1428c9546561424a2ab0ad120363becc66",
       "docs/v4/publication-recovery-hold-successor-evidence.json": "6bb3ce696cffec2629838f5f30b8eea4acb837cbb81c1bcbc1b4de4f19e8764a",
       "docs/v4/repository-enforcement-evidence.json": "fc69f901036971bd64588cf3247d1701939e7525442f196daeab7f1919de11a2",
-      "docs/v4/test_checks.py": "c915b137417c53b3b3f773eacbfcfea3d62584a21ca11df8288e0c2b4281cf6e",
-      "docs/v4/validation.md": "ea9a8542919690e417e575c37e5f50e804d47edf4c87a179502674256319e2ed"
+      "docs/v4/test_checks.py": "8b753e4f977efeeeb3f90d70adc4d367730dbc9579d8f6ca83ae0ef5ed3aaf82",
+      "docs/v4/validation.md": "6058dbac9fbe77e3c45dd48fcba2fa90ab4e5f87e5d81b1aee58f759df982755"
     },
     "Task25 review history and final source-546ac4e fix-loop rereview preserved; current rereview PASS/CLEAN with 0 findings; durable review SHA-256 42de4ad70cc6192d03cd983359d30a8ca631fc52cf2dc6d8c8c2fd6ee0d08b8d; earlier 8c31e84 review remains historically scoped": 1
   },
@@ -2432,8 +2432,8 @@
     },
     {
       "path": "README.md",
-      "sha256": "c94d99cabf8bd76f2dd29d807b3446eae4bc8a75a897969d853633d703faeaa4",
-      "disposition": "current Task34/35 candidate and evidence status; external gates HELD"
+      "sha256": "e33ff1b9e4b87d9394f273ef197fbc90f62711b6d97880fa50cb518edc12ea16",
+      "disposition": "current P1 navigation and published fixture CI; external gates HELD"
     },
     {
       "path": "docs-new-arch/ArchCurrent.mermaid",
@@ -2477,8 +2477,8 @@
     },
     {
       "path": "docs/README.md",
-      "sha256": "5bb6b385761cf2d82812ec93b86b4115f7b556b20dc39e96b45a36905fdd783f",
-      "disposition": "current Task34/35 candidate and documentation navigation; external gates HELD"
+      "sha256": "67719f215c8bb3e564073238805a8016a071e21b5c70facc79117f559c31371c",
+      "disposition": "current P1 documentation navigation; external gates HELD"
     },
     {
       "path": "docs/adr/0001-durable-runtime.md",
@@ -3197,7 +3197,7 @@
     },
     {
       "path": "docs/superpowers/specs/2026-10-13-v4-multiplatform-autonomy-program-sequence.md",
-      "sha256": "ba64032ca707c4348c97651fa06beced3df90d1612c38c56de50fed1558947ca",
+      "sha256": "2b3a10096385285418196450dc4a87797f2f9ef913994220b73d0fdf7af2ff3a",
       "disposition": "preserved dated design specification"
     },
     {
@@ -3207,7 +3207,7 @@
     },
     {
       "path": "docs/v4/IMPLEMENTATION-BLUEPRINT.md",
-      "sha256": "8ceb85b83e452c10d4b323a709ac6706935013c2d9193bd1bff2b1b8c83d2703",
+      "sha256": "812ae6dbfef9a9cb0a7e29fa7e80e228bbcee4d97f549e66d6575ad4a2c53506",
       "disposition": "historical capture-time documentation/status scope; Task18 latest local candidate is source c23c4cca72021ce6621eaacd66f2bfc23f4cc129 / artifact be6f713b255f6b654b73ae4343db1db5c07e3840; external rows remain NOT RUN and gates HELD"
     },
     {
@@ -3282,8 +3282,8 @@
     },
     {
       "path": "docs/v4/evidence-lock.json",
-      "sha256": "09100cb7aee864227d78112aa7729a1cded7790d34cc33687c5e2a3732188e55",
-      "disposition": "active 417-path exact-hash source lock for Task34/35 source 546ac4ed794afc123ea02586a37d4a4457590582; historical nested locks preserved"
+      "sha256": "8a2ba41c0da37f20486d56b42446cfa3fa04d74215e982a5305b80b3b53536fe",
+      "disposition": "current P1 development source inventory; historical lock preserved at ea4cd3f"
     },
     {
       "path": "docs/v4/goal-revision-evidence.json",
@@ -3422,8 +3422,8 @@
     },
     {
       "path": "docs/v4/p1-qualification-matrix.json",
-      "sha256": "fb3ae1b5af6844bcf6e2d72c5c2d8f2444c6f2156c30e5d4cdd17f0cdd24768e",
-      "disposition": "latest Task34/35 candidate; historical Task31/32 and earlier records retained"
+      "sha256": "c7de522514872cf4e6ec437db35491e0091e5bf517bfc13f9f0f1fc2d5c74c93",
+      "disposition": "P1 qualification matrix with published fixture CI and current follow-up scope"
     },
     {
       "path": "docs/v4/p1-remaining-production-development-evidence.json",
@@ -3432,12 +3432,12 @@
     },
     {
       "path": "docs/v4/p1-rg0-rg1-audit-and-spec-review.md",
-      "sha256": "7c8484be05457854c20bac34e09d8e8ccf497d087d2d86d5d8a14de555f58b2c",
-      "disposition": "frozen initial audit/review scope plus current Task36 candidate addendum; external gates HELD"
+      "sha256": "005a345e1746faa6d3d110215e35fe520917022ab6284f589121b4adf4ce413a",
+      "disposition": "frozen review chain and successive handoff hashes; external gates HELD"
     },
     {
       "path": "docs/v4/p1-rg0-rg1-external-acceptance.schema.json",
-      "sha256": "0086353075c823f92f78b2d4f5e48005e62660537b70c95864b5f4ed5e2c945c",
+      "sha256": "16cbdd59abc82c587d0d05de44dec0d867893d0bc8207df20d7f1bbe85805154",
       "disposition": "current external acceptance schema; identities and production values remain unprovisioned"
     },
     {
@@ -3462,8 +3462,8 @@
     },
     {
       "path": "docs/v4/progress.md",
-      "sha256": "ee9fb3c67f7d3054cfd821cb2206ebb6ebc1fa22751e68c1c4ac401aba04660c",
-      "disposition": "current Task34/35 exact-candidate progress; external acceptance NOT RUN/HELD"
+      "sha256": "1a518c682495ad3ea32602065883009652d7dc6a9fe18f656a583212d85de60b",
+      "disposition": "current P1 development and release handoff; external gates HELD"
     },
     {
       "path": "docs/v4/publication-recovery-hold-evidence.json",
@@ -3532,8 +3532,8 @@
     },
     {
       "path": "docs/v4/validation.md",
-      "sha256": "ea9a8542919690e417e575c37e5f50e804d47edf4c87a179502674256319e2ed",
-      "disposition": "current Task34/35 exact-candidate local validation; earlier candidate results historical"
+      "sha256": "6058dbac9fbe77e3c45dd48fcba2fa90ab4e5f87e5d81b1aee58f759df982755",
+      "disposition": "current P1 verification; historical checks remain candidate-bound"
     },
     {
       "path": "docs/verification.md",
@@ -4058,8 +4058,8 @@
     ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-34-build-report.md": "f2191f02a28df94d1cf9d08fc8f315f02e270f2ee63fbcf681ef96e4e05d85c4",
     ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-34-build-review.md": "6992a5f72cc184c939b2375b660a86ae4bf453275cf5c1ff1db5abc8a0637d43",
     ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-35-report.md": "4fbce11cd0daeefd3c6d2dc4be378b022e9123e66a28c59ece20992268013781",
-    "README.md": "c94d99cabf8bd76f2dd29d807b3446eae4bc8a75a897969d853633d703faeaa4",
-    "docs/README.md": "5bb6b385761cf2d82812ec93b86b4115f7b556b20dc39e96b45a36905fdd783f",
+    "README.md": "e33ff1b9e4b87d9394f273ef197fbc90f62711b6d97880fa50cb518edc12ea16",
+    "docs/README.md": "67719f215c8bb3e564073238805a8016a071e21b5c70facc79117f559c31371c",
     "docs/superpowers/plans/2026-10-27-p1-production-policy-and-revocation.md": "c1564a7ec7d09f63b5aba105678c8b5929619fecc49e5b4bb3e415ed1340672e",
     "docs/superpowers/plans/2026-10-27-p1-rg0-rg1-initial-gap-audit.md": "5d1dd8a86718184d03324144643dfb009cb36243a5bd0c0f14c46844eb3c5cd4",
     "docs/superpowers/plans/2026-10-28-p1-recovery-rollback-v2.md": "e4548b283023d31bba22a0a73a8472d5cb0e9e4ef0dee77fc058605c58d54787",
@@ -4069,21 +4069,21 @@
     "docs/superpowers/specs/2026-10-13-p1-production-recovery-and-alerts-design.md": "4d7076fd968c28d78307678fa0b186d446dff6e3f3a88d5507646a828b2605cc",
     "docs/superpowers/specs/2026-10-13-p1-production-routing-and-worker-fencing-design.md": "76921a085e352f86ae77895c824917832a49847c306b76bc56ae2c7e44a23e90",
     "docs/superpowers/specs/2026-10-13-rg0-rg1-external-acceptance-design.md": "7334364e5417cbb29143877334a80ea90125e9ce61bff71f67de77a86f61069e",
-    "docs/v4/IMPLEMENTATION-BLUEPRINT.md": "8ceb85b83e452c10d4b323a709ac6706935013c2d9193bd1bff2b1b8c83d2703",
-    "docs/v4/evidence-lock.json": "09100cb7aee864227d78112aa7729a1cded7790d34cc33687c5e2a3732188e55",
+    "docs/v4/IMPLEMENTATION-BLUEPRINT.md": "812ae6dbfef9a9cb0a7e29fa7e80e228bbcee4d97f549e66d6575ad4a2c53506",
+    "docs/v4/evidence-lock.json": "8a2ba41c0da37f20486d56b42446cfa3fa04d74215e982a5305b80b3b53536fe",
     "docs/v4/p0-release.json": "0a0f1969e0497cbec535fb3f854b51cef870a4746eb92f8a67a127566dc9ff75",
     "docs/v4/p1-production-policy-revocation-evidence.json": "e5a5a3d424157479cacaf00eae39614a5abe12ecdb04ac38af0c95692dbd982b",
-    "docs/v4/p1-qualification-matrix.json": "fb3ae1b5af6844bcf6e2d72c5c2d8f2444c6f2156c30e5d4cdd17f0cdd24768e",
+    "docs/v4/p1-qualification-matrix.json": "c7de522514872cf4e6ec437db35491e0091e5bf517bfc13f9f0f1fc2d5c74c93",
     "docs/v4/p1-remaining-production-development-evidence.json": "9712af1be052ae418a26d4c0ac600ce15a191d49b31517885926e3cc72d598ad",
-    "docs/v4/p1-rg0-rg1-external-acceptance.schema.json": "0086353075c823f92f78b2d4f5e48005e62660537b70c95864b5f4ed5e2c945c",
+    "docs/v4/p1-rg0-rg1-external-acceptance.schema.json": "16cbdd59abc82c587d0d05de44dec0d867893d0bc8207df20d7f1bbe85805154",
     "docs/v4/p1-rg0-rg1-initial-gap-audit.json": "33fe485384dcf60e36df8d48ace6394c80bce0d1bd9e6b9b39c7a905d65676b1",
     "docs/v4/p1-rg0-rg1-initial-gap-audit.md": "62aab5afb39f7c47e355a68ccf56e319a72955247515dfbdba8913fd797a5944",
-    "docs/v4/progress.md": "ee9fb3c67f7d3054cfd821cb2206ebb6ebc1fa22751e68c1c4ac401aba04660c",
+    "docs/v4/progress.md": "1a518c682495ad3ea32602065883009652d7dc6a9fe18f656a583212d85de60b",
     "docs/v4/publication-recovery-hold-evidence.json": "3cce88e4d692f726be710c1f4db46b1428c9546561424a2ab0ad120363becc66",
     "docs/v4/publication-recovery-hold-successor-evidence.json": "6bb3ce696cffec2629838f5f30b8eea4acb837cbb81c1bcbc1b4de4f19e8764a",
     "docs/v4/repository-enforcement-evidence.json": "fc69f901036971bd64588cf3247d1701939e7525442f196daeab7f1919de11a2",
-    "docs/v4/test_checks.py": "c915b137417c53b3b3f773eacbfcfea3d62584a21ca11df8288e0c2b4281cf6e",
-    "docs/v4/validation.md": "ea9a8542919690e417e575c37e5f50e804d47edf4c87a179502674256319e2ed"
+    "docs/v4/test_checks.py": "8b753e4f977efeeeb3f90d70adc4d367730dbc9579d8f6ca83ae0ef5ed3aaf82",
+    "docs/v4/validation.md": "6058dbac9fbe77e3c45dd48fcba2fa90ab4e5f87e5d81b1aee58f759df982755"
   },
   "historical_documentation_refresh": {
     "plan_task": "docs/superpowers/plans/2026-10-27-p1-rg0-rg1-initial-gap-audit.md",
@@ -4177,6 +4177,7 @@
       "historical Task22 development build report; superseded by Task26 final corrected artifact": 1,
       "historical Task23 exact-candidate qualification; superseded by Task35 authoritative qualification": 1,
       "current Task25 final mixed-host fix implementation report; 29 readback unit tests passed": 1,
+      "Task25 review history and final source-546ac4e fix-loop rereview preserved; current rereview PASS/CLEAN with 0 findings; durable review SHA-256 42de4ad70cc6192d03cd983359d30a8ca631fc52cf2dc6d8c8c2fd6ee0d08b8d; earlier 8c31e84 review remains historically scoped": 1,
       "historical Task26 development artifact build; superseded by Task34": 1,
       "historical Task26 build review; superseded by Task34": 1,
       "historical Task28 runner-environment failure; superseded as latest qualification by Task35": 1,
@@ -4189,10 +4190,10 @@
       "current Task34 independent build artifact review": 1,
       "current Task35 exact-candidate local qualification report; external gates HELD": 1,
       "active user-authored project instructions; preserved verbatim": 1,
-      "current Task34/35 candidate and evidence status; external gates HELD": 1,
+      "current P1 navigation and published fixture CI; external gates HELD": 1,
       "preserved original design source or historical diagram": 2,
       "historical capture-time documentation/status scope; Task18 latest local candidate is source c23c4cca72021ce6621eaacd66f2bfc23f4cc129 / artifact be6f713b255f6b654b73ae4343db1db5c07e3840; external rows remain NOT RUN and gates HELD": 74,
-      "current Task34/35 candidate and documentation navigation; external gates HELD": 1,
+      "current P1 documentation navigation; external gates HELD": 1,
       "preserved immutable historical snapshot; bytes retained verbatim": 1,
       "preserved YouTube-agent reference research": 4,
       "preserved dated preparation plan": 3,
@@ -4201,10 +4202,9 @@
       "preserved dated design specification": 3,
       "preserved dated initial P1/RG0/RG1 subaudit report": 3,
       "preserved dated independent item7 qualification report": 1,
-      "frozen initial audit/review scope plus current Task36 candidate addendum; external gates HELD": 1,
-      "current Task34/35 exact-candidate progress; external acceptance NOT RUN/HELD": 1,
-      "current Task34/35 exact-candidate local validation; earlier candidate results historical": 1,
-      "Task25 review history and final source-546ac4e fix-loop rereview preserved; current rereview PASS/CLEAN with 0 findings; durable review SHA-256 42de4ad70cc6192d03cd983359d30a8ca631fc52cf2dc6d8c8c2fd6ee0d08b8d; earlier 8c31e84 review remains historically scoped": 1
+      "frozen review chain and successive handoff hashes; external gates HELD": 1,
+      "current P1 development and release handoff; external gates HELD": 1,
+      "current P1 verification; historical checks remain candidate-bound": 1
     }
   },
   "mermaid_source_blocks_updated": 1,
@@ -5264,5 +5264,30 @@
     "producer_bindings": [],
     "status_at_event": "PASS_LOCAL_DEVELOPMENT_QUALIFICATION; EXTERNAL_ACCEPTANCE_NOT_RUN; PRODUCTION_GATES_HELD",
     "superseded_by": "Task35 exact local qualification of source 546ac4ed794afc123ea02586a37d4a4457590582 / artifact fe6b3795ce4453beb6c6bbafcc20cd3be91b3b87."
+  },
+  "current_p1_follow_up": {
+    "source_lock_sha256": "8a2ba41c0da37f20486d56b42446cfa3fa04d74215e982a5305b80b3b53536fe",
+    "scope": "Local development checkout with injected targets and authorities",
+    "artifact_build": "NOT RUN",
+    "external_rows_not_run": 22,
+    "external_final_audit": "NOT RUN",
+    "production_recovery_case_lifecycle": "HELD pending a compatible schema and rollback-verifier successor",
+    "handoff": "docs/v4/progress.md#current-state"
+  },
+  "published_fixture_ci": {
+    "head_commit": "ea4cd3f030361683051659e37c8171fce7b80a19",
+    "workflow_run_id": 40942778372,
+    "workflow_run_url": "https://github.com/manojvermamv/Salience/actions/runs/40942778372",
+    "conclusion": "success",
+    "required_jobs": {
+      "verify": "success",
+      "p0-regression": "success"
+    },
+    "non_live_tests": {
+      "passed": 1212,
+      "skipped": 26,
+      "warnings": 3
+    },
+    "compose_worker_restart": "SKIPPED"
   }
 }

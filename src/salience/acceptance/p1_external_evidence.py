@@ -52,7 +52,8 @@ from ._reconciliation import (
     _validate_ledgers,
     _load_matrix_safely,
 )
-from ._row_validation import _validate_row
+from ._row_validation import _validate_p0_proof_reuse, _validate_row
+from ._trust import _validate_external_trust
 
 
 def _schema_for_default() -> Any:
@@ -120,6 +121,7 @@ def _validate_acceptance_package_impl(
     payload: Mapping[str, object],
     *,
     now: datetime,
+    trust: Mapping[str, Any] | None,
 ) -> AcceptanceDisposition:
     """Validate a local package; never contacts targets or changes a gate."""
     if not isinstance(payload, Mapping):
@@ -230,7 +232,8 @@ def _validate_acceptance_package_impl(
             state=state,
         )
 
-    _validate_invalidations(payload, dependencies, state)
+    _validate_p0_proof_reuse(payload, state)
+    _validate_invalidations(payload, dependencies, state, now, row_by_id)
     _validate_evidence_bindings(payload, state)
     _validate_evidence_index(payload, state)
 
@@ -243,12 +246,13 @@ def _validate_acceptance_package_impl(
     )
     matrix_rg1_pass = _is_pass(matrix_status.get("RG1"))
     package_is_external = manifest.get("package_scope") == "EXTERNAL_PRODUCTION"
+    separate_audit = payload.get("schema_version") == "1.1"
     if manifest.get("package_scope") == "SYNTHETIC":
         state.add_global(
             "SYNTHETIC_PACKAGE_LOCAL_ONLY",
             "Synthetic packages can establish local structure only.",
         )
-    if not p0_rg0_pass or not matrix_rg1_pass:
+    if not separate_audit and (not p0_rg0_pass or not matrix_rg1_pass):
         state.add_global(
             "QUALIFICATION_LEDGER_HELD",
             "The reconciled P0/RG0 or P1/RG1 ledger is held or has a non-pass prerequisite.",
@@ -258,33 +262,50 @@ def _validate_acceptance_package_impl(
             "EXTERNAL_SCOPE_NOT_ESTABLISHED",
             "This package does not claim an external production acceptance scope.",
         )
+    elif not separate_audit:
+        state.add_global(
+            "EXTERNAL_PACKAGE_VERSION_RETIRED",
+            "External acceptance requires the current independently signed package format.",
+        )
+    elif not _validate_external_trust(payload, trust, state):
+        for row_id, row_state in state.row_states.items():
+            if row_state.claimed_status == "PASS":
+                state.add_row(
+                    row_id,
+                    "EXTERNAL_PROVENANCE_UNVERIFIED",
+                    "Trusted package provenance is required for external evidence.",
+                )
+
+    def row_passes(row_id: str) -> bool:
+        row_state = state.row_states.get(row_id)
+        return (
+            row_state is not None
+            and row_state.claimed_status == "PASS"
+            and row_state.freshness == "CURRENT"
+            and not row_state.blockers
+        )
 
     _apply_row_holds(
         state=state,
         row_by_id=row_by_id,
         dependencies=dependencies,
         matrix_rows=matrix_rows,
-        p0_rg0_pass=p0_rg0_pass,
+        p0_rg0_pass=all(map(row_passes, RG0_ROW_IDS)) if separate_audit else p0_rg0_pass,
         matrix_rg1_pass=matrix_rg1_pass,
         package_is_external=package_is_external,
+        require_released_ledgers=not separate_audit,
     )
-    all_rows_pass = set(row_by_id) == set(ROW_IDS) and all(
-        row_id in state.row_states
-        and state.row_states[row_id].claimed_status == "PASS"
-        and state.row_states[row_id].freshness == "CURRENT"
-        and not state.row_states[row_id].blockers
-        for row_id in ROW_IDS
-    )
+    all_rows_pass = set(row_by_id) == set(ROW_IDS) and all(map(row_passes, ROW_IDS))
     if not all_rows_pass:
         state.add_global(
             "ROW_STATUS_NOT_PASS",
             "Every required row must have a current, exact-scope PASS disposition.",
         )
-    final_audit_status = _validate_final_audit(payload, state, now, row_by_id)
-    if not final_audit_status:
+    audit_present = "final_audit" in payload
+    if (audit_present or not separate_audit) and not _validate_final_audit(payload, state, now, row_by_id):
         state.add_global(
             "FINAL_AUDIT_NOT_COMPLETE",
-            "A separate final audit must recheck all 22 rows before external readiness.",
+            "The final audit record must independently recheck all 22 rows.",
         )
 
     rows_out: dict[str, RowDisposition] = {}
@@ -319,13 +340,11 @@ def _validate_acceptance_package_impl(
     if (
         not state.global_blockers
         and not state.structural_errors
+        and separate_audit
         and package_is_external
-        and p0_rg0_pass
-        and matrix_rg1_pass
-        and final_audit_status
-        and all(row.effective_status == "PASS" for row in rows_out.values())
+        and all_rows_pass
     ):
-        disposition = "READY_FOR_FINAL_AUDIT"
+        disposition = "FINAL_AUDIT_RECORDED" if audit_present else "READY_FOR_FINAL_AUDIT"
 
     structural_status = "INVALID" if state.structural_errors else "VALID"
     blockers = tuple(
@@ -354,10 +373,11 @@ def validate_acceptance_package(
     payload: Mapping[str, object],
     *,
     now: datetime,
+    trust: Mapping[str, Any] | None = None,
 ) -> AcceptanceDisposition:
     """Return a fail-closed result for malformed local package shapes."""
     try:
-        return _validate_acceptance_package_impl(payload, now=now)
+        return _validate_acceptance_package_impl(payload, now=now, trust=trust)
     except Exception as exc:
         return _invalid_result(
             payload,

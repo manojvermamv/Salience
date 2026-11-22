@@ -301,9 +301,12 @@ def _write_local_launcher_process_fixture(tmp_path, monkeypatch, *, allow_worker
     prefix = tmp_path / "python-prefix"
     interpreter_path = prefix / "bin" / "python"
     interpreter_path.parent.mkdir(parents=True)
-    shutil.copy2(Path(sys.executable).resolve(), interpreter_path)
+    base_interpreter = Path(sys._base_executable).resolve()
+    shutil.copy2(base_interpreter, interpreter_path)
     (prefix / "pyvenv.cfg").write_text(
-        "home = /usr\ninclude-system-site-packages = false\nversion = 3.13.5\n",
+        f"home = {base_interpreter.parent}\n"
+        "include-system-site-packages = false\n"
+        f"version = {sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}\n",
         encoding="utf-8",
     )
     runtime_root = prefix / "lib" / "python3.13" / "site-packages"

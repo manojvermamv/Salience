@@ -21,6 +21,22 @@ class _ProductionCycleScheduleCutover(CycleScheduleCutover):
             self.enrollment_writer.current_key(UUID(str(intent_id)))
         )["admission"]
 
+    def _unresolved(self, connection, goal_id, first_v4_slot):
+        return super()._unresolved(connection, goal_id, first_v4_slot) or (
+            self.legacy_control._unresolved_schedule_work(connection, self.enrollment_writer.binding)
+        )
+
+    def _require_rollback_ready(self, connection, goal, spec, cutover):
+        super()._require_rollback_ready(connection, goal, spec, cutover)
+        binding = self.enrollment_writer.binding
+        if goal["revision"] != binding.goal_revision:
+            raise PermissionError("current exact production goal revision required for rollback")
+        self.legacy_control._require_source_owner(connection, binding)
+        self.legacy_control._assert_binding(connection, binding, action_kind="schedule_rollback")
+        self.legacy_control._require_rollback_watermark(
+            connection, binding, cutover["rollback_after_slot"]
+        )
+
 
 class ProductionScheduleCutover:
     """Production-bound facade over the existing durable cutover state machine."""

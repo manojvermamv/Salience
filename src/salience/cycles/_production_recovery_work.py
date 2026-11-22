@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping
+from dataclasses import replace
 from datetime import datetime, timezone
 from hashlib import sha256
 from uuid import UUID, uuid4
@@ -13,7 +14,8 @@ from psycopg.types.json import Jsonb
 
 from salience.cycles._production_recovery_contracts import (
     ProductionAlertRequest, ProductionAlertRetryPolicy, ProductionRecipientProfile,
-    ProductionRecoveryEvent, ProductionRecoveryPolicyBinding, ProductionRecoveryWork,
+    ProductionRecoveryDecision, ProductionRecoveryEvent, ProductionRecoveryPolicyBinding,
+    ProductionRecoveryWork,
     RecoveryEventConflict, RecoveryIdentityConflict, RecoveryInventoryGap,
     _EVENT_KINDS, _require_aware, _require_uuid, _scalar_payload,
 )
@@ -112,10 +114,11 @@ class ProductionRecoveryWorkRepository:
         expected: Mapping[str, object],
         policy: ProductionRecoveryPolicyBinding,
     ) -> ProductionRecoveryWork | None:
+        # The caller serializes each source binding and the work row is immutable.
+        # Locking it here would invert the deadline controller's work/source order.
         existing = connection.execute(
             """SELECT * FROM v4_production_recovery_work
-               WHERE source_discriminant=%s AND source_id=%s AND source_revision=%s
-               FOR UPDATE""",
+               WHERE source_discriminant=%s AND source_id=%s AND source_revision=%s""",
             (source_discriminant, source_id, source_revision),
         ).fetchone()
         if existing is None:
@@ -140,6 +143,7 @@ class ProductionRecoveryWorkRepository:
         payload: Mapping[str, object],
         actor_id: UUID | None = None,
         occurred_at: datetime | None = None,
+        event_id: UUID | None = None,
     ) -> ProductionRecoveryEvent:
         if not isinstance(event_key, str) or not event_key or len(event_key) > 256:
             raise ValueError("bounded stable recovery event key required")
@@ -148,6 +152,8 @@ class ProductionRecoveryWorkRepository:
         _require_uuid(policy_decision_id, "policy decision ID")
         if actor_id is not None:
             _require_uuid(actor_id, "event actor ID")
+        if event_id is not None:
+            _require_uuid(event_id, "event ID")
         if occurred_at is not None:
             occurred_at = _require_aware(occurred_at, "event occurrence time")
         safe_payload = _scalar_payload(payload)
@@ -177,6 +183,7 @@ class ProductionRecoveryWorkRepository:
                 or prior["payload"] != safe_payload
                 or prior["policy_decision_id"] != policy_decision_id
                 or prior["actor_id"] != actor_id
+                or (event_id is not None and prior["event_id"] != event_id)
                 or (
                     occurred_at is not None
                     and prior["occurred_at"] != occurred_at
@@ -193,7 +200,7 @@ class ProductionRecoveryWorkRepository:
                       encode(public.digest(%s::jsonb::text,'sha256'),'hex'))
                RETURNING *""",
             (
-                uuid4(),
+                event_id if event_id is not None else uuid4(),
                 work.work_id,
                 event_key,
                 event_kind,
@@ -718,6 +725,10 @@ class ProductionRecoveryWorkRepository:
         recipient_profile: ProductionRecipientProfile,
         retry_policy: ProductionAlertRetryPolicy,
         policy_decision_id: UUID,
+        _authorize: Callable[
+            [ProductionRecoveryWork, ProductionAlertRequest], ProductionRecoveryDecision
+        ] | None = None,
+        _now: Callable[[], datetime] | None = None,
     ) -> ProductionAlertRequest:
         work_id = _require_uuid(work_id, "work ID")
         if not isinstance(recipient_profile, ProductionRecipientProfile):
@@ -766,50 +777,8 @@ class ProductionRecoveryWorkRepository:
                     raise RecoveryIdentityConflict(
                         "recipient or retry policy digest differs from work binding"
                     )
-                if escalation_level == 0:
-                    alert_event = self._event(initial)
-                else:
-                    initial_event = self._event(initial)
-                    due_at = production_alert_escalation_due_at(
-                        initial_event, retry_policy, escalation_level
-                    )
-                    if _require_aware(
-                        self._now(), "alert escalation time"
-                    ) < due_at:
-                        raise ValueError("production alert escalation is not due")
-                    payload = {
-                        "schema_version": "salience.p1-production-recovery-alert.v1",
-                        "work_id": str(work.work_id),
-                        "source_id": str(work.source_id),
-                        "intent_id": str(work.intent_id),
-                        "reason": work.reason,
-                        "state": work.state,
-                        "deadline": work.deadline.isoformat(),
-                        "severity": severity,
-                        "escalation_level": escalation_level,
-                        "recipient_profile_revision": recipient_profile.revision,
-                        "policy_revision": retry_policy.revision,
-                        "evidence_sha256": binding_sha,
-                    }
-                    if work.operation_id is not None:
-                        payload["operation_id"] = str(work.operation_id)
-                    if work.case_id is not None:
-                        payload["case_id"] = str(work.case_id)
-                    if work.target_alias is not None:
-                        payload["target_alias"] = work.target_alias
-                    alert_event = self._append_event(
-                        connection,
-                        work,
-                        event_key=(
-                            f"alert-intent:{work.work_id}:"
-                            f"{work.source_revision}:{escalation_level}"
-                        ),
-                        event_kind="alert_intent",
-                        policy_decision_id=policy_decision_id,
-                        payload=payload,
-                    )
-                return ProductionAlertRequest(
-                    alert_event_id=alert_event.event_id,
+                alert = ProductionAlertRequest(
+                    alert_event_id=initial["event_id"] if escalation_level == 0 else uuid4(),
                     work_id=work.work_id,
                     workspace_id=work.workspace_id,
                     source_id=work.source_id,
@@ -826,6 +795,69 @@ class ProductionRecoveryWorkRepository:
                     retry_policy=retry_policy,
                     policy_decision_id=policy_decision_id,
                 )
+                if escalation_level == 0:
+                    return alert
+
+                event_key = (
+                    f"alert-intent:{work.work_id}:{work.source_revision}:{escalation_level}"
+                )
+                payload = {
+                    "schema_version": "salience.p1-production-recovery-alert.v1",
+                    "work_id": str(work.work_id),
+                    "source_id": str(work.source_id),
+                    "intent_id": str(work.intent_id),
+                    "reason": work.reason,
+                    "state": work.state,
+                    "deadline": work.deadline.isoformat(),
+                    "severity": severity,
+                    "escalation_level": escalation_level,
+                    "recipient_profile_revision": recipient_profile.revision,
+                    "policy_revision": retry_policy.revision,
+                    "evidence_sha256": binding_sha,
+                }
+                if work.operation_id is not None:
+                    payload["operation_id"] = str(work.operation_id)
+                if work.case_id is not None:
+                    payload["case_id"] = str(work.case_id)
+                if work.target_alias is not None:
+                    payload["target_alias"] = work.target_alias
+                prior = connection.execute(
+                    "SELECT * FROM v4_production_recovery_events WHERE event_key=%s",
+                    (event_key,),
+                ).fetchone()
+                if prior is not None:
+                    if (
+                        prior["work_id"] != work.work_id
+                        or prior["event_kind"] != "alert_intent"
+                        or prior["payload"] != payload
+                    ):
+                        raise RecoveryEventConflict("escalation intent conflicts with its request")
+                    return replace(
+                        alert, alert_event_id=prior["event_id"],
+                        policy_decision_id=prior["policy_decision_id"],
+                    )
+
+                due_at = production_alert_escalation_due_at(
+                    self._event(initial), retry_policy, escalation_level
+                )
+                clock = _now or self._now
+                if _require_aware(clock(), "alert escalation time") < due_at:
+                    raise ValueError("production alert escalation is not due")
+                if _authorize is not None:
+                    decision = _authorize(work, alert)
+                    if not isinstance(decision, ProductionRecoveryDecision) or not decision.allowed:
+                        raise PermissionError("current alert authority denied the escalation intent")
+                    alert = replace(alert, policy_decision_id=decision.decision_id)
+                self._append_event(
+                    connection,
+                    work,
+                    event_key=event_key,
+                    event_kind="alert_intent",
+                    policy_decision_id=alert.policy_decision_id,
+                    payload=payload,
+                    event_id=alert.alert_event_id,
+                )
+                return alert
 
     @staticmethod
     def _policy_evidence_from_profile(

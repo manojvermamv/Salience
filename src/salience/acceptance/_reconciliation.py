@@ -17,15 +17,14 @@ from ._contracts import (
 )
 
 
-P0_EXTERNAL_CHECKS = frozenset(
-    {
-        "independent safety review",
-        "production identity and ingress",
-        "production storage and restore",
-        "production collector and alert delivery",
-        "remote repository gate enforcement",
-    }
-)
+P0_EXTERNAL_PROOF_ROWS = {
+    "independent safety review": frozenset({"R01"}),
+    "production identity and ingress": frozenset({"R16F", "R22"}),
+    "production storage and restore": frozenset({"R69"}),
+    "production collector and alert delivery": frozenset({"R01"}),
+    "remote repository gate enforcement": frozenset({"R01"}),
+}
+P0_EXTERNAL_CHECKS = frozenset(P0_EXTERNAL_PROOF_ROWS)
 LEDGER_STATUSES = frozenset({"PASS", "FAIL", "NOT RUN", "HELD"})
 
 
@@ -224,6 +223,7 @@ def _apply_row_holds(
     p0_rg0_pass: bool,
     matrix_rg1_pass: bool,
     package_is_external: bool,
+    require_released_ledgers: bool,
 ) -> None:
     """Apply reconciled ledger and transitive prerequisite blockers to claimed PASS rows."""
     for row_id, row_state in state.row_states.items():
@@ -231,9 +231,9 @@ def _apply_row_holds(
             continue
         if not package_is_external:
             row_state.blockers.add("SYNTHETIC_PACKAGE_LOCAL_ONLY")
-        if ROW_GATES[row_id] == "RG0" and not p0_rg0_pass:
+        if require_released_ledgers and ROW_GATES[row_id] == "RG0" and not p0_rg0_pass:
             row_state.blockers.add("QUALIFICATION_LEDGER_HELD")
-        if ROW_GATES[row_id] == "RG1":
+        if require_released_ledgers and ROW_GATES[row_id] == "RG1":
             ledger_row = matrix_rows.get(row_id, {})
             if (
                 ledger_row.get("gate") != "RG1"

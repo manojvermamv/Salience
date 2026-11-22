@@ -134,12 +134,18 @@ else
   exit "$result"
 fi
 
-if DATABASE_URL="$database_url" "$python_bin" -m alembic upgrade head; then
-  pass "Canonical migrations apply through 0046_production_policy_approval_id_immutability"
-else
+if ! DATABASE_URL="$database_url" "$python_bin" -m alembic upgrade head; then
   fail "Canonical migrations did not apply"
   exit "$result"
 fi
+if ! migration_revision=$(docker compose exec -T postgres psql -XAt -U salience \
+    -d "$test_database_name" -v ON_ERROR_STOP=1 \
+    -c 'SELECT version_num FROM alembic_version ORDER BY version_num') ||
+    [[ ! $migration_revision =~ ^[0-9][A-Za-z0-9_]+$ ]]; then
+  fail "Could not read one canonical migration revision from the disposable database"
+  exit "$result"
+fi
+pass "Canonical migrations apply through $migration_revision"
 
 if TEST_DATABASE_URL="$test_database_url" TEST_TEMPORAL_TARGET="$test_temporal_target" \
   "$python_bin" -m pytest -p no:cacheprovider \

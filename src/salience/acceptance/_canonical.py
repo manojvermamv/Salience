@@ -149,7 +149,7 @@ def _iter_evidence_refs(value: Any) -> list[dict[str, str]]:
 
 
 def _package_digest_payload(payload: Mapping[str, Any]) -> dict[str, Any]:
-    return {
+    fields = {
         "run_id": payload.get("run_id"),
         "manifest_sha256": payload.get("manifest_sha256"),
         "manifest_signature": payload.get("manifest_signature"),
@@ -161,3 +161,6 @@ def _package_digest_payload(payload: Mapping[str, Any]) -> dict[str, Any]:
         "lineage": payload.get("lineage"),
         "invalidation_records": payload.get("invalidation_records"),
     }
+    if payload.get("schema_version") == "1.1":
+        fields["schema_version"] = "1.1"
+    return fields

@@ -21,6 +21,12 @@ from salience.cycles.native_schedules import schedule_row, schedule_metadata, re
 LOGGER = logging.getLogger(__name__)
 
 
+class _ScheduleResumeSlotMismatch(PermissionError):
+    def __init__(self, expected_slot):
+        super().__init__("local and remote resumed schedule slots must match")
+        self.expected_slot = expected_slot
+
+
 class FixtureLegacyScheduleControl:
     supports_temporal = False
     def __init__(self, database_url, *, workspace_id):
@@ -54,7 +60,7 @@ class FixtureLegacyScheduleControl:
             if row["status"] == "active":
                 connection.execute("UPDATE job_schedules SET status='paused',updated_at=clock_timestamp() WHERE id=%s", (schedule_id,))
 
-    def resume_after(self, schedule_id, after_slot, *, subject_id=None):
+    def resume_after(self, schedule_id, after_slot, *, subject_id=None, _verified_next_slot=None):
         with psycopg.connect(self.database_url, row_factory=dict_row, connect_timeout=3) as connection:
             connection.execute("SET LOCAL statement_timeout='3s'")
             # This is the actual fixture resume transaction, after any lost
@@ -97,6 +103,8 @@ class FixtureLegacyScheduleControl:
             next_slot = anchor + steps * interval
             if next_slot <= boundary:
                 next_slot += interval
+            if _verified_next_slot is not None and next_slot != _verified_next_slot:
+                raise _ScheduleResumeSlotMismatch(next_slot)
             if row.get("native_publication_source"):
                 connection.execute("UPDATE v4_native_publication_schedule_progress SET resume_after=%s,next_slot=%s,updated_at=clock_timestamp() WHERE schedule_id=%s", (after_slot, next_slot, schedule_id))
                 connection.execute("UPDATE job_schedules SET status='active',next_run_at=%s,updated_at=clock_timestamp() WHERE id=%s", (next_slot, schedule_id))
@@ -331,7 +339,8 @@ class CycleScheduleCutover(CycleAdmission):
         return {"state": "active", "intent_ids": batch["intent_ids"], "admissions": admissions,
                 "skipped": batch["skipped"], "held": batch["held"]}
 
-    def _unresolved(self, connection, goal_id, first_v4_slot):
+    @staticmethod
+    def _unresolved(connection, goal_id, first_v4_slot):
         return bool(connection.execute("""
             SELECT 1 FROM v4_cycle_intents AS intent
             WHERE intent.goal_id=%s AND intent.due_at >= %s AND (
@@ -349,6 +358,16 @@ class CycleScheduleCutover(CycleAdmission):
                           AND event.payload->>'operation_id'=cycle.operation_id::text)))
             ) LIMIT 1
         """, (goal_id, first_v4_slot)).fetchone())
+
+    def _require_rollback_ready(self, connection, goal, spec, cutover):
+        original = connection.execute(
+            "SELECT payload FROM v4_goal_revisions WHERE goal_id=%s AND revision=%s",
+            (goal["id"], cutover["goal_revision"]),
+        ).fetchone()
+        if goal["state"] != "active" or spec.cadence.interval_seconds != parse_goal(original["payload"]).cadence.interval_seconds:
+            raise ValueError("compatible active goal required before legacy resume")
+        if self._stopped(connection, goal["id"]):
+            raise PermissionError("current stop blocks legacy resume")
 
     def rollback(self, goal_id, *, idempotency_key):
         self._key(idempotency_key)
@@ -379,27 +398,26 @@ class CycleScheduleCutover(CycleAdmission):
         with self._command("cycles:schedule") as connection:
             goal, current_spec = self._policy_goal(connection, goal_id)
             row = self._row(connection, goal_id, lock=True)
-            original = connection.execute("SELECT payload FROM v4_goal_revisions WHERE goal_id=%s AND revision=%s",
-                                          (goal_id, row["goal_revision"])).fetchone()
-            original_spec = parse_goal(original["payload"])
-            if goal["state"] != "active" or current_spec.cadence.interval_seconds != original_spec.cadence.interval_seconds:
-                raise ValueError("compatible active goal required before legacy resume")
-            if self._stopped(connection, goal_id):
-                raise PermissionError("current stop blocks legacy resume")
+            if row["state"] == "rolled_back":
+                return self._view(row)
+            self._require_rollback_ready(connection, goal, current_spec, row)
             if self._unresolved(connection, goal_id, row["first_v4_slot"]):
                 raise ValueError("unresolved intents, outbox or permits hold legacy resume")
         try:
             self.legacy_control.resume_after(row["legacy_schedule_id"], row["rollback_after_slot"], subject_id=self.subject_id)
         except TimeoutError:
             pass
-        snapshot = self.legacy_control.describe(row["legacy_schedule_id"])
-        if snapshot["paused"] or snapshot["resume_after"] != row["rollback_after_slot"].isoformat() or snapshot["next_run_at"] is None or snapshot["next_run_at"] <= row["rollback_after_slot"]:
-            raise ValueError("legacy resume and later slot must be verified")
         with self._command("cycles:schedule") as connection:
-            self._policy_goal(connection, goal_id)
+            goal, current_spec = self._policy_goal(connection, goal_id)
             current = self._row(connection, goal_id, lock=True)
+            if current["state"] == "rolled_back":
+                return self._view(current)
+            self._require_rollback_ready(connection, goal, current_spec, current)
             legacy = self.legacy_control._schedule(connection, current["legacy_schedule_id"], lock=True)
             metadata = schedule_metadata(legacy)
+            snapshot = self.legacy_control.describe(current["legacy_schedule_id"])
+            if snapshot["paused"] or snapshot["resume_after"] != current["rollback_after_slot"].isoformat() or snapshot["next_run_at"] is None or snapshot["next_run_at"] <= current["rollback_after_slot"]:
+                raise ValueError("legacy resume and later slot must be verified")
             if current["state"] != "rollback_pending" or current["rollback_key"] != idempotency_key or legacy["status"] != "active" or metadata["resume_after"] != current["rollback_after_slot"].isoformat() or metadata["next_run_at"] <= current["rollback_after_slot"]:
                 raise ValueError("verified rollback state and later legacy slot required")
             if self._unresolved(connection, goal_id, current["first_v4_slot"]):

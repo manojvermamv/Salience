@@ -1222,11 +1222,11 @@
       }
     }
   ],
-  "review_status": "PASS_HISTORICAL_SLICE2_FIXTURE_QUALIFICATION; HISTORICAL_0043_FIXTURE_QUALIFICATION; HISTORICAL_REVIEW_AND_CI_AT_6F5EDC7; HISTORICAL_DOCUMENTATION_CI_FOR_62B5A5E; LATEST_TASK34_35_LOCAL_DEVELOPMENT_QUALIFICATION; TASK34_ARTIFACT_REVIEW_PASS_CLEAN; TASK25_FINAL_MIXED_HOST_FIX_NOT_INDEPENDENTLY_REREVIEWED; EXTERNAL_ACCEPTANCE_NOT_RUN; PRODUCTION_RELEASE_HELD",
+  "review_status": "PASS_HISTORICAL_SLICE2_FIXTURE_QUALIFICATION; HISTORICAL_0043_FIXTURE_QUALIFICATION; HISTORICAL_REVIEW_AND_CI_AT_6F5EDC7; HISTORICAL_DOCUMENTATION_CI_FOR_62B5A5E; RECORDED_TASK34_35_LOCAL_DEVELOPMENT_QUALIFICATION; TASK34_ARTIFACT_REVIEW_PASS_CLEAN; TASK25_FINAL_MIXED_HOST_FIX_REREVIEW_PASS_CLEAN; EXTERNAL_ACCEPTANCE_NOT_RUN; PRODUCTION_RELEASE_HELD",
   "production_effects_enabled": false,
   "RG0": "HELD",
   "RG1": "HELD",
-  "source_lock_sha256": "09100cb7aee864227d78112aa7729a1cded7790d34cc33687c5e2a3732188e55",
+  "source_lock_sha256": "8a2ba41c0da37f20486d56b42446cfa3fa04d74215e982a5305b80b3b53536fe",
   "verifiers": {
     "R02": [
       "tests/e2e/test_v4_worker_upgrade.py",
@@ -1407,7 +1407,7 @@
     "source_files": 316,
     "status": "PASS independent implemented-fixture qualification; RG0/RG1 HELD"
   },
-  "qualified_application_commit_scope": "The legacy qualified_application_commit alias remains the historical Slice 2 fixture qualification at ec12763, migration 0046, Phase 9 gate 60, and full non-live 908/26/3. Task18, Task22/23, and Task31/32 are retained as historical local development candidates. The current Task34/35 local development candidate is recorded under latest_local_candidate with source 546ac4ed794afc123ea02586a37d4a4457590582 / tree 278e2bbf074fdf07b701f87f925c537dd916e118 and artifact fe6b3795ce4453beb6c6bbafcc20cd3be91b3b87 / tree 124037b25c754751e2447c7d8639800f9f35d238. External acceptance remains NOT RUN; production gates remain held.",
+  "qualified_application_commit_scope": "The legacy qualified_application_commit alias remains the historical Slice 2 fixture qualification at ec12763, migration 0046, Phase 9 gate 60, and full non-live 908/26/3. Task18, Task22/23, and Task31/32 are retained as historical local development candidates. The recorded Task34/35 development checkpoint is recorded under latest_local_candidate with source 546ac4ed794afc123ea02586a37d4a4457590582 / tree 278e2bbf074fdf07b701f87f925c537dd916e118 and artifact fe6b3795ce4453beb6c6bbafcc20cd3be91b3b87 / tree 124037b25c754751e2447c7d8639800f9f35d238. External acceptance remains NOT RUN; production gates remain held.",
   "historical_parallel_qualification": {
     "evidence": "docs/v4/parallel-agents-evidence.json",
     "full_non_live_tests": 540,
@@ -2460,43 +2460,7 @@
     "record_scope": "Historical Slice 2 candidate snapshot; retain candidate-bound counts and docs CI details for traceability.",
     "latest_local_candidate_record": "latest_local_candidate"
   },
-  "source_lock_scope": "The active exact source lock docs/v4/evidence-lock.json binds Task34/35 source 546ac4ed794afc123ea02586a37d4a4457590582 (tree 278e2bbf074fdf07b701f87f925c537dd916e118); raw file SHA-256 09100cb7aee864227d78112aa7729a1cded7790d34cc33687c5e2a3732188e55; 417 paths (410 application/source paths plus seven established boundary files). Task31/32 source and artifact remain under historical_task31_task32_local_candidate.",
-  "current_documentation_ci": {
-    "head_commit": "62b5a5e6afc8bd6477bbd14a951166edc97ea683",
-    "short_head": "62b5a5e",
-    "workflow_run_id": 40553244096,
-    "workflow_run_url": "https://github.com/manojvermamv/Salience/actions/runs/40553244096",
-    "event": "push",
-    "workflow": "V4 documentation contract",
-    "created_at": "2026-10-27T17:43:21Z",
-    "updated_at": "2026-10-27T18:02:44Z",
-    "status": "completed",
-    "conclusion": "success",
-    "required_jobs": {
-      "verify": {
-        "job_id": 122362339840,
-        "conclusion": "success",
-        "started_at": "2026-10-27T17:43:24Z",
-        "completed_at": "2026-10-27T17:43:32Z"
-      },
-      "p0-regression": {
-        "job_id": 122362339085,
-        "conclusion": "success",
-        "started_at": "2026-10-27T17:43:23Z",
-        "completed_at": "2026-10-27T18:02:43Z"
-      }
-    },
-    "hosted_suite_summary": {
-      "migration_head": "0046_production_policy_approval_id_immutability",
-      "passed": 908,
-      "skipped": 26,
-      "warnings": 3,
-      "elapsed_seconds": 1082.53
-    },
-    "scope": "Historical hosted documentation/evidence CI for exact pushed head 62b5a5e6afc8bd6477bbd14a951166edc97ea683 (run 40553244096); it does not validate the current Task33 documentation update or the current Task31/32 application candidate.",
-    "next_status_only_commit_ci": "REQUIRED_AFTER_PUSH",
-    "record_kind": "historical_documentation_ci"
-  },
+  "source_lock_scope": "Development source content inventory for the P1 follow-up. Task34 source and artifact remain bound to the historical lock at published commit ea4cd3f.",
   "task18_local_development_candidate": {
     "record_kind": "historical_local_development_candidate",
     "status": "HISTORICAL_PASS_LOCAL_DEVELOPMENT_QUALIFICATION; SUPERSEDED_AS_LATEST_BY_TASK35; EXTERNAL_ACCEPTANCE_NOT_RUN; PRODUCTION_GATES_HELD",
@@ -2840,7 +2804,7 @@
       "group03_task35_passed": 80,
       "collection_log_sha256": "916694c44a1df8287ef4e0d284d391584db91c830475c7d558db8c96c203f9c6"
     },
-    "qualification_scope": "development-only; exact Task34/35 local candidate qualification, not externally trusted or production-qualified",
+    "qualification_scope": "Recorded Task35 host pytest at the exact artifact Git checkout with disposable PostgreSQL and Temporal. Task34 verified wheel and OCI bytes separately.",
     "review_scope": "Task25 final mixed Unix/TCP source fix at 546ac4e has an independent fix-loop rereview against parent 951ee1a00fb31040765140679720bf02ec7e3d5a: Spec PASS, Quality PASS — CLEAN, 0 findings; durable Task25 review record SHA-256 42de4ad70cc6192d03cd983359d30a8ca631fc52cf2dc6d8c8c2fd6ee0d08b8d (source report SHA-256 6d26fc9717cfd888eea26025d442dbbf1a42174343d967d85b3dcb92c2131644; 8 Markdown hard-break whitespace normalizations are documented there). Earlier 8c31e84 review remains scoped to that commit. Task34 build artifact independently reviewed PASS/CLEAN; Task35 is exact-candidate local qualification only. No whole-change review or exact-head hosted CI is claimed.",
     "external_gates": {
       "external_rows": "NOT RUN (22 rows)",
@@ -3350,5 +3314,66 @@
     },
     "producer_bindings": [],
     "record_scope": "Task31 build and Task32 qualification are retained unchanged as historical candidate evidence; Task35 is the latest exact-artifact local qualification."
+  },
+  "historical_documentation_ci": {
+    "head_commit": "62b5a5e6afc8bd6477bbd14a951166edc97ea683",
+    "short_head": "62b5a5e",
+    "workflow_run_id": 40553244096,
+    "workflow_run_url": "https://github.com/manojvermamv/Salience/actions/runs/40553244096",
+    "event": "push",
+    "workflow": "V4 documentation contract",
+    "created_at": "2026-10-27T17:43:21Z",
+    "updated_at": "2026-10-27T18:02:44Z",
+    "status": "completed",
+    "conclusion": "success",
+    "required_jobs": {
+      "verify": {
+        "job_id": 122362339840,
+        "conclusion": "success",
+        "started_at": "2026-10-27T17:43:24Z",
+        "completed_at": "2026-10-27T17:43:32Z"
+      },
+      "p0-regression": {
+        "job_id": 122362339085,
+        "conclusion": "success",
+        "started_at": "2026-10-27T17:43:23Z",
+        "completed_at": "2026-10-27T18:02:43Z"
+      }
+    },
+    "hosted_suite_summary": {
+      "migration_head": "0046_production_policy_approval_id_immutability",
+      "passed": 908,
+      "skipped": 26,
+      "warnings": 3,
+      "elapsed_seconds": 1082.53
+    },
+    "scope": "Historical hosted documentation/evidence CI for exact pushed head 62b5a5e6afc8bd6477bbd14a951166edc97ea683 (run 40553244096); it does not validate the current Task33 documentation update or the current Task31/32 application candidate.",
+    "next_status_only_commit_ci": "REQUIRED_AFTER_PUSH",
+    "record_kind": "historical_documentation_ci"
+  },
+  "published_fixture_ci": {
+    "head_commit": "ea4cd3f030361683051659e37c8171fce7b80a19",
+    "workflow_run_id": 40942778372,
+    "workflow_run_url": "https://github.com/manojvermamv/Salience/actions/runs/40942778372",
+    "conclusion": "success",
+    "required_jobs": {
+      "verify": "success",
+      "p0-regression": "success"
+    },
+    "non_live_tests": {
+      "passed": 1212,
+      "skipped": 26,
+      "warnings": 3
+    },
+    "compose_worker_restart": "SKIPPED"
+  },
+  "current_p1_follow_up": {
+    "source_lock_sha256": "8a2ba41c0da37f20486d56b42446cfa3fa04d74215e982a5305b80b3b53536fe",
+    "scope": "Local development checkout with injected targets and authorities",
+    "artifact_build": "NOT RUN",
+    "external_rows_not_run": 22,
+    "external_final_audit": "NOT RUN",
+    "production_recovery_case_lifecycle": "HELD pending a compatible schema and rollback-verifier successor",
+    "handoff": "docs/v4/progress.md#current-state"
   }
 }

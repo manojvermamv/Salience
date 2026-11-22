@@ -316,7 +316,7 @@ class GateChecks(unittest.TestCase):
             current["documentation_candidate_post_push_exact_head_ci"],
             "PASS_FOR_62B5A5E (run 40553244096); NEXT_STATUS_ONLY_COMMIT_CI_REQUIRED_AFTER_PUSH",
         )
-        hosted_docs_ci = matrix["current_documentation_ci"]
+        hosted_docs_ci = matrix["historical_documentation_ci"]
         self.assertEqual(hosted_docs_ci["head_commit"], "62b5a5e6afc8bd6477bbd14a951166edc97ea683")
         self.assertEqual(hosted_docs_ci["workflow_run_id"], 40553244096)
         self.assertEqual(
@@ -582,9 +582,9 @@ class GateChecks(unittest.TestCase):
         audit = (CHECK.ROOT / "docs/v4/p1-rg0-rg1-initial-gap-audit.md").read_text()
         handoffs = {
             "README.md": section(readme, "## Current status and evidence", "## Historical and separate qualification records"),
-            "docs/README.md": section(docs_readme, "# Documentation", "The latest local implementation"),
+            "docs/README.md": docs_readme,
             "docs/v4/IMPLEMENTATION-BLUEPRINT.md": section(blueprint, "# Salience V4 production implementation blueprint", "## 6. Requirement traceability"),
-            "docs/v4/progress.md": section(progress, "## Initial commit-bound P1/RG0/RG1 residual-gap audit", "## Current publication recovery-hold integration"),
+            "docs/v4/progress.md": section(progress, "## Initial commit-bound P1/RG0/RG1 residual-gap audit", "## Historical Task18 recovery-hold integration"),
             "docs/v4/validation.md": section(validation, "## Initial commit-bound P1/RG0/RG1 residual-gap audit", "## Frozen 0043 candidate evidence summary"),
             "docs/superpowers/specs/2026-10-13-v4-multiplatform-autonomy-program-sequence.md": (
                 section(sequence, "## Purpose and current boundary", "## Program control and shared invariants")
@@ -607,11 +607,14 @@ class GateChecks(unittest.TestCase):
         ]
         for path, content in handoffs.items():
             with self.subTest(handoff=path):
-                if path in scoped_status_pages:
+                if path == "README.md":
+                    self.assertIn(f"Documentation whole-change review is PASS_AFTER_FIX_ROUND_1 for manifest `{manifest}`.", content)
+                    self.assertIn("external target qualification, and the final P1/RG0/RG1 audit remain NOT RUN.", content)
+                    self.assertIn("Initial audit/design checkpoint (frozen scope)", content)
+                elif path in scoped_status_pages:
                     self.assertIn(review_status, content)
                 else:
                     self.assertIn(status, content)
-                self.assertIn("that review does not transfer to later content or exact-candidate CI.", content)
                 self.assertNotIn(pending_review_claim.casefold(), content.casefold())
                 for stale in stale_claims:
                     self.assertNotIn(stale.casefold(), content.casefold())
@@ -864,12 +867,12 @@ class GateChecks(unittest.TestCase):
         self.assertIn("not acceptance evidence", documentation_checks["historical_pre_candidate_run"]["result"])
 
         scoped_checkpoint_lines = [
-            ("docs/README.md", "**Current checkpoint — 2026-10-27:**"),
+            ("docs/README.md", "**Historical initial-audit checkpoint — 2026-10-27:**"),
             ("docs/README.md", "P0 and DG1 remain locally qualified."),
             ("docs/README.md", "The [initial audit]"),
-            ("docs/v4/validation.md", "**Current checkpoint — 2026-10-27:**"),
+            ("docs/v4/validation.md", "**Historical checkpoint — 2026-10-27."),
             ("docs/v4/validation.md", "See the [audit report]"),
-            ("docs/v4/progress.md", "**Current checkpoint — 2026-10-27:**"),
+            ("docs/v4/progress.md", "**Historical checkpoint — 2026-10-27:**"),
             ("docs/v4/progress.md", "**APPROVED program sequence:**"),
             ("docs/v4/progress.md", "See the [audit report]"),
         ]
@@ -884,6 +887,20 @@ class GateChecks(unittest.TestCase):
             for path in ["docs/README.md", "docs/v4/validation.md", "docs/v4/progress.md"]
         ]
         self.assertTrue(all("implementation and target qualification NOT RUN" in line for line in initial_audit_lines))
+
+    def test_current_source_handoff_keeps_hosted_and_artifact_evidence_scoped(self):
+        matrix = json.loads(Path(__file__).with_name("p1-qualification-matrix.json").read_text())
+        current = matrix["current_p1_follow_up"]
+        lock_path = Path(__file__).with_name("evidence-lock.json")
+        self.assertEqual(current["source_lock_sha256"], hashlib.sha256(lock_path.read_bytes()).hexdigest())
+        self.assertEqual(current["artifact_build"], "NOT RUN")
+        self.assertEqual(current["external_rows_not_run"], 22)
+        self.assertEqual((matrix["RG0"], matrix["RG1"]), ("HELD", "HELD"))
+        hosted = matrix["published_fixture_ci"]
+        self.assertEqual(hosted["head_commit"], "ea4cd3f030361683051659e37c8171fce7b80a19")
+        self.assertEqual(hosted["workflow_run_id"], 40942778372)
+        self.assertEqual(hosted["compose_worker_restart"], "SKIPPED")
+        self.assertIn("TASK25_FINAL_MIXED_HOST_FIX_REREVIEW_PASS_CLEAN", matrix["review_status"])
 
 
 if __name__ == "__main__":

@@ -4,8 +4,9 @@ from collections.abc import Mapping, Sequence
 from datetime import datetime
 from typing import Any
 
-from ._canonical import _evidence_ref_error, _iter_evidence_refs
+from ._canonical import _evidence_ref_error, _iter_evidence_refs, sha256_json
 from ._contracts import ROW_GATES, VALID_STATUSES, _ValidationState
+from ._reconciliation import P0_EXTERNAL_PROOF_ROWS
 from ._row_checks import (
     _manifest_row_scope_errors,
     _validate_credentials,
@@ -17,6 +18,34 @@ from ._row_checks import (
     _validate_procedure,
     _validate_transition,
 )
+from ._scope_binding import _execution_records, _target_manifest, _target_scope_identity
+
+
+def _p0_proofs(row: Mapping[str, Any], required: set[str]) -> list[tuple[str, str]]:
+    return [
+        (check["check_id"], check["raw_result"]["sha256"])
+        for check in row.get("normalized_checks", [])
+        if isinstance(check, Mapping) and check.get("check_id") in required
+        and _evidence_ref_error(check.get("raw_result")) is None
+    ]
+
+
+def _validate_p0_proof_reuse(payload: Mapping[str, Any], state: _ValidationState) -> None:
+    if payload.get("schema_version") != "1.1":
+        return
+    proofs: dict[str, set[tuple[str, str]]] = {}
+    for _, execution in _execution_records(payload):
+        if execution.get("status") != "PASS":
+            continue
+        row_id = execution.get("row_id")
+        required = {proof for proof, rows in P0_EXTERNAL_PROOF_ROWS.items() if row_id in rows}
+        for proof, digest in _p0_proofs(execution, required):
+            proofs.setdefault(digest, set()).add((proof, row_id))
+    for uses in proofs.values():
+        if len({proof for proof, _ in uses}) > 1:
+            for _, row_id in uses:
+                state.add_row(row_id, "REQUIRED_P0_PROOF_REUSED",
+                              "Different named P0 proofs must use distinct evidence across the package.")
 
 
 def _validate_row(
@@ -27,6 +56,55 @@ def _validate_row(
     manifest: Mapping[str, Any],
     now: datetime,
     expected_dependencies: Sequence[str],
+    state: _ValidationState,
+) -> None:
+    if payload.get("schema_version") != "1.1":
+        _validate_execution(row_id=row_id, row=row, payload=payload, manifest=manifest, now=now,
+                            expected_dependencies=expected_dependencies, state=state)
+        return
+    targets = manifest.get("row_targets", {}).get(row_id, {})
+    executions = [row, *row.get("child_checks", [])]
+    target_ids = [item.get("target_id") for item in executions]
+    if set(target_ids) != set(targets) or len(target_ids) != len(targets) or not targets:
+        state.add_row(row_id, "ROW_TARGET_INVENTORY_MISMATCH",
+                      "Every signed row target requires exactly one execution record.", structural=True)
+    scopes = [sha256_json(_target_scope_identity(target)) for target in targets.values()]
+    if len(set(scopes)) != len(scopes):
+        state.add_row(row_id, "ROW_TARGET_INVENTORY_MISMATCH",
+                      "Each target must identify a distinct account, resource or route scope.", structural=True)
+    used_results: set[str] = set()
+    parent_runbook = row.get("procedure", {})
+    for item in executions:
+        scoped_manifest = _target_manifest(manifest, row_id, item.get("target_id"))
+        if item is not row:
+            procedure = item.get("procedure", {})
+            if (item.get("row_id") != row_id or item.get("child_checks") is not None
+                    or item.get("record_sha256") != sha256_json({k: v for k, v in item.items() if k != "record_sha256"})
+                    or (row.get("status") == "PASS" and item.get("status") != "PASS")):
+                state.add_row(row_id, "CHILD_EXECUTION_INVALID",
+                              "Every child must bind its row, digest and execution status.", structural=True)
+            if item.get("status") in {"PASS", "FAIL"} and (
+                procedure.get("runbook_version") != parent_runbook.get("runbook_version")
+                or procedure.get("runbook", {}).get("sha256") != parent_runbook.get("runbook", {}).get("sha256")
+            ):
+                state.add_row(row_id, "CHILD_RUNBOOK_MISMATCH",
+                              "Child execution must use the row's pinned runbook and version.", structural=True)
+        observations = [item.get("raw_result"), item.get("readback")]
+        observations.extend(check.get("raw_result") for check in item.get("normalized_checks", []))
+        control = item.get("negative_control", {})
+        observations.extend((control.get("raw_denial"), control.get("independent_effect_readback")))
+        digests = {ref["sha256"] for ref in observations if isinstance(ref, Mapping) and "sha256" in ref}
+        if digests & used_results:
+            state.add_row(row_id, "CHILD_EVIDENCE_REUSED",
+                          "A target cannot reuse another target's execution results or readbacks.", structural=True)
+        used_results.update(digests)
+        _validate_execution(row_id=row_id, row=item, payload=payload, manifest=scoped_manifest, now=now,
+                            expected_dependencies=expected_dependencies, state=state)
+
+
+def _validate_execution(
+    *, row_id: str, row: Mapping[str, Any], payload: Mapping[str, Any],
+    manifest: Mapping[str, Any], now: datetime, expected_dependencies: Sequence[str],
     state: _ValidationState,
 ) -> None:
     if row.get("run_id") != payload.get("run_id"):
@@ -56,6 +134,22 @@ def _validate_row(
                 "RESULT_STATUS_MISMATCH",
                 "A PASS row requires passing normalized checks on exact scope.",
             )
+        if payload.get("schema_version") == "1.1":
+            required = {proof for proof, rows in P0_EXTERNAL_PROOF_ROWS.items() if row_id in rows}
+            proofs = _p0_proofs(row, required)
+            proof_ids = {proof_id for proof_id, _ in proofs}
+            if missing := sorted(required - proof_ids):
+                state.add_row(
+                    row_id,
+                    "REQUIRED_P0_PROOF_MISSING",
+                    f"Row {row_id} is missing required proofs: {', '.join(missing)}.",
+                )
+            if len(proofs) != len(proof_ids) or len(proofs) != len({digest for _, digest in proofs}):
+                state.add_row(
+                    row_id,
+                    "REQUIRED_P0_PROOF_REUSED",
+                    f"Row {row_id} requires one distinct evidence record per named P0 proof.",
+                )
     if row.get("status") == "FAIL":
         checks = row.get("normalized_checks", [])
         has_executed_failure = any(

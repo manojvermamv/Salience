@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from dataclasses import replace
 from uuid import UUID
 
 import psycopg
@@ -324,12 +325,18 @@ class ProductionTemporalScheduleControl(
             or decision.request.route_tuple_sha256 != request.route_tuple_sha256
         ):
             raise PermissionError("fresh exact route-fence decision required")
+        self._require_live_route_lease(route_id, slot_id, fencing_epoch)
+        return decision
+
+    def _require_live_route_lease(self, route_id, slot_id, fencing_epoch) -> None:
         readback = self.route_authority.read_slot(route_id, slot_id)
         if (
             not readback.available
             or readback.state != "leased"
-            or readback.lease != self.route_lease
+            or readback.route_id != route_id
+            or readback.slot_id != slot_id
             or readback.fencing_epoch != fencing_epoch
+            or readback.lease is None
+            or readback.lease != replace(self.route_lease, expires_at=readback.lease.expires_at)
         ):
             raise PermissionError("current route owner and fencing epoch readback required")
-        return decision

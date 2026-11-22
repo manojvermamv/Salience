@@ -58,6 +58,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     parser.add_argument("--package", type=Path)
     parser.add_argument("--schema", type=Path)
+    parser.add_argument("--trust-file", type=Path)
     try:
         args = parser.parse_args(argv)
     except ValueError:
@@ -72,6 +73,17 @@ def main(argv: Sequence[str] | None = None) -> int:
     except ValueError as exc:
         _emit(_invalid_result("PACKAGE_INPUT_INVALID", str(exc)))
         return 2
+
+    trust = None
+    if args.trust_file is not None:
+        try:
+            trust = _parse_json_file(args.trust_file, "trust")
+        except ValueError:
+            _emit(_invalid_result("TRUST_INPUT_INVALID", "The configured trust file cannot be read."))
+            return 2
+        if not isinstance(trust, dict):
+            _emit(_invalid_result("TRUST_INPUT_INVALID", "The configured trust file must be an object."))
+            return 2
 
     if _contains_secret(payload):
         _emit(
@@ -100,6 +112,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         disposition: AcceptanceDisposition = validate_acceptance_package(
             payload,
             now=datetime.now(timezone.utc),
+            trust=trust,
         )
     except Exception as exc:
         # Invalid external data must produce a stable result rather than a traceback.

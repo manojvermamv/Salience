@@ -32,6 +32,13 @@ if [[ ${1:-} == compose && ${2:-} == exec ]]; then
   if [[ $* == *'DROP DATABASE '* && ${VERIFY_PHASE9_MODE:-} == cleanup-fails ]]; then
     exit 1
   fi
+  if [[ $* == *'SELECT version_num FROM alembic_version'* ]]; then
+    case ${VERIFY_PHASE9_MODE:-success} in
+      readback-fails) exit 1 ;;
+      readback-ambiguous) printf '%s\n' '0100_synthetic_revision' '0101_another_revision' ;;
+      *) printf '%s\n' '0100_synthetic_revision' ;;
+    esac
+  fi
 fi
 
 exit 0
@@ -104,11 +111,28 @@ grep -Fxq 'SOURCE_COMMIT: 0123456789abcdef0123456789abcdef01234567' \
     exit 1
   }
 source_line=$(grep -n -F 'SOURCE_COMMIT:' "$tmp/clean.log" | cut -d: -f1)
-migration_line=$(grep -n -F 'Canonical migrations apply through' "$tmp/clean.log" | cut -d: -f1)
+migration_line=$(grep -n -Fx 'PASS: Canonical migrations apply through 0100_synthetic_revision' "$tmp/clean.log" | cut -d: -f1) || true
+if [[ -z $migration_line ]]; then
+  printf 'Verifier did not report the migration revision read from the disposable database\n' >&2
+  exit 1
+fi
 if (( source_line >= migration_line )); then
   printf 'Source commit provenance was printed after migrations\n' >&2
   exit 1
 fi
+
+for mode in readback-fails readback-ambiguous; do
+  if run_verifier "$mode" "$tmp/$mode.log"; then
+    printf 'Expected migration readback failure for %s\n' "$mode" >&2
+    exit 1
+  fi
+  grep -Fxq 'FAIL: Could not read one canonical migration revision from the disposable database' "$tmp/$mode.log"
+  grep -Fq 'DROP DATABASE IF EXISTS' "$tmp/docker.log"
+  if grep -Fq -- '-m pytest' "$tmp/python.log"; then
+    printf 'Verifier executed pytest after invalid migration readback\n' >&2
+    exit 1
+  fi
+done
 
 if run_verifier success "$tmp/dirty.log" dirty; then
   printf 'Expected dirty source verification to fail\n' >&2

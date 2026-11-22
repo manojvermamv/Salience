@@ -1,6 +1,6 @@
 {
-  "baseline_commit": "546ac4ed794afc123ea02586a37d4a4457590582",
-  "scope": "Current exact application/source content lock for Task34/35 source 546ac4ed794afc123ea02586a37d4a4457590582 (tree 278e2bbf074fdf07b701f87f925c537dd916e118). This lock covers 410 files under src, tests, migrations, and scripts plus seven established deployment/dependency/build-context boundary files (417 total). The exact Task34 development artifact is fe6b3795ce4453beb6c6bbafcc20cd3be91b3b87 (tree 124037b25c754751e2447c7d8639800f9f35d238), whose sole parent is source. This lock records source-tree Git bytes and exact path coverage only; it is not external artifact trust, independent review, production qualification, or acceptance.",
+  "baseline_commit": "ea4cd3f030361683051659e37c8171fce7b80a19",
+  "scope": "Development checkout after the P1 schedule, recovery, acceptance and verifier follow-up. This inventory pins the current source and build-context bytes.",
   "files": [
     {
       "path": ".dockerignore",
@@ -20,7 +20,7 @@
     },
     {
       "path": "compose.p0.yaml",
-      "sha256": "cb7a6af6ce2a944a6df24c4f860f18e7cdfff5a5db65332251cce30d878f9392"
+      "sha256": "dde85a6077dc0601783430e90fc51c72e2fd17e6cc131637997779708ce1854b"
     },
     {
       "path": "compose.yaml",
@@ -252,7 +252,7 @@
     },
     {
       "path": "scripts/check-p1-external-acceptance.py",
-      "sha256": "f7bd0ea30441816c57c8b36f8936b9c9e7ba1d0b1fcf7dff16e3c57237e0ca6b"
+      "sha256": "3ec76dc50345580feac9799521411c9aaf5744d61323bd91559c0e65c7caf278"
     },
     {
       "path": "scripts/launch-v4-publication-worker.py",
@@ -268,7 +268,7 @@
     },
     {
       "path": "scripts/verify-phase-9.sh",
-      "sha256": "8b0e110430a85c83a12b4b76a75a111358dea4bd3a525d725b9c504a53da21c3"
+      "sha256": "5217a3ca7305a24afa5d481833a068b073174f1ecc01e491e495c51840fe2026"
     },
     {
       "path": "scripts/verify-phases-1-4.sh",
@@ -308,11 +308,11 @@
     },
     {
       "path": "src/salience/acceptance/_audit_validation.py",
-      "sha256": "ee0515c8455d82a2fc5c0422dd7ed83b3b1e40fe2d37c9e3229d524cd7e96e9b"
+      "sha256": "b5ae3a2b81bcf36b5fad69e673d05268c5b4c6fb11efb4744e6cebacbbf9e5bd"
     },
     {
       "path": "src/salience/acceptance/_canonical.py",
-      "sha256": "e4afdf982648ff3feb4512424c554184df8cd99d52ac7cb0890ec3b5dd7baebd"
+      "sha256": "d8f320ca8a860ab0c50ae7b2977cf4ff274efb7f44ba72d8ecb3897b43c13e70"
     },
     {
       "path": "src/salience/acceptance/_contracts.py",
@@ -320,31 +320,35 @@
     },
     {
       "path": "src/salience/acceptance/_evidence_validation.py",
-      "sha256": "97782b538b1ef9aa8e08a3e28fa69f27995e2ce2e029296e07072016fe0c92ed"
+      "sha256": "80447f178b309a1632ab0167a498e9e4505ed2140141dd9023a02a10fad56b98"
     },
     {
       "path": "src/salience/acceptance/_manifest_validation.py",
-      "sha256": "ed1c262ffaefbe7952e01a5bf635a2f005198ec67fabf093da85761d89e2a01f"
+      "sha256": "7a9c5ada8a07865cc90e676d52099583e71e5fd47cf5d41165d1240a3013cce7"
     },
     {
       "path": "src/salience/acceptance/_reconciliation.py",
-      "sha256": "ee97a5e9d455981f2ab5196a53316c0ffc7ccf58f9343c14ba772e8acfcbb139"
+      "sha256": "5331452b0fc9fc6398b642adde03b2a5b595475e9e5bcb63f6a16e8aa37f81e7"
     },
     {
       "path": "src/salience/acceptance/_row_checks.py",
-      "sha256": "a2aad2557b8d106efcda3fb7115f8b71e459383c8e532cf09b0d7f79ac055ec0"
+      "sha256": "fc37d95caf8e5f23c09f3515a228fb6f03403b171dda9a6e98105a94583228c6"
     },
     {
       "path": "src/salience/acceptance/_row_validation.py",
-      "sha256": "61e048a4b3bff97fedb25debe2d6de24608cc7905aea114f90a1193c52269faa"
+      "sha256": "257dc4625047d61cc298bd61a4eb5ca4eb10717d4321c4d85fe41c092980572f"
     },
     {
       "path": "src/salience/acceptance/_scope_binding.py",
-      "sha256": "50b4cdd42b0c0fce015a49178255f334f75d91a8c8e99de0d2f183590fd4efc6"
+      "sha256": "f9c1da6d2a7c4afae32deeef82e2f4d71d1b2f534453e60e2eda302a4b42beb8"
+    },
+    {
+      "path": "src/salience/acceptance/_trust.py",
+      "sha256": "66e6828685943369e10828b460f23dc7f762ae0996ca932de585df8bbb6bc145"
     },
     {
       "path": "src/salience/acceptance/p1_external_evidence.py",
-      "sha256": "a5071907b7984d370be5221fa23458f13f02119e7adf9d0e53b9d9dd85833497"
+      "sha256": "0f4baab1b89438537124d6f1e04ac5a53b71bb2976a9e966e48f0405a8413278"
     },
     {
       "path": "src/salience/agents/__init__.py",
@@ -588,7 +592,7 @@
     },
     {
       "path": "src/salience/cycles/_production_recovery_alerts.py",
-      "sha256": "3a927c88fee78ae6ada9431d1b541d3c2144034a8f8f9516abc7ef725cf9f01c"
+      "sha256": "b859e78277bbe812e3cb503842ca4ea72854c4380fab03e15022447cca5ff147"
     },
     {
       "path": "src/salience/cycles/_production_recovery_contracts.py",
@@ -596,7 +600,7 @@
     },
     {
       "path": "src/salience/cycles/_production_recovery_control.py",
-      "sha256": "8f89e86fb17605d37447d83415ed2746581ffbcfd087e5cd3d1a7cf0494f3f3e"
+      "sha256": "531b86adc6ac7a742363426016cff9224d3e0a0e124ba6c7b267638e8ddaf9c3"
     },
     {
       "path": "src/salience/cycles/_production_recovery_coordinator.py",
@@ -604,7 +608,7 @@
     },
     {
       "path": "src/salience/cycles/_production_recovery_work.py",
-      "sha256": "b0b849c796c30d1e69f4b4f34d836a05748fa5103f3a820483ae73e345e9adbe"
+      "sha256": "e1d099c74f124916b1c7f04f77e1a4fd18a1e5858274e3dfa2afa691975de1dd"
     },
     {
       "path": "src/salience/cycles/_production_schedule_contracts.py",
@@ -612,7 +616,7 @@
     },
     {
       "path": "src/salience/cycles/_production_schedule_core.py",
-      "sha256": "b6f8d76b1ebf1787a2723884169ead83a7cb30094b32e2a2c501c394306aefc6"
+      "sha256": "ada09216d0f3cc84b28f436c5e1600631bc4e247c9abebdc2856d8d59ae60658"
     },
     {
       "path": "src/salience/cycles/_production_schedule_inventory.py",
@@ -620,7 +624,7 @@
     },
     {
       "path": "src/salience/cycles/_production_schedule_target.py",
-      "sha256": "18b6c73fcde672e5f11512fb6d451dc93fe80bf3fb4a9ad5e61906214c50f989"
+      "sha256": "ffe93175b66cdecae5b4ef9a8b769b705ddfd167b192138cbaa1b87bafea88f2"
     },
     {
       "path": "src/salience/cycles/admission.py",
@@ -696,7 +700,7 @@
     },
     {
       "path": "src/salience/cycles/production_intent_enrollment.py",
-      "sha256": "7fee0bbcdfbcfd1d993eb60dc7dc37c7341e28cb7962052e7c95781492cf19f0"
+      "sha256": "db4db80f27c7996e29dd534596288f93e47149c0079a76991efb7ff3e3bf1dd8"
     },
     {
       "path": "src/salience/cycles/production_recovery.py",
@@ -716,7 +720,7 @@
     },
     {
       "path": "src/salience/cycles/production_schedule_cutover.py",
-      "sha256": "0a054e71f153633b6292852e85d39d494f1692594616707ef9755d6b5a15a497"
+      "sha256": "1001a6e7ccf5c9e43c88da44448751d3b4f7b61e9f5b3c9ca719c1ef99fed44c"
     },
     {
       "path": "src/salience/cycles/publication_recovery.py",
@@ -736,7 +740,7 @@
     },
     {
       "path": "src/salience/cycles/schedule_cutover.py",
-      "sha256": "5300f2c55ccb36b660bb9ae3d85926dba3f31307cabfa32207c94b2a079166d0"
+      "sha256": "72a1e6064a839b11fb18faaa080c01a2fc2815db36c2a7b4f9026a1603ae444d"
     },
     {
       "path": "src/salience/cycles/temporal_schedule_control.py",
@@ -1328,7 +1332,7 @@
     },
     {
       "path": "tests/integration/test_p1_production_recovery.py",
-      "sha256": "4100af985b720551b0cb5a466b79e4c6afbbe790617c52e02c7686c82af50c5a"
+      "sha256": "f286b34e00ff2f19eec657f0c5f3e262bf925723ef91f7771204d95d39370ca8"
     },
     {
       "path": "tests/integration/test_p1_production_routing.py",
@@ -1336,7 +1340,11 @@
     },
     {
       "path": "tests/integration/test_p1_production_schedule_fencing.py",
-      "sha256": "5f26aaaf7b748e79df340e56f28efd629995cdf000106d547caaef0d340b7731"
+      "sha256": "6f51d13d20cca044802130c32321aaff22bd1bbb6cc52e5f4c11b3099425b47a"
+    },
+    {
+      "path": "tests/integration/test_p1_recovery_deadline_receipts.py",
+      "sha256": "6d7f351963e738645a92c7e30f598025a2e203313e93175a8205dd1918b7aab8"
     },
     {
       "path": "tests/integration/test_publication_control_api.py",
@@ -1420,7 +1428,7 @@
     },
     {
       "path": "tests/integration/test_v4_legacy_publication.py",
-      "sha256": "88e567fcb152a36b378591719d6e7309918e63aaa1a61f9eea1b7ffd8b836466"
+      "sha256": "77db7275c850e600d2123ae08fdcde9f1595fe0b83755c36f625d3cb3fdcf521"
     },
     {
       "path": "tests/integration/test_v4_legacy_schedule_ingress.py",
@@ -1456,7 +1464,7 @@
     },
     {
       "path": "tests/integration/test_v4_publication_recovery_floor.py",
-      "sha256": "225a737718d5ef6e1289afc1643b55f3392d362337b5b53082fd602a53defa9a"
+      "sha256": "1a4b7d840c78ee3b11fd43c288b0a16e8cc29cbf6872b2d38911cc41bd5c750d"
     },
     {
       "path": "tests/integration/test_v4_publication_recovery_holds.py",
@@ -1508,7 +1516,7 @@
     },
     {
       "path": "tests/scripts/test_verify_phase_9_cleanup.sh",
-      "sha256": "c3b5eb957369bf33483a804e5753d03380431bc35b501ef0ad379beb24cc3225"
+      "sha256": "8ff29dedc8ce64074e4cb9a06b343c7a6bc12ce0f040116413872c0c955a0818"
     },
     {
       "path": "tests/support/production_route_authority.py",
@@ -1592,7 +1600,7 @@
     },
     {
       "path": "tests/unit/test_p1_external_acceptance.py",
-      "sha256": "30f4cbf5efe04677cf30ee39227814f10fcb95eddf8b610544ee614a0ba8b354"
+      "sha256": "5dfd80e9a5cd1295ade47bb276308fe0276f8f12a400cbf5098e7fa2d174488f"
     },
     {
       "path": "tests/unit/test_parallel_agent_teams.py",
@@ -1671,8 +1679,7 @@
       "sha256": "7f76114852b4b9d95b3517c49718ccf2e007d64d442a1b4e05ef696dd37a8bbc"
     }
   ],
-  "reviewed_at": "2026-10-29T18:51:30Z",
-  "review_scope": "Active local source lock for Task34 exact source 546ac4ed794afc123ea02586a37d4a4457590582, tree 278e2bbf074fdf07b701f87f925c537dd916e118: 410 application/source files plus seven established boundary files. The exact Task34 development artifact is fe6b3795ce4453beb6c6bbafcc20cd3be91b3b87, tree 124037b25c754751e2447c7d8639800f9f35d238, directly parented by source. This lock binds repository source bytes and path coverage only. Task34 build/review and Task35 qualification reports are in .superpowers/sdd/2026-10-28-p1-remaining-production-development/task-34-build-report.md, task-34-build-review.md, and task-35-report.md; external trust, production target qualification, and acceptance remain outstanding. Production effects remain disabled, RG0/full RG1 remain HELD, and P2 remains BLOCKED.",
+  "review_scope": "Source content inventory. The recorded Task34 build and Task35 tests are scoped to their historical source and artifact commits.",
   "historical_task_10_lock": {
     "baseline_commit": "14801007310232f59708566ca9a3eefb80bfea87",
     "application_commit": "5cb57910c2c6dc2f6ea37da75640c5c947c8907b",
@@ -1680,7 +1687,7 @@
     "file_count": 360,
     "meaning": "Retained Task 10 source inventory; historical contents remain available in the original committed evidence lock."
   },
-  "application_commit": "546ac4ed794afc123ea02586a37d4a4457590582",
+  "application_commit": null,
   "superseded_0043_386d4bc_lock": {
     "baseline_commit": "386d4bc7cc5acb794858d3c3c14400a0659a83ef",
     "application_commit": "386d4bc7cc5acb794858d3c3c14400a0659a83ef",
@@ -3153,5 +3160,11 @@
     ],
     "meaning": "Exact prior 0043 386d4bc Task 8 content lock retained byte-for-byte as historical evidence; it is superseded as the active lock by successor 182c4e4."
   },
-  "qualification_harness_observed_head": "fe6b3795ce4453beb6c6bbafcc20cd3be91b3b87"
+  "historical_task34_lock": {
+    "source_commit": "546ac4ed794afc123ea02586a37d4a4457590582",
+    "artifact_commit": "fe6b3795ce4453beb6c6bbafcc20cd3be91b3b87",
+    "record_commit": "ea4cd3f030361683051659e37c8171fce7b80a19",
+    "record_path": "docs/v4/evidence-lock.json",
+    "sha256": "09100cb7aee864227d78112aa7729a1cded7790d34cc33687c5e2a3732188e55"
+  }
 }

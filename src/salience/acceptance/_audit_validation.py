@@ -8,13 +8,15 @@ from ._canonical import _evidence_ref_error, _is_sha256, _iter_evidence_refs, _p
 from ._contracts import ROW_GATES, ROW_IDS, _ValidationState
 from ._reconciliation import _transitive_dependents
 from ._row_checks import _validate_person
-from ._scope_binding import _authorization_scope_from_manifest, _route_set_binding
+from ._scope_binding import _authorization_scope_from_manifest, _execution_records, _route_set_binding
 
 
 def _validate_invalidations(
     payload: Mapping[str, Any],
     dependencies: Mapping[str, tuple[str, ...]],
     state: _ValidationState,
+    now: datetime,
+    row_by_id: Mapping[str, Mapping[str, Any]],
 ) -> None:
     records = payload.get("invalidation_records", [])
     if not isinstance(records, list):
@@ -62,6 +64,7 @@ def _validate_invalidations(
     sequences: list[int] = []
     predecessor_link_found = False
     row_states = state.row_states
+    current_format = payload.get("schema_version") == "1.1"
     for record in records:
         if not isinstance(record, Mapping):
             state.add_global("INVALIDATION_LOG_INVALID", "Invalidation record must be an object.", structural=True)
@@ -83,12 +86,14 @@ def _validate_invalidations(
             )
         else:
             sequences.append(sequence)
+        invalidated_at = _parse_datetime(record.get("invalidated_at"))
         if (
             record.get("source_run_id") == payload.get("run_id")
             or record.get("new_run_id") != payload.get("run_id")
             or not _is_sha256(record.get("source_package_sha256"))
             or not record.get("reason")
-            or _parse_datetime(record.get("invalidated_at")) is None
+            or invalidated_at is None
+            or (current_format and invalidated_at > now)
         ):
             state.add_global(
                 "INVALIDATION_LINEAGE_INVALID",
@@ -116,8 +121,16 @@ def _validate_invalidations(
                 "Invalidation affected rows must equal the complete transitive dependency closure.",
                 structural=True,
             )
-        for row_id in actual_affected & set(row_states):
-            row_states[row_id].blockers.add("EVIDENCE_INVALIDATED")
+        for row_id in actual_affected & row_by_id.keys():
+            row = row_by_id[row_id]
+            if not current_format or invalidated_at is None or any(
+                (started := _parse_datetime(execution.get("procedure", {}).get("started_at"))) is None
+                or started <= invalidated_at
+                or (observed := _parse_datetime(execution.get("freshness", {}).get("observed_at"))) is None
+                or observed <= invalidated_at
+                for execution in (row, *row.get("child_checks", []))
+            ):
+                row_states[row_id].blockers.add("EVIDENCE_INVALIDATED")
     if sequences and sequences != list(range(1, len(sequences) + 1)):
         state.add_global(
             "INVALIDATION_APPEND_ONLY_VIOLATION",
@@ -153,25 +166,42 @@ def _validate_final_audit(
     audit_time = _parse_datetime(audit.get("audited_at"))
     auditor = audit.get("auditor")
     manifest = payload.get("manifest", {})
+    current_format = payload.get("schema_version") == "1.1"
     expected_scope = (
         _authorization_scope_from_manifest(manifest, _route_set_binding(manifest))
         if isinstance(manifest, Mapping)
         else None
     )
-    if (
-        audit_time is None
-        or audit_time > now
-        or _validate_person(
-            auditor,
-            now,
-            expected_role="independent-final-auditor",
-            expected_scope=expected_scope,
+    authority_valid = (
+        audit_time is not None
+        and audit_time <= now
+        and all(
+            not _validate_person(
+                auditor,
+                moment,
+                expected_role="independent-final-auditor",
+                expected_scope=expected_scope,
+            )
+            for moment in ((now, audit_time) if current_format else (now,))
         )
-    ):
+    )
+    if not authority_valid:
         state.add_global(
             "FINAL_AUDITOR_AUTHORITY_INVALID",
             "The separate final audit requires a named, current independent auditor.",
         )
+    audit_chronology_valid = True
+    if current_format and audit_time is not None:
+        evidence_times = [_parse_datetime(manifest.get("created_at"))]
+        for _, execution in _execution_records(payload):
+            evidence_times.extend((
+                _parse_datetime(execution.get("procedure", {}).get("completed_at")),
+                _parse_datetime(execution.get("freshness", {}).get("observed_at")),
+            ))
+        audit_chronology_valid = all(when is None or when <= audit_time for when in evidence_times)
+        if not audit_chronology_valid:
+            state.add_global("FINAL_AUDIT_PRECEDES_EVIDENCE",
+                             "The final audit cannot precede the manifest, execution or evidence it rechecks.")
     row_authorities = {
         person.get("person_id")
         for row in row_by_id.values()
@@ -215,18 +245,15 @@ def _validate_final_audit(
         )
     return (
         rechecks_complete
-        and audit_time is not None
-        and audit_time <= now
-        and not _validate_person(
-            auditor,
-            now,
-            expected_role="independent-final-auditor",
-            expected_scope=expected_scope,
-        )
+        and authority_valid
+        and audit_chronology_valid
         and isinstance(auditor, Mapping)
         and auditor.get("person_id") not in row_authorities
         and audit.get("status") == "PASS"
-        and audit.get("disposition") == "READY_FOR_FINAL_AUDIT"
+        and audit.get("disposition") == (
+            "FINAL_AUDIT_RECORDED" if current_format
+            else "READY_FOR_FINAL_AUDIT"
+        )
     )
 
 
@@ -239,8 +266,9 @@ def _validate_evidence_index(
         "manifest_signature": payload.get("manifest_signature"),
         "rows": payload.get("rows"),
         "invalidation_records": payload.get("invalidation_records"),
-        "final_audit": payload.get("final_audit"),
     }
+    if payload.get("schema_version") != "1.1":
+        source["final_audit"] = payload.get("final_audit")
     expected = [
         {
             "uri": reference["uri"],
@@ -279,7 +307,7 @@ def _validate_evidence_index(
             "Artifact digest index must enumerate every immutable evidence reference exactly once.",
             structural=True,
         )
-    for reference in _iter_evidence_refs(source):
+    for reference in _iter_evidence_refs({**source, "final_audit": payload.get("final_audit")}):
         code = _evidence_ref_error(reference)
         if code:
             state.add_global(

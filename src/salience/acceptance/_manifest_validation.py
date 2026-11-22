@@ -12,7 +12,8 @@ from ._canonical import (
     _parse_datetime,
     sha256_json,
 )
-from ._contracts import _ValidationState
+from ._contracts import ROW_IDS, _ValidationState
+from ._scope_binding import _execution_records
 
 
 def _validate_manifest(
@@ -254,11 +255,13 @@ def _validate_deployment_artifact_and_route_bindings(
                 structural=True,
             )
 
-    for row in payload.get("rows", []):
-        if not isinstance(row, Mapping):
-            continue
+    if payload.get("schema_version") == "1.1" and set(manifest.get("row_targets", {})) != set(ROW_IDS):
+        state.add_global("ROW_TARGET_INVENTORY_MISMATCH", "The signed target inventory must cover all required rows.", structural=True)
+    for _, row in _execution_records(payload):
         row_id = row.get("row_id")
         route = row.get("scope", {}).get("route", {})
+        if payload.get("schema_version") == "1.1" and route.get("applicability") == "NOT_APPLICABLE":
+            continue
         route_id = route.get("route_id")
         canonical_route_id = _is_canonical_uuid(route_id)
         inventory_route = route_by_id.get(route_id) if canonical_route_id else None

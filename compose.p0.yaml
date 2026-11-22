@@ -1,6 +1,9 @@
 services:
   p0-api:
-    build: .
+    build:
+      context: .
+      args:
+        - SALIENCE_WHEEL_FILE
     command: ["uvicorn", "salience.api.app:create_configured_app", "--factory", "--host", "0.0.0.0", "--port", "8000", "--limit-concurrency", "32", "--timeout-keep-alive", "5", "--no-access-log"]
     environment:
       SALIENCE_DEPLOYMENT_MODE: p0

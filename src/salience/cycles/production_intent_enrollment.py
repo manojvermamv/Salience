@@ -32,6 +32,53 @@ class ProductionIntentEnrollmentWriter:
     def _load_facts(self, connection, key: ProductionIntentKey, *, require_write: bool):
         control = self.schedule_control
         binding = self.binding
+        goal = connection.execute(
+            """SELECT revision,state FROM public.v4_goals
+               WHERE id=%s AND workspace_id=%s FOR UPDATE""",
+            (binding.goal_id, binding.workspace_id),
+        ).fetchone()
+        if (
+            goal is None
+            or goal["revision"] != binding.goal_revision
+            or goal["state"] != "active"
+        ):
+            raise PermissionError("current bound active goal revision is required")
+        intent = connection.execute(
+            """SELECT intent.goal_id,intent.goal_revision,intent.eligibility_revision,
+                      intent.due_at,EXISTS (
+                          SELECT 1 FROM public.v4_cycle_requests request
+                          WHERE request.intent_id=intent.id AND request.origin='scheduled'
+                      ) AS scheduled
+               FROM public.v4_cycle_intents intent WHERE intent.id=%s FOR UPDATE""",
+            (key.intent_id,),
+        ).fetchone()
+        if intent is None:
+            raise ValueError("canonical production intent is unavailable")
+        if (intent["goal_id"], intent["goal_revision"]) != (binding.goal_id, binding.goal_revision):
+            raise PermissionError("current bound active goal revision is required")
+        if intent["eligibility_revision"] != key.eligibility_revision:
+            raise ValueError("canonical intent eligibility revision is stale")
+
+        cutover = connection.execute(
+            """SELECT state,goal_revision,legacy_schedule_id,actor_id,first_v4_slot
+               FROM public.v4_schedule_cutovers
+               WHERE goal_id=%s AND workspace_id=%s FOR SHARE""",
+            (binding.goal_id, binding.workspace_id),
+        ).fetchone()
+        if cutover and (
+            cutover["goal_revision"], cutover["legacy_schedule_id"],
+            cutover["actor_id"], cutover["first_v4_slot"],
+        ) != (
+            binding.goal_revision, binding.schedule_id,
+            binding.schedule_operator_subject_id, binding.first_v4_slot,
+        ):
+            raise PermissionError("exact production cutover binding required for enrollment")
+        active_cutover = cutover is not None and cutover["state"] == "active"
+        if not active_cutover and (
+            intent["scheduled"] or (cutover and intent["due_at"] >= binding.first_v4_slot)
+        ):
+            raise PermissionError("active schedule cutover required for enrollment of overlapping work")
+
         row = control._binding_row(connection, schedule_id=binding.schedule_id)
         current_binding = control._binding_value(row)
         if current_binding != binding:
@@ -105,7 +152,15 @@ class ProductionIntentEnrollmentWriter:
         )
         if require_write:
             current_authority(connection, workspace_id, operator_id, "cycles:write")
-        source_rows = control._local_source(connection, binding.remote_schedule_id)
+        connection.execute(
+            "SELECT id FROM public.job_schedules WHERE id=%s AND workspace_id=%s FOR SHARE",
+            (binding.schedule_id, workspace_id),
+        ).fetchone()
+        source_rows = control._local_source(
+            connection,
+            binding.remote_schedule_id,
+            schedule_statuses=("paused",) if active_cutover else ("active",),
+        )
         if len(source_rows) != 1 or (
             source_rows[0]["source_kind"],
             source_rows[0]["schedule_id"],
@@ -185,29 +240,6 @@ class ProductionIntentEnrollmentWriter:
             entry["stopped"] is not False for entry in stop_by_scope.values()
         ):
             raise PermissionError("current workspace and goal stop state required")
-        intent = connection.execute(
-            """SELECT intent.id,intent.goal_id,intent.goal_revision,
-                      intent.eligibility_revision,goal.workspace_id,
-                      goal.revision AS current_goal_revision,goal.state AS goal_state
-               FROM public.v4_cycle_intents intent
-               JOIN public.v4_goals goal ON goal.id=intent.goal_id
-               JOIN public.v4_goal_revisions revision
-                 ON revision.goal_id=goal.id AND revision.revision=intent.goal_revision
-               WHERE intent.id=%s FOR SHARE OF intent,goal""",
-            (key.intent_id,),
-        ).fetchone()
-        if intent is None:
-            raise ValueError("canonical production intent is unavailable")
-        if (
-            intent["goal_id"] != binding.goal_id
-            or intent["workspace_id"] != workspace_id
-            or intent["goal_revision"] != binding.goal_revision
-            or intent["current_goal_revision"] != binding.goal_revision
-            or intent["goal_state"] != "active"
-        ):
-            raise PermissionError("current bound active goal revision is required")
-        if intent["eligibility_revision"] != key.eligibility_revision:
-            raise ValueError("canonical intent eligibility revision is stale")
         if control.route_lease.owner_id not in identity_by_id:
             raise PermissionError("current route owner identity required")
         if control.route_lease.route_id != binding.route_id:
@@ -239,7 +271,7 @@ class ProductionIntentEnrollmentWriter:
             "operation_id": key.intent_id,
             "approval_id": approval["id"],
         }
-        return facts
+        return facts, active_cutover
 
     @staticmethod
     def _same_enrollment(existing, facts) -> bool:
@@ -277,7 +309,7 @@ class ProductionIntentEnrollmentWriter:
         if not isinstance(key, ProductionIntentKey):
             raise ValueError("canonical production intent key required")
         control = self.schedule_control
-        facts = self._load_facts(connection, key, require_write=require_write)
+        facts, active_cutover = self._load_facts(connection, key, require_write=require_write)
         decision = control._route_decision(
             route_id=facts["route_id"],
             route_tuple_sha256=self.binding.route_tuple_sha256,
@@ -292,25 +324,22 @@ class ProductionIntentEnrollmentWriter:
         )
         if not isinstance(decision.decision_id, UUID):
             raise PermissionError("one fresh exact route-fence decision is required")
-        refreshed = self._load_facts(connection, key, require_write=require_write)
+        refreshed, still_active = self._load_facts(connection, key, require_write=require_write)
         comparable_facts = {name: value for name, value in facts.items() if name not in {"operation_id", "approval_id"}}
         comparable_refreshed = {
             name: value
             for name, value in refreshed.items()
             if name not in {"operation_id", "approval_id"}
         }
-        if comparable_refreshed != comparable_facts:
+        if comparable_refreshed != comparable_facts or still_active != active_cutover:
             raise PermissionError("policy, stop, identity, source, or route fact changed before enrollment")
-        readback = control.route_authority.read_slot(
-            facts["route_id"], facts["slot_id"]
+        if active_cutover:
+            readback = control.describe(self.binding.schedule_id)
+            if not readback["paused"] or not control._last_slot_precedes(readback, self.binding.first_v4_slot):
+                raise PermissionError("paused drained predecessor schedule required for enrollment")
+        control._require_live_route_lease(
+            facts["route_id"], facts["slot_id"], facts["fencing_epoch"]
         )
-        if (
-            not readback.available
-            or readback.state != "leased"
-            or readback.lease != control.route_lease
-            or readback.fencing_epoch != facts["fencing_epoch"]
-        ):
-            raise PermissionError("exact live route lease readback is required before enrollment commit")
         expected = {
             name: value
             for name, value in facts.items()
@@ -364,12 +393,6 @@ class ProductionIntentEnrollmentWriter:
 
         with self.schedule_control._connect() as connection:
             with connection.transaction():
-                current_authority(
-                    connection,
-                    self.binding.workspace_id,
-                    self.binding.schedule_operator_subject_id,
-                    "cycles:write",
-                )
                 enrollment = self._enroll_in_transaction(
                     connection, key, require_write=True
                 )

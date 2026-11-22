@@ -7,8 +7,8 @@ from urllib.parse import parse_qsl, urlsplit
 
 from ._contracts import _ValidationState
 from ._scope_binding import (
-    _evidence_binding_from_manifest,
-    _route_binding_for_path,
+    _evidence_binding_for_path,
+    _execution_records,
 )
 
 
@@ -165,10 +165,7 @@ def _validate_evidence_bindings(
     for path, reference in _reference_paths(payload):
         if path and path[0] == "artifact_digest_index":
             continue
-        expected = _evidence_binding_from_manifest(
-            payload,
-            _route_binding_for_path(payload, path),
-        )
+        expected = _evidence_binding_for_path(payload, path)
         binding = reference.get("binding")
         provenance = reference.get("provenance")
         evidence_id = reference.get("evidence_id")
@@ -227,10 +224,7 @@ def _validate_evidence_bindings(
     if isinstance(route_inventory, list):
         for index, route in enumerate(route_inventory):
             path = ("manifest", "route_manifest", "inventory", str(index))
-            expected = _evidence_binding_from_manifest(
-                payload,
-                _route_binding_for_path(payload, path),
-            )
+            expected = _evidence_binding_for_path(payload, path)
             if isinstance(route, Mapping) and dict(route.get("binding", {})) != expected:
                 _add_evidence_error(
                     state,
@@ -240,11 +234,10 @@ def _validate_evidence_bindings(
                     "A route observation does not bind to this run and exact candidate/deployment/environment/account/resource scope.",
                 )
 
-    for index, row in enumerate(payload.get("rows", [])):
+    for row_path, row in _execution_records(payload):
         if not isinstance(row, Mapping):
             continue
         execution_record = row.get("status") in {"PASS", "FAIL"}
-        row_path = ("rows", str(index))
         observations = [
             (row.get("freshness"), (*row_path, "freshness")),
             (
@@ -261,10 +254,7 @@ def _validate_evidence_bindings(
         for observation, path in observations:
             if observation is None and not execution_record:
                 continue
-            expected = _evidence_binding_from_manifest(
-                payload,
-                _route_binding_for_path(payload, path),
-            )
+            expected = _evidence_binding_for_path(payload, path)
             if not isinstance(observation, Mapping) or dict(observation.get("binding", {})) != expected:
                 _add_evidence_error(
                     state,
@@ -278,10 +268,7 @@ def _validate_evidence_bindings(
     if isinstance(invalidations, list):
         for index, record in enumerate(invalidations):
             path = ("invalidation_records", str(index))
-            expected = _evidence_binding_from_manifest(
-                payload,
-                _route_binding_for_path(payload, path),
-            )
+            expected = _evidence_binding_for_path(payload, path)
             if not isinstance(record, Mapping) or dict(record.get("binding", {})) != expected:
                 _add_evidence_error(
                     state,
@@ -294,8 +281,8 @@ def _validate_evidence_bindings(
     rows = payload.get("rows", [])
     if not isinstance(rows, list):
         return
-    for row in rows:
-        if not isinstance(row, Mapping) or not isinstance(row.get("row_id"), str):
+    for _, row in _execution_records(payload):
+        if not isinstance(row.get("row_id"), str):
             continue
         row_id = row["row_id"]
         raw_result = row.get("raw_result")
@@ -340,6 +327,10 @@ def _validate_evidence_bindings(
         if isinstance(row, Mapping) and isinstance(row.get("row_id"), str)
     }
     rechecks = audit.get("row_rechecks", []) if isinstance(audit, Mapping) else []
+    current_format = payload.get("schema_version") == "1.1"
+    unavailable_digests = {
+        ref["sha256"] for _, ref in _reference_paths(rows)
+    } if current_format and rechecks else set()
     if isinstance(rechecks, list):
         for recheck in rechecks:
             if not isinstance(recheck, Mapping):
@@ -353,6 +344,8 @@ def _validate_evidence_bindings(
             if (
                 not isinstance(provenance, Mapping)
                 or provenance.get("operator_id") != auditor_id
+                or (current_format and isinstance(readback, Mapping)
+                    and readback.get("sha256") in unavailable_digests)
                 or any(
                     isinstance(candidate, Mapping) and not _independent(candidate, readback)
                     for candidate in candidates
@@ -360,6 +353,32 @@ def _validate_evidence_bindings(
             ):
                 state.add_global(
                     "FINAL_AUDIT_RECHECK_NOT_INDEPENDENT",
-                    "Each final-audit recheck requires new evidence from the final auditor, independent of that row's execution and negative-control evidence.",
+                    "Each final-audit recheck requires new evidence from the final auditor, independent of execution evidence and other rechecks.",
                     structural=True,
                 )
+
+            if not current_format:
+                continue
+            if isinstance(readback, Mapping):
+                unavailable_digests.add(readback.get("sha256"))
+            child_ids = {child.get("target_id") for child in row.get("child_checks", [])}
+            child_rechecks = recheck.get("child_rechecks", [])
+            rechecked = [child.get("target_id") for child in child_rechecks]
+            if set(rechecked) != child_ids or len(rechecked) != len(child_ids):
+                state.add_global("FINAL_AUDIT_CHILD_RECHECK_INCOMPLETE",
+                                 "The auditor must independently read every declared child target.", structural=True)
+            child_authorities = {
+                child[role].get("person_id") for child in row.get("child_checks", [])
+                for role in ("operator", "owner", "independent_reviewer") if isinstance(child.get(role), Mapping)
+            }
+            if auditor_id in child_authorities:
+                state.add_global("FINAL_AUDITOR_NOT_INDEPENDENT",
+                                 "The final auditor must differ from each child authority.", structural=True)
+            for child in child_rechecks:
+                child_readback = child.get("readback", {})
+                if (child.get("status") != "PASS" or child_readback.get("sha256") in unavailable_digests
+                        or child_readback.get("provenance", {}).get("operator_id") != auditor_id
+                        or any(not _independent(source, child_readback) for source in candidates)):
+                    state.add_global("FINAL_AUDIT_CHILD_RECHECK_INVALID",
+                                     "Each child recheck needs a fresh independent auditor readback.", structural=True)
+                unavailable_digests.add(child_readback.get("sha256"))

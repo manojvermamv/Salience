@@ -164,12 +164,31 @@ def _manifest_row_scope_errors(row: Mapping[str, Any], manifest: Mapping[str, An
         (row_account.get("account_id"), account.get("account_id")),
         (row_account.get("repository_id"), account.get("repository_id")),
         (sorted(row_scope.get("resource_ids", [])), sorted(environment.get("resource_ids", []))),
-        (
-            row_scope.get("route", {}).get("authenticated_route_manifest_sha256"),
-            manifest.get("route_manifest", {}).get("authenticated_manifest_sha256"),
-        ),
+
     ]
     if any(actual != expected for actual, expected in checks):
+        errors.append("SCOPE_IDENTITY_MISMATCH")
+    route = row_scope.get("route", {})
+    if "target" in manifest:
+        target = manifest["target"]
+        if (row_account != target.get("account") or route != target.get("route")
+                or sorted(row_scope.get("resource_ids", [])) != sorted(target.get("resource_ids", []))):
+            errors.append("SCOPE_IDENTITY_MISMATCH")
+        for name, axis in (("account", row_account), ("route", route)):
+            if axis.get("applicability") == "NOT_APPLICABLE":
+                owner_id = row.get("owner", {}).get("person_id")
+                reviewer_id = row.get("independent_reviewer", {}).get("person_id")
+                if (not str(axis.get("reason", "")).strip()
+                        or axis.get("row_id") != row.get("row_id")
+                        or axis.get("accountable_owner_id") != owner_id
+                        or axis.get("reviewer_id") != reviewer_id
+                        or reviewer_id == owner_id
+                        or axis.get("reviewer_confirmed") is not True
+                        or (name == "route" and row_scope.get("route_evidence_required") is not False)):
+                    errors.append("NONAPPLICABILITY_APPROVAL_INVALID")
+        if route.get("applicability") == "NOT_APPLICABLE":
+            return errors
+    if route.get("authenticated_route_manifest_sha256") != manifest.get("route_manifest", {}).get("authenticated_manifest_sha256"):
         errors.append("SCOPE_IDENTITY_MISMATCH")
     if not _is_canonical_uuid(row_scope.get("route", {}).get("route_id")):
         errors.append("ROUTE_ID_NOT_UUID")

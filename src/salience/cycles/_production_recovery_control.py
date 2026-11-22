@@ -11,7 +11,7 @@ from salience.cycles._production_recovery_contracts import (
     NoEffectGenerationReissueCommand, ProductionCaseDeadlineCommand,
     ProductionDeadlineWakeReceipt, ProductionIntentDeadlineCommand,
     ProductionNoEffectAuthorization, ProductionNoEffectReissueReceipt,
-    ProductionRecoveryAuthority, ProductionRecoveryDecision,
+    ProductionRecoveryAuthority, ProductionRecoveryDecision, ProductionRecoveryWork,
     RecoveryDeadlineNotDue, RecoveryEventConflict, RecoveryIdentityConflict,
     RecoveryInventoryGap, RecoveryProviderReadDenied, TypedCaseCommandReceipt,
     TypedIntentWakeReceipt, _require_aware, _require_uuid,
@@ -46,18 +46,119 @@ class ProductionRecoveryCaseController:
         self.commands = commands
 
     @staticmethod
-    def _deadline_replay(
-        repository: ProductionRecoveryWorkRepository, connection, event_row
-    ) -> ProductionDeadlineWakeReceipt:
-        event = repository._event(event_row)
+    def _verify_case_suspension(
+        connection, work: ProductionRecoveryWork, event_key: str, receipt: TypedCaseCommandReceipt
+    ) -> None:
+        if not isinstance(receipt, TypedCaseCommandReceipt) or (
+            receipt.case_id != work.case_id
+            or receipt.action != "deadline_suspend"
+            or type(receipt.resulting_revision) is not int
+            or receipt.resulting_revision != work.case_revision + 1
+            or not isinstance(receipt.command_id, UUID)
+        ):
+            raise ValueError("typed deadline suspension receipt does not match its source revision")
+        evidence = connection.execute(
+            """SELECT 1 FROM v4_case_commands command
+               JOIN v4_recovery_cases recovery ON recovery.id=command.case_id
+               JOIN v4_case_events event ON event.case_id=command.case_id
+                 AND event.actor_id=command.actor_id AND event.case_revision=%s
+               WHERE command.id=%s AND command.case_id=%s AND command.idempotency_key=%s
+                 AND command.action='deadline_suspend'
+                 AND jsonb_typeof(command.result->'resulting_revision')='number'
+                 AND command.result->>'resulting_revision'=event.case_revision::text
+                 AND event.action='escalated' AND event.payload->>'state'='suspended'
+                 AND event.payload->>'case_id'=recovery.id::text
+                 AND (recovery.revision=event.case_revision AND recovery.state='suspended'
+                      OR recovery.revision=event.case_revision+1 AND recovery.state='terminal')
+                 AND recovery.workspace_id=%s AND recovery.goal_id=%s
+                 AND recovery.target_cycle_id=%s AND recovery.context_id=%s
+                 AND recovery.operation_id=%s AND recovery.owner_id=%s""",
+            (
+                receipt.resulting_revision, receipt.command_id, work.case_id, event_key,
+                work.workspace_id, work.goal_id, work.cycle_id, work.context_id,
+                work.operation_id, work.owner_id,
+            ),
+        ).fetchone()
+        if evidence is None:
+            raise ValueError("canonical case suspension command and transition evidence required")
+
+    @staticmethod
+    def _verify_intent_wake(
+        connection, work: ProductionRecoveryWork, event_key: str, receipt: TypedIntentWakeReceipt
+    ) -> None:
+        if not isinstance(receipt, TypedIntentWakeReceipt) or (
+            receipt.intent_id != work.intent_id
+            or type(receipt.eligibility_revision) is not int
+            or receipt.eligibility_revision != work.eligibility_revision
+            or receipt.disposition not in {
+                "held", "woken", "admitted", "deferred", "denied", "review_required"
+            }
+            or (receipt.cycle_id is not None) != (receipt.disposition == "admitted")
+        ):
+            raise ValueError("typed intent wake receipt does not match its enrollment or cycle")
+        if receipt.disposition == "held":
+            return
+        evidence = connection.execute(
+            """SELECT admission.disposition,cycle.id AS cycle_id
+               FROM v4_cycle_intents intent
+               JOIN v4_cycle_events command ON command.intent_id=intent.id
+                 AND command.kind='production_recovery_intent_wake_command'
+                 AND command.workspace_id=%s AND command.goal_id=intent.goal_id
+                 AND command.payload->>'idempotency_key'=%s
+                 AND command.payload->'expected_revision'=to_jsonb(%s::integer)
+                 AND command.payload->>'disposition'=%s
+               JOIN v4_cycle_events wake ON wake.intent_id=intent.id AND wake.kind='intent_wake'
+                 AND wake.workspace_id=command.workspace_id AND wake.goal_id=command.goal_id
+                 AND wake.subject_id=command.subject_id
+                 AND wake.payload->'expected_revision'=command.payload->'expected_revision'
+               LEFT JOIN v4_production_intent_enrollments enrollment ON enrollment.intent_id=intent.id
+                 AND enrollment.workspace_id=command.workspace_id AND enrollment.goal_id=intent.goal_id
+                 AND enrollment.eligibility_revision=%s
+               LEFT JOIN v4_admissions admission ON admission.intent_id=enrollment.intent_id
+                 AND admission.eligibility_revision=enrollment.eligibility_revision
+               LEFT JOIN v4_cycles cycle ON cycle.id=admission.cycle_id AND cycle.intent_id=intent.id
+               WHERE intent.id=%s AND intent.goal_id=%s AND intent.eligibility_revision>%s""",
+            (
+                work.workspace_id, event_key, work.source_revision, receipt.disposition,
+                work.source_revision + 1, work.intent_id, work.goal_id, work.source_revision,
+            ),
+        ).fetchone()
+        if evidence is None or (
+            receipt.disposition != "woken"
+            and (receipt.disposition, receipt.cycle_id) != (evidence["disposition"], evidence["cycle_id"])
+        ):
+            raise ValueError("canonical intent wake command, revision and admission evidence required")
+
+    def _deadline_replay(self, connection, work, event_row) -> ProductionDeadlineWakeReceipt:
+        event = self.repository._event(event_row)
         payload = event.payload
-        if payload.get("status") == "deadline_suspend":
+        due_at = work.deadline if work.source_discriminant == "cycle_case" else work.due_at
+        if (
+            event.work_id != work.work_id
+            or event.event_kind != "escalation"
+            or payload.get("schema_version") != "salience.p1-production-recovery-deadline.v1"
+            or payload.get("work_id") != str(work.work_id)
+            or payload.get("source_id") != str(work.source_id)
+            or payload.get("intent_id") != str(work.intent_id)
+            or payload.get("deadline") != due_at.isoformat()
+            or payload.get("event_key") != event.event_key
+            or type(payload.get("attempt")) is not int
+        ):
+            raise RecoveryEventConflict("recorded deadline wake does not match its exact source")
+        if work.source_discriminant == "cycle_case":
+            if (
+                payload.get("status") != "deadline_suspend"
+                or payload.get("result_class") != "suspended"
+                or payload.get("operation_id") != str(work.operation_id)
+            ):
+                raise RecoveryEventConflict("recorded case deadline does not match its source")
             result: TypedCaseCommandReceipt | TypedIntentWakeReceipt = TypedCaseCommandReceipt(
                 case_id=UUID(str(payload["case_id"])),
                 action="deadline_suspend",
                 resulting_revision=int(payload["attempt"]),
                 command_id=UUID(str(payload["command_id"])),
             )
+            self._verify_case_suspension(connection, work, event.event_key, result)
         else:
             cycle_id = payload.get("result_class")
             result = TypedIntentWakeReceipt(
@@ -66,6 +167,7 @@ class ProductionRecoveryCaseController:
                 disposition=str(payload["status"]),
                 cycle_id=UUID(str(cycle_id)) if cycle_id else None,
             )
+            self._verify_intent_wake(connection, work, event.event_key, result)
         return ProductionDeadlineWakeReceipt(event.event_id, result)
 
     def wake_deadline(self, work_id: UUID) -> ProductionDeadlineWakeReceipt:
@@ -110,11 +212,20 @@ class ProductionRecoveryCaseController:
                 (event_key,),
             ).fetchone()
             if replay is not None:
-                return self._deadline_replay(self.repository, connection, replay)
+                return self._deadline_replay(connection, work, replay)
 
             now = connection.execute("SELECT clock_timestamp() AS now").fetchone()["now"]
             if now < due_at:
                 raise RecoveryDeadlineNotDue("canonical recovery deadline is not due")
+
+            # Canonical admission and case commands lock the goal before their source rows.
+            goal = connection.execute(
+                """SELECT id FROM v4_goals
+                   WHERE id=%s AND workspace_id=%s FOR UPDATE""",
+                (work.goal_id, work.workspace_id),
+            ).fetchone()
+            if goal is None:
+                raise RecoveryIdentityConflict("canonical deadline goal is outside the work scope")
 
             if action_kind == "deadline_suspend":
                 current = connection.execute(
@@ -212,12 +323,7 @@ class ProductionRecoveryCaseController:
                     route_decision_id=decision.route_decision_id,
                 )
                 receipt = self.commands.suspend_case(connection, command)
-                if not isinstance(receipt, TypedCaseCommandReceipt) or (
-                    receipt.case_id != work.source_id
-                    or receipt.action != "deadline_suspend"
-                    or receipt.resulting_revision != work.case_revision + 1
-                ):
-                    raise ValueError("typed deadline suspension receipt does not match its source revision")
+                self._verify_case_suspension(connection, work, event_key, receipt)
                 payload = {
                     "schema_version": "salience.p1-production-recovery-deadline.v1",
                     "status": "deadline_suspend",
@@ -248,11 +354,7 @@ class ProductionRecoveryCaseController:
                     route_decision_id=decision.route_decision_id,
                 )
                 receipt = self.commands.wake_intent(connection, command)
-                if not isinstance(receipt, TypedIntentWakeReceipt) or (
-                    receipt.intent_id != work.intent_id
-                    or receipt.eligibility_revision != work.eligibility_revision
-                ):
-                    raise ValueError("typed intent wake receipt does not match its enrollment revision")
+                self._verify_intent_wake(connection, work, event_key, receipt)
                 payload = {
                     "schema_version": "salience.p1-production-recovery-deadline.v1",
                     "status": receipt.disposition,

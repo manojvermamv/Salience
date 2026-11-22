@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from hashlib import sha256
 import json
 from uuid import NAMESPACE_URL, UUID, uuid5
@@ -52,10 +52,114 @@ class _ProductionScheduleTargetAdapter:
         return row
 
 
-    def _assert_current_action_source(self, connection, binding, *, action):
+    def _require_rollback_watermark(self, connection, binding, after_slot):
+        cursor = connection.execute(
+            """SELECT last_slot FROM public.v4_schedule_cursors
+               WHERE goal_id=%s AND goal_revision=%s FOR SHARE""",
+            (binding.goal_id, binding.goal_revision),
+        ).fetchone()
+        expected = (
+            cursor["last_slot"] if cursor is not None
+            else binding.first_v4_slot - timedelta(seconds=binding.interval_seconds)
+        )
+        if after_slot != expected:
+            raise PermissionError("rollback watermark must match the canonical cursor")
+
+    @staticmethod
+    def _is_later_cadence_slot(local_next, remote_next, interval_seconds):
+        return (
+            local_next is not None
+            and remote_next is not None
+            and remote_next >= local_next
+            and (remote_next - local_next) % timedelta(seconds=interval_seconds) == timedelta(0)
+        )
+
+    @staticmethod
+    def _require_source_owner(connection, binding):
+        owner = connection.execute(
+            """SELECT 1 FROM public.identity_subjects
+               WHERE id=%s AND workspace_id=%s AND enabled IS TRUE
+                 AND expires_at>clock_timestamp() FOR SHARE""",
+            (binding.source_owner_subject_id, binding.workspace_id),
+        ).fetchone()
+        if owner is None:
+            raise PermissionError("current enabled bound source owner required")
+
+    def _unresolved_schedule_work(self, connection, binding):
+        return bool(connection.execute(
+            """SELECT 1 FROM public.v4_legacy_dispatches dispatch
+               JOIN public.jobs job ON job.id=dispatch.job_id
+               WHERE dispatch.workspace_id=%(workspace)s AND dispatch.goal_id=%(goal)s
+                 AND job.state NOT IN ('succeeded','cancelled','dead_lettered','timed_out')
+               UNION ALL
+               SELECT 1 FROM public.v4_legacy_publication_recovery_holds hold
+               WHERE hold.workspace_id=%(workspace)s AND hold.goal_id=%(goal)s
+               UNION ALL
+               SELECT 1 FROM public.v4_production_recovery_work work
+               WHERE work.workspace_id=%(workspace)s AND work.goal_id=%(goal)s
+                 AND (work.source_discriminant='production_publication_hold' OR EXISTS (
+                     SELECT 1 FROM public.v4_recovery_cases recovery
+                     WHERE work.source_discriminant='cycle_case' AND work.source_id=recovery.id
+                       AND recovery.failure_class='unknown_effect'
+                       AND recovery.state NOT IN ('terminal','resolved')))
+               UNION ALL
+               SELECT 1 FROM public.v4_production_effect_permits permit
+               LEFT JOIN public.v4_production_current_dispatch dispatch
+                 ON dispatch.operation_id=permit.operation_id
+               LEFT JOIN public.v4_production_effect_permit_claims claim
+                 ON (claim.permit_id,claim.operation_id,claim.generation)
+                  = (permit.permit_id,permit.operation_id,permit.generation)
+               LEFT JOIN public.external_effects effect
+                 ON effect.id::text=permit.request_snapshot->>'external_effect_id'
+                AND effect.workspace_id=permit.workspace_id
+                AND effect.job_id::text=permit.request_snapshot->>'job_id'
+               WHERE permit.workspace_id=%(workspace)s AND permit.goal_id=%(goal)s
+                 -- A newer generation requires authoritative same-operation no-effect proof.
+                 AND (dispatch.generation IS NULL OR dispatch.generation<=permit.generation)
+                 AND (claim.claim_id IS NOT NULL OR permit.expires_at>clock_timestamp()
+                      OR effect.status IN ('submitting','unknown','accepted','completed'))
+                 AND NOT EXISTS (
+                     SELECT 1 FROM public.v4_cycle_events event
+                     WHERE claim.claim_id IS NULL AND effect.status='cancelled'
+                       AND effect.attempted_at IS NULL AND event.cycle_id=permit.cycle_id
+                       AND event.kind='production_publication_cancelled_before_submit'
+                       AND event.payload->>'operation_id'=permit.operation_id::text
+                       AND event.payload->>'permit_id'=permit.permit_id::text
+                       AND event.payload->>'external_effect_id'=effect.id::text)
+                 AND NOT EXISTS (
+                     SELECT 1 FROM public.v4_cycles cycle
+                     JOIN public.publication_attempts attempt
+                       ON attempt.id::text=permit.request_snapshot->>'publication_attempt_id'
+                     JOIN public.publication_plans plan ON plan.id=attempt.publication_plan_id
+                     JOIN public.remote_publication_receipts receipt
+                       ON receipt.publication_attempt_id=attempt.id
+                     JOIN public.publications publication
+                       ON publication.remote_publication_receipt_id=receipt.id
+                      AND publication.publication_request_id=plan.publication_request_id
+                     WHERE cycle.id=permit.cycle_id AND cycle.operation_id=permit.operation_id
+                       AND cycle.state='closed' AND cycle.disposition='completed'
+                       AND plan.id::text=permit.request_snapshot->>'publication_plan_id'
+                       AND plan.publication_request_id::text=permit.request_snapshot->>'publication_request_id'
+                       AND plan.external_effect_id=effect.id AND effect.status='completed'
+                       AND receipt.publisher_id=permit.provider_id
+                       AND effect.provider_reference=receipt.remote_id
+                       AND publication.state='published')
+               LIMIT 1""",
+            {"workspace": binding.workspace_id, "goal": binding.goal_id},
+        ).fetchone())
+
+    def _assert_current_action_source(self, connection, binding, *, action, after_slot=None):
         """Hold exact local source/lifecycle facts before a remote action."""
-        # Keep the active local schedule identity stable until the remote
-        # command returns. The fixture mirror update runs after this transaction.
+        from salience.cycles.native_schedules import schedule_metadata
+
+        # Match the state machine's goal-before-schedule lock order.
+        goal = connection.execute(
+            """SELECT revision,state FROM public.v4_goals
+               WHERE id=%s AND workspace_id=%s FOR SHARE""",
+            (binding.goal_id, binding.workspace_id),
+        ).fetchone()
+        if goal is None or goal["revision"] != binding.goal_revision or goal["state"] != "active":
+            raise PermissionError("current bound active goal revision required")
         schedule = self._schedule(connection, binding.schedule_id, lock=True)
         status = schedule["status"]
         if action == "pause":
@@ -63,9 +167,9 @@ class _ProductionScheduleTargetAdapter:
                 raise PermissionError("invalid local schedule status for pause")
             required_cutover_states = {"pending", "active"}
         elif action == "resume_after":
-            if status != "paused":
+            if status not in {"active", "paused"}:
                 raise PermissionError("invalid local schedule status for resume")
-            required_cutover_states = {"rollback_pending"}
+            required_cutover_states = {"rollback_pending", "rolled_back"} if status == "active" else {"rollback_pending"}
         else:
             raise ValueError("bounded production schedule action required")
 
@@ -100,32 +204,11 @@ class _ProductionScheduleTargetAdapter:
         ) != expected:
             raise PermissionError("current active bound schedule source and goal revision required")
 
-        goal = connection.execute(
-            """SELECT id,workspace_id,revision,state FROM public.v4_goals
-               WHERE id=%s AND workspace_id=%s FOR SHARE""",
-            (binding.goal_id, binding.workspace_id),
-        ).fetchone()
-        if (
-            goal is None
-            or goal["revision"] != binding.goal_revision
-            or goal["state"] != "active"
-        ):
-            raise PermissionError("current bound active goal revision required")
-
-        owner = connection.execute(
-            """SELECT id,workspace_id,enabled FROM public.identity_subjects
-               WHERE id=%s FOR SHARE""",
-            (binding.source_owner_subject_id,),
-        ).fetchone()
-        if (
-            owner is None
-            or owner["workspace_id"] != binding.workspace_id
-            or owner["enabled"] is not True
-        ):
-            raise PermissionError("current enabled bound source owner required")
+        self._require_source_owner(connection, binding)
 
         cutover = connection.execute(
-            """SELECT state,goal_revision,legacy_schedule_id,actor_id,first_v4_slot
+            """SELECT state,goal_revision,legacy_schedule_id,actor_id,first_v4_slot,
+                      rollback_after_slot
                FROM public.v4_schedule_cutovers
                WHERE goal_id=%s AND workspace_id=%s FOR SHARE""",
             (binding.goal_id, binding.workspace_id),
@@ -165,7 +248,27 @@ class _ProductionScheduleTargetAdapter:
                     "locally paused predecessor and committed stop required for active cutover"
                 )
             return stop_fence
-        return None
+
+        if after_slot is None or cutover["rollback_after_slot"] != after_slot:
+            raise PermissionError("exact current rollback watermark required before remote resume")
+        self._require_rollback_watermark(connection, binding, after_slot)
+        if status == "active":
+            metadata = schedule_metadata(schedule)
+            if (
+                metadata["resume_after"] != after_slot.isoformat()
+                or metadata["next_run_at"] is None
+                or metadata["next_run_at"] <= after_slot
+            ):
+                raise PermissionError("active legacy schedule lacks exact rollback watermark readback")
+        self._assert_binding(connection, binding, action_kind="schedule_resume")
+        from salience.cycles.schedule_cutover import CycleScheduleCutover
+
+        if (
+            CycleScheduleCutover._unresolved(connection, binding.goal_id, binding.first_v4_slot)
+            or self._unresolved_schedule_work(connection, binding)
+        ):
+            raise ValueError("unresolved schedule work holds legacy resume")
+        return status
 
 
     def _command_key(self, binding: ProductionScheduleBinding, action: str, suffix: str = "") -> str:
@@ -302,8 +405,13 @@ class _ProductionScheduleTargetAdapter:
         with self._connect() as connection:
             connection.execute("SET LOCAL statement_timeout='3s'")
             cutover = connection.execute(
-                "SELECT state,rollback_after_slot FROM public.v4_schedule_cutovers "
-                "WHERE goal_id=%s AND workspace_id=%s",
+                """SELECT state,rollback_after_slot,schedule.status AS legacy_status,
+                          schedule.next_run_at AS legacy_next,clock_timestamp() AS now
+                   FROM public.v4_schedule_cutovers cutover
+                   JOIN public.job_schedules schedule
+                     ON schedule.id=cutover.legacy_schedule_id
+                    AND schedule.workspace_id=cutover.workspace_id
+                   WHERE cutover.goal_id=%s AND cutover.workspace_id=%s""",
                 (binding.goal_id, binding.workspace_id),
             ).fetchone()
         if cutover and cutover["state"] == "active":
@@ -332,10 +440,17 @@ class _ProductionScheduleTargetAdapter:
             watermark = cutover["rollback_after_slot"]
             reconciled = (
                 not readback.paused
+                and (cutover["state"] == "rolled_back" or readback.running_action_count == 0)
                 and readback.resume_after is not None
                 and _aware(readback.resume_after, "resume watermark") == watermark
                 and readback.next_action is not None
-                and _aware(readback.next_action, "next action") > watermark
+                and _aware(readback.next_action, "next action") > max(watermark, cutover["now"])
+                and (
+                    cutover["legacy_status"] != "active"
+                    or self._is_later_cadence_slot(
+                        cutover["legacy_next"], readback.next_action, binding.interval_seconds
+                    )
+                )
             )
             if readback.paused is False and not reconciled:
                 self._hold(
@@ -434,12 +549,14 @@ class _ProductionScheduleTargetAdapter:
         schedule_id = UUID(str(schedule_id))
         after_slot = _aware(after_slot, "rollback watermark")
         binding = self.binding_for_schedule(schedule_id)
+        if subject_id is not None and UUID(str(subject_id)) != binding.schedule_operator_subject_id:
+            raise PermissionError("exact bound schedule operator required before remote resume")
         command_key = self._command_key(binding, "resume_after", after_slot.isoformat())
         mutation_error = None
         with self._connect() as connection:
             connection.execute("SET LOCAL statement_timeout='3s'")
-            self._assert_current_action_source(
-                connection, binding, action="resume_after"
+            status = self._assert_current_action_source(
+                connection, binding, action="resume_after", after_slot=after_slot
             )
             before = self._readback(binding, action_kind="schedule_resume")
             if before.running_action_count:
@@ -453,8 +570,9 @@ class _ProductionScheduleTargetAdapter:
                     },
                 )
                 raise PermissionError("unresolved remote schedule actions hold rollback")
-            if not before.paused and not (
-                before.resume_after is not None
+            if (status == "active" or not before.paused) and not (
+                not before.paused
+                and before.resume_after is not None
                 and _aware(before.resume_after, "resume watermark") == after_slot
                 and before.next_action is not None
                 and _aware(before.next_action, "next action") > after_slot
@@ -466,6 +584,18 @@ class _ProductionScheduleTargetAdapter:
                 )
                 raise PermissionError("exact paused schedule or prior resume reconciliation required")
             if before.paused:
+                if not self._last_slot_precedes(
+                    {"last_slot": before.last_slot,
+                     "last_slot_is_boundary": before.last_slot is None
+                     and binding.member_snapshot["history_action_count"] == 0},
+                    binding.first_v4_slot,
+                ):
+                    self._hold(
+                        binding, "schedule_resume_predecessor_not_fenced",
+                        {"last_slot": _time_text(before.last_slot, "last slot"),
+                         "first_v4_slot": binding.first_v4_slot.isoformat()},
+                    )
+                    raise PermissionError("exact paused predecessor readback required before resume")
                 try:
                     self.target.resume_after(
                         binding.remote_schedule_id, command_key, after_slot
@@ -489,6 +619,7 @@ class _ProductionScheduleTargetAdapter:
             raise PermissionError("resume acknowledgment has no exact schedule readback") from error
         if (
             readback.paused
+            or readback.running_action_count != 0
             or readback.resume_after is None
             or _aware(readback.resume_after, "resume watermark") != after_slot
             or readback.next_action is None
@@ -507,11 +638,25 @@ class _ProductionScheduleTargetAdapter:
                 },
             )
             raise PermissionError("later exact rollback slot readback required") from mutation_error
-        super().resume_after(schedule_id, after_slot, subject_id=subject_id)
+        from salience.cycles.schedule_cutover import _ScheduleResumeSlotMismatch
+
+        try:
+            super().resume_after(
+                schedule_id, after_slot, subject_id=subject_id, _verified_next_slot=readback.next_action
+            )
+        except _ScheduleResumeSlotMismatch as error:
+            self._hold(
+                binding, "schedule_resume_local_remote_mismatch",
+                {"local_next_action": _time_text(error.expected_slot, "local next action"),
+                 "remote_next_action": _time_text(readback.next_action, "remote next action")},
+            )
+            raise
         with self._connect() as connection:
             row = self._schedule(connection, schedule_id)
             local_next = row["next_run_at"]
-        if local_next != readback.next_action:
+        if local_next != readback.next_action and not self._is_later_cadence_slot(
+            local_next, readback.next_action, binding.interval_seconds
+        ):
             self._hold(
                 binding,
                 "schedule_resume_local_remote_mismatch",

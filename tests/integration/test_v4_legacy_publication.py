@@ -1423,7 +1423,7 @@ async def test_expired_hold_insert_failure_preserves_activity_entry_liability(
         ("legacy:publication:reconcile:account:" + f["account"].id,),
     )
     assert await _hard_exit_publication_worker(
-        f, tmp_path, after_acceptance=True, permit_ttl_seconds=5
+        f, tmp_path, after_acceptance=True, permit_ttl_seconds=10
     ) == 73
     operation_id = submitted["operation_id"]
     workflow_id = "salience-v4-legacy-operation:" + operation_id

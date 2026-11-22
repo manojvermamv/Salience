@@ -12,7 +12,7 @@ This user-approved document gives one dependency-sorted route from the completed
 
 Slice 0's 0043 publication recovery-floor repair is recorded in the [P1 repair design](2026-10-13-p1-publication-recovery-floor-repair-design.md), and its local candidate evidence is preserved in the [progress ledger](../../v4/progress.md). The GPT-6.1 review, GPT-5.6 meta-review, and required CI are recorded at their original commit scopes; the later diagnostic assertion correction is separately recorded in the successor evidence without rewriting the historical review. Slice 1's audit report and row inventory are [here](../../v4/p1-rg0-rg1-initial-gap-audit.md) and [here](../../v4/p1-rg0-rg1-initial-gap-audit.json). Exact-source Actions run 40443346020 passed verify and p0-regression. All 22 rows remain non-PASS for final entry because the target environment, named owners, and current external acceptance evidence are missing or stale. All five increments in Slices 2–6 are REQUIRED and their designs are COMPLETE_REVIEWED; implementation and target qualification are NOT RUN. Slice 1 records this initial inventory only and cannot declare entry conditions passed. Effects stay disabled, the fixture publication budget stays zero, RG0 and full RG1 stay HELD, P2 is blocked, P3–P7 stay gated, optional P6 stays disabled, and `main` stays unmerged.
 
-The P2–P7 entries below are future specification slots in dependency order. Do not draft or implement a P2 slice until the final exact-commit P1/RG0/RG1 entry audit, after all applicable conditional gap work and external acceptance, reconciles the unchanged candidate and environment and declares the applicable RG0/RG1 entry conditions pass. The earlier audit is a residual-work inventory only. After entry, draft and approve just the next slice's spec; no implementation, migration, provider probe, or effect is authorized by this sequence document.
+The [current P1 handoff](../../v4/progress.md#current-state) records development implemented after the initial review and the remaining production work. The P2–P7 entries below are future specification slots in dependency order. Do not draft or implement a P2 slice until the final exact-commit P1/RG0/RG1 entry audit, after all applicable conditional gap work and external acceptance, reconciles the unchanged candidate and environment and declares the applicable RG0/RG1 entry conditions pass. The earlier audit is a residual-work inventory only. After entry, draft and approve just the next slice's spec; no implementation, migration, provider probe, or effect is authorized by this sequence document.
 
 “Next” means the next bounded work in this approved sequence, not a claim that a task is running or complete. “Gated” means entry evidence is still required. “Optional” means the slice does not exist unless its explicit enabling decision and conditions are met.
 
@@ -105,7 +105,7 @@ The required P2 path reaches the RG2 decision through the canonical contract and
 - **Exit contribution:** Defines the residual P1/RG0/RG1 work and the required bounded specs below. All 22 rows remain non-PASS for final entry. This inventory cannot declare applicable entry conditions pass; independent row and cross-spec reviews passed; Documentation whole-change review is PASS_AFTER_FIX_ROUND_1 for reviewer-reported manifest `cafa0bd46ede2cc8aef51058f46541068a07cd031774c8b5501270bc2385ee9a`; that review does not transfer to later content or exact-candidate CI. The final exact-candidate/environment P1/RG0/RG1 audit remains NOT RUN / BLOCKED. Implementation and target qualification remain NOT RUN.
 - **Excludes:** P2 entry, production changes, automatic acceptance, or creating placeholder specs for already-covered obligations.
 
-### 2. Bounded residual P1 policy and revocation — REQUIRED; design COMPLETE_REVIEWED; implementation/target qualification NOT RUN
+### 2. Bounded residual P1 policy and revocation — REQUIRED; design COMPLETE_REVIEWED; target qualification NOT RUN
 
 - **Specification:** [2026-10-13-p1-production-policy-and-revocation-design.md](2026-10-13-p1-production-policy-and-revocation-design.md) — COMPLETE_REVIEWED; implementation and target qualification NOT RUN.
 - **Dependencies and entry:** Audit decision REQUIRED for production policy and cross-service revocation on R13, R15, R17, and R18, with supporting R05, R07, R10, and R23F. The design review is complete; named owners and target evidence remain prerequisites to implementation and qualification.
@@ -115,7 +115,7 @@ The required P2 path reaches the RG2 decision through the canonical contract and
 - **Exit contribution:** Supplies only its mapped RG0/RG1 rows; the audit records whether they pass.
 - **Excludes:** P2 adapter selection, adaptive routing, or production enablement from a policy record alone.
 
-### 3. Production routing and worker fencing — REQUIRED; design COMPLETE_REVIEWED; implementation/target qualification NOT RUN
+### 3. Production routing and worker fencing — REQUIRED; design COMPLETE_REVIEWED; target qualification NOT RUN
 
 - **Specification:** [2026-10-13-p1-production-routing-and-worker-fencing-design.md](2026-10-13-p1-production-routing-and-worker-fencing-design.md) — COMPLETE_REVIEWED; implementation and target qualification NOT RUN.
 - **Dependencies and entry:** Audit decision REQUIRED for production worker routing, registration, drain, artifact compatibility, and rollback fencing on R02, R03, R06, and R08, with supporting rows. The design review is complete; named owners and target evidence remain prerequisites to implementation and qualification.
@@ -125,7 +125,7 @@ The required P2 path reaches the RG2 decision through the canonical contract and
 - **Exit contribution:** Closes only the mapped routing/fencing rows, contributing to RG0 or RG1 as the audit assigns.
 - **Excludes:** Dynamic P5 capability selection, new platform support, or unrestricted worker/agent routing.
 
-### 4. Live Temporal schedule inventory, cutover, and fencing — REQUIRED; design COMPLETE_REVIEWED; implementation/target qualification NOT RUN
+### 4. Live Temporal schedule inventory, cutover, and fencing — REQUIRED; design COMPLETE_REVIEWED; target qualification NOT RUN
 
 - **Specification:** [2026-10-13-p1-live-schedule-fencing-design.md](2026-10-13-p1-live-schedule-fencing-design.md) — COMPLETE_REVIEWED; implementation and target qualification NOT RUN.
 - **Dependencies and entry:** Audit decision REQUIRED for live Temporal schedule inventory, cutover, stop, monitoring, and rollback fencing on R03, R06, R08, and R18. The design review is complete; local fixture schedules do not satisfy implementation or target qualification.
@@ -135,7 +135,7 @@ The required P2 path reaches the RG2 decision through the canonical contract and
 - **Exit contribution:** Supplies schedule-specific RG1 evidence only; no fixture-to-production promotion.
 - **Excludes:** Changing cadence based on learning, creating new cycles during reconciliation, or converting all legacy schedules by implication.
 
-### 5. Production recovery, remote read reconciliation, and alerts — REQUIRED; design COMPLETE_REVIEWED; implementation/target qualification NOT RUN
+### 5. Production recovery, remote read reconciliation, and alerts — REQUIRED; design COMPLETE_REVIEWED; target qualification NOT RUN
 
 - **Specification:** [2026-10-13-p1-production-recovery-and-alerts-design.md](2026-10-13-p1-production-recovery-and-alerts-design.md) — COMPLETE_REVIEWED; implementation and target qualification NOT RUN.
 - **Dependencies and entry:** Audit decision REQUIRED for production recovery workers, remote read reconciliation, and external alerts on R18, R32, R33, and R34, with supporting R09, R35, and R53. The design review is complete; local database notifications are not external alert evidence.
@@ -145,7 +145,7 @@ The required P2 path reaches the RG2 decision through the canonical contract and
 - **Exit contribution:** Advances only mapped RG1 recovery/alert rows.
 - **Excludes:** Treating notification as approval, automatically resolving a hold, or adding a new platform or analytics adapter.
 
-### 6. External RG0/RG1 acceptance package — REQUIRED; design COMPLETE_REVIEWED; implementation/target qualification NOT RUN
+### 6. External RG0/RG1 acceptance package — REQUIRED; design COMPLETE_REVIEWED; target qualification NOT RUN
 
 - **Specification:** [2026-10-13-rg0-rg1-external-acceptance-design.md](2026-10-13-rg0-rg1-external-acceptance-design.md) — COMPLETE_REVIEWED; implementation and target qualification NOT RUN.
 - **Dependencies and entry:** Audit decision REQUIRED because the current ledgers lack an owner-bound, exact-candidate/deployment acceptance contract and production evidence for the mapped rows. The design review is complete; target environment and named owners remain missing, so execution is NOT RUN.

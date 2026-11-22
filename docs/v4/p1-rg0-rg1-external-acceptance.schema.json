@@ -21,7 +21,7 @@
   ],
   "properties": {
     "schema_version": {
-      "const": "1.0"
+      "enum": ["1.0", "1.1"]
     },
     "run_id": {
       "type": "string",
@@ -59,6 +59,9 @@
     "package_digest": {
       "$ref": "#/$defs/sha256"
     },
+    "package_attestation": {
+      "$ref": "#/$defs/attestation"
+    },
     "final_audit": {
       "$ref": "#/$defs/finalAudit"
     },
@@ -93,6 +96,19 @@
     "nonEmpty": {
       "type": "string",
       "minLength": 1
+    },
+    "ed25519Signature": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9+/]{86}==$"
+    },
+    "attestation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["key_id", "signature_b64"],
+      "properties": {
+        "key_id": {"$ref": "#/$defs/nonEmpty"},
+        "signature_b64": {"$ref": "#/$defs/ed25519Signature"}
+      }
     },
     "uriRef": {
       "type": "object",
@@ -635,6 +651,45 @@
           "items": {
             "$ref": "#/$defs/sha256"
           }
+        },
+        "row_targets": {
+          "type": "object",
+          "propertyNames": {
+            "enum": [
+              "R01",
+              "R22",
+              "R69",
+              "R16F",
+              "R23F",
+              "R02",
+              "R03",
+              "R05",
+              "R06",
+              "R07",
+              "R08",
+              "R09",
+              "R10",
+              "R13",
+              "R15",
+              "R17",
+              "R18",
+              "R32",
+              "R33",
+              "R34",
+              "R35",
+              "R53"
+            ]
+          },
+          "additionalProperties": {
+            "type": "object",
+            "minProperties": 1,
+            "propertyNames": {
+              "$ref": "#/$defs/nonEmpty"
+            },
+            "additionalProperties": {
+              "$ref": "#/$defs/acceptanceTarget"
+            }
+          }
         }
       }
     },
@@ -664,6 +719,9 @@
         },
         "signed_manifest_sha256": {
           "$ref": "#/$defs/sha256"
+        },
+        "signature_b64": {
+          "$ref": "#/$defs/ed25519Signature"
         },
         "signature_evidence": {
           "$ref": "#/$defs/uriRef"
@@ -723,7 +781,14 @@
           "$ref": "#/$defs/nonEmpty"
         },
         "account_id": {
-          "$ref": "#/$defs/nonEmpty"
+          "anyOf": [
+            {
+              "$ref": "#/$defs/nonEmpty"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "candidate_tree": {
           "$ref": "#/$defs/sourceSha"
@@ -863,24 +928,7 @@
           }
         },
         "account": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": [
-            "provider",
-            "account_id",
-            "repository_id"
-          ],
-          "properties": {
-            "provider": {
-              "$ref": "#/$defs/nonEmpty"
-            },
-            "account_id": {
-              "$ref": "#/$defs/nonEmpty"
-            },
-            "repository_id": {
-              "$ref": "#/$defs/nonEmpty"
-            }
-          }
+          "$ref": "#/$defs/acceptanceTarget/properties/account"
         },
         "resource_ids": {
           "type": "array",
@@ -893,26 +941,7 @@
           "type": "boolean"
         },
         "route": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": [
-            "route_id",
-            "route_tuple_sha256",
-            "authenticated_route_manifest_sha256"
-          ],
-          "properties": {
-            "route_id": {
-              "type": "string",
-              "format": "uuid",
-              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
-            },
-            "route_tuple_sha256": {
-              "$ref": "#/$defs/sha256"
-            },
-            "authenticated_route_manifest_sha256": {
-              "$ref": "#/$defs/sha256"
-            }
-          }
+          "$ref": "#/$defs/acceptanceTarget/properties/route"
         }
       }
     },
@@ -1415,7 +1444,14 @@
               "$ref": "#/$defs/nonEmpty"
             },
             "account_alias": {
-              "$ref": "#/$defs/nonEmpty"
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/nonEmpty"
+                },
+                {
+                  "type": "null"
+                }
+              ]
             },
             "command_ids": {
               "type": "array",
@@ -1436,9 +1472,16 @@
               }
             },
             "route_id": {
-              "type": "string",
-              "format": "uuid",
-              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
             },
             "schedule_ids": {
               "type": "array",
@@ -1744,6 +1787,26 @@
           "items": {
             "$ref": "#/$defs/nonEmpty"
           }
+        },
+        "target_id": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "child_checks": {
+          "type": "array",
+          "items": {
+            "allOf": [
+              {
+                "$ref": "#/$defs/row"
+              },
+              {
+                "not": {
+                  "required": [
+                    "child_checks"
+                  ]
+                }
+              }
+            ]
+          }
         }
       },
       "allOf": [
@@ -2018,6 +2081,34 @@
               },
               "readback": {
                 "$ref": "#/$defs/uriRef"
+              },
+              "child_rechecks": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "target_id",
+                    "status",
+                    "readback"
+                  ],
+                  "properties": {
+                    "target_id": {
+                      "$ref": "#/$defs/nonEmpty"
+                    },
+                    "status": {
+                      "enum": [
+                        "PASS",
+                        "FAIL",
+                        "NOT RUN",
+                        "HELD"
+                      ]
+                    },
+                    "readback": {
+                      "$ref": "#/$defs/uriRef"
+                    }
+                  }
+                }
               }
             }
           }
@@ -2031,7 +2122,8 @@
         "disposition": {
           "enum": [
             "NO_GO",
-            "READY_FOR_FINAL_AUDIT"
+            "READY_FOR_FINAL_AUDIT",
+            "FINAL_AUDIT_RECORDED"
           ]
         },
         "evidence_ref": {
@@ -2039,6 +2131,9 @@
         },
         "package_digest": {
           "$ref": "#/$defs/sha256"
+        },
+        "attestation": {
+          "$ref": "#/$defs/attestation"
         },
         "record_sha256": {
           "$ref": "#/$defs/sha256"
@@ -2127,13 +2222,34 @@
           "$ref": "#/$defs/nonEmpty"
         },
         "provider": {
-          "$ref": "#/$defs/nonEmpty"
+          "anyOf": [
+            {
+              "$ref": "#/$defs/nonEmpty"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "account_id": {
-          "$ref": "#/$defs/nonEmpty"
+          "anyOf": [
+            {
+              "$ref": "#/$defs/nonEmpty"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "repository_id": {
-          "$ref": "#/$defs/nonEmpty"
+          "anyOf": [
+            {
+              "$ref": "#/$defs/nonEmpty"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "resource_ids": {
           "type": "array",
@@ -2153,6 +2269,41 @@
         },
         "route_binding": {
           "$ref": "#/$defs/routeBinding"
+        },
+        "row_id": {
+          "enum": [
+            "R01",
+            "R22",
+            "R69",
+            "R16F",
+            "R23F",
+            "R02",
+            "R03",
+            "R05",
+            "R06",
+            "R07",
+            "R08",
+            "R09",
+            "R10",
+            "R13",
+            "R15",
+            "R17",
+            "R18",
+            "R32",
+            "R33",
+            "R34",
+            "R35",
+            "R53"
+          ]
+        },
+        "target_id": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "account_nonapplicability": {
+          "$ref": "#/$defs/scopeNonapplicability"
+        },
+        "row_targets_sha256": {
+          "$ref": "#/$defs/sha256"
         }
       }
     },
@@ -2302,13 +2453,34 @@
           "$ref": "#/$defs/nonEmpty"
         },
         "provider": {
-          "$ref": "#/$defs/nonEmpty"
+          "anyOf": [
+            {
+              "$ref": "#/$defs/nonEmpty"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "account_id": {
-          "$ref": "#/$defs/nonEmpty"
+          "anyOf": [
+            {
+              "$ref": "#/$defs/nonEmpty"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "repository_id": {
-          "$ref": "#/$defs/nonEmpty"
+          "anyOf": [
+            {
+              "$ref": "#/$defs/nonEmpty"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "resource_ids": {
           "type": "array",
@@ -2328,6 +2500,38 @@
         },
         "route_binding": {
           "$ref": "#/$defs/routeBinding"
+        },
+        "row_id": {
+          "enum": [
+            "R01",
+            "R22",
+            "R69",
+            "R16F",
+            "R23F",
+            "R02",
+            "R03",
+            "R05",
+            "R06",
+            "R07",
+            "R08",
+            "R09",
+            "R10",
+            "R13",
+            "R15",
+            "R17",
+            "R18",
+            "R32",
+            "R33",
+            "R34",
+            "R35",
+            "R53"
+          ]
+        },
+        "target_id": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "account_nonapplicability": {
+          "$ref": "#/$defs/scopeNonapplicability"
         }
       }
     },
@@ -2416,34 +2620,239 @@
           }
         },
         {
-          "type": "object",
-          "additionalProperties": false,
-          "required": [
-            "applicability",
-            "reason",
-            "accountable_owner_id",
-            "reviewer_id",
-            "reviewer_confirmed"
-          ],
-          "properties": {
-            "applicability": {
-              "const": "NOT_APPLICABLE"
+          "$ref": "#/$defs/scopeNonapplicability"
+        }
+      ]
+    },
+    "scopeNonapplicability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "applicability",
+        "reason",
+        "accountable_owner_id",
+        "reviewer_id",
+        "reviewer_confirmed",
+        "row_id"
+      ],
+      "properties": {
+        "applicability": {
+          "const": "NOT_APPLICABLE"
+        },
+        "reason": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "accountable_owner_id": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "reviewer_id": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "reviewer_confirmed": {
+          "const": true
+        },
+        "row_id": {
+          "enum": [
+            "R01",
+            "R22",
+            "R69",
+            "R16F",
+            "R23F",
+            "R02",
+            "R03",
+            "R05",
+            "R06",
+            "R07",
+            "R08",
+            "R09",
+            "R10",
+            "R13",
+            "R15",
+            "R17",
+            "R18",
+            "R32",
+            "R33",
+            "R34",
+            "R35",
+            "R53"
+          ]
+        }
+      }
+    },
+    "targetAccount": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "provider",
+        "account_id",
+        "repository_id"
+      ],
+      "properties": {
+        "provider": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "account_id": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "repository_id": {
+          "$ref": "#/$defs/nonEmpty"
+        }
+      }
+    },
+    "targetRoute": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "route_id",
+        "route_tuple_sha256",
+        "authenticated_route_manifest_sha256"
+      ],
+      "properties": {
+        "route_id": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "route_tuple_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "authenticated_route_manifest_sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "acceptanceTarget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "account",
+        "route",
+        "resource_ids"
+      ],
+      "properties": {
+        "account": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/targetAccount"
             },
-            "reason": {
-              "$ref": "#/$defs/nonEmpty"
+            {
+              "$ref": "#/$defs/scopeNonapplicability"
+            }
+          ]
+        },
+        "route": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/targetRoute"
             },
-            "accountable_owner_id": {
-              "$ref": "#/$defs/nonEmpty"
-            },
-            "reviewer_id": {
-              "$ref": "#/$defs/nonEmpty"
-            },
-            "reviewer_confirmed": {
-              "const": true
+            {
+              "$ref": "#/$defs/scopeNonapplicability"
+            }
+          ]
+        },
+        "resource_ids": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/nonEmpty"
+          }
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "schema_version": {
+            "const": "1.1"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "manifest": {
+            "required": [
+              "row_targets"
+            ]
+          },
+          "rows": {
+            "items": {
+              "required": [
+                "target_id"
+              ]
             }
           }
         }
-      ]
+      },
+      "else": {
+        "properties": {
+          "manifest": {
+            "not": {
+              "required": [
+                "row_targets"
+              ]
+            }
+          },
+          "rows": {
+            "items": {
+              "not": {
+                "anyOf": [
+                  {
+                    "required": [
+                      "child_checks"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "target_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schema_version": {
+            "const": "1.1"
+          },
+          "manifest": {
+            "properties": {
+              "package_scope": {
+                "const": "EXTERNAL_PRODUCTION"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "package_attestation"
+        ],
+        "properties": {
+          "manifest_signature": {
+            "required": [
+              "signature_b64"
+            ],
+            "properties": {
+              "algorithm": {
+                "const": "Ed25519"
+              }
+            }
+          },
+          "final_audit": {
+            "required": [
+              "attestation"
+            ]
+          }
+        }
+      }
     }
-  }
+  ]
 }
