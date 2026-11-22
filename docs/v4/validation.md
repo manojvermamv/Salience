@@ -28,11 +28,17 @@ The legacy publication regression `test_expired_hold_insert_failure_preserves_ac
 
 The local launcher subprocess fixture now derives its Python home and version from the base interpreter. The former fixed home prevented a uv-managed interpreter from loading its standard library. All 11 supported-launcher cases passed on rerun, including artifact pin denial, startup isolation, and read-only runtime checks.
 
+GitHub Actions verified the published follow-up at `59d863c`. Both jobs passed and the hosted non-live suite reported 1,247 passed, 26 skipped, and 3 warnings. The Compose worker restart case was among the skips. [GitHub Actions run 45060118075](https://github.com/manojvermamv/Salience/actions/runs/45060118075)
+
 ### Signed external acceptance packages
 
 The retained synthetic package uses format `1.0` and returns `VALID / NO_GO / UNCHANGED`. External packages use format `1.1` and require a separate operator-provisioned trust file. The trust file is a JSON object containing `evidence_producers` and `final_auditors`. Each maps a trusted key ID to a standard-base64-encoded raw 32-byte Ed25519 public key. The final auditor key ID is the named auditor's person ID. Keep trust keys under independent operational control.
 
 The signed `manifest.row_targets` inventory enumerates the exact targets for each of the 22 rows. Each row names its primary `target_id`. Every additional target has its own `child_checks` execution record and an independent `child_rechecks` audit record. An account or route can be declared `NOT_APPLICABLE` with a reason and the named accountable owner and reviewer. The required P0 proofs each need a distinct normalized check and distinct evidence. The final auditor needs fresh observations for every target. A successor retains the prior invalidation history and requires execution and observation after invalidation for each affected target.
+
+Every passing primary or child execution in format `1.1` must include each required `check_id` for its row exactly once. Bind each check to the execution's target and supply its own immutable raw result. A row-specific check cannot reuse another required check's evidence within the package. The five named P0 proofs remain required at their assigned rows. The catalog identifies each required check, including the separate R01 alert observations and the R16F zero-effect assertion across denied requests. [Check catalog](../../src/salience/acceptance/_procedure_checks.py) · [Per-row acceptance procedures](../superpowers/specs/2026-10-13-rg0-rg1-external-acceptance-design.md#per-row-external-acceptance-procedures)
+
+The row-procedure follow-up passed all 74 acceptance tests. The CLI rejects a generic R03 check, and signed-package tests cover missing child checks, duplicate claims, and reused evidence. The frozen format `1.0` package retained its digest and all 22 `NOT RUN` rows.
 
 ```bash
 python scripts/check-p1-external-acceptance.py \

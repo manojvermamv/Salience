@@ -1226,7 +1226,7 @@
   "production_effects_enabled": false,
   "RG0": "HELD",
   "RG1": "HELD",
-  "source_lock_sha256": "8a2ba41c0da37f20486d56b42446cfa3fa04d74215e982a5305b80b3b53536fe",
+  "source_lock_sha256": "61f7570218ed123b42561bd37e1e04e11c833eebc7d55d4577a1f5272148840b",
   "verifiers": {
     "R02": [
       "tests/e2e/test_v4_worker_upgrade.py",
@@ -2460,7 +2460,7 @@
     "record_scope": "Historical Slice 2 candidate snapshot; retain candidate-bound counts and docs CI details for traceability.",
     "latest_local_candidate_record": "latest_local_candidate"
   },
-  "source_lock_scope": "Development source content inventory for the P1 follow-up. Task34 source and artifact remain bound to the historical lock at published commit ea4cd3f.",
+  "source_lock_scope": "Source inventory for the P1 acceptance procedure follow-up. The preceding inventories remain bound to published commits 59d863c and ea4cd3f.",
   "task18_local_development_candidate": {
     "record_kind": "historical_local_development_candidate",
     "status": "HISTORICAL_PASS_LOCAL_DEVELOPMENT_QUALIFICATION; SUPERSEDED_AS_LATEST_BY_TASK35; EXTERNAL_ACCEPTANCE_NOT_RUN; PRODUCTION_GATES_HELD",
@@ -3368,12 +3368,28 @@
     "compose_worker_restart": "SKIPPED"
   },
   "current_p1_follow_up": {
-    "source_lock_sha256": "8a2ba41c0da37f20486d56b42446cfa3fa04d74215e982a5305b80b3b53536fe",
+    "source_lock_sha256": "61f7570218ed123b42561bd37e1e04e11c833eebc7d55d4577a1f5272148840b",
     "scope": "Local development checkout with injected targets and authorities",
     "artifact_build": "NOT RUN",
     "external_rows_not_run": 22,
     "external_final_audit": "NOT RUN",
     "production_recovery_case_lifecycle": "HELD pending a compatible schema and rollback-verifier successor",
     "handoff": "docs/v4/progress.md#current-state"
+  },
+  "published_p1_follow_up_ci": {
+    "head_commit": "59d863c05804f0c7a9d240f3d6ca5923ddb1a586",
+    "workflow_run_id": 45060118075,
+    "workflow_run_url": "https://github.com/manojvermamv/Salience/actions/runs/45060118075",
+    "conclusion": "success",
+    "required_jobs": {
+      "verify": "success",
+      "p0-regression": "success"
+    },
+    "non_live_tests": {
+      "passed": 1247,
+      "skipped": 26,
+      "warnings": 3
+    },
+    "compose_worker_restart": "SKIPPED"
   }
 }

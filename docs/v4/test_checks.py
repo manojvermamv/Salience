@@ -565,7 +565,10 @@ class GateChecks(unittest.TestCase):
             "Implementation and target qualification remain NOT RUN."
         )
         review_status = status.rsplit("Implementation and target qualification remain NOT RUN.", 1)[0].rstrip()
-        scoped_status_pages = {"docs/README.md", "docs/v4/progress.md", "docs/v4/validation.md"}
+        scoped_status_pages = {
+            "docs/README.md", "docs/v4/IMPLEMENTATION-BLUEPRINT.md",
+            "docs/v4/progress.md", "docs/v4/validation.md",
+        }
         pending_review_claim = "Post-review packaging changes have not received another whole-change rereview."
 
         def section(source, start, end):
@@ -618,6 +621,14 @@ class GateChecks(unittest.TestCase):
                 self.assertNotIn(pending_review_claim.casefold(), content.casefold())
                 for stale in stale_claims:
                     self.assertNotIn(stale.casefold(), content.casefold())
+
+    def test_blueprint_leads_with_current_state_and_scopes_frozen_audit(self):
+        introduction = BLUEPRINT.split("## Navigation", 1)[0]
+        current, frozen = introduction.split("**Initial audit/design checkpoint:**", 1)
+        self.assertIn("progress.md#current-state", current)
+        self.assertIn("frozen source", frozen)
+        self.assertNotIn("Implementation and target qualification remain NOT RUN.", introduction)
+        self.assertNotIn("The exact audit source-head CI is current", introduction)
 
     def test_deferral_contract_distinguishes_all_three_identity_paths(self):
         decision = BLUEPRINT.split("**P1 re-admission and deferral:**", 1)[1].split("\n", 1)[0]

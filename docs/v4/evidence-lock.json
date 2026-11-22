@@ -1,6 +1,6 @@
 {
-  "baseline_commit": "ea4cd3f030361683051659e37c8171fce7b80a19",
-  "scope": "Development checkout after the P1 schedule, recovery, acceptance and verifier follow-up. This inventory pins the current source and build-context bytes.",
+  "baseline_commit": "59d863c05804f0c7a9d240f3d6ca5923ddb1a586",
+  "scope": "Source and build-context inventory for the P1 acceptance procedure follow-up.",
   "files": [
     {
       "path": ".dockerignore",
@@ -316,7 +316,7 @@
     },
     {
       "path": "src/salience/acceptance/_contracts.py",
-      "sha256": "8bb675c86aa32448816d0a6bacf760988d13e5c1bf647f769d619cc7a6aac383"
+      "sha256": "4131228c2bc4834257d78a1dafb527952773fcb20b820af942860459e27cf8e5"
     },
     {
       "path": "src/salience/acceptance/_evidence_validation.py",
@@ -325,6 +325,10 @@
     {
       "path": "src/salience/acceptance/_manifest_validation.py",
       "sha256": "7a9c5ada8a07865cc90e676d52099583e71e5fd47cf5d41165d1240a3013cce7"
+    },
+    {
+      "path": "src/salience/acceptance/_procedure_checks.py",
+      "sha256": "6c8ad061f09b1c608616f92e687e75d91ea5d0765fc3d1482c05d24cb5c00b53"
     },
     {
       "path": "src/salience/acceptance/_reconciliation.py",
@@ -336,7 +340,7 @@
     },
     {
       "path": "src/salience/acceptance/_row_validation.py",
-      "sha256": "257dc4625047d61cc298bd61a4eb5ca4eb10717d4321c4d85fe41c092980572f"
+      "sha256": "f3c13d2fe034ec5860abc0c31075ce4a1537ce0eb86b51e2343516e62fbb6c26"
     },
     {
       "path": "src/salience/acceptance/_scope_binding.py",
@@ -348,7 +352,7 @@
     },
     {
       "path": "src/salience/acceptance/p1_external_evidence.py",
-      "sha256": "0f4baab1b89438537124d6f1e04ac5a53b71bb2976a9e966e48f0405a8413278"
+      "sha256": "50e27aab6b36a3eb7dddb9484eeef2ddd71d9729816bcf334c7c8e2dadc8bc3f"
     },
     {
       "path": "src/salience/agents/__init__.py",
@@ -1600,7 +1604,7 @@
     },
     {
       "path": "tests/unit/test_p1_external_acceptance.py",
-      "sha256": "5dfd80e9a5cd1295ade47bb276308fe0276f8f12a400cbf5098e7fa2d174488f"
+      "sha256": "ebc9f7091dfeae5f6123efdb22b6704a6917b4cf9f105904f8ec02462e69e13c"
     },
     {
       "path": "tests/unit/test_parallel_agent_teams.py",
@@ -3166,5 +3170,10 @@
     "record_commit": "ea4cd3f030361683051659e37c8171fce7b80a19",
     "record_path": "docs/v4/evidence-lock.json",
     "sha256": "09100cb7aee864227d78112aa7729a1cded7790d34cc33687c5e2a3732188e55"
+  },
+  "preceding_p1_follow_up_lock": {
+    "record_commit": "59d863c05804f0c7a9d240f3d6ca5923ddb1a586",
+    "record_path": "docs/v4/evidence-lock.json",
+    "sha256": "8a2ba41c0da37f20486d56b42446cfa3fa04d74215e982a5305b80b3b53536fe"
   }
 }

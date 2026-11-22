@@ -52,7 +52,7 @@ from ._reconciliation import (
     _validate_ledgers,
     _load_matrix_safely,
 )
-from ._row_validation import _validate_p0_proof_reuse, _validate_row
+from ._row_validation import _validate_required_evidence_reuse, _validate_row
 from ._trust import _validate_external_trust
 
 
@@ -232,7 +232,7 @@ def _validate_acceptance_package_impl(
             state=state,
         )
 
-    _validate_p0_proof_reuse(payload, state)
+    _validate_required_evidence_reuse(payload, state)
     _validate_invalidations(payload, dependencies, state, now, row_by_id)
     _validate_evidence_bindings(payload, state)
     _validate_evidence_index(payload, state)

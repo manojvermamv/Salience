@@ -553,3 +553,15 @@ The table binds the development handoff after the schedule, recovery, acceptance
 | `docs/v4/p1-qualification-matrix.json` | `c7de522514872cf4e6ec437db35491e0091e5bf517bfc13f9f0f1fc2d5c74c93` |
 | `docs/v4/p1-rg0-rg1-external-acceptance.schema.json` | `16cbdd59abc82c587d0d05de44dec0d867893d0bc8207df20d7f1bbe85805154` |
 | `docs/superpowers/specs/2026-10-13-v4-multiplatform-autonomy-program-sequence.md` | `2b3a10096385285418196450dc4a87797f2f9ef913994220b73d0fdf7af2ff3a` |
+
+## P1 acceptance procedure handoff hashes — 2026-11-22
+
+This update binds the development checkout for row-specific acceptance procedures. The earlier P1 follow-up table is bound to published commit `59d863c`. External qualification and the independent final audit remain open. [Verification and scope](validation.md#p1-follow-up-verification)
+
+| Path | SHA-256 |
+| --- | --- |
+| `docs/v4/IMPLEMENTATION-BLUEPRINT.md` | `64f5fa2baafd01f271222f2459f967d9e678ca208d3a4367378bfc221b088f78` |
+| `docs/v4/validation.md` | `85127bfbb5a852947a5fae5c73f849dd45ee17f27870714583f980630be86573` |
+| `docs/v4/test_checks.py` | `561a33f1c36dd19bdce168882e695e7e356d4eecfaa0df674294611f7b3354b4` |
+| `docs/v4/evidence-lock.json` | `61f7570218ed123b42561bd37e1e04e11c833eebc7d55d4577a1f5272148840b` |
+| `docs/v4/p1-qualification-matrix.json` | `423af674bb1770c8b4b9658a7ccd04edd6ae38e3c76302b462f47e5b11ba4b15` |

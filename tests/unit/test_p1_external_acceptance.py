@@ -1372,7 +1372,7 @@ def test_negative_controls_pass_only_on_proven_denial_and_zero_effect() -> None:
     assert "NEGATIVE_CONTROL_EFFECT_OBSERVED" in _result_row(result, "R23F")["blockers"]
 
 
-def test_package_cannot_enable_production_or_release_a_gate() -> None:
+def test_package_cannot_enable_production_or_release_a_gate(tmp_path: Path) -> None:
     invalid_cli = subprocess.run(
         [sys.executable, str(ROOT / "scripts/check-p1-external-acceptance.py")],
         cwd=ROOT,
@@ -1397,34 +1397,31 @@ def test_package_cannot_enable_production_or_release_a_gate() -> None:
     assert result.to_dict()["disposition"] == "NO_GO"
 
     package = _valid_package()
-    package_path = ROOT / "tests/unit/.tmp-p1-external-package.json"
+    package_path = tmp_path / "p1-external-package.json"
     schema_path = ROOT / "docs/v4/p1-rg0-rg1-external-acceptance.schema.json"
     before_p0 = P0_PATH.read_bytes()
     before_matrix = MATRIX_PATH.read_bytes()
     package_path.write_text(json.dumps(package), encoding="utf-8")
-    try:
-        completed = subprocess.run(
-            [
-                sys.executable,
-                str(ROOT / "scripts/check-p1-external-acceptance.py"),
-                "--package",
-                str(package_path),
-                "--schema",
-                str(schema_path),
-            ],
-            cwd=ROOT,
-            text=True,
-            capture_output=True,
-            check=False,
-        )
-        assert completed.stdout.startswith("{")
-        cli_result = json.loads(completed.stdout)
-        assert completed.returncode != 0
-        assert cli_result["structural_status"] == "VALID"
-        assert cli_result["disposition"] == "NO_GO"
-        assert "GO" not in cli_result.get("gate_state", "")
-    finally:
-        package_path.unlink(missing_ok=True)
+    completed = subprocess.run(
+        [
+            sys.executable,
+            str(ROOT / "scripts/check-p1-external-acceptance.py"),
+            "--package",
+            str(package_path),
+            "--schema",
+            str(schema_path),
+        ],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert completed.stdout.startswith("{")
+    cli_result = json.loads(completed.stdout)
+    assert completed.returncode != 0
+    assert cli_result["structural_status"] == "VALID"
+    assert cli_result["disposition"] == "NO_GO"
+    assert "GO" not in cli_result.get("gate_state", "")
     assert P0_PATH.read_bytes() == before_p0
     assert MATRIX_PATH.read_bytes() == before_matrix
 
@@ -1452,9 +1449,22 @@ def test_final_audit_is_separate_and_rechecks_every_row() -> None:
 
 
 def _complete_external_package() -> dict[str, Any]:
+    from salience.acceptance._procedure_checks import REQUIRED_ROW_CHECK_IDS
+
     package = _valid_package()
     package["schema_version"] = "1.1"
     package["manifest"]["package_scope"] = "EXTERNAL_PRODUCTION"
+    for row in package["rows"]:
+        row_id = row["row_id"]
+        row["normalized_checks"].extend(
+            {
+                "check_id": check_id,
+                "status": "PASS",
+                "scope_match": True,
+                "raw_result": _ref(f"{row_id}:{check_id}"),
+            }
+            for check_id in REQUIRED_ROW_CHECK_IDS[row_id]
+        )
     for row_id in ("R16F", "R22", "R23F"):
         row = _row_by_id(package, row_id)
         row["negative_control"].update(
@@ -1618,6 +1628,126 @@ def test_current_external_package_requires_each_named_p0_proof() -> None:
     assert result.disposition == "NO_GO"
 
 
+def test_signed_procedures_require_row_specific_assertions_for_all_rows() -> None:
+    package = _complete_external_package()
+    package.pop("final_audit")
+    # These representative assertions come from the approved procedure table.
+    # Keep them independent of the catalog used to assemble the valid package.
+    required = {
+        "R01": "canonical-ownership-manifest",
+        "R22": "expired-and-revoked-credential-denial",
+        "R69": "cross-tenant-access-denial",
+        "R16F": "wrong-audience-denial",
+        "R23F": "no-alternate-provider-selection",
+        "R02": "bounded-history-continuation",
+        "R03": "deduplicated-acknowledgement",
+        "R05": "expired-baseline-denial",
+        "R06": "canonical-intent-cycle-slot-and-operation",
+        "R07": "over-quota-admission-denial",
+        "R08": "later-slot-rollback-readback",
+        "R09": "pre-admission-recovery-intent-identity",
+        "R10": "stale-context-denied-before-work",
+        "R13": "post-restart-revocation-denial",
+        "R15": "model-text-only-authorization-denial",
+        "R17": "at-most-one-permit-claim",
+        "R18": "separately-scoped-read-only-reconciliation",
+        "R32": "bounded-recovery-actions-and-retries",
+        "R33": "current-stage-reauthorization",
+        "R34": "authorized-human-acknowledgement",
+        "R35": "archived-identity-reuse-denial",
+        "R53": "superseding-correction-lineage",
+    }
+    for row in package["rows"]:
+        row["normalized_checks"] = [
+            check for check in row["normalized_checks"]
+            if check["check_id"] != required[row["row_id"]]
+        ]
+    result = _validate(package, trust=_sign_external_package(package))
+    assert result.disposition == "NO_GO"
+    for row_id in required:
+        assert result.rows[row_id].local_validation == "HELD", row_id
+        assert "REQUIRED_ROW_CHECK_MISSING" in result.rows[row_id].blockers, row_id
+
+
+def test_required_row_check_cannot_reuse_a_named_p0_proof() -> None:
+    package = _complete_external_package()
+    package.pop("final_audit")
+    checks = {
+        check["check_id"]: check["raw_result"]
+        for check in _row_by_id(package, "R01")["normalized_checks"]
+    }
+    checks["exact-head-ci"].update(
+        {key: checks["remote repository gate enforcement"][key] for key in ("uri", "sha256")}
+    )
+    result = _validate(package, trust=_sign_external_package(package))
+    assert result.disposition == "NO_GO"
+    assert "REQUIRED_ROW_CHECK_EVIDENCE_REUSED" in result.rows["R01"].blockers
+
+
+@pytest.mark.parametrize(
+    ("row_id", "check_id", "source_row_id", "source_check_id"),
+    (
+        ("R34", "external-alert-delivery-and-deduplication", "R03", "ordered-delivery"),
+        ("R53", "deployed-schema-and-migration-inventory", "R69", "production storage and restore"),
+    ),
+)
+def test_signed_required_checks_cannot_relabel_another_rows_evidence(
+    row_id, check_id, source_row_id, source_check_id,
+) -> None:
+    package = _complete_external_package()
+    package.pop("final_audit")
+    source = next(
+        check["raw_result"] for check in _row_by_id(package, source_row_id)["normalized_checks"]
+        if check["check_id"] == source_check_id
+    )
+    target = next(
+        check["raw_result"] for check in _row_by_id(package, row_id)["normalized_checks"]
+        if check["check_id"] == check_id
+    )
+    target.update({key: source[key] for key in ("uri", "sha256")})
+    result = _validate(package, trust=_sign_external_package(package))
+    assert result.disposition == "NO_GO"
+    assert "REQUIRED_ROW_CHECK_EVIDENCE_REUSED" in result.rows[row_id].blockers
+
+
+def test_same_named_p0_proof_can_still_link_both_applicable_rows() -> None:
+    package = _complete_external_package()
+    package.pop("final_audit")
+    first, second = (
+        next(check["raw_result"] for check in _row_by_id(package, row_id)["normalized_checks"]
+             if check["check_id"] == "production identity and ingress")
+        for row_id in ("R16F", "R22")
+    )
+    second.update({key: first[key] for key in ("uri", "sha256")})
+    result = _validate(package, trust=_sign_external_package(package))
+    assert result.disposition == "READY_FOR_FINAL_AUDIT"
+
+
+@pytest.mark.parametrize(
+    ("row_id", "check_id"),
+    (
+        ("R01", "current-repository-protection"),
+        ("R01", "configured-required-checks"),
+        ("R01", "collector-export-evidence"),
+        ("R01", "collector-delivery-evidence"),
+        ("R01", "external-alert-destination-receipt"),
+        ("R01", "named-human-alert-acknowledgement"),
+        ("R01", "alert-escalation-receipt"),
+        ("R16F", "denied-ingress-requests-produce-zero-effects"),
+    ),
+)
+def test_aggregate_p0_proofs_require_each_mandatory_observation(row_id, check_id) -> None:
+    package = _complete_external_package()
+    package.pop("final_audit")
+    row = _row_by_id(package, row_id)
+    row["normalized_checks"] = [
+        check for check in row["normalized_checks"] if check["check_id"] != check_id
+    ]
+    result = _validate(package, trust=_sign_external_package(package))
+    assert result.disposition == "NO_GO"
+    assert "REQUIRED_ROW_CHECK_MISSING" in result.rows[row_id].blockers
+
+
 def test_required_p0_proofs_use_distinct_evidence() -> None:
     package = _complete_external_package()
     package.pop("final_audit")
@@ -1760,6 +1890,20 @@ def test_external_preaudit_cli_uses_configured_trust_file(tmp_path) -> None:
     result = json.loads(verified.stdout)
     assert result["disposition"] == "READY_FOR_FINAL_AUDIT"
     assert result["gate_state"] == "UNCHANGED"
+
+    row = _row_by_id(package, "R03")
+    row["normalized_checks"] = [{**row["normalized_checks"][0], "check_id": "generic-pass"}]
+    _sign_external_package(package)
+    package_path.write_text(json.dumps(package))
+    generic_pass = subprocess.run(
+        [*command, "--trust-file", str(trust_path)], text=True, capture_output=True, check=False,
+    )
+    assert generic_pass.returncode == 1, generic_pass.stdout
+    result = json.loads(generic_pass.stdout)
+    assert result["disposition"] == "NO_GO"
+    assert "REQUIRED_ROW_CHECK_MISSING" in result["rows"]["R03"]["blockers"]
+    assert result["gate_state"] == "UNCHANGED"
+
     trust_path.write_bytes(b"\xff")
     invalid_trust = subprocess.run(
         [*command, "--trust-file", str(trust_path)], text=True, capture_output=True, check=False,
@@ -2520,8 +2664,7 @@ def test_signed_account_and_route_nonapplicability_binds_row_authorities():
         assert result.disposition == "NO_GO"
 
 
-def test_signed_multi_account_row_requires_distinct_target_execution_and_audit():
-    package = _complete_external_package()
+def _add_warehouse_target(package):
     row = _row_by_id(package, "R53")
     child = copy.deepcopy(row)
     child["target_id"] = "warehouse"
@@ -2535,6 +2678,51 @@ def test_signed_multi_account_row_requires_distinct_target_execution_and_audit()
         ref.update(_ref("warehouse:" + "/".join(path)))
     row["child_checks"] = [child]
     _prepare_target_bindings(package)
+    return child
+
+
+def test_signed_secondary_target_must_run_every_required_row_check():
+    package = _complete_external_package()
+    child = _add_warehouse_target(package)
+    package.pop("final_audit")
+    child["normalized_checks"] = [
+        check for check in child["normalized_checks"]
+        if check["check_id"] != "superseding-correction-lineage"
+    ]
+    _prepare_target_bindings(package)
+    result = _validate(package, trust=_sign_external_package(package))
+    assert result.disposition == "NO_GO"
+    assert "REQUIRED_ROW_CHECK_MISSING" in result.rows["R53"].blockers
+
+
+@pytest.mark.parametrize(
+    ("check_id", "reuse_evidence", "expected_blocker"),
+    (
+        ("transaction-outbox-linkage", False, "REQUIRED_ROW_CHECK_DUPLICATE"),
+        ("ordered-delivery", True, "REQUIRED_ROW_CHECK_EVIDENCE_REUSED"),
+    ),
+)
+def test_signed_row_required_checks_need_unambiguous_distinct_evidence(
+    check_id, reuse_evidence, expected_blocker,
+):
+    package = _complete_external_package()
+    package.pop("final_audit")
+    checks = _row_by_id(package, "R03")["normalized_checks"]
+    by_id = {check["check_id"]: check for check in checks}
+    if reuse_evidence:
+        other = by_id["transaction-outbox-linkage"]["raw_result"]
+        by_id[check_id]["raw_result"].update({key: other[key] for key in ("uri", "sha256")})
+    else:
+        checks.append({**by_id[check_id], "raw_result": _ref("second-outbox-linkage")})
+    _prepare_target_bindings(package)
+    result = _validate(package, trust=_sign_external_package(package))
+    assert result.disposition == "NO_GO"
+    assert expected_blocker in result.rows["R03"].blockers
+
+
+def test_signed_multi_account_row_requires_distinct_target_execution_and_audit():
+    package = _complete_external_package()
+    child = _add_warehouse_target(package)
     audit = package.pop("final_audit")
     trust = _sign_external_package(package)
     result = _validate(package, trust=trust)

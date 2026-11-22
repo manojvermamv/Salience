@@ -6,6 +6,7 @@ from typing import Any
 
 from ._canonical import _evidence_ref_error, _iter_evidence_refs, sha256_json
 from ._contracts import ROW_GATES, VALID_STATUSES, _ValidationState
+from ._procedure_checks import REQUIRED_ROW_CHECK_IDS
 from ._reconciliation import P0_EXTERNAL_PROOF_ROWS
 from ._row_checks import (
     _manifest_row_scope_errors,
@@ -21,31 +22,78 @@ from ._row_checks import (
 from ._scope_binding import _execution_records, _target_manifest, _target_scope_identity
 
 
-def _p0_proofs(row: Mapping[str, Any], required: set[str]) -> list[tuple[str, str]]:
+def _check_proofs(checks: Sequence[Mapping[str, Any]], required: set[str]) -> list[tuple[str, str]]:
     return [
         (check["check_id"], check["raw_result"]["sha256"])
-        for check in row.get("normalized_checks", [])
-        if isinstance(check, Mapping) and check.get("check_id") in required
+        for check in checks
+        if isinstance(check, Mapping) and isinstance(check.get("check_id"), str)
+        and check["check_id"] in required
         and _evidence_ref_error(check.get("raw_result")) is None
     ]
 
 
-def _validate_p0_proof_reuse(payload: Mapping[str, Any], state: _ValidationState) -> None:
+def _validate_required_evidence_reuse(payload: Mapping[str, Any], state: _ValidationState) -> None:
     if payload.get("schema_version") != "1.1":
         return
-    proofs: dict[str, set[tuple[str, str]]] = {}
-    for _, execution in _execution_records(payload):
+    p0_proofs: dict[str, set[tuple[str, str]]] = {}
+    row_proofs: dict[str, dict[tuple[str, ...], str]] = {}
+    for path, execution in _execution_records(payload):
         if execution.get("status") != "PASS":
             continue
         row_id = execution.get("row_id")
-        required = {proof for proof, rows in P0_EXTERNAL_PROOF_ROWS.items() if row_id in rows}
-        for proof, digest in _p0_proofs(execution, required):
-            proofs.setdefault(digest, set()).add((proof, row_id))
-    for uses in proofs.values():
+        if not isinstance(row_id, str) or row_id not in REQUIRED_ROW_CHECK_IDS:
+            continue
+        checks = execution.get("normalized_checks", [])
+        required_p0 = {proof for proof, rows in P0_EXTERNAL_PROOF_ROWS.items() if row_id in rows}
+        for proof, digest in _check_proofs(checks, required_p0):
+            p0_proofs.setdefault(digest, set()).add((proof, row_id))
+        for _, digest in _check_proofs(checks, set(REQUIRED_ROW_CHECK_IDS[row_id])):
+            row_proofs.setdefault(digest, {})[path] = row_id
+    for uses in p0_proofs.values():
         if len({proof for proof, _ in uses}) > 1:
             for _, row_id in uses:
                 state.add_row(row_id, "REQUIRED_P0_PROOF_REUSED",
                               "Different named P0 proofs must use distinct evidence across the package.")
+    for digest, uses in row_proofs.items():
+        shared_p0 = p0_proofs.get(digest, set())
+        if len(uses) > 1 or shared_p0:
+            for row_id in set(uses.values()) | {row_id for _, row_id in shared_p0}:
+                state.add_row(row_id, "REQUIRED_ROW_CHECK_EVIDENCE_REUSED",
+                              "Required row checks cannot reuse another execution's evidence or a P0 proof.")
+
+
+def _validate_required_checks(
+    row_id: str, checks: Sequence[Mapping[str, Any]], state: _ValidationState
+) -> None:
+    required_p0 = {proof for proof, rows in P0_EXTERNAL_PROOF_ROWS.items() if row_id in rows}
+    p0_proofs = _check_proofs(checks, required_p0)
+    p0_ids = {proof_id for proof_id, _ in p0_proofs}
+    p0_digests = {digest for _, digest in p0_proofs}
+    if missing := sorted(required_p0 - p0_ids):
+        state.add_row(row_id, "REQUIRED_P0_PROOF_MISSING",
+                      f"Row {row_id} is missing required proofs: {', '.join(missing)}.")
+    if len(p0_proofs) != len(p0_ids) or len(p0_proofs) != len(p0_digests):
+        state.add_row(row_id, "REQUIRED_P0_PROOF_REUSED",
+                      f"Row {row_id} requires one distinct evidence record per named P0 proof.")
+
+    required_row = set(REQUIRED_ROW_CHECK_IDS[row_id])
+    row_check_proofs = _check_proofs(checks, required_row)
+    check_ids = {check_id for check_id, _ in row_check_proofs}
+    check_digests = {digest for _, digest in row_check_proofs}
+    claimed_checks = [
+        check["check_id"] for check in checks
+        if isinstance(check, Mapping) and isinstance(check.get("check_id"), str)
+        and check["check_id"] in required_row
+    ]
+    if missing := sorted(required_row - check_ids):
+        state.add_row(row_id, "REQUIRED_ROW_CHECK_MISSING",
+                      f"Row {row_id} is missing required checks with immutable evidence: {', '.join(missing)}.")
+    if len(claimed_checks) != len(set(claimed_checks)):
+        state.add_row(row_id, "REQUIRED_ROW_CHECK_DUPLICATE",
+                      f"Row {row_id} requires exactly one record per named check.")
+    if len(row_check_proofs) != len(check_digests):
+        state.add_row(row_id, "REQUIRED_ROW_CHECK_EVIDENCE_REUSED",
+                      f"Row {row_id} requires distinct evidence for each required check.")
 
 
 def _validate_row(
@@ -135,21 +183,7 @@ def _validate_execution(
                 "A PASS row requires passing normalized checks on exact scope.",
             )
         if payload.get("schema_version") == "1.1":
-            required = {proof for proof, rows in P0_EXTERNAL_PROOF_ROWS.items() if row_id in rows}
-            proofs = _p0_proofs(row, required)
-            proof_ids = {proof_id for proof_id, _ in proofs}
-            if missing := sorted(required - proof_ids):
-                state.add_row(
-                    row_id,
-                    "REQUIRED_P0_PROOF_MISSING",
-                    f"Row {row_id} is missing required proofs: {', '.join(missing)}.",
-                )
-            if len(proofs) != len(proof_ids) or len(proofs) != len({digest for _, digest in proofs}):
-                state.add_row(
-                    row_id,
-                    "REQUIRED_P0_PROOF_REUSED",
-                    f"Row {row_id} requires one distinct evidence record per named P0 proof.",
-                )
+            _validate_required_checks(row_id, checks, state)
     if row.get("status") == "FAIL":
         checks = row.get("normalized_checks", [])
         has_executed_failure = any(
