@@ -89,6 +89,18 @@ The production resume handoff remains pending. Current policy requires authorita
 
 ### Local image and Compose restart rehearsal
 
+#### Exact `0055` fixture candidate at `b7e7499`
+
+The clean checkout used application commit `b7e74997fa5f92a7909858cc136f85d97c55ad47` and tree `49c007ba107622764baf5ea58d38a9f54c0212e1`. The pinned wheel SHA-256 was `b56139801a6746a5bc20c04e3db27a02240141900dcee43e7d400461ef903ae5`. The loaded Docker image ID was `sha256:5fcb7addee3810b4743299495c09ed4f8e4117f48b2f675d962858842f5dfb88` and its amd64 manifest digest was `sha256:b7d68a2edf45d6f421ac1499220a175b2aa6b88de33b28dd03e97900760faf29`. The retained OCI archive verified all 15 blobs. [Artifact digests](p1-qualification-matrix.json)
+
+The same image started migration, the fixture API and mock provider, and ran the worker before and after its deliberate crash. PostgreSQL read back `0055_p1_recovery_open_rollback_v4`, the API returned HTTP 200, and the restarted workflow reconciled one mock acceptance into one canonical effect and two checkpoints.
+
+The first Compose restart timed out in launcher preflight. The isolated retry used the same image and lock, observed the worker exit with code 137, and completed after restarting the same container.
+
+The installed v4 verifier preserved historical work and denied missing route and Temporal readbacks separately. A separate run used the image-installed recovery controller to open and replay a populated case, then verified the opening receipt and rejected incomplete provenance. The network-disabled startup tests confirmed the checked-in routed path still requires externally provisioned production trust, an authenticated executor, and operational readback authorities. The configured production API also remained held.
+
+#### Earlier exact fixture candidate at `8c2cd7c`
+
 On November 23, the local build used a clean detached checkout at `8c2cd7c3ba46be5886f29636a9fe54017f43ee6b` and tree `2ff435f0b546eca34b4a7a06d62f7138a59444a1`. The tracked Dockerfile built the amd64 image from its pinned Python base. The launch-lock builder verified the retained wheel and installed application files against the commit and pinned the interpreter read from that image.
 
 | Artifact | Digest |

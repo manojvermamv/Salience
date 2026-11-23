@@ -612,3 +612,14 @@ This update records canonical production case opening and the successor rollback
 | `docs/v4/test_checks.py` | `fa6f3f097d9a5fab18ed420e18e70b76807eb38095daee59e1c82230a11bd6f7` |
 | `docs/v4/evidence-lock.json` | `8fe751ff7129e9f986fb5b917fe8ba51020e6a235db6495674eda74aacbc9d0b` |
 | `docs/v4/p1-qualification-matrix.json` | `b55299184070ae6bacf074ce302fdf159f65fec7518ef68418aebeb9004d9534` |
+
+## Exact `0055` fixture image evidence hashes — 2026-11-23
+
+This update records the wheel, image, restart, and installed case-opening and rollback checks for `b7e74997fa5f92a7909858cc136f85d97c55ad47`. [Fixture verification](validation.md#local-image-and-compose-restart-rehearsal)
+
+| Path | SHA-256 |
+| --- | --- |
+| `docs/v4/progress.md` | `a7c82629754241a20de51ac45d8c6b589128f8b503f05f5a40023e6fede8149b` |
+| `docs/v4/validation.md` | `a2c66774a81f70def0f9992bc7ee343f48561060bd6143a9b15b255ead6d8a48` |
+| `docs/v4/p1-qualification-matrix.json` | `08d61c2b727c9452ed8b1674c30b896776cc5d72b2beb8c9705fc4e97433f045` |
+| `docs/v4/test_checks.py` | `fc7b022e46e79c86d29878172ff77aee0f8c089a824e5ca5c18c4d338930d111` |

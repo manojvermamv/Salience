@@ -12,7 +12,7 @@ The follow-up repairs cover due schedule admission after activation, exact rollb
 
 The resume transaction records the existing cycle as runnable under its original identity. The production controller can open an unknown-outcome case from an enrolled cycle and an exact claimed publication attempt. Its case, work, audit events and initial alert intent commit together. Rollback verifier v4 checks that opening evidence. The owning workflow’s resume handoff still needs wiring. The current permit policy requires authoritative no-effect evidence for a claimed predecessor. A fresh permit for an expired unclaimed predecessor requires a reviewed change to that contract. Effects remain disabled, the fixture publication budget is zero, RG0 and full RG1 are **HELD**, and P2 is **BLOCKED**. All 22 external rows and the final target audit remain `NOT RUN`. [Ordered program](../superpowers/specs/2026-10-13-v4-multiplatform-autonomy-program-sequence.md) · [Validation evidence](validation.md)
 
-The local Compose rehearsal built and ran the wheel and image from `8c2cd7c`. The same image started the fixture API and restarted the worker after one mock acceptance. The production launcher still requires provisioned trust and an authenticated executor. [Exact image and fixture evidence](validation.md#local-image-and-compose-restart-rehearsal)
+The local Compose rehearsal built and ran the wheel and image from `b7e7499`. The same image started the fixture API and restarted the worker after one mock acceptance. The production launcher still requires provisioned trust and an authenticated executor. [Exact image and fixture evidence](validation.md#local-image-and-compose-restart-rehearsal)
 
 ## Recorded Task34/35 development checkpoint — 2026-10-29
 

@@ -934,10 +934,21 @@ class GateChecks(unittest.TestCase):
             "canonical_checkpoint_count": 2,
             "canonical_effect_count": 1,
         })
-        self.assertEqual(fixture["production_launcher_denials"], {
+        launcher_denials = {
             "current": "UNPROVISIONED_PRODUCTION_TRUST",
             "rollback_restart": "AUTHENTICATED_EXECUTOR_REQUIRED",
-        })
+        }
+        if fixture["rollback_verifier_abi"].endswith(".v4"):
+            launcher_denials["rollback_without_readbacks"] = "ROUTE_AND_TEMPORAL_READBACK_REQUIRED"
+            self.assertEqual(rollback["unavailable_temporal_readback"], "DENIED")
+            opened = fixture["installed_case_opening"]
+            self.assertEqual(opened["application_commit"], fixture["application_commit"])
+            self.assertEqual(opened["image_id"], fixture["local_image_id"])
+            self.assertEqual(opened["opening_receipt_count"], 1)
+            self.assertEqual(opened["operation_permit_count_after_opening"], 1)
+            self.assertEqual(opened["external_effect_state_after_opening"], "submitting")
+            self.assertEqual(opened["incomplete_opening_receipt"], "DENIED")
+        self.assertEqual(fixture["production_launcher_denials"], launcher_denials)
         self.assertEqual(current["external_rows_not_run"], 22)
         self.assertEqual((matrix["RG0"], matrix["RG1"]), ("HELD", "HELD"))
         hosted = matrix["published_fixture_ci"]
