@@ -584,9 +584,10 @@ def build_publication_worker_launch_lock(
         rollback_abi = _compatibility.PRODUCTION_ROLLBACK_ABIS.get(migration_head)
         if rollback_abi is None:
             raise ValueError("production launch lock requires an exact supported migration head")
-        if rollback_abi == _compatibility.ROLLBACK_VERIFIER_ABI_V3 and not (
-            _compatibility._REQUIRED_PRODUCTION_V3_SOURCE_PATHS <= set(tree)
-        ):
+        required_recovery_paths = _compatibility._RECOVERY_SOURCE_PATHS_BY_HEAD.get(
+            migration_head, frozenset(),
+        )
+        if not required_recovery_paths <= set(tree):
             raise ValueError("production case lifecycle candidate omits verifier or migration source")
         try:
             routes = parse_route_bundle(route_bundle, expected_lock_sha256="0" * 64)

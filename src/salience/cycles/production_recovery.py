@@ -6,6 +6,11 @@ from salience.cycles._production_recovery_case_commands import (
     ProductionRecoveryCaseCommand,
     ProductionRecoveryCaseReceipt,
 )
+from salience.cycles._production_recovery_case_opening import (
+    ProductionRecoveryCaseOpenAuthorization,
+    ProductionRecoveryCaseOpenCommand,
+    ProductionRecoveryCaseOpenReceipt,
+)
 from salience.cycles._production_recovery_control import ProductionRecoveryCaseController
 from salience.cycles._production_recovery_contracts import (
     NoEffectGenerationReissueCommand, ProductionAlertAcknowledgment,
@@ -36,6 +41,8 @@ __all__ = [
     "ProductionRecoveryAlerts", "ProductionRecoveryAuthority",
     "ProductionRecoveryCaseAuthorization", "ProductionRecoveryCaseCommand",
     "ProductionRecoveryCaseController", "ProductionRecoveryCaseReceipt",
+    "ProductionRecoveryCaseOpenAuthorization", "ProductionRecoveryCaseOpenCommand",
+    "ProductionRecoveryCaseOpenReceipt",
     "ProductionRecoveryCoordinator",
     "ProductionRecoveryDecision", "ProductionRecoveryEvent",
     "ProductionRecoveryPolicyBinding", "ProductionRecoveryReadContext",

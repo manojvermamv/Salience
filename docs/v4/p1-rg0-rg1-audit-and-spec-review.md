@@ -599,3 +599,16 @@ This update records the historical v2 test isolation and the guarded deadline ra
 | `docs/v4/evidence-lock.json` | `c65b675096841ae4e80c45297701c7c0e71956a0633dc803b98b97b4393c9931` |
 | `docs/v4/p1-qualification-matrix.json` | `1b983ceb5c9f14d3ee7080e6f8e90bbc03334302dfce598b931bf6975a72f239` |
 | `docs/v4/validation.md` | `f8a1c28b84d2a586a0cc67430ac3f51ad7f38b76dc234a201858f58769967c0a` |
+
+## P1 recovery opening and rollback v4 evidence hashes — 2026-11-23
+
+This update records canonical production case opening and the successor rollback verifier. [Verification and scope](validation.md#production-recovery-opening-and-rollback-verifier-v4)
+
+| Path | SHA-256 |
+| --- | --- |
+| `docs/v4/IMPLEMENTATION-BLUEPRINT.md` | `e1d3bc671fd57a02ac5bcf8b3fabfefffc291731b44385b9cabec55a45875bdc` |
+| `docs/v4/progress.md` | `62c8c37592eb01fb92f35a5db55cc6e5234d528d20cc6e5c61e17740e1bf2f3f` |
+| `docs/v4/validation.md` | `bec1d4005fb9efad4ef021a8fe51ae29a689fecd968dad9ecfcf86d2d8f4bb4d` |
+| `docs/v4/test_checks.py` | `fa6f3f097d9a5fab18ed420e18e70b76807eb38095daee59e1c82230a11bd6f7` |
+| `docs/v4/evidence-lock.json` | `8fe751ff7129e9f986fb5b917fe8ba51020e6a235db6495674eda74aacbc9d0b` |
+| `docs/v4/p1-qualification-matrix.json` | `b55299184070ae6bacf074ce302fdf159f65fec7518ef68418aebeb9004d9534` |

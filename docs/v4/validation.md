@@ -66,7 +66,26 @@ python -m pytest -q \
 
 The focused run passed all 54 tests against disposable PostgreSQL and read back `0053_p1_recovery_rollback_v3` at head. The tests cover function-only deadline execution and replay, fresh authority after a cleared stop, production case commands, and rollback rejection when canonical evidence drifts. The route and Temporal authorities are injected fixtures.
 
-The migration compatibility follow-up passed 15 focused PostgreSQL tests. The two generation-reissue races now use the guarded production deadline controller. The historical v2 evidence tests seed an isolated database at `0050`, clone it, and replay only `0051`. The installed-image head check requires a single `0053` head.
+The migration compatibility follow-up passed 15 focused PostgreSQL tests. The two generation-reissue races now use the guarded production deadline controller. The historical v2 evidence tests seed an isolated database at `0050`, clone it, and replay only `0051`. The packaged migration check requires the exact single head for its application candidate.
+
+### Production recovery opening and rollback verifier v4
+
+Migration `0054` adds `ProductionRecoveryCaseController.open_case` for an enrolled cycle with an exact claimed publication in `submitting` or `unknown`. The controller requires the opener’s explicit function grant and checks canonical publication state and current actor, stage, policy, stop, and route decisions. It records the case, work, case and cycle audit events, and initial alert intent atomically. The workflow, provider, operation, claim and existing remote liability retain their original identity. Unknown outcomes remain in reconciliation. A production opening requires its authorization even when a fixture database role has write access to the case tables.
+
+Migration `0055` binds the opening receipt, original claimed permit, case and cycle audit events, and initial alert intent in rollback verifier v4. A missing source or conflicting evidence keeps rollback held. The launch lock binds `0055` to ABI v4. Historical locks remain exact at `0051` with ABI v2 and `0053` with ABI v3.
+
+```bash
+python -m pytest -q \
+  tests/integration/test_p1_production_recovery_case_opening.py \
+  tests/integration/test_p1_production_recovery_case_commands.py \
+  tests/integration/test_p1_recovery_rollback_v3.py \
+  tests/integration/test_p1_recovery_rollback_v4.py \
+  tests/integration/test_p1_production_routing.py
+```
+
+The final opener and v4 verifier run passed 33 PostgreSQL tests, including revoked grants, authority expiring during a blocked insert, concurrent opening and exact replay, malformed rollback evidence, and downgrade denial when opening evidence exists.
+
+The production resume handoff remains pending. Current policy requires authoritative no-effect evidence for a successor permit on a claimed predecessor. Recovery from an expired, never-claimed permit requires a reviewed policy amendment, an exact original-run continuation, and target qualification. [Current status](progress.md#current-state)
 
 ### Local image and Compose restart rehearsal
 

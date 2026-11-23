@@ -22,6 +22,9 @@ ROLLBACK_MIGRATION_HEAD_V2 = "0051_p1_recovery_rollback_v2"
 ROLLBACK_VERIFIER_ABI_V3 = "salience.p1-recovery-rollback-verifier.v3"
 ROLLBACK_INVENTORY_SCHEMA_V3 = "salience.p1-recovery-rollback-inventory.v3"
 ROLLBACK_MIGRATION_HEAD_V3 = "0053_p1_recovery_rollback_v3"
+ROLLBACK_VERIFIER_ABI_V4 = "salience.p1-recovery-rollback-verifier.v4"
+ROLLBACK_INVENTORY_SCHEMA_V4 = "salience.p1-recovery-rollback-inventory.v4"
+ROLLBACK_MIGRATION_HEAD_V4 = "0055_p1_recovery_open_rollback_v4"
 _REASON_KEYS = ("expired_permit_receipt", "published_during_cancel")
 _INVENTORY_ARRAYS = {
     "source_identities": "source_identities",
@@ -55,6 +58,21 @@ _INVENTORY_KEYS = frozenset(
 _RELATION_COUNT_KEYS = frozenset(
     relation for relation in _INVENTORY_ARRAYS.values() if relation is not None
 )
+_CASE_OPENING_KEYS = frozenset({
+    "schema_version", "command_id", "case_id", "work_id", "alert_event_id", "workspace_id", "goal_id",
+    "intent_id", "cycle_id", "context_id", "operation_id", "actor_id", "action", "resulting_revision",
+    "state", "kind", "failure_class", "eligibility_revision", "generation", "request_fingerprint",
+    "permit_id", "claim_id", "external_effect_id", "evidence_state", "request", "authorization",
+})
+_CASE_OPENING_REQUEST_KEYS = frozenset({
+    "workspace_id", "actor_id", "intent_id", "cycle_id", "context_id", "operation_id",
+    "eligibility_revision", "generation", "request_fingerprint", "deadline", "idempotency_key",
+})
+_CASE_OPENING_AUTHORIZATION_KEYS = frozenset({
+    "policy_decision_id", "policy_version_id", "policy_document_hash", "stage_decision_id", "route_decision_id",
+    "route_id", "slot_id", "fencing_epoch", "workspace_stop_revision", "goal_stop_revision", "actor_revision",
+    "expires_at", "recipient_profile_revision", "retry_policy_revision", "alert_policy_sha256",
+})
 
 
 class RecoveryRollbackVerificationError(RuntimeError):
@@ -287,7 +305,11 @@ def read_p1_recovery_rollback_inventory_v2(
     database_url: str, *, workspace_id: UUID
 ) -> RecoveryRollbackInventoryV2:
     """Read and validate the exact workspace inventory in one read-only snapshot."""
-    return _read_workspace_inventory(database_url, workspace_id, lifecycle=False)
+    return _read_workspace_inventory(
+        database_url, workspace_id, ROLLBACK_MIGRATION_HEAD_V2,
+        "SELECT public.v4_p1_recovery_rollback_inventory_v2(%s)",
+        validate_recovery_rollback_inventory_v2,
+    )
 
 
 def validate_recovery_rollback_inventory_v3(
@@ -350,24 +372,113 @@ def read_p1_recovery_rollback_inventory_v3(
     database_url: str, *, workspace_id: UUID
 ) -> RecoveryRollbackInventoryV2:
     """Read workspace inventory including authenticated case command lineage."""
-    return _read_workspace_inventory(database_url, workspace_id, lifecycle=True)
+    return _read_workspace_inventory(
+        database_url, workspace_id, ROLLBACK_MIGRATION_HEAD_V3,
+        "SELECT public.v4_p1_recovery_rollback_inventory_v3(%s)",
+        validate_recovery_rollback_inventory_v3,
+    )
+
+
+def validate_recovery_rollback_inventory_v4(
+    inventory: object, *, workspace_id: UUID
+) -> tuple[RecoveryRollbackRouteClaimV2, ...]:
+    if (
+        not isinstance(inventory, dict)
+        or set(inventory) != _INVENTORY_KEYS | {"case_lineage", "opening_receipts"}
+        or inventory["schema_version"] != ROLLBACK_INVENTORY_SCHEMA_V4
+        or inventory["migration_head"] != ROLLBACK_MIGRATION_HEAD_V4
+    ):
+        raise RecoveryRollbackVerificationError("rollback v4 inventory envelope is incomplete")
+    receipts = inventory["opening_receipts"]
+    counts = inventory["relation_counts"]
+    if (
+        not isinstance(receipts, list) or not isinstance(counts, dict)
+        or type(counts.get("production_case_opening_receipts")) is not int
+        or counts["production_case_opening_receipts"] != len(receipts)
+    ):
+        raise RecoveryRollbackVerificationError("rollback case opening inventory is partial")
+    common = {key: value for key, value in inventory.items() if key != "opening_receipts"}
+    common["schema_version"] = ROLLBACK_INVENTORY_SCHEMA_V3
+    common["migration_head"] = ROLLBACK_MIGRATION_HEAD_V3
+    common["relation_counts"] = {
+        key: value for key, value in counts.items() if key != "production_case_opening_receipts"
+    }
+    routes = validate_recovery_rollback_inventory_v3(common, workspace_id=workspace_id)
+    permits = {row["permit_id"]: row for row in inventory["production_permits"]}
+    claims = {row["claim_id"]: row for row in inventory["production_claims"]}
+    events = {row["event_id"]: row for row in inventory["recovery_events"]}
+    expected = {}
+    for work in inventory["recovery_work"]:
+        if not isinstance(work, dict) or "opening_command_id" not in work:
+            raise RecoveryRollbackVerificationError("rollback work omits opening provenance")
+        if work["opening_command_id"] is not None:
+            _uuid(work["opening_command_id"], "opening command_id")
+            expected[work["work_id"]] = work
+    for receipt in receipts:
+        if (not isinstance(receipt, dict) or receipt.keys() != _CASE_OPENING_KEYS
+                or not isinstance(receipt["work_id"], str)):
+            raise RecoveryRollbackVerificationError("rollback case opening receipt is incomplete")
+        work = expected.pop(receipt["work_id"], None)
+        if (
+            work is None or work["source_discriminant"] != "cycle_case"
+            or receipt["command_id"] != work["opening_command_id"]
+            or receipt["case_id"] != work["source_id"]
+            or receipt["workspace_id"] != str(workspace_id)
+            or receipt["actor_id"] != work["owner_id"]
+            or receipt["failure_class"] != work["reason"]
+            or any(receipt[key] != work[key] for key in (
+                "goal_id", "intent_id", "cycle_id", "context_id", "operation_id", "state",
+                "eligibility_revision", "request_fingerprint",
+            ))
+            or receipt["schema_version"] != "salience.p1-production-recovery-case-opening.v1"
+            or receipt["action"] != "open" or receipt["kind"] != "reconciliation"
+            or type(receipt["resulting_revision"]) is not int or receipt["resulting_revision"] != 1
+            or type(receipt["generation"]) is not int or receipt["generation"] < 1
+            or receipt["evidence_state"] not in ("submitting", "unknown")
+            or not isinstance(receipt["request"], dict) or not isinstance(receipt["authorization"], dict)
+        ):
+            raise RecoveryRollbackVerificationError("rollback case opening receipt differs from its source")
+        for key in ("permit_id", "claim_id", "external_effect_id", "alert_event_id"):
+            _uuid(receipt[key], f"opening {key}")
+        request, decision = receipt["request"], receipt["authorization"]
+        permit = permits.get(receipt["permit_id"], {})
+        claim = claims.get(receipt["claim_id"], {})
+        alert = events.get(receipt["alert_event_id"], {})
+        material_keys = ("operation_id", "generation")
+        if (
+            request.keys() != _CASE_OPENING_REQUEST_KEYS
+            or decision.keys() != _CASE_OPENING_AUTHORIZATION_KEYS
+            or any(request[key] != receipt[key] for key in _CASE_OPENING_REQUEST_KEYS & _CASE_OPENING_KEYS)
+            or any(permit.get(key) != receipt[key] or claim.get(key) != receipt[key] for key in material_keys)
+            or claim.get("permit_id") != receipt["permit_id"]
+            or permit.get("request_snapshot", {}).get("external_effect_id") != receipt["external_effect_id"]
+            or alert.get("event_kind") != "alert_intent" or alert.get("work_id") != receipt["work_id"]
+            or alert.get("policy_decision_id") != decision["policy_decision_id"]
+        ):
+            raise RecoveryRollbackVerificationError("rollback case opening authority or linked evidence differs")
+    if expected:
+        raise RecoveryRollbackVerificationError("rollback case opening inventory omits a bound source")
+    return routes
+
+
+def read_p1_recovery_rollback_inventory_v4(
+    database_url: str, *, workspace_id: UUID
+) -> RecoveryRollbackInventoryV2:
+    """Read workspace inventory including canonical case-opening provenance."""
+    return _read_workspace_inventory(
+        database_url, workspace_id, ROLLBACK_MIGRATION_HEAD_V4,
+        "SELECT public.v4_p1_recovery_rollback_inventory_v4(%s)",
+        validate_recovery_rollback_inventory_v4,
+    )
 
 
 def _read_workspace_inventory(
-    database_url: str, workspace_id: UUID, *, lifecycle: bool,
+    database_url: str, workspace_id: UUID, migration: str, query: str, validate,
 ) -> RecoveryRollbackInventoryV2:
     if not isinstance(database_url, str) or not database_url.strip():
         raise RecoveryRollbackVerificationError("rollback database URL is unavailable")
     if not isinstance(workspace_id, UUID):
         raise RecoveryRollbackVerificationError("rollback workspace UUID is required")
-    if lifecycle:
-        migration = ROLLBACK_MIGRATION_HEAD_V3
-        query = "SELECT public.v4_p1_recovery_rollback_inventory_v3(%s)"
-        validate = validate_recovery_rollback_inventory_v3
-    else:
-        migration = ROLLBACK_MIGRATION_HEAD_V2
-        query = "SELECT public.v4_p1_recovery_rollback_inventory_v2(%s)"
-        validate = validate_recovery_rollback_inventory_v2
     try:
         with psycopg.connect(database_url, connect_timeout=3) as connection:
             connection.execute(
@@ -578,6 +689,20 @@ def verify_p1_recovery_rollback_v3(
     """Require complete DB, lineage, route, and drained Temporal evidence."""
     return _verify_workspace_readbacks(
         read_p1_recovery_rollback_inventory_v3(database_url, workspace_id=workspace_id),
+        route_authority, temporal_readback,
+    )
+
+
+def verify_p1_recovery_rollback_v4(
+    database_url: str,
+    *,
+    workspace_id: UUID,
+    route_authority: RouteLeaseAuthority,
+    temporal_readback: TemporalWorkerReadback,
+) -> RecoveryRollbackInventoryV2:
+    """Require complete workspace, case-opening, route, and Temporal evidence."""
+    return _verify_workspace_readbacks(
+        read_p1_recovery_rollback_inventory_v4(database_url, workspace_id=workspace_id),
         route_authority, temporal_readback,
     )
 

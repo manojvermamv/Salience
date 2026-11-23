@@ -112,21 +112,21 @@
       "docs/superpowers/specs/2026-10-13-p1-production-recovery-and-alerts-design.md": "4d7076fd968c28d78307678fa0b186d446dff6e3f3a88d5507646a828b2605cc",
       "docs/superpowers/specs/2026-10-13-p1-production-routing-and-worker-fencing-design.md": "76921a085e352f86ae77895c824917832a49847c306b76bc56ae2c7e44a23e90",
       "docs/superpowers/specs/2026-10-13-rg0-rg1-external-acceptance-design.md": "7334364e5417cbb29143877334a80ea90125e9ce61bff71f67de77a86f61069e",
-      "docs/v4/IMPLEMENTATION-BLUEPRINT.md": "b16dcb243e68b90f4d4eeab95f0e493633696def8c6a3f575b71082c11190d6e",
-      "docs/v4/evidence-lock.json": "c65b675096841ae4e80c45297701c7c0e71956a0633dc803b98b97b4393c9931",
+      "docs/v4/IMPLEMENTATION-BLUEPRINT.md": "e1d3bc671fd57a02ac5bcf8b3fabfefffc291731b44385b9cabec55a45875bdc",
+      "docs/v4/evidence-lock.json": "8fe751ff7129e9f986fb5b917fe8ba51020e6a235db6495674eda74aacbc9d0b",
       "docs/v4/p0-release.json": "0a0f1969e0497cbec535fb3f854b51cef870a4746eb92f8a67a127566dc9ff75",
       "docs/v4/p1-production-policy-revocation-evidence.json": "e5a5a3d424157479cacaf00eae39614a5abe12ecdb04ac38af0c95692dbd982b",
-      "docs/v4/p1-qualification-matrix.json": "1b983ceb5c9f14d3ee7080e6f8e90bbc03334302dfce598b931bf6975a72f239",
+      "docs/v4/p1-qualification-matrix.json": "b55299184070ae6bacf074ce302fdf159f65fec7518ef68418aebeb9004d9534",
       "docs/v4/p1-remaining-production-development-evidence.json": "9712af1be052ae418a26d4c0ac600ce15a191d49b31517885926e3cc72d598ad",
       "docs/v4/p1-rg0-rg1-external-acceptance.schema.json": "16cbdd59abc82c587d0d05de44dec0d867893d0bc8207df20d7f1bbe85805154",
       "docs/v4/p1-rg0-rg1-initial-gap-audit.json": "33fe485384dcf60e36df8d48ace6394c80bce0d1bd9e6b9b39c7a905d65676b1",
       "docs/v4/p1-rg0-rg1-initial-gap-audit.md": "62aab5afb39f7c47e355a68ccf56e319a72955247515dfbdba8913fd797a5944",
-      "docs/v4/progress.md": "a79ba51becca4c5e9a6fc47b4d4bf346ef9ed3b71f000ed53302268a3855bfb9",
+      "docs/v4/progress.md": "62c8c37592eb01fb92f35a5db55cc6e5234d528d20cc6e5c61e17740e1bf2f3f",
       "docs/v4/publication-recovery-hold-evidence.json": "3cce88e4d692f726be710c1f4db46b1428c9546561424a2ab0ad120363becc66",
       "docs/v4/publication-recovery-hold-successor-evidence.json": "6bb3ce696cffec2629838f5f30b8eea4acb837cbb81c1bcbc1b4de4f19e8764a",
       "docs/v4/repository-enforcement-evidence.json": "fc69f901036971bd64588cf3247d1701939e7525442f196daeab7f1919de11a2",
-      "docs/v4/test_checks.py": "1ece1a194329ce088db5660f50a36eeab843a4e8d426ec5c587a055bbbbfc9e6",
-      "docs/v4/validation.md": "f8a1c28b84d2a586a0cc67430ac3f51ad7f38b76dc234a201858f58769967c0a"
+      "docs/v4/test_checks.py": "fa6f3f097d9a5fab18ed420e18e70b76807eb38095daee59e1c82230a11bd6f7",
+      "docs/v4/validation.md": "bec1d4005fb9efad4ef021a8fe51ae29a689fecd968dad9ecfcf86d2d8f4bb4d"
     },
     "Task25 review history and final source-546ac4e fix-loop rereview preserved; current rereview PASS/CLEAN with 0 findings; durable review SHA-256 42de4ad70cc6192d03cd983359d30a8ca631fc52cf2dc6d8c8c2fd6ee0d08b8d; earlier 8c31e84 review remains historically scoped": 1
   },
@@ -3207,7 +3207,7 @@
     },
     {
       "path": "docs/v4/IMPLEMENTATION-BLUEPRINT.md",
-      "sha256": "b16dcb243e68b90f4d4eeab95f0e493633696def8c6a3f575b71082c11190d6e",
+      "sha256": "e1d3bc671fd57a02ac5bcf8b3fabfefffc291731b44385b9cabec55a45875bdc",
       "disposition": "historical capture-time documentation/status scope; Task18 latest local candidate is source c23c4cca72021ce6621eaacd66f2bfc23f4cc129 / artifact be6f713b255f6b654b73ae4343db1db5c07e3840; external rows remain NOT RUN and gates HELD"
     },
     {
@@ -3282,7 +3282,7 @@
     },
     {
       "path": "docs/v4/evidence-lock.json",
-      "sha256": "c65b675096841ae4e80c45297701c7c0e71956a0633dc803b98b97b4393c9931",
+      "sha256": "8fe751ff7129e9f986fb5b917fe8ba51020e6a235db6495674eda74aacbc9d0b",
       "disposition": "current P1 development source inventory; historical lock preserved at ea4cd3f"
     },
     {
@@ -3422,7 +3422,7 @@
     },
     {
       "path": "docs/v4/p1-qualification-matrix.json",
-      "sha256": "1b983ceb5c9f14d3ee7080e6f8e90bbc03334302dfce598b931bf6975a72f239",
+      "sha256": "b55299184070ae6bacf074ce302fdf159f65fec7518ef68418aebeb9004d9534",
       "disposition": "P1 qualification matrix with published fixture CI and current follow-up scope"
     },
     {
@@ -3432,7 +3432,7 @@
     },
     {
       "path": "docs/v4/p1-rg0-rg1-audit-and-spec-review.md",
-      "sha256": "93d2ee95dcd46dabc4c2ed04ff829f194977ee79a9a7e346dec4baea9c7d4c35",
+      "sha256": "9319814ee718dde6a4e49ff71613c9d2bfdc98a2f496aff713808afe0dbfa349",
       "disposition": "frozen review chain and successive handoff hashes; external gates HELD"
     },
     {
@@ -3462,7 +3462,7 @@
     },
     {
       "path": "docs/v4/progress.md",
-      "sha256": "a79ba51becca4c5e9a6fc47b4d4bf346ef9ed3b71f000ed53302268a3855bfb9",
+      "sha256": "62c8c37592eb01fb92f35a5db55cc6e5234d528d20cc6e5c61e17740e1bf2f3f",
       "disposition": "current P1 development and release handoff; external gates HELD"
     },
     {
@@ -3532,7 +3532,7 @@
     },
     {
       "path": "docs/v4/validation.md",
-      "sha256": "f8a1c28b84d2a586a0cc67430ac3f51ad7f38b76dc234a201858f58769967c0a",
+      "sha256": "bec1d4005fb9efad4ef021a8fe51ae29a689fecd968dad9ecfcf86d2d8f4bb4d",
       "disposition": "current P1 verification; historical checks remain candidate-bound"
     },
     {
@@ -4069,21 +4069,21 @@
     "docs/superpowers/specs/2026-10-13-p1-production-recovery-and-alerts-design.md": "4d7076fd968c28d78307678fa0b186d446dff6e3f3a88d5507646a828b2605cc",
     "docs/superpowers/specs/2026-10-13-p1-production-routing-and-worker-fencing-design.md": "76921a085e352f86ae77895c824917832a49847c306b76bc56ae2c7e44a23e90",
     "docs/superpowers/specs/2026-10-13-rg0-rg1-external-acceptance-design.md": "7334364e5417cbb29143877334a80ea90125e9ce61bff71f67de77a86f61069e",
-    "docs/v4/IMPLEMENTATION-BLUEPRINT.md": "b16dcb243e68b90f4d4eeab95f0e493633696def8c6a3f575b71082c11190d6e",
-    "docs/v4/evidence-lock.json": "c65b675096841ae4e80c45297701c7c0e71956a0633dc803b98b97b4393c9931",
+    "docs/v4/IMPLEMENTATION-BLUEPRINT.md": "e1d3bc671fd57a02ac5bcf8b3fabfefffc291731b44385b9cabec55a45875bdc",
+    "docs/v4/evidence-lock.json": "8fe751ff7129e9f986fb5b917fe8ba51020e6a235db6495674eda74aacbc9d0b",
     "docs/v4/p0-release.json": "0a0f1969e0497cbec535fb3f854b51cef870a4746eb92f8a67a127566dc9ff75",
     "docs/v4/p1-production-policy-revocation-evidence.json": "e5a5a3d424157479cacaf00eae39614a5abe12ecdb04ac38af0c95692dbd982b",
-    "docs/v4/p1-qualification-matrix.json": "1b983ceb5c9f14d3ee7080e6f8e90bbc03334302dfce598b931bf6975a72f239",
+    "docs/v4/p1-qualification-matrix.json": "b55299184070ae6bacf074ce302fdf159f65fec7518ef68418aebeb9004d9534",
     "docs/v4/p1-remaining-production-development-evidence.json": "9712af1be052ae418a26d4c0ac600ce15a191d49b31517885926e3cc72d598ad",
     "docs/v4/p1-rg0-rg1-external-acceptance.schema.json": "16cbdd59abc82c587d0d05de44dec0d867893d0bc8207df20d7f1bbe85805154",
     "docs/v4/p1-rg0-rg1-initial-gap-audit.json": "33fe485384dcf60e36df8d48ace6394c80bce0d1bd9e6b9b39c7a905d65676b1",
     "docs/v4/p1-rg0-rg1-initial-gap-audit.md": "62aab5afb39f7c47e355a68ccf56e319a72955247515dfbdba8913fd797a5944",
-    "docs/v4/progress.md": "a79ba51becca4c5e9a6fc47b4d4bf346ef9ed3b71f000ed53302268a3855bfb9",
+    "docs/v4/progress.md": "62c8c37592eb01fb92f35a5db55cc6e5234d528d20cc6e5c61e17740e1bf2f3f",
     "docs/v4/publication-recovery-hold-evidence.json": "3cce88e4d692f726be710c1f4db46b1428c9546561424a2ab0ad120363becc66",
     "docs/v4/publication-recovery-hold-successor-evidence.json": "6bb3ce696cffec2629838f5f30b8eea4acb837cbb81c1bcbc1b4de4f19e8764a",
     "docs/v4/repository-enforcement-evidence.json": "fc69f901036971bd64588cf3247d1701939e7525442f196daeab7f1919de11a2",
-    "docs/v4/test_checks.py": "1ece1a194329ce088db5660f50a36eeab843a4e8d426ec5c587a055bbbbfc9e6",
-    "docs/v4/validation.md": "f8a1c28b84d2a586a0cc67430ac3f51ad7f38b76dc234a201858f58769967c0a"
+    "docs/v4/test_checks.py": "fa6f3f097d9a5fab18ed420e18e70b76807eb38095daee59e1c82230a11bd6f7",
+    "docs/v4/validation.md": "bec1d4005fb9efad4ef021a8fe51ae29a689fecd968dad9ecfcf86d2d8f4bb4d"
   },
   "historical_documentation_refresh": {
     "plan_task": "docs/superpowers/plans/2026-10-27-p1-rg0-rg1-initial-gap-audit.md",
@@ -5266,16 +5266,16 @@
     "superseded_by": "Task35 exact local qualification of source 546ac4ed794afc123ea02586a37d4a4457590582 / artifact fe6b3795ce4453beb6c6bbafcc20cd3be91b3b87."
   },
   "current_p1_follow_up": {
-    "source_lock_sha256": "c65b675096841ae4e80c45297701c7c0e71956a0633dc803b98b97b4393c9931",
+    "source_lock_sha256": "8fe751ff7129e9f986fb5b917fe8ba51020e6a235db6495674eda74aacbc9d0b",
     "scope": "Local development checkout with injected targets and authorities",
-    "artifact_build": "PASS_FIXTURE_ONLY",
+    "artifact_build": "NOT RUN",
     "external_rows_not_run": 22,
     "external_final_audit": "NOT RUN",
-    "production_recovery_case_lifecycle": "Fixture-verified commands and rollback ABI v3. Production case opening, workflow handoff, and policy for a fresh expired-unclaimed permit remain open.",
+    "production_recovery_case_lifecycle": "Fixture-verified opening for an exact claimed publication, existing case commands, and rollback ABI v4. The routed workflow handoff and reviewed permit rule for expired never-claimed work remain open.",
     "handoff": "docs/v4/progress.md#current-state",
-    "migration_head": "0053_p1_recovery_rollback_v3",
+    "migration_head": "0055_p1_recovery_open_rollback_v4",
     "external_artifact_qualification": "NOT RUN",
-    "fixture_image_rehearsal": {
+    "prior_fixture_image_rehearsal": {
       "application_commit": "8c2cd7c3ba46be5886f29636a9fe54017f43ee6b",
       "application_tree": "2ff435f0b546eca34b4a7a06d62f7138a59444a1",
       "wheel_sha256": "1f1c33125709c5e32562657659fdf1218602e6b91b45c2e0a75de53291512ff1",

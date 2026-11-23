@@ -904,9 +904,15 @@ class GateChecks(unittest.TestCase):
         current = matrix["current_p1_follow_up"]
         lock_path = Path(__file__).with_name("evidence-lock.json")
         self.assertEqual(current["source_lock_sha256"], hashlib.sha256(lock_path.read_bytes()).hexdigest())
-        self.assertEqual(current["artifact_build"], "PASS_FIXTURE_ONLY")
         self.assertEqual(current["external_artifact_qualification"], "NOT RUN")
-        fixture = current["fixture_image_rehearsal"]
+        if current["artifact_build"] == "NOT RUN":
+            self.assertNotIn("fixture_image_rehearsal", current)
+            fixture = current["prior_fixture_image_rehearsal"]
+            self.assertNotEqual(fixture["migration_head"], current["migration_head"])
+        else:
+            self.assertEqual(current["artifact_build"], "PASS_FIXTURE_ONLY")
+            fixture = current["fixture_image_rehearsal"]
+            self.assertEqual(fixture["migration_head"], current["migration_head"])
         self.assertRegex(fixture["application_commit"], r"^[a-f0-9]{40}$")
         self.assertRegex(fixture["application_tree"], r"^[a-f0-9]{40}$")
         self.assertRegex(fixture["local_image_id"], r"^sha256:[a-f0-9]{64}$")
@@ -921,7 +927,6 @@ class GateChecks(unittest.TestCase):
         self.assertEqual(rollback["scoped_route_claims"], rollback["scoped_temporal_readbacks"])
         self.assertEqual(rollback["scoped_route_claims"], 1)
         self.assertEqual(rollback["unavailable_route"], "DENIED")
-        self.assertEqual(fixture["migration_head"], current["migration_head"])
         self.assertEqual(fixture["compose_worker_restart"], {
             "status": "succeeded",
             "provider_effect_calls": 1,

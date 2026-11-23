@@ -15,6 +15,11 @@ from salience.cycles._production_recovery_case_commands import (
     ProductionRecoveryCaseReceipt,
     execute_case_command,
 )
+from salience.cycles._production_recovery_case_opening import (
+    ProductionRecoveryCaseOpenCommand,
+    ProductionRecoveryCaseOpenReceipt,
+    open_case,
+)
 from salience.cycles._production_recovery_contracts import (
     NoEffectGenerationReissueCommand, ProductionCaseDeadlineCommand,
     ProductionDeadlineWakeReceipt, ProductionIntentDeadlineCommand,
@@ -62,6 +67,9 @@ class ProductionRecoveryCaseController:
         self.repository = repository
         self.authority = authority
         self.commands = commands
+
+    def open_case(self, command: ProductionRecoveryCaseOpenCommand) -> ProductionRecoveryCaseOpenReceipt:
+        return open_case(self.repository, self.authority, command)
 
     def execute_case_command(
         self, command: ProductionRecoveryCaseCommand

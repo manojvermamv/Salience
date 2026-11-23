@@ -28,10 +28,13 @@ from salience.cycles.p1_recovery_rollback import (
     ROLLBACK_VERIFIER_ABI_V2,
     ROLLBACK_VERIFIER_ABI_V3,
     ROLLBACK_MIGRATION_HEAD_V3,
+    ROLLBACK_VERIFIER_ABI_V4,
+    ROLLBACK_MIGRATION_HEAD_V4,
     RecoveryRollbackInventoryV2,
     RecoveryRollbackTemporalReadbackV2,
     verify_p1_recovery_rollback_v2,
     verify_p1_recovery_rollback_v3,
+    verify_p1_recovery_rollback_v4,
 )
 
 if TYPE_CHECKING:
@@ -96,6 +99,14 @@ _REQUIRED_PRODUCTION_V3_SOURCE_PATHS = frozenset({
     "src/salience/cycles/_production_recovery_case_commands.py",
     "src/salience/cycles/_production_recovery_control.py",
 })
+_RECOVERY_SOURCE_PATHS_BY_HEAD = {
+    ROLLBACK_MIGRATION_HEAD_V3: _REQUIRED_PRODUCTION_V3_SOURCE_PATHS,
+    ROLLBACK_MIGRATION_HEAD_V4: _REQUIRED_PRODUCTION_V3_SOURCE_PATHS | {
+        "migrations/versions/0054_p1_recovery_case_opening.py",
+        "migrations/versions/0055_p1_recovery_open_rollback_v4.py",
+        "src/salience/cycles/_production_recovery_case_opening.py",
+    },
+}
 _REQUIRED_MIGRATION_SUPPORT_PATHS = frozenset(
     {
         "alembic.ini",
@@ -229,6 +240,7 @@ PRODUCTION_MIGRATION_HEAD = "0051_p1_recovery_rollback_v2"
 PRODUCTION_ROLLBACK_ABIS = {
     PRODUCTION_MIGRATION_HEAD: ROLLBACK_VERIFIER_ABI_V2,
     ROLLBACK_MIGRATION_HEAD_V3: ROLLBACK_VERIFIER_ABI_V3,
+    ROLLBACK_MIGRATION_HEAD_V4: ROLLBACK_VERIFIER_ABI_V4,
 }
 PRODUCTION_LOCK_QUALIFICATION = "development-only"
 PRODUCTION_EXTERNAL_TRUST_DIGEST = None
@@ -542,8 +554,9 @@ def _validate_lock_and_pin_static(
     if is_production_v2:
         required_source_paths.update(_REQUIRED_PRODUCTION_V2_SOURCE_PATHS)
         required_import_modules.update(_REQUIRED_PRODUCTION_V2_IMPORT_MODULES)
-        if launch_lock.production.migration_head == ROLLBACK_MIGRATION_HEAD_V3:
-            required_source_paths.update(_REQUIRED_PRODUCTION_V3_SOURCE_PATHS)
+        required_source_paths.update(
+            _RECOVERY_SOURCE_PATHS_BY_HEAD.get(launch_lock.production.migration_head, ())
+        )
     if (
         any(not isinstance(path, str) for path in source_paths)
         or len(source_paths) != len(set(source_paths))
@@ -1490,18 +1503,17 @@ def require_production_rollback_compatibility(
         raise PublicationWorkerCompatibilityError(
             "production rollback requires the exact verifier-v2 payload"
         )
-    verify = (
-        verify_p1_recovery_rollback_v3 if production.rollback_verifier_abi == ROLLBACK_VERIFIER_ABI_V3
-        else verify_p1_recovery_rollback_v2
-    )
+    routes = _production_routes_from_lock(launch_lock, observed_launch_lock_sha256)
+    verify = {
+        ROLLBACK_VERIFIER_ABI_V2: verify_p1_recovery_rollback_v2,
+        ROLLBACK_VERIFIER_ABI_V3: verify_p1_recovery_rollback_v3,
+        ROLLBACK_VERIFIER_ABI_V4: verify_p1_recovery_rollback_v4,
+    }[production.rollback_verifier_abi]
     result = verify(
         database_url,
         workspace_id=workspace_id,
         route_authority=route_authority,
         temporal_readback=temporal_readback,
-    )
-    routes = _production_routes_from_lock(
-        launch_lock, observed_launch_lock_sha256
     )
     from salience.cycles.production_routing import route_manifest_sha256
 
@@ -1642,13 +1654,14 @@ def require_publication_worker_compatibility_from_environment(
             from salience.cycles.p1_recovery_rollback import (
                 read_p1_recovery_rollback_inventory_v2,
                 read_p1_recovery_rollback_inventory_v3,
+                read_p1_recovery_rollback_inventory_v4,
             )
 
-            read = (
-                read_p1_recovery_rollback_inventory_v3
-                if lock.production.rollback_verifier_abi == ROLLBACK_VERIFIER_ABI_V3
-                else read_p1_recovery_rollback_inventory_v2
-            )
+            read = {
+                ROLLBACK_VERIFIER_ABI_V2: read_p1_recovery_rollback_inventory_v2,
+                ROLLBACK_VERIFIER_ABI_V3: read_p1_recovery_rollback_inventory_v3,
+                ROLLBACK_VERIFIER_ABI_V4: read_p1_recovery_rollback_inventory_v4,
+            }[lock.production.rollback_verifier_abi]
             read(database_url, workspace_id=rollback_workspace_id)
         except Exception as error:
             raise PublicationWorkerCompatibilityError(

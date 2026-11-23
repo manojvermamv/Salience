@@ -33,9 +33,11 @@ _HEX_64 = re.compile(r"^[0-9a-f]{64}$")
 _PRODUCTION_MIGRATION_HEAD = "0051_p1_recovery_rollback_v2"
 _ROLLBACK_VERIFIER_ABI_V2 = "salience.p1-recovery-rollback-verifier.v2"
 _PRODUCTION_LIFECYCLE_HEAD = "0053_p1_recovery_rollback_v3"
+_PRODUCTION_OPENING_HEAD = "0055_p1_recovery_open_rollback_v4"
 _ROLLBACK_VERIFIER_ABIS = {
     _PRODUCTION_MIGRATION_HEAD: _ROLLBACK_VERIFIER_ABI_V2,
     _PRODUCTION_LIFECYCLE_HEAD: "salience.p1-recovery-rollback-verifier.v3",
+    _PRODUCTION_OPENING_HEAD: "salience.p1-recovery-rollback-verifier.v4",
 }
 _PRODUCTION_LOCK_QUALIFICATION = "development-only"
 _EXTERNAL_PRODUCTION_TRUST_DIGEST = None
@@ -63,6 +65,14 @@ _REQUIRED_PRODUCTION_V3_SOURCE_PATHS = {
     "migrations/versions/0053_p1_recovery_rollback_v3.py",
     "src/salience/cycles/_production_recovery_case_commands.py",
     "src/salience/cycles/_production_recovery_control.py",
+}
+_RECOVERY_SOURCE_PATHS_BY_HEAD = {
+    _PRODUCTION_LIFECYCLE_HEAD: _REQUIRED_PRODUCTION_V3_SOURCE_PATHS,
+    _PRODUCTION_OPENING_HEAD: _REQUIRED_PRODUCTION_V3_SOURCE_PATHS | {
+        "migrations/versions/0054_p1_recovery_case_opening.py",
+        "migrations/versions/0055_p1_recovery_open_rollback_v4.py",
+        "src/salience/cycles/_production_recovery_case_opening.py",
+    },
 }
 _REQUIRED_IMPORT_MODULES = {
     "salience.cycles.publication_recovery_compatibility",
@@ -406,8 +416,7 @@ def _verify_pin(lock: dict) -> Path:
     if lock.get("schema_version") == "salience.publication-worker-launch-lock.v2":
         required_source_paths.update(_REQUIRED_PRODUCTION_V2_SOURCE_PATHS)
         required_import_modules.update(_REQUIRED_PRODUCTION_V2_IMPORT_MODULES)
-        if production["migration_head"] == _PRODUCTION_LIFECYCLE_HEAD:
-            required_source_paths.update(_REQUIRED_PRODUCTION_V3_SOURCE_PATHS)
+        required_source_paths.update(_RECOVERY_SOURCE_PATHS_BY_HEAD.get(production["migration_head"], ()))
     if len(source_names) != len(set(source_names)) or not required_source_paths <= set(source_names):
         raise LauncherError("publication worker source manifest is incomplete")
     source_manifest = (json.dumps(source_files, sort_keys=True, separators=(",", ":")) + "\n").encode()
