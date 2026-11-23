@@ -66,6 +66,8 @@ python -m pytest -q \
 
 The focused run passed all 54 tests against disposable PostgreSQL and read back `0053_p1_recovery_rollback_v3` at head. The tests cover function-only deadline execution and replay, fresh authority after a cleared stop, production case commands, and rollback rejection when canonical evidence drifts. The route and Temporal authorities are injected fixtures.
 
+The migration compatibility follow-up passed 15 focused PostgreSQL tests. The two generation-reissue races now use the guarded production deadline controller. The historical v2 evidence tests seed an isolated database at `0050`, clone it, and replay only `0051`. The installed-image head check requires a single `0053` head.
+
 ### Local image and Compose restart rehearsal
 
 On November 23, the local build used a clean detached checkout at `8c2cd7c3ba46be5886f29636a9fe54017f43ee6b` and tree `2ff435f0b546eca34b4a7a06d62f7138a59444a1`. The tracked Dockerfile built the amd64 image from its pinned Python base. The launch-lock builder verified the retained wheel and installed application files against the commit and pinned the interpreter read from that image.

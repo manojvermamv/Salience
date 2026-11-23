@@ -1344,7 +1344,7 @@
     },
     {
       "path": "tests/integration/test_p1_production_policy_revocation.py",
-      "sha256": "7da8ccdf7d7cfaed2c3fea6a598d112788c4c6e50985bce67cf937cf0d3a620a"
+      "sha256": "a83c6a17e7cbb9d4cc4194422b157a1055279095eb378d9c5818d9d6a0969a2c"
     },
     {
       "path": "tests/integration/test_p1_production_recovery.py",
@@ -1460,7 +1460,7 @@
     },
     {
       "path": "tests/integration/test_v4_migrations.py",
-      "sha256": "469dfdba64d480e341957de82db490da6db4cff35745107cb6a14d9f46012ba0"
+      "sha256": "824ccc3ed3de19946c196c77ce5c7ca218d6edd1a0796e4ebd262ecb0eccffd0"
     },
     {
       "path": "tests/integration/test_v4_native_publication_schedules.py",

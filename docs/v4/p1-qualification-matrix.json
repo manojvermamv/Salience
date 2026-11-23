@@ -1226,7 +1226,7 @@
   "production_effects_enabled": false,
   "RG0": "HELD",
   "RG1": "HELD",
-  "source_lock_sha256": "97366799657e9cf5fa8be38ba0e4858e88a406fbd63f5508aac766f354c25175",
+  "source_lock_sha256": "c65b675096841ae4e80c45297701c7c0e71956a0633dc803b98b97b4393c9931",
   "verifiers": {
     "R02": [
       "tests/e2e/test_v4_worker_upgrade.py",
@@ -3368,7 +3368,7 @@
     "compose_worker_restart": "SKIPPED"
   },
   "current_p1_follow_up": {
-    "source_lock_sha256": "97366799657e9cf5fa8be38ba0e4858e88a406fbd63f5508aac766f354c25175",
+    "source_lock_sha256": "c65b675096841ae4e80c45297701c7c0e71956a0633dc803b98b97b4393c9931",
     "scope": "Local development checkout with injected targets and authorities",
     "artifact_build": "PASS_FIXTURE_ONLY",
     "external_rows_not_run": 22,

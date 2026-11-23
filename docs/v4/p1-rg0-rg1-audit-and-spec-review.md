@@ -589,3 +589,13 @@ This update records a fixture image and restart rehearsal using source `8c2cd7c3
 | `docs/v4/validation.md` | `b700dfed061fbb332509c36e1202565903a932ddf0687d7f4f9a35d70e97288b` |
 | `docs/v4/p1-qualification-matrix.json` | `1c9eea0d3071421fce0b319d28d8d1beb58d3d0d801f92db5e4cfd0ec58cdce6` |
 | `docs/v4/test_checks.py` | `1ece1a194329ce088db5660f50a36eeab843a4e8d426ec5c587a055bbbbfc9e6` |
+
+## P1 migration compatibility evidence hashes — 2026-11-23
+
+This update records the historical v2 test isolation and the guarded deadline race tests. [Verification and scope](validation.md#production-case-commands-and-rollback-verifier-v3)
+
+| Path | SHA-256 |
+| --- | --- |
+| `docs/v4/evidence-lock.json` | `c65b675096841ae4e80c45297701c7c0e71956a0633dc803b98b97b4393c9931` |
+| `docs/v4/p1-qualification-matrix.json` | `1b983ceb5c9f14d3ee7080e6f8e90bbc03334302dfce598b931bf6975a72f239` |
+| `docs/v4/validation.md` | `f8a1c28b84d2a586a0cc67430ac3f51ad7f38b76dc234a201858f58769967c0a` |

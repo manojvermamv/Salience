@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import contextmanager
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from hashlib import sha256
 import json
+import os
 import re
 import time
 from threading import Event, Thread
@@ -26,6 +28,7 @@ from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import InMemoryMetricReader
 from temporalio.exceptions import ApplicationError
 
+from salience.cycles import production_recovery as recovery
 from salience.cycles.governance import CycleGovernance
 from salience.cycles.production_dispatch import (
     ProductionAuthorizationDenied,
@@ -655,23 +658,39 @@ def _wait_for_pg_lock(database, application_name, timeout=3.0):
 
 
 def _start_due_case_transition(case, proof, application_name, entered, release):
-    service = CycleGovernance(
-        make_conninfo(case["database"], application_name=application_name),
-        workspace_id=case["workspace_id"],
-        subject_id=case["subject_id"],
+    class PausingRepository(recovery.ProductionRecoveryWorkRepository):
+        @contextmanager
+        def _connect(self):
+            with super()._connect() as connection:
+                yield connection
+                # Hold the successful production controller transaction open.
+                entered.set()
+                assert release.wait(timeout=5)
+
+    class DeadlineAuthority:
+        def authorize_deadline_wake(self, work, source, action, key):
+            assert work.work_id == proof["work_id"]
+            assert source["case_id"] == proof["case_id"] and action == "deadline_suspend"
+            return recovery.ProductionRecoveryDecision(
+                allowed=True,
+                decision_id=uuid4(),
+                route_decision_id=uuid4(),
+                policy_revision=1,
+                stop_revision=proof["goal_stop_revision"],
+                workspace_stop_revision=proof["workspace_stop_revision"],
+            )
+
+        def authorize_no_effect_reissue(self, *_args):
+            raise AssertionError("deadline transition does not authorize a generation")
+
+    controller = recovery.ProductionRecoveryCaseController(
+        PausingRepository(make_conninfo(case["database"], application_name=application_name)),
+        authority=DeadlineAuthority(),
+        commands=None,
     )
 
     def transition():
-        # Hold the canonical case transition's transaction open after its update
-        # so dispatch must serialize against the case and cycle rows.
-        with psycopg.connect(
-            make_conninfo(case["database"], application_name=application_name),
-            row_factory=dict_row,
-        ) as connection:
-            result = service._escalate_due(connection, proof["case_id"])
-            entered.set()
-            assert release.wait(timeout=5)
-            return result
+        return controller.wake_deadline(proof["work_id"])
 
     return transition
 
@@ -687,6 +706,7 @@ def _insert_task7_no_effect_command(
     """Seed a migration-valid Task 7 event payload for a focused dispatch test."""
     work_id, case_id, event_id = uuid4(), uuid4(), uuid4()
     observation_id = uuid4()
+    deadline = case_deadline or datetime.now(timezone.utc) + timedelta(days=1)
     stage_decision_id, policy_decision_id, route_decision_id = (
         uuid4() for _ in range(3)
     )
@@ -875,7 +895,7 @@ def _insert_task7_no_effect_command(
                 request.operation_id,
                 "3" * 64,
                 request.subject_id,
-                case_deadline or (datetime.now(timezone.utc) + timedelta(days=1)),
+                deadline,
             ),
         )
         connection.execute(
@@ -888,7 +908,7 @@ def _insert_task7_no_effect_command(
                       recipient_profile_revision)
                VALUES(%s,'cycle_case',%s,%s,%s,%s,%s,%s,%s,1,1,%s,%s,%s,%s,
                       'unknown_effect','reconciling',%s,%s,
-                      clock_timestamp()+interval '1 day',1,1)""",
+                      %s,1,1)""",
             (
                 work_id,
                 case_id,
@@ -904,6 +924,7 @@ def _insert_task7_no_effect_command(
                 current["account_id"],
                 fingerprint,
                 "3" * 64,
+                deadline,
             ),
         )
         enrollment_join = connection.execute(
@@ -3014,30 +3035,27 @@ def _drop_database_for_task12(source, name):
         )
 
 
-def _prepare_task12_0050_migration_clone(rollback_database):
-    """Restore the cloned schema to 0050 before replaying migration 0051."""
-    with psycopg.connect(rollback_database) as connection:
-        # These clones start at the current 0051 head. Drop the dependent
-        # inventory first, then every function owned or replaced by 0051.
-        connection.execute(
-            "DROP FUNCTION public.v4_p1_recovery_rollback_inventory_v2(uuid)"
-        )
-        connection.execute(
-            "DROP FUNCTION public.v4_p1_rollback_production_hold_matches_v1(uuid)"
-        )
-        connection.execute(
-            "DROP FUNCTION public.v4_p1_rollback_issue_event_matches_v1(uuid)"
-        )
-        connection.execute(
-            "DROP FUNCTION public.v4_p1_rollback_claim_event_matches_v1(uuid)"
-        )
-        connection.execute(
-            "UPDATE alembic_version SET version_num='0050_p1_production_dispatch_reissue'"
-        )
+@pytest.fixture(scope="module")
+def pre_rollback_v2_database():
+    migration_tests = import_module("test_v4_migrations")
+    source = os.environ["TEST_DATABASE_URL"]
+    name, database = migration_tests._create_migration_database(source, "rollback_v2_before_")
+    try:
+        upgraded = migration_tests._migration(database, "upgrade", "0050_p1_production_dispatch_reissue")
+        assert upgraded.returncode == 0, upgraded.stdout + upgraded.stderr
+        yield database
+    finally:
+        migration_tests._drop_migration_database(source, name)
 
 
-def test_0051_rollback_inventory_binds_distinct_issue_and_claim_decisions(accounting):
-    case, _ = _production_rollback_case(accounting)
+@pytest.fixture
+def rollback_v2_accounting(pre_rollback_v2_database, monkeypatch, request):
+    monkeypatch.setenv("TEST_DATABASE_URL", pre_rollback_v2_database)
+    return request.getfixturevalue("accounting")
+
+
+def test_0051_rollback_inventory_binds_distinct_issue_and_claim_decisions(rollback_v2_accounting):
+    case, _ = _production_rollback_case(rollback_v2_accounting)
     issued = case["dispatch"].issue_permit(case["request"])
     _insert_task7_no_effect_command(case, case["request"])
     claimed = case["dispatch"].claim_permit(case["operation_id"], issued.permit_id)
@@ -3064,9 +3082,10 @@ def test_0051_rollback_inventory_binds_distinct_issue_and_claim_decisions(accoun
         case["database"], "task12_0051_claim_inventory_"
     )
     try:
-        _prepare_task12_0050_migration_clone(rollback_database)
         migration_tests = import_module("test_v4_migrations")
-        upgraded = migration_tests._migration(rollback_database, "upgrade", "head")
+        upgraded = migration_tests._migration(
+            rollback_database, "upgrade", "0051_p1_recovery_rollback_v2",
+        )
         assert upgraded.returncode == 0, upgraded.stdout + upgraded.stderr
 
         with psycopg.connect(rollback_database, row_factory=dict_row) as connection:
@@ -3158,9 +3177,9 @@ def test_0051_rollback_inventory_binds_distinct_issue_and_claim_decisions(accoun
     ),
 )
 def test_0051_rollback_inventory_rejects_claim_event_payload_drift(
-    accounting, field, corrupt_value
+    rollback_v2_accounting, field, corrupt_value
 ):
-    case, _ = _production_rollback_case(accounting)
+    case, _ = _production_rollback_case(rollback_v2_accounting)
     issued = case["dispatch"].issue_permit(case["request"])
     _insert_task7_no_effect_command(case, case["request"])
     claimed = case["dispatch"].claim_permit(case["operation_id"], issued.permit_id)
@@ -3187,9 +3206,10 @@ def test_0051_rollback_inventory_rejects_claim_event_payload_drift(
         case["database"], "task12_0051_claim_payload_"
     )
     try:
-        _prepare_task12_0050_migration_clone(rollback_database)
         migration_tests = import_module("test_v4_migrations")
-        upgraded = migration_tests._migration(rollback_database, "upgrade", "head")
+        upgraded = migration_tests._migration(
+            rollback_database, "upgrade", "0051_p1_recovery_rollback_v2",
+        )
         assert upgraded.returncode == 0, upgraded.stdout + upgraded.stderr
 
         with psycopg.connect(rollback_database, row_factory=dict_row) as connection:
@@ -3224,16 +3244,17 @@ def test_0051_rollback_inventory_rejects_claim_event_payload_drift(
     "drift",
     ["omitted_required_scopes", "unknown_field", "malformed_database_time", "future_database_time"],
 )
-def test_0051_rollback_inventory_rejects_permit_issue_event_drift(accounting, drift):
-    case, _ = _production_rollback_case(accounting)
+def test_0051_rollback_inventory_rejects_permit_issue_event_drift(rollback_v2_accounting, drift):
+    case, _ = _production_rollback_case(rollback_v2_accounting)
     issued = case["dispatch"].issue_permit(case["request"])
     clone_name, rollback_database = _clone_database_for_task12(
         case["database"], "task14_0051_issue_payload_"
     )
     try:
-        _prepare_task12_0050_migration_clone(rollback_database)
         migration_tests = import_module("test_v4_migrations")
-        upgraded = migration_tests._migration(rollback_database, "upgrade", "head")
+        upgraded = migration_tests._migration(
+            rollback_database, "upgrade", "0051_p1_recovery_rollback_v2",
+        )
         assert upgraded.returncode == 0, upgraded.stdout + upgraded.stderr
 
         with psycopg.connect(rollback_database, row_factory=dict_row) as connection:
