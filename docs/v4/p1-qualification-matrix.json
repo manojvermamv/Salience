@@ -3370,12 +3370,45 @@
   "current_p1_follow_up": {
     "source_lock_sha256": "97366799657e9cf5fa8be38ba0e4858e88a406fbd63f5508aac766f354c25175",
     "scope": "Local development checkout with injected targets and authorities",
-    "artifact_build": "NOT RUN",
+    "artifact_build": "PASS_FIXTURE_ONLY",
     "external_rows_not_run": 22,
     "external_final_audit": "NOT RUN",
-    "production_recovery_case_lifecycle": "Fixture-verified case commands and rollback ABI v3. Deployed resume handoff and fresh permit remain open.",
+    "production_recovery_case_lifecycle": "Fixture-verified commands and rollback ABI v3. Production case opening, workflow handoff, and policy for a fresh expired-unclaimed permit remain open.",
     "handoff": "docs/v4/progress.md#current-state",
-    "migration_head": "0053_p1_recovery_rollback_v3"
+    "migration_head": "0053_p1_recovery_rollback_v3",
+    "external_artifact_qualification": "NOT RUN",
+    "fixture_image_rehearsal": {
+      "application_commit": "8c2cd7c3ba46be5886f29636a9fe54017f43ee6b",
+      "application_tree": "2ff435f0b546eca34b4a7a06d62f7138a59444a1",
+      "wheel_sha256": "1f1c33125709c5e32562657659fdf1218602e6b91b45c2e0a75de53291512ff1",
+      "local_image_id": "sha256:ea4b7d522dc50a497f1d5c38566191d7f535e85a2a13eda821d5f640a5868e6d",
+      "fixture_launch_lock_sha256": "b9bbea3aa38a94c7759f5d9ca457b28442a4f0d83f12b27a27c82bf310f65694",
+      "development_route_lock_sha256": "969e1d602f83c7a197a93487de171894fc20047160c3f3610f29bca024c0b99d",
+      "rollback_verifier_abi": "salience.p1-recovery-rollback-verifier.v3",
+      "migration_head": "0053_p1_recovery_rollback_v3",
+      "compose_worker_restart": {
+        "status": "succeeded",
+        "provider_effect_calls": 1,
+        "reconciled": true,
+        "canonical_checkpoint_count": 2,
+        "canonical_effect_count": 1
+      },
+      "production_launcher_denials": {
+        "current": "UNPROVISIONED_PRODUCTION_TRUST",
+        "rollback_restart": "AUTHENTICATED_EXECUTOR_REQUIRED"
+      },
+      "image_amd64_manifest_sha256": "sha256:fc00dfc7fb1daa3d60b73c1808a9a72cf7dfb428ca5610a677a9655d9089a2ca",
+      "image_archive_sha256": "3f7acf3751ca88a8157646a1a71dfb66dbc13e399e47016796f694494caf02a0",
+      "verified_oci_blobs": 15,
+      "installed_rollback_fixture_readback": {
+        "inventory_sha256": "a1663e74eac30fdf903983c55316f760e9aec6d108cd426d7c7633bdcee8cbb3",
+        "readback_sha256": "14ca0476beccbb680b84117d0b7861acd3e6e6b0cfd93e249cdb22838d87ac9c",
+        "scoped_route_claims": 1,
+        "scoped_temporal_readbacks": 1,
+        "unavailable_route": "DENIED"
+      },
+      "configured_production_api": "DENIED"
+    }
   },
   "published_p1_follow_up_ci": {
     "head_commit": "59d863c05804f0c7a9d240f3d6ca5923ddb1a586",

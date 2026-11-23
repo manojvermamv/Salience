@@ -904,7 +904,35 @@ class GateChecks(unittest.TestCase):
         current = matrix["current_p1_follow_up"]
         lock_path = Path(__file__).with_name("evidence-lock.json")
         self.assertEqual(current["source_lock_sha256"], hashlib.sha256(lock_path.read_bytes()).hexdigest())
-        self.assertEqual(current["artifact_build"], "NOT RUN")
+        self.assertEqual(current["artifact_build"], "PASS_FIXTURE_ONLY")
+        self.assertEqual(current["external_artifact_qualification"], "NOT RUN")
+        fixture = current["fixture_image_rehearsal"]
+        self.assertRegex(fixture["application_commit"], r"^[a-f0-9]{40}$")
+        self.assertRegex(fixture["application_tree"], r"^[a-f0-9]{40}$")
+        self.assertRegex(fixture["local_image_id"], r"^sha256:[a-f0-9]{64}$")
+        for key in ("wheel_sha256", "image_archive_sha256", "fixture_launch_lock_sha256", "development_route_lock_sha256"):
+            self.assertRegex(fixture[key], r"^[a-f0-9]{64}$")
+        self.assertRegex(fixture["image_amd64_manifest_sha256"], r"^sha256:[a-f0-9]{64}$")
+        self.assertEqual(fixture["verified_oci_blobs"], 15)
+        self.assertEqual(fixture["configured_production_api"], "DENIED")
+        rollback = fixture["installed_rollback_fixture_readback"]
+        self.assertRegex(rollback["inventory_sha256"], r"^[a-f0-9]{64}$")
+        self.assertRegex(rollback["readback_sha256"], r"^[a-f0-9]{64}$")
+        self.assertEqual(rollback["scoped_route_claims"], rollback["scoped_temporal_readbacks"])
+        self.assertEqual(rollback["scoped_route_claims"], 1)
+        self.assertEqual(rollback["unavailable_route"], "DENIED")
+        self.assertEqual(fixture["migration_head"], current["migration_head"])
+        self.assertEqual(fixture["compose_worker_restart"], {
+            "status": "succeeded",
+            "provider_effect_calls": 1,
+            "reconciled": True,
+            "canonical_checkpoint_count": 2,
+            "canonical_effect_count": 1,
+        })
+        self.assertEqual(fixture["production_launcher_denials"], {
+            "current": "UNPROVISIONED_PRODUCTION_TRUST",
+            "rollback_restart": "AUTHENTICATED_EXECUTOR_REQUIRED",
+        })
         self.assertEqual(current["external_rows_not_run"], 22)
         self.assertEqual((matrix["RG0"], matrix["RG1"]), ("HELD", "HELD"))
         hosted = matrix["published_fixture_ci"]

@@ -578,3 +578,14 @@ This update binds the recovery command transactions and the successor rollback v
 | `docs/v4/validation.md` | `12bed5ba31661fc2dbe2c07708b4d5e9e9be3f68a9e39e27f2baf3bf9808af0e` |
 | `docs/v4/evidence-lock.json` | `97366799657e9cf5fa8be38ba0e4858e88a406fbd63f5508aac766f354c25175` |
 | `docs/v4/p1-qualification-matrix.json` | `ecf4a12e4de0064d823d7b69d8b305d9fb010db5645023381281fd0c535d16b8` |
+
+## Local image and restart evidence hashes — 2026-11-23
+
+This update records a fixture image and restart rehearsal using source `8c2cd7c3ba46be5886f29636a9fe54017f43ee6b`. [Verification and scope](validation.md#local-image-and-compose-restart-rehearsal)
+
+| Path | SHA-256 |
+| --- | --- |
+| `docs/v4/progress.md` | `a79ba51becca4c5e9a6fc47b4d4bf346ef9ed3b71f000ed53302268a3855bfb9` |
+| `docs/v4/validation.md` | `b700dfed061fbb332509c36e1202565903a932ddf0687d7f4f9a35d70e97288b` |
+| `docs/v4/p1-qualification-matrix.json` | `1c9eea0d3071421fce0b319d28d8d1beb58d3d0d801f92db5e4cfd0ec58cdce6` |
+| `docs/v4/test_checks.py` | `1ece1a194329ce088db5660f50a36eeab843a4e8d426ec5c587a055bbbbfc9e6` |

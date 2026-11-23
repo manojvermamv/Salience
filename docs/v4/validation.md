@@ -66,6 +66,25 @@ python -m pytest -q \
 
 The focused run passed all 54 tests against disposable PostgreSQL and read back `0053_p1_recovery_rollback_v3` at head. The tests cover function-only deadline execution and replay, fresh authority after a cleared stop, production case commands, and rollback rejection when canonical evidence drifts. The route and Temporal authorities are injected fixtures.
 
+### Local image and Compose restart rehearsal
+
+On November 23, the local build used a clean detached checkout at `8c2cd7c3ba46be5886f29636a9fe54017f43ee6b` and tree `2ff435f0b546eca34b4a7a06d62f7138a59444a1`. The tracked Dockerfile built the amd64 image from its pinned Python base. The launch-lock builder verified the retained wheel and installed application files against the commit and pinned the interpreter read from that image.
+
+| Artifact | Digest |
+| --- | --- |
+| Wheel SHA-256 | `1f1c33125709c5e32562657659fdf1218602e6b91b45c2e0a75de53291512ff1` |
+| Local Docker image ID | `sha256:ea4b7d522dc50a497f1d5c38566191d7f535e85a2a13eda821d5f640a5868e6d` |
+| amd64 image manifest SHA-256 | `sha256:fc00dfc7fb1daa3d60b73c1808a9a72cf7dfb428ca5610a677a9655d9089a2ca` |
+| Saved image archive SHA-256 | `3f7acf3751ca88a8157646a1a71dfb66dbc13e399e47016796f694494caf02a0` |
+| Fixture launch lock SHA-256 | `b9bbea3aa38a94c7759f5d9ca457b28442a4f0d83f12b27a27c82bf310f65694` |
+| Development route launch lock SHA-256 | `969e1d602f83c7a197a93487de171894fc20047160c3f3610f29bca024c0b99d` |
+
+The saved archive’s OCI index references the rehearsed image ID. All 15 referenced manifest, config, and layer blobs matched their digests.
+
+The disposable Compose project used the prebuilt image for migration, API, worker, and mock provider. PostgreSQL reported `0053_p1_recovery_rollback_v3`. The configured fixture API returned HTTP 200 from `/health/ready`. The existing `run_compose_restart_scenario` crashed the worker after mock provider acceptance and restarted the same container with the same image and read-only v1 control bundle. The workflow succeeded with one mock provider acceptance, one canonical effect, two canonical checkpoints, and a recorded reconciliation.
+
+The development route lock pinned `salience.p1-recovery-rollback-verifier.v3` to that migration head. In a network-disabled container using the same image, the external entry point exited 78 for current routed startup without the production trust digest and for rollback restart without an authenticated executor. The configured API in the same image also denied production mode. The installed v3 verifier read the disposable PostgreSQL rollback inventory with one injected route claim and one injected Temporal readback. It denied an unavailable route without changing the database inventory digest. Production rollback execution and external qualification still require their trusted authorities and the approved target.
+
 ## Recorded Task34 build and Task35 checkout qualification — 2026-10-29
 
 Task34 built from source `546ac4ed794afc123ea02586a37d4a4457590582` (tree `278e2bbf074fdf07b701f87f925c537dd916e118`). Its artifact lock commit `fe6b3795ce4453beb6c6bbafcc20cd3be91b3b87` (tree `124037b25c754751e2447c7d8639800f9f35d238`) is a direct child that changes two development lock files. Two wheels and the selected OCI manifest, config, and 14 layers matched by digest. The OCI archive digests differed and the images were not loaded. The build used a cached base in a temporary Dockerfile. [Task34 report](../../.superpowers/sdd/2026-10-28-p1-remaining-production-development/task-34-build-report.md)
