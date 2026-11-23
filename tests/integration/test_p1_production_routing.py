@@ -1489,7 +1489,11 @@ def test_launcher_v2_rejects_caller_supplied_hold_lists(tmp_path, monkeypatch):
     assert process_calls == []
 
 
-def _configure_v2_rollback_launcher_main(launcher, tmp_path, monkeypatch):
+def _configure_v2_rollback_launcher_main(
+    launcher, tmp_path, monkeypatch, *,
+    migration_head="0051_p1_recovery_rollback_v2",
+    abi="salience.p1-recovery-rollback-verifier.v2",
+):
     import hashlib
     import json
 
@@ -1509,8 +1513,8 @@ def _configure_v2_rollback_launcher_main(launcher, tmp_path, monkeypatch):
         },
         "production": {
             "schema_version": "salience.p1-production-worker-launch.v2",
-            "migration_head": "0051_p1_recovery_rollback_v2",
-            "rollback_verifier_abi": "salience.p1-recovery-rollback-verifier.v2",
+            "migration_head": migration_head,
+            "rollback_verifier_abi": abi,
             "qualification": "development-only",
             "workflow_allowlist": [],
             "activity_allowlist": [],
@@ -1531,14 +1535,20 @@ def _configure_v2_rollback_launcher_main(launcher, tmp_path, monkeypatch):
     return digest
 
 
-def test_launcher_v2_runs_pre_and_post_readback_before_prior_code(tmp_path, monkeypatch):
+@pytest.mark.parametrize("migration_head,abi", [
+    ("0051_p1_recovery_rollback_v2", "salience.p1-recovery-rollback-verifier.v2"),
+    ("0053_p1_recovery_rollback_v3", "salience.p1-recovery-rollback-verifier.v3"),
+])
+def test_launcher_v2_runs_pre_and_post_readback_before_prior_code(tmp_path, monkeypatch, migration_head, abi):
     from importlib.util import module_from_spec, spec_from_file_location
 
     source = Path(__file__).resolve().parents[2] / "scripts/launch-v4-publication-worker.py"
     spec = spec_from_file_location("salience_launcher_v2_pre_post", source)
     launcher = module_from_spec(spec)
     spec.loader.exec_module(launcher)
-    _configure_v2_rollback_launcher_main(launcher, tmp_path, monkeypatch)
+    _configure_v2_rollback_launcher_main(
+        launcher, tmp_path, monkeypatch, migration_head=migration_head, abi=abi,
+    )
     monkeypatch.setenv("TEST_DATABASE_URL", "postgresql://unrelated/test-only")
     workspace_id = UUID("00000000-0000-0000-0000-000000000904")
     digest = "d" * 64
@@ -1548,7 +1558,7 @@ def test_launcher_v2_runs_pre_and_post_readback_before_prior_code(tmp_path, monk
         calls.append(("verify", scope))
         return SimpleNamespace(
             workspace_id=scope,
-            migration_head="0051_p1_recovery_rollback_v2",
+            migration_head=migration_head,
             digest=digest,
             readback_digest="f" * 64,
         )
@@ -1585,7 +1595,7 @@ def test_launcher_v2_runs_pre_and_post_readback_before_prior_code(tmp_path, monk
     def changed_verifier(scope):
         return SimpleNamespace(
             workspace_id=scope,
-            migration_head="0051_p1_recovery_rollback_v2",
+            migration_head=migration_head,
             digest=next(changed),
             readback_digest="f" * 64,
         )
@@ -1619,6 +1629,7 @@ def test_launcher_v2_runs_pre_and_post_readback_before_prior_code(tmp_path, monk
             verifier=changed_verifier,
             deployable_executor=lambda _execution: 0,
             execution=execution,
+            migration_head=migration_head,
         )
 
     changed_readbacks = iter(("a" * 64, "b" * 64))
@@ -1626,7 +1637,7 @@ def test_launcher_v2_runs_pre_and_post_readback_before_prior_code(tmp_path, monk
     def changed_readback_verifier(scope):
         return SimpleNamespace(
             workspace_id=scope,
-            migration_head="0051_p1_recovery_rollback_v2",
+            migration_head=migration_head,
             digest=digest,
             readback_digest=next(changed_readbacks),
         )
@@ -1637,6 +1648,7 @@ def test_launcher_v2_runs_pre_and_post_readback_before_prior_code(tmp_path, monk
             verifier=changed_readback_verifier,
             deployable_executor=lambda _execution: 0,
             execution=execution,
+            migration_head=migration_head,
         )
 
 

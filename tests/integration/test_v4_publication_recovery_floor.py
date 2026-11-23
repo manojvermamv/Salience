@@ -1041,7 +1041,7 @@ def test_worker_floor_rejects_unknown_pre_floor_and_ambiguous_lineages_before_re
     "case,database_revision",
     (
         ("exact-0043", "0043_complete_publication_recovery_liabilities"),
-        ("qualified-descendant", "0052_qualified_descendant"),
+        ("qualified-descendant", "0054_qualified_descendant"),
     ),
     ids=("exact-0043", "qualified-descendant"),
 )
@@ -1052,10 +1052,10 @@ def test_worker_floor_accepts_0043_and_qualified_descendant(
     if case == "qualified-descendant":
         lock = _add_migration_source(
             lock,
-            "0052_qualified_descendant.py",
+            "0054_qualified_descendant.py",
             {
-                "revision": "0052_qualified_descendant",
-                "down_revision": "0051_p1_recovery_rollback_v2",
+                "revision": "0054_qualified_descendant",
+                "down_revision": "0053_p1_recovery_rollback_v3",
             },
         )
     register_worker, database_reads, registered = _compatibility_registration_probe(
@@ -1162,8 +1162,12 @@ def test_authenticated_migration_inventory_rejects_unexpected_state(
         assert parse_calls == []
 
 
-def test_launcher_v2_lock_builder_binds_exact_final_migration_head_0051_and_verifier_abi(
-    tmp_path, monkeypatch
+@pytest.mark.parametrize("head_number,expected_head,expected_abi", [
+    (51, "0051_p1_recovery_rollback_v2", "salience.p1-recovery-rollback-verifier.v2"),
+    (53, "0053_p1_recovery_rollback_v3", "salience.p1-recovery-rollback-verifier.v3"),
+])
+def test_launcher_v2_lock_builder_binds_exact_final_migration_head_and_verifier_abi(
+    tmp_path, monkeypatch, head_number, expected_head, expected_abi,
 ):
     from salience.cycles import publication_recovery_compatibility as compatibility
     from salience.cycles.production_routing import (
@@ -1183,7 +1187,7 @@ def test_launcher_v2_lock_builder_binds_exact_final_migration_head_0051_and_veri
     assert compatibility.PRODUCTION_LOCK_QUALIFICATION == "development-only"
     builder = _lock_builder_module()
     repository_root, application_commit, wheel_path, runtime_root = _synthetic_builder_inputs(
-        tmp_path
+        tmp_path, migration_ceiling=head_number,
     )
     monkeypatch.setattr(builder, "REPOSITORY_ROOT", repository_root)
     monkeypatch.setattr(
@@ -1231,8 +1235,8 @@ def test_launcher_v2_lock_builder_binds_exact_final_migration_head_0051_and_veri
     payload = lock.production
     assert isinstance(payload, compatibility.ProductionWorkerLockPayloadV2)
     assert payload.schema_version == "salience.p1-production-worker-launch.v2"
-    assert payload.migration_head == "0051_p1_recovery_rollback_v2"
-    assert payload.rollback_verifier_abi == "salience.p1-recovery-rollback-verifier.v2"
+    assert payload.migration_head == expected_head
+    assert payload.rollback_verifier_abi == expected_abi
     assert payload.qualification == "development-only"
     assert not hasattr(payload, "external_trust_digest")
     lock_bytes = lock_path.read_bytes()
@@ -1517,13 +1521,16 @@ def test_every_current_numbered_migration_has_safe_import_surface():
     assert len({revision for revision, _parents in parsed}) == len(migration_paths)
 
 
-def _synthetic_builder_inputs(tmp_path, *, extra_migrations=()):
+def _synthetic_builder_inputs(tmp_path, *, extra_migrations=(), migration_ceiling=None):
     repo_root = tmp_path / "candidate-repository"
     runtime_root = tmp_path / "runtime-root"
     repo_root.mkdir()
     runtime_root.mkdir()
     source_data = {}
     for source_name in SOURCE_PATHS:
+        if (migration_ceiling is not None and source_name in MIGRATION_REVISION_PATHS
+                and int(Path(source_name).name[:4]) > migration_ceiling):
+            continue
         data = (ROOT / source_name).read_bytes()
         source_data[source_name] = data
         target = repo_root / source_name
@@ -1687,7 +1694,7 @@ def test_publication_worker_launch_lock_builder_accepts_valid_wheel_and_installe
     assert lock.pin.distribution_record_sha256 == _sha256(record_path.read_bytes())
 
 
-def test_publication_worker_launch_lock_builder_accepts_real_synthetic_0051_descendant(
+def test_publication_worker_launch_lock_builder_accepts_real_synthetic_0053_descendant(
     tmp_path, monkeypatch
 ):
     builder = _lock_builder_module()
@@ -1695,10 +1702,10 @@ def test_publication_worker_launch_lock_builder_accepts_real_synthetic_0051_desc
         tmp_path,
         extra_migrations=(
             (
-                "0052_qualified_builder_descendant.py",
+                "0054_qualified_builder_descendant.py",
                 {
-                    "revision": "0052_qualified_builder_descendant",
-                    "down_revision": "0051_p1_recovery_rollback_v2",
+                    "revision": "0054_qualified_builder_descendant",
+                    "down_revision": "0053_p1_recovery_rollback_v3",
                 },
             ),
         ),
@@ -1713,7 +1720,7 @@ def test_publication_worker_launch_lock_builder_accepts_real_synthetic_0051_desc
 
     assert lock.pin.application_commit == application_commit
     assert any(
-        item.path == "migrations/versions/0052_qualified_builder_descendant.py"
+        item.path == "migrations/versions/0054_qualified_builder_descendant.py"
         for item in lock.pin.source_files
     )
 
@@ -5886,7 +5893,7 @@ def test_authenticated_migration_graph_resolves_inside_site_packages(tmp_path, m
     revisions, heads = compatibility._migration_graph(verified_source_files)
 
     assert "0046_production_policy_approval_id_immutability" in revisions
-    assert heads == {"0051_p1_recovery_rollback_v2"}
+    assert heads == {"0053_p1_recovery_rollback_v3"}
     assert (
         runtime_root
         / "migrations/versions/0046_production_policy_approval_id_immutability.py"

@@ -49,6 +49,23 @@ python scripts/check-p1-external-acceptance.py \
 
 Sign the ASCII string `salience-external-acceptance-v1.1:<purpose>:<sha256>` with purpose `manifest`, `package`, or `audit`. The manifest and evidence package use the configured producer key. The independent auditor uses a different trusted key. For the audit signature, hash canonical audit JSON without `attestation` and `record_sha256`; then hash the signed record without `record_sha256` for the recorded digest. The final audit binds the same pre-audit package digest when attached later. The checker can report `READY_FOR_FINAL_AUDIT`, `FINAL_AUDIT_RECORDED`, or `NO_GO`. In all cases it reports `gate_state=UNCHANGED`. Target qualification and the release decision still require their accountable owners and the independent audit process.
 
+### Production case commands and rollback verifier v3
+
+Use the production case-controller service role to execute the typed command function installed by migration `0052`. The transaction checks the exact work binding, actor grant, policy, stage, route, stop revisions, and applicable operation approval. It records the command and events atomically. Terminalization and archive require the canonical terminal business disposition. Archive binds the reason, evidence digest, retention deadline, and actor.
+
+Grant `EXECUTE` on `v4_apply_production_recovery_case_command_v1` to the case-command role. The deadline controller uses `v4_read_production_case_deadline_v1` and `v4_suspend_production_recovery_case_v1` with its own function grants. The deadline authorization carries both current stop revisions, including after a stop is cleared. The guarded database transaction records due-time suspension and escalation together.
+
+Migration `0053` adds read-only rollback verifier ABI v3 for the exact successor head. It checks the complete workspace inventory and verifies case lineage against the command receipt, case event, scoped cycle audit, and archive. The launch lock pins the verifier ABI to its migration head. The historical `0051` head continues to use ABI v2. Routed worker startup and deployed reauthorization remain subject to independent production qualification.
+
+```bash
+python -m pytest -q \
+  tests/integration/test_p1_production_recovery_case_commands.py \
+  tests/integration/test_p1_recovery_rollback_v3.py \
+  tests/integration/test_p1_production_routing.py
+```
+
+The focused run passed all 54 tests against disposable PostgreSQL and read back `0053_p1_recovery_rollback_v3` at head. The tests cover function-only deadline execution and replay, fresh authority after a cleared stop, production case commands, and rollback rejection when canonical evidence drifts. The route and Temporal authorities are injected fixtures.
+
 ## Recorded Task34 build and Task35 checkout qualification — 2026-10-29
 
 Task34 built from source `546ac4ed794afc123ea02586a37d4a4457590582` (tree `278e2bbf074fdf07b701f87f925c537dd916e118`). Its artifact lock commit `fe6b3795ce4453beb6c6bbafcc20cd3be91b3b87` (tree `124037b25c754751e2447c7d8639800f9f35d238`) is a direct child that changes two development lock files. Two wheels and the selected OCI manifest, config, and 14 layers matched by digest. The OCI archive digests differed and the images were not loaded. The build used a cached base in a temporary Dockerfile. [Task34 report](../../.superpowers/sdd/2026-10-28-p1-remaining-production-development/task-34-build-report.md)

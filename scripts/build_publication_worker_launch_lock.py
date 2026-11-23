@@ -581,8 +581,13 @@ def build_publication_worker_launch_lock(
             parse_route_bundle,
         )
 
-        if migration_head != _compatibility.PRODUCTION_MIGRATION_HEAD:
-            raise ValueError("production launch lock requires the exact current migration head")
+        rollback_abi = _compatibility.PRODUCTION_ROLLBACK_ABIS.get(migration_head)
+        if rollback_abi is None:
+            raise ValueError("production launch lock requires an exact supported migration head")
+        if rollback_abi == _compatibility.ROLLBACK_VERIFIER_ABI_V3 and not (
+            _compatibility._REQUIRED_PRODUCTION_V3_SOURCE_PATHS <= set(tree)
+        ):
+            raise ValueError("production case lifecycle candidate omits verifier or migration source")
         try:
             routes = parse_route_bundle(route_bundle, expected_lock_sha256="0" * 64)
         except (TypeError, ValueError) as error:
@@ -686,7 +691,7 @@ def build_publication_worker_launch_lock(
             production=_compatibility.ProductionWorkerLockPayloadV2(
                 schema_version="salience.p1-production-worker-launch.v2",
                 migration_head=migration_head,
-                rollback_verifier_abi=_compatibility.ROLLBACK_VERIFIER_ABI_V2,
+                rollback_verifier_abi=rollback_abi,
                 qualification=_compatibility.PRODUCTION_LOCK_QUALIFICATION,
                 workflow_allowlist=PRODUCTION_WORKFLOW_ALLOWLIST,
                 activity_allowlist=PRODUCTION_ACTIVITY_ALLOWLIST,

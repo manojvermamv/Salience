@@ -1,6 +1,11 @@
 """Public facade for effects-disabled production recovery contracts."""
 
 from salience.cycles._production_recovery_alerts import ProductionRecoveryAlerts
+from salience.cycles._production_recovery_case_commands import (
+    ProductionRecoveryCaseAuthorization,
+    ProductionRecoveryCaseCommand,
+    ProductionRecoveryCaseReceipt,
+)
 from salience.cycles._production_recovery_control import ProductionRecoveryCaseController
 from salience.cycles._production_recovery_contracts import (
     NoEffectGenerationReissueCommand, ProductionAlertAcknowledgment,
@@ -29,7 +34,9 @@ __all__ = [
     "ProductionNoEffectAuthorization", "ProductionNoEffectReissueReceipt",
     "ProductionProviderReadContract", "ProductionRecipientProfile",
     "ProductionRecoveryAlerts", "ProductionRecoveryAuthority",
-    "ProductionRecoveryCaseController", "ProductionRecoveryCoordinator",
+    "ProductionRecoveryCaseAuthorization", "ProductionRecoveryCaseCommand",
+    "ProductionRecoveryCaseController", "ProductionRecoveryCaseReceipt",
+    "ProductionRecoveryCoordinator",
     "ProductionRecoveryDecision", "ProductionRecoveryEvent",
     "ProductionRecoveryPolicyBinding", "ProductionRecoveryReadContext",
     "ProductionRecoveryReadResult", "ProductionRecoveryWork",

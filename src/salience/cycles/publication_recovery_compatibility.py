@@ -26,9 +26,12 @@ import psycopg
 
 from salience.cycles.p1_recovery_rollback import (
     ROLLBACK_VERIFIER_ABI_V2,
+    ROLLBACK_VERIFIER_ABI_V3,
+    ROLLBACK_MIGRATION_HEAD_V3,
     RecoveryRollbackInventoryV2,
     RecoveryRollbackTemporalReadbackV2,
     verify_p1_recovery_rollback_v2,
+    verify_p1_recovery_rollback_v3,
 )
 
 if TYPE_CHECKING:
@@ -87,6 +90,12 @@ _REQUIRED_PRODUCTION_V2_SOURCE_PATHS = frozenset(
         "src/salience/workflows/temporal_readback.py",
     }
 )
+_REQUIRED_PRODUCTION_V3_SOURCE_PATHS = frozenset({
+    "migrations/versions/0052_p1_recovery_case_commands.py",
+    "migrations/versions/0053_p1_recovery_rollback_v3.py",
+    "src/salience/cycles/_production_recovery_case_commands.py",
+    "src/salience/cycles/_production_recovery_control.py",
+})
 _REQUIRED_MIGRATION_SUPPORT_PATHS = frozenset(
     {
         "alembic.ini",
@@ -217,6 +226,10 @@ class _StaticPinValidation:
     recorded_paths: frozenset[str]
 
 PRODUCTION_MIGRATION_HEAD = "0051_p1_recovery_rollback_v2"
+PRODUCTION_ROLLBACK_ABIS = {
+    PRODUCTION_MIGRATION_HEAD: ROLLBACK_VERIFIER_ABI_V2,
+    ROLLBACK_MIGRATION_HEAD_V3: ROLLBACK_VERIFIER_ABI_V3,
+}
 PRODUCTION_LOCK_QUALIFICATION = "development-only"
 PRODUCTION_EXTERNAL_TRUST_DIGEST = None
 
@@ -529,6 +542,8 @@ def _validate_lock_and_pin_static(
     if is_production_v2:
         required_source_paths.update(_REQUIRED_PRODUCTION_V2_SOURCE_PATHS)
         required_import_modules.update(_REQUIRED_PRODUCTION_V2_IMPORT_MODULES)
+        if launch_lock.production.migration_head == ROLLBACK_MIGRATION_HEAD_V3:
+            required_source_paths.update(_REQUIRED_PRODUCTION_V3_SOURCE_PATHS)
     if (
         any(not isinstance(path, str) for path in source_paths)
         or len(source_paths) != len(set(source_paths))
@@ -653,17 +668,18 @@ def _production_routes_from_lock(
         raise PublicationWorkerCompatibilityError(
             "production route launch payload schema is unsupported"
         )
-    if production.rollback_verifier_abi != ROLLBACK_VERIFIER_ABI_V2:
+    expected_abi = PRODUCTION_ROLLBACK_ABIS.get(production.migration_head)
+    if expected_abi is None:
         raise PublicationWorkerCompatibilityError(
-            "production route launch payload does not pin rollback verifier ABI v2"
+            "production route launch payload does not pin the exact migration head"
+        )
+    if production.rollback_verifier_abi != expected_abi:
+        raise PublicationWorkerCompatibilityError(
+            "production route launch rollback verifier ABI does not match its migration head"
         )
     if production.qualification != PRODUCTION_LOCK_QUALIFICATION:
         raise PublicationWorkerCompatibilityError(
             "production route candidate is not explicitly development-only"
-        )
-    if production.migration_head != PRODUCTION_MIGRATION_HEAD:
-        raise PublicationWorkerCompatibilityError(
-            "production route launch payload does not pin the exact migration head"
         )
     if production.workflow_allowlist != PRODUCTION_WORKFLOW_ALLOWLIST:
         raise PublicationWorkerCompatibilityError(
@@ -1465,7 +1481,7 @@ def require_production_rollback_compatibility(
         raise PublicationWorkerCompatibilityError(
             "authenticated production migration graph does not have the exact pinned head"
         )
-    if _database_revision(database_url) != PRODUCTION_MIGRATION_HEAD:
+    if _database_revision(database_url) != launch_lock.production.migration_head:
         raise PublicationWorkerCompatibilityError(
             "production rollback database does not have the exact pinned migration head"
         )
@@ -1474,7 +1490,11 @@ def require_production_rollback_compatibility(
         raise PublicationWorkerCompatibilityError(
             "production rollback requires the exact verifier-v2 payload"
         )
-    result = verify_p1_recovery_rollback_v2(
+    verify = (
+        verify_p1_recovery_rollback_v3 if production.rollback_verifier_abi == ROLLBACK_VERIFIER_ABI_V3
+        else verify_p1_recovery_rollback_v2
+    )
+    result = verify(
         database_url,
         workspace_id=workspace_id,
         route_authority=route_authority,
@@ -1614,18 +1634,22 @@ def require_publication_worker_compatibility_from_environment(
                 "v2 rollback restart requires one canonical workspace UUID"
             )
         _validate_lock_and_pin(lock, observed)
-        if _database_revision(database_url) != PRODUCTION_MIGRATION_HEAD:
+        if _database_revision(database_url) != lock.production.migration_head:
             raise PublicationWorkerCompatibilityError(
                 "v2 rollback database does not have the exact pinned migration head"
             )
         try:
             from salience.cycles.p1_recovery_rollback import (
                 read_p1_recovery_rollback_inventory_v2,
+                read_p1_recovery_rollback_inventory_v3,
             )
 
-            read_p1_recovery_rollback_inventory_v2(
-                database_url, workspace_id=rollback_workspace_id
+            read = (
+                read_p1_recovery_rollback_inventory_v3
+                if lock.production.rollback_verifier_abi == ROLLBACK_VERIFIER_ABI_V3
+                else read_p1_recovery_rollback_inventory_v2
             )
+            read(database_url, workspace_id=rollback_workspace_id)
         except Exception as error:
             raise PublicationWorkerCompatibilityError(
                 "in-process v2 rollback inventory is unavailable or incomplete"

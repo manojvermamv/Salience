@@ -1,6 +1,6 @@
 # Salience V4 production implementation blueprint
 
-The current P1 handoff covers local implementation through migration `0051`, fixture verification, and the production work that remains. Deployable production integration, target qualification, and the final external audit are open. [Current P1 status](progress.md#current-state)
+The current P1 handoff covers local implementation through migration `0053`, fixture verification, and the production work that remains. Deployable production integration, target qualification, and the final external audit are open. [Current P1 status](progress.md#current-state)
 
 **Initial audit/design checkpoint:** COMPLETE_REVIEWED for frozen source `7c1ddcda280b510048ad61106c406171edd64f18` and environment `18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436`; five increments REQUIRED; five designs COMPLETE_REVIEWED; implementation and target qualification NOT RUN; 22 final-entry rows remain non-PASS; RG0/RG1 HELD; Slice 7/P2 BLOCKED; production disabled; main unmerged.
 
@@ -32,7 +32,7 @@ Read this document in order and reuse completed work in the current execution sn
 <a id="current-execution"></a>
 ## Current execution snapshot
 
-[The P1 handoff](progress.md#current-state) is the current implementation and qualification record. P1 development includes policy and revocation, routed worker leases, production-bound schedule inventory and cutover, recovery and rollback verification through migration `0051`, and an external acceptance package checker. Local component and fixture evidence is available. Production composition and target evidence are still required, all 22 external checks remain `NOT RUN`, and P2 remains **BLOCKED**. For the published fixture regression and its scope, see [validation](validation.md).
+[The P1 handoff](progress.md#current-state) is the current implementation and qualification record. P1 development includes policy and revocation, routed worker leases, production-bound schedule inventory and cutover, recovery commands and rollback verification through migration `0053`, and an external acceptance package checker. Local component and fixture evidence is available. Production composition and target evidence are still required, all 22 external checks remain `NOT RUN`, and P2 remains **BLOCKED**. [Validation](validation.md)
 
 ### Initial commit-bound P1/RG0/RG1 residual-gap audit — 2026-10-27
 

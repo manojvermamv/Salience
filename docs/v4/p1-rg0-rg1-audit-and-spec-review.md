@@ -565,3 +565,16 @@ This update binds the development checkout for row-specific acceptance procedure
 | `docs/v4/test_checks.py` | `561a33f1c36dd19bdce168882e695e7e356d4eecfaa0df674294611f7b3354b4` |
 | `docs/v4/evidence-lock.json` | `61f7570218ed123b42561bd37e1e04e11c833eebc7d55d4577a1f5272148840b` |
 | `docs/v4/p1-qualification-matrix.json` | `423af674bb1770c8b4b9658a7ccd04edd6ae38e3c76302b462f47e5b11ba4b15` |
+
+## P1 recovery case and rollback handoff hashes — 2026-11-22
+
+This update binds the recovery command transactions and the successor rollback verifier. The approved target and independent audit remain open. [Verification and scope](validation.md#production-case-commands-and-rollback-verifier-v3)
+
+| Path | SHA-256 |
+| --- | --- |
+| `README.md` | `77c05d91f9015e6ee7e4b3ca993c4ab2159f4f1b24ee38c3fde13a6a2b88d3d3` |
+| `docs/v4/IMPLEMENTATION-BLUEPRINT.md` | `b16dcb243e68b90f4d4eeab95f0e493633696def8c6a3f575b71082c11190d6e` |
+| `docs/v4/progress.md` | `56fb57ad9323fa542750eeecc78fce611049b532814dacddcfb7a1f41c8559af` |
+| `docs/v4/validation.md` | `12bed5ba31661fc2dbe2c07708b4d5e9e9be3f68a9e39e27f2baf3bf9808af0e` |
+| `docs/v4/evidence-lock.json` | `97366799657e9cf5fa8be38ba0e4858e88a406fbd63f5508aac766f354c25175` |
+| `docs/v4/p1-qualification-matrix.json` | `ecf4a12e4de0064d823d7b69d8b305d9fb010db5645023381281fd0c535d16b8` |

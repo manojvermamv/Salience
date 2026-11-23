@@ -3,10 +3,18 @@
 from __future__ import annotations
 
 from dataclasses import replace
-from datetime import datetime
+from datetime import datetime, timezone
 from hashlib import sha256
 from uuid import UUID
 
+import psycopg
+from psycopg.types.json import Jsonb
+
+from salience.cycles._production_recovery_case_commands import (
+    ProductionRecoveryCaseCommand,
+    ProductionRecoveryCaseReceipt,
+    execute_case_command,
+)
 from salience.cycles._production_recovery_contracts import (
     NoEffectGenerationReissueCommand, ProductionCaseDeadlineCommand,
     ProductionDeadlineWakeReceipt, ProductionIntentDeadlineCommand,
@@ -23,6 +31,16 @@ from salience.cycles.production_dispatch import (
     ProductionPermitResult,
     ProductionRecoveryCommandReference,
 )
+from salience.observability.tracing import TraceContext
+
+
+_LEGACY_DEADLINE_REVISIONS = frozenset({
+    "0047_p1_production_recovery_work_events",
+    "0048_p1_production_schedule_bindings",
+    "0049_p1_production_recovery_decision_evidence",
+    "0050_p1_production_dispatch_reissue",
+    "0051_p1_recovery_rollback_v2",
+})
 
 
 class ProductionRecoveryCaseController:
@@ -44,6 +62,11 @@ class ProductionRecoveryCaseController:
         self.repository = repository
         self.authority = authority
         self.commands = commands
+
+    def execute_case_command(
+        self, command: ProductionRecoveryCaseCommand
+    ) -> ProductionRecoveryCaseReceipt:
+        return execute_case_command(self.repository, self.authority, command)
 
     @staticmethod
     def _verify_case_suspension(
@@ -133,6 +156,11 @@ class ProductionRecoveryCaseController:
         event = self.repository._event(event_row)
         payload = event.payload
         due_at = work.deadline if work.source_discriminant == "cycle_case" else work.due_at
+        deadline_text = (
+            due_at.astimezone(timezone.utc).isoformat()
+            if "goal_stop_revision" in payload
+            else due_at.isoformat()
+        )
         if (
             event.work_id != work.work_id
             or event.event_kind != "escalation"
@@ -140,7 +168,7 @@ class ProductionRecoveryCaseController:
             or payload.get("work_id") != str(work.work_id)
             or payload.get("source_id") != str(work.source_id)
             or payload.get("intent_id") != str(work.intent_id)
-            or payload.get("deadline") != due_at.isoformat()
+            or payload.get("deadline") != deadline_text
             or payload.get("event_key") != event.event_key
             or type(payload.get("attempt")) is not int
         ):
@@ -170,9 +198,81 @@ class ProductionRecoveryCaseController:
             self._verify_intent_wake(connection, work, event.event_key, result)
         return ProductionDeadlineWakeReceipt(event.event_id, result)
 
+    @staticmethod
+    def _read_guarded_case_deadline(connection, work_id):
+        return connection.execute(
+            """WITH source AS MATERIALIZED (
+                   SELECT public.v4_read_production_case_deadline_v1(%s) AS snapshot
+               )
+               SELECT source.snapshot-'work' AS deadline_snapshot, work.*
+               FROM source CROSS JOIN LATERAL jsonb_populate_record(
+                   NULL::public.v4_production_recovery_work, source.snapshot->'work'
+               ) AS work
+               WHERE source.snapshot IS NOT NULL""",
+            (work_id,),
+        ).fetchone()
+
+    def _wake_guarded_case_deadline(self, connection, row) -> ProductionDeadlineWakeReceipt:
+        work = self.repository._work(row)
+        snapshot = row["deadline_snapshot"]
+        recorded = snapshot["replay"]
+        if recorded is None:
+            if not snapshot["due"]:
+                raise RecoveryDeadlineNotDue("canonical recovery deadline is not due")
+            action = "deadline_suspend"
+            due_at = work.deadline.astimezone(timezone.utc)
+            key = f"deadline-wake:cycle_case:{work.source_id}:{work.source_revision}:{due_at.isoformat()}:{action}"
+            decision = self.authority.authorize_deadline_wake(work, {
+                "case_id": work.source_id,
+                "revision": work.case_revision,
+                "state": work.state,
+                "deadline": work.deadline,
+                "workspace_id": work.workspace_id,
+                "goal_id": work.goal_id,
+                "owner_id": work.owner_id,
+                "operation_id": work.operation_id,
+                "context_id": work.context_id,
+                "cycle_state": snapshot["cycle_state"],
+            }, action, key)
+            if not isinstance(decision, ProductionRecoveryDecision) or not decision.allowed:
+                raise PermissionError("current deadline command authority denied")
+            event_id = connection.execute(
+                "SELECT public.v4_suspend_production_recovery_case_v1(%s,%s,%s) AS event_id",
+                (work.work_id, key, Jsonb({
+                    "policy_decision_id": str(decision.decision_id),
+                    "policy_revision": decision.policy_revision,
+                    "route_decision_id": str(decision.route_decision_id),
+                    "stop_revision": decision.stop_revision,
+                    "workspace_stop_revision": decision.workspace_stop_revision,
+                    "traceparent": TraceContext.new_root().to_carrier()["traceparent"],
+                })),
+            ).fetchone()["event_id"]
+            readback = self._read_guarded_case_deadline(connection, work.work_id)
+            recorded = readback["deadline_snapshot"]["replay"] if readback else None
+            if recorded is None or recorded["event_id"] != str(event_id):
+                raise RecoveryEventConflict("guarded case deadline receipt failed canonical readback")
+        return ProductionDeadlineWakeReceipt(UUID(recorded["event_id"]), TypedCaseCommandReceipt(
+            case_id=work.case_id,
+            action="deadline_suspend",
+            resulting_revision=recorded["resulting_revision"],
+            command_id=UUID(recorded["command_id"]),
+        ))
+
     def wake_deadline(self, work_id: UUID) -> ProductionDeadlineWakeReceipt:
         work_id = _require_uuid(work_id, "work ID")
         with self.repository._connect() as connection:
+            guarded_role = connection.execute(
+                """SELECT has_function_privilege(to_regprocedure(
+                    'public.v4_read_production_case_deadline_v1(uuid)'), 'EXECUTE') AS allowed""",
+            ).fetchone()["allowed"]
+            if guarded_role:
+                try:
+                    guarded_row = self._read_guarded_case_deadline(connection, work_id)
+                    if guarded_row is not None:
+                        return self._wake_guarded_case_deadline(connection, guarded_row)
+                except psycopg.errors.InsufficientPrivilege as error:
+                    raise PermissionError(error.diag.message_primary) from error
+
             row = connection.execute(
                 """SELECT work.*
                    FROM v4_production_recovery_work work
@@ -207,6 +307,13 @@ class ProductionRecoveryCaseController:
                 f"deadline-wake:{work.source_discriminant}:{work.source_id}:"
                 f"{work.source_revision}:{due_at.isoformat()}:{action_kind}"
             )
+            if action_kind == "deadline_suspend":
+                deployment_revisions = connection.execute(
+                    "SELECT version_num FROM public.alembic_version"
+                ).fetchall()
+                if (len(deployment_revisions) != 1
+                    or deployment_revisions[0]["version_num"] not in _LEGACY_DEADLINE_REVISIONS):
+                    raise PermissionError("current production deadline function grant and source required")
             replay = connection.execute(
                 "SELECT * FROM v4_production_recovery_events WHERE event_key=%s",
                 (event_key,),

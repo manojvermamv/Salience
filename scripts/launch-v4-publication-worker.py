@@ -32,6 +32,11 @@ _HEX_40 = re.compile(r"^[0-9a-f]{40}$")
 _HEX_64 = re.compile(r"^[0-9a-f]{64}$")
 _PRODUCTION_MIGRATION_HEAD = "0051_p1_recovery_rollback_v2"
 _ROLLBACK_VERIFIER_ABI_V2 = "salience.p1-recovery-rollback-verifier.v2"
+_PRODUCTION_LIFECYCLE_HEAD = "0053_p1_recovery_rollback_v3"
+_ROLLBACK_VERIFIER_ABIS = {
+    _PRODUCTION_MIGRATION_HEAD: _ROLLBACK_VERIFIER_ABI_V2,
+    _PRODUCTION_LIFECYCLE_HEAD: "salience.p1-recovery-rollback-verifier.v3",
+}
 _PRODUCTION_LOCK_QUALIFICATION = "development-only"
 _EXTERNAL_PRODUCTION_TRUST_DIGEST = None
 _REQUIRED_SOURCE_PATHS = {
@@ -52,6 +57,12 @@ _REQUIRED_PRODUCTION_V2_SOURCE_PATHS = {
     "src/salience/cycles/p1_recovery_rollback.py",
     "src/salience/cycles/p1_recovery_rollback_fixtures.py",
     "src/salience/workflows/temporal_readback.py",
+}
+_REQUIRED_PRODUCTION_V3_SOURCE_PATHS = {
+    "migrations/versions/0052_p1_recovery_case_commands.py",
+    "migrations/versions/0053_p1_recovery_rollback_v3.py",
+    "src/salience/cycles/_production_recovery_case_commands.py",
+    "src/salience/cycles/_production_recovery_control.py",
 }
 _REQUIRED_IMPORT_MODULES = {
     "salience.cycles.publication_recovery_compatibility",
@@ -339,8 +350,9 @@ def _verify_pin(lock: dict) -> Path:
         if (
             production.get("schema_version")
             != "salience.p1-production-worker-launch.v2"
-            or production.get("migration_head") != _PRODUCTION_MIGRATION_HEAD
-            or production.get("rollback_verifier_abi") != _ROLLBACK_VERIFIER_ABI_V2
+            or not isinstance(production.get("migration_head"), str)
+            or production["migration_head"] not in _ROLLBACK_VERIFIER_ABIS
+            or production.get("rollback_verifier_abi") != _ROLLBACK_VERIFIER_ABIS[production["migration_head"]]
             or production.get("qualification") != _PRODUCTION_LOCK_QUALIFICATION
             or not isinstance(production.get("workflow_allowlist"), list)
             or not isinstance(production.get("activity_allowlist"), list)
@@ -394,6 +406,8 @@ def _verify_pin(lock: dict) -> Path:
     if lock.get("schema_version") == "salience.publication-worker-launch-lock.v2":
         required_source_paths.update(_REQUIRED_PRODUCTION_V2_SOURCE_PATHS)
         required_import_modules.update(_REQUIRED_PRODUCTION_V2_IMPORT_MODULES)
+        if production["migration_head"] == _PRODUCTION_LIFECYCLE_HEAD:
+            required_source_paths.update(_REQUIRED_PRODUCTION_V3_SOURCE_PATHS)
     if len(source_names) != len(set(source_names)) or not required_source_paths <= set(source_names):
         raise LauncherError("publication worker source manifest is incomplete")
     source_manifest = (json.dumps(source_files, sort_keys=True, separators=(",", ":")) + "\n").encode()
@@ -615,10 +629,12 @@ def _parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _verified_rollback_digest(result: object, workspace_id: UUID) -> str:
+def _verified_rollback_digest(
+    result: object, workspace_id: UUID, migration_head: str,
+) -> str:
     if (
         getattr(result, "workspace_id", None) != workspace_id
-        or getattr(result, "migration_head", None) != _PRODUCTION_MIGRATION_HEAD
+        or getattr(result, "migration_head", None) != migration_head
     ):
         raise LauncherError("rollback verifier returned a mismatched workspace or migration head")
     digest = getattr(result, "digest", None)
@@ -658,9 +674,10 @@ def _run_rollback_restart_v2(
     verifier,
     deployable_executor: AuthenticatedDeployableExecutor,
     execution: AuthenticatedDeployableExecution,
+    migration_head: str = _PRODUCTION_MIGRATION_HEAD,
 ) -> int:
     """Fence the authenticated deployable handoff with stable v2 readbacks."""
-    if not isinstance(workspace_id, UUID):
+    if not isinstance(workspace_id, UUID) or migration_head not in _ROLLBACK_VERIFIER_ABIS:
         raise LauncherError("rollback v2 accepts one workspace UUID scope")
     if not callable(verifier) or not callable(deployable_executor):
         raise LauncherError("rollback v2 requires verifier and authenticated deployable executor")
@@ -699,7 +716,7 @@ def _run_rollback_restart_v2(
     except Exception as error:
         raise LauncherError("pre-process rollback v2 readback failed closed") from error
     before_digests = (
-        _verified_rollback_digest(before, workspace_id),
+        _verified_rollback_digest(before, workspace_id, migration_head),
         _verified_rollback_readback_digest(before),
     )
 
@@ -715,7 +732,7 @@ def _run_rollback_restart_v2(
     except Exception as error:
         raise LauncherError("post-process rollback v2 readback failed closed") from error
     after_digests = (
-        _verified_rollback_digest(after, workspace_id),
+        _verified_rollback_digest(after, workspace_id, migration_head),
         _verified_rollback_readback_digest(after),
     )
     if after_digests != before_digests:
@@ -981,6 +998,7 @@ def main(
             verifier=rollback_verifier,
             deployable_executor=deployable_executor,
             execution=execution,
+            migration_head=lock["production"]["migration_head"],
         )
 
     environment["DATABASE_URL"] = database_url

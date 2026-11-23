@@ -1,8 +1,8 @@
-"""Read-only v2 verification for workspace-scoped production rollback starts."""
+"""Read-only verification for workspace-scoped production rollback starts."""
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime, timedelta, timezone
 import hashlib
 import json
@@ -19,6 +19,9 @@ if TYPE_CHECKING:
 ROLLBACK_VERIFIER_ABI_V2 = "salience.p1-recovery-rollback-verifier.v2"
 ROLLBACK_INVENTORY_SCHEMA_V2 = "salience.p1-recovery-rollback-inventory.v2"
 ROLLBACK_MIGRATION_HEAD_V2 = "0051_p1_recovery_rollback_v2"
+ROLLBACK_VERIFIER_ABI_V3 = "salience.p1-recovery-rollback-verifier.v3"
+ROLLBACK_INVENTORY_SCHEMA_V3 = "salience.p1-recovery-rollback-inventory.v3"
+ROLLBACK_MIGRATION_HEAD_V3 = "0053_p1_recovery_rollback_v3"
 _REASON_KEYS = ("expired_permit_receipt", "published_during_cancel")
 _INVENTORY_ARRAYS = {
     "source_identities": "source_identities",
@@ -284,35 +287,107 @@ def read_p1_recovery_rollback_inventory_v2(
     database_url: str, *, workspace_id: UUID
 ) -> RecoveryRollbackInventoryV2:
     """Read and validate the exact workspace inventory in one read-only snapshot."""
+    return _read_workspace_inventory(database_url, workspace_id, lifecycle=False)
+
+
+def validate_recovery_rollback_inventory_v3(
+    inventory: object, *, workspace_id: UUID
+) -> tuple[RecoveryRollbackRouteClaimV2, ...]:
+    if (
+        not isinstance(inventory, dict)
+        or set(inventory) != _INVENTORY_KEYS | {"case_lineage"}
+        or inventory["schema_version"] != ROLLBACK_INVENTORY_SCHEMA_V3
+        or inventory["migration_head"] != ROLLBACK_MIGRATION_HEAD_V3
+    ):
+        raise RecoveryRollbackVerificationError("rollback v3 inventory envelope is incomplete")
+    lineage = inventory["case_lineage"]
+    counts = inventory["relation_counts"]
+    if (
+        not isinstance(lineage, list)
+        or not isinstance(counts, dict)
+        or type(counts.get("production_case_lineage")) is not int
+        or counts["production_case_lineage"] != len(lineage)
+    ):
+        raise RecoveryRollbackVerificationError("rollback case lineage inventory is partial")
+    common = {key: inventory[key] for key in _INVENTORY_KEYS}
+    common["schema_version"] = ROLLBACK_INVENTORY_SCHEMA_V2
+    common["migration_head"] = ROLLBACK_MIGRATION_HEAD_V2
+    common["relation_counts"] = {key: value for key, value in counts.items() if key != "production_case_lineage"}
+    routes = validate_recovery_rollback_inventory_v2(common, workspace_id=workspace_id)
+    case_work = {
+        item["work_id"]: item
+        for item in inventory["recovery_work"]
+        if isinstance(item, dict) and item.get("source_discriminant") == "cycle_case"
+    }
+    seen = set()
+    for record in lineage:
+        if not isinstance(record, dict) or set(record) != {
+            "work_id", "case_id", "source_revision", "current_revision", "current_state",
+            "command_receipts", "archive",
+        }:
+            raise RecoveryRollbackVerificationError("rollback case lineage record is incomplete")
+        work_id = str(_uuid(record["work_id"], "case lineage work_id"))
+        work = case_work.get(work_id)
+        if (
+            work is None or work_id in seen
+            or record["case_id"] != work["source_id"]
+            or work["workspace_id"] != str(workspace_id)
+            or type(record["source_revision"]) is not int
+            or record["source_revision"] != work["source_revision"]
+            or type(record["current_revision"]) is not int
+            or record["current_revision"] < record["source_revision"]
+            or not isinstance(record["command_receipts"], list)
+            or len(record["command_receipts"]) != record["current_revision"] - record["source_revision"]
+        ):
+            raise RecoveryRollbackVerificationError("rollback case lineage differs from the workspace source")
+        seen.add(work_id)
+    if seen != case_work.keys():
+        raise RecoveryRollbackVerificationError("rollback case lineage omits a bound source")
+    return routes
+
+
+def read_p1_recovery_rollback_inventory_v3(
+    database_url: str, *, workspace_id: UUID
+) -> RecoveryRollbackInventoryV2:
+    """Read workspace inventory including authenticated case command lineage."""
+    return _read_workspace_inventory(database_url, workspace_id, lifecycle=True)
+
+
+def _read_workspace_inventory(
+    database_url: str, workspace_id: UUID, *, lifecycle: bool,
+) -> RecoveryRollbackInventoryV2:
     if not isinstance(database_url, str) or not database_url.strip():
         raise RecoveryRollbackVerificationError("rollback database URL is unavailable")
     if not isinstance(workspace_id, UUID):
         raise RecoveryRollbackVerificationError("rollback workspace UUID is required")
+    if lifecycle:
+        migration = ROLLBACK_MIGRATION_HEAD_V3
+        query = "SELECT public.v4_p1_recovery_rollback_inventory_v3(%s)"
+        validate = validate_recovery_rollback_inventory_v3
+    else:
+        migration = ROLLBACK_MIGRATION_HEAD_V2
+        query = "SELECT public.v4_p1_recovery_rollback_inventory_v2(%s)"
+        validate = validate_recovery_rollback_inventory_v2
     try:
         with psycopg.connect(database_url, connect_timeout=3) as connection:
             connection.execute(
                 "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY"
             )
             connection.execute("SET LOCAL statement_timeout='10s'")
-            head = connection.execute(
+            heads = connection.execute(
                 "SELECT version_num FROM public.alembic_version"
-            ).fetchone()
-            if head is None or head[0] != ROLLBACK_MIGRATION_HEAD_V2:
+            ).fetchall()
+            if heads != [(migration,)]:
                 raise RecoveryRollbackVerificationError(
-                    "database does not have the exact 0051 migration head"
+                    f"database does not have the exact {migration} migration head"
                 )
-            row = connection.execute(
-                "SELECT public.v4_p1_recovery_rollback_inventory_v2(%s)",
-                (workspace_id,),
-            ).fetchone()
+            row = connection.execute(query, (workspace_id,)).fetchone()
             if row is None or not isinstance(row[0], dict):
                 raise RecoveryRollbackVerificationError(
                     "workspace inventory query returned no complete envelope"
                 )
             raw_inventory = row[0]
-            route_claims = validate_recovery_rollback_inventory_v2(
-                raw_inventory, workspace_id=workspace_id
-            )
+            route_claims = validate(raw_inventory, workspace_id=workspace_id)
             from salience.cycles.p1_recovery_rollback_fixtures import (
                 read_fixture_liabilities,
             )
@@ -487,9 +562,31 @@ def verify_p1_recovery_rollback_v2(
     temporal_readback: TemporalWorkerReadback,
 ) -> RecoveryRollbackInventoryV2:
     """Require complete DB, route, and drained Temporal evidence for one scope."""
-    inventory = read_p1_recovery_rollback_inventory_v2(
-        database_url, workspace_id=workspace_id
+    return _verify_workspace_readbacks(
+        read_p1_recovery_rollback_inventory_v2(database_url, workspace_id=workspace_id),
+        route_authority, temporal_readback,
     )
+
+
+def verify_p1_recovery_rollback_v3(
+    database_url: str,
+    *,
+    workspace_id: UUID,
+    route_authority: RouteLeaseAuthority,
+    temporal_readback: TemporalWorkerReadback,
+) -> RecoveryRollbackInventoryV2:
+    """Require complete DB, lineage, route, and drained Temporal evidence."""
+    return _verify_workspace_readbacks(
+        read_p1_recovery_rollback_inventory_v3(database_url, workspace_id=workspace_id),
+        route_authority, temporal_readback,
+    )
+
+
+def _verify_workspace_readbacks(
+    inventory: RecoveryRollbackInventoryV2,
+    route_authority: RouteLeaseAuthority,
+    temporal_readback: TemporalWorkerReadback,
+) -> RecoveryRollbackInventoryV2:
     _verify_route_claims(inventory.route_claims, route_authority)
     temporal_evidence = _verify_temporal_readbacks(
         inventory.route_claims, temporal_readback
@@ -530,13 +627,8 @@ def verify_p1_recovery_rollback_v2(
         ],
     }
     readback_digest = hashlib.sha256(_canonical_bytes(readback_material)).hexdigest()
-    return RecoveryRollbackInventoryV2(
-        workspace_id=inventory.workspace_id,
-        migration_head=inventory.migration_head,
-        digest=inventory.digest,
-        inventory=inventory.inventory,
-        route_claims=inventory.route_claims,
-        fixture_liabilities=inventory.fixture_liabilities,
+    return replace(
+        inventory,
         temporal_readbacks=temporal_evidence,
         readback_digest=readback_digest,
     )

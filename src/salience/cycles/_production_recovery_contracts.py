@@ -290,6 +290,7 @@ class ProductionRecoveryDecision:
     route_decision_id: UUID
     policy_revision: int
     stop_revision: int
+    workspace_stop_revision: int | None = None
 
     def __post_init__(self) -> None:
         if type(self.allowed) is not bool:
@@ -300,6 +301,10 @@ class ProductionRecoveryDecision:
             raise ValueError("positive policy revision required")
         if type(self.stop_revision) is not int or self.stop_revision < 1:
             raise ValueError("positive stop revision required")
+        if self.workspace_stop_revision is not None and (
+            type(self.workspace_stop_revision) is not int or self.workspace_stop_revision < 1
+        ):
+            raise ValueError("positive workspace stop revision required")
 
 
 @dataclass(frozen=True, slots=True)
