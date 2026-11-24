@@ -973,6 +973,14 @@ class GateChecks(unittest.TestCase):
             self.assertEqual(claimed["budget_reservation_state_after_opening"], "reserved")
             self.assertTrue(claimed["publication_liabilities_unchanged"])
             self.assertEqual(claimed["incomplete_opening_receipt"], "DENIED")
+            self.assertRegex(claimed["live_opener_body_sha256"], r"^[a-f0-9]{64}$")
+            self.assertTrue(claimed["live_opener_security_definer"])
+            self.assertEqual(claimed["live_opener_configuration"], ["search_path=pg_catalog, public", "TimeZone=UTC"])
+            self.assertEqual(preclaim["historical_v5_on_current_head"], "DENIED")
+            self.assertEqual(
+                preclaim["preclaim_lineage_sha256"],
+                preclaim["history_preserved_across_upgrade"]["preclaim_lineage_sha256"],
+            )
         self.assertEqual(fixture["production_launcher_denials"], launcher_denials)
         self.assertEqual(current["external_rows_not_run"], 22)
         self.assertEqual((matrix["RG0"], matrix["RG1"]), ("HELD", "HELD"))

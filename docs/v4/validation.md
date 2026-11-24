@@ -115,6 +115,14 @@ Before qualification, the deployment owner needs to approve the route decision p
 
 ### Local image and Compose restart rehearsal
 
+#### Exact `0059` fixture candidate at `a4abf14`
+
+The tracked Dockerfile built the candidate from clean application commit `a4abf14013373d828797671b7d6cd7d846da79db` and tree `e73d0043a69ab92f722ef64dcb0ea196ca892b30`. The wheel SHA-256 was `1527a69024a90196ee3299f137fe045171b5ce0e42905af3ebd7951b8f102889`. The loaded image ID was `sha256:f5836829d0228ef5a7b2aebdf3e3526511ce1842e5f97ef6703a3b503370628f` and the linux/amd64 manifest digest was `sha256:724d614c93a7f247df46b7833a9f3f5dc00ffda3f8bba63f223c19cc7166bc54`. The OCI archive verified all 15 referenced blobs. The installed dependency inventory and successful `pip check` are bound to these image bytes. Transitive versions can change across builds, so use the retained image digest for this rehearsal. [Exact artifact and evidence digests](p1-qualification-matrix.json)
+
+The same image ran migration, the fixture API, the mock publisher and the worker. PostgreSQL reported `0059_p1_claimed_reserved_opening` and the API returned HTTP 200. The worker exited with code 137 after one mock acceptance and restarted in the same container. The workflow reconciled that acceptance into one canonical effect and two checkpoints.
+
+Installed rollback v6 verified the exact claimed opening with a reserved plan and preserved its original liability on replay. A separate installed test preserved the populated preclaim renewal through the upgrade from 0058 and rejected altered evidence. The historical v5 reader refused the 0059 database. Route and Temporal fixtures exercised v6 readback and missing authority denial. The network-disabled production checks exercised unprovisioned trust, the missing executor, missing readbacks and the held configured API.
+
 #### Exact `0058` fixture candidate at `1cf636a`
 
 The tracked Dockerfile built the candidate from clean application commit `1cf636a1d8216f1b75823b61a76f3fdd0fc3cc7c` and tree `cbd54e10d8498d8858a32741fddb06d9d4d8de12`. The wheel SHA-256 was `58457ad1ea94daa85b4249e5f7e6c76d0f19d0fe91689827157ee359311fbebf`. The loaded image ID was `sha256:77a23fb75087500a4d18dd5b842f5f505c8d6828dbfa7b1d20ebb2864673d694` and the linux/amd64 manifest digest was `sha256:4940196f92eff0934d0119a1306e353e6ad6723e674fa0b729b87db976d6d29a`. The OCI archive verified all 15 referenced blobs. The installed dependency inventory and successful `pip check` are bound to these image bytes. Transitive versions can change across builds, so use the retained image digest for this rehearsal. [Exact artifact and evidence digests](p1-qualification-matrix.json)

@@ -645,9 +645,9 @@ This update records canonical reserved-plan case opening and the exact v6 migrat
 | Path | SHA-256 |
 | --- | --- |
 | `docs/v4/IMPLEMENTATION-BLUEPRINT.md` | `227f18af6dd28f26e9f2220156fdcdd195aa5dd3f5f0c1d2f2ef8b8ea3182d1e` |
-| `docs/v4/progress.md` | `021762ffa101a65ccba80eb6505dd6c1fb5fae6e568b79c4766bc5eab20cdd95` |
-| `docs/v4/validation.md` | `e8c93131caea09f256097c0dccebe7f877dfe1ce0514970c9c10d0c2adac9275` |
-| `docs/v4/test_checks.py` | `a62bce3efe11ea58c0cb491d65c8ea6fc44ab41f6fd8f158d7eec292cfc15173` |
+| `docs/v4/progress.md` | `2c6721ac56672b5f5abc6afa4808a260d710ba58708f6ce94ea4abdeda32244a` |
+| `docs/v4/validation.md` | `a9d9a8ae0f7b60e11336d7a6965a4fc94a852e690a36d4cb76a18ecafb695c59` |
+| `docs/v4/test_checks.py` | `36a39c935c70e2bddfad539ffb94e2724fbc0d4d474d52455651ebb205a6ace3` |
 | `README.md` | `17c55bf2e57aa8910f911a2cd8623840509df20f40837ab9806861a66986295a` |
 | `docs/v4/evidence-lock.json` | `c5476b50e52cd949951dd5cd40ebb2efba1d861d3e9d7a67cf054f78f53dae11` |
-| `docs/v4/p1-qualification-matrix.json` | `60b95f3baffd8b97282da718cae8750e1cea9268c7a681ed906ded62a175b0db` |
+| `docs/v4/p1-qualification-matrix.json` | `33a68fa7ab1372a76bf8bafab64b2cf86619d96903fb7fae51fbabf1c2fcd116` |
