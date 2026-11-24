@@ -97,7 +97,7 @@ The same-run regressions use real Temporal and PostgreSQL, an already bound publ
 
 The last published `0055` run passed documentation verification and failed five historical regression cases. Four now exercise the specific historical downgrade guard in an isolated database, and the v2 launch test pins its graph to `0051`. All five passed together locally after the corrections. [Historical hosted run 45233815587](https://github.com/manojvermamv/Salience/actions/runs/45233815587)
 
-A claimed publication with an ambiguous result still needs authoritative remote evidence. Its canonical opening puts the cycle into reconciliation. A separate handoff must authorize the exact operation to proceed if a provider later proves no effect. Until then, the opened claimed path can retain and reconcile its evidence. [Current status](progress.md#current-state)
+Claimed recovery still has two gaps through the normal publication entry point. The opener needs to accept the exact live `reserved` plan used by publication authorization. After opening, the provider-read visibility window starts at the claim, before the original send may have started. An empty lookup after that window can race a delayed send. The claimed handoff needs proof that the original send can no longer arrive, a current typed operator and stage decision, and a guarded same-run continuation. Preserve the claimed liability and original reservation while outcome or finality is uncertain. A terminal Temporal run stays terminal. [Claimed opener](../../migrations/versions/0054_p1_recovery_case_opening.py) · [Visibility calculation](../../src/salience/cycles/_production_recovery_coordinator.py) · [Current status](progress.md#current-state)
 
 ### Proposed named P1 qualification target
 
@@ -108,6 +108,14 @@ The route authority needs a durable lease and a way to fence a decision that was
 Before qualification, the deployment owner needs to approve the route decision protocol, supply an executor and readback adapters, and stage independent trust that binds the environment to the exact candidate. The workspace and target IDs, scoped approvals, evidence producer and independent auditor need actual identities and trusted keys. The environment name is proposed and no named target has been provisioned or qualified.
 
 ### Local image and Compose restart rehearsal
+
+#### Exact `0058` fixture candidate at `1cf636a`
+
+The tracked Dockerfile built the candidate from clean application commit `1cf636a1d8216f1b75823b61a76f3fdd0fc3cc7c` and tree `cbd54e10d8498d8858a32741fddb06d9d4d8de12`. The wheel SHA-256 was `58457ad1ea94daa85b4249e5f7e6c76d0f19d0fe91689827157ee359311fbebf`. The loaded image ID was `sha256:77a23fb75087500a4d18dd5b842f5f505c8d6828dbfa7b1d20ebb2864673d694` and the linux/amd64 manifest digest was `sha256:4940196f92eff0934d0119a1306e353e6ad6723e674fa0b729b87db976d6d29a`. The OCI archive verified all 15 referenced blobs. The installed dependency inventory and successful `pip check` are bound to these image bytes. Transitive versions can change across builds, so use the retained image digest for this rehearsal. [Exact artifact and evidence digests](p1-qualification-matrix.json)
+
+The same image ran migration, the fixture API, the mock publisher and the worker. PostgreSQL reported `0058_p1_preclaim_rollback_v5` and the API returned HTTP 200. The worker exited with code 137 after one mock acceptance and restarted in the same container. The workflow reconciled that acceptance into one canonical effect and two checkpoints.
+
+An installed-image test separately opened and authorized recovery, issued generation 2, and verified its populated rollback inventory. It rejected a modified renewal receipt. Route and Temporal fixtures exercised v5 readback and missing authority denial. The network-disabled production checks exercised unprovisioned trust, the missing executor, missing readbacks and the held configured API.
 
 #### Exact `0055` fixture candidate at `b7e7499`
 

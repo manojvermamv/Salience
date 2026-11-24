@@ -948,6 +948,18 @@ class GateChecks(unittest.TestCase):
             self.assertEqual(opened["operation_permit_count_after_opening"], 1)
             self.assertEqual(opened["external_effect_state_after_opening"], "submitting")
             self.assertEqual(opened["incomplete_opening_receipt"], "DENIED")
+        if fixture["rollback_verifier_abi"].endswith(".v5"):
+            launcher_denials["rollback_without_readbacks"] = "ROUTE_AND_TEMPORAL_READBACK_REQUIRED"
+            self.assertEqual(rollback["unavailable_temporal_readback"], "DENIED")
+            self.assertEqual(fixture["worker_exit_code_before_recovery"], 137)
+            preclaim = fixture["installed_preclaim_readback"]
+            self.assertEqual(preclaim["commit"], fixture["application_commit"])
+            self.assertEqual(preclaim["image_id"], fixture["local_image_id"])
+            self.assertEqual(preclaim["migration_head"], fixture["migration_head"])
+            self.assertEqual(preclaim["production_preclaim_lineage"], 1)
+            self.assertEqual(preclaim["successor_generation"], 2)
+            self.assertEqual(preclaim["external_effect_state"], "planned")
+            self.assertEqual(preclaim["altered_renewal_payload"], "DENIED")
         self.assertEqual(fixture["production_launcher_denials"], launcher_denials)
         self.assertEqual(current["external_rows_not_run"], 22)
         self.assertEqual((matrix["RG0"], matrix["RG1"]), ("HELD", "HELD"))

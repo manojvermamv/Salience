@@ -631,8 +631,9 @@ This update records the local preclaim permit amendment, exact rollback verifier
 | Path | SHA-256 |
 | --- | --- |
 | `docs/v4/IMPLEMENTATION-BLUEPRINT.md` | `682c0c7e7cbdabce58d038f30de40095a04373d0062029bd9454d20624ea4df4` |
-| `docs/v4/progress.md` | `f3da0b3456f08e4dbcbb8ec308032f5a5aba7f523a61e14396a76ccd3eb2567b` |
-| `docs/v4/validation.md` | `5bb8acb20e46fc34d560ade5227ff12bf6b74a89297b9ce13eaa04291cdbd324` |
-| `docs/v4/test_checks.py` | `fc7b022e46e79c86d29878172ff77aee0f8c089a824e5ca5c18c4d338930d111` |
+| `docs/v4/progress.md` | `0a9e18956bc23c972ba4a1428d22776d2ee17ac603e9e940d12e298b80b6fae5` |
+| `docs/v4/validation.md` | `4582af64774c0fe4536cb20a48e7f390a6cd86e77f4f5c72d79767ec0b5824f4` |
+| `docs/v4/test_checks.py` | `c6c9bcc8f73f566271513d4c74d383fc617ee8f1100035fdf80f3c71a372e876` |
+| `README.md` | `b0374d8c22f4802c71e26549ee7f8fe13643a47e9ee8deef6b16586c06d1c0c7` |
 | `docs/v4/evidence-lock.json` | `eb3da62652859bb64cab766a0a570030ed508b7d032fa0536ce86cef7f2dee24` |
-| `docs/v4/p1-qualification-matrix.json` | `1a907f79797b78c792efcc36d8700eadf6c9c7d4471db3a5b3e59de58a7bf092` |
+| `docs/v4/p1-qualification-matrix.json` | `60fc803889180e8b64460eabb0b91ed447f62fbaaa73741ae9c3716c713edc47` |

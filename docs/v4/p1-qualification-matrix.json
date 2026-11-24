@@ -3370,7 +3370,7 @@
   "current_p1_follow_up": {
     "source_lock_sha256": "eb3da62652859bb64cab766a0a570030ed508b7d032fa0536ce86cef7f2dee24",
     "scope": "Local development checkout with injected targets and authorities",
-    "artifact_build": "NOT RUN",
+    "artifact_build": "PASS_FIXTURE_ONLY",
     "external_rows_not_run": 22,
     "external_final_audit": "NOT RUN",
     "production_recovery_case_lifecycle": "Local production-shaped case commands, claimed and expired-unclaimed opening, original-workflow preclaim resume, and rollback ABI v5. The claimed no-effect handoff and production composition remain open.",
@@ -3440,6 +3440,71 @@
       "platform": "AWS ECS/Fargate",
       "region": "us-east-1",
       "disposition": "PROPOSED_UNPROVISIONED"
+    },
+    "fixture_image_rehearsal": {
+      "application_commit": "1cf636a1d8216f1b75823b61a76f3fdd0fc3cc7c",
+      "application_tree": "cbd54e10d8498d8858a32741fddb06d9d4d8de12",
+      "wheel_sha256": "58457ad1ea94daa85b4249e5f7e6c76d0f19d0fe91689827157ee359311fbebf",
+      "local_image_id": "sha256:77a23fb75087500a4d18dd5b842f5f505c8d6828dbfa7b1d20ebb2864673d694",
+      "image_amd64_manifest_sha256": "sha256:4940196f92eff0934d0119a1306e353e6ad6723e674fa0b729b87db976d6d29a",
+      "image_archive_sha256": "ef7da2876558d4f3dae205467334dd8da3f98f92eb3b427f0eb8bf812f117e6d",
+      "verified_oci_blobs": 15,
+      "fixture_launch_lock_sha256": "4433dbccccf34b37333dd56c947648f71e33e75005215baef20056b2a311e7f3",
+      "development_route_lock_sha256": "0fe68cf0f7ac2eaf01b0c3e751ae3e2c805d72b9fb4509803fd93ef0dedafac1",
+      "rollback_verifier_abi": "salience.p1-recovery-rollback-verifier.v5",
+      "migration_head": "0058_p1_preclaim_rollback_v5",
+      "compose_worker_restart": {
+        "status": "succeeded",
+        "provider_effect_calls": 1,
+        "reconciled": true,
+        "canonical_checkpoint_count": 2,
+        "canonical_effect_count": 1
+      },
+      "worker_exit_code_before_recovery": 137,
+      "production_launcher_denials": {
+        "current": "UNPROVISIONED_PRODUCTION_TRUST",
+        "rollback_restart": "AUTHENTICATED_EXECUTOR_REQUIRED",
+        "rollback_without_readbacks": "ROUTE_AND_TEMPORAL_READBACK_REQUIRED"
+      },
+      "configured_production_api": "DENIED",
+      "installed_rollback_fixture_readback": {
+        "inventory_sha256": "546da7217552ae9329d421b0deaca1ed6a7d118740a7cdffd6d666f7083e7a55",
+        "readback_sha256": "9a50895ad1ebef5d3e73f16f482ea9b739295829c4d0d2e987f2dc851b83e631",
+        "scoped_route_claims": 1,
+        "scoped_temporal_readbacks": 1,
+        "unavailable_route": "DENIED",
+        "unavailable_temporal_readback": "DENIED",
+        "v4_history_check": null,
+        "v5_history_check": {
+          "preclaim_lineage": 0,
+          "historical_recovery_work_rows": 1,
+          "historical_v4_on_current_head": "DENIED"
+        }
+      },
+      "installed_preclaim_readback": {
+        "commit": "1cf636a1d8216f1b75823b61a76f3fdd0fc3cc7c",
+        "image_id": "sha256:77a23fb75087500a4d18dd5b842f5f505c8d6828dbfa7b1d20ebb2864673d694",
+        "migration_head": "0058_p1_preclaim_rollback_v5",
+        "rollback_verifier_abi": "salience.p1-recovery-rollback-verifier.v5",
+        "production_preclaim_lineage": 1,
+        "successor_generation": 2,
+        "external_effect_state": "planned",
+        "inventory_sha256": "80448ad93caa00f419598a63e5ebe48746e70a05252dfce474f4f86a03a291f2",
+        "readback_sha256": "e531b4a21c8485f3d4f4af2febd709faa608e88d3cd7b3542df2205375e970ff",
+        "altered_renewal_payload": "DENIED"
+      },
+      "rehearsal_evidence_sha256": {
+        "summary.json": "217b16413482327e7a1358bec60e06b1cc5319adbd8f3228971fd6a1fb601ea4",
+        "build.log": "2fcb18de717eb40668cf178378c4ecdf60eae7e0c210ab3e09525f330e5abaab",
+        "compose-rehearsal.json": "55481b00d1576edf0395044a8936ec6b988a1f5ef26888c6e13b638918956ecb",
+        "compose-observations.jsonl": "bc8965afb66038f2b1b30f0554153cbd7c50f44797af2a768c59bedf9bbc9291",
+        "installed-rollback-readback.json": "237a09370c279c3416cab91ab168cbde5e18aab0b1d7c397027db360605fd3c1",
+        "installed-preclaim-readback.json": "aea5816c4db321a2c48336bc8b79cc7f538fc4689fadf8f31bbee89d0cb8bc33",
+        "production-holds.json": "433c9346a6279baba0b504866fa49ced9d0dda28b2227b8af267988bef24e08a",
+        "image-archive-verification.json": "fe291444144c9c815f1df6b36c41e880d915b07e070a786c153798f1011d34a0",
+        "installed-python-dependencies.txt": "9e4011b3a6eec70ade369c3b531b9248bc189ce7e2e9cd82fbcd4ade1b4c914f",
+        "installed-python-dependency-check.txt": "9261363b733079a641c2e4cc9bc46ffa1d8336945a87f807b6cf68847dbc9b09"
+      }
     }
   },
   "published_p1_follow_up_ci": {
