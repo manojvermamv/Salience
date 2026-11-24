@@ -165,6 +165,7 @@ def test_notification_failure_has_finite_retries_and_visible_owner_hold(governed
         assert connection.execute("SELECT count(*) FROM v4_notification_acceptances WHERE notification_id=%s",(opened["notification_id"],)).fetchone()[0] == 0
 
 
+@pytest.mark.parametrize("cycle_database", ["0031_runtime_waits"], indirect=True)
 def test_wait_binding_and_receipts_cannot_be_rewritten_or_destructively_downgraded(governed):
     import subprocess,sys
     _,database,_,_,opened,waits = open_review(governed)
@@ -177,7 +178,8 @@ def test_wait_binding_and_receipts_cannot_be_rewritten_or_destructively_downgrad
         version = connection.execute("SELECT version_num FROM alembic_version").fetchone()[0]
         wait_snapshot = connection.execute("SELECT to_jsonb(wait) FROM v4_runtime_waits wait WHERE id=%s",(job["id"],)).fetchone()[0]
     rollback = subprocess.run([sys.executable,"-m","alembic","-x","database_url="+database,"downgrade","0030_v4_schedule_cutover"],capture_output=True,text=True)
-    assert rollback.returncode != 0 and any(message in rollback.stderr for message in ("0051_p1_recovery_rollback_v2 is irreversible","preserve durable waits","preserve runtime hold owner binding","preserve canonical delivery scope","preserve parallel agent execution history","preserve legacy dispatch identity","preserve original native schedule history","preserve original native publication schedule history","preserve original legacy publication history","preserve original legacy stage history","preserve original legacy creative history","preserve production policy and revocation authority history"))
+    assert rollback.returncode != 0
+    assert "preserve durable waits" in rollback.stderr, rollback.stderr
     with psycopg.connect(database) as connection:
         assert connection.execute("SELECT version_num FROM alembic_version").fetchone()[0] == version
         assert connection.execute("SELECT to_jsonb(wait) FROM v4_runtime_waits wait WHERE id=%s",(job["id"],)).fetchone()[0] == wait_snapshot
@@ -350,6 +352,7 @@ def test_runtime_hold_owner_must_match_the_original_start_subject(governed, late
         assert connection.execute("SELECT owner_id FROM v4_runtime_holds WHERE cycle_id=%s",(cycle,)).fetchone()[0] == service.subject_id
 
 
+@pytest.mark.parametrize("cycle_database", ["0032_runtime_hold_owner"], indirect=True)
 def test_populated_owner_binding_cannot_be_rolled_back(governed):
     import subprocess
     import sys
@@ -362,7 +365,8 @@ def test_populated_owner_binding_cannot_be_rolled_back(governed):
         version = connection.execute("SELECT version_num FROM alembic_version").fetchone()[0]
         hold_snapshot = connection.execute("SELECT to_jsonb(hold) FROM v4_runtime_holds hold WHERE cycle_id=%s",(cycle,)).fetchone()[0]
     rollback = subprocess.run([sys.executable,"-m","alembic","-x","database_url="+database,"downgrade","0031_runtime_waits"],capture_output=True,text=True)
-    assert rollback.returncode != 0 and any(message in rollback.stderr for message in ("0051_p1_recovery_rollback_v2 is irreversible","preserve runtime hold owner binding","preserve canonical delivery scope","preserve parallel agent execution history","preserve legacy dispatch identity","preserve original native schedule history","preserve original native publication schedule history","preserve original legacy publication history","preserve original legacy stage history","preserve original legacy creative history","preserve production policy and revocation authority history"))
+    assert rollback.returncode != 0
+    assert "preserve runtime hold owner binding" in rollback.stderr, rollback.stderr
     with psycopg.connect(database) as connection:
         assert connection.execute("SELECT version_num FROM alembic_version").fetchone()[0] == version
         assert connection.execute("SELECT to_jsonb(hold) FROM v4_runtime_holds hold WHERE cycle_id=%s",(cycle,)).fetchone()[0] == hold_snapshot

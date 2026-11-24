@@ -72,6 +72,7 @@ def adopt_arguments(native):
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("cycle_database", ["0037_native_schedule_sources"], indirect=True)
 async def test_native_adoption_atomic_replay_scope_and_identity(policy, monkeypatch):
     async with native_schedule(policy, monkeypatch) as n:
         service, control, database = n["service"], n["control"], n["database"]
@@ -119,15 +120,8 @@ async def test_native_adoption_atomic_replay_scope_and_identity(policy, monkeypa
             progress_snapshot=connection.execute("SELECT to_jsonb(progress) FROM v4_native_schedule_progress progress WHERE schedule_id=%s", (n["schedule_id"],)).fetchone()[0]
         result = await asyncio.to_thread(subprocess.run, [sys.executable, "-m", "alembic", "-x", "database_url="+database,
             "downgrade", "0036_legacy_cycle_dispatch"], capture_output=True, text=True)
-        assert result.returncode != 0 and any(reason in result.stderr for reason in (
-            "0051_p1_recovery_rollback_v2 is irreversible",
-            "preserve original native publication schedule history",
-            "preserve original legacy publication history",
-            "preserve original native schedule history",
-            "preserve original legacy stage history",
-            "preserve original legacy creative history",
-            "preserve production policy and revocation authority history",
-        ))
+        assert result.returncode != 0
+        assert "preserve original native schedule history" in result.stderr, result.stderr
         with psycopg.connect(database) as connection:
             assert connection.execute("SELECT version_num FROM alembic_version").fetchone()[0] == head_revision
             assert connection.execute("SELECT to_jsonb(source) FROM v4_native_schedule_sources source WHERE schedule_id=%s", (n["schedule_id"],)).fetchone()[0] == source_snapshot

@@ -14,7 +14,7 @@ from uuid import UUID
 
 from temporalio import activity, workflow
 from temporalio.common import RetryPolicy
-from temporalio.exceptions import ApplicationError
+from temporalio.exceptions import ActivityError, ApplicationError
 from temporalio.worker import Worker
 
 from salience.cycles.production_dispatch import (
@@ -22,6 +22,7 @@ from salience.cycles.production_dispatch import (
     ProductionEffectDispatch,
     PublicationEffectBinding,
     ProductionPermitRequest,
+    RouteFenceDecision,
 )
 from salience.governance.production_policy import ProductionApprovalBinding
 from salience.governance.policy import EffectClass
@@ -49,6 +50,13 @@ from salience.workflows.schedules import (
 PUBLICATION_WORKFLOW_TYPE = "GovernedPublicationWorkflow"
 MAX_PUBLICATION_ATTEMPTS = 3
 PUBLICATION_POLL_INTERVAL_SECONDS = 0.05
+PRECLAIM_RESUME_WAIT = timedelta(minutes=2)
+PRECLAIM_RESUME_POLL_INTERVAL = timedelta(seconds=2)
+PRECLAIM_RESUME_OUTCOME_UNKNOWN = "preclaim_resume_outcome_unknown"
+
+
+class _PreclaimPermitExpired(str):
+    """A local dispatcher denial for an expired, unclaimed initial permit."""
 
 
 @dataclass(frozen=True)
@@ -134,6 +142,9 @@ class PublicationWorkflowState:
     crash_at: str | None = None
     crash_reached: asyncio.Event = field(default_factory=asyncio.Event)
     crashed: bool = False
+    # A worker deployment may opt in only for explicitly verified nonmutating
+    # prepare_delivery implementations, keyed by publisher, adapter, and profile versions.
+    preclaim_resume_delivery_profiles: frozenset[tuple[str, str, int]] = frozenset()
 
 
 @dataclass(frozen=True)
@@ -204,6 +215,32 @@ class PublicationActivities:
             isinstance(self._state.provider, FixturePublisherAdapter)
             and self._adapter_for(request) is self._state.provider
         )
+
+    def _preclaim_resume_delivery_allowed(self, request: PublicationRequest) -> bool:
+        adapter = self._state.publisher_adapters.get(request.publisher_id or "")
+        if adapter is None or adapter is self._state.provider:
+            return False
+        return (
+            request.publisher_id,
+            adapter.capabilities.version,
+            request.capability_profile_version,
+        ) in self._state.preclaim_resume_delivery_profiles
+
+    def _preclaim_denied_payload(
+        self, payload: dict[str, Any], request: PublicationRequest, reason: str
+    ) -> dict[str, Any]:
+        expired = (
+            isinstance(reason, _PreclaimPermitExpired)
+            and "production_preclaim_resume_until" in payload
+            and payload.get("preclaim_resumed") is not True
+            and self._preclaim_resume_delivery_allowed(request)
+        )
+        return {
+            **payload,
+            "authorization_revoked": True,
+            "denial_reason": str(reason),
+            **({"preclaim_permit_expired": True} if expired else {}),
+        }
 
     def _production_projection_denial(
         self, current: CurrentPublicationAuthorization, request: PublicationRequest
@@ -507,6 +544,13 @@ class PublicationActivities:
         if not decision.authorized:
             reason = decision.reason_code or "route_fence_denied"
             await self._hold_publication_liability_if_claimed(payload, action_kind, reason)
+            if (
+                action_kind == "delivery"
+                and isinstance(decision, RouteFenceDecision)
+                and decision.preclaim_permit_expired
+                and reason == "permit_expired"
+            ):
+                return None, _PreclaimPermitExpired(reason)
             return None, reason
         return current, None
 
@@ -570,6 +614,8 @@ class PublicationActivities:
                 dispatch.claim_permit, binding.operation_id, permit_id
             )
         except ProductionAuthorizationDenied as error:
+            if error.preclaim_permit_expired and error.reason_code == "permit_expired":
+                return _PreclaimPermitExpired(error.reason_code)
             return error.reason_code
         if not result.dispatch_allowed:
             return "production_dispatch_claim_denied"
@@ -745,6 +791,16 @@ class PublicationActivities:
 
     @activity.defn(name="salience.publication.authorize")
     async def authorize(self, payload: dict[str, Any]) -> dict[str, Any]:
+        if payload.get("preclaim_resume") is True:
+            result = await self._authorize_preclaim_resume(payload)
+            if not result["authorized"] and activity.info().attempt > 1:
+                # A retry may see changed authority after the first attempt committed.
+                return {
+                    **result,
+                    "preclaim_resume_pending": False,
+                    "failure_reason": PRECLAIM_RESUME_OUTCOME_UNKNOWN,
+                }
+            return result
         run = await self._run()
         workflow_request = PublicationWorkflowRequest(**payload["workflow_request"])
         request = PublicationRequest.model_validate(payload["request"])
@@ -989,6 +1045,14 @@ class PublicationActivities:
                                         "production_operation_id": str(permit.operation_id),
                                         "production_permit_id": str(permit.permit_id),
                                     }
+                                    if (
+                                        self._preclaim_resume_delivery_allowed(request)
+                                        and permit.generation == 1
+                                        and permit.claim_id is None
+                                    ):
+                                        production_permit_payload["production_preclaim_resume_until"] = (
+                                            permit_request.execution_deadline.isoformat()
+                                        )
         await self._checkpoint("publication.authorization.checked")
         return {
             **payload,
@@ -1001,16 +1065,93 @@ class PublicationActivities:
             **production_permit_payload,
         }
 
+    async def _authorize_preclaim_resume(self, payload: dict[str, Any]) -> dict[str, Any]:
+        original = {**payload, "authorized": False}
+        request = PublicationRequest.model_validate(payload["request"])
+        dispatch = self._state.production_dispatch
+        if dispatch is None or not self._preclaim_resume_delivery_allowed(request):
+            return {**original, "denial_reason": "preclaim_resume_unavailable"}
+
+        current, denial = await self._load_current_production_authorization(request)
+        if current is None:
+            return {**original, "denial_reason": denial}
+        denial = self._production_publication_target_denial(current, payload, "submit")
+        if denial is not None:
+            return {**original, "denial_reason": denial}
+        binding = current.approval_binding
+        info = activity.info()
+        if (
+            binding is None
+            or info.workflow_id != binding.workflow_id
+            or info.workflow_run_id != binding.workflow_run_id
+            or payload.get("production_operation_id") != str(binding.operation_id)
+            or current.external_effect_state != "planned"
+            or current.remote_receipt_id is not None
+        ):
+            return {**original, "denial_reason": "production_publication_binding_mismatch"}
+
+        try:
+            publication_binding = PublicationEffectBinding(
+                publication_request_id=binding.publication_request_id,
+                job_id=binding.job_id,
+                workflow_id=binding.workflow_id,
+                workflow_run_id=binding.workflow_run_id,
+                publication_plan_id=binding.publication_plan_id,
+                publication_attempt_id=binding.publication_attempt_id,
+                external_effect_id=binding.external_effect_id,
+            )
+            permit_request = self._production_permit_request(current, request, publication_binding)
+            if (
+                permit_request.generation != 1
+                or permit_request.execution_deadline.isoformat()
+                != payload.get("production_preclaim_resume_until")
+            ):
+                raise ProductionAuthorizationDenied("invalid_binding")
+            predecessor_id = UUID(payload["production_permit_id"])
+        except ProductionAuthorizationDenied as error:
+            return {**original, "denial_reason": error.reason_code}
+        except (KeyError, TypeError, ValueError, PermissionError):
+            return {**original, "denial_reason": "production_permit_request_invalid"}
+
+        try:
+            permit = await asyncio.to_thread(
+                dispatch.issue_preclaim_resume_permit, permit_request,
+                predecessor_permit_id=predecessor_id,
+            )
+        except ProductionAuthorizationDenied as error:
+            return {**original, "denial_reason": error.reason_code}
+        if permit is None:
+            return {**original, "preclaim_resume_pending": True}
+        if (
+            permit.operation_id != binding.operation_id
+            or permit.permit_id == predecessor_id
+            or permit.generation != 2
+            or permit.claim_id is not None
+            or permit.dispatch_allowed
+        ):
+            raise RuntimeError("preclaim publication renewal returned an unexpected permit")
+        renewed = self._canonical_publication_payload(payload, current)
+        for name in (
+            "authorization_revoked", "preclaim_permit_expired", "preclaim_resume",
+            "production_preclaim_resume_until",
+        ):
+            renewed.pop(name, None)
+        return {
+            **renewed, "authorized": True, "denial_reason": None, "preclaim_resumed": True,
+            "production_permit_id": str(permit.permit_id),
+        }
+
     @activity.defn(name="salience.publication.delivery")
     async def delivery(self, payload: dict[str, Any]) -> dict[str, Any]:
         request = PublicationRequest.model_validate(payload["request"])
         current, denial_reason = await self._production_action_current(payload, "delivery")
         if denial_reason is not None:
-            return {
-                **payload,
-                "authorization_revoked": True,
-                "denial_reason": denial_reason,
-            }
+            return self._preclaim_denied_payload(payload, request, denial_reason)
+        if (
+            ("production_preclaim_resume_until" in payload or payload.get("preclaim_resumed") is True)
+            and not self._preclaim_resume_delivery_allowed(request)
+        ):
+            return self._preclaim_denied_payload(payload, request, "preclaim_resume_unavailable")
         action_payload = (
             self._canonical_publication_payload(payload, current)
             if current is not None
@@ -1081,11 +1222,7 @@ class PublicationActivities:
                         payload, "submit", denial_reason
                     )
                     await self._checkpoint("publication.authorization.revoked_before_submit")
-                    return {
-                        **payload,
-                        "authorization_revoked": True,
-                        "denial_reason": denial_reason,
-                    }
+                    return self._preclaim_denied_payload(payload, request, denial_reason)
                 # The permit claim serializes submit authority. Only its owner may win
                 # this canonical planned-to-submitting transition and resolve credentials.
                 submitting = await self._state.store.begin_effect_submission(run, effect_key)
@@ -1445,14 +1582,22 @@ class PublicationActivities:
     @activity.defn(name="salience.publication.dead_letter")
     async def dead_letter(self, payload: dict[str, Any]) -> PublicationWorkflowResult:
         run = await self._run()
+        failure_reason = payload.get("failure_reason")
+        preclaim_outcome_unknown = failure_reason == PRECLAIM_RESUME_OUTCOME_UNKNOWN
         await self._state.store.dead_letter(
             run,
             attempt=MAX_PUBLICATION_ATTEMPTS,
             error_type=str(payload.get("failure_reason", "publication_failure")),
-            error_message="governed publication could not reach a terminal provider state",
+            error_message=(
+                "publication permit renewal outcome could not be confirmed"
+                if preclaim_outcome_unknown
+                else "governed publication could not reach a terminal provider state"
+            ),
         )
         return PublicationWorkflowResult(
-            publication_state="dead_lettered",
+            publication_state=(
+                "ambiguous_requires_reconciliation" if preclaim_outcome_unknown else "dead_lettered"
+            ),
             job_id=str(run.job_id),
             trace_id=run.trace_context.trace_id,
             publication_request_id=payload.get("publication_request_id"),
@@ -1460,7 +1605,7 @@ class PublicationActivities:
             publication_attempt_id=payload.get("publication_attempt_id"),
             remote_receipt_id=payload.get("remote_receipt_id"),
             fixture_submit_count=self._state.provider.submit_count,
-            denial_reason=payload.get("failure_reason"),
+            denial_reason=failure_reason,
         )
 
 
@@ -1486,11 +1631,27 @@ class GovernedPublicationWorkflow:
         if self._cancellation_requested:
             return await _execute_terminal("salience.publication.cancel", payload)
         payload = await _execute_stage("salience.publication.delivery", payload)
-        if payload.get("authorization_revoked"):
-            return await _execute_terminal("salience.publication.denied", payload)
-        if self._cancellation_requested:
-            return await _execute_terminal("salience.publication.cancel", payload)
-        payload = await _execute_stage("salience.publication.submit_or_reconcile", payload)
+        if not payload.get("authorization_revoked"):
+            if self._cancellation_requested:
+                return await _execute_terminal("salience.publication.cancel", payload)
+            payload = await _execute_stage("salience.publication.submit_or_reconcile", payload)
+        if (
+            payload.get("authorization_revoked")
+            and payload.get("preclaim_permit_expired") is True
+            and workflow.patched("publication-expired-unclaimed-resume-v1")
+        ):
+            payload = await self._wait_for_preclaim_resume(payload)
+            if payload.get("failure_reason") == PRECLAIM_RESUME_OUTCOME_UNKNOWN:
+                return await _execute_terminal("salience.publication.dead_letter", payload)
+            if self._cancellation_requested:
+                return await _execute_terminal("salience.publication.cancel", payload)
+            if not payload["authorized"]:
+                return await _execute_terminal("salience.publication.denied", payload)
+            payload = await _execute_stage("salience.publication.delivery", payload)
+            if not payload.get("authorization_revoked"):
+                if self._cancellation_requested:
+                    return await _execute_terminal("salience.publication.cancel", payload)
+                payload = await _execute_stage("salience.publication.submit_or_reconcile", payload)
         if payload.get("authorization_revoked"):
             return await _execute_terminal("salience.publication.denied", payload)
         while payload["publication_state"] in {"accepted", "processing"}:
@@ -1507,6 +1668,43 @@ class GovernedPublicationWorkflow:
         return await workflow.execute_activity(
             "salience.publication.complete", payload, start_to_close_timeout=timedelta(seconds=10)
         )
+
+    async def _wait_for_preclaim_resume(self, payload: dict[str, Any]) -> dict[str, Any]:
+        started = workflow.now()
+        deadline = min(
+            started + PRECLAIM_RESUME_WAIT,
+            datetime.fromisoformat(payload["production_preclaim_resume_until"]),
+        )
+        while not self._cancellation_requested and workflow.now() < deadline:
+            remaining = deadline - workflow.now()
+            try:
+                result = await workflow.execute_activity(
+                    "salience.publication.authorize", {**payload, "preclaim_resume": True},
+                    start_to_close_timeout=min(remaining, timedelta(seconds=30)),
+                    schedule_to_close_timeout=remaining,
+                    retry_policy=RetryPolicy(
+                        initial_interval=timedelta(milliseconds=100),
+                        maximum_interval=timedelta(seconds=1),
+                        maximum_attempts=MAX_PUBLICATION_ATTEMPTS,
+                    ),
+                )
+            except ActivityError:
+                # The transaction may have committed before the worker lost its reply.
+                return {**payload, "authorized": False, "failure_reason": PRECLAIM_RESUME_OUTCOME_UNKNOWN}
+            if result.get("preclaim_resume_pending") is not True:
+                if workflow.now() >= deadline and result["authorized"]:
+                    return {**result, "authorized": False, "failure_reason": PRECLAIM_RESUME_OUTCOME_UNKNOWN}
+                return result
+            remaining = deadline - workflow.now()
+            if remaining > timedelta() and not self._cancellation_requested:
+                try:
+                    await workflow.wait_condition(
+                        lambda: self._cancellation_requested,
+                        timeout=min(remaining, PRECLAIM_RESUME_POLL_INTERVAL),
+                    )
+                except asyncio.TimeoutError:
+                    pass
+        return {**payload, "authorized": False}
 
 
 async def _execute_stage(name: str, argument: Any) -> dict[str, Any]:

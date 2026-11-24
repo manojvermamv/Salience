@@ -34,10 +34,12 @@ _PRODUCTION_MIGRATION_HEAD = "0051_p1_recovery_rollback_v2"
 _ROLLBACK_VERIFIER_ABI_V2 = "salience.p1-recovery-rollback-verifier.v2"
 _PRODUCTION_LIFECYCLE_HEAD = "0053_p1_recovery_rollback_v3"
 _PRODUCTION_OPENING_HEAD = "0055_p1_recovery_open_rollback_v4"
+_PRODUCTION_PRECLAIM_HEAD = "0058_p1_preclaim_rollback_v5"
 _ROLLBACK_VERIFIER_ABIS = {
     _PRODUCTION_MIGRATION_HEAD: _ROLLBACK_VERIFIER_ABI_V2,
     _PRODUCTION_LIFECYCLE_HEAD: "salience.p1-recovery-rollback-verifier.v3",
     _PRODUCTION_OPENING_HEAD: "salience.p1-recovery-rollback-verifier.v4",
+    _PRODUCTION_PRECLAIM_HEAD: "salience.p1-recovery-rollback-verifier.v5",
 }
 _PRODUCTION_LOCK_QUALIFICATION = "development-only"
 _EXTERNAL_PRODUCTION_TRUST_DIGEST = None
@@ -66,12 +68,19 @@ _REQUIRED_PRODUCTION_V3_SOURCE_PATHS = {
     "src/salience/cycles/_production_recovery_case_commands.py",
     "src/salience/cycles/_production_recovery_control.py",
 }
+_REQUIRED_PRODUCTION_V4_SOURCE_PATHS = _REQUIRED_PRODUCTION_V3_SOURCE_PATHS | {
+    "migrations/versions/0054_p1_recovery_case_opening.py",
+    "migrations/versions/0055_p1_recovery_open_rollback_v4.py",
+    "src/salience/cycles/_production_recovery_case_opening.py",
+}
 _RECOVERY_SOURCE_PATHS_BY_HEAD = {
     _PRODUCTION_LIFECYCLE_HEAD: _REQUIRED_PRODUCTION_V3_SOURCE_PATHS,
-    _PRODUCTION_OPENING_HEAD: _REQUIRED_PRODUCTION_V3_SOURCE_PATHS | {
-        "migrations/versions/0054_p1_recovery_case_opening.py",
-        "migrations/versions/0055_p1_recovery_open_rollback_v4.py",
-        "src/salience/cycles/_production_recovery_case_opening.py",
+    _PRODUCTION_OPENING_HEAD: _REQUIRED_PRODUCTION_V4_SOURCE_PATHS,
+    _PRODUCTION_PRECLAIM_HEAD: _REQUIRED_PRODUCTION_V4_SOURCE_PATHS | {
+        "migrations/versions/0056_p1_preclaim_permit_resume.py",
+        "migrations/versions/0057_p1_preclaim_case_opening.py",
+        "migrations/versions/0058_p1_preclaim_rollback_v5.py",
+        "src/salience/cycles/production_dispatch.py",
     },
 }
 _REQUIRED_IMPORT_MODULES = {

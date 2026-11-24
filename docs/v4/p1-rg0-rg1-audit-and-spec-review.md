@@ -623,3 +623,16 @@ This update records the wheel, image, restart, and installed case-opening and ro
 | `docs/v4/validation.md` | `a2c66774a81f70def0f9992bc7ee343f48561060bd6143a9b15b255ead6d8a48` |
 | `docs/v4/p1-qualification-matrix.json` | `08d61c2b727c9452ed8b1674c30b896776cc5d72b2beb8c9705fc4e97433f045` |
 | `docs/v4/test_checks.py` | `fc7b022e46e79c86d29878172ff77aee0f8c089a824e5ca5c18c4d338930d111` |
+
+## P1 expired-unclaimed permit and rollback v5 evidence hashes — 2026-11-24
+
+This update records the local preclaim permit amendment, exact rollback verifier, and proposed named target. [Verification and scope](validation.md#expired-unclaimed-publication-permit-recovery-and-rollback-verifier-v5)
+
+| Path | SHA-256 |
+| --- | --- |
+| `docs/v4/IMPLEMENTATION-BLUEPRINT.md` | `682c0c7e7cbdabce58d038f30de40095a04373d0062029bd9454d20624ea4df4` |
+| `docs/v4/progress.md` | `f3da0b3456f08e4dbcbb8ec308032f5a5aba7f523a61e14396a76ccd3eb2567b` |
+| `docs/v4/validation.md` | `5bb8acb20e46fc34d560ade5227ff12bf6b74a89297b9ce13eaa04291cdbd324` |
+| `docs/v4/test_checks.py` | `fc7b022e46e79c86d29878172ff77aee0f8c089a824e5ca5c18c4d338930d111` |
+| `docs/v4/evidence-lock.json` | `eb3da62652859bb64cab766a0a570030ed508b7d032fa0536ce86cef7f2dee24` |
+| `docs/v4/p1-qualification-matrix.json` | `1a907f79797b78c792efcc36d8700eadf6c9c7d4471db3a5b3e59de58a7bf092` |

@@ -1,6 +1,6 @@
 {
-  "baseline_commit": "5276573addc6e6fe4c889a5afa637b9c3a280795",
-  "scope": "Source and build-context inventory for the P1 recovery opening and rollback v4 follow-up.",
+  "baseline_commit": "a953d8888245bca8a5f26fbe3a22a37925145dce",
+  "scope": "Source and build-context inventory for the P1 expired-unclaimed permit and rollback v5 follow-up.",
   "files": [
     {
       "path": ".dockerignore",
@@ -255,6 +255,18 @@
       "sha256": "ac56989536d9aeff8f03010c7adf848544fef57e895542ab30f71f81e7a9a537"
     },
     {
+      "path": "migrations/versions/0056_p1_preclaim_permit_resume.py",
+      "sha256": "3b9cfb2111f831b882018f6173dc0ba6948e29e651bb08f311d0a0799bb5bed7"
+    },
+    {
+      "path": "migrations/versions/0057_p1_preclaim_case_opening.py",
+      "sha256": "dd33efbac242f521cd7ad7cdb1758070bc59bb6c46e76f79c5d342f537e1672b"
+    },
+    {
+      "path": "migrations/versions/0058_p1_preclaim_rollback_v5.py",
+      "sha256": "3b6ce2d347c5a18507d0cdbea91c711233046af8427147bdccaf9250c3ea1e1c"
+    },
+    {
       "path": "migrations/versions/__init__.py",
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
@@ -272,7 +284,7 @@
     },
     {
       "path": "scripts/launch-v4-publication-worker.py",
-      "sha256": "7add41cc531754269c9ef6f8889f3575830b3da8acfc37cab816a4155c47f39a"
+      "sha256": "f797d9b3e27c9f2fe340abc5dbb455d437448dcd66f60bad1cf750eda661f1a4"
     },
     {
       "path": "scripts/verify-browser-evidence.sh",
@@ -620,7 +632,7 @@
     },
     {
       "path": "src/salience/cycles/_production_recovery_case_opening.py",
-      "sha256": "4066823dc8521ea114ac655da564eb822a6bfdbd9ff798031eb20c514d6bf68f"
+      "sha256": "6018a42cb58672b40e5ec51b64f622f1693d44d5996f47376e76354b0c26d288"
     },
     {
       "path": "src/salience/cycles/_production_recovery_contracts.py",
@@ -716,7 +728,7 @@
     },
     {
       "path": "src/salience/cycles/p1_recovery_rollback.py",
-      "sha256": "615bd8ea9ea0982145590da57e83ad82d1fac59948057d4278af35461d46df6f"
+      "sha256": "af69f76c38e019316583ac37cee9c5b7a021c180b2a1e62fce7b8bc404650a15"
     },
     {
       "path": "src/salience/cycles/p1_recovery_rollback_fixtures.py",
@@ -724,7 +736,7 @@
     },
     {
       "path": "src/salience/cycles/production_dispatch.py",
-      "sha256": "33fd64af0b73bbc5f09ce72f3ccbed3f8e880f871b4bf5cb0c6c1f3bacb384f3"
+      "sha256": "8cc322a644b8454d32147494f64c28d3b68608f33903867114d79f9255d82e31"
     },
     {
       "path": "src/salience/cycles/production_intent_enrollment.py",
@@ -756,7 +768,7 @@
     },
     {
       "path": "src/salience/cycles/publication_recovery_compatibility.py",
-      "sha256": "f2088e50025a01d47e4f6787963ea40c933c856326dd2f01214ac5112fcff51e"
+      "sha256": "713d3bf8191d8889775ee84e0d22988fe674354eafe83db44f2fe5f6155e31d3"
     },
     {
       "path": "src/salience/cycles/runtime.py",
@@ -1072,7 +1084,7 @@
     },
     {
       "path": "src/salience/workflows/publication.py",
-      "sha256": "6e1be3e3d0f8b7aa5490ee54b239a467c98064f4864a2b6a544ca3d494a0fe0a"
+      "sha256": "3276da7a7fc6379531e2b557554d3bde16fcb6ff907e90205c846b74ad8ed8ea"
     },
     {
       "path": "src/salience/workflows/schedules.py",
@@ -1092,7 +1104,7 @@
     },
     {
       "path": "tests/conftest.py",
-      "sha256": "1f9b7c854cd4f7810909eeb2afd2c9ce1d718d249dd322d5cc7ad13d371f5025"
+      "sha256": "a38401f43dce32e55a4040ac9fca3100c9e0a69d48ddc398517044cd37f9904b"
     },
     {
       "path": "tests/contracts/test_model_gateway.py",
@@ -1117,6 +1129,10 @@
     {
       "path": "tests/e2e/test_compose_worker_restart.py",
       "sha256": "839a2ce36db39a518c402f23dbdf24fb1e11d49b22edf6985c63dc57ad515c27"
+    },
+    {
+      "path": "tests/e2e/test_p1_preclaim_publication_workflow.py",
+      "sha256": "4022db02cdbb335e58992ada15dd3f75ca6151ccb0fb8f702454e59681f5203a"
     },
     {
       "path": "tests/e2e/test_phase1_verifier.py",
@@ -1355,6 +1371,18 @@
       "sha256": "d0a641d0c49f8dfa72c7de44cfa0ba84690dc9d990cb975f5c3fc1d101ce9029"
     },
     {
+      "path": "tests/integration/test_p1_preclaim_publication_temporal.py",
+      "sha256": "ec84fecf0d79871585aa97c53e5a5767da959fa3135297aafd17b7fb81c801ab"
+    },
+    {
+      "path": "tests/integration/test_p1_preclaim_resume_db.py",
+      "sha256": "5300f5a9d9cb30dc38dea5d4df39167dc8b9161563547cc2af705d6f24152dcc"
+    },
+    {
+      "path": "tests/integration/test_p1_preclaim_resume_dispatch.py",
+      "sha256": "543fad32c1fbe19b450cb3997708890d85f03808d48584eb66d55a1b6d09255d"
+    },
+    {
       "path": "tests/integration/test_p1_production_policy_revocation.py",
       "sha256": "a83c6a17e7cbb9d4cc4194422b157a1055279095eb378d9c5818d9d6a0969a2c"
     },
@@ -1368,11 +1396,11 @@
     },
     {
       "path": "tests/integration/test_p1_production_recovery_case_opening.py",
-      "sha256": "fff6e48f46223d79d9c7ce5434df25290c8bc0f8c861d0e7763701e3209823d0"
+      "sha256": "be3431a032b519c125b7f86cbf28d043333f3c1139411ad0c1ef3ccb7198db28"
     },
     {
       "path": "tests/integration/test_p1_production_routing.py",
-      "sha256": "63763ca50125acc2a6d85b60124ec1278e9d8074bf88e31aa21c406b1e5589e9"
+      "sha256": "c94dfa94f33dfe853d22fec8e2de4d40ed5f8169218df949aa8efcdb523bf92c"
     },
     {
       "path": "tests/integration/test_p1_production_schedule_fencing.py",
@@ -1388,7 +1416,7 @@
     },
     {
       "path": "tests/integration/test_p1_recovery_rollback_v4.py",
-      "sha256": "bb68d3e010f14cd1e0ed31593f489def1ecb00abed2332f74d1bd340b1a89a69"
+      "sha256": "8618823705301bc76306c6a1a7941beb0bff260b44b1e8c8d947adb7186eb4c7"
     },
     {
       "path": "tests/integration/test_publication_control_api.py",
@@ -1432,7 +1460,7 @@
     },
     {
       "path": "tests/integration/test_v4_cycle_admission.py",
-      "sha256": "8770c7d7bac0d1f0c1aeefc6cf6cb52f2ef92ead8b8d9390435689be1c963846"
+      "sha256": "06bca827d7c757c4687f07c27a94e7adeae72beeac0ddf5356845b4c306cbbc7"
     },
     {
       "path": "tests/integration/test_v4_cycle_governance.py",
@@ -1480,15 +1508,15 @@
     },
     {
       "path": "tests/integration/test_v4_migrations.py",
-      "sha256": "9a2ac72a11afc3010da6d14233687bff23939ce3138a290b8b07884a817404f8"
+      "sha256": "402c42a4dbbebb2d07d142f03f51f76abdba552b90803df76ad059c3f49a75af"
     },
     {
       "path": "tests/integration/test_v4_native_publication_schedules.py",
-      "sha256": "ca695cf61287659a4c1e69ba2f0c908141dad2fe03f21ad8cf7441cf8758c1be"
+      "sha256": "aeeaa343db6ecee2c8bc07e9a29244f97be7291c5000cac77c7228c79c76b999"
     },
     {
       "path": "tests/integration/test_v4_native_schedules.py",
-      "sha256": "207f500bd212a72d0da2409de40852da802838bf9ab191138c247174e5dc56ae"
+      "sha256": "35e74836a9e9def89abe7f2af320390daf8e7a32316a7362b35d8e346394a450"
     },
     {
       "path": "tests/integration/test_v4_object_retention.py",
@@ -1508,7 +1536,7 @@
     },
     {
       "path": "tests/integration/test_v4_publication_recovery_floor.py",
-      "sha256": "568cb5115e54920983971a9f0886ad4669b51929ef3bd1870ef927fb44eb71cc"
+      "sha256": "cacc346dbccdc36417939b1abba5b09adebd3cb052472bceb8276c04547c3eaf"
     },
     {
       "path": "tests/integration/test_v4_publication_recovery_holds.py",
@@ -1516,7 +1544,7 @@
     },
     {
       "path": "tests/integration/test_v4_runtime_waits.py",
-      "sha256": "801037309d46df5a301522eaa5b91f0aca4ac04530150d447156b1fd927f929d"
+      "sha256": "eb069f9173c2074db96c343896c31a341f33dc4eb3dedee990ac9c00c61abc4d"
     },
     {
       "path": "tests/integration/test_v4_s3_service.py",
@@ -3225,5 +3253,10 @@
     "record_commit": "5276573addc6e6fe4c889a5afa637b9c3a280795",
     "record_path": "docs/v4/evidence-lock.json",
     "sha256": "c65b675096841ae4e80c45297701c7c0e71956a0633dc803b98b97b4393c9931"
+  },
+  "preceding_p1_preclaim_lock": {
+    "record_commit": "a953d8888245bca8a5f26fbe3a22a37925145dce",
+    "record_path": "docs/v4/evidence-lock.json",
+    "sha256": "8fe751ff7129e9f986fb5b917fe8ba51020e6a235db6495674eda74aacbc9d0b"
   }
 }

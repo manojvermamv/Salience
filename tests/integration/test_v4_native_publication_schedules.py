@@ -15,6 +15,7 @@ import pytest
 from temporalio.client import Client
 
 from test_v4_legacy_publication import _allow, _publication_fixture, _wait_started
+from test_v4_publication_recovery_holds import _migrate
 
 
 def _token(actor_id, key):
@@ -265,8 +266,9 @@ async def test_native_publication_adoption_snapshots_real_original_action_histor
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("cycle_database", ["0041_native_publication_sources"], indirect=True)
 async def test_actual_native_publication_pair_is_adopted_fenced_and_resumed_through_outbox(
-    monkeypatch,
+    monkeypatch, cycle_database,
 ):
     from salience.cycles.legacy_schedule_workflow import LEGACY_SCHEDULE_INGRESS
     from salience.cycles.outbox import CycleOutbox
@@ -274,6 +276,7 @@ async def test_actual_native_publication_pair_is_adopted_fenced_and_resumed_thro
     from salience.cycles.runtime import TemporalCycleTransport
     from temporalio.client import ScheduleHandle
 
+    monkeypatch.setenv("TEST_DATABASE_URL", cycle_database)
     async with native_publication_schedule(monkeypatch) as native:
         database = native["database"]
         schedule_id = native["schedule_id"]
@@ -579,11 +582,7 @@ async def test_actual_native_publication_pair_is_adopted_fenced_and_resumed_thro
             timeout=30,
         )
         assert result.returncode != 0
-        assert any(reason in result.stderr for reason in (
-            "0051_p1_recovery_rollback_v2 is irreversible",
-            "preserve original native publication schedule history",
-            "preserve production policy and revocation authority history",
-        ))
+        assert "preserve original native publication schedule history" in result.stderr, result.stderr
         with psycopg.connect(database, row_factory=dict_row) as connection:
             assert connection.execute(
                 "SELECT version_num FROM alembic_version"
@@ -620,6 +619,10 @@ async def test_actual_native_publication_pair_is_adopted_fenced_and_resumed_thro
             assert pair_before_rollback["id"] == publication_schedule_id
             assert pair_before_rollback["job_schedule_id"] == schedule_id
             assert pair_before_rollback["status"] == "scheduled"
+
+        # The current publication inspection path requires the recovery floor.
+        upgrade = _migrate(database, "upgrade", "0043_complete_publication_recovery_liabilities")
+        assert upgrade.returncode == 0, upgrade.stderr
 
         rollback_key = "native-publication-rollback-" + uuid4().hex
         original_update = ScheduleHandle.update

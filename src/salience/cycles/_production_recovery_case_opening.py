@@ -1,4 +1,4 @@
-"""Open a canonical production reconciliation case for a claimed publication."""
+"""Open canonical reconciliation and expired preclaim review cases."""
 
 from __future__ import annotations
 
@@ -22,6 +22,7 @@ from salience.observability.tracing import TraceContext
 
 
 _OPEN = "SELECT public.v4_open_production_recovery_case_v1(%s,%s) AS result"
+_OPEN_PRECLAIM = "SELECT public.v4_open_production_preclaim_case_v1(%s,%s) AS result"
 
 
 @dataclass(frozen=True, slots=True)
@@ -39,6 +40,7 @@ class ProductionRecoveryCaseOpenCommand:
     request_fingerprint: str
     deadline: datetime
     idempotency_key: str
+    preclaim_permit_id: UUID | None = None
 
     def __post_init__(self) -> None:
         for name in ("workspace_id", "actor_id", "intent_id", "cycle_id", "context_id", "operation_id"):
@@ -50,6 +52,8 @@ class ProductionRecoveryCaseOpenCommand:
         object.__setattr__(self, "deadline", _require_aware(self.deadline, "case deadline"))
         if not isinstance(self.idempotency_key, str) or not _SAFE_OPAQUE_REFERENCE.fullmatch(self.idempotency_key):
             raise ValueError("bounded opening command idempotency key required")
+        if self.preclaim_permit_id is not None:
+            _require_uuid(self.preclaim_permit_id, "expired initial permit ID")
 
 
 @dataclass(frozen=True, slots=True)
@@ -100,7 +104,7 @@ def open_case(
 ) -> ProductionRecoveryCaseOpenReceipt:
     if not isinstance(command, ProductionRecoveryCaseOpenCommand):
         raise ValueError("typed production recovery case opening required")
-    request = Jsonb({
+    request_fields = {
         "workspace_id": str(command.workspace_id),
         "actor_id": str(command.actor_id),
         "intent_id": str(command.intent_id),
@@ -112,11 +116,19 @@ def open_case(
         "request_fingerprint": command.request_fingerprint,
         "deadline": command.deadline.isoformat(),
         "idempotency_key": command.idempotency_key,
-    })
+    }
+    statement = _OPEN
+    if command.preclaim_permit_id is not None:
+        statement = _OPEN_PRECLAIM
+        request_fields.update(
+            opening_kind="expired_unclaimed_permit",
+            permit_id=str(command.preclaim_permit_id),
+        )
+    request = Jsonb(request_fields)
     with repository._connect() as connection:
         try:
             with connection.transaction():
-                result = connection.execute(_OPEN, (request, None)).fetchone()["result"]
+                result = connection.execute(statement, (request, None)).fetchone()["result"]
             if result is None:
                 authorize = getattr(authority, "authorize_case_opening", None)
                 if not callable(authorize):
@@ -144,7 +156,7 @@ def open_case(
                     "alert_policy_sha256": repository._policy_evidence(alert),
                 })
                 with connection.transaction():
-                    result = connection.execute(_OPEN, (request, binding)).fetchone()["result"]
+                    result = connection.execute(statement, (request, binding)).fetchone()["result"]
         except psycopg.errors.InsufficientPrivilege as error:
             raise PermissionError(error.diag.message_primary) from error
         except psycopg.errors.InvalidParameterValue as error:

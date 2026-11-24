@@ -1226,7 +1226,7 @@
   "production_effects_enabled": false,
   "RG0": "HELD",
   "RG1": "HELD",
-  "source_lock_sha256": "8fe751ff7129e9f986fb5b917fe8ba51020e6a235db6495674eda74aacbc9d0b",
+  "source_lock_sha256": "eb3da62652859bb64cab766a0a570030ed508b7d032fa0536ce86cef7f2dee24",
   "verifiers": {
     "R02": [
       "tests/e2e/test_v4_worker_upgrade.py",
@@ -2460,7 +2460,7 @@
     "record_scope": "Historical Slice 2 candidate snapshot; retain candidate-bound counts and docs CI details for traceability.",
     "latest_local_candidate_record": "latest_local_candidate"
   },
-  "source_lock_scope": "Source inventory for the P1 recovery opening and rollback v4 follow-up.",
+  "source_lock_scope": "Source inventory for the P1 expired-unclaimed permit and rollback v5 follow-up.",
   "task18_local_development_candidate": {
     "record_kind": "historical_local_development_candidate",
     "status": "HISTORICAL_PASS_LOCAL_DEVELOPMENT_QUALIFICATION; SUPERSEDED_AS_LATEST_BY_TASK35; EXTERNAL_ACCEPTANCE_NOT_RUN; PRODUCTION_GATES_HELD",
@@ -3368,48 +3368,16 @@
     "compose_worker_restart": "SKIPPED"
   },
   "current_p1_follow_up": {
-    "source_lock_sha256": "8fe751ff7129e9f986fb5b917fe8ba51020e6a235db6495674eda74aacbc9d0b",
+    "source_lock_sha256": "eb3da62652859bb64cab766a0a570030ed508b7d032fa0536ce86cef7f2dee24",
     "scope": "Local development checkout with injected targets and authorities",
-    "artifact_build": "PASS_FIXTURE_ONLY",
+    "artifact_build": "NOT RUN",
     "external_rows_not_run": 22,
     "external_final_audit": "NOT RUN",
-    "production_recovery_case_lifecycle": "Fixture-verified opening for an exact claimed publication, existing case commands, and rollback ABI v4. The routed workflow handoff and reviewed permit rule for expired never-claimed work remain open.",
+    "production_recovery_case_lifecycle": "Local production-shaped case commands, claimed and expired-unclaimed opening, original-workflow preclaim resume, and rollback ABI v5. The claimed no-effect handoff and production composition remain open.",
     "handoff": "docs/v4/progress.md#current-state",
-    "migration_head": "0055_p1_recovery_open_rollback_v4",
+    "migration_head": "0058_p1_preclaim_rollback_v5",
     "external_artifact_qualification": "NOT RUN",
     "prior_fixture_image_rehearsal": {
-      "application_commit": "8c2cd7c3ba46be5886f29636a9fe54017f43ee6b",
-      "application_tree": "2ff435f0b546eca34b4a7a06d62f7138a59444a1",
-      "wheel_sha256": "1f1c33125709c5e32562657659fdf1218602e6b91b45c2e0a75de53291512ff1",
-      "local_image_id": "sha256:ea4b7d522dc50a497f1d5c38566191d7f535e85a2a13eda821d5f640a5868e6d",
-      "fixture_launch_lock_sha256": "b9bbea3aa38a94c7759f5d9ca457b28442a4f0d83f12b27a27c82bf310f65694",
-      "development_route_lock_sha256": "969e1d602f83c7a197a93487de171894fc20047160c3f3610f29bca024c0b99d",
-      "rollback_verifier_abi": "salience.p1-recovery-rollback-verifier.v3",
-      "migration_head": "0053_p1_recovery_rollback_v3",
-      "compose_worker_restart": {
-        "status": "succeeded",
-        "provider_effect_calls": 1,
-        "reconciled": true,
-        "canonical_checkpoint_count": 2,
-        "canonical_effect_count": 1
-      },
-      "production_launcher_denials": {
-        "current": "UNPROVISIONED_PRODUCTION_TRUST",
-        "rollback_restart": "AUTHENTICATED_EXECUTOR_REQUIRED"
-      },
-      "image_amd64_manifest_sha256": "sha256:fc00dfc7fb1daa3d60b73c1808a9a72cf7dfb428ca5610a677a9655d9089a2ca",
-      "image_archive_sha256": "3f7acf3751ca88a8157646a1a71dfb66dbc13e399e47016796f694494caf02a0",
-      "verified_oci_blobs": 15,
-      "installed_rollback_fixture_readback": {
-        "inventory_sha256": "a1663e74eac30fdf903983c55316f760e9aec6d108cd426d7c7633bdcee8cbb3",
-        "readback_sha256": "14ca0476beccbb680b84117d0b7861acd3e6e6b0cfd93e249cdb22838d87ac9c",
-        "scoped_route_claims": 1,
-        "scoped_temporal_readbacks": 1,
-        "unavailable_route": "DENIED"
-      },
-      "configured_production_api": "DENIED"
-    },
-    "fixture_image_rehearsal": {
       "application_commit": "b7e74997fa5f92a7909858cc136f85d97c55ad47",
       "application_tree": "49c007ba107622764baf5ea58d38a9f54c0212e1",
       "wheel_sha256": "b56139801a6746a5bc20c04e3db27a02240141900dcee43e7d400461ef903ae5",
@@ -3466,6 +3434,12 @@
       },
       "initial_compose_attempt": "PREFLIGHT_TIMEOUT",
       "successful_retry_worker_exit_status": 137
+    },
+    "proposed_named_qualification_target": {
+      "environment": "salience-p1-qual-use1",
+      "platform": "AWS ECS/Fargate",
+      "region": "us-east-1",
+      "disposition": "PROPOSED_UNPROVISIONED"
     }
   },
   "published_p1_follow_up_ci": {

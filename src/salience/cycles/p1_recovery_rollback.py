@@ -25,6 +25,9 @@ ROLLBACK_MIGRATION_HEAD_V3 = "0053_p1_recovery_rollback_v3"
 ROLLBACK_VERIFIER_ABI_V4 = "salience.p1-recovery-rollback-verifier.v4"
 ROLLBACK_INVENTORY_SCHEMA_V4 = "salience.p1-recovery-rollback-inventory.v4"
 ROLLBACK_MIGRATION_HEAD_V4 = "0055_p1_recovery_open_rollback_v4"
+ROLLBACK_VERIFIER_ABI_V5 = "salience.p1-recovery-rollback-verifier.v5"
+ROLLBACK_INVENTORY_SCHEMA_V5 = "salience.p1-recovery-rollback-inventory.v5"
+ROLLBACK_MIGRATION_HEAD_V5 = "0058_p1_preclaim_rollback_v5"
 _REASON_KEYS = ("expired_permit_receipt", "published_during_cancel")
 _INVENTORY_ARRAYS = {
     "source_identities": "source_identities",
@@ -73,6 +76,13 @@ _CASE_OPENING_AUTHORIZATION_KEYS = frozenset({
     "route_id", "slot_id", "fencing_epoch", "workspace_stop_revision", "goal_stop_revision", "actor_revision",
     "expires_at", "recipient_profile_revision", "retry_policy_revision", "alert_policy_sha256",
 })
+
+
+_PRECLAIM_OPENING_KEYS = _CASE_OPENING_KEYS | {
+    "opening_kind", "approval_request_id", "publication_request_id", "publication_plan_id",
+    "publication_attempt_id", "job_id", "workflow_id", "workflow_run_id",
+    "provider_idempotency_key", "budget_reservation_id",
+}
 
 
 class RecoveryRollbackVerificationError(RuntimeError):
@@ -472,6 +482,150 @@ def read_p1_recovery_rollback_inventory_v4(
     )
 
 
+def validate_recovery_rollback_inventory_v5(
+    inventory: object, *, workspace_id: UUID,
+) -> tuple[RecoveryRollbackRouteClaimV2, ...]:
+    if (
+        not isinstance(inventory, dict)
+        or set(inventory) != _INVENTORY_KEYS | {"case_lineage", "opening_receipts", "preclaim_lineage"}
+        or inventory["schema_version"] != ROLLBACK_INVENTORY_SCHEMA_V5
+        or inventory["migration_head"] != ROLLBACK_MIGRATION_HEAD_V5
+    ):
+        raise RecoveryRollbackVerificationError("rollback v5 inventory envelope is incomplete")
+    lineage = inventory["preclaim_lineage"]
+    counts = inventory["relation_counts"]
+    if (
+        not isinstance(lineage, list) or not isinstance(counts, dict)
+        or type(counts.get("production_preclaim_lineage")) is not int
+        or counts["production_preclaim_lineage"] != len(lineage)
+    ):
+        raise RecoveryRollbackVerificationError("rollback preclaim inventory is incomplete")
+    def indexed(relation: str, id_field: str) -> dict:
+        indexed_rows = {}
+        rows = inventory[relation]
+        if not isinstance(rows, list):
+            raise RecoveryRollbackVerificationError(f"rollback {relation} is unavailable")
+        for row in rows:
+            if not isinstance(row, dict):
+                raise RecoveryRollbackVerificationError(f"rollback {relation} contains an incomplete row")
+            identity = str(_uuid(row.get(id_field), id_field))
+            if identity in indexed_rows:
+                raise RecoveryRollbackVerificationError(f"rollback {relation} contains a duplicate row")
+            indexed_rows[identity] = row
+        return indexed_rows
+
+    work_rows = indexed("recovery_work", "work_id")
+    events = indexed("recovery_events", "event_id")
+    permits = indexed("production_permits", "permit_id")
+    pointers = indexed("production_current_pointers", "operation_id")
+    claims = indexed("production_claims", "claim_id")
+    claimed_permits = {row.get("permit_id") for row in claims.values() if isinstance(row.get("permit_id"), str)}
+    accepted_work = set()
+    accepted_proofs = set()
+    for item in lineage:
+        if not isinstance(item, dict) or set(item) != {"opening", "renewal"}:
+            raise RecoveryRollbackVerificationError("rollback preclaim lineage is incomplete")
+        opening = item["opening"]
+        if not isinstance(opening, dict) or opening.keys() != _PRECLAIM_OPENING_KEYS:
+            raise RecoveryRollbackVerificationError("rollback preclaim opening is incomplete")
+        work_id = str(_uuid(opening["work_id"], "preclaim work ID"))
+        work = work_rows.get(work_id, {})
+        original_id = str(_uuid(opening["permit_id"], "preclaim predecessor permit"))
+        original = permits.get(original_id, {})
+        operation = str(_uuid(opening["operation_id"], "preclaim operation ID"))
+        pointer = pointers.get(operation, {})
+        alert = events.get(str(_uuid(opening["alert_event_id"], "preclaim alert ID")), {})
+        request = opening["request"]
+        decision = opening["authorization"]
+        original_snapshot = original.get("request_snapshot")
+        if (
+            work_id in accepted_work or opening["workspace_id"] != str(workspace_id)
+            or opening["schema_version"] != "salience.p1-production-preclaim-case-opening.v1"
+            or opening.get("opening_kind") != "expired_unclaimed_permit"
+            or opening["command_id"] != work.get("opening_command_id")
+            or opening["case_id"] != work.get("source_id") or opening["claim_id"] is not None
+            or opening["actor_id"] != work.get("owner_id")
+            or opening["failure_class"] != work.get("reason")
+            or any(opening[key] != work.get(key) for key in (
+                "goal_id", "intent_id", "cycle_id", "context_id", "operation_id", "state",
+                "eligibility_revision", "request_fingerprint",
+            ))
+            or opening["action"] != "open" or opening["kind"] != "manual_review"
+            or opening["state"] != "awaiting_review" or opening["evidence_state"] != "planned"
+            or type(opening["generation"]) is not int or opening["generation"] != 1
+            or type(opening["resulting_revision"]) is not int or opening["resulting_revision"] != 1
+            or opening["operation_id"] != original.get("operation_id")
+            or original.get("generation") != 1 or original_id in claimed_permits
+            or not isinstance(original_snapshot, dict)
+            or any(opening[key] != original_snapshot.get(key) for key in (
+                "publication_request_id", "publication_plan_id", "publication_attempt_id",
+                "external_effect_id", "job_id", "workflow_id", "workflow_run_id", "budget_reservation_id",
+            ))
+            or original.get("approval_request_id") != opening["approval_request_id"]
+            or pointer.get("idempotency_key") != opening["provider_idempotency_key"]
+            or alert.get("work_id") != work_id or alert.get("event_kind") != "alert_intent"
+            or not isinstance(request, dict)
+            or request.keys() != _CASE_OPENING_REQUEST_KEYS | {"opening_kind", "permit_id"}
+            or any(request[key] != opening[key] for key in request.keys() & opening.keys())
+            or not isinstance(decision, dict) or decision.keys() != _CASE_OPENING_AUTHORIZATION_KEYS
+            or alert.get("policy_decision_id") != decision["policy_decision_id"]
+        ):
+            raise RecoveryRollbackVerificationError("rollback preclaim opening differs from its source")
+        accepted_work.add(work_id)
+        renewal = item["renewal"]
+        if renewal is None:
+            if pointer.get("current_permit_id") != original_id or pointer.get("generation") != 1:
+                raise RecoveryRollbackVerificationError("rollback preclaim inventory omits a renewal proof")
+            continue
+        if not isinstance(renewal, dict):
+            raise RecoveryRollbackVerificationError("rollback preclaim renewal is incomplete")
+        proof_id = str(_uuid(renewal.get("event_id"), "preclaim proof ID"))
+        payload = renewal.get("payload")
+        if (
+            proof_id in accepted_proofs or renewal != events.get(proof_id)
+            or renewal.get("event_kind") != "preclaim_permit_resume" or renewal.get("work_id") != work_id
+            or not isinstance(payload, dict) or payload.get("predecessor_permit_id") != original_id
+            or payload.get("opening_command_id") != opening["command_id"]
+            or payload.get("schema_version") != "salience.p1-preclaim-permit-resume.v1"
+            or payload.get("operation_id") != operation or payload.get("work_id") != work_id
+            or payload.get("approval_request_id") != opening["approval_request_id"]
+        ):
+            raise RecoveryRollbackVerificationError("rollback preclaim renewal differs from its source")
+        accepted_proofs.add(proof_id)
+        successor_id = str(_uuid(payload.get("successor_permit_id"), "preclaim successor permit"))
+        successor = permits.get(successor_id, {})
+        if (
+            successor.get("generation") != 2 or successor.get("operation_id") != operation
+            or successor.get("recovery_command_id") != proof_id
+            or successor.get("approval_request_id") != opening["approval_request_id"]
+            or successor.get("route_fence_decision_id") != payload.get("route_decision_id")
+            or pointer.get("generation") != 2 or pointer.get("current_permit_id") != successor_id
+        ):
+            raise RecoveryRollbackVerificationError("rollback preclaim successor differs from its proof")
+    if accepted_proofs != {key for key, row in events.items() if row.get("event_kind") == "preclaim_permit_resume"}:
+        raise RecoveryRollbackVerificationError("rollback preclaim lineage omits a renewal proof")
+    legacy = {key: value for key, value in inventory.items() if key != "preclaim_lineage"}
+    legacy["schema_version"] = ROLLBACK_INVENTORY_SCHEMA_V4
+    legacy["migration_head"] = ROLLBACK_MIGRATION_HEAD_V4
+    legacy["relation_counts"] = {key: value for key, value in counts.items() if key != "production_preclaim_lineage"}
+    legacy["recovery_work"] = [
+        row | {"opening_command_id": None} if isinstance(row, dict) and row.get("work_id") in accepted_work else row
+        for row in inventory["recovery_work"]
+    ]
+    return validate_recovery_rollback_inventory_v4(legacy, workspace_id=workspace_id)
+
+
+def read_p1_recovery_rollback_inventory_v5(
+    database_url: str, *, workspace_id: UUID,
+) -> RecoveryRollbackInventoryV2:
+    """Read workspace inventory including approved preclaim permit recovery."""
+    return _read_workspace_inventory(
+        database_url, workspace_id, ROLLBACK_MIGRATION_HEAD_V5,
+        "SELECT public.v4_p1_recovery_rollback_inventory_v5(%s)",
+        validate_recovery_rollback_inventory_v5,
+    )
+
+
 def _read_workspace_inventory(
     database_url: str, workspace_id: UUID, migration: str, query: str, validate,
 ) -> RecoveryRollbackInventoryV2:
@@ -703,6 +857,17 @@ def verify_p1_recovery_rollback_v4(
     """Require complete workspace, case-opening, route, and Temporal evidence."""
     return _verify_workspace_readbacks(
         read_p1_recovery_rollback_inventory_v4(database_url, workspace_id=workspace_id),
+        route_authority, temporal_readback,
+    )
+
+
+def verify_p1_recovery_rollback_v5(
+    database_url: str, *, workspace_id: UUID,
+    route_authority: RouteLeaseAuthority, temporal_readback: TemporalWorkerReadback,
+) -> RecoveryRollbackInventoryV2:
+    """Require complete workspace, preclaim renewal, route, and Temporal evidence."""
+    return _verify_workspace_readbacks(
+        read_p1_recovery_rollback_inventory_v5(database_url, workspace_id=workspace_id),
         route_authority, temporal_readback,
     )
 

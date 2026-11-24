@@ -1,4 +1,3 @@
-import os
 import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
@@ -15,8 +14,8 @@ from salience.cycles.contracts import GoalSpec
 
 
 @pytest.fixture
-def cycles():
-    database = os.environ["TEST_DATABASE_URL"]
+def cycles(cycle_database):
+    database = cycle_database
     workspace, subject = uuid4(), uuid4()
     with psycopg.connect(database) as connection:
         connection.execute("INSERT INTO workspaces (id,slug,display_name) VALUES (%s,%s,'P1 fixture')", (workspace, str(workspace)))

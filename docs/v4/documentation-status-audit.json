@@ -112,21 +112,21 @@
       "docs/superpowers/specs/2026-10-13-p1-production-recovery-and-alerts-design.md": "4d7076fd968c28d78307678fa0b186d446dff6e3f3a88d5507646a828b2605cc",
       "docs/superpowers/specs/2026-10-13-p1-production-routing-and-worker-fencing-design.md": "76921a085e352f86ae77895c824917832a49847c306b76bc56ae2c7e44a23e90",
       "docs/superpowers/specs/2026-10-13-rg0-rg1-external-acceptance-design.md": "7334364e5417cbb29143877334a80ea90125e9ce61bff71f67de77a86f61069e",
-      "docs/v4/IMPLEMENTATION-BLUEPRINT.md": "e1d3bc671fd57a02ac5bcf8b3fabfefffc291731b44385b9cabec55a45875bdc",
-      "docs/v4/evidence-lock.json": "8fe751ff7129e9f986fb5b917fe8ba51020e6a235db6495674eda74aacbc9d0b",
+      "docs/v4/IMPLEMENTATION-BLUEPRINT.md": "682c0c7e7cbdabce58d038f30de40095a04373d0062029bd9454d20624ea4df4",
+      "docs/v4/evidence-lock.json": "eb3da62652859bb64cab766a0a570030ed508b7d032fa0536ce86cef7f2dee24",
       "docs/v4/p0-release.json": "0a0f1969e0497cbec535fb3f854b51cef870a4746eb92f8a67a127566dc9ff75",
       "docs/v4/p1-production-policy-revocation-evidence.json": "e5a5a3d424157479cacaf00eae39614a5abe12ecdb04ac38af0c95692dbd982b",
-      "docs/v4/p1-qualification-matrix.json": "08d61c2b727c9452ed8b1674c30b896776cc5d72b2beb8c9705fc4e97433f045",
+      "docs/v4/p1-qualification-matrix.json": "1a907f79797b78c792efcc36d8700eadf6c9c7d4471db3a5b3e59de58a7bf092",
       "docs/v4/p1-remaining-production-development-evidence.json": "9712af1be052ae418a26d4c0ac600ce15a191d49b31517885926e3cc72d598ad",
       "docs/v4/p1-rg0-rg1-external-acceptance.schema.json": "16cbdd59abc82c587d0d05de44dec0d867893d0bc8207df20d7f1bbe85805154",
       "docs/v4/p1-rg0-rg1-initial-gap-audit.json": "33fe485384dcf60e36df8d48ace6394c80bce0d1bd9e6b9b39c7a905d65676b1",
       "docs/v4/p1-rg0-rg1-initial-gap-audit.md": "62aab5afb39f7c47e355a68ccf56e319a72955247515dfbdba8913fd797a5944",
-      "docs/v4/progress.md": "a7c82629754241a20de51ac45d8c6b589128f8b503f05f5a40023e6fede8149b",
+      "docs/v4/progress.md": "f3da0b3456f08e4dbcbb8ec308032f5a5aba7f523a61e14396a76ccd3eb2567b",
       "docs/v4/publication-recovery-hold-evidence.json": "3cce88e4d692f726be710c1f4db46b1428c9546561424a2ab0ad120363becc66",
       "docs/v4/publication-recovery-hold-successor-evidence.json": "6bb3ce696cffec2629838f5f30b8eea4acb837cbb81c1bcbc1b4de4f19e8764a",
       "docs/v4/repository-enforcement-evidence.json": "fc69f901036971bd64588cf3247d1701939e7525442f196daeab7f1919de11a2",
       "docs/v4/test_checks.py": "fc7b022e46e79c86d29878172ff77aee0f8c089a824e5ca5c18c4d338930d111",
-      "docs/v4/validation.md": "a2c66774a81f70def0f9992bc7ee343f48561060bd6143a9b15b255ead6d8a48"
+      "docs/v4/validation.md": "5bb8acb20e46fc34d560ade5227ff12bf6b74a89297b9ce13eaa04291cdbd324"
     },
     "Task25 review history and final source-546ac4e fix-loop rereview preserved; current rereview PASS/CLEAN with 0 findings; durable review SHA-256 42de4ad70cc6192d03cd983359d30a8ca631fc52cf2dc6d8c8c2fd6ee0d08b8d; earlier 8c31e84 review remains historically scoped": 1
   },
@@ -3207,7 +3207,7 @@
     },
     {
       "path": "docs/v4/IMPLEMENTATION-BLUEPRINT.md",
-      "sha256": "e1d3bc671fd57a02ac5bcf8b3fabfefffc291731b44385b9cabec55a45875bdc",
+      "sha256": "682c0c7e7cbdabce58d038f30de40095a04373d0062029bd9454d20624ea4df4",
       "disposition": "historical capture-time documentation/status scope; Task18 latest local candidate is source c23c4cca72021ce6621eaacd66f2bfc23f4cc129 / artifact be6f713b255f6b654b73ae4343db1db5c07e3840; external rows remain NOT RUN and gates HELD"
     },
     {
@@ -3282,7 +3282,7 @@
     },
     {
       "path": "docs/v4/evidence-lock.json",
-      "sha256": "8fe751ff7129e9f986fb5b917fe8ba51020e6a235db6495674eda74aacbc9d0b",
+      "sha256": "eb3da62652859bb64cab766a0a570030ed508b7d032fa0536ce86cef7f2dee24",
       "disposition": "current P1 development source inventory; historical lock preserved at ea4cd3f"
     },
     {
@@ -3422,7 +3422,7 @@
     },
     {
       "path": "docs/v4/p1-qualification-matrix.json",
-      "sha256": "08d61c2b727c9452ed8b1674c30b896776cc5d72b2beb8c9705fc4e97433f045",
+      "sha256": "1a907f79797b78c792efcc36d8700eadf6c9c7d4471db3a5b3e59de58a7bf092",
       "disposition": "P1 qualification matrix with published fixture CI and current follow-up scope"
     },
     {
@@ -3432,7 +3432,7 @@
     },
     {
       "path": "docs/v4/p1-rg0-rg1-audit-and-spec-review.md",
-      "sha256": "93d4dd00fa88b16d8461363e34131a2220b12a1a9bf154c27eb46fe9154d5fdb",
+      "sha256": "03d1fb63bf1b20866cda566b39f58700fbaa5ed155f2a06398f1deabef76d3b9",
       "disposition": "frozen review chain and successive handoff hashes; external gates HELD"
     },
     {
@@ -3462,7 +3462,7 @@
     },
     {
       "path": "docs/v4/progress.md",
-      "sha256": "a7c82629754241a20de51ac45d8c6b589128f8b503f05f5a40023e6fede8149b",
+      "sha256": "f3da0b3456f08e4dbcbb8ec308032f5a5aba7f523a61e14396a76ccd3eb2567b",
       "disposition": "current P1 development and release handoff; external gates HELD"
     },
     {
@@ -3532,7 +3532,7 @@
     },
     {
       "path": "docs/v4/validation.md",
-      "sha256": "a2c66774a81f70def0f9992bc7ee343f48561060bd6143a9b15b255ead6d8a48",
+      "sha256": "5bb8acb20e46fc34d560ade5227ff12bf6b74a89297b9ce13eaa04291cdbd324",
       "disposition": "current P1 verification; historical checks remain candidate-bound"
     },
     {
@@ -4069,21 +4069,21 @@
     "docs/superpowers/specs/2026-10-13-p1-production-recovery-and-alerts-design.md": "4d7076fd968c28d78307678fa0b186d446dff6e3f3a88d5507646a828b2605cc",
     "docs/superpowers/specs/2026-10-13-p1-production-routing-and-worker-fencing-design.md": "76921a085e352f86ae77895c824917832a49847c306b76bc56ae2c7e44a23e90",
     "docs/superpowers/specs/2026-10-13-rg0-rg1-external-acceptance-design.md": "7334364e5417cbb29143877334a80ea90125e9ce61bff71f67de77a86f61069e",
-    "docs/v4/IMPLEMENTATION-BLUEPRINT.md": "e1d3bc671fd57a02ac5bcf8b3fabfefffc291731b44385b9cabec55a45875bdc",
-    "docs/v4/evidence-lock.json": "8fe751ff7129e9f986fb5b917fe8ba51020e6a235db6495674eda74aacbc9d0b",
+    "docs/v4/IMPLEMENTATION-BLUEPRINT.md": "682c0c7e7cbdabce58d038f30de40095a04373d0062029bd9454d20624ea4df4",
+    "docs/v4/evidence-lock.json": "eb3da62652859bb64cab766a0a570030ed508b7d032fa0536ce86cef7f2dee24",
     "docs/v4/p0-release.json": "0a0f1969e0497cbec535fb3f854b51cef870a4746eb92f8a67a127566dc9ff75",
     "docs/v4/p1-production-policy-revocation-evidence.json": "e5a5a3d424157479cacaf00eae39614a5abe12ecdb04ac38af0c95692dbd982b",
-    "docs/v4/p1-qualification-matrix.json": "08d61c2b727c9452ed8b1674c30b896776cc5d72b2beb8c9705fc4e97433f045",
+    "docs/v4/p1-qualification-matrix.json": "1a907f79797b78c792efcc36d8700eadf6c9c7d4471db3a5b3e59de58a7bf092",
     "docs/v4/p1-remaining-production-development-evidence.json": "9712af1be052ae418a26d4c0ac600ce15a191d49b31517885926e3cc72d598ad",
     "docs/v4/p1-rg0-rg1-external-acceptance.schema.json": "16cbdd59abc82c587d0d05de44dec0d867893d0bc8207df20d7f1bbe85805154",
     "docs/v4/p1-rg0-rg1-initial-gap-audit.json": "33fe485384dcf60e36df8d48ace6394c80bce0d1bd9e6b9b39c7a905d65676b1",
     "docs/v4/p1-rg0-rg1-initial-gap-audit.md": "62aab5afb39f7c47e355a68ccf56e319a72955247515dfbdba8913fd797a5944",
-    "docs/v4/progress.md": "a7c82629754241a20de51ac45d8c6b589128f8b503f05f5a40023e6fede8149b",
+    "docs/v4/progress.md": "f3da0b3456f08e4dbcbb8ec308032f5a5aba7f523a61e14396a76ccd3eb2567b",
     "docs/v4/publication-recovery-hold-evidence.json": "3cce88e4d692f726be710c1f4db46b1428c9546561424a2ab0ad120363becc66",
     "docs/v4/publication-recovery-hold-successor-evidence.json": "6bb3ce696cffec2629838f5f30b8eea4acb837cbb81c1bcbc1b4de4f19e8764a",
     "docs/v4/repository-enforcement-evidence.json": "fc69f901036971bd64588cf3247d1701939e7525442f196daeab7f1919de11a2",
     "docs/v4/test_checks.py": "fc7b022e46e79c86d29878172ff77aee0f8c089a824e5ca5c18c4d338930d111",
-    "docs/v4/validation.md": "a2c66774a81f70def0f9992bc7ee343f48561060bd6143a9b15b255ead6d8a48"
+    "docs/v4/validation.md": "5bb8acb20e46fc34d560ade5227ff12bf6b74a89297b9ce13eaa04291cdbd324"
   },
   "historical_documentation_refresh": {
     "plan_task": "docs/superpowers/plans/2026-10-27-p1-rg0-rg1-initial-gap-audit.md",
@@ -5266,48 +5266,16 @@
     "superseded_by": "Task35 exact local qualification of source 546ac4ed794afc123ea02586a37d4a4457590582 / artifact fe6b3795ce4453beb6c6bbafcc20cd3be91b3b87."
   },
   "current_p1_follow_up": {
-    "source_lock_sha256": "8fe751ff7129e9f986fb5b917fe8ba51020e6a235db6495674eda74aacbc9d0b",
+    "source_lock_sha256": "eb3da62652859bb64cab766a0a570030ed508b7d032fa0536ce86cef7f2dee24",
     "scope": "Local development checkout with injected targets and authorities",
-    "artifact_build": "PASS_FIXTURE_ONLY",
+    "artifact_build": "NOT RUN",
     "external_rows_not_run": 22,
     "external_final_audit": "NOT RUN",
-    "production_recovery_case_lifecycle": "Fixture-verified opening for an exact claimed publication, existing case commands, and rollback ABI v4. The routed workflow handoff and reviewed permit rule for expired never-claimed work remain open.",
+    "production_recovery_case_lifecycle": "Local production-shaped case commands, claimed and expired-unclaimed opening, original-workflow preclaim resume, and rollback ABI v5. The claimed no-effect handoff and production composition remain open.",
     "handoff": "docs/v4/progress.md#current-state",
-    "migration_head": "0055_p1_recovery_open_rollback_v4",
+    "migration_head": "0058_p1_preclaim_rollback_v5",
     "external_artifact_qualification": "NOT RUN",
     "prior_fixture_image_rehearsal": {
-      "application_commit": "8c2cd7c3ba46be5886f29636a9fe54017f43ee6b",
-      "application_tree": "2ff435f0b546eca34b4a7a06d62f7138a59444a1",
-      "wheel_sha256": "1f1c33125709c5e32562657659fdf1218602e6b91b45c2e0a75de53291512ff1",
-      "local_image_id": "sha256:ea4b7d522dc50a497f1d5c38566191d7f535e85a2a13eda821d5f640a5868e6d",
-      "fixture_launch_lock_sha256": "b9bbea3aa38a94c7759f5d9ca457b28442a4f0d83f12b27a27c82bf310f65694",
-      "development_route_lock_sha256": "969e1d602f83c7a197a93487de171894fc20047160c3f3610f29bca024c0b99d",
-      "rollback_verifier_abi": "salience.p1-recovery-rollback-verifier.v3",
-      "migration_head": "0053_p1_recovery_rollback_v3",
-      "compose_worker_restart": {
-        "status": "succeeded",
-        "provider_effect_calls": 1,
-        "reconciled": true,
-        "canonical_checkpoint_count": 2,
-        "canonical_effect_count": 1
-      },
-      "production_launcher_denials": {
-        "current": "UNPROVISIONED_PRODUCTION_TRUST",
-        "rollback_restart": "AUTHENTICATED_EXECUTOR_REQUIRED"
-      },
-      "image_amd64_manifest_sha256": "sha256:fc00dfc7fb1daa3d60b73c1808a9a72cf7dfb428ca5610a677a9655d9089a2ca",
-      "image_archive_sha256": "3f7acf3751ca88a8157646a1a71dfb66dbc13e399e47016796f694494caf02a0",
-      "verified_oci_blobs": 15,
-      "installed_rollback_fixture_readback": {
-        "inventory_sha256": "a1663e74eac30fdf903983c55316f760e9aec6d108cd426d7c7633bdcee8cbb3",
-        "readback_sha256": "14ca0476beccbb680b84117d0b7861acd3e6e6b0cfd93e249cdb22838d87ac9c",
-        "scoped_route_claims": 1,
-        "scoped_temporal_readbacks": 1,
-        "unavailable_route": "DENIED"
-      },
-      "configured_production_api": "DENIED"
-    },
-    "fixture_image_rehearsal": {
       "application_commit": "b7e74997fa5f92a7909858cc136f85d97c55ad47",
       "application_tree": "49c007ba107622764baf5ea58d38a9f54c0212e1",
       "wheel_sha256": "b56139801a6746a5bc20c04e3db27a02240141900dcee43e7d400461ef903ae5",
@@ -5364,6 +5332,12 @@
       },
       "initial_compose_attempt": "PREFLIGHT_TIMEOUT",
       "successful_retry_worker_exit_status": 137
+    },
+    "proposed_named_qualification_target": {
+      "environment": "salience-p1-qual-use1",
+      "platform": "AWS ECS/Fargate",
+      "region": "us-east-1",
+      "disposition": "PROPOSED_UNPROVISIONED"
     }
   },
   "published_fixture_ci": {

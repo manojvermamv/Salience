@@ -5,11 +5,43 @@ import importlib.util
 import subprocess
 import sys
 from pathlib import Path
+from urllib.parse import urlsplit, urlunsplit
+from uuid import uuid4
 
+import psycopg
 import pytest
 
 
 ROOT = Path(__file__).parents[1]
+
+
+@pytest.fixture
+def cycle_database(request):
+    """Provide a disposable database for tests of a specific migration guard."""
+    source = os.environ["TEST_DATABASE_URL"]
+    revision = getattr(request, "param", None)
+    if revision is None:
+        yield source
+        return
+
+    name = "cycle_migration_" + uuid4().hex
+    database = urlunsplit(urlsplit(source)._replace(path="/" + name))
+    identifier = psycopg.sql.Identifier(name)
+    with psycopg.connect(source, autocommit=True) as admin:
+        admin.execute(psycopg.sql.SQL("CREATE DATABASE {}").format(identifier))
+    try:
+        upgrade = subprocess.run(
+            [sys.executable, "-m", "alembic", "-x", f"database_url={database}", "upgrade", revision],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            timeout=120,
+        )
+        assert upgrade.returncode == 0, upgrade.stderr
+        yield database
+    finally:
+        with psycopg.connect(source, autocommit=True) as admin:
+            admin.execute(psycopg.sql.SQL("DROP DATABASE {} WITH (FORCE)").format(identifier))
 
 
 @pytest.fixture(scope="session")

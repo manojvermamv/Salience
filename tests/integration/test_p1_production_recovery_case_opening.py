@@ -16,7 +16,7 @@ from psycopg.types.json import Jsonb
 import pytest
 
 from salience.cycles import production_recovery as recovery
-from salience.cycles.production_dispatch import PublicationEffectBinding
+from salience.cycles.production_dispatch import ProductionPreclaimResumeAuthorization, PublicationEffectBinding
 from salience.observability.tracing import TraceContext
 from salience.publication.repository import PublicationRepository
 from salience.workflows.persistence import CanonicalJobStore, CanonicalRun
@@ -33,14 +33,16 @@ from test_v4_migrations import (
 
 
 _OPEN_FUNCTION = "public.v4_open_production_recovery_case_v1(jsonb,jsonb)"
+_PRECLAIM_OPEN_FUNCTION = "public.v4_open_production_preclaim_case_v1(jsonb,jsonb)"
 _REVISION = "0054_p1_recovery_case_opening"
 _PREVIOUS_REVISION = "0053_p1_recovery_rollback_v3"
 
 
 class _OpenAuthority(_RecoveryAuthority):
-    def __init__(self, bindings):
+    def __init__(self, bindings, *, database):
         super().__init__(recovery)
         self.bindings = bindings
+        self.database = database
         self.available = True
         self.override = {}
         self.before_decision = lambda: None
@@ -59,6 +61,21 @@ class _OpenAuthority(_RecoveryAuthority):
             } | self.bindings | self.override),
         )
 
+    def authorize_preclaim_resume(self, request, *, predecessor_permit_id, resume_command_id):
+        if not self.available:
+            raise PermissionError("preclaim renewal stage authority denied")
+        with psycopg.connect(self.database) as connection:
+            profile_id, profile_version, adapter_version = connection.execute(
+                """SELECT profile.id,profile.profile_version,profile.publisher_version
+                   FROM publication_requests publication JOIN publisher_capability_profiles profile
+                     ON profile.id=publication.publisher_capability_profile_id WHERE publication.id=%s""",
+                (request.publication_binding.publication_request_id,),
+            ).fetchone()
+        return ProductionPreclaimResumeAuthorization(
+            request, predecessor_permit_id, resume_command_id, uuid4(), uuid4(),
+            profile_id, profile_version, adapter_version, datetime.now(timezone.utc) + timedelta(seconds=30),
+        )
+
     def authorize_case_command(self, command):
         return recovery.ProductionRecoveryCaseAuthorization(
             command=command, policy_decision_id=uuid4(), stage_decision_id=uuid4(),
@@ -69,10 +86,22 @@ class _OpenAuthority(_RecoveryAuthority):
 
 @pytest.fixture(scope="module")
 def opening_database():
+    with _opening_database() as database:
+        yield database
+
+
+@pytest.fixture(scope="module")
+def preclaim_opening_database():
+    with _opening_database() as database:
+        yield database
+
+
+@contextmanager
+def _opening_database(revision="head"):
     source = os.environ["TEST_DATABASE_URL"]
     name, database = _create_migration_database(source, "p1_case_open_")
     try:
-        result = _migration(database, "upgrade", "head")
+        result = _migration(database, "upgrade", revision)
         assert result.returncode == 0, result.stdout + result.stderr
         yield database
     finally:
@@ -80,14 +109,24 @@ def opening_database():
 
 
 @pytest.fixture
-def opening_source(opening_database, monkeypatch, request):
+def opening_source(monkeypatch, request):
+    source_state = getattr(request, "param", "submitting")
+    database_fixture = "preclaim_opening_database" if source_state.startswith("preclaim") else "opening_database"
+    opening_database = request.getfixturevalue(database_fixture)
     monkeypatch.setenv("TEST_DATABASE_URL", opening_database)
     accounting_state = request.getfixturevalue("accounting")
+    return seed_opening_source(accounting_state, opening_database, source_state)
+
+
+def seed_opening_source(
+    accounting_state, opening_database, source_state, *,
+    workflow_id="case-opening-workflow", workflow_run_id=None,
+):
     binding = PublicationEffectBinding(
         publication_request_id=uuid4(),
         job_id=uuid4(),
-        workflow_id="case-opening-workflow",
-        workflow_run_id=f"case-opening-run-{uuid4()}",
+        workflow_id=workflow_id,
+        workflow_run_id=workflow_run_id or f"case-opening-run-{uuid4()}",
         publication_plan_id=uuid4(),
         publication_attempt_id=uuid4(),
         external_effect_id=uuid4(),
@@ -113,18 +152,60 @@ def opening_source(opening_database, monkeypatch, request):
                      (%s,%s,'https://case-actor.invalid',%s,clock_timestamp()+interval '1 day')""",
             (route.owner_id, workspace, str(route.owner_id), actor, workspace, str(actor)),
         )
-        for scope in ("production:recovery:case:open", "production:recovery:case:resume"):
+        for scope in (
+            "production:recovery:case:open",
+            "production:recovery:case:review",
+            "production:recovery:case:resume",
+        ):
             connection.execute(
                 """INSERT INTO permission_grants(workspace_id,principal_type,principal_id,
                                                  scope,effect,constraints,expires_at)
                    VALUES(%s,'identity',%s,%s,'allow','{}',clock_timestamp()+interval '1 hour')""",
                 (workspace, str(actor), scope),
             )
+        if source_state.startswith("preclaim"):
+            connection.execute("SET LOCAL session_replication_role=replica")
+            connection.execute(
+                "UPDATE publication_requests SET request_key=%s WHERE id=%s",
+                (permit_request.idempotency_key, binding.publication_request_id),
+            )
+            connection.execute(
+                "UPDATE publication_attempts SET idempotency_key=%s WHERE id=%s",
+                (f"{permit_request.idempotency_key}:attempt:1", binding.publication_attempt_id),
+            )
+            connection.execute(
+                "UPDATE external_effects SET idempotency_key=%s WHERE id=%s",
+                (f"{permit_request.idempotency_key}:publish", binding.external_effect_id),
+            )
+            connection.execute(
+                """UPDATE budget_reservations
+                   SET reservation_key=%s,estimated_amount=0 WHERE id=%s""",
+                (f"{permit_request.idempotency_key}:publish", permit_request.budget_reservation_id),
+            )
+            connection.execute("SET LOCAL session_replication_role=origin")
+            connection.execute(
+                "UPDATE publication_plans SET state='reserved' WHERE id=%s",
+                (binding.publication_plan_id,),
+            )
+            connection.execute(
+                """INSERT INTO cost_ledger_entries(
+                       budget_reservation_id,job_id,estimated_amount,usage,recorded_at)
+                   VALUES(%s,%s,0,'{"kind":"estimated","estimated_micros":0}',CURRENT_TIMESTAMP)""",
+                (permit_request.budget_reservation_id, binding.job_id),
+            )
     issued = dispatch.issue_permit(permit_request)
-    source_state = getattr(request, "param", "submitting")
-    if source_state != "unclaimed":
+    if source_state not in {"unclaimed", "preclaim_expired", "preclaim_live"}:
         dispatch.claim_permit(permit_request.operation_id, issued.permit_id)
     with psycopg.connect(opening_database) as connection:
+        if source_state in {"preclaim_expired", "preclaim_claimed"}:
+            # Use fixture-only aging of the immutable permit to avoid waiting for its TTL.
+            connection.execute("SET LOCAL session_replication_role=replica")
+            connection.execute(
+                """UPDATE v4_production_effect_permits SET expires_at=clock_timestamp()
+                   WHERE permit_id=%s""",
+                (issued.permit_id,),
+            )
+            connection.execute("SET LOCAL session_replication_role=origin")
         fingerprint, policy_hash, actor_revision = connection.execute(
             """SELECT encode(public.digest(request_snapshot::text,'sha256'),'hex'),
                       policy_document_hash,
@@ -153,7 +234,7 @@ def opening_source(opening_database, monkeypatch, request):
                    FROM v4_production_effect_permits WHERE permit_id=%s""",
                 (eligibility, actor, issued.permit_id),
             )
-    if source_state not in {"unclaimed", "not_attempted"}:
+    if source_state not in {"unclaimed", "not_attempted"} and not source_state.startswith("preclaim"):
         run = CanonicalRun(workspace, permit_request.program_id, binding.job_id,
                            binding.workflow_run_id, TraceContext.new_root())
         assert asyncio.run(CanonicalJobStore(opening_database).begin_effect_submission(
@@ -164,7 +245,10 @@ def opening_source(opening_database, monkeypatch, request):
         "policy_document_hash": policy_hash,
         "route_id": route.route_id, "slot_id": route.slot_id, "fencing_epoch": route.fencing_epoch,
         "workspace_stop_revision": 1, "goal_stop_revision": 1, "actor_revision": actor_revision,
-    })
+    }, database=opening_database)
+    if source_state.startswith("preclaim"):
+        dispatch.preclaim_resume_authority = authority
+    case["opening_permit_id"] = issued.permit_id
     return case, authority, {
         "workspace_id": workspace, "actor_id": actor, "intent_id": permit_request.intent_id,
         "cycle_id": permit_request.cycle_id, "context_id": permit_request.context_id,
@@ -266,6 +350,205 @@ def _publication_liabilities(database, operation_id):
                       - ARRAY['cycle','cycle_events']""",
             (operation_id,),
         ).fetchone()[0]
+
+
+@pytest.mark.parametrize("opening_source", ["preclaim_expired"], indirect=True)
+def test_expired_unclaimed_permit_opens_exact_manual_review_once(opening_source):
+    case, authority, request_fields = opening_source
+    database = case["database"]
+    with psycopg.connect(database) as connection:
+        assert connection.execute(
+            "SELECT to_regprocedure(%s)", (_PRECLAIM_OPEN_FUNCTION,),
+        ).fetchone()[0] is not None
+    command = recovery.ProductionRecoveryCaseOpenCommand(
+        **request_fields, preclaim_permit_id=case["opening_permit_id"],
+    )
+    with _restricted_role(database) as ungranted:
+        with pytest.raises(PermissionError, match="permission denied for function"):
+            _controller(ungranted, authority).open_case(command)
+    with _restricted_role(database, [f"EXECUTE ON FUNCTION {_PRECLAIM_OPEN_FUNCTION}"]) as granted:
+        open_case = _controller(granted, authority).open_case
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            first, second = list(pool.map(lambda _: open_case(command), range(2)))
+        assert second == first
+        authority.available = False
+        assert open_case(command) == first
+        with pytest.raises(recovery.RecoveryIdentityConflict):
+            open_case(replace(command, preclaim_permit_id=uuid4()))
+    assert first.state == "awaiting_review"
+    binding = case["publication_binding"]
+    request = case["request"]
+    with psycopg.connect(database) as connection:
+        state, count, kind, reason, receipt, work_id, opened, audit, alert_status = connection.execute(
+            """SELECT cycle.state,cycle.recovery_count,recovery.kind,recovery.failure_class,command.result,
+                      work.work_id,event.payload,audit.payload,alert.payload->>'status'
+               FROM v4_recovery_cases recovery
+               JOIN v4_cycles cycle ON cycle.id=recovery.target_cycle_id
+               JOIN v4_production_recovery_work work ON work.source_id=recovery.id
+               JOIN v4_case_commands command ON command.id=work.opening_command_id
+               JOIN v4_case_events event ON event.case_id=recovery.id AND event.action='opened'
+               JOIN v4_cycle_events audit ON audit.cycle_id=cycle.id AND audit.kind='production_case_open'
+               JOIN v4_production_recovery_events alert ON alert.work_id=work.work_id
+               WHERE recovery.operation_id=%s""",
+            (command.operation_id,),
+        ).fetchone()
+        assert (state, count, kind, reason, work_id, alert_status) == (
+            "retry_due", 1, "manual_review", "manual_review", first.work_id, "pending",
+        )
+        assert receipt == opened == audit
+        expected = {
+            "schema_version": "salience.p1-production-preclaim-case-opening.v1",
+            "opening_kind": "expired_unclaimed_permit",
+            "permit_id": str(case["opening_permit_id"]),
+            "claim_id": None,
+            "generation": 1,
+            "approval_request_id": str(request.approval_request_id),
+            "publication_request_id": str(binding.publication_request_id),
+            "publication_plan_id": str(binding.publication_plan_id),
+            "publication_attempt_id": str(binding.publication_attempt_id),
+            "external_effect_id": str(binding.external_effect_id),
+            "job_id": str(binding.job_id),
+            "workflow_id": binding.workflow_id,
+            "workflow_run_id": binding.workflow_run_id,
+            "provider_idempotency_key": request.idempotency_key,
+            "budget_reservation_id": str(request.budget_reservation_id),
+            "request_fingerprint": command.request_fingerprint,
+            "evidence_state": "planned",
+        }
+        assert {key: receipt[key] for key in expected} == expected
+        assert connection.execute(
+            """SELECT pointer.generation,pointer.current_claim_id,effect.status,effect.attempted_at
+               FROM v4_production_current_dispatch pointer
+               JOIN external_effects effect ON effect.id=%s WHERE pointer.operation_id=%s""",
+            (binding.external_effect_id, command.operation_id),
+        ).fetchone() == (1, None, "planned", None)
+        blockers = connection.execute(
+            "SELECT v4_p1_recovery_rollback_inventory_v4(%s)->'blockers'",
+            (command.workspace_id,),
+        ).fetchone()[0]
+        assert {
+            "kind": "production_case_opening_missing_or_mismatched", "work_id": str(first.work_id),
+        } in blockers
+
+
+@pytest.mark.parametrize("opening_source", ["preclaim_live", "preclaim_claimed"], indirect=True)
+def test_preclaim_opening_requires_expired_permit_with_no_claim(opening_source):
+    case, authority, request_fields = opening_source
+    command = recovery.ProductionRecoveryCaseOpenCommand(
+        **request_fields, preclaim_permit_id=case["opening_permit_id"],
+    )
+    with pytest.raises(PermissionError, match="expired unclaimed initial production permit"):
+        _controller(case["database"], authority).open_case(command)
+    assert _case_count(case["database"], command.operation_id) == 0
+
+
+@pytest.mark.parametrize("opening_source", ["preclaim_expired"], indirect=True)
+@pytest.mark.parametrize("drift", [
+    "prior_submission_status", "remote_receipt", "wrong_permit", "closed_run", "fixture_claim",
+    "unexpected_cost_evidence",
+])
+def test_preclaim_opening_holds_when_canonical_publication_evidence_changes(opening_source, drift):
+    case, authority, request_fields = opening_source
+    database = case["database"]
+    binding = case["publication_binding"]
+    command = recovery.ProductionRecoveryCaseOpenCommand(
+        **request_fields, preclaim_permit_id=case["opening_permit_id"],
+    )
+    if drift == "wrong_permit":
+        command = replace(command, preclaim_permit_id=uuid4())
+    elif drift == "remote_receipt":
+        asyncio.run(PublicationRepository(database).record_remote_receipt(
+            publication_attempt_id=str(binding.publication_attempt_id),
+            publisher_id=case["request"].provider_id, remote_id=f"preclaim-known-{uuid4()}",
+            state="accepted", safe_metadata_hash="b" * 64, remote_url=None,
+        ))
+    else:
+        with psycopg.connect(database) as connection:
+            if drift == "prior_submission_status":
+                connection.execute(
+                    """INSERT INTO publication_status_events
+                         (publication_attempt_id,sequence_no,state,source,safe_payload_hash)
+                       VALUES(%s,1,'submitting','workflow',%s)""",
+                    (binding.publication_attempt_id, "f" * 64),
+                )
+            elif drift == "closed_run":
+                connection.execute("UPDATE jobs SET state='cancelled' WHERE id=%s", (binding.job_id,))
+            elif drift == "unexpected_cost_evidence":
+                connection.execute(
+                    """INSERT INTO cost_ledger_entries(
+                           budget_reservation_id,job_id,estimated_amount,actual_amount,usage,recorded_at)
+                       VALUES(%s,%s,0,0,'{"kind":"settlement"}',CURRENT_TIMESTAMP)""",
+                    (case["request"].budget_reservation_id, binding.job_id),
+                )
+            else:
+                connection.execute(
+                    """INSERT INTO v4_permit_claims(id,cycle_id,operation_id,context_id,request_fingerprint)
+                       VALUES(%s,%s,%s,%s,%s)""",
+                    (uuid4(), command.cycle_id, command.operation_id, command.context_id, "f" * 64),
+                )
+    with pytest.raises(PermissionError):
+        _controller(database, authority).open_case(command)
+    assert _case_count(database, command.operation_id) == 0
+
+
+@pytest.mark.parametrize("opening_source", ["preclaim_expired"], indirect=True)
+def test_preclaim_review_and_resume_require_the_original_workflow_approval(opening_source):
+    case, authority, request_fields = opening_source
+    database = case["database"]
+    command = recovery.ProductionRecoveryCaseOpenCommand(
+        **request_fields, preclaim_permit_id=case["opening_permit_id"],
+    )
+    controller = _controller(database, authority)
+    opened = controller.open_case(command)
+    original_approval_id = case["request"].approval_request_id
+    competing_id = uuid4()
+    with psycopg.connect(database) as connection:
+        connection.execute(
+            """INSERT INTO approval_requests(
+                   id,workspace_id,policy_version_id,effect_type,status,request_context,requested_by,job_id)
+               SELECT %s,workspace_id,policy_version_id,effect_type,'pending',request_context,requested_by,job_id
+               FROM approval_requests WHERE id=%s""",
+            (competing_id, original_approval_id),
+        )
+        connection.execute(
+            """UPDATE approval_requests SET status='approved',decided_by='p1-competing-reviewer',
+                   decided_at=clock_timestamp() WHERE id=%s""",
+            (competing_id,),
+        )
+    review = recovery.ProductionRecoveryCaseCommand(
+        workspace_id=command.workspace_id, work_id=opened.work_id, case_id=opened.case_id,
+        actor_id=command.actor_id, expected_revision=1, action="review_approve",
+        idempotency_key="preclaim-review", approval_request_id=original_approval_id,
+        reason="Confirm operator review of the never-claimed permit",
+    )
+    resume = replace(review, action="resume", idempotency_key="preclaim-resume", reason=None)
+    with pytest.raises(recovery.RecoveryIdentityConflict):
+        controller.execute_case_command(resume)
+    with pytest.raises(PermissionError, match="requires the original publication workflow approval"):
+        controller.execute_case_command(replace(review, approval_request_id=competing_id))
+    assert controller.execute_case_command(review).state == "retry_due"
+    resume = replace(resume, expected_revision=2)
+    result = controller.execute_case_command(resume)
+    assert (result.state, result.resulting_revision) == ("resolved", 3)
+    with psycopg.connect(database) as connection:
+        assert connection.execute(
+            """SELECT state,recovery_count FROM v4_cycles WHERE id=%s""",
+            (command.cycle_id,),
+        ).fetchone() == ("runnable", 1)
+
+
+@pytest.mark.parametrize("opening_source", ["preclaim_expired"], indirect=True)
+def test_preclaim_opening_history_prevents_downgrade(opening_source):
+    case, authority, request_fields = opening_source
+    controller = _controller(case["database"], authority)
+    command = recovery.ProductionRecoveryCaseOpenCommand(
+        **request_fields, preclaim_permit_id=case["opening_permit_id"],
+    )
+    receipt = controller.open_case(command)
+    result = _migration(case["database"], "downgrade", "0056_p1_preclaim_permit_resume")
+    assert result.returncode != 0
+    assert "preserve production preclaim case opening history" in result.stderr
+    assert controller.open_case(command) == receipt
 
 
 def test_only_granted_command_role_can_open_and_unknown_cannot_resume(opening_source):

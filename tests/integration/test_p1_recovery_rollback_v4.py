@@ -10,8 +10,14 @@ from salience.cycles import p1_recovery_rollback as rollback
 from salience.cycles import production_recovery as recovery
 from test_p1_production_policy_revocation import accounting, cycles, policy
 from test_p1_production_recovery import _rollback_v2_readbacks, _rollback_v2_valid_operation, _task9_set_stop_scope
-from test_p1_production_recovery_case_opening import opening_database, opening_source
+from test_p1_production_recovery_case_opening import _opening_database, opening_source
 from test_v4_migrations import _migration
+
+
+@pytest.fixture(scope="module")
+def opening_database():
+    with _opening_database(rollback.ROLLBACK_MIGRATION_HEAD_V4) as database:
+        yield database
 
 
 def test_successor_inventory_preserves_history_and_requires_its_exact_head():

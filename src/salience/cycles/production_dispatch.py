@@ -9,7 +9,7 @@ supplies and qualifies its versioned implementation.
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import datetime, timedelta, timezone
 import hashlib
 import re
@@ -131,9 +131,10 @@ _PUBLICATION_FIELDS = frozenset(
 class ProductionAuthorizationDenied(PermissionError):
     """A bounded current-authority denial with no sensitive row values."""
 
-    def __init__(self, reason_code: str) -> None:
+    def __init__(self, reason_code: str, *, preclaim_permit_expired: bool = False) -> None:
         safe_code = reason_code if reason_code in _REASON_CODES else "other"
         self.reason_code = safe_code
+        self.preclaim_permit_expired = safe_code == "permit_expired" and preclaim_permit_expired is True
         super().__init__(safe_code)
 
 
@@ -196,10 +197,15 @@ class RouteFenceDecision:
     decision_id: UUID | None
     reason_code: str | None
     request: RouteFenceRequest
+    preclaim_permit_expired: bool = field(default=False, kw_only=True)
 
     def __post_init__(self) -> None:
         if type(self.authorized) is not bool:
             raise ValueError("route-fence authorization must be explicit")
+        if type(self.preclaim_permit_expired) is not bool or (self.preclaim_permit_expired and (
+            self.authorized or self.reason_code != "permit_expired"
+        )):
+            raise ValueError("preclaim expiry requires an exact permit-expiry denial")
         if not isinstance(self.request, RouteFenceRequest):
             raise ValueError("route-fence request tuple required")
         if self.authorized:
@@ -351,6 +357,41 @@ class ProductionPermitRequest:
 
 
 @dataclass(frozen=True, slots=True)
+class ProductionPreclaimResumeAuthorization:
+    request: ProductionPermitRequest
+    predecessor_permit_id: UUID
+    resume_command_id: UUID
+    stage_decision_id: UUID
+    policy_decision_id: UUID
+    delivery_profile_id: UUID
+    delivery_profile_version: int
+    delivery_adapter_version: str
+    expires_at: datetime
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.request, ProductionPermitRequest):
+            raise ValueError("exact original production request required")
+        for name in (
+            "predecessor_permit_id", "resume_command_id", "stage_decision_id",
+            "policy_decision_id", "delivery_profile_id",
+        ):
+            if not isinstance(getattr(self, name), UUID) or getattr(self, name).int == 0:
+                raise ValueError(f"preclaim resume {name} UUID required")
+        if type(self.delivery_profile_version) is not int or self.delivery_profile_version < 1:
+            raise ValueError("positive preclaim delivery profile version required")
+        if not isinstance(self.delivery_adapter_version, str) or not 1 <= len(self.delivery_adapter_version) <= 128:
+            raise ValueError("exact preclaim delivery adapter version required")
+        if not isinstance(self.expires_at, datetime) or self.expires_at.utcoffset() is None:
+            raise ValueError("preclaim resume authorization requires a timezone-aware expiry")
+
+
+class ProductionPreclaimResumeAuthority(Protocol):
+    def authorize_preclaim_resume(
+        self, request: ProductionPermitRequest, *, predecessor_permit_id: UUID, resume_command_id: UUID,
+    ) -> ProductionPreclaimResumeAuthorization: ...
+
+
+@dataclass(frozen=True, slots=True)
 class ProductionRecoveryCommandReference:
     """Typed Task 7 evidence reference consumed by same-operation Task 8 paths."""
 
@@ -434,6 +475,7 @@ class ProductionEffectDispatch:
         route_fence: RouteFenceAuthority,
         *,
         metrics: ProductionAuthorizationMetrics | None = None,
+        preclaim_resume_authority: ProductionPreclaimResumeAuthority | None = None,
     ) -> None:
         if not isinstance(database_url, str) or not database_url.strip():
             raise ValueError("production dispatch database URL required")
@@ -442,15 +484,37 @@ class ProductionEffectDispatch:
         self.database_url = database_url
         self.route_fence = route_fence
         self.metrics = metrics
+        self.preclaim_resume_authority = preclaim_resume_authority
 
     def issue_permit(self, request: ProductionPermitRequest) -> ProductionPermitResult:
+        result = self._issue_with_observability(request)
+        assert result is not None
+        return result
+
+    def issue_preclaim_resume_permit(
+        self, request: ProductionPermitRequest, *, predecessor_permit_id: UUID,
+    ) -> ProductionPermitResult | None:
+        """Use a committed operator resume to renew one expired, never-claimed permit."""
+        if (
+            not isinstance(request, ProductionPermitRequest)
+            or not isinstance(predecessor_permit_id, UUID)
+            or request.generation != 1
+            or request.publication_binding is None
+            or request.publication_binding.remote_receipt_id is not None
+        ):
+            raise ValueError("original production publication permit request required")
+        return self._issue_with_observability(request, predecessor_permit_id=predecessor_permit_id)
+
+    def _issue_with_observability(
+        self, request: ProductionPermitRequest, *, predecessor_permit_id: UUID | None = None,
+    ) -> ProductionPermitResult | None:
         if not isinstance(request, ProductionPermitRequest):
             raise ValueError("typed production permit request required")
         if request.route.route_tuple_sha256 is None:
             raise ProductionAuthorizationDenied("invalid_binding")
         attempt_id = uuid4()
         try:
-            result = self._issue_permit(request)
+            result = self._issue_permit(request, predecessor_permit_id=predecessor_permit_id)
         except ProductionAuthorizationDenied as denial:
             self._record_decision("issue", getattr(request, "effect_type", "other"), "deny", denial.reason_code)
             self._persist_denial_event(
@@ -466,7 +530,7 @@ class ProductionEffectDispatch:
             self._record_primary_outage("issue", getattr(request, "effect_type", "other"))
             raise
         except (psycopg.errors.RaiseException, psycopg.IntegrityError) as error:
-            if request.generation <= 1:
+            if request.generation <= 1 and predecessor_permit_id is None:
                 raise
             denial = ProductionAuthorizationDenied("generation_advance_required")
             self._record_decision("issue", request.effect_type, "deny", denial.reason_code)
@@ -479,7 +543,8 @@ class ProductionEffectDispatch:
                 attempt_id=attempt_id,
             )
             raise denial from error
-        self._record_decision("issue", request.effect_type, "allow", "none")
+        if result is not None:
+            self._record_decision("issue", request.effect_type, "allow", "none")
         return result
 
     def _current_generation_for_reissue(
@@ -504,7 +569,9 @@ class ProductionEffectDispatch:
             return row["generation"]
         return row["generation"] + 1
 
-    def _issue_permit(self, request: ProductionPermitRequest) -> ProductionPermitResult:
+    def _issue_permit(
+        self, request: ProductionPermitRequest, *, predecessor_permit_id: UUID | None = None,
+    ) -> ProductionPermitResult | None:
         if not isinstance(request, ProductionPermitRequest):
             raise ValueError("typed production permit request required")
         if request.route.route_tuple_sha256 is None:
@@ -514,16 +581,56 @@ class ProductionEffectDispatch:
         result: ProductionPermitResult | None = None
         with psycopg.connect(self.database_url, row_factory=dict_row) as connection:
             with connection.transaction():
-                recovery_work_id = self._prelock_recovery_work(connection, request)
+                arguments = None
+                renewal_authorization = None
+                renewal_deadline = None
+                if predecessor_permit_id is None:
+                    recovery_work_id = self._prelock_recovery_work(connection, request)
+                else:
+                    arguments = (
+                        request.operation_id, predecessor_permit_id, request.approval_request_id,
+                        request.idempotency_key, request.publication_binding.workflow_run_id,
+                    )
+                    prior = self._find_preclaim_resume(connection, arguments)
+                    if prior is None:
+                        return None
+                    recovery_work_id = UUID(prior["work_id"])
+                    locked = connection.execute(
+                        "SELECT work_id FROM public.v4_production_recovery_work WHERE work_id=%s FOR UPDATE",
+                        (recovery_work_id,),
+                    ).fetchone()
+                    if locked is None:
+                        raise ProductionAuthorizationDenied("generation_advance_required")
                 self._lock_operation(connection, request.operation_id)
+                if arguments is not None:
+                    current = self._find_preclaim_resume(connection, arguments)
+                    if current is None or current["work_id"] != str(recovery_work_id):
+                        raise ProductionAuthorizationDenied("generation_advance_required")
+                    resume_command_id = UUID(current["command_id"])
+                    renewal_authorization = self._authorize_preclaim_resume(
+                        request, predecessor_permit_id, resume_command_id,
+                    )
+                    renewal_deadline = min(
+                        renewal_authorization.expires_at,
+                        datetime.fromisoformat(current["command_expires_at"]),
+                    )
+                    if renewal_deadline <= self._database_time(connection):
+                        raise ProductionAuthorizationDenied("permit_expired")
+                    request = replace(
+                        request, generation=2,
+                        recovery_command_id=UUID(current["proof_id"]) if current["proof_id"] else resume_command_id,
+                    )
                 facts = self._load_authority(connection, request)
+                if renewal_authorization is not None:
+                    self._verify_preclaim_delivery_profile(connection, renewal_authorization)
                 pointer = connection.execute(
                     "SELECT * FROM public.v4_production_current_dispatch "
                     "WHERE operation_id=%s FOR UPDATE",
                     (request.operation_id,),
                 ).fetchone()
                 if (
-                    pointer is not None
+                    arguments is None
+                    and pointer is not None
                     and pointer["generation"] + 1 == request.generation
                     and request.recovery_command_id is not None
                 ):
@@ -548,6 +655,14 @@ class ProductionEffectDispatch:
                         if existing["expires_at"] <= now:
                             raise ProductionAuthorizationDenied("permit_expired")
                         self._validate_permit_row(existing, request, facts)
+                        if renewal_deadline is not None:
+                            decision = self._route_decision(self._route_request(
+                                request.route, request.operation_id, existing["permit_id"], "issue",
+                            ))
+                            if not decision.authorized:
+                                raise ProductionAuthorizationDenied(decision.reason_code or "route_fence_denied")
+                            if min(existing["expires_at"], renewal_deadline) <= self._database_time(connection):
+                                raise ProductionAuthorizationDenied("permit_expired")
                         claim_id = pointer["current_claim_id"]
                         return ProductionPermitResult(
                             permit_id=existing["permit_id"],
@@ -561,7 +676,11 @@ class ProductionEffectDispatch:
                         request.generation != pointer["generation"] + 1
                         or request.recovery_command_id is None
                         or pointer["idempotency_key"] != request.idempotency_key
-                        or pointer["current_claim_id"] is None
+                        or (arguments is None and pointer["current_claim_id"] is None)
+                        or (arguments is not None and (
+                            pointer["current_claim_id"] is not None
+                            or pointer["current_permit_id"] != predecessor_permit_id
+                        ))
                     ):
                         raise ProductionAuthorizationDenied("generation_advance_required")
                 elif request.generation != 1 or request.recovery_command_id is not None:
@@ -571,6 +690,8 @@ class ProductionEffectDispatch:
                     self._database_time(connection) + timedelta(seconds=request.ttl_seconds),
                     facts.expires_at,
                 )
+                if renewal_deadline is not None:
+                    expiry = min(expiry, renewal_deadline)
                 if expiry <= self._database_time(connection):
                     raise ProductionAuthorizationDenied("permit_expired")
                 route_request = self._route_request(
@@ -590,6 +711,24 @@ class ProductionEffectDispatch:
                     denial = ProductionAuthorizationDenied("permit_expired")
                 if denial is None:
                     assert decision is not None and decision.decision_id is not None
+                    if arguments is not None:
+                        assert renewal_authorization is not None
+                        authorization = Jsonb({
+                            "resume_command_id": str(renewal_authorization.resume_command_id),
+                            "stage_decision_id": str(renewal_authorization.stage_decision_id),
+                            "policy_decision_id": str(renewal_authorization.policy_decision_id),
+                            "delivery_profile_id": str(renewal_authorization.delivery_profile_id),
+                            "delivery_profile_version": renewal_authorization.delivery_profile_version,
+                            "delivery_adapter_version": renewal_authorization.delivery_adapter_version,
+                            "expires_at": renewal_authorization.expires_at.isoformat(),
+                        })
+                        proof = connection.execute(
+                            "SELECT public.v4_record_preclaim_resume_v1(%s,%s,%s,%s,%s,%s,%s,%s) AS proof_id",
+                            (*arguments, permit_id, decision.decision_id, authorization),
+                        ).fetchone()["proof_id"]
+                        if not isinstance(proof, UUID):
+                            raise ProductionAuthorizationDenied("generation_advance_required")
+                        request = replace(request, recovery_command_id=proof)
                     snapshot = self._permit_snapshot(request, facts, decision.decision_id)
                     connection.execute(
                         """INSERT INTO public.v4_production_effect_permits(
@@ -639,16 +778,18 @@ class ProductionEffectDispatch:
                             request.recovery_command_id,
                         ),
                     )
-                    connection.execute(
-                        "SELECT public.v4_advance_production_current_dispatch_v1(%s,%s,%s,NULL,%s,%s)",
-                        (
-                            request.operation_id,
-                            request.generation - 1,
-                            permit_id,
-                            request.idempotency_key,
-                            request.recovery_command_id,
-                        ),
-                    )
+                    if arguments is None:
+                        connection.execute(
+                            "SELECT public.v4_advance_production_current_dispatch_v1(%s,%s,%s,NULL,%s,%s)",
+                            (request.operation_id, request.generation - 1, permit_id,
+                             request.idempotency_key, request.recovery_command_id),
+                        )
+                    else:
+                        connection.execute(
+                            "SELECT public.v4_advance_preclaim_resume_dispatch_v1(%s,%s,%s,%s,%s)",
+                            (request.operation_id, predecessor_permit_id, permit_id,
+                             request.idempotency_key, request.recovery_command_id),
+                        )
                     self._write_event(
                         connection,
                         facts,
@@ -673,6 +814,53 @@ class ProductionEffectDispatch:
             raise denial
         assert result is not None
         return result
+
+    def _authorize_preclaim_resume(
+        self, request: ProductionPermitRequest, predecessor: UUID, command: UUID,
+    ) -> ProductionPreclaimResumeAuthorization:
+        authorize = getattr(self.preclaim_resume_authority, "authorize_preclaim_resume", None)
+        if not callable(authorize):
+            raise ProductionAuthorizationDenied("effect_not_allowed")
+        try:
+            result = authorize(request, predecessor_permit_id=predecessor, resume_command_id=command)
+        except PermissionError as error:
+            raise ProductionAuthorizationDenied("effect_not_allowed") from error
+        if (
+            not isinstance(result, ProductionPreclaimResumeAuthorization)
+            or result.request != request or result.predecessor_permit_id != predecessor
+            or result.request.route.route_tuple_sha256 != request.route.route_tuple_sha256
+            or result.resume_command_id != command
+        ):
+            raise ProductionAuthorizationDenied("invalid_binding")
+        return result
+
+    @staticmethod
+    def _verify_preclaim_delivery_profile(
+        connection, authorization: ProductionPreclaimResumeAuthorization,
+    ) -> None:
+        request = authorization.request
+        binding = request.publication_binding
+        if binding is None:
+            raise ProductionAuthorizationDenied("invalid_binding")
+        match = connection.execute(
+            """SELECT 1 FROM public.publication_requests publication
+               JOIN public.publisher_capability_profiles profile ON profile.id=publication.publisher_capability_profile_id
+               JOIN public.publication_plans plan ON plan.publication_request_id=publication.id
+               WHERE publication.id=%s AND publication.workspace_id=%s AND publication.publisher_id=%s
+                 AND plan.id=%s AND plan.publisher_version=profile.publisher_version AND profile.id=%s
+                 AND profile.profile_version=publication.capability_profile_version
+                 AND profile.profile_version=%s AND profile.publisher_version=%s""",
+            (binding.publication_request_id, request.workspace_id, request.provider_id, binding.publication_plan_id,
+             authorization.delivery_profile_id, authorization.delivery_profile_version, authorization.delivery_adapter_version),
+        ).fetchone()
+        if match is None:
+            raise ProductionAuthorizationDenied("invalid_binding")
+
+    @staticmethod
+    def _find_preclaim_resume(connection, arguments):
+        return connection.execute(
+            "SELECT public.v4_find_preclaim_resume_v1(%s,%s,%s,%s,%s) AS receipt", arguments,
+        ).fetchone()["receipt"]
 
     def claim_permit(self, operation_id: UUID, permit_id: UUID) -> ProductionPermitResult:
         attempt_id = uuid4()
@@ -733,7 +921,12 @@ class ProductionEffectDispatch:
                     with connection.transaction():
                         now = self._database_time(connection)
                         if permit["expires_at"] <= now:
-                            raise ProductionAuthorizationDenied("permit_expired")
+                            raise ProductionAuthorizationDenied(
+                                "permit_expired", preclaim_permit_expired=(
+                                    request.generation == 1 and request.publication_binding is not None
+                                    and facts.expires_at > now
+                                ),
+                            )
                         if permit["expires_at"] > facts.expires_at:
                             raise ProductionAuthorizationDenied("authority_changed")
                         self._validate_permit_row(permit, request, facts)
@@ -755,22 +948,36 @@ class ProductionEffectDispatch:
                     if denial is None and (
                         permit["expires_at"] <= now or facts.expires_at <= now
                     ):
-                        denial = ProductionAuthorizationDenied("permit_expired")
+                        denial = ProductionAuthorizationDenied(
+                            "permit_expired", preclaim_permit_expired=(
+                                request.generation == 1 and request.publication_binding is not None
+                                and permit["expires_at"] <= now < facts.expires_at
+                            ),
+                        )
                     if denial is None:
                         assert decision is not None and decision.decision_id is not None
                         claim_id = uuid4()
-                        connection.execute(
-                            """INSERT INTO public.v4_production_effect_permit_claims(
-                              claim_id,permit_id,operation_id,generation,route_fence_decision_id)
-                       VALUES(%s,%s,%s,%s,%s)""",
-                            (
-                                claim_id,
-                                permit_id,
-                                operation_id,
-                                pointer["generation"],
-                                decision.decision_id,
-                            ),
-                        )
+                        try:
+                            connection.execute(
+                                """INSERT INTO public.v4_production_effect_permit_claims(
+                                  claim_id,permit_id,operation_id,generation,route_fence_decision_id)
+                           VALUES(%s,%s,%s,%s,%s)""",
+                                (
+                                    claim_id,
+                                    permit_id,
+                                    operation_id,
+                                    pointer["generation"],
+                                    decision.decision_id,
+                                ),
+                            )
+                        except psycopg.errors.RaiseException as error:
+                            if error.diag.message_primary not in {
+                                "preclaim_resume_claim_requires_current_successor",
+                                "preclaim_resume_predecessor_claim_is_permanently_fenced",
+                                "preclaim_resume_requires_never_attempted_planned_publication",
+                            }:
+                                raise
+                            raise ProductionAuthorizationDenied("invalid_binding") from error
                         connection.execute(
                             "SELECT public.v4_advance_production_current_dispatch_v1(%s,%s,%s,%s,%s,NULL)",
                             (
@@ -1337,6 +1544,9 @@ class ProductionEffectDispatch:
                 preclaim_delivery = (
                     action_kind == "delivery" and pointer["current_claim_id"] is None
                 )
+                renewable_delivery = (
+                    preclaim_delivery and request.generation == 1 and request.publication_binding is not None
+                )
                 if (
                     pointer["generation"] != permit["generation"]
                     or pointer["current_permit_id"] != permit_id
@@ -1376,6 +1586,7 @@ class ProductionEffectDispatch:
                         return self._denied_action(
                             route_request,
                             "permit_expired",
+                            preclaim_permit_expired=(renewable_delivery and permit["expires_at"] <= now < facts.expires_at),
                         )
                 except ProductionAuthorizationDenied as denial:
                     return self._denied_action(
@@ -1398,6 +1609,7 @@ class ProductionEffectDispatch:
                         decision_id=None,
                         reason_code="permit_expired",
                         request=route_request,
+                        preclaim_permit_expired=(renewable_delivery and permit["expires_at"] <= now < facts.expires_at),
                     )
                 if decision.authorized:
                     self._write_event(
@@ -1418,6 +1630,8 @@ class ProductionEffectDispatch:
         self,
         route_request: RouteFenceRequest,
         reason_code: str,
+        *,
+        preclaim_permit_expired: bool = False,
     ) -> RouteFenceDecision:
         safe_reason = reason_code if reason_code in _REASON_CODES else "other"
         return RouteFenceDecision(
@@ -1425,6 +1639,7 @@ class ProductionEffectDispatch:
             decision_id=None,
             reason_code=safe_reason,
             request=route_request,
+            preclaim_permit_expired=preclaim_permit_expired,
         )
 
     def _load_authority(self, connection, request: ProductionPermitRequest) -> _AuthorityFacts:
@@ -2035,7 +2250,7 @@ class ProductionEffectDispatch:
             or workflow_payload.get("workflow_id") != binding.workflow_id
             or row["publication_approval_status"] != "approved"
             or row["request_state"] not in {"planned", "authorized"}
-            or row["plan_state"] not in {"planned", "authorized"}
+            or row["plan_state"] not in {"planned", "authorized", "reserved"}
             or row["attempt_state"] not in {"planned", "authorized"}
             or row["job_state"] not in {"queued", "running"}
             or row["account_status"] != "active"
@@ -2386,7 +2601,11 @@ class ProductionEffectDispatch:
             decision = self.route_fence.authorize_action(request)
         except Exception as error:
             raise ProductionAuthorizationDenied("route_fence_unavailable") from error
-        if not isinstance(decision, RouteFenceDecision) or decision.request != request:
+        if (
+            not isinstance(decision, RouteFenceDecision) or decision.request != request
+            or decision.request.route_tuple_sha256 != request.route_tuple_sha256
+            or decision.preclaim_permit_expired
+        ):
             raise ProductionAuthorizationDenied("route_fence_invalid")
         return decision
 
@@ -2406,6 +2625,7 @@ class ProductionEffectDispatch:
             operation_id=operation_id,
             permit_id=permit_id,
             action_kind=action_kind,
+            route_tuple_sha256=binding.route_tuple_sha256,
         )
 
     @staticmethod
