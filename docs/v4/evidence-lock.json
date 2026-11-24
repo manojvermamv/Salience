@@ -1,6 +1,6 @@
 {
-  "baseline_commit": "a953d8888245bca8a5f26fbe3a22a37925145dce",
-  "scope": "Source and build-context inventory for the P1 expired-unclaimed permit and rollback v5 follow-up.",
+  "baseline_commit": "5115b5228deaca36e0f60d46695ee46cebc20b46",
+  "scope": "Source and build-context inventory for the P1 reserved-plan claimed recovery opening.",
   "files": [
     {
       "path": ".dockerignore",
@@ -267,6 +267,10 @@
       "sha256": "3b6ce2d347c5a18507d0cdbea91c711233046af8427147bdccaf9250c3ea1e1c"
     },
     {
+      "path": "migrations/versions/0059_p1_claimed_reserved_opening.py",
+      "sha256": "d4e3d9a481637b0d3c9e1a6df0405b9ff720caa2a50daa5d0f2e0481b3ce60e2"
+    },
+    {
       "path": "migrations/versions/__init__.py",
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
@@ -284,7 +288,7 @@
     },
     {
       "path": "scripts/launch-v4-publication-worker.py",
-      "sha256": "f797d9b3e27c9f2fe340abc5dbb455d437448dcd66f60bad1cf750eda661f1a4"
+      "sha256": "f7d3ae6ce13e15008784a14f0b474755387e23737ae1b752b536c8c85afdad0d"
     },
     {
       "path": "scripts/verify-browser-evidence.sh",
@@ -728,7 +732,7 @@
     },
     {
       "path": "src/salience/cycles/p1_recovery_rollback.py",
-      "sha256": "af69f76c38e019316583ac37cee9c5b7a021c180b2a1e62fce7b8bc404650a15"
+      "sha256": "bb42d9861215aa7183b5bc6ae6f35edfbe025d56d0e3ce7485c119ac6018bce7"
     },
     {
       "path": "src/salience/cycles/p1_recovery_rollback_fixtures.py",
@@ -768,7 +772,7 @@
     },
     {
       "path": "src/salience/cycles/publication_recovery_compatibility.py",
-      "sha256": "713d3bf8191d8889775ee84e0d22988fe674354eafe83db44f2fe5f6155e31d3"
+      "sha256": "8fca2fb40d19761545bb4bdc6df4a81ed76ef8de6dc07f7a10b9773f0b4169aa"
     },
     {
       "path": "src/salience/cycles/runtime.py",
@@ -1371,6 +1375,10 @@
       "sha256": "d0a641d0c49f8dfa72c7de44cfa0ba84690dc9d990cb975f5c3fc1d101ce9029"
     },
     {
+      "path": "tests/integration/test_p1_claimed_reserved_recovery.py",
+      "sha256": "749701f7cb70b3e08f041bb3399634766c077189c1affb15a9ae9f881acb7a1f"
+    },
+    {
       "path": "tests/integration/test_p1_preclaim_publication_temporal.py",
       "sha256": "ec84fecf0d79871585aa97c53e5a5767da959fa3135297aafd17b7fb81c801ab"
     },
@@ -1380,7 +1388,7 @@
     },
     {
       "path": "tests/integration/test_p1_preclaim_resume_dispatch.py",
-      "sha256": "543fad32c1fbe19b450cb3997708890d85f03808d48584eb66d55a1b6d09255d"
+      "sha256": "43901cd966d6145e368b8b93c915d36ef8afd846c9c3374d1fd84245f28a5142"
     },
     {
       "path": "tests/integration/test_p1_production_policy_revocation.py",
@@ -1400,7 +1408,7 @@
     },
     {
       "path": "tests/integration/test_p1_production_routing.py",
-      "sha256": "c94dfa94f33dfe853d22fec8e2de4d40ed5f8169218df949aa8efcdb523bf92c"
+      "sha256": "a876f13a96ec5e965a76a0a180da6712db8d062cbaa93b413ee59207385eeb68"
     },
     {
       "path": "tests/integration/test_p1_production_schedule_fencing.py",
@@ -1508,7 +1516,7 @@
     },
     {
       "path": "tests/integration/test_v4_migrations.py",
-      "sha256": "402c42a4dbbebb2d07d142f03f51f76abdba552b90803df76ad059c3f49a75af"
+      "sha256": "645a5f662abf331e9a0997763766742aa5b7735f1048fe62125b7d17fd2693e7"
     },
     {
       "path": "tests/integration/test_v4_native_publication_schedules.py",
@@ -1536,7 +1544,7 @@
     },
     {
       "path": "tests/integration/test_v4_publication_recovery_floor.py",
-      "sha256": "cacc346dbccdc36417939b1abba5b09adebd3cb052472bceb8276c04547c3eaf"
+      "sha256": "1522349087faa5fec290bd7b4dda836557f1e051b7db57bc24cb3067fec467c6"
     },
     {
       "path": "tests/integration/test_v4_publication_recovery_holds.py",
@@ -3258,5 +3266,10 @@
     "record_commit": "a953d8888245bca8a5f26fbe3a22a37925145dce",
     "record_path": "docs/v4/evidence-lock.json",
     "sha256": "8fe751ff7129e9f986fb5b917fe8ba51020e6a235db6495674eda74aacbc9d0b"
+  },
+  "preceding_p1_claimed_reserved_lock": {
+    "record_commit": "5115b5228deaca36e0f60d46695ee46cebc20b46",
+    "record_path": "docs/v4/evidence-lock.json",
+    "sha256": "eb3da62652859bb64cab766a0a570030ed508b7d032fa0536ce86cef7f2dee24"
   }
 }

@@ -14,8 +14,14 @@ from salience.cycles.production_dispatch import (
     ProductionAuthorizationDenied, ProductionEffectDispatch, RouteFenceDecision,
 )
 from test_p1_production_policy_revocation import _production_case, accounting, cycles, policy
-from test_p1_production_recovery_case_opening import opening_source, preclaim_opening_database
+from test_p1_production_recovery_case_opening import _opening_database, opening_source
 from test_p1_production_recovery import _rollback_v2_readbacks, _task9_set_stop_scope
+
+
+@pytest.fixture(scope="module")
+def preclaim_opening_database():
+    with _opening_database(rollback.ROLLBACK_MIGRATION_HEAD_V5) as database:
+        yield database
 
 
 def test_preclaim_renewal_requires_a_typed_original_publication_binding(accounting):

@@ -97,7 +97,13 @@ The same-run regressions use real Temporal and PostgreSQL, an already bound publ
 
 The last published `0055` run passed documentation verification and failed five historical regression cases. Four now exercise the specific historical downgrade guard in an isolated database, and the v2 launch test pins its graph to `0051`. All five passed together locally after the corrections. [Historical hosted run 45233815587](https://github.com/manojvermamv/Salience/actions/runs/45233815587)
 
-Claimed recovery still has two gaps through the normal publication entry point. The opener needs to accept the exact live `reserved` plan used by publication authorization. After opening, the provider-read visibility window starts at the claim, before the original send may have started. An empty lookup after that window can race a delayed send. The claimed handoff needs proof that the original send can no longer arrive, a current typed operator and stage decision, and a guarded same-run continuation. Preserve the claimed liability and original reservation while outcome or finality is uncertain. A terminal Temporal run stays terminal. [Claimed opener](../../migrations/versions/0054_p1_recovery_case_opening.py) · [Visibility calculation](../../src/salience/cycles/_production_recovery_coordinator.py) · [Current status](progress.md#current-state)
+### Claimed publication with a canonical reserved plan
+
+Migration `0059` allows the production case opener to recognize the reserved plan created by publication authorization. It checks the exact original reservation and effect graph and preserves the original claim, cost liability, and case-opening receipt. The rollback verifier v6 requires this exact migration head and checks the installed opener definition and configuration. It retains the older verification rules for claimed and preclaim opening receipts. The v5 lock still requires `0058`.
+
+The reserved-plan tests seed the positive, finite reservation required by production permit issuance and use the real reservation repository, permit claim, and submission marker. The workflow’s default zero estimate does not establish that funding. Named-target qualification needs evidence of the actual reserved funding path.
+
+The provider-read visibility window starts at the claim, before the original send may have started. An empty lookup after that window can race a delayed send. The claimed handoff needs proof that the original send can no longer arrive, a current typed operator and stage decision, and a guarded same-run continuation. Preserve the claimed liability and original reservation while outcome or finality is uncertain. A terminal Temporal run stays terminal. [Claimed opener](../../migrations/versions/0054_p1_recovery_case_opening.py) · [Visibility calculation](../../src/salience/cycles/_production_recovery_coordinator.py) · [Current status](progress.md#current-state)
 
 ### Proposed named P1 qualification target
 

@@ -1,6 +1,6 @@
 # Salience V4 production implementation blueprint
 
-The current P1 handoff covers local implementation through migration `0058`, including expired-unclaimed publication recovery, fixture verification, and the production work that remains. Deployable production integration, target qualification, and the final external audit are open. [Current P1 status](progress.md#current-state)
+The current P1 handoff covers local implementation through migration `0059`, including expired-unclaimed recovery and claimed case opening, fixture verification, and the production work that remains. Deployable production integration, target qualification, and the final external audit are open. [Current P1 status](progress.md#current-state)
 
 **Initial audit/design checkpoint:** COMPLETE_REVIEWED for frozen source `7c1ddcda280b510048ad61106c406171edd64f18` and environment `18b15955b9a3be547bd1998ac2c1fce759c99d647fc3eeaa0ea21858e7a81436`; five increments REQUIRED; five designs COMPLETE_REVIEWED; implementation and target qualification NOT RUN; 22 final-entry rows remain non-PASS; RG0/RG1 HELD; Slice 7/P2 BLOCKED; production disabled; main unmerged.
 

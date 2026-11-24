@@ -637,3 +637,17 @@ This update records the local preclaim permit amendment, exact rollback verifier
 | `README.md` | `b0374d8c22f4802c71e26549ee7f8fe13643a47e9ee8deef6b16586c06d1c0c7` |
 | `docs/v4/evidence-lock.json` | `eb3da62652859bb64cab766a0a570030ed508b7d032fa0536ce86cef7f2dee24` |
 | `docs/v4/p1-qualification-matrix.json` | `60fc803889180e8b64460eabb0b91ed447f62fbaaa73741ae9c3716c713edc47` |
+
+## P1 reserved-plan claimed opening and rollback v6 evidence hashes — 2026-11-24
+
+This update records canonical reserved-plan case opening and the exact v6 migration readback. [Verification and scope](validation.md#claimed-publication-with-a-canonical-reserved-plan)
+
+| Path | SHA-256 |
+| --- | --- |
+| `docs/v4/IMPLEMENTATION-BLUEPRINT.md` | `227f18af6dd28f26e9f2220156fdcdd195aa5dd3f5f0c1d2f2ef8b8ea3182d1e` |
+| `docs/v4/progress.md` | `021762ffa101a65ccba80eb6505dd6c1fb5fae6e568b79c4766bc5eab20cdd95` |
+| `docs/v4/validation.md` | `e8c93131caea09f256097c0dccebe7f877dfe1ce0514970c9c10d0c2adac9275` |
+| `docs/v4/test_checks.py` | `a62bce3efe11ea58c0cb491d65c8ea6fc44ab41f6fd8f158d7eec292cfc15173` |
+| `README.md` | `17c55bf2e57aa8910f911a2cd8623840509df20f40837ab9806861a66986295a` |
+| `docs/v4/evidence-lock.json` | `c5476b50e52cd949951dd5cd40ebb2efba1d861d3e9d7a67cf054f78f53dae11` |
+| `docs/v4/p1-qualification-matrix.json` | `60b95f3baffd8b97282da718cae8750e1cea9268c7a681ed906ded62a175b0db` |
