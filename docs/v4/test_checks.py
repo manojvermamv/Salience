@@ -1016,7 +1016,11 @@ class GateChecks(unittest.TestCase):
             self.assertEqual(fixture["installed_committed_receipt_regressions_passed"], 6)
             self.assertEqual(fixture["installed_signed_acceptance_regressions_passed"], 3)
             if "fixture_send_finality" in current:
-                self.assertEqual(fixture["installed_fixture_send_barrier_regressions_passed"], 6)
+                if "claimed_recovery_wait" in current:
+                    self.assertEqual(fixture["installed_fixture_send_barrier_regressions_passed"], 9)
+                    self.assertEqual(fixture["installed_recovery_read_expiry_regressions_passed"], 3)
+                else:
+                    self.assertEqual(fixture["installed_fixture_send_barrier_regressions_passed"], 6)
         self.assertEqual(fixture["production_launcher_denials"], launcher_denials)
         self.assertEqual(current["external_rows_not_run"], 22)
         self.assertEqual((matrix["RG0"], matrix["RG1"]), ("HELD", "HELD"))

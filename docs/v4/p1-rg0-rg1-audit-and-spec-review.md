@@ -715,9 +715,9 @@ This update records the original-run wait for an exact claimed publication and t
 | Path | SHA-256 |
 | --- | --- |
 | `docs/v4/IMPLEMENTATION-BLUEPRINT.md` | `2ff03f5c38ff564a50a5722f4774363e4757d8bfac02e80ccd1d8fabc764ac3b` |
-| `docs/v4/progress.md` | `ef0f0491d702f067a8eb5705e3843a0ea8747f9a3cb46deb28ebfad0cb26962a` |
-| `docs/v4/validation.md` | `107ef26e17888a31e93c569ab43b2005fd840d727a3542aad41d33342e18838c` |
-| `docs/v4/test_checks.py` | `8cb3e0877d87a1507d9fe8f3ab952e02d98737383fea33496af5e92b4eefb5a7` |
+| `docs/v4/progress.md` | `4a06e71cb5a254e97f6954506908c4e287069c7469a91259cf9a27ad64534730` |
+| `docs/v4/validation.md` | `bbc8d956a53ea27c14d49cebfe189a1185b93745182359f245e956cdac9a6a20` |
+| `docs/v4/test_checks.py` | `bbef0ab336e9bc2ed21f8642e2f49885dddb17104c623cd5672986a971f61f1f` |
 | `README.md` | `dbfa93b10cc65da969f363d7186a53d94f7190ffcefd55b3f326a65650c7709e` |
 | `docs/v4/evidence-lock.json` | `351b907646bd2a192daf62e0e9c9cddd2d46fb694e96c7818261ccd88b4a0745` |
-| `docs/v4/p1-qualification-matrix.json` | `dde36cdd28edb9bb96955797bbbb57b754d699530a044233a9c76154a1a9c22a` |
+| `docs/v4/p1-qualification-matrix.json` | `da464abbb17e863106e77f3500510ee08b720ed6e4cbdda8870d262016a6d838` |
