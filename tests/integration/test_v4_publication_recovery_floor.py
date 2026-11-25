@@ -19,7 +19,7 @@ import sys
 import subprocess
 import struct
 import sysconfig
-from uuid import UUID
+from uuid import UUID, uuid4
 import zipfile
 from types import SimpleNamespace
 
@@ -8540,7 +8540,11 @@ async def test_0043_fixture_startup_guard_remains_unchanged(monkeypatch):
     assert len(temporal_connects) == 1
 
 
-def _write_v2_route_lock(tmp_path, monkeypatch, *, migration_head="0051_p1_recovery_rollback_v2"):
+def _write_v2_route_lock(
+    tmp_path, monkeypatch, *, migration_head="0051_p1_recovery_rollback_v2",
+    temporal_endpoint_id="temporal-test-endpoint", namespace="salience-production-test",
+    task_queue="salience-publication-test",
+):
     from salience.cycles import publication_recovery_compatibility as compatibility
     from salience.cycles.production_routing import (
         PRODUCTION_ACTIVITY_ALLOWLIST,
@@ -8557,9 +8561,9 @@ def _write_v2_route_lock(tmp_path, monkeypatch, *, migration_head="0051_p1_recov
     route_tuple = RouteTupleV1(
         deployment_id=UUID("00000000-0000-0000-0000-000000000301"),
         environment_id=UUID("00000000-0000-0000-0000-000000000302"),
-        temporal_endpoint_id="temporal-test-endpoint",
-        namespace="salience-production-test",
-        task_queue="salience-publication-test",
+        temporal_endpoint_id=temporal_endpoint_id,
+        namespace=namespace,
+        task_queue=task_queue,
         worker_kind="production-publication",
         workflow_types=PRODUCTION_WORKFLOW_ALLOWLIST,
         activity_types=PRODUCTION_ACTIVITY_ALLOWLIST,
@@ -8605,10 +8609,21 @@ def _write_v2_route_lock(tmp_path, monkeypatch, *, migration_head="0051_p1_recov
 def test_v2_launcher_carries_independent_trust_to_isolated_preflight(
     tmp_path, monkeypatch, cycle_database,
 ):
+    from psycopg import connect, sql
     from support.production_route_authority import FakeRouteLeaseAuthority
+    from temporalio.api.enums.v1 import TaskQueueType
+    from temporalio.api.taskqueue.v1 import TaskQueue
+    from temporalio.api.workflowservice.v1 import DescribeTaskQueueRequest
+    from temporalio.client import Client, WorkflowFailureError
+    from temporalio.exceptions import ActivityError, ApplicationError
+
+    from salience.workflows import worker
+    from salience.workflows.publication import GovernedPublicationWorkflow, PublicationWorkflowRequest
 
     lock, wheel_path, route = _write_v2_route_lock(
         tmp_path, monkeypatch, migration_head="0060_p1_claimed_reissue_fence",
+        temporal_endpoint_id=os.environ["TEST_TEMPORAL_TARGET"], namespace="default",
+        task_queue=f"salience-empty-routed-worker-{uuid4()}",
     )
     launcher = _launcher_module()
     lock_path, digest_path, launcher_path, digest = _configure_launcher(
@@ -8648,9 +8663,75 @@ compatibility._interpreter_installation_prefix = lambda _path: Path({str(tmp_pat
     ]
     authority = FakeRouteLeaseAuthority()
     handoffs = []
+    observed_poller_types = []
+    unavailable_readbacks = []
+
+    async def run_current_route(execution):
+        stop = asyncio.Event()
+        observer = await Client.connect(route.route_tuple.temporal_endpoint_id)
+
+        async def connect_temporal(endpoint, *, namespace):
+            client = await Client.connect(endpoint, namespace=namespace)
+            client.route_endpoint_id = route.route_tuple.temporal_endpoint_id
+            client.route_build_id = route.worker_build_id
+            client.route_artifact_sha256 = lock.pin.artifact_sha256
+            client.route_image_sha256 = route.image_sha256
+            return client
+
+        class UnavailableReadback:
+            def read_worker(self, route_id, slot_id):
+                unavailable_readbacks.append((route_id, slot_id))
+                return None
+
+        lifecycle = asyncio.create_task(worker.run_authenticated_current_route(
+            execution, route_authority=authority, temporal_connect=connect_temporal,
+            temporal_readback=UnavailableReadback(), stop_requested=stop,
+        ))
+        try:
+            async with asyncio.timeout(10):
+                for queue_type in (
+                    TaskQueueType.TASK_QUEUE_TYPE_WORKFLOW,
+                    TaskQueueType.TASK_QUEUE_TYPE_ACTIVITY,
+                ):
+                    while True:
+                        if lifecycle.done():
+                            await lifecycle
+                        response = await observer.workflow_service.describe_task_queue(
+                            DescribeTaskQueueRequest(
+                                namespace=route.route_tuple.namespace,
+                                task_queue=TaskQueue(name=route.route_tuple.task_queue),
+                                task_queue_type=queue_type,
+                            ),
+                        )
+                        owned = [poller for poller in response.pollers if str(owner_id) == poller.identity]
+                        if owned:
+                            assert all(poller.worker_version_capabilities.build_id == route.worker_build_id for poller in owned)
+                            observed_poller_types.append(queue_type)
+                            break
+                        await asyncio.sleep(0.05)
+                handle = await observer.start_workflow(
+                    GovernedPublicationWorkflow.run,
+                    PublicationWorkflowRequest(scheduled_publication_schedule_id="none"),
+                    id=f"empty-route-probe-{uuid4()}", task_queue=route.route_tuple.task_queue,
+                )
+                with pytest.raises(WorkflowFailureError) as failure:
+                    await handle.result()
+                assert isinstance(failure.value.cause, ActivityError)
+                assert isinstance(failure.value.cause.cause, ApplicationError)
+                assert failure.value.cause.cause.type == "RoutedRehearsalActivityDenied"
+        finally:
+            stop.set()
+            with pytest.raises(PermissionError, match="Temporal worker readback is incomplete") as drain_failure:
+                await asyncio.wait_for(lifecycle, 10)
+        raise drain_failure.value
+
+    def execute_current_route(execution):
+        handoffs.append(execution)
+        return asyncio.run(run_current_route(execution))
+
     injected = {
         "route_authority": authority,
-        "route_child_exec": lambda *args: handoffs.append(args),
+        "current_route_executor": execute_current_route,
     }
 
     with pytest.raises(launcher.LauncherError, match="trust digest is unprovisioned"):
@@ -8671,7 +8752,7 @@ compatibility._interpreter_installation_prefix = lambda _path: Path({str(tmp_pat
 
     lock_path.write_bytes(original_lock)
     digest_path.write_text(digest + "\n", encoding="ascii")
-    with pytest.raises(launcher.LauncherError, match="executor returned unexpectedly"):
+    with pytest.raises(PermissionError, match="Temporal worker readback is incomplete"):
         launcher.main(argv, external_production_trust_digest=digest, **injected)
 
     assert preflight_exits == [0]
@@ -8680,6 +8761,13 @@ compatibility._interpreter_installation_prefix = lambda _path: Path({str(tmp_pat
     assert lease is not None
     assert lease.owner_id == owner_id
     assert lease.artifact_lock_sha256 == digest
+    assert len(observed_poller_types) == 2
+    assert unavailable_readbacks == [(route.route_id, slot_id)]
+    assert authority.read_slot(route.route_id, slot_id).state == "leased"
+    with connect(cycle_database) as connection:
+        for table in ("jobs", "external_effects", "publication_attempts", "v4_production_effect_permits"):
+            count = connection.execute(sql.SQL("SELECT count(*) FROM {}").format(sql.Identifier(table)))
+            assert count.fetchone() == (0,)
 
 
 def test_v2_launch_lock_authenticates_route_allowlists_and_exact_head(tmp_path, monkeypatch):

@@ -679,3 +679,17 @@ This update records local verification for retrying a committed receipt in its o
 | `README.md` | `dbfa93b10cc65da969f363d7186a53d94f7190ffcefd55b3f326a65650c7709e` |
 | `docs/v4/evidence-lock.json` | `8e30966727205375eb62f6c260f79bc81b887511abc0caf7c67916207d01b41c` |
 | `docs/v4/p1-qualification-matrix.json` | `6fb5b23f7e96c1cf802241286c9ca737e0121abc0bfa6213cec1380acd544d94` |
+
+## P1 authenticated routed worker rehearsal evidence hashes — 2026-11-25
+
+This update records the typed launcher and effects-disabled routed worker rehearsal. [Verification and scope](validation.md#independent-current-route-trust)
+
+| Path | SHA-256 |
+| --- | --- |
+| `docs/v4/IMPLEMENTATION-BLUEPRINT.md` | `2ff03f5c38ff564a50a5722f4774363e4757d8bfac02e80ccd1d8fabc764ac3b` |
+| `docs/v4/progress.md` | `9dca04d7888898cf89cbd4084a5e4d91ea8eed5af89a3799104f2cb5d5429a1d` |
+| `docs/v4/validation.md` | `f0df129850d4e9255921ddd0dfcc8a4632c40247f202d63f7e02d44a3f793434` |
+| `docs/v4/test_checks.py` | `fa3ea81689e220e16419123a641c794ebbc395d0efe6b8220b4f6e24fb88a1c9` |
+| `README.md` | `dbfa93b10cc65da969f363d7186a53d94f7190ffcefd55b3f326a65650c7709e` |
+| `docs/v4/evidence-lock.json` | `e7d129a5eb3de6b15e80d845b11af13ef83ffc6412888a6de67ea8720924dc8d` |
+| `docs/v4/p1-qualification-matrix.json` | `01ae2810ae6a56c2d3ff807458761a0a583d07ef442c9660fd555c83faa1582d` |

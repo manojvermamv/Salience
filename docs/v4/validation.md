@@ -119,7 +119,11 @@ If a publication activity fails after PostgreSQL stores its remote receipt, the 
 
 ### Independent current route trust
 
-The injected launcher composition supplies the expected digest separately from the candidate lock and its companion digest. The launcher compares the expected value before claiming a route slot and passes it to the isolated subprocess, which verifies the lock, installed application pins and exact database migration head. The fixture regression uses real isolated preflight and captures the injected executor handoff. Worker registration, drain, platform readback and transactionally fenced target decisions still require routed composition and target evidence.
+The injected launcher composition supplies the expected digest separately from the candidate lock and its companion digest. The launcher compares it before claiming a route slot and passes it to the isolated subprocess, which verifies the lock, installed application pins and exact database migration head.
+
+The launcher passes the authenticated route and lease to the rehearsal executor as typed values. The installed rehearsal rechecks the pinned runtime, database head and current lease before connecting to Temporal. It accepts only exact-head routes with an empty producer inventory. A real Temporal fixture observes workflow and activity polls under the expected boot owner and build ID. A directly started probe fails at the rehearsal activity boundary before a canonical publication action runs.
+
+After a stop request, the launcher requires a fresh stopped receipt for the exact route and epoch. An incomplete readback leaves the lease held. Temporal's poller descriptions retain recent poll history, and its visibility queries can lag. The target still needs bounded lease and readback adapters, independently observed process termination and active-task accounting, and transactionally fenced lease transfer. [Temporal Visibility](https://docs.temporal.io/visibility) · [Route and drain contract](../superpowers/specs/2026-10-13-p1-production-routing-and-worker-fencing-design.md#drain-rollback-and-restart-fence)
 
 ### Proposed named P1 qualification target
 

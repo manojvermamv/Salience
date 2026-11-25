@@ -1,6 +1,6 @@
 {
-  "baseline_commit": "540c46b15af92565a82701eb3c0597b67139ff7b",
-  "scope": "Source and build-context inventory for P1 committed receipt replay and routed launcher trust.",
+  "baseline_commit": "799fd3c65d71c0c08553d619e56d4cc863a7cb34",
+  "scope": "Source and build-context inventory for P1 authenticated routed worker rehearsal.",
   "files": [
     {
       "path": ".dockerignore",
@@ -292,7 +292,7 @@
     },
     {
       "path": "scripts/launch-v4-publication-worker.py",
-      "sha256": "834e685212b0c437757bd3f4abe405ce75013c0d463c605d1286d824cbf1ccd1"
+      "sha256": "fc4711ef758e9d02f3fdd4b31172dba04bf083b986ec88b0cb3774d9f7f3b1ba"
     },
     {
       "path": "scripts/verify-browser-evidence.sh",
@@ -1108,7 +1108,7 @@
     },
     {
       "path": "src/salience/workflows/worker.py",
-      "sha256": "06e013bc9f0ebcec8be4cb522a9c783709496cf747fad89836a161b07b4b2434"
+      "sha256": "08332f354837451479d8c848814be139949ad217209a1a55c27b3b7d98d3ced5"
     },
     {
       "path": "tests/conftest.py",
@@ -1416,7 +1416,7 @@
     },
     {
       "path": "tests/integration/test_p1_production_routing.py",
-      "sha256": "686d762040783f00af6aa8d054295298e265b68b3aa8b77f77c96218ab840379"
+      "sha256": "d11ad7cc81ace7c0735e90b0dbd3eccc9be9015f8b8670c33a18d288b545ca01"
     },
     {
       "path": "tests/integration/test_p1_production_schedule_fencing.py",
@@ -1552,7 +1552,7 @@
     },
     {
       "path": "tests/integration/test_v4_publication_recovery_floor.py",
-      "sha256": "c9708b02240c521f10dab6c20fba1d7b83036bf54ba67a77668e075eade091bc"
+      "sha256": "65887f1e314cf46ebe525e91cdffa95cabf922e2066eb7365d763926904d8f1b"
     },
     {
       "path": "tests/integration/test_v4_publication_recovery_holds.py",
@@ -3289,5 +3289,10 @@
     "record_commit": "540c46b15af92565a82701eb3c0597b67139ff7b",
     "record_path": "docs/v4/evidence-lock.json",
     "sha256": "96eb0d33b2eb1895700d29a8f45de969bcdebeb3de772d2bb20f287bab599fa2"
+  },
+  "preceding_p1_typed_route_lock": {
+    "record_commit": "799fd3c65d71c0c08553d619e56d4cc863a7cb34",
+    "record_path": "docs/v4/evidence-lock.json",
+    "sha256": "8e30966727205375eb62f6c260f79bc81b887511abc0caf7c67916207d01b41c"
   }
 }

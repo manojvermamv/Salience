@@ -1212,16 +1212,22 @@ def test_duplicate_slot_owner_never_registers(monkeypatch):
     assert registered == []
 
 
-def test_v2_external_launcher_claims_and_hands_off_route_lease(
-    monkeypatch, tmp_path
-):
+@pytest.mark.parametrize("outcome", ["stopped", "missing_receipt", "foreign_receipt", "producers", "wrong_mode"])
+def test_v2_external_launcher_claims_and_hands_off_route_lease(monkeypatch, tmp_path, outcome):
     import json
     from importlib.util import module_from_spec, spec_from_file_location
     import subprocess
 
     from salience.cycles.production_routing import canonical_route_manifest_bytes
+    from salience.workflows.temporal_readback import WorkerDrainReceipt
 
     route = _publication_route()
+    if outcome == "producers":
+        route_tuple = replace(route.route_tuple, producer_bindings=({"producer": "fixture", "source": "jobs"},))
+        route = replace(route, route_tuple=route_tuple, route_tuple_sha256=production_routing.route_tuple_sha256(route_tuple))
+    elif outcome == "wrong_mode":
+        route_tuple = replace(route.route_tuple, compatibility_mode="incompatible")
+        route = replace(route, route_tuple=route_tuple, route_tuple_sha256=production_routing.route_tuple_sha256(route_tuple))
     launcher_spec = spec_from_file_location(
         "salience_route_launcher_handoff",
         Path(__file__).resolve().parents[2] / "scripts/launch-v4-publication-worker.py",
@@ -1273,41 +1279,62 @@ def test_v2_external_launcher_claims_and_hands_off_route_lease(
     authority = _authority()
     handoffs = []
 
-    def child_exec(interpreter, command, environment):
-        handoffs.append((interpreter, command, environment))
-
-    with pytest.raises(launcher.LauncherError, match="executor returned"):
-        launcher.main(
-            [
-                "--mode",
-                "current",
-                "--worker-kind",
-                "deployable",
-                "--route-id",
-                str(route.route_id),
-                "--slot-id",
-                str(_SLOT_A),
-                "--owner-id",
-                str(_OWNER_A),
-            ],
-            route_authority=authority,
-            route_child_exec=child_exec,
-            external_production_trust_digest=digest,
+    def child_exec(execution):
+        handoffs.append(execution)
+        observed_at = datetime.now(timezone.utc)
+        if outcome == "missing_receipt":
+            return 0
+        return WorkerDrainReceipt(
+            status="stopped", route_id=execution.route.route_id, slot_id=execution.lease.slot_id,
+            owner_id=_OWNER_B if outcome == "foreign_receipt" else execution.lease.owner_id,
+            fencing_epoch=execution.lease.fencing_epoch,
+            route_manifest_sha256=execution.lease.route_manifest_sha256,
+            artifact_lock_sha256=execution.lease.artifact_lock_sha256,
+            route_tuple_sha256=execution.route.route_tuple_sha256,
+            boundary_at=observed_at, readback_observed_at=observed_at,
         )
+
+    def invoke_launcher():
+        return launcher.main([
+            "--mode",
+            "current",
+            "--worker-kind",
+            "deployable",
+            "--route-id",
+            str(route.route_id),
+            "--slot-id",
+            str(_SLOT_A),
+            "--owner-id",
+            str(_OWNER_A),
+        ], route_authority=authority, current_route_executor=child_exec,
+            external_production_trust_digest=digest)
+
+    if outcome in {"producers", "wrong_mode"}:
+        message = "without producers" if outcome == "producers" else "exact-head compatibility"
+        with pytest.raises(launcher.LauncherError, match=message):
+            invoke_launcher()
+        assert handoffs == []
+        assert authority.read_slot(route.route_id, _SLOT_A).state == "missing"
+        return
+    if outcome in {"missing_receipt", "foreign_receipt"}:
+        with pytest.raises(launcher.LauncherError, match="bound stopped drain receipt"):
+            invoke_launcher()
+    else:
+        assert invoke_launcher() == 0
 
     assert fake_launcher_file.read_text(encoding="utf-8").startswith("# fake v2")
     assert len(handoffs) == 1
-    environment = handoffs[0][2]
-    manifest_payload = json.loads(environment["SALIENCE_PRODUCTION_ROUTE_MANIFEST"])
-    lease_payload = json.loads(environment["SALIENCE_PRODUCTION_ROUTE_LEASE"])
-    assert manifest_payload["route_id"] == str(route.route_id)
-    assert manifest_payload["route_tuple"]["namespace"] == route.route_tuple.namespace
-    assert lease_payload["route_id"] == str(route.route_id)
-    assert lease_payload["slot_id"] == str(_SLOT_A)
-    assert lease_payload["owner_id"] == str(_OWNER_A)
-    assert lease_payload["fencing_epoch"] == 1
-    assert lease_payload["artifact_lock_sha256"] == digest
-    assert authority.read_slot(route.route_id, _SLOT_A).lease is not None
+    execution = handoffs[0]
+    assert canonical_route_manifest_bytes(execution.route) == canonical_route_manifest_bytes(route)
+    assert execution.route.artifact_lock_sha256 == digest
+    assert execution.lease == authority.read_slot(route.route_id, _SLOT_A).lease
+    assert execution.lease.owner_id == _OWNER_A
+    assert execution.lease.fencing_epoch == 1
+    assert execution.expected_launch_lock_sha256 == digest
+    assert execution.launch_lock_bytes == lock_bytes
+    assert execution.interpreter_path == "synthetic-python"
+    assert execution.runtime_root == str(tmp_path)
+    assert execution.database_url == "postgresql://primary/salience"
 
 
 def test_routed_publication_uses_production_effect_dispatch_with_exact_route_binding(

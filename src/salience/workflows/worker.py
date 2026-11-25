@@ -5,16 +5,20 @@ from __future__ import annotations
 import asyncio
 from collections.abc import Callable
 from datetime import datetime, timezone
+from hashlib import sha256
 import inspect
+import json
 import os
 import subprocess
 import time
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Protocol
 from uuid import UUID, uuid4
 
 import httpx
 from temporalio.client import Client
+from temporalio.exceptions import ApplicationError
 
 from salience.config import Settings
 from salience.fixtures.mock_effect_provider import HttpMockEffectProvider
@@ -49,7 +53,7 @@ from salience.governance.cost_repository import CostReservationRepository
 from salience.intelligence.repository import IntelligenceRepository
 from salience.research.rss import ConfiguredRssResearchConnector
 from salience.workflows.persistence import CanonicalJobStore
-from temporalio.worker import Worker
+from temporalio.worker import ActivityInboundInterceptor, ExecuteActivityInput, Interceptor, Worker
 
 from salience.cycles.production_dispatch import (
     ProductionEffectDispatch,
@@ -81,6 +85,37 @@ class ComposeRestartResult:
     reconciled: bool
     canonical_checkpoint_count: int
     canonical_effect_count: int
+
+
+class _CurrentRouteExecution(Protocol):
+    @property
+    def route(self) -> ProductionRouteManifestV1: ...
+    @property
+    def lease(self) -> RouteLease: ...
+    @property
+    def launch_lock_bytes(self) -> bytes: ...
+    @property
+    def expected_launch_lock_sha256(self) -> str: ...
+    @property
+    def database_url(self) -> str: ...
+    @property
+    def runtime_root(self) -> str: ...
+    @property
+    def interpreter_path(self) -> str: ...
+
+
+class _DenyRehearsalActivity(ActivityInboundInterceptor):
+    async def execute_activity(self, input: ExecuteActivityInput) -> object:
+        raise ApplicationError(
+            "routed worker rehearsal cannot execute workflow activities",
+            type="RoutedRehearsalActivityDenied",
+            non_retryable=True,
+        )
+
+
+class _RehearsalInterceptor(Interceptor):
+    def intercept_activity(self, next: ActivityInboundInterceptor) -> ActivityInboundInterceptor:
+        return _DenyRehearsalActivity(next)
 
 
 async def run_worker() -> None:
@@ -262,6 +297,7 @@ def build_routed_worker(
     permit_request_factory: Callable[
         [ProductionApprovalBinding, PublicationEffectBinding], ProductionPermitRequest
     ],
+    rehearsal_only: bool = False,
 ) -> Worker:
     """Assemble one route-bound publication worker after exact lease validation."""
     _validate_routed_lease(
@@ -325,11 +361,19 @@ def build_routed_worker(
         "salience.publication.cancel": publication.cancel,
         "salience.publication.dead_letter": publication.dead_letter,
     }
+    rehearsal_options = {}
+    if rehearsal_only:
+        rehearsal_options = {
+            "identity": str(lease.owner_id),
+            "build_id": route.worker_build_id,
+            "interceptors": [_RehearsalInterceptor()],
+        }
     return Worker(
         client,
         task_queue=route.route_tuple.task_queue,
         workflows=[workflow_handlers[name] for name in route.route_tuple.workflow_types],
         activities=[activity_handlers[name] for name in route.route_tuple.activity_types],
+        **rehearsal_options,
     )
 
 
@@ -347,6 +391,7 @@ async def connect_routed_worker(
     compatibility_preflight: Callable[
         [str, ProductionRouteManifestV1, RouteLease], object
     ],
+    rehearsal_only: bool = False,
 ) -> tuple[Client, Worker]:
     """Revalidate authenticated pins and lease before the injected Temporal connector."""
     preflight_result = compatibility_preflight(database_url, route, lease)
@@ -371,8 +416,79 @@ async def connect_routed_worker(
         database_url=database_url,
         publication_state=publication_state,
         permit_request_factory=permit_request_factory,
+        rehearsal_only=rehearsal_only,
     )
     return client, worker
+
+
+async def run_authenticated_current_route(
+    execution: _CurrentRouteExecution,
+    *,
+    route_authority: RouteLeaseAuthority,
+    temporal_connect: Callable[..., object],
+    temporal_readback: TemporalWorkerReadback,
+    stop_requested: asyncio.Event | None = None,
+) -> WorkerDrainReceipt:
+    """Rehearse registration and polling without executing publication activities."""
+    from salience.cycles.publication_recovery_compatibility import (
+        _launch_lock_from_json,
+        require_production_worker_compatibility,
+    )
+
+    route, lease = execution.route, execution.lease
+    if not isinstance(route, ProductionRouteManifestV1) or route.route_tuple.producer_bindings:
+        raise PermissionError("routed worker rehearsal requires an authenticated route without producers")
+    if route.route_tuple.compatibility_mode != "exact-head":
+        raise PermissionError("routed worker rehearsal requires exact-head compatibility")
+    if not callable(getattr(temporal_readback, "read_worker", None)):
+        raise PermissionError("routed worker rehearsal requires Temporal readback")
+    if not callable(temporal_connect):
+        raise PermissionError("routed worker rehearsal requires a Temporal connector")
+
+    raw_lock = execution.launch_lock_bytes
+    observed_digest = sha256(raw_lock).hexdigest()
+    lock = _launch_lock_from_json(json.loads(raw_lock))
+    if lock.runtime_root != execution.runtime_root or lock.interpreter_path != execution.interpreter_path:
+        raise PermissionError("routed worker runtime does not match the authenticated lock")
+
+    async def compatibility_preflight(database_url, selected_route, _lease):
+        verified = await asyncio.to_thread(
+            require_production_worker_compatibility,
+            database_url,
+            launch_lock=lock,
+            observed_launch_lock_sha256=observed_digest,
+            expected_launch_lock_sha256=execution.expected_launch_lock_sha256,
+            route_id=selected_route.route_id,
+        )
+        if verified != selected_route:
+            raise PermissionError("routed worker handoff does not match the authenticated route")
+
+    def deny_permit(_approval, _publication):
+        raise PermissionError("routed worker rehearsal cannot authorize publication")
+
+    database_url = execution.database_url
+    _client, worker = await connect_routed_worker(
+        route=route,
+        lease=lease,
+        route_authority=route_authority,
+        database_url=database_url,
+        publication_state=PublicationWorkflowState(
+            store=CanonicalJobStore(database_url),
+            repository=PublicationRepository(database_url),
+        ),
+        permit_request_factory=deny_permit,
+        temporal_connect=temporal_connect,
+        compatibility_preflight=compatibility_preflight,
+        rehearsal_only=True,
+    )
+    return await run_routed_worker(
+        worker,
+        route=route,
+        lease=lease,
+        route_authority=route_authority,
+        temporal_readback=temporal_readback,
+        stop_requested=stop_requested,
+    )
 
 
 def _require_exact_drained_readback(
@@ -500,12 +616,14 @@ async def run_routed_worker(
     temporal_readback: TemporalWorkerReadback,
     sleep: Callable[[float], object] = asyncio.sleep,
     now: Callable[[], datetime] = lambda: datetime.now(timezone.utc),
+    stop_requested: asyncio.Event | None = None,
 ) -> WorkerDrainReceipt:
     """Renew a slot at one third of its remaining TTL and drain on lease loss."""
     current = lease
     _validate_routed_lease(route, current, route_authority, now=now())
     run_task = asyncio.create_task(worker.run())
     lease_lost = False
+    stopping = False
     cancellation: asyncio.CancelledError | None = None
     try:
         while not run_task.done():
@@ -514,9 +632,18 @@ async def run_routed_worker(
                 lease_lost = True
                 break
             interval = remaining / 3
-            pause = sleep(interval)
-            if inspect.isawaitable(pause):
-                await pause
+            if stop_requested is None:
+                pause = sleep(interval)
+                if inspect.isawaitable(pause):
+                    await pause
+            else:
+                try:
+                    await asyncio.wait_for(stop_requested.wait(), timeout=interval)
+                except TimeoutError:
+                    pass
+                else:
+                    stopping = True
+                    break
             if run_task.done():
                 break
             if current.expires_at <= now():
@@ -550,7 +677,7 @@ async def run_routed_worker(
         _shutdown_drain_and_readback(
             worker,
             run_task,
-            shutdown_requested=lease_lost or cancellation is not None,
+            shutdown_requested=stopping or lease_lost or cancellation is not None,
             temporal_readback=temporal_readback,
             route=route,
             lease=current,

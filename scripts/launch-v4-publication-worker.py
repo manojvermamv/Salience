@@ -17,8 +17,12 @@ import subprocess
 import sys
 from datetime import datetime, timezone
 from types import MappingProxyType
-from typing import Mapping, Protocol
+from typing import TYPE_CHECKING, Mapping, NamedTuple, Protocol
 from uuid import UUID
+
+if TYPE_CHECKING:
+    from salience.cycles.production_routing import ProductionRouteManifestV1, RouteLease
+    from salience.workflows.temporal_readback import WorkerDrainReceipt
 
 
 CONTROL_LAUNCHER_PATH = Path("/run/salience-control/launch-v4-publication-worker.py")
@@ -213,6 +217,20 @@ class AuthenticatedDeployableExecution:
 
 class AuthenticatedDeployableExecutor(Protocol):
     def __call__(self, execution: AuthenticatedDeployableExecution) -> object: ...
+
+
+class AuthenticatedCurrentRouteExecution(NamedTuple):
+    route: ProductionRouteManifestV1
+    lease: RouteLease
+    launch_lock_bytes: bytes
+    expected_launch_lock_sha256: str
+    database_url: str
+    runtime_root: str
+    interpreter_path: str
+
+
+class CurrentRouteExecutor(Protocol):
+    def __call__(self, execution: AuthenticatedCurrentRouteExecution, /) -> WorkerDrainReceipt: ...
 
 
 def _sha256(path: Path) -> str:
@@ -535,9 +553,6 @@ def _environment_for_child(
     expired: str | None,
     cancelled: str | None,
     lock_digest: str,
-    *,
-    route_manifest: object | None = None,
-    lease_identity: object | None = None,
 ) -> dict[str, str]:
     environment = {
         key: value
@@ -556,15 +571,6 @@ def _environment_for_child(
     elif mode == "rollback-restart-v2":
         environment["SALIENCE_PUBLICATION_ROLLBACK_WORKSPACE_ID"] = workspace
         environment.pop("TEST_DATABASE_URL", None)
-    if route_manifest is not None or lease_identity is not None:
-        if route_manifest is None or lease_identity is None:
-            raise LauncherError("route manifest and one-use lease identity must be complete")
-        environment["SALIENCE_PRODUCTION_ROUTE_MANIFEST"] = json.dumps(
-            route_manifest, sort_keys=True, separators=(",", ":")
-        )
-        environment["SALIENCE_PRODUCTION_ROUTE_LEASE"] = json.dumps(
-            lease_identity, sort_keys=True, separators=(",", ":")
-        )
     return environment
 
 
@@ -577,7 +583,7 @@ def _claim_authenticated_route(
     slot_id: UUID,
     owner_id: UUID,
     route_authority,
-):
+) -> tuple[ProductionRouteManifestV1, RouteLease]:
     """Resolve and claim one route only after the outer lock and preflight pass."""
     if getattr(route_authority, "protocol_version", None) != "salience.p1-route-fence.v1":
         raise LauncherError("production route lease authority version is unsupported")
@@ -586,7 +592,6 @@ def _claim_authenticated_route(
         from salience.cycles.production_routing import (
             RouteLease,
             RouteLeaseClaim,
-            canonical_route_manifest_bytes,
             parse_route_bundle,
             route_manifest_sha256,
         )
@@ -601,6 +606,10 @@ def _claim_authenticated_route(
                 "requested route is absent or ambiguous in the authenticated bundle"
             )
         route = selected[0]
+        if route.route_tuple.producer_bindings:
+            raise LauncherError("routed worker rehearsal requires an authenticated route without producers")
+        if route.route_tuple.compatibility_mode != "exact-head":
+            raise LauncherError("routed worker rehearsal requires exact-head compatibility")
         if slot_id not in route.slots:
             raise LauncherError("requested slot is absent from the authenticated route")
         expected_manifest_digest = route_manifest_sha256(route)
@@ -631,17 +640,7 @@ def _claim_authenticated_route(
             or readback.lease != lease
         ):
             raise LauncherError("route authority did not read back its claimed slot")
-        manifest_payload = json.loads(canonical_route_manifest_bytes(route))
-        lease_payload = {
-            "route_id": str(lease.route_id),
-            "slot_id": str(lease.slot_id),
-            "owner_id": str(lease.owner_id),
-            "fencing_epoch": lease.fencing_epoch,
-            "expires_at": lease.expires_at.isoformat(),
-            "route_manifest_sha256": lease.route_manifest_sha256,
-            "artifact_lock_sha256": lease.artifact_lock_sha256,
-        }
-        return route, lease, manifest_payload, lease_payload
+        return route, lease
     except LauncherError:
         raise
     except Exception as error:
@@ -791,7 +790,7 @@ def main(
     *,
     route_authority=None,
     temporal_readback=None,
-    route_child_exec=None,
+    current_route_executor: CurrentRouteExecutor | None = None,
     rollback_verifier=None,
     prior_code_process=None,
     deployable_executor: AuthenticatedDeployableExecutor | None = None,
@@ -911,6 +910,8 @@ def main(
             )
         if route_authority is None or temporal_readback is None:
             raise LauncherError("v2 rollback requires live route and Temporal readback authorities")
+        if current_route_executor is not None:
+            raise LauncherError("v2 rollback restart rejects a current route executor")
     if is_routed and not is_rollback_v2:
         if arguments.mode != "current" or arguments.worker_kind != "deployable":
             raise LauncherError("production route startup requires current deployable worker mode")
@@ -920,9 +921,9 @@ def main(
             raise LauncherError(
                 "production route startup requires an injected route lease authority"
             )
-        if route_child_exec is None:
+        if not callable(current_route_executor):
             raise LauncherError("production route child handoff requires an injected executor")
-    elif not is_routed and (any(route_values) or route_authority is not None or route_child_exec is not None):
+    elif not is_routed and (any(route_values) or route_authority is not None or current_route_executor is not None):
         raise LauncherError("v1 fixture launch rejects production route inputs")
     worker = lock["workers"][arguments.worker_kind]
     interpreter = lock["interpreter_path"]
@@ -971,28 +972,46 @@ def main(
             detail = result.stderr.strip() or "publication worker compatibility preflight failed"
             raise LauncherError(detail[-4000:])
 
-    route = lease = route_manifest_payload = lease_identity_payload = None
     if is_routed and not is_rollback_v2:
-        route, lease, route_manifest_payload, lease_identity_payload = (
-            _claim_authenticated_route(
-                lock,
-                lock_digest,
-                runtime_root,
-                route_id=requested_route_id,
-                slot_id=requested_slot_id,
-                owner_id=requested_owner_id,
-                route_authority=route_authority,
-            )
-        )
-        environment = _environment_for_child(
-            arguments.mode,
-            arguments.workspace_id,
-            str(expired_id) if expired_id else None,
-            str(cancel_id) if cancel_id else None,
+        route, lease = _claim_authenticated_route(
+            lock,
             lock_digest,
-            route_manifest=route_manifest_payload,
-            lease_identity=lease_identity_payload,
+            runtime_root,
+            route_id=requested_route_id,
+            slot_id=requested_slot_id,
+            owner_id=requested_owner_id,
+            route_authority=route_authority,
         )
+        execution = AuthenticatedCurrentRouteExecution(
+            route=route,
+            lease=lease,
+            launch_lock_bytes=raw_lock,
+            expected_launch_lock_sha256=external_production_trust_digest,
+            database_url=database_url,
+            runtime_root=str(runtime_root),
+            interpreter_path=interpreter,
+        )
+        from salience.workflows.temporal_readback import WorkerDrainReceipt
+
+        launched_at = datetime.now(timezone.utc)
+        drain = current_route_executor(execution)
+        if (
+            not isinstance(drain, WorkerDrainReceipt)
+            or drain.status != "stopped"
+            or drain.route_id != route.route_id
+            or drain.slot_id != lease.slot_id
+            or drain.owner_id != lease.owner_id
+            or drain.fencing_epoch != lease.fencing_epoch
+            or drain.route_manifest_sha256 != lease.route_manifest_sha256
+            or drain.artifact_lock_sha256 != lease.artifact_lock_sha256
+            or drain.route_tuple_sha256 != route.route_tuple_sha256
+            or not (
+                launched_at <= drain.boundary_at <= drain.readback_observed_at
+                <= datetime.now(timezone.utc)
+            )
+        ):
+            raise LauncherError("injected current route executor did not return a bound stopped drain receipt")
+        return 0
 
     if is_rollback_v2:
         if rollback_verifier is None:
@@ -1055,11 +1074,6 @@ def main(
         worker["module"],
         *worker["argv"],
     ]
-    if is_routed:
-        if route_child_exec is None:
-            raise LauncherError("production route child handoff requires an injected executor")
-        route_child_exec(interpreter, command, environment)
-        raise LauncherError("injected production route child executor returned unexpectedly")
     try:
         os.execve(interpreter, command, environment)
     except OSError as error:
