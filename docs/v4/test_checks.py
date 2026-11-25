@@ -994,6 +994,22 @@ class GateChecks(unittest.TestCase):
             self.assertEqual(fence["rollback_verification"], "DENIED")
             self.assertEqual(fence["protected_claim"], "DENIED")
             self.assertTrue(fence["pointer_unchanged"])
+        if current["artifact_build"] == "PASS_FIXTURE_ONLY" and "current_routed_launcher" in current:
+            handoff = fixture["installed_current_route_handoff"]
+            self.assertEqual(handoff["image_id"], fixture["local_image_id"])
+            self.assertEqual(handoff["migration_head"], fixture["migration_head"])
+            self.assertEqual(handoff["launch_lock_sha256"], fixture["development_route_lock_sha256"])
+            self.assertEqual(handoff["status"], "PASS_FIXTURE_ONLY")
+            self.assertEqual(handoff["producer_bindings"], 0)
+            self.assertFalse(handoff["worker_registered"])
+            for denial in ("ambient_only", "mismatched_independent_trust"):
+                self.assertEqual(handoff[denial]["disposition"], "DENIED")
+                self.assertEqual((handoff[denial]["claims"], handoff[denial]["handoffs"]), (0, 0))
+            handoff_result = handoff["exact_independent_trust"]
+            self.assertEqual(handoff_result["disposition"], "HANDOFF_CAPTURED")
+            self.assertEqual((handoff_result["claims"], handoff_result["handoffs"]), (1, 1))
+            self.assertEqual(fixture["installed_committed_receipt_regressions_passed"], 6)
+            self.assertEqual(fixture["installed_signed_acceptance_regressions_passed"], 3)
         self.assertEqual(fixture["production_launcher_denials"], launcher_denials)
         self.assertEqual(current["external_rows_not_run"], 22)
         self.assertEqual((matrix["RG0"], matrix["RG1"]), ("HELD", "HELD"))

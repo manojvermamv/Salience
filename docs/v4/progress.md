@@ -14,7 +14,7 @@ The resume transaction records the existing cycle as runnable under its original
 
 An activity retry can reuse the durable provider receipt on the original Temporal run while the claimed permit and authority are current. Effect completion and the acceptance checkpoint commit together. The routed launcher passes the independently supplied lock digest into isolated exact-head preflight before claiming a slot. The configured launcher still needs provisioned trust and an executor that joins the authenticated handoff to the routed worker. [Receipt replay](validation.md#committed-publication-receipt-replay) · [Route trust](validation.md#independent-current-route-trust)
 
-The earlier exact `98e19fb` Compose rehearsal started the fixture API, restarted the worker after one mock acceptance, and verified installed v7 rollback history and claimed-successor denial. The proposed named qualification target is an isolated ECS/Fargate environment. [Target recommendation](validation.md#proposed-named-p1-qualification-target) · [Exact image and fixture evidence](validation.md#local-image-and-compose-restart-rehearsal)
+The exact `3d549fa` fixture rehearsal restarted the Compose worker after one mock acceptance and verified installed v7 rollback history, claimed-successor denial, and receipt replay. The installed launcher reached one authenticated handoff, and the signed fixture tests exercised pre-audit readiness and independent per-target readbacks. The proposed named qualification target is an isolated ECS/Fargate environment. [Target recommendation](validation.md#proposed-named-p1-qualification-target) · [Exact image and fixture evidence](validation.md#local-image-and-compose-restart-rehearsal)
 
 ## Recorded Task34/35 development checkpoint — 2026-10-29
 
