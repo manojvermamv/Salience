@@ -701,9 +701,9 @@ This update records exact mock predecessor closure and the canonical hold after 
 | Path | SHA-256 |
 | --- | --- |
 | `docs/v4/IMPLEMENTATION-BLUEPRINT.md` | `2ff03f5c38ff564a50a5722f4774363e4757d8bfac02e80ccd1d8fabc764ac3b` |
-| `docs/v4/progress.md` | `b732957d67f5165c846339c6eb602f30af9b40252a5b34c65bd79e09f0226efe` |
-| `docs/v4/validation.md` | `c60bd0e22109fd6b841927a9f2db43ba50956893070523437f7900035801ef6b` |
-| `docs/v4/test_checks.py` | `15fb4b765cac24a204236e3edf2d0943f404043bb65b6fd65f1163913b5c0c14` |
+| `docs/v4/progress.md` | `774dca08c4b1ea00b9fc8410b1c0c7cc900345e914bc41002abc6ac274021c1a` |
+| `docs/v4/validation.md` | `f69a3e28f389717b454250c8a3ffdcfd26f4c2a1a91c21d12eda32ad92cbba34` |
+| `docs/v4/test_checks.py` | `8cb3e0877d87a1507d9fe8f3ab952e02d98737383fea33496af5e92b4eefb5a7` |
 | `README.md` | `dbfa93b10cc65da969f363d7186a53d94f7190ffcefd55b3f326a65650c7709e` |
 | `docs/v4/evidence-lock.json` | `d8d2e07060c847e763fe8166ec1d7933c7d08c6db1b6a28e2d469f855fa26013` |
-| `docs/v4/p1-qualification-matrix.json` | `a5843b8cb2f2ac2cb7b1969832472a0374579ea5604b0a109cdc870eb55eee52` |
+| `docs/v4/p1-qualification-matrix.json` | `26b63d6f0a6929981632196071dccc05b3ab1ee30985bcc2454fa1b73d433bb0` |
