@@ -103,7 +103,7 @@ The last published `0055` run passed documentation verification and failed five 
 
 Migration `0059` allows the production case opener to recognize the reserved plan created by publication authorization. It checks the exact original reservation and effect graph and preserves the original claim, cost liability, and case-opening receipt. The rollback verifier v6 requires this exact migration head and checks the installed opener definition and configuration. It retains the older verification rules for claimed and preclaim opening receipts. The v5 lock still requires `0058`.
 
-The reserved-plan tests seed the positive, finite reservation required by production permit issuance and use the real reservation repository, permit claim, and submission marker. The workflow’s default zero estimate does not establish that funding. Named-target qualification needs evidence of the actual reserved funding path.
+The reserved-plan tests seed the positive, finite reservation required by production permit issuance and use the real reservation repository, permit claim, and submission marker. At revision `0059`, the publication activity called the zero-cost reservation path. The `0060` application uses the scoped approval binding described below. Named-target qualification needs evidence of the actual reserved funding path.
 
 The provider-read visibility window starts at the claim, before the original send may have started. An empty lookup after that window can race a delayed send. The claimed handoff needs proof that the original send can no longer arrive, a current typed operator and stage decision, and a guarded same-run continuation. Preserve the claimed liability and original reservation while outcome or finality is uncertain. A terminal Temporal run stays terminal. [Claimed opener](../../migrations/versions/0054_p1_recovery_case_opening.py) · [Visibility calculation](../../src/salience/cycles/_production_recovery_coordinator.py) · [Current status](progress.md#current-state)
 
@@ -122,6 +122,14 @@ The route authority needs a durable lease and a way to fence a decision that was
 Before qualification, the deployment owner needs to approve the route decision protocol, supply an executor and readback adapters, and stage independent trust that binds the environment to the exact candidate. The workspace and target IDs, scoped approvals, evidence producer and independent auditor need actual identities and trusted keys. The environment name is proposed and no named target has been provisioned or qualified.
 
 ### Local image and Compose restart rehearsal
+
+#### Exact `0060` fixture candidate at `98e19fb`
+
+The tracked Dockerfile built the candidate from clean application commit `98e19fb843fd199af2f4d6d37608269a58ad661e` and tree `0b188c30022d816d8e08e90ec4205865930be949`. The wheel SHA-256 was `a475863a391e435b1409af54bee1cbf6fcb1884e321cd769ee64c1c8e0d07cf7`. The loaded image ID was `sha256:478dca5f7229227696152ede8abc80f84a790831bc83bdd495f0ea10cec4d4f3` and the linux/amd64 manifest digest was `sha256:3618eafac1a38180e085051bb6922644c2418f18cc9db9d66aec714987d0bda3`. The OCI archive verified all 15 referenced blobs. The installed dependency inventory and successful `pip check` are bound to these image bytes. Transitive versions can change across builds, so use the retained image digest for this rehearsal. [Exact artifact and evidence digests](p1-qualification-matrix.json)
+
+The same image ran migration, the fixture API, the mock publisher and the worker. PostgreSQL reported `0060_p1_claimed_reissue_fence` and the API returned HTTP 200. The worker exited with code 137 after one mock acceptance and restarted in the same container. The workflow reconciled that acceptance into one canonical effect and two checkpoints.
+
+Installed rollback v7 verified the exact claimed opening with a reserved plan and preserved its original liability on replay. A separate installed test preserved the populated preclaim renewal through the upgrade from 0058 through 0059 and into 0060 and rejected altered evidence. The historical v6 reader refused the 0060 database. The installed verifier and database claim barrier rejected an unresolved historical successor based on claim-clock evidence and preserved its pointer. Route and Temporal fixtures exercised v7 readback and missing authority denial. The network-disabled production checks exercised unprovisioned trust, the missing executor, missing readbacks and the held configured API.
 
 #### Exact `0059` fixture candidate at `a4abf14`
 
