@@ -995,19 +995,24 @@ class GateChecks(unittest.TestCase):
             self.assertEqual(fence["protected_claim"], "DENIED")
             self.assertTrue(fence["pointer_unchanged"])
         if current["artifact_build"] == "PASS_FIXTURE_ONLY" and "current_routed_launcher" in current:
-            handoff = fixture["installed_current_route_handoff"]
-            self.assertEqual(handoff["image_id"], fixture["local_image_id"])
-            self.assertEqual(handoff["migration_head"], fixture["migration_head"])
-            self.assertEqual(handoff["launch_lock_sha256"], fixture["development_route_lock_sha256"])
-            self.assertEqual(handoff["status"], "PASS_FIXTURE_ONLY")
-            self.assertEqual(handoff["producer_bindings"], 0)
-            self.assertFalse(handoff["worker_registered"])
-            for denial in ("ambient_only", "mismatched_independent_trust"):
-                self.assertEqual(handoff[denial]["disposition"], "DENIED")
-                self.assertEqual((handoff[denial]["claims"], handoff[denial]["handoffs"]), (0, 0))
-            handoff_result = handoff["exact_independent_trust"]
-            self.assertEqual(handoff_result["disposition"], "HANDOFF_CAPTURED")
-            self.assertEqual((handoff_result["claims"], handoff_result["handoffs"]), (1, 1))
+            routed = fixture["installed_routed_worker"]
+            self.assertEqual(routed["candidate"], fixture["application_commit"])
+            self.assertEqual(routed["image_id"], fixture["local_image_id"])
+            self.assertEqual(routed["migration_head"], fixture["migration_head"])
+            self.assertEqual(routed["status"], "PASS_REGISTRATION_FIXTURE_ONLY")
+            self.assertEqual(routed["drain_and_transfer"], "HELD_INCOMPLETE_READBACK")
+            self.assertRegex(routed["launch_lock_sha256"], r"^[a-f0-9]{64}$")
+            self.assertEqual((routed["producer_bindings"], routed["effect_authorization_calls"]), (0, 0))
+            self.assertTrue(routed["slot_remained_leased"])
+            registration, = routed["registrations"]
+            self.assertEqual((registration["starts"], registration["epoch"]), (1, 1))
+            self.assertFalse(registration["drained"])
+            self.assertTrue(registration["canonical_counts_unchanged"])
+            self.assertEqual(registration["workflow_probe"], "RoutedRehearsalActivityDenied")
+            self.assertEqual(set(registration["observed_pollers"]), {"ACTIVITY", "WORKFLOW"})
+            for poller in registration["observed_pollers"].values():
+                self.assertEqual(poller["identity"], registration["owner_id"])
+                self.assertEqual(poller["build_id"], routed["worker_build_id"])
             self.assertEqual(fixture["installed_committed_receipt_regressions_passed"], 6)
             self.assertEqual(fixture["installed_signed_acceptance_regressions_passed"], 3)
         self.assertEqual(fixture["production_launcher_denials"], launcher_denials)
