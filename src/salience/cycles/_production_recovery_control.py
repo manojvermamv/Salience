@@ -619,6 +619,8 @@ class ProductionRecoveryCaseController:
                 != command.original_idempotency_key
             ):
                 raise ValueError("current dispatch no longer uses the original operation key")
+            if dispatch["request_snapshot"].get("publication_request_id") is not None:
+                raise PermissionError("publication no-effect recovery requires predecessor finality")
             key = command.idempotency_key
             prior = connection.execute(
                 "SELECT * FROM v4_production_recovery_events WHERE event_key=%s",

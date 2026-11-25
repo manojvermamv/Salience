@@ -139,6 +139,10 @@ class ProductionRecoveryCoordinator:
                 or dispatch["request_fingerprint"] != work.request_fingerprint
             ):
                 raise RecoveryProviderReadDenied("current dispatch no longer matches the bound operation")
+            publication = (
+                work.source_discriminant == "production_publication_hold"
+                or dispatch["request_snapshot"].get("publication_request_id") is not None
+            )
             context = ProductionRecoveryReadContext(
                 idempotency_key=dispatch["request_snapshot"].get("idempotency_key"),
                 operation_started_at=dispatch["claimed_at"],
@@ -163,37 +167,53 @@ class ProductionRecoveryCoordinator:
                 phase = "pre-visibility"
             else:
                 phase = "visibility-elapsed"
-            event_key = f"remote-read:{work.work_id}:{phase}"
 
-            # A pre-window not-found is useful evidence, but it is not proof of
-            # absence. It gets one replay-stable identity; after its boundary,
-            # one separate authoritative read is permitted under a second key.
+            # Publication keeps the two bounded read opportunities. The claim
+            # clock only spaces those reads and cannot prove predecessor finality.
+            event_phase = f"publication-{phase}" if publication else phase
+            event_key = f"remote-read:{work.work_id}:{event_phase}"
+            known_read_keys = [
+                f"remote-read:{work.work_id}:{known_phase}"
+                for known_phase in ("no-visibility-window", "pre-visibility", "visibility-elapsed")
+            ] if publication else []
             prior = connection.execute(
                 """SELECT * FROM v4_production_recovery_events
-                   WHERE work_id=%s AND event_key=%s""",
-                (work.work_id, event_key),
+                   WHERE work_id=%s AND (
+                     event_key=%s OR (event_key=ANY(%s)
+                       AND event_kind='remote_read_observation'
+                       AND payload->>'result_class' IN ('in_progress','terminal_success'))
+                     OR (%s AND event_kind='remote_read_observation'
+                       AND event_key=%s AND payload->>'result_class'='terminal_success')
+                   )
+                   ORDER BY (event_key=%s) DESC, occurred_at DESC, event_id DESC
+                   LIMIT 1""",
+                (work.work_id, event_key, known_read_keys, publication,
+                 f"remote-read:{work.work_id}:publication-pre-visibility", event_key),
             ).fetchone()
             if prior is not None:
                 return self._read_event_result(self.repository._event(prior))
-            elapsed = connection.execute(
-                """SELECT * FROM v4_production_recovery_events
-                   WHERE work_id=%s AND event_key=%s""",
-                (work.work_id, f"remote-read:{work.work_id}:visibility-elapsed"),
-            ).fetchone()
-            if elapsed is not None:
-                return self._read_event_result(self.repository._event(elapsed))
-            preliminary = connection.execute(
-                """SELECT * FROM v4_production_recovery_events
-                   WHERE work_id=%s AND event_key=%s""",
-                (work.work_id, f"remote-read:{work.work_id}:pre-visibility"),
-            ).fetchone()
-            if phase == "visibility-elapsed" and preliminary is not None:
-                previous = preliminary["payload"]
-                if not (
-                    previous.get("result_class") == "unknown"
-                    and previous.get("remote_state") == "not_found"
-                ):
-                    return self._read_event_result(self.repository._event(preliminary))
+            if not publication:
+                # A preliminary not-found allows a separate bounded lookup once
+                # the visibility window for a non-publication operation elapses.
+                elapsed = connection.execute(
+                    """SELECT * FROM v4_production_recovery_events
+                       WHERE work_id=%s AND event_key=%s""",
+                    (work.work_id, f"remote-read:{work.work_id}:visibility-elapsed"),
+                ).fetchone()
+                if elapsed is not None:
+                    return self._read_event_result(self.repository._event(elapsed))
+                preliminary = connection.execute(
+                    """SELECT * FROM v4_production_recovery_events
+                       WHERE work_id=%s AND event_key=%s""",
+                    (work.work_id, f"remote-read:{work.work_id}:pre-visibility"),
+                ).fetchone()
+                if phase == "visibility-elapsed" and preliminary is not None:
+                    previous = preliminary["payload"]
+                    if not (
+                        previous.get("result_class") == "unknown"
+                        and previous.get("remote_state") == "not_found"
+                    ):
+                        return self._read_event_result(self.repository._event(preliminary))
 
             grant = self.authority.authorize_remote_read(work, context)
             if not isinstance(grant, ProductionScopedReadGrant):
@@ -280,7 +300,8 @@ class ProductionRecoveryCoordinator:
                         result_class = "terminal_success"
                     elif observation.result == "not_found":
                         if (
-                            phase == "visibility-elapsed"
+                            not publication
+                            and phase == "visibility-elapsed"
                             and visibility_boundary is not None
                             and current_time >= visibility_boundary
                             and observed_at >= visibility_boundary
@@ -304,7 +325,7 @@ class ProductionRecoveryCoordinator:
                 "remote_state": remote_state,
                 "event_key": context.idempotency_key,
             }
-            if visibility_boundary is not None:
+            if not publication and visibility_boundary is not None:
                 payload["deadline"] = visibility_boundary.isoformat()
             if work.case_id is not None:
                 payload["case_id"] = str(work.case_id)

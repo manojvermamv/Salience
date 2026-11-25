@@ -1909,6 +1909,22 @@ def test_production_budget_binding_is_current_and_account_scoped(accounting):
     assert _permit_count(case["database"], case["operation_id"]) == 0
 
 
+@pytest.mark.parametrize("invalid_funding", ["infinite_expiry", "nonfinite_amount"])
+def test_production_dispatch_denies_nonfinite_reservation(accounting, invalid_funding):
+    case = _production_case(accounting)
+    with psycopg.connect(case["database"]) as connection:
+        values = (case["request"].budget_reservation_id,)
+        if invalid_funding == "infinite_expiry":
+            connection.execute("UPDATE budget_reservations SET expires_at='infinity' WHERE id=%s", values)
+        else:
+            connection.execute("UPDATE budget_reservations SET reserved_amount='NaN' WHERE id=%s", values)
+
+    with pytest.raises(ProductionAuthorizationDenied, match="budget_unavailable"):
+        case["dispatch"].issue_permit(case["request"])
+    assert case["route"].calls == []
+    assert _permit_count(case["database"], case["operation_id"]) == 0
+
+
 def test_active_stop_denial_records_db_derived_stop_latency(accounting):
     case = _production_case(accounting)
     governance = CycleGovernance(
@@ -3866,7 +3882,7 @@ def test_production_authorize_issues_one_permit_from_current_publication_binding
         database_time=now,
         budget_status="reserved",
         publication_plan_id=str(plan_id),
-        publication_plan_state="planned",
+        publication_plan_state="reserved",
         external_effect_id=str(effect_id),
         external_effect_state="planned",
         publication_attempt_id=str(attempt_id),
@@ -3880,32 +3896,15 @@ def test_production_authorize_issues_one_permit_from_current_publication_binding
         budget_reservation_id=str(approval.budget_reservation_id),
     )
 
-    class Store(_PublicationActivityStore):
-        async def plan_effect(self, run, effect_key):
-            return None
-
-        async def effect(self, run, effect_key):
-            return SimpleNamespace(effect_id=str(effect_id))
 
     class Repository:
-        async def create_plan(self, **kwargs):
-            return SimpleNamespace(id=str(plan_id))
-
-        async def attach_reservation(self, **kwargs):
-            return None
-
         async def load_current_authorization(self, publication_request_id):
             return current
 
-        async def create_attempt(self, **kwargs):
-            return SimpleNamespace(id=str(attempt_id))
-
     class Costs:
-        async def reserve_for_publication_effect(self, **kwargs):
-            return SimpleNamespace(
-                reservation_id=str(approval.budget_reservation_id),
-                status=SimpleNamespace(value="reserved"),
-            )
+        async def read_approved_publication_reservation(self, binding, *, reservation_key):
+            assert binding == approval and reservation_key == f"{request.idempotency_key}:publish"
+            return SimpleNamespace(reservation_id=str(approval.budget_reservation_id))
 
     class Authorizer:
         def __init__(self):
@@ -3966,7 +3965,7 @@ def test_production_authorize_issues_one_permit_from_current_publication_binding
     dispatch = Dispatch()
     authorizer = Authorizer()
     state = PublicationWorkflowState(
-        store=Store(),
+        store=_PublicationActivityStore(),
         repository=Repository(),
         publisher_adapters={"production-publisher": _PublicationActivityAdapter()},
         cost_repository=Costs(),
@@ -3987,12 +3986,8 @@ def test_production_authorize_issues_one_permit_from_current_publication_binding
     async def checkpoint(_name):
         return None
 
-    async def current_production_authorization(_request):
-        return current, None
-
     activities._run = current_run
     activities._checkpoint = checkpoint
-    activities._load_current_production_authorization = current_production_authorization
     monkeypatch.setattr(
         "salience.workflows.publication.activity.info",
         lambda: SimpleNamespace(

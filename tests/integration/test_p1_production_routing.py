@@ -1541,6 +1541,7 @@ def _configure_v2_rollback_launcher_main(
     ("0055_p1_recovery_open_rollback_v4", "salience.p1-recovery-rollback-verifier.v4"),
     ("0058_p1_preclaim_rollback_v5", "salience.p1-recovery-rollback-verifier.v5"),
     ("0059_p1_claimed_reserved_opening", "salience.p1-recovery-rollback-verifier.v6"),
+    ("0060_p1_claimed_reissue_fence", "salience.p1-recovery-rollback-verifier.v7"),
 ])
 def test_launcher_v2_runs_pre_and_post_readback_before_prior_code(tmp_path, monkeypatch, migration_head, abi):
     from importlib.util import module_from_spec, spec_from_file_location

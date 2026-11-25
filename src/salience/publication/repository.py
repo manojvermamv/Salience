@@ -537,6 +537,14 @@ class PublicationRepository:
     async def load_request(self, publication_request_id: str) -> PublicationRequest:
         return await asyncio.to_thread(self._load_request, publication_request_id)
 
+    async def load_prebound_production_request(
+        self, approval_request_id: str, *, job_id: str, workflow_id: str, workflow_run_id: str,
+    ) -> PublicationRequest | None:
+        """Resolve the producer's exact original request for this Temporal run."""
+        return await asyncio.to_thread(
+            self._load_prebound_production_request, approval_request_id, job_id, workflow_id, workflow_run_id,
+        )
+
     async def load_scheduled_execution(self, publication_schedule_id: str) -> PersistedPublicationExecution:
         return await asyncio.to_thread(self._load_scheduled_execution, publication_schedule_id)
 
@@ -944,6 +952,30 @@ class PublicationRepository:
         if row is None:
             raise KeyError(publication_request_id)
         return _publication_request_from_row(row)
+
+    def _load_prebound_production_request(
+        self, approval_request_id: str, job_id: str, workflow_id: str, workflow_run_id: str,
+    ) -> PublicationRequest | None:
+        with self._connect() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """SELECT request.id::text
+                   FROM approval_requests approval
+                   LEFT JOIN publication_requests request ON request.publication_approval_request_id=approval.id
+                     AND request.id::text=approval.request_context->>'publication_request_id'
+                     AND request.workspace_id=approval.workspace_id
+                     AND approval.job_id=%s AND approval.request_context->>'job_id'=%s
+                     AND approval.request_context->>'workflow_id'=%s
+                     AND approval.request_context->>'workflow_run_id'=%s
+                   WHERE approval.id=%s
+                     AND approval.request_context->>'schema_version'='salience.p1-effect-approval.v1'""",
+                (job_id, job_id, workflow_id, workflow_run_id, approval_request_id),
+            )
+            row = cursor.fetchone()
+        if row is None:
+            return None
+        if row[0] is None:
+            raise PermissionError("production publication approval does not bind the exact request and workflow run")
+        return self._load_request(row[0])
 
     def _load_scheduled_execution(self, publication_schedule_id: str) -> PersistedPublicationExecution:
         with self._connect() as connection, connection.cursor() as cursor:

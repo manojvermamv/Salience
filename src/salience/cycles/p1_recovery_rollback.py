@@ -31,6 +31,9 @@ ROLLBACK_MIGRATION_HEAD_V5 = "0058_p1_preclaim_rollback_v5"
 ROLLBACK_VERIFIER_ABI_V6 = "salience.p1-recovery-rollback-verifier.v6"
 ROLLBACK_INVENTORY_SCHEMA_V6 = "salience.p1-recovery-rollback-inventory.v6"
 ROLLBACK_MIGRATION_HEAD_V6 = "0059_p1_claimed_reserved_opening"
+ROLLBACK_VERIFIER_ABI_V7 = "salience.p1-recovery-rollback-verifier.v7"
+ROLLBACK_INVENTORY_SCHEMA_V7 = "salience.p1-recovery-rollback-inventory.v7"
+ROLLBACK_MIGRATION_HEAD_V7 = "0060_p1_claimed_reissue_fence"
 _REASON_KEYS = ("expired_permit_receipt", "published_during_cancel")
 _INVENTORY_ARRAYS = {
     "source_identities": "source_identities",
@@ -655,6 +658,32 @@ def read_p1_recovery_rollback_inventory_v6(
     )
 
 
+def validate_recovery_rollback_inventory_v7(
+    inventory: object, *, workspace_id: UUID,
+) -> tuple[RecoveryRollbackRouteClaimV2, ...]:
+    if (
+        not isinstance(inventory, dict)
+        or inventory.get("schema_version") != ROLLBACK_INVENTORY_SCHEMA_V7
+        or inventory.get("migration_head") != ROLLBACK_MIGRATION_HEAD_V7
+    ):
+        raise RecoveryRollbackVerificationError("rollback v7 inventory envelope is incomplete")
+    return validate_recovery_rollback_inventory_v6(
+        inventory | {"schema_version": ROLLBACK_INVENTORY_SCHEMA_V6, "migration_head": ROLLBACK_MIGRATION_HEAD_V6},
+        workspace_id=workspace_id,
+    )
+
+
+def read_p1_recovery_rollback_inventory_v7(
+    database_url: str, *, workspace_id: UUID,
+) -> RecoveryRollbackInventoryV2:
+    """Read the exact inventory including unqualified claimed successor evidence."""
+    return _read_workspace_inventory(
+        database_url, workspace_id, ROLLBACK_MIGRATION_HEAD_V7,
+        "SELECT public.v4_p1_recovery_rollback_inventory_v7(%s)",
+        validate_recovery_rollback_inventory_v7,
+    )
+
+
 def _read_workspace_inventory(
     database_url: str, workspace_id: UUID, migration: str, query: str, validate,
 ) -> RecoveryRollbackInventoryV2:
@@ -908,6 +937,17 @@ def verify_p1_recovery_rollback_v6(
     """Require exact reserved-plan, preclaim, route, and Temporal readbacks."""
     return _verify_workspace_readbacks(
         read_p1_recovery_rollback_inventory_v6(database_url, workspace_id=workspace_id),
+        route_authority, temporal_readback,
+    )
+
+
+def verify_p1_recovery_rollback_v7(
+    database_url: str, *, workspace_id: UUID,
+    route_authority: RouteLeaseAuthority, temporal_readback: TemporalWorkerReadback,
+) -> RecoveryRollbackInventoryV2:
+    """Require exact claimed finality, route, and Temporal rollback readbacks."""
+    return _verify_workspace_readbacks(
+        read_p1_recovery_rollback_inventory_v7(database_url, workspace_id=workspace_id),
         route_authority, temporal_readback,
     )
 

@@ -651,3 +651,17 @@ This update records canonical reserved-plan case opening and the exact v6 migrat
 | `README.md` | `17c55bf2e57aa8910f911a2cd8623840509df20f40837ab9806861a66986295a` |
 | `docs/v4/evidence-lock.json` | `c5476b50e52cd949951dd5cd40ebb2efba1d861d3e9d7a67cf054f78f53dae11` |
 | `docs/v4/p1-qualification-matrix.json` | `33a68fa7ab1372a76bf8bafab64b2cf86619d96903fb7fae51fbabf1c2fcd116` |
+
+## P1 production funding and rollback v7 evidence hashes — 2026-11-25
+
+This update records approved production reservation adoption and enforcement of the claimed finality boundary. [Verification and scope](validation.md#funded-production-authorization-and-claimed-reissue-fence)
+
+| Path | SHA-256 |
+| --- | --- |
+| `docs/v4/IMPLEMENTATION-BLUEPRINT.md` | `d40b582839fcb9685f9604da907a93c463430c411cedce076e9405239e36d7b3` |
+| `docs/v4/progress.md` | `0f34f764001d8d37d8d46461b2fe1e975e4dad120394c528f18b24b53166d8bb` |
+| `docs/v4/validation.md` | `80ebb641fc55eb9a6dc646714712be8aa614464c85aa763c36d55aedfdd929cf` |
+| `docs/v4/test_checks.py` | `ec1a33a5c8152b227ed17cb5c4c2b0ae5b7f0e54ef40f61077cfb49e3703a985` |
+| `README.md` | `dbfa93b10cc65da969f363d7186a53d94f7190ffcefd55b3f326a65650c7709e` |
+| `docs/v4/evidence-lock.json` | `96eb0d33b2eb1895700d29a8f45de969bcdebeb3de772d2bb20f287bab599fa2` |
+| `docs/v4/p1-qualification-matrix.json` | `ac66380aa21b972fa2c053897acd3f16094559d35099902b8773ecfd9c9d0b17` |

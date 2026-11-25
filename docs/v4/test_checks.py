@@ -948,7 +948,7 @@ class GateChecks(unittest.TestCase):
             self.assertEqual(opened["operation_permit_count_after_opening"], 1)
             self.assertEqual(opened["external_effect_state_after_opening"], "submitting")
             self.assertEqual(opened["incomplete_opening_receipt"], "DENIED")
-        if fixture["rollback_verifier_abi"].endswith((".v5", ".v6")):
+        if fixture["rollback_verifier_abi"].endswith((".v5", ".v6", ".v7")):
             launcher_denials["rollback_without_readbacks"] = "ROUTE_AND_TEMPORAL_READBACK_REQUIRED"
             self.assertEqual(rollback["unavailable_temporal_readback"], "DENIED")
             self.assertEqual(fixture["worker_exit_code_before_recovery"], 137)
@@ -960,8 +960,9 @@ class GateChecks(unittest.TestCase):
             self.assertEqual(preclaim["successor_generation"], 2)
             self.assertEqual(preclaim["external_effect_state"], "planned")
             self.assertEqual(preclaim["altered_renewal_payload"], "DENIED")
-        if fixture["rollback_verifier_abi"].endswith(".v6"):
-            self.assertEqual(rollback["v6_history_check"]["historical_v5_on_current_head"], "DENIED")
+        if fixture["rollback_verifier_abi"].endswith((".v6", ".v7")):
+            if fixture["rollback_verifier_abi"].endswith(".v6"):
+                self.assertEqual(rollback["v6_history_check"]["historical_v5_on_current_head"], "DENIED")
             claimed = fixture["installed_claimed_reserved_readback"]
             self.assertEqual(claimed["application_commit"], fixture["application_commit"])
             self.assertEqual(claimed["image_id"], fixture["local_image_id"])
@@ -981,6 +982,14 @@ class GateChecks(unittest.TestCase):
                 preclaim["preclaim_lineage_sha256"],
                 preclaim["history_preserved_across_upgrade"]["preclaim_lineage_sha256"],
             )
+        if fixture["rollback_verifier_abi"].endswith(".v7"):
+            self.assertEqual(rollback["v7_history_check"]["historical_v6_on_current_head"], "DENIED")
+            fence = fixture["installed_claimed_reissue_fence"]
+            self.assertEqual(fence["image_id"], fixture["local_image_id"])
+            self.assertEqual(fence["migration_head"], fixture["migration_head"])
+            self.assertEqual(fence["rollback_verification"], "DENIED")
+            self.assertEqual(fence["protected_claim"], "DENIED")
+            self.assertTrue(fence["pointer_unchanged"])
         self.assertEqual(fixture["production_launcher_denials"], launcher_denials)
         self.assertEqual(current["external_rows_not_run"], 22)
         self.assertEqual((matrix["RG0"], matrix["RG1"]), ("HELD", "HELD"))

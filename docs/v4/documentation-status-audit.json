@@ -101,7 +101,7 @@
       ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-34-build-report.md": "f2191f02a28df94d1cf9d08fc8f315f02e270f2ee63fbcf681ef96e4e05d85c4",
       ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-34-build-review.md": "6992a5f72cc184c939b2375b660a86ae4bf453275cf5c1ff1db5abc8a0637d43",
       ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-35-report.md": "4fbce11cd0daeefd3c6d2dc4be378b022e9123e66a28c59ece20992268013781",
-      "README.md": "17c55bf2e57aa8910f911a2cd8623840509df20f40837ab9806861a66986295a",
+      "README.md": "dbfa93b10cc65da969f363d7186a53d94f7190ffcefd55b3f326a65650c7709e",
       "docs/README.md": "67719f215c8bb3e564073238805a8016a071e21b5c70facc79117f559c31371c",
       "docs/superpowers/plans/2026-10-27-p1-production-policy-and-revocation.md": "c1564a7ec7d09f63b5aba105678c8b5929619fecc49e5b4bb3e415ed1340672e",
       "docs/superpowers/plans/2026-10-27-p1-rg0-rg1-initial-gap-audit.md": "5d1dd8a86718184d03324144643dfb009cb36243a5bd0c0f14c46844eb3c5cd4",
@@ -112,21 +112,21 @@
       "docs/superpowers/specs/2026-10-13-p1-production-recovery-and-alerts-design.md": "4d7076fd968c28d78307678fa0b186d446dff6e3f3a88d5507646a828b2605cc",
       "docs/superpowers/specs/2026-10-13-p1-production-routing-and-worker-fencing-design.md": "76921a085e352f86ae77895c824917832a49847c306b76bc56ae2c7e44a23e90",
       "docs/superpowers/specs/2026-10-13-rg0-rg1-external-acceptance-design.md": "7334364e5417cbb29143877334a80ea90125e9ce61bff71f67de77a86f61069e",
-      "docs/v4/IMPLEMENTATION-BLUEPRINT.md": "227f18af6dd28f26e9f2220156fdcdd195aa5dd3f5f0c1d2f2ef8b8ea3182d1e",
-      "docs/v4/evidence-lock.json": "c5476b50e52cd949951dd5cd40ebb2efba1d861d3e9d7a67cf054f78f53dae11",
+      "docs/v4/IMPLEMENTATION-BLUEPRINT.md": "d40b582839fcb9685f9604da907a93c463430c411cedce076e9405239e36d7b3",
+      "docs/v4/evidence-lock.json": "96eb0d33b2eb1895700d29a8f45de969bcdebeb3de772d2bb20f287bab599fa2",
       "docs/v4/p0-release.json": "0a0f1969e0497cbec535fb3f854b51cef870a4746eb92f8a67a127566dc9ff75",
       "docs/v4/p1-production-policy-revocation-evidence.json": "e5a5a3d424157479cacaf00eae39614a5abe12ecdb04ac38af0c95692dbd982b",
-      "docs/v4/p1-qualification-matrix.json": "33a68fa7ab1372a76bf8bafab64b2cf86619d96903fb7fae51fbabf1c2fcd116",
+      "docs/v4/p1-qualification-matrix.json": "ac66380aa21b972fa2c053897acd3f16094559d35099902b8773ecfd9c9d0b17",
       "docs/v4/p1-remaining-production-development-evidence.json": "9712af1be052ae418a26d4c0ac600ce15a191d49b31517885926e3cc72d598ad",
       "docs/v4/p1-rg0-rg1-external-acceptance.schema.json": "16cbdd59abc82c587d0d05de44dec0d867893d0bc8207df20d7f1bbe85805154",
       "docs/v4/p1-rg0-rg1-initial-gap-audit.json": "33fe485384dcf60e36df8d48ace6394c80bce0d1bd9e6b9b39c7a905d65676b1",
       "docs/v4/p1-rg0-rg1-initial-gap-audit.md": "62aab5afb39f7c47e355a68ccf56e319a72955247515dfbdba8913fd797a5944",
-      "docs/v4/progress.md": "2c6721ac56672b5f5abc6afa4808a260d710ba58708f6ce94ea4abdeda32244a",
+      "docs/v4/progress.md": "0f34f764001d8d37d8d46461b2fe1e975e4dad120394c528f18b24b53166d8bb",
       "docs/v4/publication-recovery-hold-evidence.json": "3cce88e4d692f726be710c1f4db46b1428c9546561424a2ab0ad120363becc66",
       "docs/v4/publication-recovery-hold-successor-evidence.json": "6bb3ce696cffec2629838f5f30b8eea4acb837cbb81c1bcbc1b4de4f19e8764a",
       "docs/v4/repository-enforcement-evidence.json": "fc69f901036971bd64588cf3247d1701939e7525442f196daeab7f1919de11a2",
-      "docs/v4/test_checks.py": "36a39c935c70e2bddfad539ffb94e2724fbc0d4d474d52455651ebb205a6ace3",
-      "docs/v4/validation.md": "a9d9a8ae0f7b60e11336d7a6965a4fc94a852e690a36d4cb76a18ecafb695c59"
+      "docs/v4/test_checks.py": "ec1a33a5c8152b227ed17cb5c4c2b0ae5b7f0e54ef40f61077cfb49e3703a985",
+      "docs/v4/validation.md": "80ebb641fc55eb9a6dc646714712be8aa614464c85aa763c36d55aedfdd929cf"
     },
     "Task25 review history and final source-546ac4e fix-loop rereview preserved; current rereview PASS/CLEAN with 0 findings; durable review SHA-256 42de4ad70cc6192d03cd983359d30a8ca631fc52cf2dc6d8c8c2fd6ee0d08b8d; earlier 8c31e84 review remains historically scoped": 1
   },
@@ -2432,7 +2432,7 @@
     },
     {
       "path": "README.md",
-      "sha256": "17c55bf2e57aa8910f911a2cd8623840509df20f40837ab9806861a66986295a",
+      "sha256": "dbfa93b10cc65da969f363d7186a53d94f7190ffcefd55b3f326a65650c7709e",
       "disposition": "current P1 navigation and published fixture CI; external gates HELD"
     },
     {
@@ -3207,7 +3207,7 @@
     },
     {
       "path": "docs/v4/IMPLEMENTATION-BLUEPRINT.md",
-      "sha256": "227f18af6dd28f26e9f2220156fdcdd195aa5dd3f5f0c1d2f2ef8b8ea3182d1e",
+      "sha256": "d40b582839fcb9685f9604da907a93c463430c411cedce076e9405239e36d7b3",
       "disposition": "historical capture-time documentation/status scope; Task18 latest local candidate is source c23c4cca72021ce6621eaacd66f2bfc23f4cc129 / artifact be6f713b255f6b654b73ae4343db1db5c07e3840; external rows remain NOT RUN and gates HELD"
     },
     {
@@ -3282,7 +3282,7 @@
     },
     {
       "path": "docs/v4/evidence-lock.json",
-      "sha256": "c5476b50e52cd949951dd5cd40ebb2efba1d861d3e9d7a67cf054f78f53dae11",
+      "sha256": "96eb0d33b2eb1895700d29a8f45de969bcdebeb3de772d2bb20f287bab599fa2",
       "disposition": "current P1 development source inventory; historical lock preserved at ea4cd3f"
     },
     {
@@ -3422,7 +3422,7 @@
     },
     {
       "path": "docs/v4/p1-qualification-matrix.json",
-      "sha256": "33a68fa7ab1372a76bf8bafab64b2cf86619d96903fb7fae51fbabf1c2fcd116",
+      "sha256": "ac66380aa21b972fa2c053897acd3f16094559d35099902b8773ecfd9c9d0b17",
       "disposition": "P1 qualification matrix with published fixture CI and current follow-up scope"
     },
     {
@@ -3432,7 +3432,7 @@
     },
     {
       "path": "docs/v4/p1-rg0-rg1-audit-and-spec-review.md",
-      "sha256": "3e0cf34746ae696a2376cd6adb9b6bdf31ac4fcadb47bfc387857c0607143a82",
+      "sha256": "12daa0dd08156f75831d4843d3fef4a4745c26550768967c54ef5932fd4919ac",
       "disposition": "frozen review chain and successive handoff hashes; external gates HELD"
     },
     {
@@ -3462,7 +3462,7 @@
     },
     {
       "path": "docs/v4/progress.md",
-      "sha256": "2c6721ac56672b5f5abc6afa4808a260d710ba58708f6ce94ea4abdeda32244a",
+      "sha256": "0f34f764001d8d37d8d46461b2fe1e975e4dad120394c528f18b24b53166d8bb",
       "disposition": "current P1 development and release handoff; external gates HELD"
     },
     {
@@ -3532,7 +3532,7 @@
     },
     {
       "path": "docs/v4/validation.md",
-      "sha256": "a9d9a8ae0f7b60e11336d7a6965a4fc94a852e690a36d4cb76a18ecafb695c59",
+      "sha256": "80ebb641fc55eb9a6dc646714712be8aa614464c85aa763c36d55aedfdd929cf",
       "disposition": "current P1 verification; historical checks remain candidate-bound"
     },
     {
@@ -4058,7 +4058,7 @@
     ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-34-build-report.md": "f2191f02a28df94d1cf9d08fc8f315f02e270f2ee63fbcf681ef96e4e05d85c4",
     ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-34-build-review.md": "6992a5f72cc184c939b2375b660a86ae4bf453275cf5c1ff1db5abc8a0637d43",
     ".superpowers/sdd/2026-10-28-p1-remaining-production-development/task-35-report.md": "4fbce11cd0daeefd3c6d2dc4be378b022e9123e66a28c59ece20992268013781",
-    "README.md": "17c55bf2e57aa8910f911a2cd8623840509df20f40837ab9806861a66986295a",
+    "README.md": "dbfa93b10cc65da969f363d7186a53d94f7190ffcefd55b3f326a65650c7709e",
     "docs/README.md": "67719f215c8bb3e564073238805a8016a071e21b5c70facc79117f559c31371c",
     "docs/superpowers/plans/2026-10-27-p1-production-policy-and-revocation.md": "c1564a7ec7d09f63b5aba105678c8b5929619fecc49e5b4bb3e415ed1340672e",
     "docs/superpowers/plans/2026-10-27-p1-rg0-rg1-initial-gap-audit.md": "5d1dd8a86718184d03324144643dfb009cb36243a5bd0c0f14c46844eb3c5cd4",
@@ -4069,21 +4069,21 @@
     "docs/superpowers/specs/2026-10-13-p1-production-recovery-and-alerts-design.md": "4d7076fd968c28d78307678fa0b186d446dff6e3f3a88d5507646a828b2605cc",
     "docs/superpowers/specs/2026-10-13-p1-production-routing-and-worker-fencing-design.md": "76921a085e352f86ae77895c824917832a49847c306b76bc56ae2c7e44a23e90",
     "docs/superpowers/specs/2026-10-13-rg0-rg1-external-acceptance-design.md": "7334364e5417cbb29143877334a80ea90125e9ce61bff71f67de77a86f61069e",
-    "docs/v4/IMPLEMENTATION-BLUEPRINT.md": "227f18af6dd28f26e9f2220156fdcdd195aa5dd3f5f0c1d2f2ef8b8ea3182d1e",
-    "docs/v4/evidence-lock.json": "c5476b50e52cd949951dd5cd40ebb2efba1d861d3e9d7a67cf054f78f53dae11",
+    "docs/v4/IMPLEMENTATION-BLUEPRINT.md": "d40b582839fcb9685f9604da907a93c463430c411cedce076e9405239e36d7b3",
+    "docs/v4/evidence-lock.json": "96eb0d33b2eb1895700d29a8f45de969bcdebeb3de772d2bb20f287bab599fa2",
     "docs/v4/p0-release.json": "0a0f1969e0497cbec535fb3f854b51cef870a4746eb92f8a67a127566dc9ff75",
     "docs/v4/p1-production-policy-revocation-evidence.json": "e5a5a3d424157479cacaf00eae39614a5abe12ecdb04ac38af0c95692dbd982b",
-    "docs/v4/p1-qualification-matrix.json": "33a68fa7ab1372a76bf8bafab64b2cf86619d96903fb7fae51fbabf1c2fcd116",
+    "docs/v4/p1-qualification-matrix.json": "ac66380aa21b972fa2c053897acd3f16094559d35099902b8773ecfd9c9d0b17",
     "docs/v4/p1-remaining-production-development-evidence.json": "9712af1be052ae418a26d4c0ac600ce15a191d49b31517885926e3cc72d598ad",
     "docs/v4/p1-rg0-rg1-external-acceptance.schema.json": "16cbdd59abc82c587d0d05de44dec0d867893d0bc8207df20d7f1bbe85805154",
     "docs/v4/p1-rg0-rg1-initial-gap-audit.json": "33fe485384dcf60e36df8d48ace6394c80bce0d1bd9e6b9b39c7a905d65676b1",
     "docs/v4/p1-rg0-rg1-initial-gap-audit.md": "62aab5afb39f7c47e355a68ccf56e319a72955247515dfbdba8913fd797a5944",
-    "docs/v4/progress.md": "2c6721ac56672b5f5abc6afa4808a260d710ba58708f6ce94ea4abdeda32244a",
+    "docs/v4/progress.md": "0f34f764001d8d37d8d46461b2fe1e975e4dad120394c528f18b24b53166d8bb",
     "docs/v4/publication-recovery-hold-evidence.json": "3cce88e4d692f726be710c1f4db46b1428c9546561424a2ab0ad120363becc66",
     "docs/v4/publication-recovery-hold-successor-evidence.json": "6bb3ce696cffec2629838f5f30b8eea4acb837cbb81c1bcbc1b4de4f19e8764a",
     "docs/v4/repository-enforcement-evidence.json": "fc69f901036971bd64588cf3247d1701939e7525442f196daeab7f1919de11a2",
-    "docs/v4/test_checks.py": "36a39c935c70e2bddfad539ffb94e2724fbc0d4d474d52455651ebb205a6ace3",
-    "docs/v4/validation.md": "a9d9a8ae0f7b60e11336d7a6965a4fc94a852e690a36d4cb76a18ecafb695c59"
+    "docs/v4/test_checks.py": "ec1a33a5c8152b227ed17cb5c4c2b0ae5b7f0e54ef40f61077cfb49e3703a985",
+    "docs/v4/validation.md": "80ebb641fc55eb9a6dc646714712be8aa614464c85aa763c36d55aedfdd929cf"
   },
   "historical_documentation_refresh": {
     "plan_task": "docs/superpowers/plans/2026-10-27-p1-rg0-rg1-initial-gap-audit.md",
@@ -5266,87 +5266,16 @@
     "superseded_by": "Task35 exact local qualification of source 546ac4ed794afc123ea02586a37d4a4457590582 / artifact fe6b3795ce4453beb6c6bbafcc20cd3be91b3b87."
   },
   "current_p1_follow_up": {
-    "source_lock_sha256": "c5476b50e52cd949951dd5cd40ebb2efba1d861d3e9d7a67cf054f78f53dae11",
+    "source_lock_sha256": "96eb0d33b2eb1895700d29a8f45de969bcdebeb3de772d2bb20f287bab599fa2",
     "scope": "Local development checkout with injected targets and authorities",
-    "artifact_build": "PASS_FIXTURE_ONLY",
+    "artifact_build": "NOT RUN",
     "external_rows_not_run": 22,
     "external_final_audit": "NOT RUN",
-    "production_recovery_case_lifecycle": "Local production-shaped case commands, claimed opening including the canonical reserved plan, original-workflow preclaim resume, and rollback ABI v6. Claimed no-effect continuation requires predecessor send finality.",
+    "production_recovery_case_lifecycle": "Local production-shaped case commands, claimed opening including the canonical reserved plan, original-workflow preclaim resume, and rollback ABI v7. Approved funding is read in the original workflow. Claimed continuation requires predecessor send finality.",
     "handoff": "docs/v4/progress.md#current-state",
-    "migration_head": "0059_p1_claimed_reserved_opening",
+    "migration_head": "0060_p1_claimed_reissue_fence",
     "external_artifact_qualification": "NOT RUN",
     "prior_fixture_image_rehearsal": {
-      "application_commit": "1cf636a1d8216f1b75823b61a76f3fdd0fc3cc7c",
-      "application_tree": "cbd54e10d8498d8858a32741fddb06d9d4d8de12",
-      "wheel_sha256": "58457ad1ea94daa85b4249e5f7e6c76d0f19d0fe91689827157ee359311fbebf",
-      "local_image_id": "sha256:77a23fb75087500a4d18dd5b842f5f505c8d6828dbfa7b1d20ebb2864673d694",
-      "image_amd64_manifest_sha256": "sha256:4940196f92eff0934d0119a1306e353e6ad6723e674fa0b729b87db976d6d29a",
-      "image_archive_sha256": "ef7da2876558d4f3dae205467334dd8da3f98f92eb3b427f0eb8bf812f117e6d",
-      "verified_oci_blobs": 15,
-      "fixture_launch_lock_sha256": "4433dbccccf34b37333dd56c947648f71e33e75005215baef20056b2a311e7f3",
-      "development_route_lock_sha256": "0fe68cf0f7ac2eaf01b0c3e751ae3e2c805d72b9fb4509803fd93ef0dedafac1",
-      "rollback_verifier_abi": "salience.p1-recovery-rollback-verifier.v5",
-      "migration_head": "0058_p1_preclaim_rollback_v5",
-      "compose_worker_restart": {
-        "status": "succeeded",
-        "provider_effect_calls": 1,
-        "reconciled": true,
-        "canonical_checkpoint_count": 2,
-        "canonical_effect_count": 1
-      },
-      "worker_exit_code_before_recovery": 137,
-      "production_launcher_denials": {
-        "current": "UNPROVISIONED_PRODUCTION_TRUST",
-        "rollback_restart": "AUTHENTICATED_EXECUTOR_REQUIRED",
-        "rollback_without_readbacks": "ROUTE_AND_TEMPORAL_READBACK_REQUIRED"
-      },
-      "configured_production_api": "DENIED",
-      "installed_rollback_fixture_readback": {
-        "inventory_sha256": "546da7217552ae9329d421b0deaca1ed6a7d118740a7cdffd6d666f7083e7a55",
-        "readback_sha256": "9a50895ad1ebef5d3e73f16f482ea9b739295829c4d0d2e987f2dc851b83e631",
-        "scoped_route_claims": 1,
-        "scoped_temporal_readbacks": 1,
-        "unavailable_route": "DENIED",
-        "unavailable_temporal_readback": "DENIED",
-        "v4_history_check": null,
-        "v5_history_check": {
-          "preclaim_lineage": 0,
-          "historical_recovery_work_rows": 1,
-          "historical_v4_on_current_head": "DENIED"
-        }
-      },
-      "installed_preclaim_readback": {
-        "commit": "1cf636a1d8216f1b75823b61a76f3fdd0fc3cc7c",
-        "image_id": "sha256:77a23fb75087500a4d18dd5b842f5f505c8d6828dbfa7b1d20ebb2864673d694",
-        "migration_head": "0058_p1_preclaim_rollback_v5",
-        "rollback_verifier_abi": "salience.p1-recovery-rollback-verifier.v5",
-        "production_preclaim_lineage": 1,
-        "successor_generation": 2,
-        "external_effect_state": "planned",
-        "inventory_sha256": "80448ad93caa00f419598a63e5ebe48746e70a05252dfce474f4f86a03a291f2",
-        "readback_sha256": "e531b4a21c8485f3d4f4af2febd709faa608e88d3cd7b3542df2205375e970ff",
-        "altered_renewal_payload": "DENIED"
-      },
-      "rehearsal_evidence_sha256": {
-        "summary.json": "217b16413482327e7a1358bec60e06b1cc5319adbd8f3228971fd6a1fb601ea4",
-        "build.log": "2fcb18de717eb40668cf178378c4ecdf60eae7e0c210ab3e09525f330e5abaab",
-        "compose-rehearsal.json": "55481b00d1576edf0395044a8936ec6b988a1f5ef26888c6e13b638918956ecb",
-        "compose-observations.jsonl": "bc8965afb66038f2b1b30f0554153cbd7c50f44797af2a768c59bedf9bbc9291",
-        "installed-rollback-readback.json": "237a09370c279c3416cab91ab168cbde5e18aab0b1d7c397027db360605fd3c1",
-        "installed-preclaim-readback.json": "aea5816c4db321a2c48336bc8b79cc7f538fc4689fadf8f31bbee89d0cb8bc33",
-        "production-holds.json": "433c9346a6279baba0b504866fa49ced9d0dda28b2227b8af267988bef24e08a",
-        "image-archive-verification.json": "fe291444144c9c815f1df6b36c41e880d915b07e070a786c153798f1011d34a0",
-        "installed-python-dependencies.txt": "9e4011b3a6eec70ade369c3b531b9248bc189ce7e2e9cd82fbcd4ade1b4c914f",
-        "installed-python-dependency-check.txt": "9261363b733079a641c2e4cc9bc46ffa1d8336945a87f807b6cf68847dbc9b09"
-      }
-    },
-    "proposed_named_qualification_target": {
-      "environment": "salience-p1-qual-use1",
-      "platform": "AWS ECS/Fargate",
-      "region": "us-east-1",
-      "disposition": "PROPOSED_UNPROVISIONED"
-    },
-    "fixture_image_rehearsal": {
       "application_commit": "a4abf14013373d828797671b7d6cd7d846da79db",
       "application_tree": "e73d0043a69ab92f722ef64dcb0ea196ca892b30",
       "wheel_sha256": "1527a69024a90196ee3299f137fe045171b5ce0e42905af3ebd7951b8f102889",
@@ -5444,6 +5373,12 @@
         "installed-preclaim-v5-before-upgrade.stdout": "962b47c1ccb3efa27a76db8a0509c76e2db8c39c183c0779b1ed0c42fa2d06fa",
         "installed-preclaim-upgrade-to-v6.log": "a1b9b9358554b0cb66a4aefd4a85566eb8f571f99db1acab4439a15403403976"
       }
+    },
+    "proposed_named_qualification_target": {
+      "environment": "salience-p1-qual-use1",
+      "platform": "AWS ECS/Fargate",
+      "region": "us-east-1",
+      "disposition": "PROPOSED_UNPROVISIONED"
     }
   },
   "published_fixture_ci": {

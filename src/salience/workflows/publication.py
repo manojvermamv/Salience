@@ -764,21 +764,41 @@ class PublicationActivities:
             }
         else:
             run = await self._run()
-            persisted = await self._state.repository.create_request(
-                ready_package_id=workflow_request.ready_package_id,
-                workspace_id=workflow_request.workspace_id,
-                content_program_id=workflow_request.content_program_id,
-                publisher_account_id=workflow_request.publisher_account_id,
-                publication_approval_request_id=workflow_request.publication_approval_request_id,
-                idempotency_key=workflow_request.idempotency_key,
-                platform=workflow_request.platform,
-                destination=workflow_request.destination,
-                locale=workflow_request.locale,
-                territory=workflow_request.territory,
-                visibility=workflow_request.visibility,
-                capability_profile_version=workflow_request.capability_profile_version,
-            )
-            request = await self._state.repository.load_request(persisted.id)
+            request = None
+            if self._state.production_dispatch is not None:
+                info = activity.info()
+                try:
+                    request = await self._state.repository.load_prebound_production_request(
+                        workflow_request.publication_approval_request_id,
+                        job_id=str(run.job_id), workflow_id=info.workflow_id, workflow_run_id=info.workflow_run_id,
+                    )
+                except PermissionError:
+                    return {"request_stage_denial": "production_publication_binding_mismatch"}
+                if request is not None and any(
+                    getattr(request, field) != getattr(workflow_request, field)
+                    for field in (
+                        "workspace_id", "content_program_id", "ready_package_id", "publisher_account_id",
+                        "idempotency_key", "platform", "destination", "locale", "territory",
+                        "visibility", "capability_profile_version",
+                    )
+                ):
+                    return {"request_stage_denial": "production_publication_binding_mismatch"}
+            if request is None:
+                persisted = await self._state.repository.create_request(
+                    ready_package_id=workflow_request.ready_package_id,
+                    workspace_id=workflow_request.workspace_id,
+                    content_program_id=workflow_request.content_program_id,
+                    publisher_account_id=workflow_request.publisher_account_id,
+                    publication_approval_request_id=workflow_request.publication_approval_request_id,
+                    idempotency_key=workflow_request.idempotency_key,
+                    platform=workflow_request.platform,
+                    destination=workflow_request.destination,
+                    locale=workflow_request.locale,
+                    territory=workflow_request.territory,
+                    visibility=workflow_request.visibility,
+                    capability_profile_version=workflow_request.capability_profile_version,
+                )
+                request = await self._state.repository.load_request(persisted.id)
         await self._checkpoint("publication.request.created")
         return {
             "workflow_request": _workflow_request_payload(workflow_request),
@@ -801,11 +821,13 @@ class PublicationActivities:
                     "failure_reason": PRECLAIM_RESUME_OUTCOME_UNKNOWN,
                 }
             return result
-        run = await self._run()
         workflow_request = PublicationWorkflowRequest(**payload["workflow_request"])
         request = PublicationRequest.model_validate(payload["request"])
+        if not self._is_fixture_adapter(request):
+            return await self._authorize_funded_production(payload, workflow_request, request)
+
+        run = await self._run()
         adapter = self._adapter_for(request)
-        fixture_adapter = self._is_fixture_adapter(request)
         effect_key = f"{request.idempotency_key}:publish"
         await self._state.store.plan_effect(run, effect_key)
         effect = await self._state.store.effect(run, effect_key)
@@ -855,16 +877,7 @@ class PublicationActivities:
                 "budget_reservation_id": reservation.reservation_id,
             }
         if current.request != request:
-            if fixture_adapter:
-                raise RuntimeError("publication request changed after canonical load")
-            return {
-                **payload,
-                "authorized": False,
-                "denial_reason": "publication_request_changed",
-                "publication_plan_id": plan_id,
-                "external_effect_id": effect.effect_id,
-                "budget_reservation_id": reservation.reservation_id,
-            }
+            raise RuntimeError("publication request changed after canonical load")
         if current.profile is None:
             return {
                 **payload,
@@ -916,153 +929,116 @@ class PublicationActivities:
                 authorized_locale=current.request.locale,
                 authorized_territory=current.request.territory,
                 authorized_visibility=current.request.visibility,
-                policy_allowed=(
-                    current.policy_allowed
-                    and (self._state.policy_allowed if fixture_adapter else True)
-                ),
-                rights_allowed=(
-                    current.rights_allowed
-                    and (self._state.rights_allowed if fixture_adapter else True)
-                ),
-                disclosure_allowed=(
-                    current.disclosure_status == "approved"
-                    and (self._state.disclosure_allowed if fixture_adapter else True)
-                ),
+                policy_allowed=current.policy_allowed and self._state.policy_allowed,
+                rights_allowed=current.rights_allowed and self._state.rights_allowed,
+                disclosure_allowed=current.disclosure_status == "approved" and self._state.disclosure_allowed,
                 publishing_approval_state=(
-                    (
-                        current.publication_approval_state
-                        if self._state.publishing_approval_state == "approved"
-                        else self._state.publishing_approval_state
-                    )
-                    if fixture_adapter
-                    else current.publication_approval_state
+                    current.publication_approval_state
+                    if self._state.publishing_approval_state == "approved"
+                    else self._state.publishing_approval_state
                 ),
                 budget_status=reservation.status.value,
-                rate_quota_available=(
-                    self._state.rate_quota_available
-                    if fixture_adapter
-                    else current.profile.quota_state == "available"
-                ),
+                rate_quota_available=self._state.rate_quota_available,
                 capability_profile_version=current.request.capability_profile_version,
             )
         )
-        authorized = decision.allowed
-        denial_reason = ",".join(decision.reasons) if decision.reasons else None
-        production_permit_payload: dict[str, str] = {}
-        production_attempt_id: str | None = None
-        if authorized and not fixture_adapter:
-            dispatch = self._state.production_dispatch
-            if dispatch is None or self._state.production_permit_request_factory is None:
-                authorized = False
-                denial_reason = "production_dispatch_unavailable"
-            else:
-                production_current, production_denial = (
-                    await self._load_current_production_authorization(request)
-                )
-                if production_denial is not None or production_current is None:
-                    authorized = False
-                    denial_reason = production_denial or "canonical_production_authority_invalid"
-                else:
-                    binding = production_current.approval_binding
-                    info = activity.info()
-                    if binding is None or info.workflow_id is None or info.workflow_run_id is None:
-                        authorized = False
-                        denial_reason = "production_approval_binding_missing"
-                    elif (
-                        binding.publication_request_id != UUID(request.id)
-                        or binding.job_id != UUID(str(run.job_id))
-                        or binding.workflow_id != info.workflow_id
-                        or binding.workflow_run_id != info.workflow_run_id
-                        or binding.publication_plan_id != UUID(plan_id)
-                        or binding.external_effect_id != UUID(str(effect.effect_id))
-                        or production_current.publication_plan_id != str(plan_id)
-                        or production_current.external_effect_id != str(effect.effect_id)
-                        or production_current.budget_reservation_id != str(reservation.reservation_id)
-                        or production_current.job_id != str(run.job_id)
-                        or (
-                            production_current.publication_attempt_id is not None
-                            and production_current.publication_attempt_id
-                            != str(binding.publication_attempt_id)
-                        )
-                        or binding.publication_attempt_id is None
-                        or binding.remote_receipt_id is not None
-                    ):
-                        authorized = False
-                        denial_reason = "production_publication_binding_mismatch"
-                    else:
-                        attempt = await self._state.repository.create_attempt(
-                            publication_plan_id=plan_id,
-                            attempt_number=1,
-                            idempotency_key=f"{request.idempotency_key}:attempt:1",
-                        )
-                        if str(attempt.id) != str(binding.publication_attempt_id):
-                            authorized = False
-                            denial_reason = "production_publication_attempt_mismatch"
-                        else:
-                            production_current, production_denial = (
-                                await self._load_current_production_authorization(request)
-                            )
-                            if production_denial is not None or production_current is None:
-                                authorized = False
-                                denial_reason = production_denial or "canonical_production_authority_invalid"
-                            elif (
-                                production_current.publication_plan_id != str(plan_id)
-                                or production_current.publication_attempt_id != str(attempt.id)
-                                or production_current.external_effect_id != str(effect.effect_id)
-                                or production_current.budget_reservation_id
-                                != str(reservation.reservation_id)
-                                or production_current.job_id != str(run.job_id)
-                                or production_current.approval_binding != binding
-                            ):
-                                authorized = False
-                                denial_reason = "production_publication_binding_mismatch"
-                            else:
-                                production_attempt_id = attempt.id
-                                publication_binding = PublicationEffectBinding(
-                                    publication_request_id=UUID(request.id),
-                                    job_id=UUID(str(run.job_id)),
-                                    workflow_id=info.workflow_id,
-                                    workflow_run_id=info.workflow_run_id,
-                                    publication_plan_id=UUID(plan_id),
-                                    publication_attempt_id=UUID(attempt.id),
-                                    external_effect_id=UUID(str(effect.effect_id)),
-                                )
-                                try:
-                                    permit_request = self._production_permit_request(
-                                        production_current, request, publication_binding
-                                    )
-                                    permit = await asyncio.to_thread(
-                                        dispatch.issue_permit, permit_request
-                                    )
-                                except ProductionAuthorizationDenied as error:
-                                    authorized = False
-                                    denial_reason = error.reason_code
-                                except (KeyError, TypeError, ValueError, PermissionError):
-                                    authorized = False
-                                    denial_reason = "production_permit_request_invalid"
-                                else:
-                                    production_permit_payload = {
-                                        "production_operation_id": str(permit.operation_id),
-                                        "production_permit_id": str(permit.permit_id),
-                                    }
-                                    if (
-                                        self._preclaim_resume_delivery_allowed(request)
-                                        and permit.generation == 1
-                                        and permit.claim_id is None
-                                    ):
-                                        production_permit_payload["production_preclaim_resume_until"] = (
-                                            permit_request.execution_deadline.isoformat()
-                                        )
         await self._checkpoint("publication.authorization.checked")
         return {
             **payload,
-            "authorized": authorized,
-            "denial_reason": denial_reason,
+            "authorized": decision.allowed,
+            "denial_reason": ",".join(decision.reasons) if decision.reasons else None,
             "publication_plan_id": plan_id,
             "external_effect_id": effect.effect_id,
             "budget_reservation_id": reservation.reservation_id,
-            **({"publication_attempt_id": production_attempt_id} if production_attempt_id else {}),
-            **production_permit_payload,
+        }
+
+    async def _authorize_funded_production(
+        self,
+        payload: dict[str, Any],
+        workflow_request: PublicationWorkflowRequest,
+        request: PublicationRequest,
+    ) -> dict[str, Any]:
+        # The worker can only adopt an already bound reservation. A failed
+        # authorization must never release a reservation named by unchecked input.
+        authorized_payload = dict(payload)
+        authorized_payload.pop("budget_reservation_id", None)
+
+        def denied(reason: str) -> dict[str, Any]:
+            return {**authorized_payload, "authorized": False, "denial_reason": reason}
+
+        dispatch = self._state.production_dispatch
+        if dispatch is None or self._state.production_permit_request_factory is None:
+            return denied("production_dispatch_unavailable")
+        cost_repository = self._state.cost_repository
+        if cost_repository is None:
+            return denied("cost_infrastructure_unavailable")
+
+        current, reason = await self._load_current_production_authorization(request)
+        if current is None:
+            return denied(reason or "canonical_production_authority_invalid")
+        binding = current.approval_binding
+        info = activity.info()
+        run = await self._run()
+        if (
+            binding is None
+            or binding.job_id != run.job_id
+            or binding.workflow_id != info.workflow_id
+            or binding.workflow_run_id != info.workflow_run_id
+            or str(binding.budget_id) != workflow_request.budget_id
+            or workflow_request.idempotency_key != request.idempotency_key
+            or current.external_effect_state != "planned"
+            or current.remote_receipt_id is not None
+            or binding.remote_receipt_id is not None
+            or (
+                "publication_plan_id" in payload
+                and str(payload["publication_plan_id"]) != current.publication_plan_id
+            )
+        ):
+            return denied("production_publication_binding_mismatch")
+        if "scheduled_publisher_id" in payload and (
+            payload["scheduled_publisher_id"], payload["scheduled_publisher_version"]
+        ) != (current.profile.publisher_id, current.profile.version):
+            return denied("scheduled_publisher_profile_changed")
+
+        canonical = self._canonical_publication_payload(authorized_payload, current)
+        reason = self._production_publication_target_denial(current, canonical, "submit")
+        if reason is not None:
+            return denied(reason)
+        try:
+            reservation = await cost_repository.read_approved_publication_reservation(
+                binding, reservation_key=f"{request.idempotency_key}:publish",
+            )
+        except (BudgetExceeded, KeyError):
+            return denied("production_budget_reservation_not_current")
+        if reservation.reservation_id != str(binding.budget_reservation_id):
+            return denied("production_publication_reservation_binding_mismatch")
+
+        try:
+            publication_binding = PublicationEffectBinding(
+                publication_request_id=binding.publication_request_id,
+                job_id=binding.job_id,
+                workflow_id=binding.workflow_id,
+                workflow_run_id=binding.workflow_run_id,
+                publication_plan_id=binding.publication_plan_id,
+                publication_attempt_id=binding.publication_attempt_id,
+                external_effect_id=binding.external_effect_id,
+            )
+            permit_request = self._production_permit_request(current, request, publication_binding)
+            permit = await asyncio.to_thread(dispatch.issue_permit, permit_request)
+        except ProductionAuthorizationDenied as error:
+            return denied(error.reason_code)
+        except (KeyError, TypeError, ValueError, PermissionError):
+            return denied("production_permit_request_invalid")
+
+        if self._preclaim_resume_delivery_allowed(request) and permit.generation == 1 and permit.claim_id is None:
+            canonical["production_preclaim_resume_until"] = permit_request.execution_deadline.isoformat()
+        await self._checkpoint("publication.authorization.checked")
+        return {
+            **canonical,
+            "authorized": True,
+            "denial_reason": None,
+            "production_operation_id": str(permit.operation_id),
+            "production_permit_id": str(permit.permit_id),
         }
 
     async def _authorize_preclaim_resume(self, payload: dict[str, Any]) -> dict[str, Any]:
@@ -1454,7 +1430,11 @@ class PublicationActivities:
     @activity.defn(name="salience.publication.denied")
     async def denied(self, payload: dict[str, Any]) -> PublicationWorkflowResult:
         run = await self._run()
-        if isinstance(payload.get("budget_reservation_id"), str) and self._state.cost_repository is not None:
+        if (
+            "production_permit_id" not in payload
+            and isinstance(payload.get("budget_reservation_id"), str)
+            and self._state.cost_repository is not None
+        ):
             await self._state.cost_repository.release_unused(payload["budget_reservation_id"])
         await self._checkpoint("publication.denied")
         await self._state.store.terminal(run, "denied")
@@ -1621,6 +1601,10 @@ class GovernedPublicationWorkflow:
     @workflow.run
     async def run(self, request: PublicationWorkflowRequest) -> PublicationWorkflowResult:
         payload = await _execute_stage("salience.publication.request", request)
+        if "request_stage_denial" in payload:
+            return await _execute_terminal(
+                "salience.publication.denied", {"denial_reason": payload["request_stage_denial"]},
+            )
         if self._cancellation_requested:
             return await _execute_terminal("salience.publication.cancel", payload)
         payload = await _execute_stage("salience.publication.authorize", payload)

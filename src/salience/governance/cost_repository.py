@@ -9,6 +9,7 @@ from decimal import Decimal
 from typing import Any
 
 import psycopg
+from psycopg.rows import tuple_row
 
 from salience.governance.costs import (
     BudgetExceeded,
@@ -16,6 +17,7 @@ from salience.governance.costs import (
     IdempotencyConflict,
     ReservationNotFound,
 )
+from salience.governance.production_policy import ProductionApprovalBinding
 
 
 _MICROS_PER_UNIT = Decimal("1000000")
@@ -86,6 +88,16 @@ class CostReservationRepository:
             external_effect_id,
             publication_plan_id,
             estimated_micros,
+        )
+
+    async def read_approved_publication_reservation(
+        self, approval: ProductionApprovalBinding, *, reservation_key: str
+    ) -> DurableCostReservation:
+        """Read the existing funding for one unused, approved production publication."""
+        if not isinstance(approval, ProductionApprovalBinding) or approval.remote_receipt_id is not None:
+            raise BudgetExceeded("approved publication reservation is unavailable")
+        return await asyncio.to_thread(
+            self._read_approved_publication_reservation, approval, reservation_key
         )
 
     async def record_actual_usage(
@@ -447,6 +459,147 @@ class CostReservationRepository:
                 estimated_micros,
                 CostSettlementStatus.RESERVED,
             )
+
+    def _read_approved_publication_reservation(
+        self, approval: ProductionApprovalBinding, reservation_key: str
+    ) -> DurableCostReservation:
+        with psycopg.connect(self._database_url) as connection:
+            return self.read_approved_publication_reservation_in_transaction(
+                connection, approval, reservation_key=reservation_key,
+            )
+
+    @staticmethod
+    def read_approved_publication_reservation_in_transaction(
+        connection: psycopg.Connection, approval: ProductionApprovalBinding, *, reservation_key: str,
+    ) -> DurableCostReservation:
+        """Recheck the original graph in the dispatch transaction after its row locks."""
+        with connection.cursor(row_factory=tuple_row) as cursor:
+            row = cursor.execute(
+                """
+                SELECT reservation.id::text, budget.id::text, reservation.reservation_key,
+                       reservation.estimated_amount, reservation.reserved_amount, reservation.status
+                FROM public.budget_reservations reservation
+                JOIN public.budgets budget ON budget.id = reservation.budget_id
+                JOIN public.publication_plans plan ON plan.budget_reservation_id = reservation.id
+                JOIN public.publication_requests request ON request.id = plan.publication_request_id
+                JOIN public.approval_requests approval ON approval.id = request.publication_approval_request_id
+                JOIN public.publication_attempts attempt ON attempt.publication_plan_id = plan.id
+                JOIN public.external_effects effect ON effect.id = plan.external_effect_id
+                JOIN public.jobs job ON job.id = effect.job_id
+                CROSS JOIN (SELECT clock_timestamp() AS now) database_clock
+                WHERE reservation.id = %(budget_reservation_id)s
+                  AND budget.id = %(budget_id)s
+                  AND budget.workspace_id = %(workspace_id)s
+                  AND budget.content_program_id = %(program_id)s
+                  AND budget.scope = 'publisher_account:' || request.publisher_account_id::text
+                  AND budget.status = 'active'
+                  AND (budget.period_start IS NULL OR budget.period_start <= database_clock.now)
+                  AND (budget.period_end IS NULL OR budget.period_end > database_clock.now)
+                  AND reservation.job_id = job.id AND reservation.external_effect_id = effect.id
+                  AND reservation.reservation_key = %(reservation_key)s
+                  AND reservation.reservation_key = effect.idempotency_key
+                  AND reservation.status = 'reserved'
+                  AND reservation.reserved_amount > 0
+                  AND reservation.reserved_amount < 'Infinity'::numeric
+                  AND reservation.estimated_amount BETWEEN 0 AND reservation.reserved_amount
+                  AND isfinite(reservation.expires_at) AND reservation.expires_at > database_clock.now
+                  AND request.id = %(publication_request_id)s
+                  AND request.workspace_id = budget.workspace_id
+                  AND request.content_program_id = budget.content_program_id
+                  AND request.publisher_account_id = %(account_id)s
+                  AND request.publisher_id = %(provider_id)s
+                  AND request.state IN ('planned', 'authorized')
+                  AND approval.id = %(approval_request_id)s
+                  AND approval.job_id = job.id AND approval.workspace_id = request.workspace_id
+                  AND approval.effect_type = 'write' AND approval.status = 'approved'
+                  AND approval.policy_version_id = %(policy_version_id)s
+                  AND approval.request_context->>'schema_version' = 'salience.p1-effect-approval.v1'
+                  AND approval.request_context @> jsonb_build_object(
+                      'operation_id', %(operation_id)s::text,
+                      'publication_request_id', request.id::text,
+                      'publication_plan_id', plan.id::text,
+                      'publication_attempt_id', attempt.id::text,
+                      'external_effect_id', effect.id::text,
+                      'job_id', job.id::text,
+                      'workflow_id', job.input_payload->>'workflow_id',
+                      'workflow_run_id', job.workflow_run_id,
+                      'budget_id', budget.id::text,
+                      'budget_reservation_id', reservation.id::text
+                  )
+                  AND (approval.request_context->>'expires_at')::timestamptz = %(expires_at)s
+                  AND %(expires_at)s > database_clock.now
+                  AND plan.id = %(publication_plan_id)s AND plan.publisher_id = request.publisher_id
+                  AND plan.state = 'reserved' AND plan.actual_cost_micros IS NULL
+                  AND attempt.id = %(publication_attempt_id)s AND attempt.attempt_number = 1
+                  AND attempt.idempotency_key = request.request_key || ':attempt:1'
+                  AND attempt.state IN ('planned', 'authorized')
+                  AND attempt.submitted_at IS NULL AND attempt.completed_at IS NULL
+                  AND effect.id = %(external_effect_id)s AND effect.workspace_id = request.workspace_id
+                  AND effect.effect_classification = 'write'
+                  AND effect.idempotency_key = request.request_key || ':publish'
+                  AND effect.status = 'planned' AND effect.attempted_at IS NULL AND effect.completed_at IS NULL
+                  AND effect.provider_reference IS NULL AND effect.effect_result IS NULL
+                  AND job.id = %(job_id)s AND job.workspace_id = request.workspace_id
+                  AND job.content_program_id = request.content_program_id AND job.job_type = 'publication'
+                  AND job.workflow_run_id = %(workflow_run_id)s
+                  AND job.input_payload->>'workflow_id' = %(workflow_id)s
+                  AND job.state IN ('queued', 'running') AND job.finished_at IS NULL
+                  AND NOT EXISTS (
+                      SELECT 1 FROM public.publication_plans other
+                      WHERE other.publication_request_id = request.id AND other.id <> plan.id
+                  )
+                  AND NOT EXISTS (
+                      SELECT 1 FROM public.publication_attempts other
+                      WHERE other.publication_plan_id = plan.id AND other.id <> attempt.id
+                  )
+                  AND NOT EXISTS (
+                      SELECT 1 FROM public.budget_reservations other
+                      WHERE other.external_effect_id = effect.id AND other.id <> reservation.id
+                  )
+                  AND NOT EXISTS (
+                      SELECT 1 FROM public.remote_publication_receipts remote
+                      WHERE remote.publication_attempt_id = attempt.id
+                  )
+                  AND NOT EXISTS (
+                      SELECT 1 FROM public.publisher_webhook_receipts webhook
+                      WHERE webhook.publication_attempt_id = attempt.id
+                  )
+                  AND NOT EXISTS (
+                      SELECT 1 FROM public.publications remote
+                      WHERE remote.publication_request_id = request.id
+                  )
+                  AND NOT EXISTS (
+                      SELECT 1 FROM public.publication_status_events event
+                      WHERE event.publication_attempt_id = attempt.id
+                        AND event.state NOT IN ('planned', 'authorized')
+                  )
+                  AND NOT EXISTS (
+                      SELECT 1 FROM public.v4_production_effect_permit_claims claim
+                      WHERE claim.operation_id = %(operation_id)s
+                  )
+                  AND (
+                      SELECT count(*) = 1 AND bool_and(
+                          entry.job_id IS NOT DISTINCT FROM job.id
+                          AND entry.estimated_amount = reservation.estimated_amount
+                          AND entry.actual_amount IS NULL
+                          AND entry.provider_name IS NULL AND entry.provider_reference IS NULL
+                          AND entry.usage = jsonb_build_object(
+                              'kind', 'estimated', 'estimated_micros', reservation.estimated_amount * 1000000
+                          )
+                      )
+                      FROM public.cost_ledger_entries entry
+                      WHERE entry.budget_reservation_id = reservation.id
+                  ) IS TRUE
+                """,
+                vars(approval) | {"reservation_key": reservation_key},
+            ).fetchone()
+        if row is None:
+            raise BudgetExceeded("approved publication reservation is unavailable")
+        reservation_id, budget_id, key, estimated_amount, reserved_amount, status = row
+        return DurableCostReservation(
+            reservation_id, budget_id, key, _to_micros(estimated_amount),
+            _to_micros(reserved_amount), CostSettlementStatus(status),
+        )
 
     def _attach_provider_job(self, reservation_id: str, provider_job_id: str) -> None:
         with psycopg.connect(self._database_url) as connection, connection.cursor() as cursor:

@@ -1,6 +1,6 @@
 {
-  "baseline_commit": "5115b5228deaca36e0f60d46695ee46cebc20b46",
-  "scope": "Source and build-context inventory for the P1 reserved-plan claimed recovery opening.",
+  "baseline_commit": "287a3ae814d5a6f0ceee6b8418f48ac35c715b88",
+  "scope": "Source and build-context inventory for the P1 funding and claimed-publication reissue fence.",
   "files": [
     {
       "path": ".dockerignore",
@@ -271,6 +271,10 @@
       "sha256": "d4e3d9a481637b0d3c9e1a6df0405b9ff720caa2a50daa5d0f2e0481b3ce60e2"
     },
     {
+      "path": "migrations/versions/0060_p1_claimed_reissue_fence.py",
+      "sha256": "f9ecf061e37ca857fa128e1f384c2b433190aed5a14f23817d6d1ae4b80221b0"
+    },
+    {
       "path": "migrations/versions/__init__.py",
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
@@ -288,7 +292,7 @@
     },
     {
       "path": "scripts/launch-v4-publication-worker.py",
-      "sha256": "f7d3ae6ce13e15008784a14f0b474755387e23737ae1b752b536c8c85afdad0d"
+      "sha256": "1d047467b668ffacebf19bbb05507df511c5b88ca3b061cace6dad0c1085f225"
     },
     {
       "path": "scripts/verify-browser-evidence.sh",
@@ -644,11 +648,11 @@
     },
     {
       "path": "src/salience/cycles/_production_recovery_control.py",
-      "sha256": "8a5a97991fd685cedb7c3f154871c7398ca844dc89eedbc1aa12acef1ae7a48e"
+      "sha256": "91445669e4e1595555295034f57f30a3de4dfc1d2414f43ff39bdf1ce6a45f31"
     },
     {
       "path": "src/salience/cycles/_production_recovery_coordinator.py",
-      "sha256": "6eb0230472667d62d0a04d0e2db8a9ba13f8f9c4a4f9f38e741a3ff05affb7a1"
+      "sha256": "c0565b1bdb7c3483b9c468e3661da62597df05f66383a48705c034a3c29d854a"
     },
     {
       "path": "src/salience/cycles/_production_recovery_work.py",
@@ -732,7 +736,7 @@
     },
     {
       "path": "src/salience/cycles/p1_recovery_rollback.py",
-      "sha256": "bb42d9861215aa7183b5bc6ae6f35edfbe025d56d0e3ce7485c119ac6018bce7"
+      "sha256": "814dbf935f6c3d659638beae7e6daeaa5caa329d2cb031334f5d2fcbb6b21bce"
     },
     {
       "path": "src/salience/cycles/p1_recovery_rollback_fixtures.py",
@@ -740,7 +744,7 @@
     },
     {
       "path": "src/salience/cycles/production_dispatch.py",
-      "sha256": "8cc322a644b8454d32147494f64c28d3b68608f33903867114d79f9255d82e31"
+      "sha256": "d1f3ae5484b1050a10e90b624fb414b7e1ec7b88179c8b0ee90b9f2b8732e484"
     },
     {
       "path": "src/salience/cycles/production_intent_enrollment.py",
@@ -772,7 +776,7 @@
     },
     {
       "path": "src/salience/cycles/publication_recovery_compatibility.py",
-      "sha256": "8fca2fb40d19761545bb4bdc6df4a81ed76ef8de6dc07f7a10b9773f0b4169aa"
+      "sha256": "f6f5ea83cb567cb71a517d3787839631dfa0f89afb38c12567aba381464dc2bd"
     },
     {
       "path": "src/salience/cycles/runtime.py",
@@ -836,7 +840,7 @@
     },
     {
       "path": "src/salience/governance/cost_repository.py",
-      "sha256": "2fbb9f5cf692cb93cddca4e7319ebf35bc5cb8b6655e5fce1881e4d792585ed4"
+      "sha256": "c12de2065a225fc7691615fd00ba8be783ea1d22e3226e32c748bc38bfa489d3"
     },
     {
       "path": "src/salience/governance/costs.py",
@@ -1004,7 +1008,7 @@
     },
     {
       "path": "src/salience/publication/repository.py",
-      "sha256": "250e1a7988a4658b8b95c2349d601f921398a62cfd775c7f07298358dcc20c9e"
+      "sha256": "911a698cbb7d0cbbf021b6bca64c5cac9630855dec7f886d2f347e43f4133666"
     },
     {
       "path": "src/salience/publication/youtube.py",
@@ -1088,7 +1092,7 @@
     },
     {
       "path": "src/salience/workflows/publication.py",
-      "sha256": "3276da7a7fc6379531e2b557554d3bde16fcb6ff907e90205c846b74ad8ed8ea"
+      "sha256": "d9a9dab9f33f8dd6590b50ce42531bb64dd48ed92f1ea5221f5238bc49d23cd3"
     },
     {
       "path": "src/salience/workflows/schedules.py",
@@ -1375,12 +1379,16 @@
       "sha256": "d0a641d0c49f8dfa72c7de44cfa0ba84690dc9d990cb975f5c3fc1d101ce9029"
     },
     {
+      "path": "tests/integration/test_p1_claimed_publication_reissue_fence.py",
+      "sha256": "ff4f31903e07d3cfb74f1b8e8de02a5f4df247a01a759b3b8c6aa43ff7bd7634"
+    },
+    {
       "path": "tests/integration/test_p1_claimed_reserved_recovery.py",
-      "sha256": "749701f7cb70b3e08f041bb3399634766c077189c1affb15a9ae9f881acb7a1f"
+      "sha256": "cfa6d6d63098e3ad8786185c95e0521edbd64f6867650e9e225572c0373d50f0"
     },
     {
       "path": "tests/integration/test_p1_preclaim_publication_temporal.py",
-      "sha256": "ec84fecf0d79871585aa97c53e5a5767da959fa3135297aafd17b7fb81c801ab"
+      "sha256": "d49b5ab8670c0933f170cf0fe65ba5d4e72b6a221211261973d60241aacdfaa4"
     },
     {
       "path": "tests/integration/test_p1_preclaim_resume_db.py",
@@ -1392,7 +1400,7 @@
     },
     {
       "path": "tests/integration/test_p1_production_policy_revocation.py",
-      "sha256": "a83c6a17e7cbb9d4cc4194422b157a1055279095eb378d9c5818d9d6a0969a2c"
+      "sha256": "242bb6fdd56bbd647bc9953f7e36d46c59af2f17d9930265cff105c87907fae2"
     },
     {
       "path": "tests/integration/test_p1_production_recovery.py",
@@ -1404,11 +1412,11 @@
     },
     {
       "path": "tests/integration/test_p1_production_recovery_case_opening.py",
-      "sha256": "be3431a032b519c125b7f86cbf28d043333f3c1139411ad0c1ef3ccb7198db28"
+      "sha256": "96b48df0a83653ab9c21887631acf3ba969702caa0c54c6045c835609405bc03"
     },
     {
       "path": "tests/integration/test_p1_production_routing.py",
-      "sha256": "a876f13a96ec5e965a76a0a180da6712db8d062cbaa93b413ee59207385eeb68"
+      "sha256": "719748314a98793a3f83584c9d3e4d88e1b819ed55c8b04199f07fadb700bc41"
     },
     {
       "path": "tests/integration/test_p1_production_schedule_fencing.py",
@@ -1516,7 +1524,7 @@
     },
     {
       "path": "tests/integration/test_v4_migrations.py",
-      "sha256": "645a5f662abf331e9a0997763766742aa5b7735f1048fe62125b7d17fd2693e7"
+      "sha256": "ba3390097e32e8b38872a23d5362e060ebce9c1b642da6194655f827d9088aaf"
     },
     {
       "path": "tests/integration/test_v4_native_publication_schedules.py",
@@ -1544,7 +1552,7 @@
     },
     {
       "path": "tests/integration/test_v4_publication_recovery_floor.py",
-      "sha256": "1522349087faa5fec290bd7b4dda836557f1e051b7db57bc24cb3067fec467c6"
+      "sha256": "76b588fdef0a4e2412d3b3401d3d7856b5c98ba9792482de2f3962881d289f5a"
     },
     {
       "path": "tests/integration/test_v4_publication_recovery_holds.py",
@@ -3271,5 +3279,10 @@
     "record_commit": "5115b5228deaca36e0f60d46695ee46cebc20b46",
     "record_path": "docs/v4/evidence-lock.json",
     "sha256": "eb3da62652859bb64cab766a0a570030ed508b7d032fa0536ce86cef7f2dee24"
+  },
+  "preceding_p1_claimed_finality_lock": {
+    "record_commit": "287a3ae814d5a6f0ceee6b8418f48ac35c715b88",
+    "record_path": "docs/v4/evidence-lock.json",
+    "sha256": "c5476b50e52cd949951dd5cd40ebb2efba1d861d3e9d7a67cf054f78f53dae11"
   }
 }

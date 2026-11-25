@@ -16,7 +16,11 @@ from psycopg.types.json import Jsonb
 import pytest
 
 from salience.cycles import production_recovery as recovery
-from salience.cycles.production_dispatch import ProductionPreclaimResumeAuthorization, PublicationEffectBinding
+from salience.cycles.production_dispatch import (
+    ProductionAuthorizationDenied, ProductionPreclaimResumeAuthorization, PublicationEffectBinding,
+)
+from salience.governance.cost_repository import CostReservationRepository
+from salience.governance.costs import BudgetExceeded, CostSettlementStatus
 from salience.observability.tracing import TraceContext
 from salience.publication.repository import PublicationRepository
 from salience.workflows.persistence import CanonicalJobStore, CanonicalRun
@@ -118,9 +122,58 @@ def opening_source(monkeypatch, request):
     return seed_opening_source(accounting_state, opening_database, source_state)
 
 
+@pytest.mark.parametrize("opening_source", ["preclaim_live"], indirect=True)
+def test_approved_publication_reservation_reads_the_original_unclaimed_cost(opening_source):
+    case, _, _ = opening_source
+    permit = case["request"]
+    database = case["database"]
+    current = asyncio.run(PublicationRepository(database).load_current_authorization(
+        str(permit.publication_binding.publication_request_id),
+    ))
+    approval = current.approval_binding
+    assert approval is not None
+    repository = CostReservationRepository(database)
+    key = f"{permit.idempotency_key}:publish"
+
+    result = asyncio.run(repository.read_approved_publication_reservation(approval, reservation_key=key))
+    assert result.reservation_id == str(permit.budget_reservation_id)
+    assert result.estimated_micros == 100_000
+    assert result.reserved_micros == 100_000
+    assert result.status == CostSettlementStatus.RESERVED
+
+    with pytest.raises(BudgetExceeded):
+        asyncio.run(repository.read_approved_publication_reservation(
+            replace(approval, budget_reservation_id=uuid4()), reservation_key=key,
+        ))
+    with pytest.raises(BudgetExceeded):
+        asyncio.run(repository.read_approved_publication_reservation(
+            replace(approval, expires_at=approval.expires_at + timedelta(seconds=1)), reservation_key=key,
+        ))
+
+    route_calls = list(case["route"].calls)
+    with psycopg.connect(case["database"]) as connection:
+        connection.execute(
+            "UPDATE budget_reservations SET external_effect_id=NULL WHERE id=%s",
+            (permit.budget_reservation_id,),
+        )
+    with pytest.raises(ProductionAuthorizationDenied, match="budget_unavailable"):
+        case["dispatch"].claim_permit(permit.operation_id, case["opening_permit_id"])
+    assert case["route"].calls == route_calls
+    with psycopg.connect(case["database"]) as connection:
+        connection.execute(
+            "UPDATE budget_reservations SET external_effect_id=%s WHERE id=%s",
+            (permit.publication_binding.external_effect_id, permit.budget_reservation_id),
+        )
+
+    claimed = case["dispatch"].claim_permit(permit.operation_id, case["opening_permit_id"])
+    assert claimed.dispatch_allowed
+    with pytest.raises(BudgetExceeded):
+        asyncio.run(repository.read_approved_publication_reservation(approval, reservation_key=key))
+
+
 def seed_opening_source(
     accounting_state, opening_database, source_state, *,
-    workflow_id="case-opening-workflow", workflow_run_id=None,
+    workflow_id="case-opening-workflow", workflow_run_id=None, issue_initial_permit=True,
 ):
     binding = PublicationEffectBinding(
         publication_request_id=uuid4(),
@@ -179,7 +232,7 @@ def seed_opening_source(
             )
             connection.execute(
                 """UPDATE budget_reservations
-                   SET reservation_key=%s,estimated_amount=0 WHERE id=%s""",
+                   SET reservation_key=%s WHERE id=%s""",
                 (f"{permit_request.idempotency_key}:publish", permit_request.budget_reservation_id),
             )
             connection.execute("SET LOCAL session_replication_role=origin")
@@ -190,9 +243,13 @@ def seed_opening_source(
             connection.execute(
                 """INSERT INTO cost_ledger_entries(
                        budget_reservation_id,job_id,estimated_amount,usage,recorded_at)
-                   VALUES(%s,%s,0,'{"kind":"estimated","estimated_micros":0}',CURRENT_TIMESTAMP)""",
-                (permit_request.budget_reservation_id, binding.job_id),
+                   SELECT id,job_id,estimated_amount,jsonb_build_object(
+                              'kind','estimated','estimated_micros',estimated_amount*1000000),CURRENT_TIMESTAMP
+                   FROM budget_reservations WHERE id=%s""",
+                (permit_request.budget_reservation_id,),
             )
+    if not issue_initial_permit:
+        return case, None, {}
     issued = dispatch.issue_permit(permit_request)
     if source_state not in {"unclaimed", "preclaim_expired", "preclaim_live"}:
         dispatch.claim_permit(permit_request.operation_id, issued.permit_id)

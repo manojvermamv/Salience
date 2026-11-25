@@ -2,7 +2,9 @@
 
 import asyncio
 from dataclasses import replace
-from uuid import UUID
+from datetime import timedelta
+from hashlib import sha256
+from uuid import UUID, uuid4
 
 import psycopg
 import pytest
@@ -263,3 +265,170 @@ def test_claimed_reserved_unknown_read_preserves_liability_and_denies_resume(cla
         ))
     assert repository.get_work(work.work_id) == work
     assert opening._publication_liabilities(database, command.operation_id) == before
+
+
+def _legacy_read(repository, work, context, result_class, remote_state):
+    with repository._connect() as connection:
+        return repository._append_event(
+            connection, work, event_key=f"remote-read:{work.work_id}:visibility-elapsed",
+            event_kind="remote_read_observation", policy_decision_id=uuid4(),
+            payload={
+                "schema_version": "salience.p1-production-recovery-read.v1",
+                "reason_code": "remote_observation",
+                "result_class": result_class,
+                "remote_state": remote_state,
+                "evidence_sha256": "a" * 64,
+                "remote_identity_sha256": "b" * 64,
+                "operation_id": str(work.operation_id),
+                "intent_id": str(work.intent_id),
+                "case_id": str(work.case_id),
+                "source_id": str(work.source_id),
+                "work_id": str(work.work_id),
+                "request_fingerprint": work.request_fingerprint,
+                "event_key": context.idempotency_key,
+                "deadline": context.operation_started_at.isoformat(),
+            },
+        )
+
+
+@pytest.mark.parametrize("legacy_observation", [False, True], ids=["fresh", "legacy-absence"])
+def test_claimed_reserved_read_requires_finality_for_no_effect(claimed_publication, legacy_observation):
+    case, authority, command = claimed_publication
+    controller = opening._controller(case["database"], authority)
+    repository = controller.repository
+    work = repository.get_work(controller.open_case(command).work_id)
+    context = _read_context(repository, recovery, work)
+    previous = (
+        _legacy_read(repository, work, context, "authoritative_no_effect", "not_found")
+        if legacy_observation else None
+    )
+    provider_result = "succeeded" if legacy_observation else "not_found"
+    target = _ReadTarget(_exact_observation(recovery, work, context, result=provider_result))
+    coordinator = recovery.ProductionRecoveryCoordinator(
+        repository, remote_target_factory=lambda _: target, authority=authority,
+        provider_contracts={work.target_alias: context.provider_contract},
+    )
+    before = opening._publication_liabilities(case["database"], command.operation_id)
+
+    read = coordinator.reconcile(work.work_id)
+
+    assert read.result_class == ("terminal_success" if legacy_observation else "unknown")
+    assert read.remote_state == provider_result
+    assert coordinator.reconcile(work.work_id) == read
+    assert len(target.requests) == 1
+    if previous is not None:
+        assert read.event_id != previous.event_id
+        with repository._connect() as connection:
+            assert repository._load_event(connection, previous.event_id) == previous
+    assert opening._publication_liabilities(case["database"], command.operation_id) == before
+
+
+def test_claimed_reserved_read_can_find_a_delayed_original_send(claimed_publication):
+    case, authority, command = claimed_publication
+    controller = opening._controller(case["database"], authority)
+    repository = controller.repository
+    work = repository.get_work(controller.open_case(command).work_id)
+    context = _read_context(repository, recovery, work, visibility_window=timedelta(minutes=5))
+    target = _ReadTarget(_exact_observation(recovery, work, context, result="not_found"))
+    coordinator = recovery.ProductionRecoveryCoordinator(
+        repository, remote_target_factory=lambda _: target, authority=authority,
+        provider_contracts={work.target_alias: context.provider_contract},
+    )
+    first = coordinator.reconcile(work.work_id)
+    assert first.result_class == "unknown"
+    assert coordinator.reconcile(work.work_id) == first
+
+    with psycopg.connect(case["database"]) as connection:
+        connection.execute("SET LOCAL session_replication_role=replica")
+        connection.execute(
+            """UPDATE v4_production_effect_permit_claims SET claimed_at=clock_timestamp()-interval '6 minutes'
+               WHERE claim_id=%s""",
+            (case["opening_claim_id"],),
+        )
+    target.observation = _exact_observation(recovery, work, context, result="succeeded")
+    second = coordinator.reconcile(work.work_id)
+
+    assert second.result_class == "terminal_success" and second.event_id != first.event_id
+    assert coordinator.reconcile(work.work_id) == second
+    assert len(target.requests) == 2
+
+
+def test_claimed_reserved_read_keeps_known_legacy_success(claimed_publication):
+    case, authority, command = claimed_publication
+    controller = opening._controller(case["database"], authority)
+    repository = controller.repository
+    work = repository.get_work(controller.open_case(command).work_id)
+    context = _read_context(repository, recovery, work)
+    previous = _legacy_read(repository, work, context, "terminal_success", "succeeded")
+    target = _ReadTarget(fail=True)
+    coordinator = recovery.ProductionRecoveryCoordinator(
+        repository, remote_target_factory=lambda _: target, authority=authority,
+        provider_contracts={work.target_alias: context.provider_contract},
+    )
+
+    read = coordinator.reconcile(work.work_id)
+
+    assert read.result_class == "terminal_success"
+    assert read.event_id == previous.event_id
+    assert not target.requests
+
+
+@pytest.mark.parametrize("recorded", [False, True], ids=["authorization", "replay"])
+def test_claimed_reserved_legacy_evidence_cannot_authorize_forward_effect(claimed_publication, recorded):
+    case, authority, open_command = claimed_publication
+    controller = opening._controller(case["database"], authority)
+    repository = controller.repository
+    work = repository.get_work(controller.open_case(open_command).work_id)
+    context = _read_context(repository, recovery, work)
+    legacy = _legacy_read(repository, work, context, "authoritative_no_effect", "not_found")
+    command = recovery.NoEffectGenerationReissueCommand(
+        work_id=work.work_id, case_id=work.case_id, expected_case_revision=1,
+        observation_event_id=legacy.event_id, observation_sha256=legacy.payload_sha256,
+        operation_id=work.operation_id, request_fingerprint=work.request_fingerprint,
+        original_idempotency_key=context.idempotency_key,
+        stage_decision_id=uuid4(), policy_decision_id=uuid4(), route_decision_id=uuid4(),
+        workspace_stop_revision=1, goal_stop_revision=1, idempotency_key=f"reissue:{work.work_id}:1",
+    )
+    if recorded:
+        identity = sha256(f"{work.operation_id}:{context.idempotency_key}".encode()).hexdigest()
+        evidence = sha256(":".join((
+            str(legacy.event_id), legacy.payload_sha256, work.request_fingerprint, identity,
+            str(command.stage_decision_id), str(command.policy_decision_id), "1", "1",
+            str(command.route_decision_id),
+        )).encode()).hexdigest()
+        with repository._connect() as connection:
+            repository._append_event(
+                connection, work, event_key=command.idempotency_key,
+                event_kind="same_operation_no_effect_reissue", policy_decision_id=command.policy_decision_id,
+                payload={
+                    "schema_version": "salience.p1-same-operation-no-effect.v1",
+                    "reason_code": "authoritative_no_effect",
+                    "result_class": "authoritative_no_effect",
+                    "evidence_sha256": evidence,
+                    "remote_identity_sha256": identity,
+                    "operation_id": str(work.operation_id),
+                    "case_id": str(work.case_id),
+                    "source_id": str(work.source_id),
+                    "work_id": str(work.work_id),
+                    "state": work.state,
+                    "request_fingerprint": work.request_fingerprint,
+                    "event_key": command.idempotency_key,
+                    "stage_decision_id": str(command.stage_decision_id),
+                    "policy_decision_id": str(command.policy_decision_id),
+                    "route_decision_id": str(command.route_decision_id),
+                    "workspace_stop_revision": 1,
+                    "goal_stop_revision": 1,
+                    "observation_event_id": str(legacy.event_id),
+                    "observation_sha256": legacy.payload_sha256,
+                },
+            )
+    before = opening._publication_liabilities(case["database"], command.operation_id)
+    with psycopg.connect(case["database"]) as connection:
+        query = "SELECT * FROM v4_production_recovery_events WHERE work_id=%s ORDER BY event_id"
+        events = connection.execute(query, (work.work_id,)).fetchall()
+
+        with pytest.raises(PermissionError, match="predecessor finality"):
+            controller.authorize_no_effect_generation_reissue(command)
+
+        assert connection.execute(query, (work.work_id,)).fetchall() == events
+    assert opening._publication_liabilities(case["database"], command.operation_id) == before

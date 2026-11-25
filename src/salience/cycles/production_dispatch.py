@@ -30,6 +30,8 @@ from salience.cycles.contracts import (
     RunContextV3,
     parse_goal,
 )
+from salience.governance.cost_repository import CostReservationRepository
+from salience.governance.costs import BudgetExceeded
 from salience.governance.policy import EffectClass
 from salience.governance.production_policy import (
     ProductionApprovalBinding,
@@ -52,6 +54,7 @@ _REASON_CODES = frozenset(
         "baseline_missing",
         "budget_missing",
         "budget_unavailable",
+        "claimed_publication_reissue_requires_finality",
         "context_invalid",
         "current_operation_missing",
         "dispatch_already_claimed",
@@ -585,6 +588,7 @@ class ProductionEffectDispatch:
                 renewal_authorization = None
                 renewal_deadline = None
                 if predecessor_permit_id is None:
+                    self._deny_legacy_publication_reissue(connection, request)
                     recovery_work_id = self._prelock_recovery_work(connection, request)
                 else:
                     arguments = (
@@ -620,7 +624,7 @@ class ProductionEffectDispatch:
                         request, generation=2,
                         recovery_command_id=UUID(current["proof_id"]) if current["proof_id"] else resume_command_id,
                     )
-                facts = self._load_authority(connection, request)
+                facts = self._load_authority(connection, request, require_unused_funding=request.generation == 1)
                 if renewal_authorization is not None:
                     self._verify_preclaim_delivery_profile(connection, renewal_authorization)
                 pointer = connection.execute(
@@ -915,7 +919,8 @@ class ProductionEffectDispatch:
                     "idempotency_key"
                 ]:
                     raise ProductionAuthorizationDenied("invalid_binding")
-                facts = self._load_authority(connection, request)
+                self._deny_legacy_publication_reissue(connection, request)
+                facts = self._load_authority(connection, request, require_unused_funding=request.generation == 1)
                 decision: RouteFenceDecision | None = None
                 try:
                     with connection.transaction():
@@ -1123,6 +1128,10 @@ class ProductionEffectDispatch:
                 ):
                     return None
                 request = self._request_from_snapshot(permit["request_snapshot"])
+                try:
+                    self._deny_legacy_publication_reissue(connection, request)
+                except ProductionAuthorizationDenied:
+                    return None
                 binding = request.publication_binding
                 if (
                     binding is None
@@ -1579,6 +1588,8 @@ class ProductionEffectDispatch:
                     )
                 facts: _AuthorityFacts | None = None
                 try:
+                    if action_kind in {"delivery", "submit", "cancel"}:
+                        self._deny_legacy_publication_reissue(connection, request)
                     facts = self._load_authority(connection, request)
                     self._validate_permit_row(permit, request, facts)
                     now = self._database_time(connection)
@@ -1642,7 +1653,9 @@ class ProductionEffectDispatch:
             preclaim_permit_expired=preclaim_permit_expired,
         )
 
-    def _load_authority(self, connection, request: ProductionPermitRequest) -> _AuthorityFacts:
+    def _load_authority(
+        self, connection, request: ProductionPermitRequest, *, require_unused_funding: bool = False,
+    ) -> _AuthorityFacts:
         operation = connection.execute(
             """SELECT workspace.id AS workspace_id,workspace.status AS workspace_status,
                       goal.id AS goal_id,goal.revision AS current_goal_revision,
@@ -1843,13 +1856,14 @@ class ProductionEffectDispatch:
             raise ProductionAuthorizationDenied("effect_not_allowed")
         if not policy.jurisdiction_refs.issubset(set(context.jurisdiction_policy_refs)):
             raise ProductionAuthorizationDenied("policy_invalid")
+        publication_plan_state = None
         if request.publication_binding is None:
             if policy.publication_scope is not None:
                 raise ProductionAuthorizationDenied("invalid_binding")
         else:
             if policy.publication_scope is None:
                 raise ProductionAuthorizationDenied("invalid_binding")
-            self._lock_publication(
+            publication_plan_state = self._lock_publication(
                 connection,
                 request,
                 context.workspace_id,
@@ -1937,6 +1951,13 @@ class ProductionEffectDispatch:
         production_budget_expiries = self._lock_production_budget(
             connection, request, context.workspace_id, context.content_program_id, now
         )
+        if require_unused_funding and publication_plan_state == "reserved":
+            try:
+                CostReservationRepository.read_approved_publication_reservation_in_transaction(
+                    connection, approval, reservation_key=f"{request.idempotency_key}:publish",
+                )
+            except BudgetExceeded as error:
+                raise ProductionAuthorizationDenied("budget_unavailable") from error
 
         expires = [
             subject["expires_at"],
@@ -2064,8 +2085,11 @@ class ProductionEffectDispatch:
         """Lock the separately approved publisher-account budget reservation."""
         row = connection.execute(
             """SELECT reservation.id AS reservation_id,reservation.budget_id,
-                      reservation.status AS reservation_status,reservation.expires_at,
-                      reservation.reserved_amount,budget.id AS current_budget_id,
+                      reservation.status AS reservation_status,
+                      CASE WHEN isfinite(reservation.expires_at) THEN reservation.expires_at END AS expires_at,
+                      CASE WHEN reservation.reserved_amount > 0 AND reservation.reserved_amount < 'Infinity'::numeric
+                           THEN reservation.reserved_amount END AS reserved_amount,
+                      budget.id AS current_budget_id,
                       budget.workspace_id,budget.content_program_id,budget.scope,
                       budget.status AS budget_status,budget.period_start,budget.period_end
                FROM public.budget_reservations reservation
@@ -2085,7 +2109,7 @@ class ProductionEffectDispatch:
             or row["scope"] != "publisher_account:" + str(request.account_id)
             or row["budget_status"] != "active"
             or row["reservation_status"] != "reserved"
-            or row["reserved_amount"] <= 0
+            or row["reserved_amount"] is None
             or row["expires_at"] is None
             or row["expires_at"] <= now
             or (row["period_start"] is not None and row["period_start"] > now)
@@ -2158,7 +2182,7 @@ class ProductionEffectDispatch:
         program_id: UUID,
         policy_scope,
         now: datetime,
-    ) -> None:
+    ) -> str:
         binding = request.publication_binding
         assert binding is not None
         row = connection.execute(
@@ -2270,6 +2294,7 @@ class ProductionEffectDispatch:
             or row["visibility"] != policy_scope.visibility
         ):
             raise ProductionAuthorizationDenied("invalid_binding")
+        return row["plan_state"]
 
     @staticmethod
     def _database_time(connection) -> datetime:
@@ -2518,6 +2543,18 @@ class ProductionEffectDispatch:
             "SELECT pg_advisory_xact_lock(hashtextextended(%s,0))",
             (str(operation_id),),
         )
+
+    @staticmethod
+    def _deny_legacy_publication_reissue(connection, request: ProductionPermitRequest) -> None:
+        if request.generation < 2 or request.publication_binding is None:
+            return
+        legacy_proof = connection.execute(
+            """SELECT 1 FROM public.v4_production_recovery_events
+               WHERE event_id=%s AND event_kind='same_operation_no_effect_reissue'""",
+            (request.recovery_command_id,),
+        ).fetchone()
+        if legacy_proof is not None:
+            raise ProductionAuthorizationDenied("claimed_publication_reissue_requires_finality")
 
     @staticmethod
     def _prelock_recovery_work(connection, request: ProductionPermitRequest) -> UUID | None:
