@@ -37,9 +37,10 @@ from salience.publication.governance import (
 from salience.publication.providers import FixturePublisherAdapter
 from salience.publication.repository import (
     CurrentPublicationAuthorization,
+    ImmutablePublicationConflict,
     PublicationRepository,
 )
-from salience.workflows.persistence import CanonicalJobStore, CanonicalRun
+from salience.workflows.persistence import CanonicalEffect, CanonicalJobStore, CanonicalRun
 from salience.workflows.schedules import (
     ScheduleRequest,
     TemporalScheduleClient,
@@ -352,6 +353,8 @@ class PublicationActivities:
         current: CurrentPublicationAuthorization,
         payload: dict[str, Any],
         action_kind: str,
+        *,
+        allow_missing_receipt: bool = False,
     ) -> str | None:
         binding = current.approval_binding
         if binding is None:
@@ -398,16 +401,17 @@ class PublicationActivities:
                 and str(binding.remote_receipt_id) != str(current.remote_receipt_id)
             ):
                 return "production_publication_receipt_binding_mismatch"
-            if payload.get("remote_receipt_id") is None or str(
-                payload["remote_receipt_id"]
-            ) != str(current.remote_receipt_id):
-                return "production_publication_receipt_target_mismatch"
             if current.remote_id is None:
                 return "production_publication_remote_target_missing"
-            if payload.get("remote_id") is None or str(payload["remote_id"]) != str(
-                current.remote_id
+            if not (
+                allow_missing_receipt
+                and payload.get("remote_receipt_id") is None
+                and payload.get("remote_id") is None
             ):
-                return "production_publication_remote_target_mismatch"
+                if str(payload.get("remote_receipt_id")) != str(current.remote_receipt_id):
+                    return "production_publication_receipt_target_mismatch"
+                if str(payload.get("remote_id")) != str(current.remote_id):
+                    return "production_publication_remote_target_mismatch"
 
         if current.publication_id is not None and payload.get("publication_id") is not None:
             if str(payload["publication_id"]) != str(current.publication_id):
@@ -492,7 +496,8 @@ class PublicationActivities:
         return False
 
     async def _production_action_current(
-        self, payload: dict[str, Any], action_kind: str
+        self, payload: dict[str, Any], action_kind: str, *,
+        receipt_replay: tuple[CanonicalRun, CanonicalEffect] | None = None,
     ) -> tuple[CurrentPublicationAuthorization | None, str | None]:
         request = PublicationRequest.model_validate(payload["request"])
         if self._is_fixture_adapter(request):
@@ -511,15 +516,22 @@ class PublicationActivities:
             reason = denial or "canonical_production_authority_invalid"
             await self._hold_publication_liability_if_claimed(payload, action_kind, reason)
             return None, reason
+        binding = current.approval_binding
+        allow_missing_receipt = (
+            action_kind == "reconcile"
+            and receipt_replay is not None
+            and payload.get("remote_receipt_id") is None
+            and payload.get("remote_id") is None
+            and payload.get("publication_id") is None
+        )
         target_denial = self._production_publication_target_denial(
-            current, payload, action_kind
+            current, payload, action_kind, allow_missing_receipt=allow_missing_receipt,
         )
         if target_denial is not None:
             await self._hold_publication_liability_if_claimed(
                 payload, action_kind, target_denial
             )
             return None, target_denial
-        binding = current.approval_binding
         operation_value = payload.get("production_operation_id")
         permit_value = payload.get("production_permit_id")
         if operation_value != str(binding.operation_id) or not isinstance(permit_value, str):
@@ -532,6 +544,11 @@ class PublicationActivities:
             reason = "production_dispatch_binding_mismatch"
             await self._hold_publication_liability_if_claimed(payload, action_kind, reason)
             return None, reason
+        if allow_missing_receipt and current.remote_receipt_id is not None:
+            if not self._original_receipt_replay(current, receipt_replay, require_retry=True):
+                reason = "production_publication_binding_mismatch"
+                await self._hold_publication_liability_if_claimed(payload, action_kind, reason)
+                return None, reason
         try:
             decision = await asyncio.to_thread(
                 dispatch.authorize_action, binding.operation_id, permit_id, action_kind
@@ -552,7 +569,37 @@ class PublicationActivities:
             ):
                 return None, _PreclaimPermitExpired(reason)
             return None, reason
+        if (
+            not allow_missing_receipt
+            and receipt_replay is not None
+            and current.remote_receipt_id is not None
+            and not self._original_receipt_replay(current, receipt_replay)
+        ):
+            reason = "production_publication_binding_mismatch"
+            await self._hold_publication_liability_if_claimed(payload, action_kind, reason)
+            return None, reason
         return current, None
+
+    @staticmethod
+    def _original_receipt_replay(
+        current: CurrentPublicationAuthorization,
+        receipt_replay: tuple[CanonicalRun, CanonicalEffect],
+        *, require_retry: bool = False,
+    ) -> bool:
+        run, effect = receipt_replay
+        binding = current.approval_binding
+        if binding is None or not activity.in_activity():
+            return False
+        info = activity.info()
+        return (
+            info.workflow_id == binding.workflow_id
+            and info.workflow_run_id == binding.workflow_run_id == run.workflow_run_id
+            and str(run.job_id) == str(current.job_id)
+            and effect.effect_id == current.external_effect_id
+            and effect.status in {"submitting", "unknown", "accepted", "completed"}
+            and (effect.external_id == current.remote_id or (effect.external_id is None and effect.status != "completed"))
+            and (not require_retry or info.attempt > 1)
+        )
 
     async def _authorize_production_action(
         self, payload: dict[str, Any], action_kind: str
@@ -1153,6 +1200,7 @@ class PublicationActivities:
         fixture_adapter = self._is_fixture_adapter(request)
         effect_key = f"{request.idempotency_key}:publish"
         current: CurrentPublicationAuthorization | None = None
+        committed_receipt = False
         if fixture_adapter:
             attempt = await self._state.repository.create_attempt(
                 publication_plan_id=payload["publication_plan_id"],
@@ -1168,7 +1216,7 @@ class PublicationActivities:
             )
             if effect_may_have_started:
                 current, target_denial = await self._production_action_current(
-                    payload, "reconcile"
+                    payload, "reconcile", receipt_replay=(run, existing_effect),
                 )
             else:
                 current, target_denial = await self._production_target_before_submit(
@@ -1191,6 +1239,7 @@ class PublicationActivities:
             payload = self._canonical_publication_payload(payload, current)
             if effect_may_have_started:
                 submitting = False
+                committed_receipt = current.remote_receipt_id is not None
             else:
                 denial_reason = await self._claim_production_permit(payload, request, current)
                 if denial_reason is not None:
@@ -1219,6 +1268,37 @@ class PublicationActivities:
             lease = self._lease_for(request)
             receipt = await adapter.submit(request, lease)
             reconciled = False
+        elif committed_receipt:
+            try:
+                receipt = await self._state.repository.load_remote_receipt(
+                    receipt_id=current.remote_receipt_id,
+                    publication_attempt_id=current.publication_attempt_id,
+                )
+                if (
+                    receipt.publisher_id != current.request.publisher_id
+                    or receipt.remote_id != current.remote_id
+                    or receipt.state != current.remote_receipt_state
+                ):
+                    raise ValueError("canonical publication receipt differs from its binding")
+            except (KeyError, ValueError) as error:
+                await self._hold_publication_liability_if_claimed(
+                    payload, "reconcile", "invalid_binding"
+                )
+                raise ApplicationError(
+                    "committed publication receipt could not be confirmed",
+                    type="ProductionPublicationLiabilityHeld",
+                    non_retryable=True,
+                ) from error
+            current, denial_reason = await self._production_action_current(
+                payload, "reconcile", receipt_replay=(run, existing_effect),
+            )
+            if denial_reason is not None or current is None:
+                raise ApplicationError(
+                    "committed publication receipt requires current reconciliation authority",
+                    type="ProductionPublicationLiabilityHeld",
+                    non_retryable=True,
+                )
+            reconciled = True
         else:
             if not fixture_adapter:
                 current, denial_reason = await self._production_action_current(
@@ -1246,29 +1326,45 @@ class PublicationActivities:
                     )
                 raise RuntimeError("ambiguous publication outcome requires reconciliation")
             reconciled = True
-        remote = await self._state.repository.record_remote_receipt(
-            publication_attempt_id=attempt.id,
-            publisher_id=receipt.publisher_id,
-            remote_id=receipt.remote_id,
-            state=receipt.state,
-            safe_metadata_hash=receipt.safe_metadata_hash,
-            remote_url=receipt.remote_url,
-        )
-        await self._state.repository.record_status_event(
-            publication_attempt_id=attempt.id,
-            state=receipt.state,
-            source="submission",
-            safe_payload_hash=receipt.safe_metadata_hash,
-            trace_id=run.trace_context.trace_id,
-            span_id=run.trace_context.span_id,
-        )
-        await self._state.store.complete_effect(
-            run,
-            idempotency_key=effect_key,
-            external_id=receipt.remote_id,
-            reconciled=reconciled,
-        )
-        await self._checkpoint("publication.accepted")
+        if committed_receipt:
+            remote_receipt_id = receipt.id
+        else:
+            remote = await self._state.repository.record_remote_receipt(
+                publication_attempt_id=attempt.id,
+                publisher_id=receipt.publisher_id,
+                remote_id=receipt.remote_id,
+                state=receipt.state,
+                safe_metadata_hash=receipt.safe_metadata_hash,
+                remote_url=receipt.remote_url,
+            )
+            remote_receipt_id = remote.id
+        try:
+            await self._state.repository.record_status_event(
+                publication_attempt_id=attempt.id,
+                state=receipt.state,
+                source="submission",
+                safe_payload_hash=receipt.safe_metadata_hash,
+                trace_id=run.trace_context.trace_id,
+                span_id=run.trace_context.span_id,
+            )
+            await self._state.store.complete_effect(
+                run,
+                idempotency_key=effect_key,
+                external_id=receipt.remote_id,
+                reconciled=reconciled,
+                publication_effect_id=current.external_effect_id if current is not None else None,
+            )
+        except (ImmutablePublicationConflict, PermissionError) as error:
+            if not committed_receipt:
+                raise
+            await self._hold_publication_liability_if_claimed(payload, "reconcile", "invalid_binding")
+            raise ApplicationError(
+                "committed publication evidence conflicts with its canonical effect",
+                type="ProductionPublicationLiabilityHeld",
+                non_retryable=True,
+            ) from error
+        if fixture_adapter:
+            await self._checkpoint("publication.accepted")
         if self._state.crash_at == "publication.accepted" and not self._state.crashed:
             self._state.crashed = True
             self._state.crash_reached.set()
@@ -1276,8 +1372,8 @@ class PublicationActivities:
         return {
             **payload,
             "publication_attempt_id": attempt.id,
-            "remote_receipt_id": remote.id,
-            "remote_id": remote.remote_id,
+            "remote_receipt_id": remote_receipt_id,
+            "remote_id": receipt.remote_id,
             "publication_state": receipt.state,
         }
 

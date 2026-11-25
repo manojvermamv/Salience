@@ -11,7 +11,8 @@ from uuid import uuid4
 import psycopg
 import pytest
 from temporalio import activity
-from temporalio.client import Client
+from temporalio.client import Client, WorkflowFailureError
+from temporalio.exceptions import ActivityError, ApplicationError
 from temporalio.worker import Replayer, Worker
 
 from salience.governance.cost_repository import CostReservationRepository
@@ -207,6 +208,148 @@ class _PreboundPublicationActivities(PublicationActivities):
     def activities(self):
         return [self.request, self.authorize, self.delivery, self.submit_or_reconcile,
                 self.await_publication, self.complete, self.denied, self.cancel, self.dead_letter]
+
+
+class _LostReceiptReplyRepository(PublicationRepository):
+    def __init__(self, database, *, lose_reply, revoke_policy_id=None):
+        super().__init__(database)
+        self.lose_reply = lose_reply
+        self.revoke_policy_id = revoke_policy_id
+
+    async def record_remote_receipt(self, **kwargs):
+        receipt = await super().record_remote_receipt(**kwargs)
+        if self.lose_reply:
+            self.lose_reply = False
+            raise RuntimeError("fixture lost the reply after PostgreSQL committed the receipt")
+        return receipt
+
+    async def load_remote_receipt(self, **kwargs):
+        receipt = await super().load_remote_receipt(**kwargs)
+        if self.revoke_policy_id is not None:
+            await asyncio.to_thread(self._revoke_policy)
+        return receipt
+
+    def _revoke_policy(self):
+        with self._connect() as connection:
+            connection.execute("UPDATE policy_versions SET status='revoked' WHERE id=%s", (self.revoke_policy_id,))
+
+
+class _LostReceiptReplyActivities(_PreboundPublicationActivities):
+    def __init__(self, state, case, *, boundary):
+        super().__init__(state, case)
+        self.boundary = boundary
+        self.submit_attempts = []
+
+    @activity.defn(name="salience.publication.submit_or_reconcile")
+    async def submit_or_reconcile(self, payload: dict) -> dict:
+        self.submit_attempts.append(activity.info().workflow_run_id)
+        first_attempt = len(self.submit_attempts) == 1
+        if not first_attempt and self.boundary == "mismatched_receipt":
+            payload = {**payload, "remote_receipt_id": str(uuid4()), "remote_id": "wrong-remote"}
+        if not first_attempt and self.boundary == "mismatched_permit":
+            payload = {**payload, "production_permit_id": str(uuid4())}
+        result = await super().submit_or_reconcile(payload)
+        if first_attempt and self.boundary not in {"receipt_commit", "revoked_during_read"}:
+            if self.boundary == "expired_permit":
+                await asyncio.to_thread(self._expire_predecessor)
+            raise RuntimeError("fixture lost the reply after publication acceptance")
+        return result
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("boundary", [
+    "receipt_commit", "activity_reply", "expired_permit", "mismatched_receipt",
+    "mismatched_permit", "revoked_during_read",
+])
+async def test_committed_publication_receipt_replays_in_original_temporal_run(
+    temporal_publication_source, boundary,
+):
+    client = await Client.connect(os.environ["TEST_TEMPORAL_TARGET"])
+    queue = f"publication-receipt-replay-{uuid4()}"
+    handle = await client.start_workflow(
+        GovernedPublicationWorkflow.run,
+        PublicationWorkflowRequest(scheduled_publication_schedule_id="prebound-fixture"),
+        id=queue, task_queue=queue,
+    )
+    case, _, _ = await asyncio.to_thread(
+        temporal_publication_source, handle.id, handle.first_execution_run_id,
+    )
+    original = case["request"]
+    binding = original.publication_binding
+    provider = _RecordingPublisher(original.provider_id)
+    lease_requests = []
+
+    def resolve_lease(request):
+        lease_requests.append(request.idempotency_key)
+        return _fixture_lease()
+
+    state = PublicationWorkflowState(
+        store=CanonicalJobStore(case["database"]),
+        repository=_LostReceiptReplyRepository(
+            case["database"], lose_reply=boundary in {"receipt_commit", "revoked_during_read"},
+            revoke_policy_id=original.policy_version_id if boundary == "revoked_during_read" else None,
+        ),
+        cost_repository=CostReservationRepository(case["database"]),
+        publisher_adapters={original.provider_id: provider},
+        credential_lease_factory=resolve_lease,
+        production_dispatch=case["dispatch"],
+        production_permit_request_factory=lambda _approval, _publication: original,
+    )
+    stages = _LostReceiptReplyActivities(state, case, boundary=boundary)
+    held = boundary not in {"receipt_commit", "activity_reply"}
+    async with Worker(
+        client, task_queue=queue, workflows=[GovernedPublicationWorkflow], activities=stages.activities,
+    ):
+        if held:
+            with pytest.raises(WorkflowFailureError) as failure:
+                await asyncio.wait_for(handle.result(), 15)
+            assert isinstance(failure.value.cause, ActivityError)
+            assert isinstance(failure.value.cause.cause, ApplicationError)
+            assert failure.value.cause.cause.type == "ProductionPublicationLiabilityHeld"
+        else:
+            result = await asyncio.wait_for(handle.result(), 15)
+            assert result.publication_state == "published"
+            assert result.job_id == str(binding.job_id)
+            assert result.publication_attempt_id == str(binding.publication_attempt_id)
+
+    assert stages.submit_attempts == [handle.first_execution_run_id] * 2
+    assert provider.prepared == provider.submitted == lease_requests == [original.idempotency_key]
+    with psycopg.connect(case["database"]) as connection:
+        assert connection.execute(
+            "SELECT permit_id FROM v4_production_effect_permit_claims WHERE operation_id=%s",
+            (original.operation_id,),
+        ).fetchall() == [(case["opening_permit_id"],)]
+        assert connection.execute(
+            "SELECT publisher_id,remote_id,state FROM remote_publication_receipts WHERE publication_attempt_id=%s",
+            (binding.publication_attempt_id,),
+        ).fetchall() == [(original.provider_id, provider.remote_id, "accepted")]
+        projected = boundary != "revoked_during_read"
+        assert connection.execute(
+            "SELECT count(*) FROM publication_status_events WHERE publication_attempt_id=%s AND source='submission'",
+            (binding.publication_attempt_id,),
+        ).fetchone() == (int(projected),)
+        assert connection.execute(
+            "SELECT status,provider_reference FROM external_effects WHERE id=%s",
+            (binding.external_effect_id,),
+        ).fetchone() == (("completed", provider.remote_id) if projected else ("submitting", None))
+        assert connection.execute(
+            "SELECT count(*) FROM job_checkpoints WHERE job_id=%s AND state='publication.accepted'",
+            (binding.job_id,),
+        ).fetchone() == (int(projected),)
+        assert connection.execute(
+            "SELECT count(*) FROM provenance_records WHERE job_id=%s AND origin_type='mock_provider'",
+            (binding.job_id,),
+        ).fetchone() == (int(projected),)
+        assert connection.execute(
+            "SELECT status FROM budget_reservations WHERE id=%s",
+            (original.budget_reservation_id,),
+        ).fetchone() == ("reserved" if held else "settled",)
+        if held:
+            assert connection.execute(
+                """SELECT payload->>'remote_id' FROM v4_cycle_events
+                   WHERE cycle_id=%s AND kind='production_publication_liability_held'""",
+                (original.cycle_id,),
+            ).fetchall() == [(provider.remote_id,)]
 
 
 @pytest.mark.asyncio

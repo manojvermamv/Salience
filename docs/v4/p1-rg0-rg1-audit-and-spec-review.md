@@ -665,3 +665,17 @@ This update records approved production reservation adoption and enforcement of 
 | `README.md` | `dbfa93b10cc65da969f363d7186a53d94f7190ffcefd55b3f326a65650c7709e` |
 | `docs/v4/evidence-lock.json` | `96eb0d33b2eb1895700d29a8f45de969bcdebeb3de772d2bb20f287bab599fa2` |
 | `docs/v4/p1-qualification-matrix.json` | `f24ab3e126f0eb1b844d569aa1df2d7a0ed945de1fd71aa8ff1f3fd3a7864325` |
+
+## P1 committed receipt replay and routed launcher trust evidence hashes — 2026-11-25
+
+This update records local verification for retrying a committed receipt in its original workflow and carrying independent trust into the isolated routed launch preflight. [Verification and scope](validation.md#committed-publication-receipt-replay)
+
+| Path | SHA-256 |
+| --- | --- |
+| `docs/v4/IMPLEMENTATION-BLUEPRINT.md` | `fa6e8c99715b3190d6f0191217d9ac56b282a025136c4268275442d75b2ae886` |
+| `docs/v4/progress.md` | `b7d42a4da097f5acdcd45130ad44c1512e86adc9939b59159691a5ebd1bbb41d` |
+| `docs/v4/validation.md` | `f9afcedf96578e5352f5518346da95e868429a2bf91e2567621e21eba76726e2` |
+| `docs/v4/test_checks.py` | `6c4e18f8820ed3c2f45f0b1a36d805bdae45c91b82f80d1a2ced572307d6b629` |
+| `README.md` | `dbfa93b10cc65da969f363d7186a53d94f7190ffcefd55b3f326a65650c7709e` |
+| `docs/v4/evidence-lock.json` | `8e30966727205375eb62f6c260f79bc81b887511abc0caf7c67916207d01b41c` |
+| `docs/v4/p1-qualification-matrix.json` | `ec4e7fc3d5755d02db67e3775834fdc86ca5ba1a370fe7f68217d0292fdda0f0` |

@@ -196,10 +196,11 @@ class CanonicalJobStore:
         return await asyncio.to_thread(self._effect, run, idempotency_key)
 
     async def complete_effect(
-        self, run: CanonicalRun, *, idempotency_key: str, external_id: str, reconciled: bool
+        self, run: CanonicalRun, *, idempotency_key: str, external_id: str, reconciled: bool,
+        publication_effect_id: str | None = None,
     ) -> None:
         await asyncio.to_thread(
-            self._complete_effect, run, idempotency_key, external_id, reconciled
+            self._complete_effect, run, idempotency_key, external_id, reconciled, publication_effect_id,
         )
 
     async def terminal(self, run: CanonicalRun, status: str) -> None:
@@ -634,32 +635,31 @@ class CanonicalJobStore:
 
     def _checkpoint(self, run: CanonicalRun, checkpoint_name: str) -> None:
         with self._connect() as connection, connection.cursor() as cursor:
-            cursor.execute(
-                "SELECT COALESCE(MAX(sequence_no), 0) + 1 FROM job_checkpoints WHERE job_id = %s",
-                (run.job_id,),
-            )
-            sequence_no = cursor.fetchone()[0]
-            cursor.execute(
-                """
-                INSERT INTO job_checkpoints (
-                    job_id, sequence_no, state, checkpoint_payload, trace_id, span_id
-                ) VALUES (%s, %s, %s, %s::jsonb, %s, %s)
-                """,
-                (
-                    run.job_id,
-                    sequence_no,
-                    checkpoint_name,
-                    json.dumps({"checkpoint": checkpoint_name}),
-                    run.trace_context.trace_id,
-                    run.trace_context.span_id,
-                ),
-            )
-            self._insert_audit(
-                cursor, run.workspace_id, run.job_id, run.workflow_run_id, run.trace_context,
-                "job.checkpointed", "allowed", {"checkpoint": checkpoint_name}
-            )
+            self._write_checkpoint(cursor, run, checkpoint_name)
             if checkpoint_name == "after_external_effect":
                 self._update_terminal(cursor, run, "succeeded")
+
+    def _write_checkpoint(self, cursor, run: CanonicalRun, checkpoint_name: str) -> None:
+        cursor.execute(
+            """
+            INSERT INTO job_checkpoints (
+                job_id, sequence_no, state, checkpoint_payload, trace_id, span_id
+            ) SELECT %s, COALESCE(MAX(sequence_no), 0) + 1, %s, %s::jsonb, %s, %s
+              FROM job_checkpoints WHERE job_id = %s
+            """,
+            (
+                run.job_id,
+                checkpoint_name,
+                json.dumps({"checkpoint": checkpoint_name}),
+                run.trace_context.trace_id,
+                run.trace_context.span_id,
+                run.job_id,
+            ),
+        )
+        self._insert_audit(
+            cursor, run.workspace_id, run.job_id, run.workflow_run_id, run.trace_context,
+            "job.checkpointed", "allowed", {"checkpoint": checkpoint_name}
+        )
 
     def _plan_effect(self, run: CanonicalRun, idempotency_key: str) -> None:
         with self._connect() as connection, connection.cursor() as cursor:
@@ -675,43 +675,95 @@ class CanonicalJobStore:
             )
 
     def _complete_effect(
-        self, run: CanonicalRun, idempotency_key: str, external_id: str, reconciled: bool
+        self, run: CanonicalRun, idempotency_key: str, external_id: str, reconciled: bool,
+        publication_effect_id: str | None,
     ) -> None:
         with self._connect() as connection, connection.cursor() as cursor:
+            if publication_effect_id is None:
+                self._write_effect_completion(cursor, run, idempotency_key, external_id, reconciled)
+                return
+
             cursor.execute(
                 """
-                UPDATE external_effects
-                SET status = 'completed', provider_name = 'mock', provider_reference = %s,
-                    reconciliation_state = %s::jsonb, effect_result = %s::jsonb,
-                    completed_at = CURRENT_TIMESTAMP
-                WHERE workspace_id = %s AND idempotency_key = %s
+                SELECT status, provider_reference FROM external_effects
+                WHERE id = %s AND workspace_id = %s AND job_id = %s AND idempotency_key = %s
+                FOR UPDATE
                 """,
-                (
-                    external_id,
-                    json.dumps({"reconciled": reconciled}),
-                    json.dumps({"external_id": external_id}),
-                    run.workspace_id,
-                    idempotency_key,
-                ),
+                (publication_effect_id, run.workspace_id, run.job_id, idempotency_key),
             )
-            self._insert_audit(
-                cursor, run.workspace_id, run.job_id, run.workflow_run_id, run.trace_context,
-                "external_effect.reconciled" if reconciled else "external_effect.completed",
-                "allowed", {"external_id": external_id, "reconciled": reconciled},
-            )
+            effect = cursor.fetchone()
+            if effect is None or effect[0] not in {"submitting", "unknown", "accepted", "completed"}:
+                raise PermissionError("original submitted publication effect required")
+            status, provider_reference = effect
+            if provider_reference is not None and provider_reference != external_id:
+                raise PermissionError("original publication receipt conflicts with the effect")
+            if status == "completed" and provider_reference is None:
+                raise PermissionError("completed publication effect lacks its original receipt")
+            # Match the publication repository's lock order. The dispatch query
+            # can acquire both rows at once, so retry if it already owns the job.
             cursor.execute(
                 """
-                INSERT INTO provenance_records (
-                    workspace_id, job_id, origin_type, source_uri, source_hash,
-                    verification_status, c2pa_manifest, lineage, trace_id, span_id
-                ) VALUES (%s, %s, 'mock_provider', %s, %s, 'verified', '{}'::jsonb, %s::jsonb, %s, %s)
+                SELECT id FROM jobs WHERE id = %s AND workflow_run_id = %s
+                  AND state IN ('queued', 'running')
+                FOR NO KEY UPDATE NOWAIT
                 """,
-                (
-                    run.workspace_id, run.job_id, f"mock://external-effects/{external_id}",
-                    external_id, json.dumps({"idempotency_key": idempotency_key}),
-                    run.trace_context.trace_id, run.trace_context.span_id,
-                ),
+                (run.job_id, run.workflow_run_id),
             )
+            if cursor.fetchone() is None:
+                raise PermissionError("original active publication workflow run required")
+            if status != "completed":
+                self._write_effect_completion(
+                    cursor, run, idempotency_key, external_id, reconciled,
+                    effect_id=publication_effect_id,
+                )
+            cursor.execute(
+                "SELECT 1 FROM job_checkpoints WHERE job_id = %s AND state = 'publication.accepted' LIMIT 1",
+                (run.job_id,),
+            )
+            if cursor.fetchone() is None:
+                self._write_checkpoint(cursor, run, "publication.accepted")
+
+    def _write_effect_completion(
+        self, cursor, run: CanonicalRun, idempotency_key: str, external_id: str, reconciled: bool,
+        *, effect_id: str | None = None,
+    ) -> None:
+        cursor.execute(
+            """
+            UPDATE external_effects
+            SET status = 'completed', provider_name = 'mock', provider_reference = %s,
+                reconciliation_state = %s::jsonb, effect_result = %s::jsonb,
+                completed_at = CURRENT_TIMESTAMP
+            WHERE workspace_id = %s AND idempotency_key = %s
+              AND (%s::uuid IS NULL OR id = %s)
+            """,
+            (
+                external_id,
+                json.dumps({"reconciled": reconciled}),
+                json.dumps({"external_id": external_id}),
+                run.workspace_id,
+                idempotency_key,
+                effect_id,
+                effect_id,
+            ),
+        )
+        self._insert_audit(
+            cursor, run.workspace_id, run.job_id, run.workflow_run_id, run.trace_context,
+            "external_effect.reconciled" if reconciled else "external_effect.completed",
+            "allowed", {"external_id": external_id, "reconciled": reconciled},
+        )
+        cursor.execute(
+            """
+            INSERT INTO provenance_records (
+                workspace_id, job_id, origin_type, source_uri, source_hash,
+                verification_status, c2pa_manifest, lineage, trace_id, span_id
+            ) VALUES (%s, %s, 'mock_provider', %s, %s, 'verified', '{}'::jsonb, %s::jsonb, %s, %s)
+            """,
+            (
+                run.workspace_id, run.job_id, f"mock://external-effects/{external_id}",
+                external_id, json.dumps({"idempotency_key": idempotency_key}),
+                run.trace_context.trace_id, run.trace_context.span_id,
+            ),
+        )
 
     def _begin_effect_submission(self, run: CanonicalRun, idempotency_key: str) -> bool:
         with self._connect() as connection, connection.cursor() as cursor:

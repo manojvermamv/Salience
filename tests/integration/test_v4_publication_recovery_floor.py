@@ -18,6 +18,7 @@ import shutil
 import sys
 import subprocess
 import struct
+import sysconfig
 from uuid import UUID
 import zipfile
 from types import SimpleNamespace
@@ -8539,7 +8540,7 @@ async def test_0043_fixture_startup_guard_remains_unchanged(monkeypatch):
     assert len(temporal_connects) == 1
 
 
-def test_v2_launch_lock_authenticates_route_allowlists_and_exact_head(tmp_path, monkeypatch):
+def _write_v2_route_lock(tmp_path, monkeypatch, *, migration_head="0051_p1_recovery_rollback_v2"):
     from salience.cycles import publication_recovery_compatibility as compatibility
     from salience.cycles.production_routing import (
         PRODUCTION_ACTIVITY_ALLOWLIST,
@@ -8550,7 +8551,9 @@ def test_v2_launch_lock_authenticates_route_allowlists_and_exact_head(tmp_path, 
         route_tuple_sha256,
     )
 
-    v1_lock, _, _, _ = _write_test_lock(tmp_path, monkeypatch, migration_ceiling=51)
+    v1_lock, wheel_path, _, _ = _write_test_lock(
+        tmp_path, monkeypatch, migration_ceiling=int(migration_head[:4]),
+    )
     route_tuple = RouteTupleV1(
         deployment_id=UUID("00000000-0000-0000-0000-000000000301"),
         environment_id=UUID("00000000-0000-0000-0000-000000000302"),
@@ -8575,8 +8578,8 @@ def test_v2_launch_lock_authenticates_route_allowlists_and_exact_head(tmp_path, 
     )
     production = compatibility.ProductionWorkerLockPayloadV2(
         schema_version="salience.p1-production-worker-launch.v2",
-        migration_head=compatibility.PRODUCTION_MIGRATION_HEAD,
-        rollback_verifier_abi=compatibility.ROLLBACK_VERIFIER_ABI_V2,
+        migration_head=migration_head,
+        rollback_verifier_abi=compatibility.PRODUCTION_ROLLBACK_ABIS[migration_head],
         qualification=compatibility.PRODUCTION_LOCK_QUALIFICATION,
         workflow_allowlist=PRODUCTION_WORKFLOW_ALLOWLIST,
         activity_allowlist=PRODUCTION_ACTIVITY_ALLOWLIST,
@@ -8595,12 +8598,105 @@ def test_v2_launch_lock_authenticates_route_allowlists_and_exact_head(tmp_path, 
         pin=v1_lock.pin,
         production=production,
     )
+    return v2_lock, wheel_path, route
+
+
+@pytest.mark.parametrize("cycle_database", ["0060_p1_claimed_reissue_fence"], indirect=True)
+def test_v2_launcher_carries_independent_trust_to_isolated_preflight(
+    tmp_path, monkeypatch, cycle_database,
+):
+    from support.production_route_authority import FakeRouteLeaseAuthority
+
+    lock, wheel_path, route = _write_v2_route_lock(
+        tmp_path, monkeypatch, migration_head="0060_p1_claimed_reissue_fence",
+    )
+    launcher = _launcher_module()
+    lock_path, digest_path, launcher_path, digest = _configure_launcher(
+        launcher, tmp_path, lock, wheel_path, monkeypatch,
+    )
+    # Adapt only the fixed image paths to the synthetic runtime. The isolated
+    # preflight still imports the real compatibility code and reads PostgreSQL.
+    prepare_runtime = f"""
+import sys
+from pathlib import Path
+sys.path[:0] = [{lock.runtime_root!r}, {sysconfig.get_path('purelib')!r}]
+from salience.cycles import publication_recovery_compatibility as compatibility
+compatibility._artifact_file_path = lambda _pin: Path({str(wheel_path)!r})
+compatibility._launcher_file_path = lambda: Path({str(launcher_path)!r})
+compatibility._interpreter_installation_prefix = lambda _path: Path({str(tmp_path)!r})
+"""
+
+    preflight_exits = []
+
+    def run_preflight(command, **kwargs):
+        assert command[1:5] == ["-I", "-B", "-S", "-c"]
+        result = subprocess.run([*command[:5], prepare_runtime + command[5]], **kwargs)
+        preflight_exits.append(result.returncode)
+        return result
+
+    monkeypatch.setattr(launcher, "subprocess", SimpleNamespace(run=run_preflight))
+    monkeypatch.setattr(sys, "path", sys.path.copy())
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("DATABASE_URL", cycle_database)
+    monkeypatch.setenv("SALIENCE_PRODUCTION_ROUTE_TRUST_DIGEST", digest)
+    owner_id = UUID("00000000-0000-0000-0000-000000000305")
+    slot_id = route.slots[0]
+    argv = [
+        "--mode", "current", "--worker-kind", "deployable",
+        "--route-id", str(route.route_id), "--slot-id", str(slot_id),
+        "--owner-id", str(owner_id),
+    ]
+    authority = FakeRouteLeaseAuthority()
+    handoffs = []
+    injected = {
+        "route_authority": authority,
+        "route_child_exec": lambda *args: handoffs.append(args),
+    }
+
+    with pytest.raises(launcher.LauncherError, match="trust digest is unprovisioned"):
+        launcher.main(argv, **injected)
+
+    original_lock = lock_path.read_bytes()
+    alternate_lock = _lock_bytes(
+        replace(lock, pin=replace(lock.pin, application_commit="a" * 40))
+    )
+    lock_path.write_bytes(alternate_lock)
+    digest_path.write_text(_sha256(alternate_lock) + "\n", encoding="ascii")
+    with pytest.raises(launcher.LauncherError, match="externally qualified production trust digest"):
+        launcher.main(argv, external_production_trust_digest=digest, **injected)
+
+    assert preflight_exits == []
+    assert authority.read_slot(route.route_id, slot_id).state == "missing"
+    assert handoffs == []
+
+    lock_path.write_bytes(original_lock)
+    digest_path.write_text(digest + "\n", encoding="ascii")
+    with pytest.raises(launcher.LauncherError, match="executor returned unexpectedly"):
+        launcher.main(argv, external_production_trust_digest=digest, **injected)
+
+    assert preflight_exits == [0]
+    assert len(handoffs) == 1
+    lease = authority.read_slot(route.route_id, slot_id).lease
+    assert lease is not None
+    assert lease.owner_id == owner_id
+    assert lease.artifact_lock_sha256 == digest
+
+
+def test_v2_launch_lock_authenticates_route_allowlists_and_exact_head(tmp_path, monkeypatch):
+    from salience.cycles import publication_recovery_compatibility as compatibility
+    from salience.cycles.production_routing import (
+        PRODUCTION_ACTIVITY_ALLOWLIST,
+        PRODUCTION_WORKFLOW_ALLOWLIST,
+    )
+
+    v2_lock, _, route = _write_v2_route_lock(tmp_path, monkeypatch)
+    production = v2_lock.production
+    route_tuple = route.route_tuple
     lock_bytes = compatibility._canonical_lock_bytes(v2_lock)
     digest = _sha256(lock_bytes)
     parsed = compatibility._launch_lock_from_json(json.loads(lock_bytes))
     assert isinstance(parsed, compatibility.PublicationWorkerLaunchLockV2)
 
-    assert compatibility.PRODUCTION_EXTERNAL_TRUST_DIGEST is None
     with pytest.raises(PublicationWorkerCompatibilityError, match="trust digest is unprovisioned"):
         compatibility.require_production_worker_compatibility(
             "postgresql://primary/salience",
@@ -8614,11 +8710,19 @@ def test_v2_launch_lock_authenticates_route_allowlists_and_exact_head(tmp_path, 
         "_database_revision",
         lambda _url: compatibility.PRODUCTION_MIGRATION_HEAD,
     )
-    monkeypatch.setattr(compatibility, "PRODUCTION_EXTERNAL_TRUST_DIGEST", digest)
+    with pytest.raises(PublicationWorkerCompatibilityError, match="externally qualified production trust digest"):
+        compatibility.require_production_worker_compatibility(
+            "postgresql://primary/salience",
+            launch_lock=parsed,
+            observed_launch_lock_sha256=digest,
+            expected_launch_lock_sha256="b" * 64,
+            route_id=route.route_id,
+        )
     selected = compatibility.require_production_worker_compatibility(
         "postgresql://primary/salience",
         launch_lock=parsed,
         observed_launch_lock_sha256=digest,
+        expected_launch_lock_sha256=digest,
         route_id=route.route_id,
     )
     assert selected.route_id == route.route_id
@@ -8650,14 +8754,12 @@ def test_v2_launch_lock_authenticates_route_allowlists_and_exact_head(tmp_path, 
         production=wrong_head_payload,
     )
     wrong_head_digest = _sha256(compatibility._canonical_lock_bytes(wrong_head_lock))
-    monkeypatch.setattr(
-        compatibility, "PRODUCTION_EXTERNAL_TRUST_DIGEST", wrong_head_digest
-    )
     with pytest.raises(PublicationWorkerCompatibilityError, match="exact migration head"):
         compatibility.require_production_worker_compatibility(
             "postgresql://primary/salience",
             launch_lock=wrong_head_lock,
             observed_launch_lock_sha256=wrong_head_digest,
+            expected_launch_lock_sha256=wrong_head_digest,
             route_id=route.route_id,
         )
     assert database_reads == []

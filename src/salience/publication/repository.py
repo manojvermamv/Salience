@@ -17,6 +17,7 @@ from salience.publication.contracts import (
     PublicationRequest,
     PublisherCapabilityProfile,
     PublisherWebhookEvent,
+    RemotePublicationReceipt,
 )
 from salience.governance.production_policy import (
     ProductionApprovalBinding,
@@ -628,6 +629,11 @@ class PublicationRepository:
             safe_metadata_hash,
             remote_url,
         )
+
+    async def load_remote_receipt(
+        self, *, receipt_id: str, publication_attempt_id: str,
+    ) -> RemotePublicationReceipt:
+        return await asyncio.to_thread(self._load_remote_receipt, receipt_id, publication_attempt_id)
 
     async def attach_reservation(
         self, *, publication_plan_id: str, budget_reservation_id: str
@@ -1514,6 +1520,27 @@ class PublicationRepository:
                 raise ImmutablePublicationConflict("publication schedule differs from its immutable version")
             return PersistedPublicationSchedule(
                 identifier, found_request, found_plan, found_job_schedule, found_version
+            )
+
+    def _load_remote_receipt(
+        self, receipt_id: str, publication_attempt_id: str,
+    ) -> RemotePublicationReceipt:
+        with self._connect() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT id::text, publication_attempt_id::text, publisher_id, remote_id,
+                       state, safe_metadata_hash, remote_url
+                FROM remote_publication_receipts
+                WHERE id = %s AND publication_attempt_id = %s
+                """,
+                (receipt_id, publication_attempt_id),
+            )
+            row = cursor.fetchone()
+            if row is None:
+                raise KeyError(receipt_id)
+            return RemotePublicationReceipt(
+                id=row[0], publication_attempt_id=row[1], publisher_id=row[2], remote_id=row[3],
+                state=row[4], safe_metadata_hash=row[5], remote_url=row[6],
             )
 
     def _record_remote_receipt(

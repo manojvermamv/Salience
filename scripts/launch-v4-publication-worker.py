@@ -46,7 +46,6 @@ _ROLLBACK_VERIFIER_ABIS = {
     _PRODUCTION_CLAIMED_FENCE_HEAD: "salience.p1-recovery-rollback-verifier.v7",
 }
 _PRODUCTION_LOCK_QUALIFICATION = "development-only"
-_EXTERNAL_PRODUCTION_TRUST_DIGEST = None
 _REQUIRED_SOURCE_PATHS = {
     "scripts/launch-v4-publication-worker.py",
     "src/salience/cycles/publication_recovery_compatibility.py",
@@ -134,6 +133,7 @@ if (
         payload["database_url"],
         launch_lock=lock,
         observed_launch_lock_sha256=payload["lock_sha256"],
+        expected_launch_lock_sha256=payload["expected_launch_lock_sha256"],
         route_id=UUID(payload["route_id"]),
     )
 else:
@@ -795,7 +795,9 @@ def main(
     rollback_verifier=None,
     prior_code_process=None,
     deployable_executor: AuthenticatedDeployableExecutor | None = None,
+    external_production_trust_digest: str | None = None,
 ) -> int:
+    """Keep routed trust an explicit input from the launcher composition."""
     _require_isolated_startup()
     arguments = _parser().parse_args(argv)
     rollback_values = (
@@ -857,11 +859,22 @@ def main(
     if not digest_text.endswith("\n") or not _HEX_64.fullmatch(digest_text[:-1]):
         raise LauncherError("independent launch-lock digest is malformed")
     lock, lock_digest = _verify_authenticated_lock(raw_lock, digest_text[:-1])
-    is_rollback_v2_candidate = (
-        lock["schema_version"] == "salience.publication-worker-launch-lock.v2"
-        and arguments.mode == "rollback-restart"
-    )
-    if arguments.worker_kind == "legacy-fixture" and not is_rollback_v2_candidate:
+    is_routed = lock["schema_version"] == "salience.publication-worker-launch-lock.v2"
+    is_rollback_v2 = is_routed and arguments.mode == "rollback-restart"
+    if is_routed and not is_rollback_v2:
+        if external_production_trust_digest is None:
+            raise LauncherError(
+                "external production trust digest is unprovisioned; production route startup remains disabled"
+            )
+        if (
+            not isinstance(external_production_trust_digest, str)
+            or not _HEX_64.fullmatch(external_production_trust_digest)
+            or lock_digest != external_production_trust_digest
+        ):
+            raise LauncherError(
+                "launch lock does not match the externally qualified production trust digest"
+            )
+    if arguments.worker_kind == "legacy-fixture" and not is_rollback_v2:
         test_database_url = os.environ.get("TEST_DATABASE_URL")
         if not test_database_url or test_database_url != database_url:
             raise LauncherError(
@@ -875,12 +888,6 @@ def main(
         raise LauncherError("publication worker launch pin is invalid") from error
     if not _HEX_64.fullmatch(lock.get("launcher_sha256", "")):
         raise LauncherError("publication worker launcher hash is malformed")
-    is_routed = lock["schema_version"] == "salience.publication-worker-launch-lock.v2"
-    is_rollback_v2 = is_routed and arguments.mode == "rollback-restart"
-    if is_routed and not is_rollback_v2 and _EXTERNAL_PRODUCTION_TRUST_DIGEST is None:
-        raise LauncherError(
-            "external production trust digest is unprovisioned; production route startup remains disabled"
-        )
     if not is_routed and arguments.mode == "rollback-restart" and not all(rollback_values):
         raise LauncherError(
             "v1 rollback-restart requires workspace and both hold operation IDs"
@@ -944,6 +951,8 @@ def main(
         ),
         "route_id": str(requested_route_id) if requested_route_id else None,
     }
+    if is_routed and not is_rollback_v2:
+        payload["expected_launch_lock_sha256"] = external_production_trust_digest
     if not is_rollback_v2:
         try:
             result = subprocess.run(

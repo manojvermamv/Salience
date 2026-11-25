@@ -1,6 +1,6 @@
 {
-  "baseline_commit": "287a3ae814d5a6f0ceee6b8418f48ac35c715b88",
-  "scope": "Source and build-context inventory for the P1 funding and claimed-publication reissue fence.",
+  "baseline_commit": "540c46b15af92565a82701eb3c0597b67139ff7b",
+  "scope": "Source and build-context inventory for P1 committed receipt replay and routed launcher trust.",
   "files": [
     {
       "path": ".dockerignore",
@@ -292,7 +292,7 @@
     },
     {
       "path": "scripts/launch-v4-publication-worker.py",
-      "sha256": "1d047467b668ffacebf19bbb05507df511c5b88ca3b061cace6dad0c1085f225"
+      "sha256": "834e685212b0c437757bd3f4abe405ce75013c0d463c605d1286d824cbf1ccd1"
     },
     {
       "path": "scripts/verify-browser-evidence.sh",
@@ -776,7 +776,7 @@
     },
     {
       "path": "src/salience/cycles/publication_recovery_compatibility.py",
-      "sha256": "f6f5ea83cb567cb71a517d3787839631dfa0f89afb38c12567aba381464dc2bd"
+      "sha256": "c5cb72fc8b8bf78b9554bb7922ff3b3e9464286c895b28a692ed697bbbd6690c"
     },
     {
       "path": "src/salience/cycles/runtime.py",
@@ -1008,7 +1008,7 @@
     },
     {
       "path": "src/salience/publication/repository.py",
-      "sha256": "911a698cbb7d0cbbf021b6bca64c5cac9630855dec7f886d2f347e43f4133666"
+      "sha256": "899d2a3d352a383c6a5b7d5fcdd36b2c942e254628ab446d68bdbf9e076ad5fb"
     },
     {
       "path": "src/salience/publication/youtube.py",
@@ -1088,11 +1088,11 @@
     },
     {
       "path": "src/salience/workflows/persistence.py",
-      "sha256": "7666c2238050938f3508387aaddb472fb5e1c40585fa4523f520945965e846d5"
+      "sha256": "a0bf5fa99e7c7c4e4d857e2a948ebc16792a3052fe3e96979bb0e84ca65dda89"
     },
     {
       "path": "src/salience/workflows/publication.py",
-      "sha256": "d9a9dab9f33f8dd6590b50ce42531bb64dd48ed92f1ea5221f5238bc49d23cd3"
+      "sha256": "5f3b5f9761d90e1c311de3966e9a6ad9622bc57fdf54c2e151e772166ed5b874"
     },
     {
       "path": "src/salience/workflows/schedules.py",
@@ -1388,7 +1388,7 @@
     },
     {
       "path": "tests/integration/test_p1_preclaim_publication_temporal.py",
-      "sha256": "d49b5ab8670c0933f170cf0fe65ba5d4e72b6a221211261973d60241aacdfaa4"
+      "sha256": "b641ace0caf60610ddb9a0633db81c0390e2f22ae2dceb89b6ea94caa050e7c1"
     },
     {
       "path": "tests/integration/test_p1_preclaim_resume_db.py",
@@ -1416,7 +1416,7 @@
     },
     {
       "path": "tests/integration/test_p1_production_routing.py",
-      "sha256": "719748314a98793a3f83584c9d3e4d88e1b819ed55c8b04199f07fadb700bc41"
+      "sha256": "686d762040783f00af6aa8d054295298e265b68b3aa8b77f77c96218ab840379"
     },
     {
       "path": "tests/integration/test_p1_production_schedule_fencing.py",
@@ -1552,7 +1552,7 @@
     },
     {
       "path": "tests/integration/test_v4_publication_recovery_floor.py",
-      "sha256": "76b588fdef0a4e2412d3b3401d3d7856b5c98ba9792482de2f3962881d289f5a"
+      "sha256": "c9708b02240c521f10dab6c20fba1d7b83036bf54ba67a77668e075eade091bc"
     },
     {
       "path": "tests/integration/test_v4_publication_recovery_holds.py",
@@ -3284,5 +3284,10 @@
     "record_commit": "287a3ae814d5a6f0ceee6b8418f48ac35c715b88",
     "record_path": "docs/v4/evidence-lock.json",
     "sha256": "c5476b50e52cd949951dd5cd40ebb2efba1d861d3e9d7a67cf054f78f53dae11"
+  },
+  "preceding_p1_receipt_replay_lock": {
+    "record_commit": "540c46b15af92565a82701eb3c0597b67139ff7b",
+    "record_path": "docs/v4/evidence-lock.json",
+    "sha256": "96eb0d33b2eb1895700d29a8f45de969bcdebeb3de772d2bb20f287bab599fa2"
   }
 }

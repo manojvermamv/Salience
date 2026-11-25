@@ -272,7 +272,6 @@ PRODUCTION_ROLLBACK_ABIS = {
     ROLLBACK_MIGRATION_HEAD_V7: ROLLBACK_VERIFIER_ABI_V7,
 }
 PRODUCTION_LOCK_QUALIFICATION = "development-only"
-PRODUCTION_EXTERNAL_TRUST_DIGEST = None
 
 
 def _canonical_json(value: object) -> bytes:
@@ -1456,19 +1455,24 @@ def require_production_worker_compatibility(
     launch_lock: PublicationWorkerLaunchLockAny,
     observed_launch_lock_sha256: str,
     route_id: UUID,
+    expected_launch_lock_sha256: str | None = None,
 ):
-    """Require an authenticated v2 route and the exact production schema head."""
+    """Require a launcher-authenticated v2 route and the exact pinned schema head."""
     if not isinstance(launch_lock, PublicationWorkerLaunchLockV2):
         raise PublicationWorkerCompatibilityError(
             "production route startup requires an authenticated v2 launch lock"
         )
     if not isinstance(route_id, UUID):
         raise PublicationWorkerCompatibilityError("production route ID UUID is required")
-    if PRODUCTION_EXTERNAL_TRUST_DIGEST is None:
+    if expected_launch_lock_sha256 is None:
         raise PublicationWorkerCompatibilityError(
             "external production trust digest is unprovisioned; production route startup remains disabled"
         )
-    if observed_launch_lock_sha256 != PRODUCTION_EXTERNAL_TRUST_DIGEST:
+    if (
+        not isinstance(expected_launch_lock_sha256, str)
+        or not _HEX_64.fullmatch(expected_launch_lock_sha256)
+        or observed_launch_lock_sha256 != expected_launch_lock_sha256
+    ):
         raise PublicationWorkerCompatibilityError(
             "launch lock does not match the externally qualified production trust digest"
         )

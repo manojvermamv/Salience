@@ -1260,7 +1260,6 @@ def test_v2_external_launcher_claims_and_hands_off_route_lease(
     digest = __import__("hashlib").sha256(lock_bytes).hexdigest()
     digest_path.write_text(digest + "\n", encoding="ascii")
     monkeypatch.setattr(launcher, "_require_isolated_startup", lambda: None)
-    monkeypatch.setattr(launcher, "_EXTERNAL_PRODUCTION_TRUST_DIGEST", digest)
     monkeypatch.setattr(launcher, "CONTROL_LOCK_PATH", lock_path)
     monkeypatch.setattr(launcher, "CONTROL_LOCK_DIGEST_PATH", digest_path)
     monkeypatch.setattr(launcher, "_verify_pin", lambda _lock: tmp_path)
@@ -1293,6 +1292,7 @@ def test_v2_external_launcher_claims_and_hands_off_route_lease(
             ],
             route_authority=authority,
             route_child_exec=child_exec,
+            external_production_trust_digest=digest,
         )
 
     assert fake_launcher_file.read_text(encoding="utf-8").startswith("# fake v2")

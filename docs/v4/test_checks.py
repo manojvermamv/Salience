@@ -908,11 +908,15 @@ class GateChecks(unittest.TestCase):
         if current["artifact_build"] == "NOT RUN":
             self.assertNotIn("fixture_image_rehearsal", current)
             fixture = current["prior_fixture_image_rehearsal"]
-            self.assertNotEqual(fixture["migration_head"], current["migration_head"])
         else:
             self.assertEqual(current["artifact_build"], "PASS_FIXTURE_ONLY")
             fixture = current["fixture_image_rehearsal"]
             self.assertEqual(fixture["migration_head"], current["migration_head"])
+            if "prior_fixture_image_rehearsal" in current:
+                self.assertNotEqual(
+                    fixture["application_commit"],
+                    current["prior_fixture_image_rehearsal"]["application_commit"],
+                )
         self.assertRegex(fixture["application_commit"], r"^[a-f0-9]{40}$")
         self.assertRegex(fixture["application_tree"], r"^[a-f0-9]{40}$")
         self.assertRegex(fixture["local_image_id"], r"^sha256:[a-f0-9]{64}$")
