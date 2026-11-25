@@ -606,3 +606,110 @@ async def test_funded_publication_issues_the_first_permit_through_native_tempora
             "SELECT id,estimated_amount,status FROM budget_reservations WHERE external_effect_id=%s",
             (binding.external_effect_id,),
         ).fetchall() == [(draft.budget_reservation_id, Decimal("0.1"), "settled")]
+
+
+@pytest.mark.asyncio
+async def test_mock_gateway_can_close_exact_predecessor_after_temporal_claim(
+    temporal_publication_source, tmp_path,
+):
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+
+    from salience.fixtures.publication_send_barrier import (
+        FixturePublicationBarrierScope,
+        FixturePublicationSend,
+        FixturePublicationSendBarrier,
+        verify_fixture_publication_no_effect,
+    )
+
+    client = await Client.connect(os.environ["TEST_TEMPORAL_TARGET"])
+    queue = f"claimed-fixture-gateway-{uuid4()}"
+    handle = await client.start_workflow(
+        GovernedPublicationWorkflow.run,
+        PublicationWorkflowRequest(scheduled_publication_schedule_id="prebound-fixture"),
+        id=queue, task_queue=queue,
+    )
+    case, _, _ = await asyncio.to_thread(
+        temporal_publication_source, handle.id, handle.first_execution_run_id,
+    )
+    original = case["request"]
+    binding = original.publication_binding
+    signer = Ed25519PrivateKey.generate()
+    scope = FixturePublicationBarrierScope(original.route.environment_id, "default", uuid4())
+    path = tmp_path / "mock-acceptance.sqlite"
+    gateway = FixturePublicationSendBarrier.create(path, scope=scope, signer=signer)
+
+    class AmbiguousGatewayPublisher(_RecordingPublisher):
+        send = None
+
+        async def submit(self, request, credential_lease):
+            self.submitted.append(request.idempotency_key)
+            info = activity.info()
+            assert (info.workflow_id, info.workflow_run_id) == (handle.id, handle.first_execution_run_id)
+            self.send = await asyncio.to_thread(self._register_send, request.idempotency_key)
+            raise RuntimeError("fixture lost the transport before the gateway accepted the send")
+
+        def _register_send(self, key):
+            with psycopg.connect(case["database"]) as connection:
+                claim, permit, fingerprint, generation = connection.execute(
+                    """SELECT claim.claim_id, permit.permit_id,
+                              encode(public.digest(permit.request_snapshot::text, 'sha256'), 'hex'),
+                              permit.generation
+                       FROM v4_production_current_dispatch pointer
+                       JOIN v4_production_effect_permits permit
+                         ON permit.permit_id = pointer.current_permit_id
+                       JOIN v4_production_effect_permit_claims claim
+                         ON claim.claim_id = pointer.current_claim_id
+                       WHERE pointer.operation_id = %s""", (original.operation_id,),
+                ).fetchone()
+            send = FixturePublicationSend(
+                original.operation_id, fingerprint, original.provider_id, str(original.account_id),
+                key, permit, claim, generation,
+            )
+            gateway.register_predecessor(send)
+            return send
+
+        async def reconcile(self, idempotency_key):
+            assert self.send.original_key == idempotency_key
+            return None
+
+    provider = AmbiguousGatewayPublisher(original.provider_id)
+    state = PublicationWorkflowState(
+        store=CanonicalJobStore(case["database"]),
+        repository=PublicationRepository(case["database"]),
+        cost_repository=CostReservationRepository(case["database"]),
+        publisher_adapters={original.provider_id: provider},
+        credential_lease_factory=lambda _request: _fixture_lease(),
+        production_dispatch=case["dispatch"],
+        production_permit_request_factory=lambda _approval, _publication: original,
+    )
+    stages = _PreboundPublicationActivities(state, case)
+    async with Worker(client, task_queue=queue, workflows=[GovernedPublicationWorkflow], activities=stages.activities):
+        with pytest.raises(WorkflowFailureError) as failure:
+            await asyncio.wait_for(handle.result(), 15)
+        assert isinstance(failure.value.cause, ActivityError)
+        assert isinstance(failure.value.cause.cause, ApplicationError)
+        assert failure.value.cause.cause.type == "ProductionPublicationLiabilityHeld"
+
+    assert provider.submitted == [original.idempotency_key]
+    proof = await asyncio.to_thread(gateway.close_predecessor, provider.send)
+    assert verify_fixture_publication_no_effect(
+        proof, scope=scope, expected_send=provider.send, public_key=signer.public_key(),
+    ) == proof
+    with pytest.raises(PermissionError, match="permanently closed"):
+        await asyncio.to_thread(
+            FixturePublicationSendBarrier(path, scope=scope, signer=signer).accept_predecessor, provider.send,
+        )
+    with psycopg.connect(case["database"]) as connection:
+        assert connection.execute(
+            """SELECT pointer.generation, pointer.current_permit_id, pointer.current_claim_id,
+                      effect.status, reservation.status
+               FROM v4_production_current_dispatch pointer
+               JOIN external_effects effect ON effect.id=%s
+               JOIN budget_reservations reservation ON reservation.id=%s
+               WHERE pointer.operation_id=%s""",
+            (binding.external_effect_id, original.budget_reservation_id, original.operation_id),
+        ).fetchone() == (1, provider.send.permit_id, provider.send.claim_id, "submitting", "reserved")
+        assert connection.execute(
+            "SELECT count(*) FROM remote_publication_receipts WHERE publication_attempt_id=%s",
+            (binding.publication_attempt_id,),
+        ).fetchone() == (0,)

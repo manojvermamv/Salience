@@ -1,6 +1,6 @@
 {
-  "baseline_commit": "799fd3c65d71c0c08553d619e56d4cc863a7cb34",
-  "scope": "Source and build-context inventory for P1 authenticated routed worker rehearsal.",
+  "baseline_commit": "cdddbf7deea01b8ca4579657ddedc6ddcd04c520",
+  "scope": "Source and build-context inventory for P1 claimed publication fixture send barrier.",
   "files": [
     {
       "path": ".dockerignore",
@@ -831,6 +831,10 @@
       "sha256": "30d16131bb9d7d91ca2ee8dd794a653e87660618c416c16dec418c58c4577a6b"
     },
     {
+      "path": "src/salience/fixtures/publication_send_barrier.py",
+      "sha256": "44e908140a21ff4aff96684becc9e2652194ec5057020bbb5cc0efb467c8f68f"
+    },
+    {
       "path": "src/salience/governance/__init__.py",
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
@@ -1388,7 +1392,7 @@
     },
     {
       "path": "tests/integration/test_p1_preclaim_publication_temporal.py",
-      "sha256": "b641ace0caf60610ddb9a0633db81c0390e2f22ae2dceb89b6ea94caa050e7c1"
+      "sha256": "2b08fd667a484d1fc81a736014043ff0ab2e5904951f37767e456905aa6d0a97"
     },
     {
       "path": "tests/integration/test_p1_preclaim_resume_db.py",
@@ -1677,6 +1681,10 @@
     {
       "path": "tests/unit/test_creative_workflow.py",
       "sha256": "b2cdac5cb7f2f960c35160d48a8e60868cbe968fafafcd61058c1ef0776cc265"
+    },
+    {
+      "path": "tests/unit/test_fixture_publication_send_barrier.py",
+      "sha256": "4aa47785418a0920f63f347ee1620828f9186a023bf9bf6527033fa88ba70d7c"
     },
     {
       "path": "tests/unit/test_intelligence_agents.py",
@@ -3294,5 +3302,10 @@
     "record_commit": "799fd3c65d71c0c08553d619e56d4cc863a7cb34",
     "record_path": "docs/v4/evidence-lock.json",
     "sha256": "8e30966727205375eb62f6c260f79bc81b887511abc0caf7c67916207d01b41c"
+  },
+  "preceding_p1_fixture_send_barrier_lock": {
+    "record_commit": "cdddbf7deea01b8ca4579657ddedc6ddcd04c520",
+    "record_path": "docs/v4/evidence-lock.json",
+    "sha256": "e7d129a5eb3de6b15e80d845b11af13ef83ffc6412888a6de67ea8720924dc8d"
   }
 }

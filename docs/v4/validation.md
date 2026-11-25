@@ -117,6 +117,12 @@ An empty publication lookup remains unknown while the predecessor may still send
 
 If a publication activity fails after PostgreSQL stores its remote receipt, the original Temporal run can retry under the current claimed permit and reconciliation authority. The activity verifies the original run, attempt and effect, then reads the existing receipt. A mismatch or expired authority keeps the liability held. Effect completion and the acceptance checkpoint commit together, so losing a reply after that transaction leaves one acceptance checkpoint and one effect record. The regression drives the production-shaped workflow through Temporal and PostgreSQL with a recording publisher and checks that the original operation submits only once.
 
+### Fixture publication send finality
+
+The isolated mock sink serializes acceptance and permanent closure in one SQLite transaction. It signs proof only after closing a registered, unaccepted predecessor. The signature binds the fixture environment, namespace, barrier, provider account, original key, request fingerprint, operation, permit and claim. Verification takes the expected scope, predecessor, and public key independently. The fixture assumes one authoritative store per barrier identity and that every mock send goes through that store.
+
+The Temporal and PostgreSQL regression reads the exact original claim after a simulated lost send, verifies the closure proof, and sees a late predecessor attempt denied after reopening the store. The original permit, claim and reservation remain attached to the unresolved publication. A live-run continuation, protected proof consumption, and a deployed gateway with an authoritative closure contract remain open.
+
 ### Independent current route trust
 
 The injected launcher composition supplies the expected digest separately from the candidate lock and its companion digest. The launcher compares it before claiming a route slot and passes it to the isolated subprocess, which verifies the lock, installed application pins and exact database migration head.
