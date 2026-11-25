@@ -446,6 +446,19 @@ class ProductionPermitResult:
 
 
 @dataclass(frozen=True, slots=True)
+class FixturePublicationHoldWait:
+    predecessor: tuple[UUID, UUID, int, str, str]
+    duration: timedelta
+    deadline: datetime
+
+    def __post_init__(self) -> None:
+        if not timedelta() < self.duration <= timedelta(minutes=2):
+            raise ValueError("bounded fixture publication wait duration required")
+        if self.deadline.utcoffset() is None:
+            raise ValueError("absolute fixture publication wait deadline required")
+
+
+@dataclass(frozen=True, slots=True)
 class _AuthorityFacts:
     workspace_id: UUID
     goal_id: UUID
@@ -1058,6 +1071,8 @@ class ProductionEffectDispatch:
         publication_request_id: UUID | str,
         action_kind: str,
         reason_code: str,
+        *,
+        fixture_wait: FixturePublicationHoldWait | None = None,
     ) -> bool:
         """Append an immutable hold event for an already claimed publication."""
         try:
@@ -1068,8 +1083,39 @@ class ProductionEffectDispatch:
             raise ValueError("bounded production action kind required")
         safe_reason = reason_code if reason_code in _REASON_CODES else "other"
         return self._record_publication_liability_held(
-            publication_request_id, action_kind, safe_reason
+            publication_request_id, action_kind, safe_reason,
+            fixture_wait=fixture_wait,
         )
+
+    def fixture_publication_wait_deadline(
+        self,
+        publication_request_id: UUID,
+        predecessor: tuple[UUID, UUID, int, str, str],
+    ) -> datetime | None:
+        operation, permit, generation, workflow_id, run_id = predecessor
+        with psycopg.connect(self.database_url, row_factory=dict_row) as connection:
+            row = connection.execute(
+                """SELECT (event.payload->>'fixture_wait_until')::timestamptz AS deadline
+                   FROM public.v4_production_effect_permits permit
+                   JOIN public.v4_production_effect_permit_claims claim
+                     ON claim.operation_id=permit.operation_id AND claim.permit_id=permit.permit_id
+                    AND claim.generation=permit.generation
+                   JOIN public.v4_cycle_events event ON event.cycle_id=permit.cycle_id
+                    AND event.payload->>'operation_id'=permit.operation_id::text
+                    AND event.payload->>'permit_id'=permit.permit_id::text
+                    AND event.payload->>'claim_id'=claim.claim_id::text
+                    AND event.payload->>'publication_request_id'=permit.request_snapshot->>'publication_request_id'
+                   WHERE permit.operation_id=%s AND permit.permit_id=%s AND permit.generation=%s
+                     AND permit.request_snapshot->>'publication_request_id'=%s
+                     AND permit.request_snapshot->>'workflow_id'=%s
+                     AND permit.request_snapshot->>'workflow_run_id'=%s
+                     AND event.kind='production_publication_liability_held'
+                     AND event.payload->>'action'='reconcile'
+                     AND event.payload->>'reason_code'='reconciliation_unresolved'
+                     AND event.payload ? 'fixture_wait_until'""",
+                (operation, permit, generation, str(publication_request_id), workflow_id, run_id),
+            ).fetchone()
+        return row["deadline"] if row is not None else None
 
     def cancel_unsubmitted_publication(
         self,
@@ -1337,6 +1383,8 @@ class ProductionEffectDispatch:
         publication_request_id: UUID,
         action_kind: str,
         reason_code: str,
+        *,
+        fixture_wait: FixturePublicationHoldWait | None = None,
     ) -> bool:
         with psycopg.connect(self.database_url, row_factory=dict_row) as connection:
             with connection.transaction():
@@ -1380,7 +1428,7 @@ class ProductionEffectDispatch:
                 if claim_id is None:
                     return False
                 claim = connection.execute(
-                    """SELECT claim_id FROM public.v4_production_effect_permit_claims
+                    """SELECT claim_id,claimed_at FROM public.v4_production_effect_permit_claims
                        WHERE claim_id=%s AND operation_id=%s AND permit_id=%s
                          AND generation=%s FOR UPDATE""",
                     (claim_id, operation_id, permit_id, pointer["generation"]),
@@ -1391,6 +1439,11 @@ class ProductionEffectDispatch:
                 binding = request.publication_binding
                 if binding is None or binding.publication_request_id != publication_request_id:
                     raise ProductionAuthorizationDenied("invalid_binding")
+                if fixture_wait is not None and fixture_wait.predecessor != (
+                    operation_id, permit_id, pointer["generation"],
+                    binding.workflow_id, binding.workflow_run_id,
+                ):
+                    return False
 
                 request_row = connection.execute(
                     """SELECT id FROM public.publication_requests
@@ -1414,9 +1467,11 @@ class ProductionEffectDispatch:
                     (binding.publication_attempt_id, binding.publication_plan_id),
                 ).fetchone()
                 effect_id = plan["external_effect_id"] if plan is not None else None
+                effect = None
                 if effect_id is not None:
-                    connection.execute(
-                        "SELECT id FROM public.external_effects WHERE id=%s FOR UPDATE",
+                    effect = connection.execute(
+                        """SELECT job_id,idempotency_key,status,provider_reference,attempted_at,completed_at
+                           FROM public.external_effects WHERE id=%s FOR UPDATE""",
                         (effect_id,),
                     ).fetchone()
                 receipt = None
@@ -1433,6 +1488,23 @@ class ProductionEffectDispatch:
                                WHERE remote_publication_receipt_id=%s FOR UPDATE""",
                             (receipt["id"],),
                         ).fetchone()
+                if fixture_wait is not None and (
+                    request_row is None
+                    or current_plan is None
+                    or current_plan["id"] != binding.publication_plan_id
+                    or attempt is None
+                    or effect_id != binding.external_effect_id
+                    or effect is None
+                    or effect["job_id"] != binding.job_id
+                    or effect["idempotency_key"] != f"{request.idempotency_key}:publish"
+                    or effect["status"] not in {"submitting", "unknown"}
+                    or effect["provider_reference"] is not None
+                    or effect["attempted_at"] is None
+                    or effect["attempted_at"] < claim["claimed_at"]
+                    or effect["completed_at"] is not None
+                    or receipt is not None
+                ):
+                    return False
                 cycle = connection.execute(
                     """SELECT cycle.id AS cycle_id,cycle.intent_id,goal.workspace_id,
                               goal.id AS goal_id,context.payload->>'traceparent' AS traceparent
@@ -1446,6 +1518,7 @@ class ProductionEffectDispatch:
                 if cycle is None:
                     raise ProductionAuthorizationDenied("current_operation_missing")
 
+                held_at = self._database_time(connection)
                 payload = {
                     "schema_version": "salience.p1-production-publication-liability-held.v1",
                     "operation_id": str(operation_id),
@@ -1481,10 +1554,15 @@ class ProductionEffectDispatch:
                     "remote_id": receipt["remote_id"] if receipt is not None else None,
                     "remote_receipt_state": receipt["state"] if receipt is not None else None,
                     "publication_id": str(publication["id"]) if publication is not None else None,
-                    "held_at": self._database_time(connection).astimezone(timezone.utc).isoformat(),
+                    "held_at": held_at.astimezone(timezone.utc).isoformat(),
                 }
+                if fixture_wait is not None:
+                    wait_until = min(held_at + fixture_wait.duration, fixture_wait.deadline, request.execution_deadline)
+                    if wait_until <= held_at:
+                        return False
+                    payload["fixture_wait_until"] = wait_until.isoformat()
                 prior = connection.execute(
-                    """SELECT id FROM public.v4_cycle_events
+                    """SELECT payload ? 'fixture_wait_until' AS fixture_wait FROM public.v4_cycle_events
                        WHERE cycle_id=%s AND kind='production_publication_liability_held'
                          AND payload->>'operation_id'=%s
                          AND payload->>'permit_id'=%s
@@ -1502,7 +1580,7 @@ class ProductionEffectDispatch:
                     ),
                 ).fetchone()
                 if prior is not None:
-                    return True
+                    return fixture_wait is None or prior["fixture_wait"]
                 traceparent = cycle["traceparent"] or (
                     f"00-{operation_id.hex}-{permit_id.hex[:16]}-01"
                 )

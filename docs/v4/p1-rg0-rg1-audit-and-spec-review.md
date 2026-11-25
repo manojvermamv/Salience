@@ -707,3 +707,17 @@ This update records exact mock predecessor closure and the canonical hold after 
 | `README.md` | `dbfa93b10cc65da969f363d7186a53d94f7190ffcefd55b3f326a65650c7709e` |
 | `docs/v4/evidence-lock.json` | `d8d2e07060c847e763fe8166ec1d7933c7d08c6db1b6a28e2d469f855fa26013` |
 | `docs/v4/p1-qualification-matrix.json` | `26b63d6f0a6929981632196071dccc05b3ab1ee30985bcc2454fa1b73d433bb0` |
+
+## P1 original-run claimed recovery wait evidence hashes — 2026-11-25
+
+This update records the original-run wait for an exact claimed publication and the primary-clock recovery read fence. [Verification and scope](validation.md#claimed-publication-recovery-wait)
+
+| Path | SHA-256 |
+| --- | --- |
+| `docs/v4/IMPLEMENTATION-BLUEPRINT.md` | `2ff03f5c38ff564a50a5722f4774363e4757d8bfac02e80ccd1d8fabc764ac3b` |
+| `docs/v4/progress.md` | `ef0f0491d702f067a8eb5705e3843a0ea8747f9a3cb46deb28ebfad0cb26962a` |
+| `docs/v4/validation.md` | `107ef26e17888a31e93c569ab43b2005fd840d727a3542aad41d33342e18838c` |
+| `docs/v4/test_checks.py` | `8cb3e0877d87a1507d9fe8f3ab952e02d98737383fea33496af5e92b4eefb5a7` |
+| `README.md` | `dbfa93b10cc65da969f363d7186a53d94f7190ffcefd55b3f326a65650c7709e` |
+| `docs/v4/evidence-lock.json` | `351b907646bd2a192daf62e0e9c9cddd2d46fb694e96c7818261ccd88b4a0745` |
+| `docs/v4/p1-qualification-matrix.json` | `dde36cdd28edb9bb96955797bbbb57b754d699530a044233a9c76154a1a9c22a` |

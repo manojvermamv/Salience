@@ -3,7 +3,7 @@
 from importlib import import_module
 from contextlib import contextmanager
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import fields
+from dataclasses import fields, replace
 from datetime import datetime, timedelta, timezone
 from hashlib import sha256
 import os
@@ -597,6 +597,79 @@ def test_authority_and_stop_races():
                 "SELECT state FROM v4_production_recovery_work WHERE work_id=%s",
                 (work.work_id,),
             ).fetchone()[0] == "reconciling"
+
+
+@pytest.mark.parametrize("expiry_stage", ["before_provider", "during_setup", "during_provider"])
+def test_recovery_read_grant_expiry_uses_the_primary_clock(expiry_stage):
+    module = import_module("salience.cycles.production_recovery")
+    with _production_recovery_operation("p1_read_grant_expiry_") as (
+        database, _fixture, owner, _enrollment,
+    ):
+        repository = module.ProductionRecoveryWorkRepository(database)
+        work = _case_work(repository, owner, module)
+        context = _read_context(repository, module, work)
+
+        def wait_for_expiry(grant):
+            with psycopg.connect(database) as connection:
+                connection.execute(
+                    "SELECT pg_sleep(greatest(0, extract(epoch FROM (%s - clock_timestamp()))) + 0.01)",
+                    (grant.expires_at,),
+                )
+
+        grants = []
+
+        class ShortReadAuthority(_RecoveryAuthority):
+            def authorize_remote_read(self, work, context):
+                grant = super().authorize_remote_read(work, context)
+                with psycopg.connect(database) as connection:
+                    expiry = connection.execute("SELECT clock_timestamp() + interval '0.3 seconds'").fetchone()[0]
+                grant = replace(grant, expires_at=expiry)
+                grants.append(grant)
+                if expiry_stage == "before_provider":
+                    wait_for_expiry(grant)
+                return grant
+
+        target = _ReadTarget(
+            _exact_observation(module, work, context, result="succeeded"),
+            on_read=lambda request: wait_for_expiry(request.read_grant),
+        )
+        factory_calls = []
+
+        def target_factory(provider):
+            factory_calls.append(provider)
+            if expiry_stage == "during_setup":
+                wait_for_expiry(grants[0])
+            return target
+
+        coordinator = module.ProductionRecoveryCoordinator(
+            repository,
+            remote_target_factory=target_factory,
+            authority=ShortReadAuthority(module),
+            provider_contracts={work.target_alias: context.provider_contract},
+        )
+        if expiry_stage != "during_provider":
+            with pytest.raises(PermissionError, match="current grant"):
+                coordinator.reconcile(work.work_id)
+            assert factory_calls == ([work.target_alias] if expiry_stage == "during_setup" else [])
+            assert target.requests == []
+        else:
+            result = coordinator.reconcile(work.work_id)
+            assert result.result_class == "held"
+            assert result.remote_state is None
+            assert len(target.requests) == 1
+            assert coordinator.reconcile(work.work_id) == result
+            assert len(target.requests) == 1
+            with psycopg.connect(database) as connection:
+                kind, payload = connection.execute(
+                    "SELECT event_kind, payload FROM v4_production_recovery_events WHERE event_id=%s",
+                    (result.event_id,),
+                ).fetchone()
+            assert kind == "stop_revocation_fence"
+            assert payload["reason_code"] == "authority_changed_during_read"
+            assert payload["evidence_sha256"] != target.observation.response_sha256
+            assert payload["policy_revision"] == grants[0].policy_revision
+            assert payload["stop_revision"] == grants[0].stop_revision
+            assert repository.get_work(work.work_id).state == "reconciling"
 
 
 def test_result_classification():

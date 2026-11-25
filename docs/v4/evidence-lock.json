@@ -1,6 +1,6 @@
 {
-  "baseline_commit": "cdddbf7deea01b8ca4579657ddedc6ddcd04c520",
-  "scope": "Source and build-context inventory for P1 claimed publication fixture send barrier.",
+  "baseline_commit": "c47ea65f991409d68d0af4e77f6ca1daa95c7bd7",
+  "scope": "Source and build-context inventory for P1 original-run claimed recovery wait.",
   "files": [
     {
       "path": ".dockerignore",
@@ -652,7 +652,7 @@
     },
     {
       "path": "src/salience/cycles/_production_recovery_coordinator.py",
-      "sha256": "c0565b1bdb7c3483b9c468e3661da62597df05f66383a48705c034a3c29d854a"
+      "sha256": "44c551d32ffc673e8a6bf10d6e907bff5e75ddcaaf91c6c6fdf973d29ed21b04"
     },
     {
       "path": "src/salience/cycles/_production_recovery_work.py",
@@ -744,7 +744,7 @@
     },
     {
       "path": "src/salience/cycles/production_dispatch.py",
-      "sha256": "d1f3ae5484b1050a10e90b624fb414b7e1ec7b88179c8b0ee90b9f2b8732e484"
+      "sha256": "4263e227ca4a4f2f51d60fcf6667b18dabd8199155668baf19b9c7042a073c75"
     },
     {
       "path": "src/salience/cycles/production_intent_enrollment.py",
@@ -1096,7 +1096,7 @@
     },
     {
       "path": "src/salience/workflows/publication.py",
-      "sha256": "5f3b5f9761d90e1c311de3966e9a6ad9622bc57fdf54c2e151e772166ed5b874"
+      "sha256": "d37807bd4d02839220ef6fb21065a0ee890befe18aa4bccf64613aeab0d55e6c"
     },
     {
       "path": "src/salience/workflows/schedules.py",
@@ -1392,7 +1392,7 @@
     },
     {
       "path": "tests/integration/test_p1_preclaim_publication_temporal.py",
-      "sha256": "2b08fd667a484d1fc81a736014043ff0ab2e5904951f37767e456905aa6d0a97"
+      "sha256": "7211bd4d61e01473e0455568890d910e4abbdee040b7b9db1bd2078e189b8de0"
     },
     {
       "path": "tests/integration/test_p1_preclaim_resume_db.py",
@@ -1408,7 +1408,7 @@
     },
     {
       "path": "tests/integration/test_p1_production_recovery.py",
-      "sha256": "f286b34e00ff2f19eec657f0c5f3e262bf925723ef91f7771204d95d39370ca8"
+      "sha256": "16df1b3ed3c986a102f8ddcfa049a71ba5fe24b6417f3edd97c16500a5905473"
     },
     {
       "path": "tests/integration/test_p1_production_recovery_case_commands.py",
@@ -3307,5 +3307,10 @@
     "record_commit": "cdddbf7deea01b8ca4579657ddedc6ddcd04c520",
     "record_path": "docs/v4/evidence-lock.json",
     "sha256": "e7d129a5eb3de6b15e80d845b11af13ef83ffc6412888a6de67ea8720924dc8d"
+  },
+  "preceding_p1_claimed_wait_lock": {
+    "record_commit": "c47ea65f991409d68d0af4e77f6ca1daa95c7bd7",
+    "record_path": "docs/v4/evidence-lock.json",
+    "sha256": "d8d2e07060c847e763fe8166ec1d7933c7d08c6db1b6a28e2d469f855fa26013"
   }
 }

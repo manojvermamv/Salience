@@ -11,7 +11,7 @@ from uuid import uuid4
 import psycopg
 import pytest
 from temporalio import activity
-from temporalio.client import Client, WorkflowFailureError
+from temporalio.client import Client, WorkflowExecutionStatus, WorkflowFailureError
 from temporalio.exceptions import ActivityError, ApplicationError
 from temporalio.worker import Replayer, Worker
 
@@ -609,8 +609,12 @@ async def test_funded_publication_issues_the_first_permit_through_native_tempora
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "wait_outcome", [None, "timeout", "cancel", "lost-reply"],
+    ids=["default-hold", "original-run-wait", "cancel-signal", "lost-hold-reply"],
+)
 async def test_mock_gateway_can_close_exact_predecessor_after_temporal_claim(
-    temporal_publication_source, tmp_path,
+    temporal_publication_source, tmp_path, wait_outcome,
 ):
     from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
@@ -640,6 +644,7 @@ async def test_mock_gateway_can_close_exact_predecessor_after_temporal_claim(
 
     class AmbiguousGatewayPublisher(_RecordingPublisher):
         send = None
+        reconciled = []
 
         async def submit(self, request, credential_lease):
             self.submitted.append(request.idempotency_key)
@@ -670,6 +675,7 @@ async def test_mock_gateway_can_close_exact_predecessor_after_temporal_claim(
 
         async def reconcile(self, idempotency_key):
             assert self.send.original_key == idempotency_key
+            self.reconciled.append(idempotency_key)
             return None
 
     provider = AmbiguousGatewayPublisher(original.provider_id)
@@ -682,23 +688,85 @@ async def test_mock_gateway_can_close_exact_predecessor_after_temporal_claim(
         production_dispatch=case["dispatch"],
         production_permit_request_factory=lambda _approval, _publication: original,
     )
-    stages = _PreboundPublicationActivities(state, case)
-    async with Worker(client, task_queue=queue, workflows=[GovernedPublicationWorkflow], activities=stages.activities):
-        with pytest.raises(WorkflowFailureError) as failure:
-            await asyncio.wait_for(handle.result(), 15)
-        assert isinstance(failure.value.cause, ActivityError)
-        assert isinstance(failure.value.cause.cause, ApplicationError)
-        assert failure.value.cause.cause.type == "ProductionPublicationLiabilityHeld"
+    if wait_outcome is not None:
+        state.fixture_claimed_publication_waits = {
+            (original.operation_id, case["opening_permit_id"], 1,
+             handle.id, handle.first_execution_run_id): timedelta(seconds=5),
+        }
+    class ClaimedHoldActivities(_PreboundPublicationActivities):
+        attempts = []
+
+        @activity.defn(name="salience.publication.submit_or_reconcile")
+        async def submit_or_reconcile(self, payload: dict) -> dict:
+            self.attempts.append(activity.info().attempt)
+            result = await super().submit_or_reconcile(payload)
+            if wait_outcome == "lost-reply" and activity.info().attempt == 2:
+                assert result["fixture_claimed_publication_hold"]
+                await asyncio.to_thread(self._expire_predecessor)
+                raise RuntimeError("fixture lost the activity reply after committing the exact hold")
+            return result
+
+    stages = ClaimedHoldActivities(state, case)
+
+    async def close_exact_predecessor():
+        proof = await asyncio.to_thread(gateway.close_predecessor, provider.send)
+        assert verify_fixture_publication_no_effect(
+            proof, scope=scope, expected_send=provider.send, public_key=signer.public_key(),
+        ) == proof
+        with pytest.raises(PermissionError, match="permanently closed"):
+            await asyncio.to_thread(
+                FixturePublicationSendBarrier(path, scope=scope, signer=signer).accept_predecessor, provider.send,
+            )
+
+    worker_options = dict(
+        task_queue=queue, workflows=[GovernedPublicationWorkflow], activities=stages.activities,
+        sticky_queue_schedule_to_start_timeout=timedelta(seconds=1),
+    )
+    if wait_outcome is not None:
+        async def wait_for_recovery_timer():
+            while (description := await handle.describe()).status == WorkflowExecutionStatus.RUNNING:
+                events = (await handle.fetch_history()).events
+                if any(event.HasField("timer_started_event_attributes") for event in events):
+                    return description.run_id
+                await asyncio.sleep(0.05)
+            pytest.fail(f"The original run reached {description.status.name} before starting the recovery timer")
+
+        async with Worker(client, **worker_options):
+            assert await asyncio.wait_for(wait_for_recovery_timer(), 10) == handle.first_execution_run_id
+            assert provider.prepared == provider.submitted == provider.reconciled == [original.idempotency_key]
+        async with Worker(client, **worker_options):
+            restarted = await handle.describe()
+            assert (restarted.run_id, restarted.status) == (handle.first_execution_run_id, WorkflowExecutionStatus.RUNNING)
+            await close_exact_predecessor()
+            after_closure = await handle.describe()
+            assert (after_closure.run_id, after_closure.status) == (restarted.run_id, WorkflowExecutionStatus.RUNNING)
+            if wait_outcome in {"cancel", "lost-reply"}:
+                await handle.signal(GovernedPublicationWorkflow.request_cancellation)
+            result = await asyncio.wait_for(handle.result(), 15)
+            assert result.publication_state == "ambiguous_requires_reconciliation"
+            assert result.publication_attempt_id == str(binding.publication_attempt_id)
+        history = await handle.fetch_history()
+        assert [
+            event.activity_task_scheduled_event_attributes.activity_type.name
+            for event in history.events if event.HasField("activity_task_scheduled_event_attributes")
+        ] == [
+            "salience.publication.request", "salience.publication.authorize",
+            "salience.publication.delivery", "salience.publication.submit_or_reconcile",
+        ]
+        await Replayer(workflows=[GovernedPublicationWorkflow]).replay_workflow(history)
+        assert provider.reconciled == [original.idempotency_key]
+        if wait_outcome == "lost-reply":
+            assert stages.attempts == [1, 2, 3]
+    else:
+        async with Worker(client, **worker_options):
+            with pytest.raises(WorkflowFailureError) as failure:
+                await asyncio.wait_for(handle.result(), 15)
+            assert isinstance(failure.value.cause, ActivityError)
+            assert isinstance(failure.value.cause.cause, ApplicationError)
+            assert failure.value.cause.cause.type == "ProductionPublicationLiabilityHeld"
+        await close_exact_predecessor()
 
     assert provider.submitted == [original.idempotency_key]
-    proof = await asyncio.to_thread(gateway.close_predecessor, provider.send)
-    assert verify_fixture_publication_no_effect(
-        proof, scope=scope, expected_send=provider.send, public_key=signer.public_key(),
-    ) == proof
-    with pytest.raises(PermissionError, match="permanently closed"):
-        await asyncio.to_thread(
-            FixturePublicationSendBarrier(path, scope=scope, signer=signer).accept_predecessor, provider.send,
-        )
     with psycopg.connect(case["database"]) as connection:
         assert connection.execute(
             """SELECT pointer.generation, pointer.current_permit_id, pointer.current_claim_id,
@@ -713,3 +781,8 @@ async def test_mock_gateway_can_close_exact_predecessor_after_temporal_claim(
             "SELECT count(*) FROM remote_publication_receipts WHERE publication_attempt_id=%s",
             (binding.publication_attempt_id,),
         ).fetchone() == (0,)
+        assert connection.execute(
+            """SELECT payload->>'permit_id',payload->>'claim_id',payload->>'reason_code'
+               FROM v4_cycle_events WHERE cycle_id=%s AND kind='production_publication_liability_held'""",
+            (original.cycle_id,),
+        ).fetchall() == [(str(provider.send.permit_id), str(provider.send.claim_id), "reconciliation_unresolved")]

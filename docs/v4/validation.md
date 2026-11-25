@@ -121,7 +121,13 @@ If a publication activity fails after PostgreSQL stores its remote receipt, the 
 
 The isolated mock sink serializes acceptance and permanent closure in one SQLite transaction. It signs proof only after closing a registered, unaccepted predecessor. The signature binds the fixture environment, namespace, barrier, provider account, original key, request fingerprint, operation, permit and claim. Verification takes the expected scope, predecessor, and public key independently. The fixture assumes one authoritative store per barrier identity and that every mock send goes through that store.
 
-The Temporal and PostgreSQL regression reads the exact original claim after a simulated lost send, verifies the closure proof, and sees a late predecessor attempt denied after reopening the store. The original permit, claim and reservation remain attached to the unresolved publication. A live-run continuation, protected proof consumption, and a deployed gateway with an authoritative closure contract remain open.
+The Temporal and PostgreSQL regression reads the exact original claim after a simulated lost send, verifies the closure proof, and sees a late predecessor attempt denied after reopening the store. The original permit, claim and reservation remain attached to the unresolved publication. Protected proof consumption, the forward handoff to a live run, and a deployed gateway with an authoritative closure contract remain open.
+
+### Claimed publication recovery wait
+
+An explicitly enrolled isolated fixture worker can keep the original Temporal run open after an inconclusive lookup for an exact claimed publication. The worker persists the canonical liability hold and absolute wait deadline before returning the wait state. If the activity reply is lost, the retry reads that deadline and resumes the hold before any further provider read. The wait is bounded by the configured interval, the original execution deadline, and the approval deadline. A cancellation signal ends the wait with the liability held. The wait issues no successor permit and performs no provider mutation.
+
+The recovery coordinator reads the PostgreSQL primary clock after obtaining an exact grant, again immediately before provider dispatch, and after rechecking authority. Expiry before dispatch prevents the provider read. Expiry during the read records a held event with a safe digest and the original policy and stop revisions. It does not record a successful observation or settle the liability.
 
 ### Independent current route trust
 

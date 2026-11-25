@@ -218,6 +218,7 @@ class ProductionRecoveryCoordinator:
             grant = self.authority.authorize_remote_read(work, context)
             if not isinstance(grant, ProductionScopedReadGrant):
                 raise PermissionError("typed exact read grant required")
+            now = connection.execute("SELECT clock_timestamp() AS now").fetchone()["now"]
             if (
                 grant.provider_id != work.target_alias
                 or grant.account_id != work.remote_account_id
@@ -242,6 +243,8 @@ class ProductionRecoveryCoordinator:
             target = self.remote_target_factory(work.target_alias)
             if not callable(getattr(target, "read_operation", None)):
                 raise RecoveryProviderReadDenied("remote target exposes only the exact read operation")
+            if grant.expires_at <= connection.execute("SELECT clock_timestamp() AS now").fetchone()["now"]:
+                raise PermissionError("current grant expired before the provider read")
             observation = None
             read_error = False
             try:
@@ -250,20 +253,31 @@ class ProductionRecoveryCoordinator:
                 # A transport failure is evidence of uncertainty, never permission
                 # to issue or retry a business effect.
                 read_error = True
+            authority_rechecked = False
             try:
                 self.authority.recheck_remote_read(work, grant)
             except Exception:
+                pass
+            else:
+                authority_rechecked = True
+            current_time = connection.execute("SELECT clock_timestamp() AS now").fetchone()["now"]
+            if not authority_rechecked or grant.expires_at <= current_time:
+                safe_digest = self._identity_digest(
+                    observation if isinstance(observation, ProductionRemoteObservation) else None
+                )
                 payload = {
                     "schema_version": "salience.p1-production-recovery-read.v1",
                     "reason_code": "authority_changed_during_read",
                     "result_class": "held",
-                    "evidence_sha256": self._identity_digest(observation),
-                    "remote_identity_sha256": self._identity_digest(observation),
+                    "evidence_sha256": safe_digest,
+                    "remote_identity_sha256": safe_digest,
                     "request_fingerprint": work.request_fingerprint,
                     "operation_id": str(work.operation_id),
                     "intent_id": str(work.intent_id),
                     "work_id": str(work.work_id),
                     "source_id": str(work.source_id),
+                    "policy_revision": grant.policy_revision,
+                    "stop_revision": grant.stop_revision,
                     "event_key": context.idempotency_key,
                 }
                 if work.case_id is not None:
@@ -278,7 +292,6 @@ class ProductionRecoveryCoordinator:
                 )
                 return self._read_event_result(event)
 
-            current_time = connection.execute("SELECT clock_timestamp() AS now").fetchone()["now"]
             exact = isinstance(observation, ProductionRemoteObservation) and self._matches(
                 work, context, observation
             )

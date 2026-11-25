@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime, timedelta
 from collections.abc import Callable, Mapping
 from types import SimpleNamespace
@@ -18,6 +18,7 @@ from temporalio.exceptions import ActivityError, ApplicationError
 from temporalio.worker import Worker
 
 from salience.cycles.production_dispatch import (
+    FixturePublicationHoldWait,
     ProductionAuthorizationDenied,
     ProductionEffectDispatch,
     PublicationEffectBinding,
@@ -54,6 +55,8 @@ PUBLICATION_POLL_INTERVAL_SECONDS = 0.05
 PRECLAIM_RESUME_WAIT = timedelta(minutes=2)
 PRECLAIM_RESUME_POLL_INTERVAL = timedelta(seconds=2)
 PRECLAIM_RESUME_OUTCOME_UNKNOWN = "preclaim_resume_outcome_unknown"
+CLAIMED_FIXTURE_WAIT_MAXIMUM = timedelta(minutes=2)
+CLAIMED_FIXTURE_WAIT_REASON = "reconciliation_unresolved"
 
 
 class _PreclaimPermitExpired(str):
@@ -146,6 +149,11 @@ class PublicationWorkflowState:
     # A worker deployment may opt in only for explicitly verified nonmutating
     # prepare_delivery implementations, keyed by publisher, adapter, and profile versions.
     preclaim_resume_delivery_profiles: frozenset[tuple[str, str, int]] = frozenset()
+    # An isolated fixture worker can opt in an exact operation, permit, generation,
+    # workflow ID and run ID. This setting only extends the workflow's availability.
+    fixture_claimed_publication_waits: Mapping[tuple[UUID, UUID, int, str, str], timedelta] = field(
+        default_factory=dict
+    )
 
 
 @dataclass(frozen=True)
@@ -447,6 +455,8 @@ class PublicationActivities:
         payload: dict[str, Any],
         action_kind: str,
         reason_code: str,
+        *,
+        fixture_wait: FixturePublicationHoldWait | None = None,
     ) -> bool:
         dispatch = self._state.production_dispatch
         if dispatch is None:
@@ -474,6 +484,7 @@ class PublicationActivities:
                 publication_request_id,
                 action_kind,
                 reason_code,
+                **({"fixture_wait": fixture_wait} if fixture_wait is not None else {}),
             )
         except (KeyError, TypeError, ValueError, ProductionAuthorizationDenied) as error:
             raise ApplicationError(
@@ -487,13 +498,73 @@ class PublicationActivities:
                 type="ProductionPublicationLiabilityHeld",
                 non_retryable=True,
             ) from error
-        if held:
+        if held and fixture_wait is None:
             raise ApplicationError(
                 "production publication liability is held after authorization denial",
                 type="ProductionPublicationLiabilityHeld",
                 non_retryable=True,
             )
-        return False
+        return held
+
+    async def _hold_claimed_fixture_for_wait(
+        self,
+        payload: dict[str, Any],
+        request: PublicationRequest,
+        run: CanonicalRun,
+        *,
+        current: CurrentPublicationAuthorization | None = None,
+    ) -> dict[str, Any] | None:
+        wait = payload.get("fixture_claimed_publication_wait")
+        dispatch = self._state.production_dispatch
+        if wait is None or dispatch is None:
+            return None
+        info = activity.info()
+        if info.workflow_run_id != run.workflow_run_id or wait["generation"] != 1:
+            return None
+        key = (
+            UUID(payload["production_operation_id"]), UUID(payload["production_permit_id"]),
+            wait["generation"], info.workflow_id, info.workflow_run_id,
+        )
+        if current is not None:
+            binding = current.approval_binding
+            duration = self._state.fixture_claimed_publication_waits.get(key)
+            if (
+                binding is None or binding.job_id != run.job_id
+                or binding.workflow_id != info.workflow_id or binding.workflow_run_id != info.workflow_run_id
+                or current.remote_receipt_id is not None
+                or current.external_effect_state not in {"submitting", "unknown"}
+                or not isinstance(duration, timedelta)
+                or not timedelta() < duration <= CLAIMED_FIXTURE_WAIT_MAXIMUM
+            ):
+                return None
+            held = await self._hold_publication_liability_if_claimed(
+                payload, "reconcile", CLAIMED_FIXTURE_WAIT_REASON,
+                fixture_wait=FixturePublicationHoldWait(key, duration, datetime.fromisoformat(wait["deadline"])),
+            )
+            if not held:
+                return None
+        elif info.attempt <= 1:
+            return None
+        deadline = await asyncio.to_thread(
+            dispatch.fixture_publication_wait_deadline, UUID(request.id), key,
+        )
+        if deadline is None:
+            return None
+        return {
+            **payload,
+            "fixture_claimed_publication_hold": {
+                "deadline": deadline.isoformat(),
+                "result": asdict(PublicationWorkflowResult(
+                    publication_state="ambiguous_requires_reconciliation",
+                    job_id=str(run.job_id),
+                    trace_id=run.trace_context.trace_id,
+                    publication_request_id=request.id,
+                    publication_plan_id=payload["publication_plan_id"],
+                    publication_attempt_id=payload["publication_attempt_id"],
+                    denial_reason=CLAIMED_FIXTURE_WAIT_REASON,
+                )),
+            },
+        }
 
     async def _production_action_current(
         self, payload: dict[str, Any], action_kind: str, *,
@@ -1079,6 +1150,12 @@ class PublicationActivities:
 
         if self._preclaim_resume_delivery_allowed(request) and permit.generation == 1 and permit.claim_id is None:
             canonical["production_preclaim_resume_until"] = permit_request.execution_deadline.isoformat()
+        key = (permit.operation_id, permit.permit_id, 1, info.workflow_id, info.workflow_run_id)
+        if key in self._state.fixture_claimed_publication_waits and permit.generation == 1:
+            canonical["fixture_claimed_publication_wait"] = {
+                "generation": permit.generation,
+                "deadline": min(permit_request.execution_deadline, binding.expires_at).isoformat(),
+            }
         await self._checkpoint("publication.authorization.checked")
         return {
             **canonical,
@@ -1197,6 +1274,10 @@ class PublicationActivities:
     async def submit_or_reconcile(self, payload: dict[str, Any]) -> dict[str, Any]:
         run = await self._run()
         request = PublicationRequest.model_validate(payload["request"])
+        # The prior activity may have committed the hold before losing its reply.
+        held_for_wait = await self._hold_claimed_fixture_for_wait(payload, request, run)
+        if held_for_wait is not None:
+            return held_for_wait
         fixture_adapter = self._is_fixture_adapter(request)
         effect_key = f"{request.idempotency_key}:publish"
         current: CurrentPublicationAuthorization | None = None
@@ -1316,8 +1397,11 @@ class PublicationActivities:
             receipt = await adapter.reconcile(request.idempotency_key)
             if receipt is None:
                 if not fixture_adapter:
+                    held_for_wait = await self._hold_claimed_fixture_for_wait(payload, request, run, current=current)
+                    if held_for_wait is not None:
+                        return held_for_wait
                     await self._hold_publication_liability_if_claimed(
-                        payload, "reconcile", "reconciliation_unresolved"
+                        payload, "reconcile", CLAIMED_FIXTURE_WAIT_REASON
                     )
                     raise ApplicationError(
                         "publication provider outcome remains unresolved",
@@ -1734,6 +1818,16 @@ class GovernedPublicationWorkflow:
                 payload = await _execute_stage("salience.publication.submit_or_reconcile", payload)
         if payload.get("authorization_revoked"):
             return await _execute_terminal("salience.publication.denied", payload)
+        hold = payload.get("fixture_claimed_publication_hold")
+        if hold is not None:
+            if workflow.patched("fixture-claimed-publication-wait-v1"):
+                remaining = datetime.fromisoformat(hold["deadline"]) - workflow.now()
+                if remaining > timedelta() and not self._cancellation_requested:
+                    try:
+                        await workflow.wait_condition(lambda: self._cancellation_requested, timeout=remaining)
+                    except asyncio.TimeoutError:
+                        pass
+            return PublicationWorkflowResult(**hold["result"])
         while payload["publication_state"] in {"accepted", "processing"}:
             if self._cancellation_requested:
                 return await _execute_terminal("salience.publication.cancel", payload)
