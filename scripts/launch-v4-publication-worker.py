@@ -41,6 +41,7 @@ _PRODUCTION_OPENING_HEAD = "0055_p1_recovery_open_rollback_v4"
 _PRODUCTION_PRECLAIM_HEAD = "0058_p1_preclaim_rollback_v5"
 _PRODUCTION_RESERVED_HEAD = "0059_p1_claimed_reserved_opening"
 _PRODUCTION_CLAIMED_FENCE_HEAD = "0060_p1_claimed_reissue_fence"
+_PRODUCTION_CLAIMED_CLOSURE_HEAD = "0061_p1_claimed_closure_evidence"
 _ROLLBACK_VERIFIER_ABIS = {
     _PRODUCTION_MIGRATION_HEAD: _ROLLBACK_VERIFIER_ABI_V2,
     _PRODUCTION_LIFECYCLE_HEAD: "salience.p1-recovery-rollback-verifier.v3",
@@ -48,6 +49,7 @@ _ROLLBACK_VERIFIER_ABIS = {
     _PRODUCTION_PRECLAIM_HEAD: "salience.p1-recovery-rollback-verifier.v5",
     _PRODUCTION_RESERVED_HEAD: "salience.p1-recovery-rollback-verifier.v6",
     _PRODUCTION_CLAIMED_FENCE_HEAD: "salience.p1-recovery-rollback-verifier.v7",
+    _PRODUCTION_CLAIMED_CLOSURE_HEAD: "salience.p1-recovery-rollback-verifier.v8",
 }
 _PRODUCTION_LOCK_QUALIFICATION = "development-only"
 _REQUIRED_SOURCE_PATHS = {
@@ -89,15 +91,21 @@ _REQUIRED_PRODUCTION_V5_SOURCE_PATHS = _REQUIRED_PRODUCTION_V4_SOURCE_PATHS | {
 _REQUIRED_PRODUCTION_V6_SOURCE_PATHS = _REQUIRED_PRODUCTION_V5_SOURCE_PATHS | {
     "migrations/versions/0059_p1_claimed_reserved_opening.py",
 }
+_REQUIRED_PRODUCTION_V7_SOURCE_PATHS = _REQUIRED_PRODUCTION_V6_SOURCE_PATHS | {
+    "migrations/versions/0060_p1_claimed_reissue_fence.py",
+    "src/salience/cycles/_production_recovery_coordinator.py",
+    "src/salience/governance/cost_repository.py",
+}
 _RECOVERY_SOURCE_PATHS_BY_HEAD = {
     _PRODUCTION_LIFECYCLE_HEAD: _REQUIRED_PRODUCTION_V3_SOURCE_PATHS,
     _PRODUCTION_OPENING_HEAD: _REQUIRED_PRODUCTION_V4_SOURCE_PATHS,
     _PRODUCTION_PRECLAIM_HEAD: _REQUIRED_PRODUCTION_V5_SOURCE_PATHS,
     _PRODUCTION_RESERVED_HEAD: _REQUIRED_PRODUCTION_V6_SOURCE_PATHS,
-    _PRODUCTION_CLAIMED_FENCE_HEAD: _REQUIRED_PRODUCTION_V6_SOURCE_PATHS | {
-        "migrations/versions/0060_p1_claimed_reissue_fence.py",
-        "src/salience/cycles/_production_recovery_coordinator.py",
-        "src/salience/governance/cost_repository.py",
+    _PRODUCTION_CLAIMED_FENCE_HEAD: _REQUIRED_PRODUCTION_V7_SOURCE_PATHS,
+    _PRODUCTION_CLAIMED_CLOSURE_HEAD: _REQUIRED_PRODUCTION_V7_SOURCE_PATHS | {
+        "migrations/versions/0061_p1_claimed_closure_evidence.py",
+        "src/salience/cycles/_production_recovery_closure.py",
+        "src/salience/fixtures/publication_send_barrier.py",
     },
 }
 _REQUIRED_IMPORT_MODULES = {

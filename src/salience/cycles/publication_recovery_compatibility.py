@@ -36,6 +36,8 @@ from salience.cycles.p1_recovery_rollback import (
     ROLLBACK_MIGRATION_HEAD_V6,
     ROLLBACK_VERIFIER_ABI_V7,
     ROLLBACK_MIGRATION_HEAD_V7,
+    ROLLBACK_VERIFIER_ABI_V8,
+    ROLLBACK_MIGRATION_HEAD_V8,
     RecoveryRollbackInventoryV2,
     RecoveryRollbackTemporalReadbackV2,
     verify_p1_recovery_rollback_v2,
@@ -44,6 +46,7 @@ from salience.cycles.p1_recovery_rollback import (
     verify_p1_recovery_rollback_v5,
     verify_p1_recovery_rollback_v6,
     verify_p1_recovery_rollback_v7,
+    verify_p1_recovery_rollback_v8,
 )
 
 if TYPE_CHECKING:
@@ -122,15 +125,21 @@ _REQUIRED_PRODUCTION_V5_SOURCE_PATHS = _REQUIRED_PRODUCTION_V4_SOURCE_PATHS | {
 _REQUIRED_PRODUCTION_V6_SOURCE_PATHS = _REQUIRED_PRODUCTION_V5_SOURCE_PATHS | {
     "migrations/versions/0059_p1_claimed_reserved_opening.py",
 }
+_REQUIRED_PRODUCTION_V7_SOURCE_PATHS = _REQUIRED_PRODUCTION_V6_SOURCE_PATHS | {
+    "migrations/versions/0060_p1_claimed_reissue_fence.py",
+    "src/salience/cycles/_production_recovery_coordinator.py",
+    "src/salience/governance/cost_repository.py",
+}
 _RECOVERY_SOURCE_PATHS_BY_HEAD = {
     ROLLBACK_MIGRATION_HEAD_V3: _REQUIRED_PRODUCTION_V3_SOURCE_PATHS,
     ROLLBACK_MIGRATION_HEAD_V4: _REQUIRED_PRODUCTION_V4_SOURCE_PATHS,
     ROLLBACK_MIGRATION_HEAD_V5: _REQUIRED_PRODUCTION_V5_SOURCE_PATHS,
     ROLLBACK_MIGRATION_HEAD_V6: _REQUIRED_PRODUCTION_V6_SOURCE_PATHS,
-    ROLLBACK_MIGRATION_HEAD_V7: _REQUIRED_PRODUCTION_V6_SOURCE_PATHS | {
-        "migrations/versions/0060_p1_claimed_reissue_fence.py",
-        "src/salience/cycles/_production_recovery_coordinator.py",
-        "src/salience/governance/cost_repository.py",
+    ROLLBACK_MIGRATION_HEAD_V7: _REQUIRED_PRODUCTION_V7_SOURCE_PATHS,
+    ROLLBACK_MIGRATION_HEAD_V8: _REQUIRED_PRODUCTION_V7_SOURCE_PATHS | {
+        "migrations/versions/0061_p1_claimed_closure_evidence.py",
+        "src/salience/cycles/_production_recovery_closure.py",
+        "src/salience/fixtures/publication_send_barrier.py",
     },
 }
 _REQUIRED_MIGRATION_SUPPORT_PATHS = frozenset(
@@ -270,6 +279,7 @@ PRODUCTION_ROLLBACK_ABIS = {
     ROLLBACK_MIGRATION_HEAD_V5: ROLLBACK_VERIFIER_ABI_V5,
     ROLLBACK_MIGRATION_HEAD_V6: ROLLBACK_VERIFIER_ABI_V6,
     ROLLBACK_MIGRATION_HEAD_V7: ROLLBACK_VERIFIER_ABI_V7,
+    ROLLBACK_MIGRATION_HEAD_V8: ROLLBACK_VERIFIER_ABI_V8,
 }
 PRODUCTION_LOCK_QUALIFICATION = "development-only"
 
@@ -1544,6 +1554,7 @@ def require_production_rollback_compatibility(
         ROLLBACK_VERIFIER_ABI_V5: verify_p1_recovery_rollback_v5,
         ROLLBACK_VERIFIER_ABI_V6: verify_p1_recovery_rollback_v6,
         ROLLBACK_VERIFIER_ABI_V7: verify_p1_recovery_rollback_v7,
+        ROLLBACK_VERIFIER_ABI_V8: verify_p1_recovery_rollback_v8,
     }[production.rollback_verifier_abi]
     result = verify(
         database_url,
@@ -1694,6 +1705,7 @@ def require_publication_worker_compatibility_from_environment(
                 read_p1_recovery_rollback_inventory_v5,
                 read_p1_recovery_rollback_inventory_v6,
                 read_p1_recovery_rollback_inventory_v7,
+                read_p1_recovery_rollback_inventory_v8,
             )
 
             read = {
@@ -1703,6 +1715,7 @@ def require_publication_worker_compatibility_from_environment(
                 ROLLBACK_VERIFIER_ABI_V5: read_p1_recovery_rollback_inventory_v5,
                 ROLLBACK_VERIFIER_ABI_V6: read_p1_recovery_rollback_inventory_v6,
                 ROLLBACK_VERIFIER_ABI_V7: read_p1_recovery_rollback_inventory_v7,
+                ROLLBACK_VERIFIER_ABI_V8: read_p1_recovery_rollback_inventory_v8,
             }[lock.production.rollback_verifier_abi]
             read(database_url, workspace_id=rollback_workspace_id)
         except Exception as error:

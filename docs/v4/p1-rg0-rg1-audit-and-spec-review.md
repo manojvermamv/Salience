@@ -721,3 +721,17 @@ This update records the original-run wait for an exact claimed publication and t
 | `README.md` | `dbfa93b10cc65da969f363d7186a53d94f7190ffcefd55b3f326a65650c7709e` |
 | `docs/v4/evidence-lock.json` | `351b907646bd2a192daf62e0e9c9cddd2d46fb694e96c7818261ccd88b4a0745` |
 | `docs/v4/p1-qualification-matrix.json` | `da464abbb17e863106e77f3500510ee08b720ed6e4cbdda8870d262016a6d838` |
+
+## P1 protected claimed publication closure evidence hashes — 2026-11-26
+
+This update records protected intake and rollback verification for signed fixture closure evidence. [Verification and scope](validation.md#protected-claimed-publication-closure-evidence)
+
+| Path | SHA-256 |
+| --- | --- |
+| `docs/v4/IMPLEMENTATION-BLUEPRINT.md` | `b5ee2fa8b3556f7a2975ad1b62bd31eeeeb158dc4f0d4d69071abb452f4f7bc9` |
+| `docs/v4/progress.md` | `5b91755d33c720d7997daaf732f1b2bc50c8248ffdba05d22d83251b7732dad0` |
+| `docs/v4/validation.md` | `7934d7e0e699a7d0dcf9ef63c3e01594f2f4a9c3db37e5110cb4c919b9e096cc` |
+| `docs/v4/test_checks.py` | `ba4d1c3a3a5a254c2ef4db77d1e7d7b8e21183213ed1fb1e89c9431546684580` |
+| `README.md` | `279d9d9b9205733bf3036703a2237055d5e97e5a2b04ddf92a0f1c7422cfe4ef` |
+| `docs/v4/evidence-lock.json` | `32d41cd4ffa032f27cd579c8ac743b8d86de8ac9b6986c79382be41de3d213cd` |
+| `docs/v4/p1-qualification-matrix.json` | `9bd6093f22bc2af2d0e8f6a9b82a3eca9ac9b02d0573dd1f0ccc9c01346f33ef` |

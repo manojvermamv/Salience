@@ -11,6 +11,12 @@ from salience.cycles._production_recovery_case_opening import (
     ProductionRecoveryCaseOpenCommand,
     ProductionRecoveryCaseOpenReceipt,
 )
+from salience.cycles._production_recovery_closure import (
+    ProductionClaimedPublicationClosureAuthorization,
+    ProductionClaimedPublicationClosureCommand,
+    ProductionClaimedPublicationClosureReceipt,
+    ProductionClaimedPublicationClosureTrust,
+)
 from salience.cycles._production_recovery_control import ProductionRecoveryCaseController
 from salience.cycles._production_recovery_contracts import (
     NoEffectGenerationReissueCommand, ProductionAlertAcknowledgment,
@@ -35,6 +41,8 @@ __all__ = [
     "ProductionRecoveryCommandReference",
     "ProductionAlertReceipt", "ProductionAlertRequest", "ProductionAlertRetryPolicy",
     "ProductionAlertTarget", "ProductionCaseDeadlineCommand",
+    "ProductionClaimedPublicationClosureAuthorization", "ProductionClaimedPublicationClosureCommand",
+    "ProductionClaimedPublicationClosureReceipt", "ProductionClaimedPublicationClosureTrust",
     "ProductionDeadlineWakeReceipt", "ProductionIntentDeadlineCommand",
     "ProductionNoEffectAuthorization", "ProductionNoEffectReissueReceipt",
     "ProductionProviderReadContract", "ProductionRecipientProfile",

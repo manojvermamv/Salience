@@ -123,6 +123,12 @@ The isolated mock sink serializes acceptance and permanent closure in one SQLite
 
 The Temporal and PostgreSQL regression reads the exact original claim after a simulated lost send, verifies the closure proof, and sees a late predecessor attempt denied after reopening the store. The original permit, claim and reservation remain attached to the unresolved publication. Protected proof consumption, the forward handoff to a live run, and a deployed gateway with an authoritative closure contract remain open.
 
+### Protected claimed publication closure evidence
+
+The case controller verifies the Ed25519 signature using independently configured fixture trust and the exact original send read from PostgreSQL. An injected stage authority supplies a decision for the exact proof and case revision before the controller calls the restricted writer. Migration `0061` retains the proof once per claim, rechecks the current source, policy, stops and decision expiry under lock, and preserves the first receipt on exact replay. Retaining evidence preserves the original permit, dispatch pointer, case, and funding liability. The successor fence stays active.
+
+Rollback ABI v8 requires the exact `0061` database and verifies the retained evidence, canonical lineage and database protections. The v7 reader still requires `0060`. The fixture trust, decision issuer and mock barrier are local. Production continuation needs a qualified gateway, a live route decision fenced with the database write, and guarded use of the retained proof by the original live Temporal run.
+
 ### Claimed publication recovery wait
 
 An isolated fixture worker configured for the exact operation, permit and Temporal run can keep that run open after an inconclusive lookup for a claimed publication. The worker persists the canonical liability hold and absolute wait deadline before returning the wait state. If the activity reply is lost, the retry reads that deadline and resumes the hold before any further provider read. The wait is bounded by the configured interval, the original execution deadline, and the approval deadline. A cancellation signal ends the wait with the liability held. The wait issues no successor permit and performs no provider mutation.

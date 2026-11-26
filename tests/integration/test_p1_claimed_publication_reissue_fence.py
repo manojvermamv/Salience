@@ -45,7 +45,7 @@ def _seed_claimed_publication(accounting):
 
 
 def _upgrade(database):
-    result = _migration(database, "upgrade", "head")
+    result = _migration(database, "upgrade", "0060_p1_claimed_reissue_fence")
     assert result.returncode == 0, result.stdout + result.stderr
 
 

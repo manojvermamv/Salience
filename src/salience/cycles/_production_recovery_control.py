@@ -20,6 +20,11 @@ from salience.cycles._production_recovery_case_opening import (
     ProductionRecoveryCaseOpenReceipt,
     open_case,
 )
+from salience.cycles._production_recovery_closure import (
+    ProductionClaimedPublicationClosureReceipt,
+    ProductionClaimedPublicationClosureTrust,
+    record_claimed_publication_closure,
+)
 from salience.cycles._production_recovery_contracts import (
     NoEffectGenerationReissueCommand, ProductionCaseDeadlineCommand,
     ProductionDeadlineWakeReceipt, ProductionIntentDeadlineCommand,
@@ -36,6 +41,7 @@ from salience.cycles.production_dispatch import (
     ProductionPermitResult,
     ProductionRecoveryCommandReference,
 )
+from salience.fixtures.publication_send_barrier import FixturePublicationNoEffectReceipt
 from salience.observability.tracing import TraceContext
 
 
@@ -57,6 +63,7 @@ class ProductionRecoveryCaseController:
         *,
         authority: ProductionRecoveryAuthority,
         commands: object,
+        closure_trust: ProductionClaimedPublicationClosureTrust | None = None,
     ) -> None:
         if not isinstance(repository, ProductionRecoveryWorkRepository):
             raise ValueError("production recovery work repository required")
@@ -67,9 +74,15 @@ class ProductionRecoveryCaseController:
         self.repository = repository
         self.authority = authority
         self.commands = commands
+        self._closure_trust = closure_trust
 
     def open_case(self, command: ProductionRecoveryCaseOpenCommand) -> ProductionRecoveryCaseOpenReceipt:
         return open_case(self.repository, self.authority, command)
+
+    def record_claimed_publication_closure(
+        self, work_id: UUID, proof: FixturePublicationNoEffectReceipt,
+    ) -> ProductionClaimedPublicationClosureReceipt:
+        return record_claimed_publication_closure(self.repository, self.authority, self._closure_trust, work_id, proof)
 
     def execute_case_command(
         self, command: ProductionRecoveryCaseCommand

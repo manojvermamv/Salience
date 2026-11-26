@@ -994,6 +994,11 @@ class GateChecks(unittest.TestCase):
             self.assertEqual(fence["rollback_verification"], "DENIED")
             self.assertEqual(fence["protected_claim"], "DENIED")
             self.assertTrue(fence["pointer_unchanged"])
+        if fixture["rollback_verifier_abi"].endswith(".v8"):
+            launcher_denials["rollback_without_readbacks"] = "ROUTE_AND_TEMPORAL_READBACK_REQUIRED"
+            self.assertEqual(rollback["unavailable_temporal_readback"], "DENIED")
+            self.assertEqual(rollback["v8_history_check"]["historical_v7_on_current_head"], "DENIED")
+            self.assertEqual(fixture["worker_exit_code_before_recovery"], 137)
         if current["artifact_build"] == "PASS_FIXTURE_ONLY" and "current_routed_launcher" in current:
             routed = fixture["installed_routed_worker"]
             self.assertEqual(routed["candidate"], fixture["application_commit"])
@@ -1013,14 +1018,17 @@ class GateChecks(unittest.TestCase):
             for poller in registration["observed_pollers"].values():
                 self.assertEqual(poller["identity"], registration["owner_id"])
                 self.assertEqual(poller["build_id"], routed["worker_build_id"])
-            self.assertEqual(fixture["installed_committed_receipt_regressions_passed"], 6)
             self.assertEqual(fixture["installed_signed_acceptance_regressions_passed"], 3)
-            if "fixture_send_finality" in current:
-                if "claimed_recovery_wait" in current:
-                    self.assertEqual(fixture["installed_fixture_send_barrier_regressions_passed"], 9)
-                    self.assertEqual(fixture["installed_recovery_read_expiry_regressions_passed"], 3)
-                else:
-                    self.assertEqual(fixture["installed_fixture_send_barrier_regressions_passed"], 6)
+            if fixture["rollback_verifier_abi"].endswith(".v8"):
+                self.assertGreater(fixture["installed_claimed_closure_regressions_passed"], 0)
+            else:
+                self.assertEqual(fixture["installed_committed_receipt_regressions_passed"], 6)
+                if "fixture_send_finality" in current:
+                    if "claimed_recovery_wait" in current:
+                        self.assertEqual(fixture["installed_fixture_send_barrier_regressions_passed"], 9)
+                        self.assertEqual(fixture["installed_recovery_read_expiry_regressions_passed"], 3)
+                    else:
+                        self.assertEqual(fixture["installed_fixture_send_barrier_regressions_passed"], 6)
         self.assertEqual(fixture["production_launcher_denials"], launcher_denials)
         self.assertEqual(current["external_rows_not_run"], 22)
         self.assertEqual((matrix["RG0"], matrix["RG1"]), ("HELD", "HELD"))

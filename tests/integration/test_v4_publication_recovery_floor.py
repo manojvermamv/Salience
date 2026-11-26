@@ -1050,7 +1050,7 @@ def test_worker_floor_rejects_unknown_pre_floor_and_ambiguous_lineages_before_re
     "case,database_revision",
     (
         ("exact-0043", "0043_complete_publication_recovery_liabilities"),
-        ("qualified-descendant", "0061_qualified_descendant"),
+        ("qualified-descendant", "0062_qualified_descendant"),
     ),
     ids=("exact-0043", "qualified-descendant"),
 )
@@ -1061,10 +1061,10 @@ def test_worker_floor_accepts_0043_and_qualified_descendant(
     if case == "qualified-descendant":
         lock = _add_migration_source(
             lock,
-            "0061_qualified_descendant.py",
+            "0062_qualified_descendant.py",
             {
-                "revision": "0061_qualified_descendant",
-                "down_revision": "0060_p1_claimed_reissue_fence",
+                "revision": "0062_qualified_descendant",
+                "down_revision": "0061_p1_claimed_closure_evidence",
             },
         )
     register_worker, database_reads, registered = _compatibility_registration_probe(
@@ -1178,6 +1178,7 @@ def test_authenticated_migration_inventory_rejects_unexpected_state(
     (58, "0058_p1_preclaim_rollback_v5", "salience.p1-recovery-rollback-verifier.v5"),
     (59, "0059_p1_claimed_reserved_opening", "salience.p1-recovery-rollback-verifier.v6"),
     (60, "0060_p1_claimed_reissue_fence", "salience.p1-recovery-rollback-verifier.v7"),
+    (61, "0061_p1_claimed_closure_evidence", "salience.p1-recovery-rollback-verifier.v8"),
 ])
 def test_launcher_v2_lock_builder_binds_exact_final_migration_head_and_verifier_abi(
     tmp_path, monkeypatch, head_number, expected_head, expected_abi,
@@ -1707,7 +1708,7 @@ def test_publication_worker_launch_lock_builder_accepts_valid_wheel_and_installe
     assert lock.pin.distribution_record_sha256 == _sha256(record_path.read_bytes())
 
 
-def test_publication_worker_launch_lock_builder_accepts_real_synthetic_0060_descendant(
+def test_publication_worker_launch_lock_builder_accepts_real_synthetic_0061_descendant(
     tmp_path, monkeypatch
 ):
     builder = _lock_builder_module()
@@ -1715,10 +1716,10 @@ def test_publication_worker_launch_lock_builder_accepts_real_synthetic_0060_desc
         tmp_path,
         extra_migrations=(
             (
-                "0061_qualified_builder_descendant.py",
+                "0062_qualified_builder_descendant.py",
                 {
-                    "revision": "0061_qualified_builder_descendant",
-                    "down_revision": "0060_p1_claimed_reissue_fence",
+                    "revision": "0062_qualified_builder_descendant",
+                    "down_revision": "0061_p1_claimed_closure_evidence",
                 },
             ),
         ),
@@ -1733,7 +1734,7 @@ def test_publication_worker_launch_lock_builder_accepts_real_synthetic_0060_desc
 
     assert lock.pin.application_commit == application_commit
     assert any(
-        item.path == "migrations/versions/0061_qualified_builder_descendant.py"
+        item.path == "migrations/versions/0062_qualified_builder_descendant.py"
         for item in lock.pin.source_files
     )
 
@@ -5906,7 +5907,7 @@ def test_authenticated_migration_graph_resolves_inside_site_packages(tmp_path, m
     revisions, heads = compatibility._migration_graph(verified_source_files)
 
     assert "0046_production_policy_approval_id_immutability" in revisions
-    assert heads == {"0060_p1_claimed_reissue_fence"}
+    assert heads == {"0061_p1_claimed_closure_evidence"}
     assert (
         runtime_root
         / "migrations/versions/0046_production_policy_approval_id_immutability.py"
@@ -8605,7 +8606,7 @@ def _write_v2_route_lock(
     return v2_lock, wheel_path, route
 
 
-@pytest.mark.parametrize("cycle_database", ["0060_p1_claimed_reissue_fence"], indirect=True)
+@pytest.mark.parametrize("cycle_database", ["0061_p1_claimed_closure_evidence"], indirect=True)
 def test_v2_launcher_carries_independent_trust_to_isolated_preflight(
     tmp_path, monkeypatch, cycle_database,
 ):
@@ -8621,7 +8622,7 @@ def test_v2_launcher_carries_independent_trust_to_isolated_preflight(
     from salience.workflows.publication import GovernedPublicationWorkflow, PublicationWorkflowRequest
 
     lock, wheel_path, route = _write_v2_route_lock(
-        tmp_path, monkeypatch, migration_head="0060_p1_claimed_reissue_fence",
+        tmp_path, monkeypatch, migration_head="0061_p1_claimed_closure_evidence",
         temporal_endpoint_id=os.environ["TEST_TEMPORAL_TARGET"], namespace="default",
         task_queue=f"salience-empty-routed-worker-{uuid4()}",
     )

@@ -30,7 +30,7 @@ _REVISION_0044 = "0044_production_policy_revocation"
 _REVISION_0045 = "0045_production_policy_approval_guard_repair"
 _REVISION_0046 = "0046_production_policy_approval_id_immutability"
 _REVISION_0050 = "0050_p1_production_dispatch_reissue"
-_REVISION_0060 = "0060_p1_claimed_reissue_fence"
+_REVISION_0061 = "0061_p1_claimed_closure_evidence"
 _HOLD_TABLE = "public.v4_legacy_publication_recovery_holds"
 _V1_KEYS = (
     "dispatch",
@@ -364,7 +364,7 @@ def test_installed_alembic_config_resolves_inside_runtime_root(task5_worker_imag
         timeout=60,
     )
     assert resolved_heads.returncode == 0, resolved_heads.stdout + resolved_heads.stderr
-    assert resolved_heads.stdout.strip() == f"{_REVISION_0060} (head)"
+    assert resolved_heads.stdout.strip() == f"{_REVISION_0061} (head)"
 
     compose = yaml.safe_load((_MIGRATION_ROOT / "compose.yaml").read_text(encoding="utf-8"))
     assert compose["services"]["migrate"]["command"] == [

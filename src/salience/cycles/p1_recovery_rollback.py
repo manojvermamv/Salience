@@ -34,6 +34,19 @@ ROLLBACK_MIGRATION_HEAD_V6 = "0059_p1_claimed_reserved_opening"
 ROLLBACK_VERIFIER_ABI_V7 = "salience.p1-recovery-rollback-verifier.v7"
 ROLLBACK_INVENTORY_SCHEMA_V7 = "salience.p1-recovery-rollback-inventory.v7"
 ROLLBACK_MIGRATION_HEAD_V7 = "0060_p1_claimed_reissue_fence"
+ROLLBACK_VERIFIER_ABI_V8 = "salience.p1-recovery-rollback-verifier.v8"
+ROLLBACK_INVENTORY_SCHEMA_V8 = "salience.p1-recovery-rollback-inventory.v8"
+ROLLBACK_MIGRATION_HEAD_V8 = "0061_p1_claimed_closure_evidence"
+_CLAIMED_CLOSURE_SCHEMA = "salience.p1-claimed-publication-closure.v1"
+_CLAIMED_CLOSURES = "claimed_publication_closures"
+_CLAIMED_CLOSURE_UUID_KEYS = frozenset({
+    "work_id", "workspace_id", "case_id", "operation_id", "permit_id", "claim_id",
+    "environment_id", "barrier_id", "closure_id", "policy_decision_id", "route_decision_id",
+})
+_CLAIMED_CLOSURE_KEYS = _CLAIMED_CLOSURE_UUID_KEYS | {
+    "schema_version", "generation", "case_revision", "request_fingerprint", "namespace", "signer_sha256",
+    "signature_hex", "recorded_at", "authority_expires_at",
+}
 _REASON_KEYS = ("expired_permit_receipt", "published_during_cancel")
 _INVENTORY_ARRAYS = {
     "source_identities": "source_identities",
@@ -684,6 +697,86 @@ def read_p1_recovery_rollback_inventory_v7(
     )
 
 
+def validate_recovery_rollback_inventory_v8(
+    inventory: object, *, workspace_id: UUID,
+) -> tuple[RecoveryRollbackRouteClaimV2, ...]:
+    if (
+        not isinstance(inventory, dict)
+        or inventory.get("schema_version") != ROLLBACK_INVENTORY_SCHEMA_V8
+        or inventory.get("migration_head") != ROLLBACK_MIGRATION_HEAD_V8
+    ):
+        raise RecoveryRollbackVerificationError("rollback v8 inventory envelope is incomplete")
+    closures = inventory.get(_CLAIMED_CLOSURES)
+    counts = inventory.get("relation_counts")
+    if (
+        not isinstance(closures, list) or not isinstance(counts, dict)
+        or type(counts.get(_CLAIMED_CLOSURES)) is not int
+        or counts[_CLAIMED_CLOSURES] != len(closures)
+    ):
+        raise RecoveryRollbackVerificationError("rollback claimed closure inventory is incomplete")
+    legacy = {key: value for key, value in inventory.items() if key != _CLAIMED_CLOSURES}
+    legacy["schema_version"] = ROLLBACK_INVENTORY_SCHEMA_V7
+    legacy["migration_head"] = ROLLBACK_MIGRATION_HEAD_V7
+    legacy["relation_counts"] = {key: value for key, value in counts.items() if key != _CLAIMED_CLOSURES}
+    routes = validate_recovery_rollback_inventory_v7(legacy, workspace_id=workspace_id)
+    openings = {row["work_id"]: row for row in inventory["opening_receipts"]}
+    permits = {row["permit_id"]: row for row in inventory["production_permits"]}
+    seen_claims = set()
+    seen_closures = set()
+    for closure in closures:
+        if not isinstance(closure, dict) or closure.keys() != _CLAIMED_CLOSURE_KEYS:
+            raise RecoveryRollbackVerificationError("rollback claimed closure receipt is incomplete")
+        for key in _CLAIMED_CLOSURE_UUID_KEYS:
+            _uuid(closure[key], f"claimed closure {key}")
+        for key in ("request_fingerprint", "signer_sha256"):
+            _digest(closure[key], f"claimed closure {key}")
+        signature = closure["signature_hex"]
+        if not isinstance(signature, str) or len(signature) != 128:
+            raise RecoveryRollbackVerificationError("rollback claimed closure signature is malformed")
+        _digest(signature[:64], "claimed closure signature encoding")
+        _digest(signature[64:], "claimed closure signature encoding")
+        try:
+            recorded = datetime.fromisoformat(closure["recorded_at"])
+            expiry = datetime.fromisoformat(closure["authority_expires_at"])
+        except (TypeError, ValueError) as error:
+            raise RecoveryRollbackVerificationError("rollback claimed closure times are malformed") from error
+        namespace = closure["namespace"]
+        claim = closure["claim_id"]
+        opening = openings.get(closure["work_id"], {})
+        if (
+            closure["schema_version"] != _CLAIMED_CLOSURE_SCHEMA
+            or closure["workspace_id"] != str(workspace_id)
+            or type(closure["generation"]) is not int or closure["generation"] != 1
+            or type(closure["case_revision"]) is not int
+            or closure["case_revision"] != opening.get("resulting_revision")
+            or not isinstance(namespace, str) or not 1 <= len(namespace) <= 512 or not namespace.isprintable()
+            or recorded.utcoffset() is None or expiry.utcoffset() is None or recorded >= expiry
+            or claim in seen_claims
+            or closure["environment_id"] != permits.get(closure["permit_id"], {}).get("environment_id")
+            or any(closure[key] != opening.get(key) for key in (
+                "case_id", "operation_id", "permit_id", "claim_id", "generation", "request_fingerprint",
+            ))
+        ):
+            raise RecoveryRollbackVerificationError("rollback claimed closure differs from its source")
+        proof_identity = (closure["environment_id"], namespace, closure["barrier_id"], closure["closure_id"])
+        if proof_identity in seen_closures:
+            raise RecoveryRollbackVerificationError("rollback claimed closure identity is duplicated")
+        seen_claims.add(claim)
+        seen_closures.add(proof_identity)
+    return routes
+
+
+def read_p1_recovery_rollback_inventory_v8(
+    database_url: str, *, workspace_id: UUID,
+) -> RecoveryRollbackInventoryV2:
+    """Read protected claimed closure evidence and its canonical lineage."""
+    return _read_workspace_inventory(
+        database_url, workspace_id, ROLLBACK_MIGRATION_HEAD_V8,
+        "SELECT public.v4_p1_recovery_rollback_inventory_v8(%s)",
+        validate_recovery_rollback_inventory_v8,
+    )
+
+
 def _read_workspace_inventory(
     database_url: str, workspace_id: UUID, migration: str, query: str, validate,
 ) -> RecoveryRollbackInventoryV2:
@@ -948,6 +1041,17 @@ def verify_p1_recovery_rollback_v7(
     """Require exact claimed finality, route, and Temporal rollback readbacks."""
     return _verify_workspace_readbacks(
         read_p1_recovery_rollback_inventory_v7(database_url, workspace_id=workspace_id),
+        route_authority, temporal_readback,
+    )
+
+
+def verify_p1_recovery_rollback_v8(
+    database_url: str, *, workspace_id: UUID,
+    route_authority: RouteLeaseAuthority, temporal_readback: TemporalWorkerReadback,
+) -> RecoveryRollbackInventoryV2:
+    """Require protected closure lineage and exact route and Temporal readbacks."""
+    return _verify_workspace_readbacks(
+        read_p1_recovery_rollback_inventory_v8(database_url, workspace_id=workspace_id),
         route_authority, temporal_readback,
     )
 
