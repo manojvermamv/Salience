@@ -116,17 +116,17 @@
       "docs/v4/evidence-lock.json": "32d41cd4ffa032f27cd579c8ac743b8d86de8ac9b6986c79382be41de3d213cd",
       "docs/v4/p0-release.json": "0a0f1969e0497cbec535fb3f854b51cef870a4746eb92f8a67a127566dc9ff75",
       "docs/v4/p1-production-policy-revocation-evidence.json": "e5a5a3d424157479cacaf00eae39614a5abe12ecdb04ac38af0c95692dbd982b",
-      "docs/v4/p1-qualification-matrix.json": "9bd6093f22bc2af2d0e8f6a9b82a3eca9ac9b02d0573dd1f0ccc9c01346f33ef",
+      "docs/v4/p1-qualification-matrix.json": "0e6fb8481e7d5f2095a99a5993696a5665a946e098780bc693d02a9cb54641de",
       "docs/v4/p1-remaining-production-development-evidence.json": "9712af1be052ae418a26d4c0ac600ce15a191d49b31517885926e3cc72d598ad",
       "docs/v4/p1-rg0-rg1-external-acceptance.schema.json": "16cbdd59abc82c587d0d05de44dec0d867893d0bc8207df20d7f1bbe85805154",
       "docs/v4/p1-rg0-rg1-initial-gap-audit.json": "33fe485384dcf60e36df8d48ace6394c80bce0d1bd9e6b9b39c7a905d65676b1",
       "docs/v4/p1-rg0-rg1-initial-gap-audit.md": "62aab5afb39f7c47e355a68ccf56e319a72955247515dfbdba8913fd797a5944",
-      "docs/v4/progress.md": "5b91755d33c720d7997daaf732f1b2bc50c8248ffdba05d22d83251b7732dad0",
+      "docs/v4/progress.md": "817a3d7cc472197cb6985b874e1208e56e339d90570de655e04bc9d39584c8e3",
       "docs/v4/publication-recovery-hold-evidence.json": "3cce88e4d692f726be710c1f4db46b1428c9546561424a2ab0ad120363becc66",
       "docs/v4/publication-recovery-hold-successor-evidence.json": "6bb3ce696cffec2629838f5f30b8eea4acb837cbb81c1bcbc1b4de4f19e8764a",
       "docs/v4/repository-enforcement-evidence.json": "fc69f901036971bd64588cf3247d1701939e7525442f196daeab7f1919de11a2",
       "docs/v4/test_checks.py": "ba4d1c3a3a5a254c2ef4db77d1e7d7b8e21183213ed1fb1e89c9431546684580",
-      "docs/v4/validation.md": "7934d7e0e699a7d0dcf9ef63c3e01594f2f4a9c3db37e5110cb4c919b9e096cc"
+      "docs/v4/validation.md": "ae81d931bc8fd64aeb34c780530e9833accd3eeed5ff7726b44059bc93cc3329"
     },
     "Task25 review history and final source-546ac4e fix-loop rereview preserved; current rereview PASS/CLEAN with 0 findings; durable review SHA-256 42de4ad70cc6192d03cd983359d30a8ca631fc52cf2dc6d8c8c2fd6ee0d08b8d; earlier 8c31e84 review remains historically scoped": 1
   },
@@ -3422,7 +3422,7 @@
     },
     {
       "path": "docs/v4/p1-qualification-matrix.json",
-      "sha256": "9bd6093f22bc2af2d0e8f6a9b82a3eca9ac9b02d0573dd1f0ccc9c01346f33ef",
+      "sha256": "0e6fb8481e7d5f2095a99a5993696a5665a946e098780bc693d02a9cb54641de",
       "disposition": "P1 qualification matrix with published fixture CI and current follow-up scope"
     },
     {
@@ -3432,7 +3432,7 @@
     },
     {
       "path": "docs/v4/p1-rg0-rg1-audit-and-spec-review.md",
-      "sha256": "a8deb3f9a32cf95ff190cf40650ac3777960101681d21bde191ef31c468f36cb",
+      "sha256": "2c5bc04c4ae1907a9d0356f642120bfa64d57444068bdbc47cf70c6fa4a6df06",
       "disposition": "frozen review chain and successive handoff hashes; external gates HELD"
     },
     {
@@ -3462,7 +3462,7 @@
     },
     {
       "path": "docs/v4/progress.md",
-      "sha256": "5b91755d33c720d7997daaf732f1b2bc50c8248ffdba05d22d83251b7732dad0",
+      "sha256": "817a3d7cc472197cb6985b874e1208e56e339d90570de655e04bc9d39584c8e3",
       "disposition": "current P1 development and release handoff; external gates HELD"
     },
     {
@@ -3532,7 +3532,7 @@
     },
     {
       "path": "docs/v4/validation.md",
-      "sha256": "7934d7e0e699a7d0dcf9ef63c3e01594f2f4a9c3db37e5110cb4c919b9e096cc",
+      "sha256": "ae81d931bc8fd64aeb34c780530e9833accd3eeed5ff7726b44059bc93cc3329",
       "disposition": "current P1 verification; historical checks remain candidate-bound"
     },
     {
@@ -4073,17 +4073,17 @@
     "docs/v4/evidence-lock.json": "32d41cd4ffa032f27cd579c8ac743b8d86de8ac9b6986c79382be41de3d213cd",
     "docs/v4/p0-release.json": "0a0f1969e0497cbec535fb3f854b51cef870a4746eb92f8a67a127566dc9ff75",
     "docs/v4/p1-production-policy-revocation-evidence.json": "e5a5a3d424157479cacaf00eae39614a5abe12ecdb04ac38af0c95692dbd982b",
-    "docs/v4/p1-qualification-matrix.json": "9bd6093f22bc2af2d0e8f6a9b82a3eca9ac9b02d0573dd1f0ccc9c01346f33ef",
+    "docs/v4/p1-qualification-matrix.json": "0e6fb8481e7d5f2095a99a5993696a5665a946e098780bc693d02a9cb54641de",
     "docs/v4/p1-remaining-production-development-evidence.json": "9712af1be052ae418a26d4c0ac600ce15a191d49b31517885926e3cc72d598ad",
     "docs/v4/p1-rg0-rg1-external-acceptance.schema.json": "16cbdd59abc82c587d0d05de44dec0d867893d0bc8207df20d7f1bbe85805154",
     "docs/v4/p1-rg0-rg1-initial-gap-audit.json": "33fe485384dcf60e36df8d48ace6394c80bce0d1bd9e6b9b39c7a905d65676b1",
     "docs/v4/p1-rg0-rg1-initial-gap-audit.md": "62aab5afb39f7c47e355a68ccf56e319a72955247515dfbdba8913fd797a5944",
-    "docs/v4/progress.md": "5b91755d33c720d7997daaf732f1b2bc50c8248ffdba05d22d83251b7732dad0",
+    "docs/v4/progress.md": "817a3d7cc472197cb6985b874e1208e56e339d90570de655e04bc9d39584c8e3",
     "docs/v4/publication-recovery-hold-evidence.json": "3cce88e4d692f726be710c1f4db46b1428c9546561424a2ab0ad120363becc66",
     "docs/v4/publication-recovery-hold-successor-evidence.json": "6bb3ce696cffec2629838f5f30b8eea4acb837cbb81c1bcbc1b4de4f19e8764a",
     "docs/v4/repository-enforcement-evidence.json": "fc69f901036971bd64588cf3247d1701939e7525442f196daeab7f1919de11a2",
     "docs/v4/test_checks.py": "ba4d1c3a3a5a254c2ef4db77d1e7d7b8e21183213ed1fb1e89c9431546684580",
-    "docs/v4/validation.md": "7934d7e0e699a7d0dcf9ef63c3e01594f2f4a9c3db37e5110cb4c919b9e096cc"
+    "docs/v4/validation.md": "ae81d931bc8fd64aeb34c780530e9833accd3eeed5ff7726b44059bc93cc3329"
   },
   "historical_documentation_refresh": {
     "plan_task": "docs/superpowers/plans/2026-10-27-p1-rg0-rg1-initial-gap-audit.md",
@@ -5268,7 +5268,7 @@
   "current_p1_follow_up": {
     "source_lock_sha256": "32d41cd4ffa032f27cd579c8ac743b8d86de8ac9b6986c79382be41de3d213cd",
     "scope": "Local development checkout with injected targets and authorities",
-    "artifact_build": "NOT RUN",
+    "artifact_build": "PASS_FIXTURE_ONLY",
     "external_rows_not_run": 22,
     "external_final_audit": "NOT RUN",
     "production_recovery_case_lifecycle": "Local production-shaped lifecycle, expired-unclaimed resume, funded authorization, committed receipt replay, and protected intake of signed fixture closure proof for the exact original claim. Rollback ABI v8 checks the retained proof lineage. The legacy successor fence remains active.",
@@ -5515,7 +5515,231 @@
         "verify": "PASS",
         "p0_regression": "PASS"
       }
-    ]
+    ],
+    "fixture_image_rehearsal": {
+      "application_commit": "f123336f65ef02417e6d63ee313768bc0a4d21ca",
+      "application_tree": "21c30a084d030be5ce6b6f0ae32a4d5085bb7176",
+      "wheel_sha256": "5c3b30ffc553233c294d14da601aa19893b217ef320bf6fa59e800536507ec33",
+      "local_image_id": "sha256:7edf208c4378def555ee71adb47c76c5b8c79c033e4c4ce5ff832e822a599a4b",
+      "image_amd64_manifest_sha256": "sha256:b0730823270f2e165bd89dbb83d515639b34a5fb375e9a6641d7d74d35712365",
+      "image_archive_sha256": "0e27b353276f4cea1f64a115409b07384cd321a411754b22d9ecc54986d4cdc3",
+      "verified_oci_blobs": 15,
+      "fixture_launch_lock_sha256": "1cf686394a7a2e7229851335df7d14aca949697b62102c10caf2d8973b9dd782",
+      "development_route_lock_sha256": "f0e4dacd406c5c156bbf1636b74c85a9cb06e47121aa069ae3969c30320dcbc7",
+      "rollback_verifier_abi": "salience.p1-recovery-rollback-verifier.v8",
+      "migration_head": "0061_p1_claimed_closure_evidence",
+      "compose_worker_restart": {
+        "status": "succeeded",
+        "provider_effect_calls": 1,
+        "reconciled": true,
+        "canonical_checkpoint_count": 2,
+        "canonical_effect_count": 1
+      },
+      "worker_exit_code_before_recovery": 137,
+      "production_launcher_denials": {
+        "current": "UNPROVISIONED_PRODUCTION_TRUST",
+        "rollback_restart": "AUTHENTICATED_EXECUTOR_REQUIRED",
+        "rollback_without_readbacks": "ROUTE_AND_TEMPORAL_READBACK_REQUIRED"
+      },
+      "configured_production_api": "DENIED",
+      "installed_rollback_fixture_readback": {
+        "inventory_sha256": "ada6342d83a86345bf30a577d627e201041cdfb462f2e40f359d48ab38564618",
+        "readback_sha256": "345a73ec183115ec251f5f27c1dbfe0b68abeab925e34ab950b9fff8986ef2c0",
+        "scoped_route_claims": 1,
+        "scoped_temporal_readbacks": 1,
+        "unavailable_route": "DENIED",
+        "unavailable_temporal_readback": "DENIED",
+        "v8_history_check": {
+          "claimed_publication_closures": 0,
+          "historical_v7_on_current_head": "DENIED"
+        }
+      },
+      "installed_preclaim_readback": {
+        "commit": "f123336f65ef02417e6d63ee313768bc0a4d21ca",
+        "image_id": "sha256:7edf208c4378def555ee71adb47c76c5b8c79c033e4c4ce5ff832e822a599a4b",
+        "migration_head": "0061_p1_claimed_closure_evidence",
+        "rollback_verifier_abi": "salience.p1-recovery-rollback-verifier.v8",
+        "development_lock_sha256": "f0e4dacd406c5c156bbf1636b74c85a9cb06e47121aa069ae3969c30320dcbc7",
+        "production_preclaim_lineage": 1,
+        "historical_v5_on_current_head": "DENIED",
+        "historical_v6_on_current_head": "DENIED",
+        "historical_v7_on_current_head": "DENIED",
+        "preclaim_lineage_sha256": "cce85ab9d47360465c0b5c4bb6e60d0d69cbb28456c9dfd6175490dd9a65d8c7",
+        "opening_command_id": "10ec1b71-1bd3-48d7-945b-9e6f1a2f8bbe",
+        "resume_command_id": "384c07de-a9d2-45a7-b788-dbd01b34ff73",
+        "proof_event_id": "684ba063-9eb0-4e93-a26a-6981c56558ff",
+        "predecessor_permit_id": "5a460ddf-7b81-4452-8715-c3ced71482ea",
+        "successor_permit_id": "cc33b896-5e1c-46db-b0c3-0b71b6900ecd",
+        "successor_generation": 2,
+        "external_effect_state": "planned",
+        "verified_route_claims": 1,
+        "verified_temporal_readbacks": 1,
+        "altered_renewal_payload": "DENIED",
+        "inventory_sha256": "97cc7513640b8c4fdaf418a42da856a20fed5bbbd9f1e09018cdbfbca31e7cb0",
+        "readback_sha256": "11305b9a765578cedc244419ba53d116496131605cd516fe531b05e7caf17948",
+        "inventory_after_denial_sha256": "97cc7513640b8c4fdaf418a42da856a20fed5bbbd9f1e09018cdbfbca31e7cb0",
+        "history_preserved_across_upgrade": {
+          "previous_migration_head": "0058_p1_preclaim_rollback_v5",
+          "previous_rollback_verifier_abi": "salience.p1-recovery-rollback-verifier.v5",
+          "previous_inventory_sha256": "4ffa9270553f761c581b2695407ac0e620e4d4133e2aa891d054194d3599cc30",
+          "preclaim_lineage_sha256": "cce85ab9d47360465c0b5c4bb6e60d0d69cbb28456c9dfd6175490dd9a65d8c7"
+        },
+        "intermediate_inventory": {
+          "migration_head": "0059_p1_claimed_reserved_opening",
+          "rollback_verifier_abi": "salience.p1-recovery-rollback-verifier.v6",
+          "inventory_sha256": "a71b31f5e6c7f2fe9cdea62e773eb1927c7d2d9032f9cf50b30904dff12574d9",
+          "preclaim_lineage_sha256": "cce85ab9d47360465c0b5c4bb6e60d0d69cbb28456c9dfd6175490dd9a65d8c7"
+        },
+        "historical_v7_inventory": {
+          "migration_head": "0060_p1_claimed_reissue_fence",
+          "rollback_verifier_abi": "salience.p1-recovery-rollback-verifier.v7",
+          "inventory_sha256": "4a2a419cc760b2f9f334502c993d096292eb450fbcfcfe9f4aa71eec3d85a75d",
+          "preclaim_lineage_sha256": "cce85ab9d47360465c0b5c4bb6e60d0d69cbb28456c9dfd6175490dd9a65d8c7"
+        },
+        "compose_network": "salience-recovery-2575639b9ffc_default"
+      },
+      "installed_claimed_reserved_readback": {
+        "disposition": "PASS_FIXTURE_ONLY",
+        "application_commit": "f123336f65ef02417e6d63ee313768bc0a4d21ca",
+        "image_id": "sha256:7edf208c4378def555ee71adb47c76c5b8c79c033e4c4ce5ff832e822a599a4b",
+        "development_lock_sha256": "f0e4dacd406c5c156bbf1636b74c85a9cb06e47121aa069ae3969c30320dcbc7",
+        "migration_head": "0061_p1_claimed_closure_evidence",
+        "rollback_verifier_abi": "salience.p1-recovery-rollback-verifier.v8",
+        "opening_receipt_count": 1,
+        "live_opener_body_sha256": "9c570e6df73127448854eb5fc27ec9e4371bf54ea61aa760ba2064cab466dcbe",
+        "live_opener_security_definer": true,
+        "live_opener_configuration": [
+          "search_path=pg_catalog, public",
+          "TimeZone=UTC"
+        ],
+        "opening_command_id": "f525c9ed-6313-41a4-9b6b-269a15946331",
+        "case_id": "0b251bde-86b9-4cc8-8b26-5320b3435143",
+        "work_id": "551d5e2f-90c0-4977-81e5-1c8d1a6e909e",
+        "operation_id": "e2cf1bc3-eb45-495f-acd8-b3dc3746532e",
+        "opening_authority_calls_with_exact_replay": 1,
+        "external_effect_state_after_opening": "submitting",
+        "publication_plan_state_after_opening": "reserved",
+        "budget_reservation_id": "3e83755f-6203-4e10-b533-1ea93e3b16a1",
+        "budget_reservation_state_after_opening": "reserved",
+        "publication_liabilities_unchanged": true,
+        "claim_id": "e425df05-0346-43e1-a8e5-41e60b7431dc",
+        "permit_id": "8b9a1fd8-d744-4020-af29-4af8aa803d6d",
+        "operation_permit_count_after_opening": 1,
+        "scoped_route_claims": 1,
+        "scoped_temporal_readbacks": 1,
+        "incomplete_opening_receipt": "DENIED",
+        "inventory_sha256": "1b5e04850cab86755cecf298791ad920157a679f317a3a1e085d421ebd04868d",
+        "readback_sha256": "e774632bc6a08bf44255926dd85e0421936db7509ea85e5cd21ba20c6c69f0c7",
+        "compose_network": "salience-recovery-2575639b9ffc_default"
+      },
+      "installed_claimed_reissue_fence": {
+        "application_commit": "f123336f65ef02417e6d63ee313768bc0a4d21ca",
+        "image_id": "sha256:7edf208c4378def555ee71adb47c76c5b8c79c033e4c4ce5ff832e822a599a4b",
+        "migration_head": "0061_p1_claimed_closure_evidence",
+        "rollback_verifier_abi": "salience.p1-recovery-rollback-verifier.v8",
+        "development_lock_sha256": "f0e4dacd406c5c156bbf1636b74c85a9cb06e47121aa069ae3969c30320dcbc7",
+        "rollback_verification": "DENIED",
+        "protected_claim": "DENIED",
+        "pointer_unchanged": true,
+        "live_catalog_triggers": [
+          {
+            "table": "v4_production_current_dispatch",
+            "type_mask": 19,
+            "enabled": "O",
+            "disabled_trigger_rollback_verification": "DENIED"
+          },
+          {
+            "table": "v4_production_effect_permit_claims",
+            "type_mask": 7,
+            "enabled": "O",
+            "disabled_trigger_rollback_verification": "DENIED"
+          },
+          {
+            "table": "v4_production_effect_permits",
+            "type_mask": 7,
+            "enabled": "O",
+            "disabled_trigger_rollback_verification": "DENIED"
+          }
+        ],
+        "inventory_blocker": {
+          "kind": "production_claimed_publication_reissue_requires_finality",
+          "operation_id": "362ea0e9-518f-4d52-8f41-e68b1c2262e6",
+          "permit_id": "f54af28d-d1ec-4877-aa1b-622fced09db5",
+          "generation": 2
+        },
+        "compose_network": "salience-recovery-2575639b9ffc_default"
+      },
+      "installed_routed_worker": {
+        "status": "PASS_REGISTRATION_FIXTURE_ONLY",
+        "drain_and_transfer": "HELD_INCOMPLETE_READBACK",
+        "candidate": "f123336f65ef02417e6d63ee313768bc0a4d21ca",
+        "image_id": "sha256:7edf208c4378def555ee71adb47c76c5b8c79c033e4c4ce5ff832e822a599a4b",
+        "migration_head": "0061_p1_claimed_closure_evidence",
+        "rollback_verifier_abi": "salience.p1-recovery-rollback-verifier.v8",
+        "worker_build_id": "routed-build-f123336f65ef",
+        "producer_bindings": 0,
+        "slot_remained_leased": true,
+        "namespace": "routed-qual-f123336f65ef",
+        "task_queue": "routed-registration-f123336f65ef",
+        "launch_lock_sha256": "6617c4665c6e1b2163ac9231378b23a8b1438c1984414ec2c577aa9fd7e5d6df",
+        "registrations": [
+          {
+            "observed_pollers": {
+              "WORKFLOW": {
+                "identity": "00000000-0000-0000-0000-000000000106",
+                "last_access_time": "2026-11-26T21:56:31.896614+00:00",
+                "build_id": "routed-build-f123336f65ef"
+              },
+              "ACTIVITY": {
+                "identity": "00000000-0000-0000-0000-000000000106",
+                "last_access_time": "2026-11-26T21:56:31.898776+00:00",
+                "build_id": "routed-build-f123336f65ef"
+              }
+            },
+            "readback": "INCOMPLETE_POLL_HISTORY",
+            "starts": 1,
+            "drained": false,
+            "workflow_probe": "RoutedRehearsalActivityDenied",
+            "canonical_counts_unchanged": true,
+            "owner_id": "00000000-0000-0000-0000-000000000106",
+            "epoch": 1
+          }
+        ],
+        "effect_authorization_calls": 0
+      },
+      "installed_claimed_closure_regressions_passed": 34,
+      "installed_signed_acceptance_regressions_passed": 3,
+      "installed_synthetic_acceptance": {
+        "structural_status": "VALID",
+        "disposition": "NO_GO",
+        "gate_state": "UNCHANGED",
+        "external_rows_not_run": 22,
+        "package_digest": "e7dcb0307a7f77c646dff921cce4e097d0d065dd38adc93ef27711227f14d6e7",
+        "output_sha256": "630f3946893bee8ab75c6a173fcb9d7406d450ef7b88bd5812d7d12fd990f871",
+        "evidence_input_commit": "f123336f65ef02417e6d63ee313768bc0a4d21ca"
+      },
+      "rehearsal_evidence_sha256": {
+        "build.log": "933ee6a87fdac7fc93850c00bfdb94203a099f0b6c10fd4b5cb55a615e5aeccd",
+        "summary.json": "6fdc2ae672e2e53be9a4daa923eeb86d095f9ed62d0760315319818f04afc07b",
+        "compose-rehearsal.json": "9b417a51418166f25b841776cea2f94fc8d41b44d32b918e3730c3bc8c98be9c",
+        "compose-observations.jsonl": "906c3f6fa9b06df77971db9021d947024d901c21924b47bd291b60b1da61105c",
+        "installed-rollback-readback.json": "8fc6405e62070da4669e4ca45810baffdd4470ea220336745113517bb7be3640",
+        "production-holds.json": "f7a034879d511f176ef0e4c0278f7ed24e7f8add869e3e8153665db0922581f8",
+        "image-archive-verification.json": "325d497a70e74861fb53c200b59ee8ac4e4bfa8ecdd6267c3f1c0f35fff86b70",
+        "installed-python-dependencies.txt": "4a560f762ccaa0e471d3293fdf15e120db63f116ad5fdd50bdbb0341aad2c024",
+        "installed-python-dependency-check.txt": "9261363b733079a641c2e4cc9bc46ffa1d8336945a87f807b6cf68847dbc9b09",
+        "installed-claimed-closure-summary.json": "0908255fcf353d1344e9cc5c9eef5d17eec2ebd5953fb0e866d1a9062115aa41",
+        "installed-claimed-closure-tests.log": "7f6d0e5e6535373d5295dbdf4c12ff74f68e2b69e91b21261e74348a99a39133",
+        "installed-routed-worker.json": "f55da561e7e86f103e19f9352146ffe750275476539a31d61a9ea13d18b2fec0",
+        "installed-synthetic-acceptance.json": "630f3946893bee8ab75c6a173fcb9d7406d450ef7b88bd5812d7d12fd990f871",
+        "installed-signed-acceptance.log": "ada043e59b0364b201c9e634c0d6a20384aa110c7c0ea7ff5b0c8ebd3e968328",
+        "routed-worker-migration.log": "391ad27a18bc0a430ffe659246164948484704a4f682b7a48086c7f4e95f0961",
+        "route-first-attempt/installed-routed-worker.stderr": "d7396903de74ca9259d9650ac9292f36954b6c008413d04cf1f6e2dccca2b60a",
+        "installed-preclaim-readback.json": "80b37c3c851e1e179460caaba0f26749b7d65d355cc32930469e49ba6feb2ab1",
+        "installed-claimed-reserved-readback.json": "7c65520730e4242e50323cc48f56dfc362f6ca85bfe504bebd0e187352a45c89",
+        "installed-claimed-reissue-fence-readback.json": "38873d7793383d9a0abf8163d2d7251a570e701d269d9f782a8bce44f86d9daf"
+      }
+    }
   },
   "published_fixture_ci": {
     "head_commit": "ea4cd3f030361683051659e37c8171fce7b80a19",
