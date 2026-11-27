@@ -121,6 +121,8 @@ If a publication activity fails after PostgreSQL stores its remote receipt, the 
 
 The isolated mock sink serializes acceptance and permanent closure in one SQLite transaction. It signs proof only after closing a registered, unaccepted predecessor. The signature binds the fixture environment, namespace, barrier, provider account, original key, request fingerprint, operation, permit and claim. Verification takes the expected scope, predecessor, and public key independently. The fixture assumes one authoritative store per barrier identity and that every mock send goes through that store.
 
+The same store accepts an exact generation-two mock send after verifying the signed closure and matching it to its own predecessor record. The send preserves the operation, original request fingerprint, provider account and key and uses a fresh permit and claim. Exact retries return the first receipt. Conflicting successor identities and delayed predecessor sends are denied. This gateway method is exercised directly in SQLite fixtures. The production permit and Temporal handoff paths still require their own guarded authorization.
+
 The Temporal and PostgreSQL regression reads the exact original claim after a simulated lost send, verifies the closure proof, and sees a late predecessor attempt denied after reopening the store. The original permit, claim and reservation remain attached to the unresolved publication. Protected proof consumption, the forward handoff to a live run, and a deployed gateway with an authoritative closure contract remain open.
 
 ### Protected claimed publication closure evidence
@@ -128,6 +130,8 @@ The Temporal and PostgreSQL regression reads the exact original claim after a si
 The case controller verifies the Ed25519 signature using independently configured fixture trust and the exact original send read from PostgreSQL. An injected stage authority supplies a decision for the exact proof and case revision before the controller calls the restricted writer. Migration `0061` retains the proof once per claim, rechecks the current source, policy, stops and decision expiry under lock, and preserves the first receipt on exact replay. Retaining evidence preserves the original permit, dispatch pointer, case, and funding liability. The successor fence stays active.
 
 Rollback ABI v8 requires the exact `0061` database and verifies the retained evidence, canonical lineage and database protections. The v7 reader still requires `0060`. The fixture trust, decision issuer and mock barrier are local. Production continuation needs a qualified gateway, a live route decision fenced with the database write, and guarded use of the retained proof by the original live Temporal run.
+
+A PostgreSQL and Temporal regression restarts the worker while the original run waits, opens the claimed recovery case, and records the signed closure through the controller. Temporal reports the same run still active after proof intake. The run reaches its recorded hold disposition with the original claimed permit, reservation, and unresolved liability intact.
 
 ### Claimed publication recovery wait
 

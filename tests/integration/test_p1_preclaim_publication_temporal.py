@@ -3,7 +3,7 @@
 import asyncio
 import os
 from dataclasses import replace
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from types import SimpleNamespace
 from uuid import uuid4
@@ -15,6 +15,7 @@ from temporalio.client import Client, WorkflowExecutionStatus, WorkflowFailureEr
 from temporalio.exceptions import ActivityError, ApplicationError
 from temporalio.worker import Replayer, Worker
 
+from salience.cycles import production_recovery as recovery
 from salience.governance.cost_repository import CostReservationRepository
 from salience.publication.repository import PublicationRepository, _fingerprint
 from salience.workflows.persistence import CanonicalJobStore
@@ -632,7 +633,7 @@ async def test_mock_gateway_can_close_exact_predecessor_after_temporal_claim(
         PublicationWorkflowRequest(scheduled_publication_schedule_id="prebound-fixture"),
         id=queue, task_queue=queue,
     )
-    case, _, _ = await asyncio.to_thread(
+    case, opening_authority, opening_fields = await asyncio.to_thread(
         temporal_publication_source, handle.id, handle.first_execution_run_id,
     )
     original = case["request"]
@@ -708,6 +709,25 @@ async def test_mock_gateway_can_close_exact_predecessor_after_temporal_claim(
 
     stages = ClaimedHoldActivities(state, case)
 
+    async def retain_closure(proof):
+        def authorize(command):
+            assert command.proof == proof
+            return recovery.ProductionClaimedPublicationClosureAuthorization(
+                command, uuid4(), uuid4(), datetime.now(timezone.utc) + timedelta(seconds=15),
+            )
+
+        opening_authority.authorize_claimed_publication_closure = authorize
+        controller = recovery.ProductionRecoveryCaseController(
+            recovery.ProductionRecoveryWorkRepository(case["database"]),
+            authority=opening_authority, commands=None,
+            closure_trust=recovery.ProductionClaimedPublicationClosureTrust(scope, signer.public_key()),
+        )
+        opened = await asyncio.to_thread(
+            controller.open_case, recovery.ProductionRecoveryCaseOpenCommand(**opening_fields),
+        )
+        stored = await asyncio.to_thread(controller.record_claimed_publication_closure, opened.work_id, proof)
+        assert stored.closure_id == proof.closure_id
+
     async def close_exact_predecessor():
         proof = await asyncio.to_thread(gateway.close_predecessor, provider.send)
         assert verify_fixture_publication_no_effect(
@@ -717,6 +737,7 @@ async def test_mock_gateway_can_close_exact_predecessor_after_temporal_claim(
             await asyncio.to_thread(
                 FixturePublicationSendBarrier(path, scope=scope, signer=signer).accept_predecessor, provider.send,
             )
+        return proof
 
     worker_options = dict(
         task_queue=queue, workflows=[GovernedPublicationWorkflow], activities=stages.activities,
@@ -737,7 +758,9 @@ async def test_mock_gateway_can_close_exact_predecessor_after_temporal_claim(
         async with Worker(client, **worker_options):
             restarted = await handle.describe()
             assert (restarted.run_id, restarted.status) == (handle.first_execution_run_id, WorkflowExecutionStatus.RUNNING)
-            await close_exact_predecessor()
+            proof = await close_exact_predecessor()
+            if wait_outcome == "timeout":
+                await retain_closure(proof)
             after_closure = await handle.describe()
             assert (after_closure.run_id, after_closure.status) == (restarted.run_id, WorkflowExecutionStatus.RUNNING)
             if wait_outcome in {"cancel", "lost-reply"}:

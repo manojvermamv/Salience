@@ -735,3 +735,17 @@ This update records protected intake and rollback verification for signed fixtur
 | `README.md` | `279d9d9b9205733bf3036703a2237055d5e97e5a2b04ddf92a0f1c7422cfe4ef` |
 | `docs/v4/evidence-lock.json` | `32d41cd4ffa032f27cd579c8ac743b8d86de8ac9b6986c79382be41de3d213cd` |
 | `docs/v4/p1-qualification-matrix.json` | `0e6fb8481e7d5f2095a99a5993696a5665a946e098780bc693d02a9cb54641de` |
+
+## P1 fixture successor and live closure intake evidence hashes — 2026-11-27
+
+This update records live original-run fixture proof intake and isolated successor acceptance. [Verification and scope](validation.md#protected-claimed-publication-closure-evidence)
+
+| Path | SHA-256 |
+| --- | --- |
+| `docs/v4/IMPLEMENTATION-BLUEPRINT.md` | `b5ee2fa8b3556f7a2975ad1b62bd31eeeeb158dc4f0d4d69071abb452f4f7bc9` |
+| `docs/v4/progress.md` | `817a3d7cc472197cb6985b874e1208e56e339d90570de655e04bc9d39584c8e3` |
+| `docs/v4/validation.md` | `5ce6f9a1cc446fff33807858b7c07c9fa33a2385898217641b11ca2f2c02a282` |
+| `docs/v4/test_checks.py` | `ba4d1c3a3a5a254c2ef4db77d1e7d7b8e21183213ed1fb1e89c9431546684580` |
+| `README.md` | `279d9d9b9205733bf3036703a2237055d5e97e5a2b04ddf92a0f1c7422cfe4ef` |
+| `docs/v4/evidence-lock.json` | `eef6213deb42468d782c1cd492a50f3537803665a1a26d1ff90857cedd8e676e` |
+| `docs/v4/p1-qualification-matrix.json` | `35ead4909c355247711ba6439b1327527200b5471b48647e29c766fa4c6d1b13` |

@@ -29,6 +29,15 @@ def _require_identity(value: str) -> None:
         raise ValueError("a bounded fixture identity is required")
 
 
+def _require_send_identity(send: FixturePublicationSend | FixturePublicationSuccessorSend) -> None:
+    if not all(isinstance(value, UUID) for value in (send.operation_id, send.permit_id, send.claim_id)):
+        raise ValueError("fixture operation, permit and claim UUIDs are required")
+    if not isinstance(send.request_sha256, str) or re.fullmatch("[a-f0-9]{64}", send.request_sha256) is None:
+        raise ValueError("the exact predecessor request fingerprint is required")
+    for value in (send.provider_id, send.account_id, send.original_key):
+        _require_identity(value)
+
+
 @dataclass(frozen=True, slots=True)
 class FixturePublicationBarrierScope:
     environment_id: UUID
@@ -53,14 +62,28 @@ class FixturePublicationSend:
     generation: int
 
     def __post_init__(self) -> None:
-        if not all(isinstance(value, UUID) for value in (self.operation_id, self.permit_id, self.claim_id)):
-            raise ValueError("fixture operation, permit and claim UUIDs are required")
-        if not isinstance(self.request_sha256, str) or re.fullmatch("[a-f0-9]{64}", self.request_sha256) is None:
-            raise ValueError("the exact predecessor request fingerprint is required")
+        _require_send_identity(self)
         if type(self.generation) is not int or self.generation != 1:
             raise ValueError("only the initial fixture generation can register a predecessor")
-        for value in (self.provider_id, self.account_id, self.original_key):
-            _require_identity(value)
+
+
+@dataclass(frozen=True, slots=True)
+class FixturePublicationSuccessorSend:
+    """Generation two of the same request, under a new permit and claim."""
+
+    operation_id: UUID
+    request_sha256: str
+    provider_id: str
+    account_id: str
+    original_key: str
+    permit_id: UUID
+    claim_id: UUID
+    generation: int
+
+    def __post_init__(self) -> None:
+        _require_send_identity(self)
+        if type(self.generation) is not int or self.generation != 2:
+            raise ValueError("only fixture generation two can send a successor")
 
 
 @dataclass(frozen=True, slots=True)
@@ -155,6 +178,8 @@ class FixturePublicationSendBarrier:
 
     @staticmethod
     def _read_predecessor(database, send: FixturePublicationSend):
+        if type(send) is not FixturePublicationSend:
+            raise PermissionError("the exact claimed predecessor is required")
         row = database.execute(
             "SELECT identity, acceptance_id, closure_id FROM predecessor WHERE operation_id = ?",
             (str(send.operation_id),),
@@ -164,6 +189,8 @@ class FixturePublicationSendBarrier:
         return row[1], row[2]
 
     def register_predecessor(self, send: FixturePublicationSend) -> None:
+        if type(send) is not FixturePublicationSend:
+            raise PermissionError("the exact claimed predecessor is required")
         with self._transaction() as database:
             database.execute(
                 """INSERT INTO predecessor(operation_id, identity, provider_id, account_id, original_key)
@@ -199,3 +226,54 @@ class FixturePublicationSendBarrier:
         closed = UUID(closure_id)
         signature = self._signer.sign(_proof_message(self._scope, send, closed))
         return FixturePublicationNoEffectReceipt(self._scope, send, closed, signature)
+
+    def accept_successor(
+        self,
+        predecessor: FixturePublicationSend,
+        proof: FixturePublicationNoEffectReceipt,
+        successor: FixturePublicationSuccessorSend,
+    ) -> UUID:
+        """Record one mock acceptance against this store's permanent predecessor closure."""
+        if type(predecessor) is not FixturePublicationSend or type(successor) is not FixturePublicationSuccessorSend:
+            raise PermissionError("the exact predecessor and generation two send are required")
+        if (
+            successor.operation_id != predecessor.operation_id
+            or successor.request_sha256 != predecessor.request_sha256
+            or successor.provider_id != predecessor.provider_id
+            or successor.account_id != predecessor.account_id
+            or successor.original_key != predecessor.original_key
+            or successor.permit_id == predecessor.permit_id
+            or successor.claim_id == predecessor.claim_id
+        ):
+            raise PermissionError("the successor must match the original request with a new permit and claim")
+
+        operation_id = str(predecessor.operation_id)
+        identity = _canonical(successor)
+        with self._transaction() as database:
+            verify_fixture_publication_no_effect(
+                proof, scope=self._scope, expected_send=predecessor, public_key=self._signer.public_key(),
+            )
+            predecessor_acceptance, closure_id = self._read_predecessor(database, predecessor)
+            if predecessor_acceptance is not None or closure_id != str(proof.closure_id):
+                raise PermissionError("the exact permanent closure must exist in this fixture store")
+
+            # Existing fixture databases need only this additive table, created under the same lock.
+            database.execute("""
+                CREATE TABLE IF NOT EXISTS successor_acceptance (
+                    operation_id TEXT PRIMARY KEY NOT NULL, identity BLOB NOT NULL, acceptance_id TEXT NOT NULL
+                )
+            """)
+            row = database.execute(
+                "SELECT identity, acceptance_id FROM successor_acceptance WHERE operation_id = ?",
+                (operation_id,),
+            ).fetchone()
+            if row is not None:
+                if row[0] != identity:
+                    raise PermissionError("a different fixture successor already accepted this operation")
+                return UUID(row[1])
+
+            acceptance_id = uuid4()
+            database.execute(
+                "INSERT INTO successor_acceptance VALUES (?, ?, ?)", (operation_id, identity, str(acceptance_id)),
+            )
+        return acceptance_id

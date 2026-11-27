@@ -1,6 +1,6 @@
 {
-  "baseline_commit": "a9d041c66f192cab116778da469c62220533da99",
-  "scope": "Source and build-context inventory for P1 protected claimed publication closure intake.",
+  "baseline_commit": "469afae69b33f42355a20c1e09fa890e2ccba068",
+  "scope": "Source and build-context inventory for P1 fixture successor acceptance and live closure intake.",
   "files": [
     {
       "path": ".dockerignore",
@@ -840,7 +840,7 @@
     },
     {
       "path": "src/salience/fixtures/publication_send_barrier.py",
-      "sha256": "44e908140a21ff4aff96684becc9e2652194ec5057020bbb5cc0efb467c8f68f"
+      "sha256": "aaee19c37d8e412bd633c67202ce3ebd9c4850b61e404e3237726e111c02c70b"
     },
     {
       "path": "src/salience/governance/__init__.py",
@@ -1408,7 +1408,7 @@
     },
     {
       "path": "tests/integration/test_p1_preclaim_publication_temporal.py",
-      "sha256": "7211bd4d61e01473e0455568890d910e4abbdee040b7b9db1bd2078e189b8de0"
+      "sha256": "bde9db82b2ffdac63da62c055ab9304ebc0412678a6e2165214cd84bf2bacc6c"
     },
     {
       "path": "tests/integration/test_p1_preclaim_resume_db.py",
@@ -1700,7 +1700,7 @@
     },
     {
       "path": "tests/unit/test_fixture_publication_send_barrier.py",
-      "sha256": "4aa47785418a0920f63f347ee1620828f9186a023bf9bf6527033fa88ba70d7c"
+      "sha256": "b4cd53a443b5bfbd6cf4f0f4db9b21f9f892f2ebd12aa120b264bdd35a37a7ad"
     },
     {
       "path": "tests/unit/test_intelligence_agents.py",
@@ -3333,5 +3333,10 @@
     "record_commit": "a9d041c66f192cab116778da469c62220533da99",
     "record_path": "docs/v4/evidence-lock.json",
     "sha256": "351b907646bd2a192daf62e0e9c9cddd2d46fb694e96c7818261ccd88b4a0745"
+  },
+  "preceding_p1_fixture_successor_lock": {
+    "record_commit": "469afae69b33f42355a20c1e09fa890e2ccba068",
+    "record_path": "docs/v4/evidence-lock.json",
+    "sha256": "32d41cd4ffa032f27cd579c8ac743b8d86de8ac9b6986c79382be41de3d213cd"
   }
 }
